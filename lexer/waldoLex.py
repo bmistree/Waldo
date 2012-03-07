@@ -58,9 +58,14 @@ tokens = (
     "CURLY_LEFT",
     "CURLY_RIGHT",
 
-    #number
+    
     "NUMBER",
     "IDENTIFIER",
+    
+    #Strings and quotes
+    "MULTI_LINE_STRING",
+    "SINGLE_LINE_STRING",
+    
     "ALL_ELSE",
     )
 '''
@@ -78,7 +83,10 @@ class LexStateMachine():
     def __init__ (self):
         self.inMultiLineComment  = False;
         self.inSingleLineComment = False;
-
+        self.inMultiLineString   = False;
+        self.inSingleLineString  = False;
+        self.fullString = '';
+        
         self.numEndpointsSeen    =     0;
         
     def addToken(self,toke):
@@ -86,7 +94,17 @@ class LexStateMachine():
         returner = toke;
 
         #determine whether to skip token
-        if (self.inMultiLineComment):
+        if (self.inMultiLineString):
+            if (tokeType != "MULTI_LINE_STRING"):
+                #we're still in the multi-line string
+                self.fullString += str(toke.value);
+                returner.type = SkipTokenType;
+        elif(self.inSingleLineString):
+            if (tokeType != "SINGLE_LINE_STRING"):
+                #we're still in the single-line string
+                self.fullString += str(toke.value);
+                returner.type = SkipTokenType;
+        elif (self.inMultiLineComment):
             returner.type = SkipTokenType;
         elif(self.inSingleLineComment):
             returner.type = SkipTokenType;
@@ -105,9 +123,24 @@ class LexStateMachine():
                 errMsg += '\n' + repr(toke.value) + '\n';
                 raise TypeError(generateTypeError(errMsg, toke));
             
-            
+
         #adjust state machine
-        if (self.inMultiLineComment):
+        if (self.inMultiLineString):
+            #check close multi-line string
+            if (tokeType == "MULTI_LINE_STRING"):
+                #preserver token type of string on end.
+                self.inMultiLineString = False;
+                returner.value = self.fullString;
+                self.fullString = '';
+
+        elif (self.inSingleLineString):
+            #check close multi-line string
+            if (tokeType == "SINGLE_LINE_STRING"):
+                #preserver token type of string on end.
+                self.inSingleLineString = False;
+                returner.value = self.fullString;
+                self.fullString = '';
+        elif (self.inMultiLineComment):
             if (tokeType == "MULTI_LINE_COMMENT_END"):
                 self.inMultiLineComment = False;
         elif(self.inSingleLineComment):
@@ -117,6 +150,12 @@ class LexStateMachine():
             self.inMultiLineComment = True;
         elif(tokeType == "SINGLE_LINE_COMMENT"):
             self.inSingleLineComment = True;
+        elif(tokeType == "MULTI_LINE_STRING"):
+            self.inMultiLineString = True;
+            returner.type = SkipTokenType;
+        elif(tokeType == "SINGLE_LINE_STRING"):
+            self.inSingleLineString = True;
+            returner.type = SkipTokenType;
         else:
             if (tokeType == "MULTI_LINE_COMMENT_END"):
                 errMsg = "Cannot lex.  multi-line comment ";
@@ -290,6 +329,15 @@ def t_NUMBER(t):
 def t_IDENTIFIER(t):
     '[a-zA-Z][a-zA-z0-9\_]*';
     return mStateMachine.addToken(t);
+
+def t_MULTI_LINE_STRING(t):
+    r'[\"]'
+    return mStateMachine.addToken(t);
+
+def t_SINGLE_LINE_STRING(t):
+    r'[\']'
+    return mStateMachine.addToken(t);
+
 
 def t_ALL_ELSE(t):
     '.'

@@ -1,0 +1,87 @@
+
+SPACE   "
+SPACE   hi
+SPACE   ;
+MULTI_LINE_STRING   hi;
+SPACE   \n
+SPACE   "
+SPACE    
+SPACE   how
+SPACE   \n
+SPACE     
+SPACE   are
+SPACE    
+SPACE   you
+SPACE   ?
+SPACE   \n
+SPACE     
+MULTI_LINE_STRING    how\n  are you?\n  
+SPACE   \n
+IDENTIFIER   hi
+SEMI_COLON   ;
+SPACE   \n
+IDENTIFIER   how
+SPACE    
+SPACE   "
+SPACE   are
+MULTI_LINE_STRING   are
+SPACE    
+IDENTIFIER   you
+SEMI_COLON   ;
+SPACE   \n
+IDENTIFIER   I
+SPACE    
+IDENTIFIER   am
+SPACE    
+SPACE   "
+SPACE    
+SPACE   //
+SPACE    
+MULTI_LINE_STRING    // 
+SPACE    
+IDENTIFIER   okay
+SEMI_COLON   ;
+SPACE   \n
+IDENTIFIER   I
+SPACE    
+IDENTIFIER   am
+SPACE    
+SPACE   "
+SPACE    
+SPACE   /*
+SPACE    
+MULTI_LINE_STRING    /* 
+SPACE    
+IDENTIFIER   too
+SEMI_COLON   ;
+SPACE   \n
+SPACE   \n
+SINGLE_LINE_COMMENT   //
+SPACE    
+SPACE   "
+SPACE   what
+SPACE    
+SPACE   about
+SPACE    
+SPACE   this
+SPACE   "
+SPACE   \n
+MULTI_LINE_COMMENT_BEGIN   /*
+SPACE   \n
+SPACE    
+SPACE   "
+SPACE   I
+SPACE    
+SPACE   do
+SPACE    
+SPACE   not
+SPACE    
+SPACE   know
+SPACE   "
+SPACE   \n
+SPACE    
+SPACE   other
+SPACE   ;
+SPACE   \n
+SPACE   */
+SPACE   \n
