@@ -1,0 +1,99 @@
+
+INT   Int
+SPACE    
+IDENTIFIER   i
+SPACE    
+EQUALS   =
+SPACE    
+NUMBER   0
+SEMI_COLON   ;
+SPACE   \n
+SPACE   \n
+SINGLE_LINE_COMMENT   //
+SPACE   comment
+SPACE   \n
+SPACE   \n
+MULTI_LINE_COMMENT_BEGIN   /*
+SPACE   \n
+SPACE   \n
+SPACE   multi
+SPACE   -
+SPACE   line
+SPACE   -
+SPACE   comment
+SPACE   \n
+SPACE   \n
+SPACE   */
+SPACE   \n
+NUMBER   6.32
+SEMI_COLON   ;
+SPACE   \n
+SPACE   \n
+SHARED   Shared
+SEMI_COLON   ;
+SPACE   \n
+SPACE   \n
+SEND_ARROW   ->
+SEMI_COLON   ;
+SEMI_COLON   ;
+SPACE   \n
+NUMBER   3
+SEMI_COLON   ;
+SPACE   \n
+NUMBER   -15
+SEMI_COLON   ;
+SPACE   \n
+SPACE   \n
+IF   If
+LEFT_PAREN   (
+SPACE    
+NUMBER   6
+SPACE    
+EQUALS   =
+EQUALS   =
+SPACE    
+NUMBER   4
+RIGHT_PAREN   )
+SPACE   \n
+CURLY_LEFT   {
+SPACE   \n
+SPACE      
+BOOL   Bool
+SPACE    
+IDENTIFIER   z
+SPACE    
+EQUALS   =
+SPACE    
+MULTI_LINE_COMMENT_BEGIN   /*
+SPACE    
+SPACE   stuff
+SPACE   */
+SPACE    
+IDENTIFIER   not
+SPACE    
+LEFT_PAREN   (
+TRUE   True
+RIGHT_PAREN   )
+SEMI_COLON   ;
+SPACE   \n
+CURLY_RIGHT   }
+SPACE   \n
+SPACE   \n
+PUBLIC   Public
+SEMI_COLON   ;
+SPACE   \n
+MAP   Map
+SEMI_COLON   ;
+SPACE   \n
+STRING   String
+SPACE    
+IDENTIFIER   q
+SEMI_COLON   ;
+SPACE   \n
+COMMA   ,
+SPACE   \n
+IDENTIFIER   this[1]
+SEMI_COLON   ;
+SPACE   \n
+SPACE   \n
+SPACE   \n

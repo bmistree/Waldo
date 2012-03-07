@@ -1,0 +1,34 @@
+
+MULTI_LINE_COMMENT_BEGIN   /*
+SPACE   *
+SPACE   \n
+SPACE   Running
+SPACE    
+SPACE   test
+SPACE   */
+SPACE   \n
+IDENTIFIER   other
+SEMI_COLON   ;
+SPACE   \n
+SPACE   \n
+MULTI_LINE_COMMENT_BEGIN   /*
+SPACE    
+SPACE   details
+SPACE   ;
+SPACE    
+SPACE   //
+SPACE    
+SPACE   2
+SPACE   ;
+SPACE    
+SPACE   /*
+SPACE    
+SPACE   */
+SPACE   \n
+STRING   String
+SPACE    
+IDENTIFIER   work
+SEMI_COLON   ;
+SPACE   \n
+SPACE   \n
+SPACE   \n

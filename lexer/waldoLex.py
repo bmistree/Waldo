@@ -56,12 +56,12 @@ tokens = (
     "LEFT_BRACKET",
     "RIGHT_BRACKET",
     "CURLY_LEFT",
-    "CURLY_RIGHT"
+    "CURLY_RIGHT",
 
     #number
     "NUMBER",
-    "VARIABLE",
-    
+    "IDENTIFIER",
+    "ALL_ELSE",
     )
 '''
 Still to add:
@@ -96,16 +96,29 @@ class LexStateMachine():
             returner.type = SkipTokenType;
         elif(tokeType == "NEWLINE"):
             returner.type = SkipTokenType;
-
+        elif (tokeType == 'ALL_ELSE'):
+            if ((self.inMultiLineComment) or (self.inSingleLineComment)):
+                returner.type = SkipTokenType;
+            else:
+                errMsg = 'Should not have gotten an ';
+                errMsg += 'all else when not in comment';
+                errMsg += '\n' + repr(toke.value) + '\n';
+                raise TypeError(generateTypeError(errMsg));
+            
+            
         #adjust state machine
         if (self.inMultiLineComment):
-            if (toke.type == "MULTI_LINE_COMMENT_END"):
+            if (tokeType == "MULTI_LINE_COMMENT_END"):
                 self.inMultiLineComment = False;
         elif(self.inSingleLineComment):
-            if (toke.type == "NEWLINE"):
+            if (tokeType == "NEWLINE"):
                 self.inSingleLineComment = False;
+        elif(tokeType == "MULTI_LINE_COMMENT_BEGIN"):
+            self.inMultiLineComment = True;
+        elif(tokeType == "SINGLE_LINE_COMMENT"):
+            self.inSingleLineComment = True;
         else:
-            if (toke.type == "MULTI_LINE_COMMENT_END"):
+            if (tokeType == "MULTI_LINE_COMMENT_END"):
                 errMsg = "Cannot lex.  multi-line comment ";
                 errMsg = "end occurred before multi-line begin."
                 raise TypeError(generateTypeError(errMsg));
@@ -135,22 +148,22 @@ def t_SHARED(t):
     return mStateMachine.addToken(t);
 
 def t_FUNCTION(t):
-    'function';
+    'Function';
     return mStateMachine.addToken(t);
 
 def t_MSG_SEND(t):
-    'msg_send';
+    'Msg_send';
     return mStateMachine.addToken(t);
 
 def t_MSG_RECEIVE(t):
-    'msg_receive';
+    'Msg_receive';
     return mStateMachine.addToken(t);
 
 def t_PUBLIC(t):
-    'public';
+    'Public';
     return mStateMachine.addToken(t);
 
-def t_SENDARROW(t):
+def t_SEND_ARROW(t):
     '-\>'
     return mStateMachine.addToken(t);
 
@@ -172,15 +185,15 @@ def t_EQUALS(t):
     return mStateMachine.addToken(t);
 
 def t_IF(t):
-    'if'
+    'If'
     return mStateMachine.addToken(t);
 
 def t_ELSE(t):
-    'else'
+    'Else'
     return mStateMachine.addToken(t);
 
 def t_ELSE_IF(t):
-    'else[ \t\r\f\v]+if'
+    r'Else[ \t\r\f\v]+if'
     return mStateMachine.addToken(t);
 
 def t_BOOL_EQUALS(t):
@@ -188,23 +201,23 @@ def t_BOOL_EQUALS(t):
     return mStateMachine.addToken(t);
 
 def t_NOT(t):
-    'not'
+    'Not'
     return mStateMachine.addToken(t);
 
 def t_TRUE(t):
-    'true'
+    'True'
     return mStateMachine.addToken(t);
 
 def t_FALSE(t):
-    'false'
+    'False'
     return mStateMachine.addToken(t);
 
 def t_MAP(t):
-    'map'
+    'Map'
     return mStateMachine.addToken(t);
 
 def t_INT(t):
-    'int'
+    'Int'
     return mStateMachine.addToken(t);
 
 def t_STRING(t):
@@ -212,7 +225,7 @@ def t_STRING(t):
     return mStateMachine.addToken(t);
 
 def t_LIST(t):
-    'list'
+    'List'
     return mStateMachine.addToken(t);
 
 def t_BOOL(t):
@@ -225,13 +238,15 @@ def t_SPACE(t):
     return mStateMachine.addToken(t);
 
 def t_NEWLINE(t):
-    '[\n]+'
+    r"[\n]"
+    t.lexer.lineno += len(t.value);
+    t.value = r"\n";
     return mStateMachine.addToken(t);
 
 #ensure that all keywords are capitalized.
 
 def t_READABLE(t):
-    'readable'
+    'Readable'
     return mStateMachine.addToken(t);
 
 def t_LEFT_PAREN(t):
@@ -269,18 +284,23 @@ def t_CURLY_RIGHT(t):
 
 
 def t_NUMBER(t):
-    '\d+(\.\d*)?'
+    '[\-]?\d+(\.\d*)?'
     return mStateMachine.addToken(t);
 
-def t_VARIABLE(t):
+def t_IDENTIFIER(t):
     '[a-zA-Z][a-zA-z0-9\_]*';
     return mStateMachine.addToken(t);
 
+def t_ALL_ELSE(t):
+    '.'
+    return mStateMachine.addToken(t);
+
 def t_error(t):
-    raise TypeError("Unknown text '%s'" % (t.value,));
+    raise TypeError("Unknown text '%s'  at line number '%s'" % (t.value,t.lexer.lineno));
 
 
 
 def constructLexer():
+    mStateMachine = LexStateMachine();
     lex.lex();
     return lex;

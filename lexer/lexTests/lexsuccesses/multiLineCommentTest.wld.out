@@ -1,0 +1,14 @@
+
+MULTI_LINE_COMMENT_BEGIN   /*
+SPACE   \n
+SPACE    
+SPACE   comment
+SPACE   -
+SPACE   multi
+SPACE   \n
+SPACE    
+SPACE   */
+SPACE   \n
+IDENTIFIER   other
+SEMI_COLON   ;
+SPACE   \n
