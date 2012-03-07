@@ -1,4 +1,4 @@
-
+#!/usr/bin/python
 
 from ply import lex
 
@@ -103,7 +103,7 @@ class LexStateMachine():
                 errMsg = 'Should not have gotten an ';
                 errMsg += 'all else when not in comment';
                 errMsg += '\n' + repr(toke.value) + '\n';
-                raise TypeError(generateTypeError(errMsg));
+                raise TypeError(generateTypeError(errMsg, toke));
             
             
         #adjust state machine
@@ -121,14 +121,14 @@ class LexStateMachine():
             if (tokeType == "MULTI_LINE_COMMENT_END"):
                 errMsg = "Cannot lex.  multi-line comment ";
                 errMsg = "end occurred before multi-line begin."
-                raise TypeError(generateTypeError(errMsg));
+                raise TypeError(generateTypeError(errMsg,toke));
                 
         return returner;
 
 mStateMachine = LexStateMachine();    
     
-def generateTypeError(errMsg):
-    return errMsg;
+def generateTypeError(errMsg, token):
+    return errMsg + ' at line number ' + str(token.lexer.lineno);
 
 '''
 Rule definitions

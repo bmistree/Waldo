@@ -115,7 +115,6 @@ def lexFileAndPrint(filename):
 
 def lexStringAndPrint(stringToLex):
     lexer = waldoLex.constructLexer();
-    
     lexer.input(stringToLex)
     for tok in iter(lexer.token, None):
         print (str(tok.type) + '   ' +  str(tok.value));
@@ -180,6 +179,3 @@ if __name__== '__main__':
             print('\nUnknown input\n');
             printUsage();
             
-                
-    
-
