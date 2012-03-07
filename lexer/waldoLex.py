@@ -108,6 +108,10 @@ class LexStateMachine():
             returner.type = SkipTokenType;
         elif(self.inSingleLineComment):
             returner.type = SkipTokenType;
+        elif(tokeType == "MULTI_LINE_COMMENT_BEGIN"):
+            returner.type = SkipTokenType;
+        elif(tokeType == "SINGLE_LINE_COMMENT_END"):
+            returner.type = SkipTokenType;
         elif(tokeType == "SPACE"):
             returner.type = SkipTokenType;
         elif(tokeType == "TAB"):
@@ -161,7 +165,10 @@ class LexStateMachine():
                 errMsg = "Cannot lex.  multi-line comment ";
                 errMsg = "end occurred before multi-line begin."
                 raise TypeError(generateTypeError(errMsg,toke));
-                
+
+
+        if (returner.type == SkipTokenType):
+            return None;
         return returner;
 
 mStateMachine = LexStateMachine();    
@@ -177,6 +184,7 @@ Rule definitions
 def t_ENDPOINT(t):
     'Endpoint';
     return mStateMachine.addToken(t);
+
 
 def t_TRACES(t):
     'Traces';
