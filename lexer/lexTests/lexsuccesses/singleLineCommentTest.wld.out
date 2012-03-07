@@ -1,7 +1,4 @@
 
 SINGLE_LINE_COMMENT   //
-SPACE   comment
-SPACE   \n
 IDENTIFIER   other
 SEMI_COLON   ;
-SPACE   \n
