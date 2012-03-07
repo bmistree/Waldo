@@ -34,7 +34,6 @@ def runSuccesses():
         try:
             result = lexFile(os.path.join(SUCCESS_FOLDER,s));
             passed, diffNotes = compareToFile(result,os.path.join(SUCCESS_FOLDER,s+WALD_OUTPUT));
-            notes  = 'No lex errors';
             if (not passed):
                 notes += '\n' + diffNotes;
                 
