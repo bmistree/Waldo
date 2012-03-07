@@ -40,7 +40,6 @@ def p_RootExpression(p):
     # p[0].addChildren([p[1],p[2],p[3]]);
     p[0].addChildren([p[1],p[2]]);
 
-
 def p_NameSection(p):
     'NameSection : Identifier'
     p[0] = AstNode(AST_PROT_OBJ_NAME);
@@ -50,7 +49,6 @@ def p_EndpointAliasSection(p):
     'EndpointAliasSection : ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON';
     p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION);
     p[0].addChildren([p[2], p[5]]);
-
 
 def p_Identifier(p):
     'Identifier : IDENTIFIER';
@@ -75,7 +73,9 @@ def parseFile(filename):
     parser = getParser();
     print('\nParsing file\n');
     result = parser.parse(text);
-    result.printAst();
+    # result.printAst();
+    json = result.toJson();
+    print(json);
 
 
 if __name__ == '__main__':
