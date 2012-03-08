@@ -10,10 +10,12 @@ def indentText(text,numIndents):
         returner += '\t'
     returner += text;
     return returner;
-        
+
+def isEmptyAstNode(node):
+    return (node.type == "EMPTY");
+
         
 class AstNode():
-
     
     def __init__(self,_type,_lineNo=None,_linePos=None,_value=None):
         '''

@@ -51,7 +51,8 @@ var w = ''' + str(width) + ''',
     h = ''' + str(height) + ''';
 
 var tree = d3.layout.tree()
-    .size([h, w - 160]);
+    .size([h, w-160 ]);
+
 
 var diagonal = d3.svg.diagonal()
     .projection(function(d) { return [d.x, d.y]; });
@@ -60,10 +61,7 @@ var vis = d3.select("#chart").append("svg")
     .attr("width", w)
     .attr("height", h)
     .append("g")
-    .attr("transform", "translate(40, 40)");
-
-
-
+    .attr("transform", "translate(-40, 40)");
 
 
 function exec (json) {
