@@ -45,7 +45,7 @@ tokens = (
     "NEWLINE",
     
     #other
-    "READABLE",
+    "CONTROLS",
     "SEMI_COLON",    
     "COMMA",
 
@@ -111,7 +111,7 @@ class LexStateMachine():
             returner.type = SkipTokenType;
         elif(tokeType == "MULTI_LINE_COMMENT_BEGIN"):
             returner.type = SkipTokenType;
-        elif(tokeType == "SINGLE_LINE_COMMENT_END"):
+        elif(tokeType == "SINGLE_LINE_COMMENT"):
             returner.type = SkipTokenType;
         elif(tokeType == "SPACE"):
             returner.type = SkipTokenType;
@@ -293,8 +293,8 @@ def t_NEWLINE(t):
 
 #ensure that all keywords are capitalized.
 
-def t_READABLE(t):
-    'Readable'
+def t_CONTROLS(t):
+    'Controls'
     return mStateMachine.addToken(t);
 
 def t_LEFT_PAREN(t):
