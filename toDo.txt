@@ -6,8 +6,8 @@ x * Separate ast building code from overall parsing code.  want to put
 x * Textually print asts
 x * Pass line numbers through for ast building errors and into ast
    nodes.
+x * Add some notation for trace message functions.     
  * Add productions to ast builder.
- * Add some notation for trace message functions.  
  * Create test infrastructure for asts
 
 

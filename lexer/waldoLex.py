@@ -58,6 +58,7 @@ tokens = (
     "CURLY_LEFT",
     "CURLY_RIGHT",
 
+    "DOT",
     
     "NUMBER",
     "IDENTIFIER",
@@ -329,7 +330,10 @@ def t_CURLY_RIGHT(t):
     '\}';
     return mStateMachine.addToken(t);
 
-
+def t_DOT(t):
+    '[.]';
+    return mStateMachine.addToken(t);
+    
 def t_NUMBER(t):
     '[\-]?\d+(\.\d*)?'
     return mStateMachine.addToken(t);

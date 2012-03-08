@@ -66,11 +66,11 @@ def p_TraceSection(p):
 
 
 def p_TraceItem(p):
-    'TraceItem : Identifier'
+    'TraceItem : Identifier DOT Identifier'
     #Each TraceItem is connected by arrows in Trace section
     # TraceItem -> TraceItem -> TraceItem;
     p[0] = AstNode(AST_TRACE_ITEM,p.lineno(1),p.lexpos(1));
-    p[0].addChild(p[1]);
+    p[0].addChildren([p[1],p[3]]);
 
 def p_TraceBodySection(p):
     '''TraceBodySection : TraceLine SEMI_COLON TraceBodySection
