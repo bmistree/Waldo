@@ -12,3 +12,14 @@ x * Add some notation for trace message functions.
 
 
  
+Incorporate errors into Trace syntax.  Probably put errors at end of
+each trace line.  (Ie, for each trace line, no matter where the error
+occurs in the trace line, all error handling on each side happens in
+one function.)  Use prose keyword, such as "OnError" to deal with
+each.  Maybe also provide ability to specify how long to wait until a
+message times out.
+
+Presumably, only one trace line can execute at a time.  What is model
+for queueing other message lines?
+
+
