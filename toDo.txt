@@ -16,6 +16,21 @@ x    -Offending token
  * Create test infrastructure for asts
 
 
+Questions:
+
+Annotation for shared data seems off.  Right now, just have one
+general CONTROLS annotation.  Can have more nuanced rules, where a
+piece of state can only be modified directly in a message response
+chain instead of at the outset of response.  Similarly, may want to
+make state only writable.  We'll see.
+
+
+Ideas:
+
+Are there any benefits behind reporting syntax errors sequentially,
+instead of reporting many at once?  That would be conventional wisdome
+to overturn.
+
 Syntax error reporting is hard.  This is because when hit a syntax
 error, yacc does not actually report to you which state it can't get
 out of (or the deepest state that it can get into before failing).
@@ -26,10 +41,10 @@ like you may have forgotten a semi-colon", "don't forget a comma
 here", etc.  Note that this may fit in with SOSP paper about
 configuration error messages.
 
-Are there any benefits behind reporting syntax errors sequentially,
-instead of reporting many at once?  That would be conventional wisdome
-to overturn.
 
+ 
+Long-term to do:
+ 
 
 Incorporate errors into Trace syntax.  Probably put errors at end of
 each trace line.  (Ie, for each trace line, no matter where the error

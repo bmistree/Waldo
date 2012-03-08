@@ -34,10 +34,10 @@ AST_TRACE_LINE = 'TRACE_LINE';
 
 #shared
 AST_SHARED_SECTION = 'SHARED_SECTION';
-AST_SHARED_BODY_SECTION = 'SHARED_BODY_SECTION';
+AST_SHARED_BODY_SECTION = 'SHARED_BODY_SECTION'; #INTERMEDIATE
 AST_ANNOTATED_DECLARATION = 'ANNOTATED_DECLARATION';
     
-
+AST_TYPE = 'TYPE';
 AST_IDENTIFIER = 'IDENTIFIER';
 AST_EMPTY = 'EMPTY';
 
@@ -105,7 +105,10 @@ def p_SharedSection(p):
                      | SHARED CURLY_LEFT empty CURLY_RIGHT''';
 
     p[0] = AstNode(AST_SHARED_SECTION,p.lineno(0),p.lexpos(0));
-    p[0].addChild(p[3]);
+    if (not isEmptyNode(p[3])):
+        p[0].addChildren(p[3].getChildren());
+    else:
+        p[0].addChild(p[3]);
 
 def p_SharedBodySection(p):
     '''SharedBodySection : AnnotatedDeclaration SEMI_COLON SharedBodySection
@@ -117,8 +120,21 @@ def p_SharedBodySection(p):
         p[0].addChildren(p[3].getChildren());
     
 def p_AnnotatedDeclaration(p):
-    'AnnotatedDeclaration : Identifier'
+    '''AnnotatedDeclaration : Identifier CONTROLS Type Identifier 
+                            | Identifier CONTROLS Type Identifier EQUALS Identifier '''
     p[0] = AstNode(AST_ANNOTATED_DECLARATION,p.lineno(1),p.lexpos(1));
+    p[0].addChildren([p[1],p[3],p[4]]);
+    
+    if (len(p) == 8):
+        #have an initialization statement to perform
+        p[0].addChild(p[6]);
+
+def p_Type(p):
+    '''Type : INT
+            | STRING
+            | LIST
+            | BOOL'''
+    p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),p[1]);
 
 
     
@@ -130,6 +146,11 @@ def p_empty(p):
 def p_Identifier(p):
     'Identifier : IDENTIFIER';
     p[0] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
+
+
+
+
+
     
 def p_error(p):
 
@@ -183,6 +204,9 @@ def findErrorCol(progText,p):
 	lastNewline = 0;
     returner = (p.lexpos - lastNewline);
     return returner;
+
+def isEmptyNode(nodeToCheck):
+    return (nodeToCheck.type == AST_EMPTY);
 
 
 def getParser(programText=None):
