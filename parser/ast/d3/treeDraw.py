@@ -17,6 +17,7 @@ def prettyDrawTree(filename,data,pathToD3,width=1000,height=1000):
 
 
 def generatePage(data, pathToD3,width,height):
+    
     text = '''
    <html>
   <head>

@@ -1,9 +1,9 @@
 To Do:
 
- * Graphically print asts
- * Separate ast building code from overall parsing code.  want to put
+x * Graphically print asts
+x * Separate ast building code from overall parsing code.  want to put
    a nice frontend on parsing.
- * Textually print asts
+x * Textually print asts
  * Pass line numbers through for ast building errors and into ast
    nodes.
  * Add productions to ast builder.

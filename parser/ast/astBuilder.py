@@ -61,36 +61,3 @@ def getParser():
     returner = yacc.yacc();
     return returner;
 
-
-def parseFile(filename):
-    print('\nParsing file\n');
-    filer = open(filename, 'r');
-    text = '';
-    for s in filer:
-        text +=s;
-    filer.flush();
-    filer.close();
-        
-    print('\nBuilding parser\n');
-    parser = getParser();
-    print('\nParsing file\n');
-    result = parser.parse(text);
-    result.drawPretty('test.html');
-
-
-if __name__ == '__main__':
-    parseFile(sys.argv[1]);
-
-    
-
-# # Build the parser
-# parser = yacc.yacc()
-
-# while True:
-#    try:
-#        s = raw_input('calc > ')
-#    except EOFError:
-#        break
-#    if not s: continue
-#    result = parser.parse(s)
-#    print result

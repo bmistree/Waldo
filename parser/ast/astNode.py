@@ -36,8 +36,15 @@ class AstNode():
     def getChildren(self):
         return self.children;
 
-    def printAst(self):
-        print(self.toJSON());
+    def printAst(self,filename=None):
+        text = self.toJSON();
+        if (filename != None):
+            filer = open(filename,'w');
+            filer.write(text);
+            filer.flush();
+            filer.close();
+        else:
+            print(self.toJSON());
 
 
         
@@ -75,8 +82,17 @@ class AstNode():
         return returner;
 
     
-    def drawPretty(self,filename,pathToD3='d3'):
+    def drawPretty(self,filename,pathToD3='d3',width=1000,height=1000):
         '''
         For now, an ugly way of generating a pretty view 
         '''
-        treeDraw.prettyDrawTree(filename,self.toJSON(),pathToD3);
+
+        #default args did not work how I anticipated.
+        if (pathToD3 == None):
+            pathToD3 = 'd3';
+        if(width == None):
+            width = 1000;
+        if(height==None):
+            height = 1000;
+            
+        treeDraw.prettyDrawTree(filename=filename,data=self.toJSON(),pathToD3=pathToD3,width=width,height=height);
