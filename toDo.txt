@@ -1,0 +1,14 @@
+To Do:
+
+ * Graphically print asts
+ * Separate ast building code from overall parsing code.  want to put
+   a nice frontend on parsing.
+ * Textually print asts
+ * Pass line numbers through for ast building errors and into ast
+   nodes.
+ * Add productions to ast builder.
+ * Add some notation for trace message functions.  
+ * Create test infrastructure for asts
+
+
+ 
