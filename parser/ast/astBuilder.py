@@ -30,8 +30,13 @@ AST_TRACE_BODY_SECTION = 'TRACE_BODY_SECTION';   #INTERMEDIATE
 AST_TRACE_ITEM = 'TRACE_ITEM';
 AST_TRACE_LINE = 'TRACE_LINE';
 
-AST_IDENTIFIER = 'IDENTIFIER';
+#shared
+AST_SHARED_SECTION = 'SHARED_SECTION';
+AST_SHARED_BODY_SECTION = 'SHARED_BODY_SECTION';
+AST_ANNOTATED_DECLARATION = 'ANNOTATED_DECLARATION';
+    
 
+AST_IDENTIFIER = 'IDENTIFIER';
 AST_EMPTY = 'EMPTY';
 
 #note: otherwise, starts at first rule.  
@@ -41,9 +46,9 @@ lexer = constructLexer();
 
 
 def p_RootExpression(p):
-    'RootExpression : NameSection EndpointAliasSection TraceSection';
+    'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection';
     p[0] = AstNode(AST_ROOT,p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[1],p[2],p[3]]);
+    p[0].addChildren([p[1],p[2],p[3],p[4]]);
     
 
 def p_NameSection(p):
@@ -75,6 +80,7 @@ def p_TraceItem(p):
 def p_TraceBodySection(p):
     '''TraceBodySection : TraceLine SEMI_COLON TraceBodySection
                         | TraceLine SEMI_COLON''';
+    #note: currently, cannot have empty trace body section.
     p[0] = AstNode(AST_TRACE_BODY_SECTION,p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
     if(len(p) == 4):
@@ -92,8 +98,31 @@ def p_TraceLine(p):
         #have additional parts of trace body to grab.
         p[0].addChildren(p[3].getChildren());
 
+def p_SharedSection(p):
+    '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
+                     | SHARED CURLY_LEFT empty CURLY_RIGHT''';
+
+    p[0] = AstNode(AST_SHARED_SECTION,p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[3]);
+
+def p_SharedBodySection(p):
+    '''SharedBodySection : AnnotatedDeclaration SEMI_COLON SharedBodySection
+                         | AnnotatedDeclaration SEMI_COLON'''
+    #note: currently, cannot have empty shared section.
+    p[0] = AstNode(AST_SHARED_BODY_SECTION, p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        p[0].addChildren(p[3].getChildren());
+    
+def p_AnnotatedDeclaration(p):
+    'AnnotatedDeclaration : Identifier'
+    p[0] = AstNode(AST_ANNOTATED_DECLARATION,p.lineno(1),p.lexpos(1));
 
 
+    
+def p_empty(p):
+    'empty : ';
+    p[0] = AstNode(AST_EMPTY, p.lineno(0),p.lexpos(0));
     
     
 def p_Identifier(p):

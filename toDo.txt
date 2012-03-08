@@ -8,6 +8,8 @@ x * Pass line numbers through for ast building errors and into ast
    nodes.
 x * Add some notation for trace message functions.     
  * Add productions to ast builder.
+    -Add Trace constructions to ast builder
+    -Add Shared constructions to ast builder
  * Create test infrastructure for asts
 
 

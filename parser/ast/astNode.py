@@ -74,7 +74,7 @@ class AstNode():
         if (len(self.children) != 0):
             returner += ',\n';
             returner += indentText('"children": [\n',indentLevel+1);
-
+            
             for s in range(0,len(self.children)):
                 returner += self.children[s].toJSON(indentLevel+1);
                 if (s != (len(self.children) -1 )):

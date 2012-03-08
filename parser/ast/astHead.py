@@ -72,7 +72,6 @@ def parseGraphicalOutputArg(goJSON):
     @throws exception if incorrectly formatted.
     @returns GraphicalOutArg object
     '''
-
     pyDict = json.loads(goJSON);
 
     if (pyDict.get('file',None) == None):
