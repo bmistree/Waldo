@@ -27,8 +27,9 @@ def runTests():
 
 
 def genAst(inputFilename):
-    parser = getParser();
-    astNode = parser.parse(getFileText(inputFilenameArg));
+    fileText = getFileText(inputFilenameArg);
+    parser = getParser(fileText);
+    astNode = parser.parse(fileText);
     return astNode;
 
 def astProduceTextOutput(astNode,textOutFilename):
@@ -50,19 +51,22 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
         
 def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg):
     ast = genAst(inputFilename);
-    performedOperation = False;
-    if (textOutputArg != None):
-        astProduceTextOutput(ast,textOutputArg);
-        performedOperation = True;
-    if (printOutputArg != None):
-        astProducePrintOutput(ast);
-        performedOperation = True;
-    if(graphicalOutputArg != None):
-        astProduceGraphicalOutput(ast,graphicalOutputArg);
-        performedOperation = True;
+    if (ast == None):
+        print('\nError with program.  Please fix and continue\n');
+    else:
+        performedOperation = False;
+        if (textOutputArg != None):
+            astProduceTextOutput(ast,textOutputArg);
+            performedOperation = True;
+        if (printOutputArg != None):
+            astProducePrintOutput(ast);
+            performedOperation = True;
+        if(graphicalOutputArg != None):
+            astProduceGraphicalOutput(ast,graphicalOutputArg);
+            performedOperation = True;
 
-    if (not performedOperation):
-        printUsage();
+        if (not performedOperation):
+            printUsage();
 
 
 

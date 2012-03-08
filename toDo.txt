@@ -6,14 +6,31 @@ x * Separate ast building code from overall parsing code.  want to put
 x * Textually print asts
 x * Pass line numbers through for ast building errors and into ast
    nodes.
-x * Add some notation for trace message functions.     
+x * Add some notation for trace message functions.
+x  * Do way better parser error reporting
+x    -Line number
+x    -Offending token
  * Add productions to ast builder.
     -Add Trace constructions to ast builder
     -Add Shared constructions to ast builder
  * Create test infrastructure for asts
 
 
- 
+Syntax error reporting is hard.  This is because when hit a syntax
+error, yacc does not actually report to you which state it can't get
+out of (or the deepest state that it can get into before failing).
+This is a problem because can't report targetted syntax errors without
+parsing for them specifically.  If provide this extra bit of
+information, maybe can provide more informative syntax error: "looks
+like you may have forgotten a semi-colon", "don't forget a comma
+here", etc.  Note that this may fit in with SOSP paper about
+configuration error messages.
+
+Are there any benefits behind reporting syntax errors sequentially,
+instead of reporting many at once?  That would be conventional wisdome
+to overturn.
+
+
 Incorporate errors into Trace syntax.  Probably put errors at end of
 each trace line.  (Ie, for each trace line, no matter where the error
 occurs in the trace line, all error handling on each side happens in

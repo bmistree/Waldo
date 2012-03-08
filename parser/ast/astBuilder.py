@@ -8,8 +8,10 @@ from waldoLex import constructLexer;
 from astNode import AstNode;
 import ply.yacc as yacc;
 
-
-
+#Program text that we are parsing.  Set in getParser function.  Allows
+#us to output surrounding lines when reporting an error.
+ProgramText = None;
+ERROR_NUM_LINES_EITHER_SIDE = 4;
 
 # Overall Structure:
 # NameSection
@@ -130,9 +132,62 @@ def p_Identifier(p):
     p[0] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
     
 def p_error(p):
-    print "Syntax error at '%s'" % p.value
 
-def getParser():
+    if (p == None):
+        print('\nError: end of file and missing some structure\n');
+    else:
+        print('\nSyntax error on "' + p.value + '"');
+        print('Line number: ' + str(p.lineno));
+        print('\n');
+
+        if (ProgramText != None):
+            #have program text, can actually print out the error.
+            programTextArray = ProgramText.split('\n');
+            errorLine = p.lineno;
+            errorCol  = findErrorCol(ProgramText,p);
+            errorText = '';
+            lowerLineNum = max(0,errorLine - ERROR_NUM_LINES_EITHER_SIDE);
+            upperLineNum = min(len(programTextArray),errorLine + ERROR_NUM_LINES_EITHER_SIDE);
+            for s in range(lowerLineNum, upperLineNum):
+                preamble = str(s+1);
+
+                if (s == errorLine -1):
+                    preamble += '*   ';
+                else:
+                    preamble += '    ';
+                    
+                errorText += preamble;
+                errorText += programTextArray[s];
+                errorText += '\n';
+                
+                if (s == errorLine -1):
+                    #want to highlight the column that the error occurred.
+                    lexPosLine = '';
+                    for t in range(0,len(preamble) + errorCol - 1):
+                        lexPosLine += ' ';
+                    lexPosLine += '^\n';
+                    errorText += lexPosLine;
+
+            print(errorText);
+
+
+def findErrorCol(progText,p):
+    '''
+    @param {string} progText -- Text of program that we're trying to
+    parse.
+    
+    @param {production token} p
+    '''
+    lastNewline = progText.rfind('\n',0,p.lexpos);
+    if lastNewline < 0:
+	lastNewline = 0;
+    returner = (p.lexpos - lastNewline);
+    return returner;
+
+
+def getParser(programText=None):
+    global ProgramText;
     returner = yacc.yacc();
+    ProgramText = programText;
     return returner;
 
