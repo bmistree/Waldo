@@ -15,13 +15,15 @@ def indentText(text,numIndents):
 class AstNode():
 
     
-    def __init__(self,_type,_value=None):
+    def __init__(self,_type,_lineNo=None,_linePos=None,_value=None):
         '''
         Only leaf nodes have values that are not None.
         (Things like Numbers, Strings, Identifiers, etc.)
         '''
         self.type = _type;
         self.value = _value;
+        self.lineNo = _lineNo;
+        self.linePos = _linePos;
         self.children = [];
 
         

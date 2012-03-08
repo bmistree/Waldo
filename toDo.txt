@@ -4,7 +4,7 @@ x * Graphically print asts
 x * Separate ast building code from overall parsing code.  want to put
    a nice frontend on parsing.
 x * Textually print asts
- * Pass line numbers through for ast building errors and into ast
+x * Pass line numbers through for ast building errors and into ast
    nodes.
  * Add productions to ast builder.
  * Add some notation for trace message functions.  

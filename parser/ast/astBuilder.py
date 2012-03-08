@@ -36,23 +36,23 @@ lexer = constructLexer();
 def p_RootExpression(p):
     # 'RootExpression : NameSection EndpointAliasSection TraceSection';
     'RootExpression : NameSection EndpointAliasSection';
-    p[0] = AstNode(AST_ROOT);
+    p[0] = AstNode(AST_ROOT,p.lineno(0),p.lexpos(0));
     # p[0].addChildren([p[1],p[2],p[3]]);
     p[0].addChildren([p[1],p[2]]);
 
 def p_NameSection(p):
     'NameSection : Identifier'
-    p[0] = AstNode(AST_PROT_OBJ_NAME);
+    p[0] = AstNode(AST_PROT_OBJ_NAME,p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
 
 def p_EndpointAliasSection(p):
     'EndpointAliasSection : ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON';
-    p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION);
+    p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[2], p[5]]);
 
 def p_Identifier(p):
     'Identifier : IDENTIFIER';
-    p[0] = AstNode(AST_IDENTIFIER,p[1]);
+    p[0] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
     
 def p_error(p):
     print "Syntax error at '%s'" % p.value
