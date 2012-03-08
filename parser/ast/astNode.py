@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+import sys;
+sys.path.append('d3');
+import treeDraw
+
 def indentText(text,numIndents):
     returner = '';
     for s in range(0,numIndents):
@@ -33,11 +37,11 @@ class AstNode():
         return self.children;
 
     def printAst(self):
-        print('\n\nGot into printAst\n\n');
+        print(self.toJSON());
 
 
         
-    def toJson(self,indentLevel=0):
+    def toJSON(self,indentLevel=0):
         '''
         JSON format:
         {
@@ -61,7 +65,7 @@ class AstNode():
             returner += indentText('"children": [\n',indentLevel+1);
 
             for s in range(0,len(self.children)):
-                returner += self.children[s].toJson(indentLevel+1);
+                returner += self.children[s].toJSON(indentLevel+1);
                 if (s != (len(self.children) -1 )):
                     returner += ',\n';
             returner += ']';
@@ -69,4 +73,10 @@ class AstNode():
         #close object
         returner += '\n' + indentText('}',indentLevel);
         return returner;
-        
+
+    
+    def drawPretty(self,filename,pathToD3='d3'):
+        '''
+        For now, an ugly way of generating a pretty view 
+        '''
+        treeDraw.prettyDrawTree(filename,self.toJSON(),pathToD3);

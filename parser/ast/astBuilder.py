@@ -68,14 +68,14 @@ def parseFile(filename):
     text = '';
     for s in filer:
         text +=s;
-
+    filer.flush();
+    filer.close();
+        
     print('\nBuilding parser\n');
     parser = getParser();
     print('\nParsing file\n');
     result = parser.parse(text);
-    # result.printAst();
-    json = result.toJson();
-    print(json);
+    result.drawPretty('test.html');
 
 
 if __name__ == '__main__':
