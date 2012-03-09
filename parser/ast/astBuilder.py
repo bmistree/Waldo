@@ -37,6 +37,12 @@ AST_SHARED_SECTION = 'SHARED_SECTION';
 AST_SHARED_BODY_SECTION = 'SHARED_BODY_SECTION'; #INTERMEDIATE
 AST_ANNOTATED_DECLARATION = 'ANNOTATED_DECLARATION';
 
+#endpoint
+AST_ENDPOINT = 'ENDPOINT';
+AST_ENDPOINT_BODY_SECTION = 'ENDPOINT_BODY_SECTION';
+AST_ENDPOINT_GLOBAL_SECTION = 'ENDPOINT_GLOBAL_SECTION';
+AST_DECLARATION = 'DECLARATION';
+
 
 AST_STRING = 'STRING_LITERAL';
 AST_NUMBER = 'NUMBER_LITERAL';
@@ -52,9 +58,9 @@ lexer = constructLexer();
 
 
 def p_RootExpression(p):
-    'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection';
+    'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection EndpointSection';
     p[0] = AstNode(AST_ROOT,p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[1],p[2],p[3],p[4]]);
+    p[0].addChildren([p[1],p[2],p[3],p[4],p[5]]);
     
 
 def p_NameSection(p):
@@ -176,10 +182,34 @@ def p_Identifier(p):
     p[0] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
 
 
+def p_EndpointSection(p):
+    'EndpointSection : Identifier CURLY_LEFT EndpointBodySection CURLY_RIGHT'
+    p[0] = AstNode(AST_ENDPOINT,p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[1],p[3]]);
 
+def p_EndpointBodySection(p):
+    'EndpointBodySection : EndpointGlobalSection '
+    p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[1]]);
+    # p[0].addChildren([p[1],p[2]]);
 
+def p_EndpointGlobalSection(p):
+    '''EndpointGlobalSection : Declaration SEMI_COLON EndpointGlobalSection
+                             | Declaration SEMI_COLON'''
+    p[0] = AstNode(AST_ENDPOINT_GLOBAL_SECTION, p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        p[0].addChildren(p[3].getChildren());
 
-    
+def p_Declaration(p):
+    '''Declaration : Type Identifier
+                   | Type Identifier EQUALS Initializer'''
+    p[0] = AstNode(AST_DECLARATION,p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[1],p[2]]);
+    if (len(p) == 5):
+        p[0].addChild(p[4]);
+
+        
 def p_error(p):
 
     if (p == None):
