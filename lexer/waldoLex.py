@@ -200,11 +200,11 @@ def t_FUNCTION(t):
     return mStateMachine.addToken(t);
 
 def t_MSG_SEND(t):
-    'Msg_send';
+    'MsgSend';
     return mStateMachine.addToken(t);
 
 def t_MSG_RECEIVE(t):
-    'Msg_receive';
+    'MsgReceive';
     return mStateMachine.addToken(t);
 
 def t_PUBLIC(t):

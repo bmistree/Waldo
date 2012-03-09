@@ -45,10 +45,16 @@ AST_ENDPOINT_FUNCTION_SECTION = 'ENDPOINT_FUNCTION_SECTION';
 
 
 #functions
+##function types
 AST_PUBLIC_FUNCTION = 'PUBLIC_FUNCTION';
+AST_FUNCTION = 'FUNCTION';
+AST_MSG_SEND_FUNCTION = 'MSG_SEND_FUNCTION';
+AST_MSG_RECEIVE_FUNCTION = 'MSG_RECEIVE_FUNCTION';
+
+
+##function helpers
 AST_FUNCTION_DECL_ARGLIST = 'FUNCTION_DECL_ARGLIST';
 AST_FUNCTION_DECL_ARG = 'FUNCTION_DECL_ARG';
-
 AST_FUNCTION_BODY = 'FUNCTION_BODY';
 
 AST_DECLARATION = 'DECLARATION';
@@ -219,22 +225,49 @@ def p_EndpointGlobalSection(p):
 
 def p_EndpointFunctionSection(p):
     '''EndpointFunctionSection :  PublicFunction EndpointFunctionSection
-                               |  PublicFunction '''
-
-    # '''EndpointFunctionSection :  MsgSendFunction EndpointFunctionSection
-    #                            |  MsgReceiveFunction EndpointFunctionSection
-    #                            |  PublicFunction EndpointFunctionSection
-    #                            |  Function EndpointFunctionSection
-    #                            |  MsgSendFunction 
-    #                            |  MsgReceiveFunction 
-    #                            |  PublicFunction 
-    #                            |  Function   '''
+                               |  PublicFunction
+                               |  Function EndpointFunctionSection
+                               |  Function
+                               |  MsgSendFunction EndpointFunctionSection
+                               |  MsgSendFunction
+                               |  MsgReceiveFunction EndpointFunctionSection
+                               |  MsgReceiveFunction                               
+                               '''
     
     p[0] = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
     if (len(p) == 3):
         p[0].addChildren(p[2].getChildren());
+
+
+def p_MsgReceiveFunction(p):
+    '''MsgReceiveFunction : MSG_RECEIVE Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
+                          | MSG_RECEIVE Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+    p[0] = AstNode(AST_MSG_RECEIVE_FUNCTION, p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[2],p[3]]);
+    if (len(p) == 7):
+        p[0].addChild(p[5]);
+
+
+def p_MsgSendFunction(p):
+    '''MsgSendFunction : MSG_SEND Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
+                       | MSG_SEND Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+    p[0] = AstNode(AST_MSG_SEND_FUNCTION, p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[2],p[3]]);
+    if (len(p) == 7):
+        p[0].addChild(p[5]);
+
     
+def p_Function(p):
+    '''Function : FUNCTION Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
+                | FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+    p[0] = AstNode(AST_FUNCTION, p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[2],p[3]]);
+    if (len(p) == 7):
+        p[0].addChild(p[5]);
+
+    
+        
 def p_PublicFunction(p):
     '''PublicFunction : PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
                       | PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
