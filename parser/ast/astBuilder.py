@@ -261,41 +261,41 @@ def p_EndpointFunctionSection(p):
 
 
 def p_MsgReceiveFunction(p):
-    '''MsgReceiveFunction : MSG_RECEIVE Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
-                          | MSG_RECEIVE Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+    '''MsgReceiveFunction : MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                          | MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT'''
     p[0] = AstNode(AST_MSG_RECEIVE_FUNCTION, p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[2],p[3]]);
-    if (len(p) == 7):
-        p[0].addChild(p[5]);
+    p[0].addChildren([p[2],p[4]]);
+    if (len(p) == 9):
+        p[0].addChild(p[7]);
 
 
 def p_MsgSendFunction(p):
-    '''MsgSendFunction : MSG_SEND Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
-                       | MSG_SEND Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+    '''MsgSendFunction : MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                       | MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT'''
     p[0] = AstNode(AST_MSG_SEND_FUNCTION, p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[2],p[3]]);
-    if (len(p) == 7):
-        p[0].addChild(p[5]);
+    p[0].addChildren([p[2],p[4]]);
+    if (len(p) == 9):
+        p[0].addChild(p[7]);
 
     
 def p_Function(p):
-    '''Function : FUNCTION Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
-                | FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+    '''Function : FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                | FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT'''
     p[0] = AstNode(AST_FUNCTION, p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[2],p[3]]);
-    if (len(p) == 7):
-        p[0].addChild(p[5]);
+    p[0].addChildren([p[2],p[4]]);
+    if (len(p) == 9):
+        p[0].addChild(p[7]);
 
     
         
 def p_PublicFunction(p):
-    '''PublicFunction : PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
-                      | PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+    '''PublicFunction : PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                      | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT'''
     
     p[0] = AstNode(AST_PUBLIC_FUNCTION, p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[3],p[4]]);
-    if (len(p) == 8):
-        p[0].addChild(p[6]);
+    p[0].addChildren([p[3],p[5]]);
+    if (len(p) == 10):
+        p[0].addChild(p[8]);
 
 def p_FunctionBody(p):
     '''FunctionBody : FunctionBodyStatement FunctionBody
@@ -416,14 +416,19 @@ def p_ReturnableExpression(p):
 
     
 def p_FunctionDeclArgList(p):
-    '''FunctionDeclArgList : LEFT_PAREN FunctionDeclArg FunctionDeclArgList
-                           | COMMA FunctionDeclArg FunctionDeclArgList
-                           | RIGHT_PAREN
-                           | LEFT_PAREN RIGHT_PAREN'''
+    '''FunctionDeclArgList : FunctionDeclArg 
+                           | FunctionDeclArgList COMMA FunctionDeclArg
+                           | Empty'''
+
     p[0] = AstNode(AST_FUNCTION_DECL_ARGLIST,p.lineno(0),p.lexpos(0));
     if (len(p) == 4):
-        p[0].addChild(p[2]);
-        p[0].addChildren(p[3].getChildren());
+        p[0].addChildren(p[1].getChildren());
+        p[0].addChild(p[3]);
+    elif(len(p) == 2):
+        p[0].addChild(p[1]);
+    else:
+        print('\nError in FunctionDeclArgList.  Unexpected length to match\n');
+        assert(False);
 
 
 def p_FunctionCall(p):
