@@ -8,7 +8,7 @@ http://mbostock.github.com/d3/
 '''
 
 
-def prettyDrawTree(filename,data,pathToD3,width=2000,height=2000):
+def prettyDrawTree(filename,data,pathToD3,width=2000,height=1000):
     page = generatePage(data,pathToD3,width,height);
     filer = open(filename,'w');
     filer.write(page);
@@ -32,7 +32,7 @@ def generatePage(data, pathToD3,width,height):
 }
 
 .node {
-  font: 15px sans-serif;
+  font: 8px sans-serif;
 }
 
 .link {
@@ -51,7 +51,7 @@ var w = ''' + str(width) + ''',
     h = ''' + str(height) + ''';
 
 var tree = d3.layout.tree()
-    .size([h, Math.max(0,w-1000) ]);
+    .size([w, h/3 ]);
 
 
 var diagonal = d3.svg.diagonal()
@@ -88,8 +88,17 @@ function exec (json) {
 
 
   node.append("text")
-      .attr("dx", function(d) { return d.children ? -8 : 8; })
-      .attr("dy", function(d) { drawHigh = !drawHigh; returner =15; if (drawHigh) returner*=-1; return returner;})
+      .attr("dx", function(d) {
+       if (d.children)
+          -8;
+       else
+       {
+          if(drawHigh)
+            return 2;
+       }
+       return -8;
+       })
+      .attr("dy", function(d) { drawHigh = !drawHigh; if (drawHigh) return -8; return 12;})
       .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
       .text(function(d) { return d.name; });
 }
