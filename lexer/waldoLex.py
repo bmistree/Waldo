@@ -33,11 +33,11 @@ tokens = (
     "FALSE",
     
     #data types
-    "MAP",
-    "INT",
-    "STRING",
-    "LIST",
-    "BOOL",
+    "MAP_TYPE",
+    "NUMBER_TYPE",
+    "STRING_TYPE",
+    "LIST_TYPE",
+    "BOOL_TYPE",
 
     #whitespace
     "SPACE",
@@ -260,23 +260,23 @@ def t_FALSE(t):
     'False'
     return mStateMachine.addToken(t);
 
-def t_MAP(t):
+def t_MAP_TYPE(t):
     'Map'
     return mStateMachine.addToken(t);
 
-def t_INT(t):
-    'Int'
+def t_NUMBER_TYPE(t):
+    'Number'
     return mStateMachine.addToken(t);
 
-def t_STRING(t):
+def t_STRING_TYPE(t):
     'String'
     return mStateMachine.addToken(t);
 
-def t_LIST(t):
+def t_LIST_TYPE(t):
     'List'
     return mStateMachine.addToken(t);
 
-def t_BOOL(t):
+def t_BOOL_TYPE(t):
     #re-name to something more friendly than boolean.
     'Bool'
     return mStateMachine.addToken(t);

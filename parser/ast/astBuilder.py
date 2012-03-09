@@ -36,7 +36,11 @@ AST_TRACE_LINE = 'TRACE_LINE';
 AST_SHARED_SECTION = 'SHARED_SECTION';
 AST_SHARED_BODY_SECTION = 'SHARED_BODY_SECTION'; #INTERMEDIATE
 AST_ANNOTATED_DECLARATION = 'ANNOTATED_DECLARATION';
-    
+
+
+AST_STRING = 'STRING_LITERAL';
+AST_NUMBER = 'NUMBER_LITERAL';
+AST_BOOL = 'BOOL_LITERAL';
 AST_TYPE = 'TYPE';
 AST_IDENTIFIER = 'IDENTIFIER';
 AST_EMPTY = 'EMPTY';
@@ -121,22 +125,46 @@ def p_SharedBodySection(p):
     
 def p_AnnotatedDeclaration(p):
     '''AnnotatedDeclaration : Identifier CONTROLS Type Identifier 
-                            | Identifier CONTROLS Type Identifier EQUALS Identifier '''
+                            | Identifier CONTROLS Type Identifier EQUALS Initializer'''
     p[0] = AstNode(AST_ANNOTATED_DECLARATION,p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[1],p[3],p[4]]);
     
-    if (len(p) == 8):
+    if (len(p) == 7):
         #have an initialization statement to perform
         p[0].addChild(p[6]);
 
 def p_Type(p):
-    '''Type : INT
-            | STRING
-            | LIST
-            | BOOL'''
+    '''Type : NUMBER_TYPE
+            | STRING_TYPE
+            | LIST_TYPE
+            | BOOL_TYPE'''
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),p[1]);
 
 
+def p_Initializer(p):
+    '''Initializer : Number
+                   | Identifier
+                   | String
+                   | Bool''';
+    p[0] = p[1];
+
+def p_Number(p):
+    '''Number : NUMBER '''
+    p[0] = AstNode(AST_NUMBER,p.lineno(1),p.lexpos(1),p[1]);
+
+    
+def p_String(p):
+    '''String : MULTI_LINE_STRING
+              | SINGLE_LINE_STRING''';
+
+    p[0] = AstNode(AST_STRING,p.lineno(1),p.lexpos(1),p[1]);
+    
+
+def p_Bool(p):
+    '''Bool : TRUE
+            | FALSE'''
+    p[0] = AstNode(AST_BOOL,p.lineno(1),p.lexpos(1),p[1]);
+    
     
 def p_empty(p):
     'empty : ';

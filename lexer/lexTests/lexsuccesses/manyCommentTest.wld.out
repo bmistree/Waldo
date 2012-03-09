@@ -1,6 +1,6 @@
 
 IDENTIFIER   other
 SEMI_COLON   ;
-STRING   String
+STRING_TYPE   String
 IDENTIFIER   work
 SEMI_COLON   ;
