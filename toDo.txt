@@ -17,7 +17,8 @@ x    -Offending token
 
  * Need to better-define ReturnableExpression.  Right now, can only
    provide literals and function calls.
-
+ * Resolve a bunch of shift-reduce conflicts labeled in parser.out.
+   
  
 Questions:
 

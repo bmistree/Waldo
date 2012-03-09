@@ -50,6 +50,10 @@ tokens = (
     "COMMA",
 
 
+    #boolean operators
+    "AND",
+    "OR",
+    
     #brackets/braces
     "LEFT_PAREN",
     "RIGHT_PAREN",
@@ -329,6 +333,15 @@ def t_CURLY_LEFT(t):
 def t_CURLY_RIGHT(t):
     '\}';
     return mStateMachine.addToken(t);
+
+def t_AND(t):
+    'And';
+    return mStateMachine.addToken(t);
+
+def t_OR(t):
+    'Or';
+    return mStateMachine.addToken(t);
+
 
 def t_DOT(t):
     '[.]';

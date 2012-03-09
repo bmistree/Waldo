@@ -67,6 +67,11 @@ AST_ELSE_STATEMENT = 'ELSE_STATEMENT';
 AST_SINGLE_OR_MULTILINE_CURLIED_BLOCK = 'SINGLE_OR_MULTILINE_BLOCK';
 AST_BOOLEAN_CONDITION = 'BOOLEAN_CONDITION';
 
+##boolean expressions
+AST_AND = 'AND';
+AST_OR  = 'OR';
+AST_BOOLEAN_STATEMENT = 'BOOLEAN_STATEMENT';
+
 
 AST_RETURNABLE_EXPRESSION = 'RETURNABLE_EXPRESSION';
 AST_ASSIGNMENT_STATEMENT = 'ASSIGNMENT_STATEMENT';
@@ -351,10 +356,37 @@ def p_SingleLineOrMultilineCurliedBlock(p):
     print('\nNeed to fill in singleLineOrMultilineCurliedBlock');
 
 def p_BooleanCondition(p):
-    '''BooleanCondition : Identifier'''
+    '''BooleanCondition : LEFT_PAREN BooleanStatement RIGHT_PAREN'''
     p[0] = AstNode(AST_BOOLEAN_CONDITION, p.lineno(0),p.lexpos(0));
-    print('\nNeed to fill in boolean statement\n');
     
+    print('\nNeed to fill in boolean statement\n');
+
+def p_BooleanStatement(p):
+    '''BooleanStatement : ReturnableExpression BooleanOperator BooleanStatement
+                        | ReturnableExpression
+    '''
+    if (len(p) == 4):
+        p[0] = p[2];
+        AstNode(AST_BOOLEAN_STATEMENT, p.lineno(0),p.lexpos(0));
+    elif(len(p) == 2):
+        p[0] = p[1];
+    else:
+        print('\nIn boolean statement, incorrect number of matches\n');
+        assert(False);
+
+def p_BooleanOperator(p):
+    '''BooleanOperator : AND
+                       | OR'''
+
+    if (p[1] == 'And'):
+        p[0] = AstNode(AST_AND,p.lineno(1),p.lexpos(1));
+    elif(p[1] == 'Or'):
+        p[0] = AstNode(AST_OR,p.lineno(1),p.lexpos(1));
+    else:
+        print('\nIncorrect boolean operator: ' + p[1] + '\n');
+        assert(False);
+    
+        
     
 def emptyElseIf():
     return AstNode(AST_ELSE_IF_STATEMENT,0,0);
@@ -373,6 +405,7 @@ def p_AssignmentStatement(p):
 
 def p_ReturnableExpression(p):
     '''ReturnableExpression : Initializer'''
+                            # | BooleanStatement'''
     ###
     ###lkjs;
     ###FIXME: This should contain more than Initializer
