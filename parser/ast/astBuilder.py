@@ -49,6 +49,8 @@ AST_PUBLIC_FUNCTION = 'PUBLIC_FUNCTION';
 AST_FUNCTION_DECL_ARGLIST = 'FUNCTION_DECL_ARGLIST';
 AST_FUNCTION_DECL_ARG = 'FUNCTION_DECL_ARG';
 
+AST_FUNCTION_BODY = 'FUNCTION_BODY';
+
 AST_DECLARATION = 'DECLARATION';
 AST_STRING = 'STRING_LITERAL';
 AST_NUMBER = 'NUMBER_LITERAL';
@@ -234,14 +236,18 @@ def p_EndpointFunctionSection(p):
         p[0].addChildren(p[2].getChildren());
     
 def p_PublicFunction(p):
-    # '''PublicFunction : PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT functionBody CURLY_RIGHT
-    #                   | PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
-
-    '''PublicFunction : PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
-
+    '''PublicFunction : PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT FunctionBody CURLY_RIGHT
+                      | PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
     
     p[0] = AstNode(AST_PUBLIC_FUNCTION, p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[3],p[4]]);
+    if (len(p) == 8):
+        p[0].addChild(p[6]);
+
+def p_FunctionBody(p):
+    '''FunctionBody : Identifier '''
+    p[0] = AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[1]);
     
 
 def p_FunctionDeclArgList(p):
