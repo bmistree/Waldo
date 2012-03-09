@@ -41,9 +41,15 @@ AST_ANNOTATED_DECLARATION = 'ANNOTATED_DECLARATION';
 AST_ENDPOINT = 'ENDPOINT';
 AST_ENDPOINT_BODY_SECTION = 'ENDPOINT_BODY_SECTION';
 AST_ENDPOINT_GLOBAL_SECTION = 'ENDPOINT_GLOBAL_SECTION';
+AST_ENDPOINT_FUNCTION_SECTION = 'ENDPOINT_FUNCTION_SECTION';
+
+
+#functions
+AST_PUBLIC_FUNCTION = 'PUBLIC_FUNCTION';
+AST_FUNCTION_DECL_ARGLIST = 'FUNCTION_DECL_ARGLIST';
+AST_FUNCTION_DECL_ARG = 'FUNCTION_DECL_ARG';
+
 AST_DECLARATION = 'DECLARATION';
-
-
 AST_STRING = 'STRING_LITERAL';
 AST_NUMBER = 'NUMBER_LITERAL';
 AST_BOOL = 'BOOL_LITERAL';
@@ -183,14 +189,22 @@ def p_Identifier(p):
 
 
 def p_EndpointSection(p):
-    'EndpointSection : Identifier CURLY_LEFT EndpointBodySection CURLY_RIGHT'
+    '''EndpointSection : Identifier CURLY_LEFT EndpointBodySection CURLY_RIGHT
+                       | Identifier CURLY_LEFT CURLY_RIGHT'''
     p[0] = AstNode(AST_ENDPOINT,p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[1],p[3]]);
+
+    p[0].addChild(p[1]);
+    if (len(p) == 5):
+        p[0].addChild(p[3]);
 
 def p_EndpointBodySection(p):
-    'EndpointBodySection : EndpointGlobalSection '
+    '''EndpointBodySection : EndpointGlobalSection EndpointFunctionSection
+                           | EndpointFunctionSection'''
+
     p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[1]]);
+    if (len(p) == 3):
+        p[0].addChild(p[2]);
     # p[0].addChildren([p[1],p[2]]);
 
 def p_EndpointGlobalSection(p):
@@ -201,6 +215,54 @@ def p_EndpointGlobalSection(p):
     if (len(p) == 4):
         p[0].addChildren(p[3].getChildren());
 
+def p_EndpointFunctionSection(p):
+    '''EndpointFunctionSection :  PublicFunction EndpointFunctionSection
+                               |  PublicFunction '''
+
+    # '''EndpointFunctionSection :  MsgSendFunction EndpointFunctionSection
+    #                            |  MsgReceiveFunction EndpointFunctionSection
+    #                            |  PublicFunction EndpointFunctionSection
+    #                            |  Function EndpointFunctionSection
+    #                            |  MsgSendFunction 
+    #                            |  MsgReceiveFunction 
+    #                            |  PublicFunction 
+    #                            |  Function   '''
+    
+    p[0] = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[1]);
+    if (len(p) == 3):
+        p[0].addChildren(p[2].getChildren());
+    
+def p_PublicFunction(p):
+    # '''PublicFunction : PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT functionBody CURLY_RIGHT
+    #                   | PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+
+    '''PublicFunction : PUBLIC FUNCTION Identifier FunctionDeclArgList CURLY_LEFT  CURLY_RIGHT'''
+
+    
+    p[0] = AstNode(AST_PUBLIC_FUNCTION, p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[3],p[4]]);
+    
+
+def p_FunctionDeclArgList(p):
+    # '''FunctionDeclArgList : LEFT_PAREN Identifier RIGHT_PAREN'''
+    
+    '''FunctionDeclArgList : LEFT_PAREN FunctionDeclArg FunctionDeclArgList
+                           | COMMA FunctionDeclArg FunctionDeclArgList
+                           | RIGHT_PAREN
+                           | LEFT_PAREN RIGHT_PAREN'''
+    p[0] = AstNode(AST_FUNCTION_DECL_ARGLIST,p.lineno(0),p.lexpos(0));
+    if (len(p) == 4):
+        p[0].addChild(p[2]);
+        p[0].addChildren(p[3].getChildren());
+
+    
+def p_FunctionDeclArg(p):
+    '''FunctionDeclArg : Type Identifier'''
+    p[0] = AstNode(AST_FUNCTION_DECL_ARG,p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[1],p[2]]);
+    
+    
 def p_Declaration(p):
     '''Declaration : Type Identifier
                    | Type Identifier EQUALS Initializer'''
