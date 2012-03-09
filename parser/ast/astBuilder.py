@@ -427,21 +427,27 @@ def p_FunctionDeclArgList(p):
 
 
 def p_FunctionCall(p):
-    '''FunctionCall : Identifier FunctionArgList'''
+    '''FunctionCall : Identifier LEFT_PAREN FunctionArgList RIGHT_PAREN'''
+    # '''FunctionCall : Identifier FunctionArgList '''
     p[0] = AstNode(AST_FUNCTION_CALL,p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[1],p[2]]);
+    p[0].addChildren([p[1],p[3]]);
 
     
 def p_FunctionArgList(p):
-    '''FunctionArgList : LEFT_PAREN ReturnableExpression FunctionDeclArgList
-                       | COMMA ReturnableExpression FunctionDeclArgList
-                       | RIGHT_PAREN
-                       | LEFT_PAREN RIGHT_PAREN'''
-
+    '''FunctionArgList : ReturnableExpression 
+                       | FunctionDeclArgList COMMA ReturnableExpression 
+                       | Empty'''
+    
     p[0] = AstNode(AST_FUNCTION_ARGLIST,p.lineno(0),p.lexpos(0));
     if (len(p) == 4):
-        p[0].addChild(p[2]);
-        p[0].addChildren(p[3].getChildren());
+        p[0].addChildren(p[1].getChildren());
+        p[0].addChild(p[3]);
+    elif(len(p) == 2):
+        p[0].addChild(p[1]);
+    else:
+        print('\nError in FunctionArgList.  Unexpected length to match\n');
+        assert(False);
+        
 
 
         
@@ -459,6 +465,9 @@ def p_Declaration(p):
     if (len(p) == 5):
         p[0].addChild(p[4]);
 
+def p_Empty(p):
+    '''Empty : '''
+    p[0] = AstNode(AST_EMPTY);
         
 def p_error(p):
 
