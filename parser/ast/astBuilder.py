@@ -314,10 +314,7 @@ def p_FunctionBodyStatement(p):
     p[0].addChild(p[1]);
 
 def p_ConditionStatement(p):
-    '''ConditionStatement : IfStatement ElseIfStatements ElseStatement
-                          | IfStatement
-                          | IfStatement ElseIfStatements
-                          | IfStatement ElseStatement'''
+    '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
 
     p[0] = AstNode(AST_CONDITION_STATEMENT,p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
@@ -337,13 +334,20 @@ def p_IfStatement(p):
     print('\nNeed to fill in if statement\n');
     
 def p_ElseIfStatements(p):
-    '''ElseIfStatements : ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock ElseIfStatements
-                        | ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock'''
+    '''ElseIfStatements : Empty
+                        | ElseIfStatements ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock'''
+
+    # '''ElseIfStatements : ElseIfStatements ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock
+    #                     | ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock'''
+    
     p[0] = AstNode(AST_ELSE_IF_STATEMENT,p.lineno(0),p.lexpos(0));
     print('\nNeed to fill in else if statement\n');
 
+
+    
 def p_ElseStatement(p):
-    '''ElseStatement : ELSE SingleLineOrMultilineCurliedBlock '''
+    '''ElseStatement : Empty
+                     | ELSE SingleLineOrMultilineCurliedBlock '''
     p[0] = AstNode(AST_ELSE_STATEMENT,p.lineno(0),p.lexpos(0));
     print('\nNeed to fill in else statement\n');
 
