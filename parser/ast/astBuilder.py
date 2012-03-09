@@ -56,7 +56,11 @@ AST_MSG_RECEIVE_FUNCTION = 'MSG_RECEIVE_FUNCTION';
 AST_FUNCTION_DECL_ARGLIST = 'FUNCTION_DECL_ARGLIST';
 AST_FUNCTION_DECL_ARG = 'FUNCTION_DECL_ARG';
 AST_FUNCTION_BODY = 'FUNCTION_BODY';
+AST_FUNCTION_ARGLIST = 'FUNCTION_ARGLIST';
+AST_FUNCTION_BODY_STATEMENT = 'FUNCTION_BODY_STATEMENT';
 
+AST_RETURNABLE_EXPRESSION = 'RETURNABLE_EXPRESSION';
+AST_ASSIGNMENT_STATEMENT = 'ASSIGNMENT_STATEMENT';
 AST_DECLARATION = 'DECLARATION';
 AST_STRING = 'STRING_LITERAL';
 AST_NUMBER = 'NUMBER_LITERAL';
@@ -165,7 +169,9 @@ def p_Initializer(p):
     '''Initializer : Number
                    | Identifier
                    | String
-                   | Bool''';
+                   | Bool
+                   | FunctionCall
+                   ''';
     p[0] = p[1];
 
 def p_Number(p):
@@ -278,14 +284,39 @@ def p_PublicFunction(p):
         p[0].addChild(p[6]);
 
 def p_FunctionBody(p):
-    '''FunctionBody : Identifier '''
+    '''FunctionBody : FunctionBodyStatement FunctionBody
+                    | FunctionBodyStatement'''
     p[0] = AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
+    if (len(p) == 3):
+        p[0].addChildren(p[2].getChildren());
     
+def p_FunctionBodyStatement(p):
+    '''FunctionBodyStatement : Declaration SEMI_COLON
+                             | AssignmentStatement SEMI_COLON
+    '''
+    p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[1]);
 
-def p_FunctionDeclArgList(p):
-    # '''FunctionDeclArgList : LEFT_PAREN Identifier RIGHT_PAREN'''
+
+def p_AssignmentStatement(p):
+    '''AssignmentStatement : Identifier EQUALS ReturnableExpression
+    '''
+    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[1],p[3]]);
+
+def p_ReturnableExpression(p):
+    '''ReturnableExpression : Initializer'''
+    ###
+    ###lkjs;
+    ###FIXME: This should contain more than Initializer
+    ###
+    p[0] = AstNode(AST_RETURNABLE_EXPRESSION,p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[1]);
+
+
     
+def p_FunctionDeclArgList(p):
     '''FunctionDeclArgList : LEFT_PAREN FunctionDeclArg FunctionDeclArgList
                            | COMMA FunctionDeclArg FunctionDeclArgList
                            | RIGHT_PAREN
@@ -295,7 +326,26 @@ def p_FunctionDeclArgList(p):
         p[0].addChild(p[2]);
         p[0].addChildren(p[3].getChildren());
 
+
+def p_FunctionCall(p):
+    '''FunctionCall : Identifier FunctionArgList'''
+    p[0] = AstNode(AST_FUNCTION_CALL,p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[1],p[2]]);
+
     
+def p_FunctionArgList(p):
+    '''FunctionArgList : LEFT_PAREN ReturnableExpression FunctionDeclArgList
+                       | COMMA ReturnableExpression FunctionDeclArgList
+                       | RIGHT_PAREN
+                       | LEFT_PAREN RIGHT_PAREN'''
+
+    p[0] = AstNode(AST_FUNCTION_ARGLIST,p.lineno(0),p.lexpos(0));
+    if (len(p) == 4):
+        p[0].addChild(p[2]);
+        p[0].addChildren(p[3].getChildren());
+
+
+        
 def p_FunctionDeclArg(p):
     '''FunctionDeclArg : Type Identifier'''
     p[0] = AstNode(AST_FUNCTION_DECL_ARG,p.lineno(0),p.lexpos(0));

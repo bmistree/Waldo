@@ -15,7 +15,10 @@ x    -Offending token
     -Add Shared constructions to ast builder
  * Create test infrastructure for asts
 
+ * Need to better-define ReturnableExpression.  Right now, can only
+   provide literals and function calls.
 
+ 
 Questions:
 
 Annotation for shared data seems off.  Right now, just have one
