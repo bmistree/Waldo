@@ -51,7 +51,7 @@ var w = ''' + str(width) + ''',
     h = ''' + str(height) + ''';
 
 var tree = d3.layout.tree()
-    .size([h, w-160 ]);
+    .size([h, Math.max(0,w-1000) ]);
 
 
 var diagonal = d3.svg.diagonal()
@@ -63,6 +63,7 @@ var vis = d3.select("#chart").append("svg")
     .append("g")
     .attr("transform", "translate(-40, 40)");
 
+var drawHigh = true;
 
 function exec (json) {
   var nodes = tree.nodes(json);
@@ -88,7 +89,7 @@ function exec (json) {
 
   node.append("text")
       .attr("dx", function(d) { return d.children ? -8 : 8; })
-      .attr("dy", -10)
+      .attr("dy", function(d) { drawHigh = !drawHigh; returner =15; if (drawHigh) returner*=-1; return returner;})
       .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
       .text(function(d) { return d.name; });
 }
