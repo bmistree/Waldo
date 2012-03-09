@@ -59,6 +59,15 @@ AST_FUNCTION_BODY = 'FUNCTION_BODY';
 AST_FUNCTION_ARGLIST = 'FUNCTION_ARGLIST';
 AST_FUNCTION_BODY_STATEMENT = 'FUNCTION_BODY_STATEMENT';
 
+##conditional expressions
+AST_CONDITION_STATEMENT = 'CONDITION_STATEMENT';
+AST_IF_STATEMENT = 'IF_STATEMENT';
+AST_ELSE_IF_STATEMENT = 'ELSE_IF_STATEMENTS';
+AST_ELSE_STATEMENT = 'ELSE_STATEMENT';
+AST_SINGLE_OR_MULTILINE_CURLIED_BLOCK = 'SINGLE_OR_MULTILINE_BLOCK';
+AST_BOOLEAN_CONDITION = 'BOOLEAN_CONDITION';
+
+
 AST_RETURNABLE_EXPRESSION = 'RETURNABLE_EXPRESSION';
 AST_ASSIGNMENT_STATEMENT = 'ASSIGNMENT_STATEMENT';
 AST_DECLARATION = 'DECLARATION';
@@ -294,10 +303,67 @@ def p_FunctionBody(p):
 def p_FunctionBodyStatement(p):
     '''FunctionBodyStatement : Declaration SEMI_COLON
                              | AssignmentStatement SEMI_COLON
+                             | ConditionStatement 
     '''
     p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
 
+def p_ConditionStatement(p):
+    '''ConditionStatement : IfStatement ElseIfStatements ElseStatement
+                          | IfStatement
+                          | IfStatement ElseIfStatements
+                          | IfStatement ElseStatement'''
+
+    p[0] = AstNode(AST_CONDITION_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        p[0].addChildren([p[1],p[2]]);
+    elif(len(p) == 2):
+        p[0].addChildren([emptyElseIf(),emptyElse()]);
+    elif(len(p) == 3):
+        if (isElseIfStatement(p[2])):
+            p[0].addChildren([p[2],emptyElse()]);
+        else:
+            p[0].addChildren([emptyElseIf(),p[2]]);
+
+def p_IfStatement(p):
+    '''IfStatement : IF BooleanCondition SingleLineOrMultilineCurliedBlock '''
+    p[0] = AstNode(AST_IF_STATEMENT,p.lineno(0),p.lexpos(0));
+    print('\nNeed to fill in if statement\n');
+    
+def p_ElseIfStatements(p):
+    '''ElseIfStatements : ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock ElseIfStatements
+                        | ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock'''
+    p[0] = AstNode(AST_ELSE_IF_STATEMENT,p.lineno(0),p.lexpos(0));
+    print('\nNeed to fill in else if statement\n');
+
+def p_ElseStatement(p):
+    '''ElseStatement : ELSE SingleLineOrMultilineCurliedBlock '''
+    p[0] = AstNode(AST_ELSE_STATEMENT,p.lineno(0),p.lexpos(0));
+    print('\nNeed to fill in else statement\n');
+
+def p_SingleLineOrMultilineCurliedBlock(p):
+    '''SingleLineOrMultilineCurliedBlock :  FunctionBodyStatement
+                                         |  CURLY_LEFT FunctionBody CURLY_RIGHT
+                                         |  CURLY_LEFT CURLY_RIGHT
+    ''';
+    p[0] = AstNode(AST_SINGLE_OR_MULTILINE_CURLIED_BLOCK,p.lineno(0),p.lexpos(0));
+    print('\nNeed to fill in singleLineOrMultilineCurliedBlock');
+
+def p_BooleanCondition(p):
+    '''BooleanCondition : Identifier'''
+    p[0] = AstNode(AST_BOOLEAN_CONDITION, p.lineno(0),p.lexpos(0));
+    print('\nNeed to fill in boolean statement\n');
+    
+    
+def emptyElseIf():
+    return AstNode(AST_ELSE_IF_STATEMENT,0,0);
+
+def emptyElse():
+    return AstNode(AST_ELSE_STATEMENT,0,0);
+
+def isElseIfStatement(p):
+    return p.type == AST_ELSE_IF_STATEMENT;
 
 def p_AssignmentStatement(p):
     '''AssignmentStatement : Identifier EQUALS ReturnableExpression
