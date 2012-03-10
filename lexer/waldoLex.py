@@ -21,6 +21,8 @@ tokens = (
     "SINGLE_LINE_COMMENT",
     "MULTI_LINE_COMMENT_BEGIN",
     "MULTI_LINE_COMMENT_END",
+
+
     "EQUALS",
 
     #boolean logic
@@ -28,6 +30,7 @@ tokens = (
     "ELSE_IF",
     "ELSE",
     "BOOL_EQUALS",
+    "BOOL_NOT_EQUALS",
     "NOT",
     "TRUE",
     "FALSE",
@@ -252,6 +255,10 @@ def t_ELSE(t):
 
 def t_BOOL_EQUALS(t):
     '\=\='
+    return mStateMachine.addToken(t);
+
+def t_BOOL_NOT_EQUALS(t):
+    "\!\="
     return mStateMachine.addToken(t);
 
 def t_NOT(t):
