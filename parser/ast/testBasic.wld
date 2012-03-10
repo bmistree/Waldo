@@ -43,13 +43,21 @@ Server
             r = (2+3)*4;
             s = 2+3*4;
         }
+
+        Function something (String a, Number b) Returns Nothing
+        {}
+
+        Public Function something (String a, Number b) Returns String
+        {
+            a = 2;
+        }
+
+        
 /*
         MsgReceive something (Bool a, Number f, String g)
         {
         }
         
-        Function something (String a, Number b)
-        {}
 
         Public Function something ()
         {

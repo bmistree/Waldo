@@ -189,7 +189,9 @@ def p_Type(p):
     '''Type : NUMBER_TYPE
             | STRING_TYPE
             | LIST_TYPE
-            | BOOL_TYPE'''
+            | BOOL_TYPE
+            | NOTHING_TYPE
+            '''
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),p[1]);
 
 
@@ -291,23 +293,23 @@ def p_MsgSendFunction(p):
 
     
 def p_Function(p):
-    '''Function : FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
-                | FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT'''
+    '''Function : FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
+                | FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT'''
     p[0] = AstNode(AST_FUNCTION, p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[2],p[4]]);
-    if (len(p) == 9):
-        p[0].addChild(p[7]);
+    p[0].addChildren([p[2],p[7],p[4]]);
+    if (len(p) == 11):
+        p[0].addChild(p[9]);
 
     
         
 def p_PublicFunction(p):
-    '''PublicFunction : PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
-                      | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT'''
+    '''PublicFunction : PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
+                      | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT'''
     
     p[0] = AstNode(AST_PUBLIC_FUNCTION, p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[3],p[5]]);
-    if (len(p) == 10):
-        p[0].addChild(p[8]);
+    p[0].addChildren([p[3],p[8],p[5]]);
+    if (len(p) == 12):
+        p[0].addChild(p[10]);
 
 def p_FunctionBody(p):
     '''FunctionBody : FunctionBody FunctionBodyStatement
@@ -452,16 +454,6 @@ def p_ReturnableExpression(p):
     else:
         print('\nIncorrect number of matches in ReturnableExpression\n');
         assert(False);
-    
-
-    # if (len(p) == 3):
-    #     p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(0),p.lexpos(0));
-    #     p[0].addChild(p[2]);
-    # elif(len(p) == 2):
-    #     p[0] = p[1];
-    # else:
-    #     print('\nIncorrect matching in ReturnableExpression\n');
-    #     assert(False);
 
 def p_BinaryOperator(p):
     '''

@@ -13,7 +13,8 @@ tokens = (
     "MSG_SEND",
     "MSG_RECEIVE",
     "PUBLIC",
-
+    "RETURNS",
+    
     #messsage notation
     "SEND_ARROW",
     
@@ -41,7 +42,8 @@ tokens = (
     "STRING_TYPE",
     "LIST_TYPE",
     "BOOL_TYPE",
-
+    "NOTHING_TYPE",
+    
     #whitespace
     "SPACE",
     "TAB",
@@ -225,6 +227,12 @@ def t_PUBLIC(t):
     'Public';
     return mStateMachine.addToken(t);
 
+def t_RETURNS(t):
+    "Returns";
+    return mStateMachine.addToken(t);
+
+
+
 def t_SEND_ARROW(t):
     '-\>'
     return mStateMachine.addToken(t);
@@ -268,6 +276,9 @@ def t_ELSE(t):
     'Else'
     return mStateMachine.addToken(t);
 
+def t_NOTHING_TYPE(t):
+    "Nothing"
+    return mStateMachine.addToken(t);
 
 
 def t_NOT(t):
@@ -302,6 +313,7 @@ def t_BOOL_TYPE(t):
     #re-name to something more friendly than boolean.
     'Bool'
     return mStateMachine.addToken(t);
+
 
 def t_SPACE(t):
     '[ ]+'

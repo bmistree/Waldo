@@ -77,6 +77,18 @@ variables are named very closely to one another.
 Should == be "IsEqualTo" and != be "IsNotEqualTo"?  This really,
 really depends on our target.  It's a fundamental tradeoff.  
 
+I really think that the function declaration syntax needs more work.
+It should reflect, these things come in, those things go out.
+
+Something of a Public <FunctionName> : In { };
+                                       Out{ };
+                                       WhatToDo
+                                       {
+
+                                       }
+Of course, keep in mind it depends if we're targetting novices or not.  
+
+
 Require parens for grouping on == and !=. 
 Require parens for grouping on or and and?
 Maybe make multiplicatino be with x?
