@@ -67,6 +67,9 @@ AST_ELSE_IF_STATEMENT = 'ELSE_IF_STATEMENT';
 AST_ELSE_STATEMENT = 'ELSE_STATEMENT';
 AST_SINGLE_OR_MULTILINE_CURLIED_BLOCK = 'SINGLE_OR_MULTILINE_BLOCK';
 AST_BOOLEAN_CONDITION = 'BOOLEAN_CONDITION';
+AST_NOT_EXPRESSION = 'NOT_EXPRESSION';
+
+
 
 ##boolean expressions
 AST_AND = 'AND';
@@ -75,6 +78,7 @@ AST_OR  = 'OR';
 
 AST_NON_BOOLEAN_STATEMENT = 'NON_BOOLEAN_STATEMENT';
 AST_RETURNABLE_EXPRESSION = 'RETURNABLE_EXPRESSION';
+AST_INTERNAL_RETURNABLE_EXPRESSION = 'INTERNAL_RETURNABLE_EXPRESSION';
 AST_ASSIGNMENT_STATEMENT = 'ASSIGNMENT_STATEMENT';
 AST_DECLARATION = 'DECLARATION';
 AST_STRING = 'STRING_LITERAL';
@@ -375,11 +379,10 @@ def p_BooleanCondition(p):
     p[0] = AstNode(AST_BOOLEAN_CONDITION, p.lineno(0),p.lexpos(0));
     p[0].addChild(p[2]);
 
-
         
 def p_BooleanOperator(p):
     '''BooleanOperator : AND
-                       | OR'''
+                       | OR  '''
 
     if (p[1] == 'And'):
         p[0] = AstNode(AST_AND,p.lineno(1),p.lexpos(1));
@@ -407,10 +410,24 @@ def p_AssignmentStatement(p):
     p[0].addChildren([p[1],p[3]]);
 
 def p_ReturnableExpression(p):
-    '''ReturnableExpression : NonBooleanStatement BooleanOperator ReturnableExpression
-                            | NonBooleanStatement'''
+    '''ReturnableExpression : NOT ReturnableExpression
+                            | InternalReturnableExpression
+    '''
+    if (len(p) == 3):
+        p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(0),p.lexpos(0));
+        p[0].addChild(p[2]);
+    elif(len(p) == 2):
+        p[0] = p[1];
+    else:
+        print('\nIncorrect matching in ReturnableExpression\n');
+        assert(False);
+        
+        
+def p_InternalReturnableExpression(p):    
+    '''InternalReturnableExpression : NonBooleanStatement BooleanOperator InternalReturnableExpression
+                                    | NonBooleanStatement'''
     
-    p[0] = AstNode(AST_RETURNABLE_EXPRESSION,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_INTERNAL_RETURNABLE_EXPRESSION,p.lineno(0),p.lexpos(0));
     if (len(p) == 4):
         p[0].addChild(p[2]);
         p[2].addChild(p[1]);
@@ -418,10 +435,9 @@ def p_ReturnableExpression(p):
     elif(len(p) == 2):
         p[0].addChild(p[1]);
     else:
-        print('\nIn ReturnableExpression, incorrect number of matches\n');
+        print('\nIn InternalReturnableExpression, incorrect number of matches\n');
         assert(False);
-
-        
+    
     
 def p_NonBooleanStatement(p):
     '''NonBooleanStatement : Initializer '''

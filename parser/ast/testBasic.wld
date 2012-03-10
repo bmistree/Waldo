@@ -31,7 +31,7 @@ Server
           {
             c = 4;
           }
-          ElseIf(d)
+          ElseIf(Not d)
           {
             d =4;
           }

@@ -56,6 +56,8 @@ here", etc.  Note that this may fit in with SOSP paper about
 configuration error messages.
 
 
+Require parens for grouping on == and !=. 
+Require parens for grouping on or and and?
  
 Long-term to do:
  
