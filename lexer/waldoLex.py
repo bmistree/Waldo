@@ -25,8 +25,8 @@ tokens = (
 
     #boolean logic
     "IF",
-    "ELSE",
     "ELSE_IF",
+    "ELSE",
     "BOOL_EQUALS",
     "NOT",
     "TRUE",
@@ -240,13 +240,15 @@ def t_IF(t):
     'If'
     return mStateMachine.addToken(t);
 
+def t_ELSE_IF(t):
+    r'ElseIf'
+    return mStateMachine.addToken(t);
+
+
 def t_ELSE(t):
     'Else'
     return mStateMachine.addToken(t);
 
-def t_ELSE_IF(t):
-    r'Else[ \t\r\f\v]+if'
-    return mStateMachine.addToken(t);
 
 def t_BOOL_EQUALS(t):
     '\=\='
