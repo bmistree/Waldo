@@ -65,6 +65,14 @@ Identifies a fundamental language tradeoff between expressiveness
 and readability.  Probably a natural metaphor with command line versus
 gui.  
 
+According to a lot of our theory, we should be able to re-design
+Haskell to have a much lower learning curve by changing around a lot
+of its syntax.  Maybe think about doing that as evaluation for paper.
+
+Special language for configuration files.  Maybe throw error when
+overwrite variable's existing value.  Maybe throw warnings when
+variables are named very closely to one another.
+
 
 Should == be "IsEqualTo" and != be "IsNotEqualTo"?  This really,
 really depends on our target.  It's a fundamental tradeoff.  
