@@ -1,0 +1,57 @@
+Basic
+
+Endpoint Server;
+Endpoint Client;
+
+Traces
+{
+        Server.one -> Client.two;
+        Server.one -> Client.two -> Server.three -> Client.four;
+}
+
+Shared
+{
+        Server Controls Bool a;
+        Server Controls Bool b = you; 
+}
+
+Server
+{
+        Number c = 4;   
+        Bool a;
+        Bool b = you;
+
+        MsgSend something (Bool a, Bool b)
+        {
+        Number c = 4;
+        
+          If (i)
+             Bool a;
+          ElseIf (c Or d Or e And f Or g)
+          {
+            c = 4;
+          }
+          ElseIf(d)
+          {
+            d =4;
+          }
+          Else
+            a =1;
+
+          
+        }
+/*
+        MsgReceive something (Bool a, Number f, String g)
+        {
+        }
+        
+        Function something (String a, Number b)
+        {}
+
+        Public Function something ()
+        {
+        }
+
+  */      
+        
+}
