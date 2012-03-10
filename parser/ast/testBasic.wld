@@ -34,6 +34,8 @@ Server
           ElseIf(d == e)
           {
             d =4;
+            m = d*d + 3-2;
+            r = a/b;
           }
           Else
             a =1;

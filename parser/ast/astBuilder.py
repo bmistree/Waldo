@@ -78,7 +78,13 @@ AST_BOOL_EQUALS = '==';
 AST_BOOL_NOT_EQUALS = '!=';
 
 
-AST_NON_BOOLEAN_STATEMENT = 'NON_BOOLEAN_STATEMENT';
+##arithmetic
+AST_PLUS = '+';
+AST_MINUS = '-';
+AST_MULTIPLY = '*';
+AST_DIVIDE = '/';
+
+
 AST_RETURNABLE_EXPRESSION = 'RETURNABLE_EXPRESSION';
 AST_INTERNAL_RETURNABLE_EXPRESSION = 'INTERNAL_RETURNABLE_EXPRESSION';
 AST_ASSIGNMENT_STATEMENT = 'ASSIGNMENT_STATEMENT';
@@ -457,12 +463,58 @@ def p_InternalReturnableExpression(p):
         print('\nIn InternalReturnableExpression, incorrect number of matches\n');
         assert(False);
     
-    
 def p_NonBooleanStatement(p):
-    '''NonBooleanStatement : Initializer '''
-    p[0] = AstNode(AST_NON_BOOLEAN_STATEMENT,p.lineno(0),p.lexpos(0));
-    p[0].addChild(p[1]);
+    '''NonBooleanStatement : MultDivStatement PlusMinusOperator NonBooleanStatement
+                           | MultDivStatement'''
 
+    if(len(p) == 4):
+        p[0] = p[2];
+        p[0].addChildren([p[1],p[3]]);
+    elif(len(p) == 2):
+        p[0] = p[1];
+    else:
+        print('\nIncorrect number of matches in NonBooleanStatement\n');
+        assert(False);
+        
+    
+def p_PlusMinusOperator(p):
+    '''PlusMinusOperator : PLUS
+                         | MINUS'''
+
+    if (p[1] == '+'):
+        p[0] = AstNode(AST_PLUS, p.lineno(1),p.lexpos(1));
+    elif(p[1] == '-'):
+        p[0] = AstNode(AST_MINUS, p.lineno(1),p.lexpos(1));
+    else:
+        print('\nIncorrect number of matches in PlusMinusOperator\n');
+        assert(False);
+
+def p_MultDivStatement(p):
+    '''MultDivStatement : Initializer MultDivOperator MultDivStatement
+                        | Initializer'''
+
+    if(len(p) == 4):
+        p[0] = p[2];
+        p[0].addChildren([p[1],p[3]]);
+    elif(len(p) == 2):
+        p[0] = p[1];
+    else:
+        print('\nIncorrect number of matches in MultDivStatement\n');
+        assert(False);
+
+        
+def p_MultDivOperator(p):
+    '''MultDivOperator : MULTIPLY
+                       | DIVIDE'''
+
+    if (p[1] == '*'):
+        p[0] = AstNode(AST_MULTIPLY, p.lineno(1),p.lexpos(1));
+    elif(p[1] == '/'):
+        p[0] = AstNode(AST_DIVIDE, p.lineno(1),p.lexpos(1));
+    else:
+        print('\nIncorrect number of matches in MultDivOperator\n');
+        assert(False);
+    
     
 def p_FunctionDeclArgList(p):
     '''FunctionDeclArgList : FunctionDeclArg 
