@@ -53,6 +53,8 @@ var w = ''' + str(width) + ''',
 var tree = d3.layout.tree()
     .size([w, h/3 ]);
 
+var VERTICAL_SPACING = 8;
+
 
 var diagonal = d3.svg.diagonal()
     .projection(function(d) { return [d.x, d.y]; });
@@ -63,7 +65,6 @@ var vis = d3.select("#chart").append("svg")
     .append("g")
     .attr("transform", "translate(-40, 40)");
 
-var drawHigh = true;
 
 function exec (json) {
   var nodes = tree.nodes(json);
@@ -93,14 +94,69 @@ function exec (json) {
           -8;
        else
        {
-          if(drawHigh)
+          if(d.drawHigh)
             return 2;
        }
        return -8;
        })
-      .attr("dy", function(d) { drawHigh = !drawHigh; if (drawHigh) return -8; return 12;})
+      .attr("dy", function(d) { if (d.drawHigh) return -8; return 12;})
       .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
       .text(function(d) { return d.name; });
+
+
+  //draws value
+  node.append("text")
+      .attr("dx", function(d) {
+       if (d.children)
+          -8;
+       else
+       {
+          if(d.drawHigh)
+            return 2;
+       }
+       return -8;
+       })
+      .attr("dy", function(d)
+                  {
+                      if (d.drawHigh)
+                          return -8 + 1*VERTICAL_SPACING;
+                      return 12 + 1*VERTICAL_SPACING;
+                  })
+      .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .text(function(d)
+            {
+               if(d.value)
+                 return d.value;
+               return '--';
+            });
+
+  //draws type
+  node.append("text")
+      .attr("dx", function(d) {
+       if (d.children)
+          -8;
+       else
+       {
+          if(d.drawHigh)
+            return 2;
+       }
+       return -8;
+       })
+      .attr("dy", function(d)
+                  {
+                      if (d.drawHigh)
+                          return -8 + 2*VERTICAL_SPACING;
+                      return 12 + 2*VERTICAL_SPACING;
+                  })
+      .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .text(function(d)
+            {
+               if(d.type)
+                 return d.type;
+               return '--';
+            });
+
+
 }
 
 

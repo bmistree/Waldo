@@ -17,15 +17,16 @@ def isEmptyAstNode(node):
         
 class AstNode():
     
-    def __init__(self,_type,_lineNo=None,_linePos=None,_value=None):
+    def __init__(self,_label,_lineNo=None,_linePos=None,_value=None):
         '''
         Only leaf nodes have values that are not None.
         (Things like Numbers, Strings, Identifiers, etc.)
         '''
-        self.type = _type;
-        self.value = _value;
-        self.lineNo = _lineNo;
-        self.linePos = _linePos;
+        self.label    = _label;
+        self.value    = _value;
+        self.lineNo   = _lineNo;
+        self.linePos  = _linePos;
+        self.type     = None;
         self.children = [];
 
         
@@ -51,12 +52,17 @@ class AstNode():
             print(self.toJSON());
 
 
+    def typeCheck(self):
+        pass;
         
-    def toJSON(self,indentLevel=0):
+    def toJSON(self,indentLevel=0,drawHigh=False):
         '''
         JSON format:
         {
-            "name": "<self.type>: <self.value>",
+            "name": "<self.label>",
+            "type": "<self.type>",
+            "value": <self.value>,
+            "drawHigh": drawHigh
             "children": [
                    //recurse
               ]
@@ -65,18 +71,41 @@ class AstNode():
         #name print
         returner = indentText('{\n',indentLevel);
         returner += indentText('"name": "',indentLevel+1);
-        returner += self.type;
-        if (self.value != None):
-            returner += ':  ' + self.value;
+        returner += self.label;
         returner += '"';
 
+
+        if (self.value != None):
+            returner += ',\n';
+            returner += indentText('"value": "',indentLevel+1);
+            returner += self.value;
+            returner += '"'
+
+        
+        if (self.type != None):
+            returner += ',\n';
+            returner += indentText('"type": "',indentLevel+1);
+            returner += self.type;
+            returner += '"'
+
+
+        #print drawHigh
+        returner += ',\n';
+        returner += indentText('"drawHigh": ',indentLevel+1);
+        if (drawHigh):
+            returner += 'true';
+        else:
+            returner += 'false';
+            
+            
         #child print
         if (len(self.children) != 0):
             returner += ',\n';
             returner += indentText('"children": [\n',indentLevel+1);
-            
+
             for s in range(0,len(self.children)):
-                returner += self.children[s].toJSON(indentLevel+1);
+                drawHigh = not drawHigh;
+                returner += self.children[s].toJSON(indentLevel+1,drawHigh);
                 if (s != (len(self.children) -1 )):
                     returner += ',\n';
             returner += ']';
