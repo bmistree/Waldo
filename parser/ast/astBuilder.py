@@ -53,9 +53,9 @@ AST_MSG_RECEIVE_FUNCTION = 'MSG_RECEIVE_FUNCTION';
 
 
 ##function helpers
+AST_FUNCTION_BODY = 'FUNCTION_BODY'; #provides new scope
 AST_FUNCTION_DECL_ARGLIST = 'FUNCTION_DECL_ARGLIST';
 AST_FUNCTION_DECL_ARG = 'FUNCTION_DECL_ARG';
-AST_FUNCTION_BODY = 'FUNCTION_BODY';
 AST_FUNCTION_ARGLIST = 'FUNCTION_ARGLIST';
 AST_FUNCTION_BODY_STATEMENT = 'FUNCTION_BODY_STATEMENT';
 
@@ -373,9 +373,19 @@ def p_SingleLineOrMultilineCurliedBlock(p):
                                          |  CURLY_LEFT CURLY_RIGHT
     ''';
     
-    p[0] = AstNode(AST_SINGLE_OR_MULTILINE_CURLIED_BLOCK,p.lineno(0),p.lexpos(0));
-    print('\nNeed to fill in singleLineOrMultilineCurliedBlock');
 
+    if (len(p) == 2):
+        p[0] = AstNode(AST_FUNCTION_BODY,p.lineno(0),p.lexpos(0));
+        p[0].addChild(p[1]);        
+    elif(len(p) == 4):
+        p[0] = p[2];
+    elif(len(p) == 3):
+        p[0] = AstNode(AST_EMPTY);
+    else:
+        print('\nIncorrect match vector in SingleLineOrMultilineCurliedBlock\n');
+        assert(False);
+
+    
 def p_BooleanCondition(p):
     '''BooleanCondition : LEFT_PAREN ReturnableExpression RIGHT_PAREN'''
     p[0] = AstNode(AST_BOOLEAN_CONDITION, p.lineno(0),p.lexpos(0));
