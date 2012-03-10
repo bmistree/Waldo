@@ -235,6 +235,15 @@ def t_MULTI_LINE_COMMENT_END(t):
     '\*\/'
     return mStateMachine.addToken(t);
 
+def t_BOOL_EQUALS(t):
+    '\=\='
+    return mStateMachine.addToken(t);
+
+def t_BOOL_NOT_EQUALS(t):
+    "\!\="
+    return mStateMachine.addToken(t);
+
+
 def t_EQUALS(t):
     '\='
     return mStateMachine.addToken(t);
@@ -253,13 +262,6 @@ def t_ELSE(t):
     return mStateMachine.addToken(t);
 
 
-def t_BOOL_EQUALS(t):
-    '\=\='
-    return mStateMachine.addToken(t);
-
-def t_BOOL_NOT_EQUALS(t):
-    "\!\="
-    return mStateMachine.addToken(t);
 
 def t_NOT(t):
     'Not'

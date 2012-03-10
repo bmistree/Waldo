@@ -74,6 +74,8 @@ AST_NOT_EXPRESSION = 'NOT_EXPRESSION';
 ##boolean expressions
 AST_AND = 'AND';
 AST_OR  = 'OR';
+AST_BOOL_EQUALS = '==';
+AST_BOOL_NOT_EQUALS = '!=';
 
 
 AST_NON_BOOLEAN_STATEMENT = 'NON_BOOLEAN_STATEMENT';
@@ -382,12 +384,19 @@ def p_BooleanCondition(p):
         
 def p_BooleanOperator(p):
     '''BooleanOperator : AND
-                       | OR  '''
+                       | OR
+                       | BOOL_EQUALS
+                       | BOOL_NOT_EQUALS 
+                       '''
 
     if (p[1] == 'And'):
         p[0] = AstNode(AST_AND,p.lineno(1),p.lexpos(1));
     elif(p[1] == 'Or'):
         p[0] = AstNode(AST_OR,p.lineno(1),p.lexpos(1));
+    elif(p[1] == '=='):
+        p[0] = AstNode(AST_BOOL_EQUALS,p.lineno(1),p.lexpos(1));
+    elif(p[1] == '!='):
+        p[0] = AstNode(AST_BOOL_NOT_EQUALS,p.lineno(1),p.lexpos(1));        
     else:
         print('\nIncorrect boolean operator: ' + p[1] + '\n');
         assert(False);
