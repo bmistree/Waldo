@@ -71,9 +71,9 @@ AST_BOOLEAN_CONDITION = 'BOOLEAN_CONDITION';
 ##boolean expressions
 AST_AND = 'AND';
 AST_OR  = 'OR';
-AST_BOOLEAN_STATEMENT = 'BOOLEAN_STATEMENT';
 
 
+AST_NON_BOOLEAN_STATEMENT = 'NON_BOOLEAN_STATEMENT';
 AST_RETURNABLE_EXPRESSION = 'RETURNABLE_EXPRESSION';
 AST_ASSIGNMENT_STATEMENT = 'ASSIGNMENT_STATEMENT';
 AST_DECLARATION = 'DECLARATION';
@@ -145,7 +145,7 @@ def p_TraceLine(p):
 
 def p_SharedSection(p):
     '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
-                     | SHARED CURLY_LEFT empty CURLY_RIGHT''';
+                     | SHARED CURLY_LEFT CURLY_RIGHT''';
 
     p[0] = AstNode(AST_SHARED_SECTION,p.lineno(0),p.lexpos(0));
     if (not isEmptyNode(p[3])):
@@ -156,12 +156,13 @@ def p_SharedSection(p):
 def p_SharedBodySection(p):
     '''SharedBodySection : AnnotatedDeclaration SEMI_COLON SharedBodySection
                          | AnnotatedDeclaration SEMI_COLON'''
-    #note: currently, cannot have empty shared section.
     p[0] = AstNode(AST_SHARED_BODY_SECTION, p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
     if (len(p) == 4):
         p[0].addChildren(p[3].getChildren());
-    
+
+        
+        
 def p_AnnotatedDeclaration(p):
     '''AnnotatedDeclaration : Identifier CONTROLS Type Identifier 
                             | Identifier CONTROLS Type Identifier EQUALS Initializer'''
@@ -189,6 +190,8 @@ def p_Initializer(p):
                    ''';
     p[0] = p[1];
 
+    
+
 def p_Number(p):
     '''Number : NUMBER '''
     p[0] = AstNode(AST_NUMBER,p.lineno(1),p.lexpos(1),p[1]);
@@ -206,10 +209,6 @@ def p_Bool(p):
             | FALSE'''
     p[0] = AstNode(AST_BOOL,p.lineno(1),p.lexpos(1),p[1]);
     
-    
-def p_empty(p):
-    'empty : ';
-    p[0] = AstNode(AST_EMPTY, p.lineno(0),p.lexpos(0));
     
     
 def p_Identifier(p):
@@ -299,13 +298,19 @@ def p_PublicFunction(p):
         p[0].addChild(p[8]);
 
 def p_FunctionBody(p):
-    '''FunctionBody : FunctionBodyStatement FunctionBody
+    '''FunctionBody : FunctionBody FunctionBodyStatement
                     | FunctionBodyStatement'''
     p[0] = AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0));
-    p[0].addChild(p[1]);
     if (len(p) == 3):
-        p[0].addChildren(p[2].getChildren());
-    
+        p[0].addChildren(p[1].getChildren());
+        p[0].addChild(p[2]);
+    elif (len(p) == 2):
+        p[0].addChild(p[1]);
+    else:
+        print('\nError statement length mismatch in FunctionBody\n');
+        assert(False);
+
+        
 def p_FunctionBodyStatement(p):
     '''FunctionBodyStatement : Declaration SEMI_COLON
                              | AssignmentStatement SEMI_COLON
@@ -316,6 +321,7 @@ def p_FunctionBodyStatement(p):
 
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
+    
     p[0] = AstNode(AST_CONDITION_STATEMENT,p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[1],p[2],p[3]]);
 
@@ -360,29 +366,14 @@ def p_SingleLineOrMultilineCurliedBlock(p):
                                          |  CURLY_LEFT FunctionBody CURLY_RIGHT
                                          |  CURLY_LEFT CURLY_RIGHT
     ''';
+    
     p[0] = AstNode(AST_SINGLE_OR_MULTILINE_CURLIED_BLOCK,p.lineno(0),p.lexpos(0));
     print('\nNeed to fill in singleLineOrMultilineCurliedBlock');
 
 def p_BooleanCondition(p):
-    '''BooleanCondition : LEFT_PAREN BooleanStatement RIGHT_PAREN'''
+    '''BooleanCondition : LEFT_PAREN ReturnableExpression RIGHT_PAREN'''
     p[0] = AstNode(AST_BOOLEAN_CONDITION, p.lineno(0),p.lexpos(0));
     p[0].addChild(p[2]);
-
-
-def p_BooleanStatement(p):
-    '''BooleanStatement : ReturnableExpression BooleanOperator BooleanStatement
-                        | ReturnableExpression
-    '''
-    p[0] = AstNode(AST_BOOLEAN_STATEMENT,p.lineno(0),p.lexpos(0));
-    if (len(p) == 4):
-        p[0].addChild(p[2]);
-        p[2].addChild(p[1]);
-        p[2].addChildren(p[3].getChildren());
-    elif(len(p) == 2):
-        p[0].addChild(p[1]);
-    else:
-        print('\nIn boolean statement, incorrect number of matches\n');
-        assert(False);
 
 
         
@@ -398,7 +389,7 @@ def p_BooleanOperator(p):
         print('\nIncorrect boolean operator: ' + p[1] + '\n');
         assert(False);
     
-        
+
     
 def emptyElseIf():
     return AstNode(AST_ELSE_IF_STATEMENT,0,0);
@@ -416,15 +407,26 @@ def p_AssignmentStatement(p):
     p[0].addChildren([p[1],p[3]]);
 
 def p_ReturnableExpression(p):
-    '''ReturnableExpression : Initializer'''
-                            # | BooleanStatement'''
-    ###
-    ###lkjs;
-    ###FIXME: This should contain more than Initializer
-    ###
+    '''ReturnableExpression : NonBooleanStatement BooleanOperator ReturnableExpression
+                            | NonBooleanStatement'''
+    
     p[0] = AstNode(AST_RETURNABLE_EXPRESSION,p.lineno(0),p.lexpos(0));
-    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        p[0].addChild(p[2]);
+        p[2].addChild(p[1]);
+        p[2].addChildren(p[3].getChildren());
+    elif(len(p) == 2):
+        p[0].addChild(p[1]);
+    else:
+        print('\nIn ReturnableExpression, incorrect number of matches\n');
+        assert(False);
 
+        
+    
+def p_NonBooleanStatement(p):
+    '''NonBooleanStatement : Initializer '''
+    p[0] = AstNode(AST_NON_BOOLEAN_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0].addChild(p[1]);
 
     
 def p_FunctionDeclArgList(p):
@@ -445,7 +447,6 @@ def p_FunctionDeclArgList(p):
 
 def p_FunctionCall(p):
     '''FunctionCall : Identifier LEFT_PAREN FunctionArgList RIGHT_PAREN'''
-    # '''FunctionCall : Identifier FunctionArgList '''
     p[0] = AstNode(AST_FUNCTION_CALL,p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[1],p[3]]);
 
