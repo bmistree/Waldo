@@ -56,6 +56,19 @@ here", etc.  Note that this may fit in with SOSP paper about
 configuration error messages.
 
 
+Dual Process Theory may define what it means to be a novice language
+and a non-novice language.  No one else has suggested why an expert
+would no longer use a novice language.  Dual Process Theory may be a
+tool to identify and explain the fundamental tradeoffs in language design.
+
+Identifies a fundamental language tradeoff between expressiveness
+and readability.  Probably a natural metaphor with command line versus
+gui.  
+
+
+Should == be "IsEqualTo" and != be "IsNotEqualTo"?  This really,
+really depends on our target.  It's a fundamental tradeoff.  
+
 Require parens for grouping on == and !=. 
 Require parens for grouping on or and and?
 Maybe make multiplicatino be with x?
