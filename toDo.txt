@@ -58,6 +58,8 @@ configuration error messages.
 
 Require parens for grouping on == and !=. 
 Require parens for grouping on or and and?
+Maybe make multiplicatino be with x?
+
  
 Long-term to do:
  

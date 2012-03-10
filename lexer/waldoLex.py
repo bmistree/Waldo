@@ -56,6 +56,13 @@ tokens = (
     #boolean operators
     "AND",
     "OR",
+
+    #math operators
+    "PLUS",
+    "MINUS",
+    "DIVIDE",
+    "MULTIPLY",
+    
     
     #brackets/braces
     "LEFT_PAREN",
@@ -353,6 +360,24 @@ def t_OR(t):
     'Or';
     return mStateMachine.addToken(t);
 
+
+def t_DIVIDE(t):
+    '\/';
+    return mStateMachine.addToken(t);
+
+def t_MULTIPLY(t):
+    '\*';
+    return mStateMachine.addToken(t);
+
+
+def t_PLUS(t):
+    '\+';
+    return mStateMachine.addToken(t);
+
+def t_MINUS(t):
+    '\-';
+    return mStateMachine.addToken(t);
+    
 
 def t_DOT(t):
     '[.]';
