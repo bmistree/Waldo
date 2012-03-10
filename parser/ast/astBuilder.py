@@ -62,7 +62,8 @@ AST_FUNCTION_BODY_STATEMENT = 'FUNCTION_BODY_STATEMENT';
 ##conditional expressions
 AST_CONDITION_STATEMENT = 'CONDITION_STATEMENT';
 AST_IF_STATEMENT = 'IF_STATEMENT';
-AST_ELSE_IF_STATEMENT = 'ELSE_IF_STATEMENTS';
+AST_ELSE_IF_STATEMENTS = 'ELSE_IF_STATEMENTS';
+AST_ELSE_IF_STATEMENT = 'ELSE_IF_STATEMENT';
 AST_ELSE_STATEMENT = 'ELSE_STATEMENT';
 AST_SINGLE_OR_MULTILINE_CURLIED_BLOCK = 'SINGLE_OR_MULTILINE_BLOCK';
 AST_BOOLEAN_CONDITION = 'BOOLEAN_CONDITION';
@@ -315,41 +316,44 @@ def p_FunctionBodyStatement(p):
 
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
-
     p[0] = AstNode(AST_CONDITION_STATEMENT,p.lineno(0),p.lexpos(0));
-    p[0].addChild(p[1]);
-    if (len(p) == 4):
-        p[0].addChildren([p[1],p[2]]);
-    elif(len(p) == 2):
-        p[0].addChildren([emptyElseIf(),emptyElse()]);
-    elif(len(p) == 3):
-        if (isElseIfStatement(p[2])):
-            p[0].addChildren([p[2],emptyElse()]);
-        else:
-            p[0].addChildren([emptyElseIf(),p[2]]);
+    p[0].addChildren([p[1],p[2],p[3]]);
+
 
 def p_IfStatement(p):
     '''IfStatement : IF BooleanCondition SingleLineOrMultilineCurliedBlock '''
     p[0] = AstNode(AST_IF_STATEMENT,p.lineno(0),p.lexpos(0));
-    print('\nNeed to fill in if statement\n');
+    p[0].addChildren([p[2],p[3]]);
+
     
 def p_ElseIfStatements(p):
     '''ElseIfStatements : Empty
-                        | ElseIfStatements ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock'''
-
-    # '''ElseIfStatements : ElseIfStatements ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock
-    #                     | ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock'''
+                        | ElseIfStatements ElseIfStatement'''
     
+    p[0] = AstNode(AST_ELSE_IF_STATEMENTS,p.lineno(0),p.lexpos(0));
+    if (len(p) == 3):
+        p[0].addChildren(p[1].getChildren());
+        p[0].addChild(p[2]);
+
+def p_ElseIfStatement(p):
+    '''ElseIfStatement : ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock'''
     p[0] = AstNode(AST_ELSE_IF_STATEMENT,p.lineno(0),p.lexpos(0));
-    print('\nNeed to fill in else if statement\n');
+    p[0].addChildren([p[2],p[3]]);
 
-
+    
     
 def p_ElseStatement(p):
     '''ElseStatement : Empty
                      | ELSE SingleLineOrMultilineCurliedBlock '''
     p[0] = AstNode(AST_ELSE_STATEMENT,p.lineno(0),p.lexpos(0));
-    print('\nNeed to fill in else statement\n');
+    if (len(p) == 3):
+        p[0].addChild(p[2]);
+    elif(len(p) == 2):
+        p[0].addChild(p[1]);
+    else:
+        print('\nIncorrect match count in ElseStatement.\n');
+        assert(False);
+
 
 def p_SingleLineOrMultilineCurliedBlock(p):
     '''SingleLineOrMultilineCurliedBlock :  FunctionBodyStatement
@@ -477,7 +481,8 @@ def p_Declaration(p):
 def p_Empty(p):
     '''Empty : '''
     p[0] = AstNode(AST_EMPTY);
-        
+
+    
 def p_error(p):
 
     if (p == None):

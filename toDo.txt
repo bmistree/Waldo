@@ -22,7 +22,10 @@ x    -Offending token
 
  * During semantic analysis, if have more than one argument in
    funcArgList, check that no arguments are empty.
- 
+
+
+
+   
 Questions:
 
 Annotation for shared data seems off.  Right now, just have one
@@ -30,6 +33,8 @@ general CONTROLS annotation.  Can have more nuanced rules, where a
 piece of state can only be modified directly in a message response
 chain instead of at the outset of response.  Similarly, may want to
 make state only writable.  We'll see.
+
+Should ElseIf use camel-case or underscore?  Mechanical Turk it.
 
 
 Ideas:
