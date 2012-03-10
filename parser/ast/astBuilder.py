@@ -366,22 +366,26 @@ def p_SingleLineOrMultilineCurliedBlock(p):
 def p_BooleanCondition(p):
     '''BooleanCondition : LEFT_PAREN BooleanStatement RIGHT_PAREN'''
     p[0] = AstNode(AST_BOOLEAN_CONDITION, p.lineno(0),p.lexpos(0));
-    
-    print('\nNeed to fill in boolean statement\n');
+    p[0].addChild(p[2]);
+
 
 def p_BooleanStatement(p):
     '''BooleanStatement : ReturnableExpression BooleanOperator BooleanStatement
                         | ReturnableExpression
     '''
+    p[0] = AstNode(AST_BOOLEAN_STATEMENT,p.lineno(0),p.lexpos(0));
     if (len(p) == 4):
-        p[0] = p[2];
-        AstNode(AST_BOOLEAN_STATEMENT, p.lineno(0),p.lexpos(0));
+        p[0].addChild(p[2]);
+        p[2].addChild(p[1]);
+        p[2].addChildren(p[3].getChildren());
     elif(len(p) == 2):
-        p[0] = p[1];
+        p[0].addChild(p[1]);
     else:
         print('\nIn boolean statement, incorrect number of matches\n');
         assert(False);
 
+
+        
 def p_BooleanOperator(p):
     '''BooleanOperator : AND
                        | OR'''

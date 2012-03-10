@@ -14,7 +14,7 @@ x    -Offending token
     -Add Trace constructions to ast builder
     -Add Shared constructions to ast builder
  * Create test infrastructure for asts
-
+ 
  * Need to better-define ReturnableExpression.  Right now, can only
    provide literals and function calls.
  * Resolve a bunch of shift-reduce conflicts labeled in parser.out.
@@ -24,6 +24,8 @@ x    -Offending token
    funcArgList, check that no arguments are empty.
 
 
+Notes:
+  Ors and Ands have same precedence and are left-associative.
 
    
 Questions:
