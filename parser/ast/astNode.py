@@ -86,7 +86,7 @@ class AstNode():
         return returner;
 
     
-    def drawPretty(self,filename,pathToD3='d3',width=2000,height=1000):
+    def drawPretty(self,filename,pathToD3='d3',width=5000,height=3000):
         '''
         For now, an ugly way of generating a pretty view 
         '''
@@ -95,8 +95,8 @@ class AstNode():
         if (pathToD3 == None):
             pathToD3 = 'd3';
         if(width == None):
-            width = 2000;
+            width = 5000;
         if(height==None):
-            height = 1000;
+            height = 3000;
             
         treeDraw.prettyDrawTree(filename=filename,data=self.toJSON(),pathToD3=pathToD3,width=width,height=height);

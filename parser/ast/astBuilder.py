@@ -434,9 +434,46 @@ def p_AssignmentStatement(p):
     p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[1],p[3]]);
 
+
+    
 def p_ReturnableExpression(p):
-    '''ReturnableExpression : NOT ReturnableExpression
-                            | InternalReturnableExpression
+    '''ReturnableExpression : LEFT_PAREN ReturnableExpression RIGHT_PAREN BinaryOperator ReturnableExpression
+                            | ParenthesizedExpression
+                            | LEFT_PAREN ReturnableExpression RIGHT_PAREN 
+    '''
+
+    if (len(p) == 6):
+        p[0] = p[4];
+        p[4].addChildren([p[2],p[5]]);
+    elif(len(p) == 2):
+        p[0] = p[1];
+    elif(len(p) == 4):
+        p[0] = p[2];
+    else:
+        print('\nIncorrect number of matches in ReturnableExpression\n');
+        assert(False);
+    
+
+    # if (len(p) == 3):
+    #     p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(0),p.lexpos(0));
+    #     p[0].addChild(p[2]);
+    # elif(len(p) == 2):
+    #     p[0] = p[1];
+    # else:
+    #     print('\nIncorrect matching in ReturnableExpression\n');
+    #     assert(False);
+
+def p_BinaryOperator(p):
+    '''
+    BinaryOperator : PlusMinusOperator
+                   | MultDivOperator
+                   | BooleanOperator
+    '''
+    p[0] = p[1];
+
+def p_ParenthesizedExpression(p):
+    '''ParenthesizedExpression : NOT ParenthesizedExpression
+                               | InternalReturnableExpression
     '''
     if (len(p) == 3):
         p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(0),p.lexpos(0));
@@ -446,6 +483,7 @@ def p_ReturnableExpression(p):
     else:
         print('\nIncorrect matching in ReturnableExpression\n');
         assert(False);
+
         
         
 def p_InternalReturnableExpression(p):    

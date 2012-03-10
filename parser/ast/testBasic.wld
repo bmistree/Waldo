@@ -40,7 +40,8 @@ Server
           Else
             a =1;
 
-          
+            r = (2+3)*4;
+            s = 2+3*4;
         }
 /*
         MsgReceive something (Bool a, Number f, String g)

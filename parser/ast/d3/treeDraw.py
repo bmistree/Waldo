@@ -8,7 +8,7 @@ http://mbostock.github.com/d3/
 '''
 
 
-def prettyDrawTree(filename,data,pathToD3,width=2000,height=1000):
+def prettyDrawTree(filename,data,pathToD3,width=5000,height=3000):
     page = generatePage(data,pathToD3,width,height);
     filer = open(filename,'w');
     filer.write(page);
