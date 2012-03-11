@@ -12,7 +12,7 @@ Traces
 Shared
 {
         Server Controls Bool a;
-        Server Controls Bool b = you; 
+        Server Controls Bool b = 1; 
 }
 
 Server

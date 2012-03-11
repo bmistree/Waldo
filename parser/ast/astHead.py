@@ -30,7 +30,7 @@ def genAst(inputFilename):
     fileText = getFileText(inputFilenameArg);
     parser = getParser(fileText);
     astNode = parser.parse(fileText);
-    return astNode;
+    return astNode,fileText;
 
 def astProduceTextOutput(astNode,textOutFilename):
     astNode.printAst(textOutFilename);
@@ -50,7 +50,7 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
 
         
 def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg):
-    ast = genAst(inputFilename);
+    ast,fileText = genAst(inputFilename);
     if (ast == None):
         print('\nError with program.  Please fix and continue\n');
     else:
@@ -68,7 +68,7 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg):
         if (not performedOperation):
             printUsage();
         else:
-            ast.typeCheck();
+            ast.typeCheck(fileText);
 
 
 

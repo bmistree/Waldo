@@ -34,18 +34,18 @@ class TypeCheckContextStack():
         AST_LABELS file....maybe.
         '''
         for s in reversed(range(0,len(self.stack))):
-            lookupType= self.stack[s].getType();
+            lookupType= self.stack[s].getIdentifierType(identifierName);
             if (lookupType != None):
                 return lookupType;
         return None;
 
-    def addIdentifier(self,identifierName,identifierType):
+    def addIdentifier(self,identifierName,identifierType,lineNum = None):
 
         if(len(self.stack) <= 1):
             print('\nError.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
 
-        self.stack[-1].addIdentifier(identifierName,identifierType);
+        self.stack[-1].addIdentifier(identifierName,identifierType,lineNum);
 
 
 
@@ -57,10 +57,14 @@ class Context():
         '''
         @returns None if doesn't exist.
         '''
-        return self.dict.get(identifierName,None);
+        val = self.dict.get(identifierName,None);
+        if (val == None):
+            return val;
+        
+        return val.getType();
 
         
-    def addIdentifier(self,identifierName,identifierType):
+    def addIdentifier(self,identifierName,identifierType,lineNum):
         '''
         If identifier already exists in this context, throw an error.
         Cannot have re-definition of existing type.
@@ -76,5 +80,16 @@ class Context():
             print('\nError.  Unrecognized identifierType insertion: ' + identifierType + '\n');
             assert(False);
 
-        self.dict[identifierName] = identifierType;
+        self.dict[identifierName] = ContextElement(identifierType,lineNum);
 
+        
+class ContextElement():
+    def __init__ (self,identifierType,lineNum):
+        self.identifierType = identifierType;
+        self.lineNum = lineNum;
+
+    def getType(self):
+        return self.identifierType;
+
+    def getLineNum(self):
+        return self.lineNum;

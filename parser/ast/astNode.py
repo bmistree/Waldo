@@ -57,7 +57,7 @@ class AstNode():
             print(self.toJSON());
 
 
-    def typeCheck(self,typeStack=None):
+    def typeCheck(self,progText,typeStack=None):
         #based on types of children, check my type.  Also, pass up
         #line numbers.
         
@@ -94,18 +94,20 @@ class AstNode():
             typeStack.endpoint2LineNo = aliasSection.children[1].lineNo;
             
             if (typeStack.endpoint1 == typeStack.endpoint2):
-                errorFunction('Cannot use same names for endpoints',[typeStack.endpoint1,typeStack.endpoint2],[typeStack.endpoint1LineNo,typeStack.endpoint2LineNo]);
+                errorFunction('Cannot use same names for endpoints',[typeStack.endpoint1,typeStack.endpoint2],[typeStack.endpoint1LineNo,typeStack.endpoint2LineNo],progText);
 
             #get into shared section
             #note: shared section should leave its context on the stack.
-            self.children[3].typeCheck(typeStack);
+            self.children[3].typeCheck(progText,typeStack);
 
             #check one endpoint
-            self.children[4].typeCheck(typeStack);
+            self.children[4].typeCheck(progText,typeStack);
 
+            print('\nWarning, still need to add other endpoint to parser for checking\n');
+            
             #go back and type check trace items.  see notes in
             #corresponding elif.
-            self.children[2].typeCheck(typeStack);
+            self.children[2].typeCheck(progText,typeStack);
                 
 
         elif(self.label == AST_TRACE_SECTION):
@@ -118,8 +120,44 @@ class AstNode():
             print('\nTo do: still must type check trace section\n');
 
         elif(self.label == AST_SHARED_SECTION):
-            print('\nStill need to add type checking to shared section\n');
+            #each child will be an annotated declaration.
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
 
+        elif(self.label == AST_ANNOTATED_DECLARATION):
+            # the type of this identifier
+            #reset my type to it.
+            self.type = self.children[1].value;
+            currentLineNo = self.children[1].lineNo;
+            if (len(self.children) == 4):
+                #have an initializer too.
+                self.children[3].typeCheck(progText,typeStack);
+                assignType = self.children[3].type;
+                if (assignType != self.type):
+                    if (assignType == None):
+                        assignType = '<None>';
+                    errorString = 'Assigned type [' + assignType + '] does not ';
+                    errorString += 'match declared type [' + self.type + '].';
+                    errorFunction(errorString,[self],[currentLineNo],progText);
+
+            #actually store the new type
+            identifierName = self.children[2].value;
+            existsAlready = typeStack.getIdentifierType(identifierName);
+            if (existsAlready != None):
+                errorFunction('Already have an identifier named ' + identifierName,[self],[currentLineNo, existsAlready.lineNo],progText);
+            else:
+                typeStack.addIdentifier(identifierName,self.type,currentLineNo);
+            
+        elif(self.label == AST_NUMBER):
+            self.type = TYPE_NUMBER;
+        elif(self.label == AST_STRING):
+            self.type = TYPE_STRING;
+        elif(self.label == AST_BOOL):
+            self.type = TYPE_BOOL;
+        elif(self.label == AST_FUNCTION_CALL):
+            print('\nNeed to finish type checking for AST_FUNCTION_CALL\n');
+
+            
         elif(self.label == AST_ENDPOINT):
             print('\nStill need to add type checking to endpoint section\n');
 
@@ -132,8 +170,6 @@ class AstNode():
             (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
             
             typeStack.popContext();
-
-
 
 
 
@@ -216,3 +252,51 @@ class AstNode():
             height = 3000;
             
         treeDraw.prettyDrawTree(filename=filename,data=self.toJSON(),pathToD3=pathToD3,width=width,height=height);
+
+
+ERROR_NUM_LINES_EITHER_SIDE = 4;
+        
+def errorFunction(errorString,astNodes,lineNumbers,progText):
+    '''
+    @param {String} errorString -- Text associated with error.
+    @param {Array < AstNode>} astNodes -- Contains all ast nodes associated with the error.
+    @param {Array < Int> } lineNumbers -- Contains all line numbers associated with error.
+    @param {String} progText -- The source text of the program.
+    '''
+    
+    print('\n\n');
+    print('*************************');
+    print('Error in type checking:');
+    print(errorString);
+
+    print('-------\nAST node labels:');
+    for s in astNodes:
+        print(s.label)
+        
+    print('-------\nLine numbers:');
+    for s in lineNumbers:
+        print(s);
+
+    programTextArray = progText.split('\n');
+    print('-------\nProgram text:');
+    for errorLine in lineNumbers:
+        print('\n\n');
+        lowerLineNum = max(0,errorLine - ERROR_NUM_LINES_EITHER_SIDE);
+        upperLineNum = min(len(programTextArray),errorLine + ERROR_NUM_LINES_EITHER_SIDE);
+
+        for s in range(lowerLineNum, upperLineNum):
+            errorText = '';
+            errorText += str(s+1);
+
+            if (s == errorLine -1):
+                errorText += '*   ';
+            else:
+                errorText += '    ';
+                    
+            errorText += programTextArray[s];
+            print(errorText);
+
+        
+    print('*************************');
+    print('\n\n');
+

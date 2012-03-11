@@ -138,19 +138,20 @@ def p_Initializer(p):
 def p_Number(p):
     '''Number : NUMBER '''
     p[0] = AstNode(AST_NUMBER,p.lineno(1),p.lexpos(1),p[1]);
-
+    p[0].type = TYPE_NUMBER;
     
 def p_String(p):
     '''String : MULTI_LINE_STRING
               | SINGLE_LINE_STRING''';
 
     p[0] = AstNode(AST_STRING,p.lineno(1),p.lexpos(1),p[1]);
-    
+    p[0].type = TYPE_STRING;
 
 def p_Bool(p):
     '''Bool : TRUE
             | FALSE'''
     p[0] = AstNode(AST_BOOL,p.lineno(1),p.lexpos(1),p[1]);
+    p[0].type = TYPE_BOOL;
     
     
     
