@@ -67,6 +67,8 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg):
 
         if (not performedOperation):
             printUsage();
+        else:
+            ast.typeCheck();
 
 
 

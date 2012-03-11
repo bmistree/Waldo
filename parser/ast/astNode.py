@@ -2,7 +2,9 @@
 
 import sys;
 sys.path.append('d3');
-import treeDraw
+import treeDraw;
+from astLabels import *;
+from astTypeCheckStack import TypeCheckContextStack;
 
 def indentText(text,numIndents):
     returner = '';
@@ -27,8 +29,11 @@ class AstNode():
         self.lineNo   = _lineNo;
         self.linePos  = _linePos;
         self.type     = None;
+        self.note     = None;
         self.children = [];
 
+    def setNote(self,note):
+        self.note = note;
         
     def addChild(self, childToAdd):
         self.children.append(childToAdd);
@@ -52,9 +57,91 @@ class AstNode():
             print(self.toJSON());
 
 
-    def typeCheck(self):
-        pass;
+    def typeCheck(self,typeStack=None):
+        #based on types of children, check my type.  Also, pass up
+        #line numbers.
         
+        if ((self.label != AST_ROOT) and (typeStack == None)):
+            print('\nError.  Must have typeStack unless root node\n');
+            assert(False);
+        elif(self.label == AST_ROOT):
+            typeStack = TypeCheckContextStack();
+
+        if ((self.label == AST_ROOT) or
+            (self.label == AST_FUNCTION_BODY) or
+            (self.label == AST_SHARED_SECTION) or
+            (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
+            #each of these create new contexts.  don't forget to
+            #remove several of them at the bottom of the function.
+            typeStack.pushContext();
+
+
+        if(self.label == AST_ROOT):
+            #top of program
+
+            #getting protocol object name
+            typeStack.protObjName = self.children[0].value;
+
+            #handling alias section
+            aliasSection = self.children[1];
+
+            #endpoint 1
+            typeStack.endpoint1 = aliasSection.children[0].value; 
+            typeStack.endpoint1LineNo = aliasSection.children[0].lineNo;
+
+            #endpoint 2
+            typeStack.endpoint2 = aliasSection.children[1].value; 
+            typeStack.endpoint2LineNo = aliasSection.children[1].lineNo;
+            
+            if (typeStack.endpoint1 == typeStack.endpoint2):
+                errorFunction('Cannot use same names for endpoints',[typeStack.endpoint1,typeStack.endpoint2],[typeStack.endpoint1LineNo,typeStack.endpoint2LineNo]);
+
+            #get into shared section
+            #note: shared section should leave its context on the stack.
+            self.children[3].typeCheck(typeStack);
+
+            #check one endpoint
+            self.children[4].typeCheck(typeStack);
+
+            #go back and type check trace items.  see notes in
+            #corresponding elif.
+            self.children[2].typeCheck(typeStack);
+                
+
+        elif(self.label == AST_TRACE_SECTION):
+            '''
+            need to check that first part of all TraceItems correspond to an Endpoint.
+            need to check that alternate between Endpoints
+            need to check that no two traces begin with same TraceItem
+            need to check to ensure all functions referenced match with msg_send and msg_receive (probably can't do that part at this point.  Maybe later).
+            '''
+            print('\nTo do: still must type check trace section\n');
+
+        elif(self.label == AST_SHARED_SECTION):
+            print('\nStill need to add type checking to shared section\n');
+
+        elif(self.label == AST_ENDPOINT):
+            print('\nStill need to add type checking to endpoint section\n');
+
+
+        #remove the new context that we had created.  Note: shared
+        #section is intentionally missing.  Want to maintain that 
+        #context while type-checking the endpoint sections.
+        if ((self.label == AST_ROOT) or
+            (self.label == AST_FUNCTION_BODY) or
+            (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
+            
+            typeStack.popContext();
+
+
+
+
+
+
+
+
+
+            
     def toJSON(self,indentLevel=0,drawHigh=False):
         '''
         JSON format:
