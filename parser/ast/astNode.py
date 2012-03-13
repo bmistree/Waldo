@@ -215,6 +215,37 @@ class AstNode():
                 
             
         elif(self.label == AST_ENDPOINT_FUNCTION_SECTION):
+            #first check that all function names do not conflict.
+            for s in self.children:
+                funcName = s.children[0].value;
+                funcType = None;
+                if (s.label == AST_PUBLIC_FUNCTION):
+                    s.children[1].checkType(progText,typeStack);
+                    funcType = getFunctionType(s.children[1].type);
+
+                elif(s.label == AST_FUNCTION):
+                    s.children[1].checkType(progText,typeStack);
+                    funcType = getFunctionType(s.children[1].type);
+
+                    funcType = s.children[1].value;
+                elif(s.label == AST_MSG_SEND_FUNCTION):
+                    
+                    pass;
+                elif(s.label == AST_MSG_RECEIVE_FUNCTION):
+                    pass;
+                else:
+                    errMsg = 'When parsing enpoint functions, do not know label ';
+                    errMsg += 'type ' + s.label;
+                    print('\n\n');
+                    print(errMsg);
+                    print('\n\n');
+                    assert(False);
+
+                self.type = funcType;
+                funcType = s.children[0]
+                
+            lkjs;
+            
             print('\nStill need to perform type checking on endpoint function section\n');
             
         #remove the new context that we had created.  Note: shared

@@ -79,6 +79,11 @@ AST_EMPTY = 'EMPTY';
 TYPE_BOOL = 'Bool';
 TYPE_NUMBER = 'Number';
 TYPE_STRING = 'String';
+TYPE_NOTHING = 'Nothing';
+
+#
+def genFunctionType(returnedType):
+    return 'Function ' + returnedType;
 
 
 
