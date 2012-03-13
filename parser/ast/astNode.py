@@ -70,6 +70,7 @@ class AstNode():
         if ((self.label == AST_ROOT) or
             (self.label == AST_FUNCTION_BODY) or
             (self.label == AST_SHARED_SECTION) or
+            (self.label == AST_ENDPOINT_GLOBAL_SECTION) or
             (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
             #each of these create new contexts.  don't forget to
             #remove several of them at the bottom of the function.
@@ -159,12 +160,67 @@ class AstNode():
 
             
         elif(self.label == AST_ENDPOINT):
-            print('\nStill need to add type checking to endpoint section\n');
+            #check if endpoint name matches previous endpoint name
+            endName = self.children[0].value;
+            currentLineNo = self.children[0].lineNo;
+            if (not typeStack.isEndpoint(endName)):
+                errMsg = 'Endpoint named ' + endName + ' was not defined at top of file ';
+                errMsg = ' are you sure your endpoints match?';
+                errorFunction(errMsg,[self],[currentLineNo,typeStack.endpoint1LineNo,typeStack.endpoint2LineNo],progText);
+
+            #check endpoint body section
+            self.children[1].typeCheck(progText,typeStack);
 
 
+        elif(self.label == AST_ENDPOINT_BODY_SECTION):
+            #typecheck global section
+            self.children[0].typeCheck(progText,typeStack);
+            #check function section.
+            self.children[1].typeCheck(progText,typeStack);
+
+            #note: perform extra pop for stack that endpoint global
+            #section put on.
+            typeStack.popContext();
+
+        elif(self.label == AST_ENDPOINT_GLOBAL_SECTION):
+
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
+
+        elif(self.label == AST_DECLARATION):
+            declaredType = self.children[0].value;
+            name = self.children[1].value;
+            currentLineNo = self.children[0].lineNo;
+            if (len(self.children) == 3):
+                self.children[2].typeCheck(progText,typeStack);
+                rhsType = self.children[2].type;
+                if (rhsType != declaredType):
+                    errMsg = 'Type mismatch for variable named ' + name + '.';
+                    errMsg += '  Declared with type [' + declaredType + '], but ';
+                    errMsg += 'assigned to type [' + rhsType + '].';
+                    errorFunction(errMsg,[self],[currentLineNo],progText);
+                
+            typeStack.addIdentifier(name,declaredType,currentLineNo);
+            self.type = declaredType;
+
+        elif(self.label == AST_IDENTIFIER):
+            name = self.value;
+            typer = typeStack.getIdentifierType(name);
+            if (typer == None):
+                errMsg = 'Cannot infer type of ' + name + '.  Are you sure it is valid?';
+                errorFunction(errMsg,[self],[self.lineNo],progText);
+                self.type = 'Undefined';
+            else:
+                self.type = typer;
+                
+            
+        elif(self.label == AST_ENDPOINT_FUNCTION_SECTION):
+            print('\nStill need to perform type checking on endpoint function section\n');
+            
         #remove the new context that we had created.  Note: shared
         #section is intentionally missing.  Want to maintain that 
         #context while type-checking the endpoint sections.
+        #skip global section too.
         if ((self.label == AST_ROOT) or
             (self.label == AST_FUNCTION_BODY) or
             (self.label == AST_ENDPOINT_FUNCTION_SECTION)):

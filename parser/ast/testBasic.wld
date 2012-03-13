@@ -12,14 +12,14 @@ Traces
 Shared
 {
         Server Controls Bool a;
-        Server Controls Bool b = 1; 
+        Server Controls Bool b = False; 
 }
 
 Server
 {
         Number c = 4;   
         Bool a;
-        Bool b = you;
+        Bool b = False;
 
         MsgSend something (Bool a, Bool b)
         {

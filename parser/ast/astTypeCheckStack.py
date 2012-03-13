@@ -47,6 +47,9 @@ class TypeCheckContextStack():
 
         self.stack[-1].addIdentifier(identifierName,identifierType,lineNum);
 
+    def isEndpoint(self,endpointName):
+        return ((endpointName == self.endpoint1) or (endpointName == self.endpoint2));
+        
 
 
 class Context():
