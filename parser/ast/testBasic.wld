@@ -44,7 +44,7 @@ Server
             s = 2+3*4;
         }
 
-        Function something (String a, Number b) Returns Nothing
+        Function something2 (String a, Number b) Returns Nothing
         {}
 
         Public Function something (String a, Number b) Returns String

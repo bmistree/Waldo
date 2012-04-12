@@ -3,6 +3,7 @@
 from astLabels import TYPE_BOOL;
 from astLabels import TYPE_STRING;
 from astLabels import TYPE_NUMBER;
+from astLabels import TYPE_NOTHING;
 
 
 class TypeCheckContextStack():
@@ -110,8 +111,10 @@ class FuncContext():
         #additional types at top of file.
         if ((funcIdentifierType != TYPE_BOOL)   and
             (funcIdentifierType != TYPE_NUMBER) and
-            (funcIdentifierType != TYPE_STRING)):
+            (funcIdentifierType != TYPE_STRING) and
+            (funcIdentifierType != TYPE_NOTHING)):
 
+            
             print('\nError.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
             assert(False);
 

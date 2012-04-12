@@ -56,6 +56,7 @@ class AstNode():
         else:
             print(self.toJSON());
 
+            
 
     def typeCheck(self,progText,typeStack=None):
         #based on types of children, check my type.  Also, pass up
@@ -226,13 +227,47 @@ class AstNode():
                 
             
         elif(self.label == AST_ENDPOINT_FUNCTION_SECTION):
+            # this just type checks the headers of each function.
+            # Have to insert the header of each function
+            for s in self.children:
+                s.functionDeclarationTypeCheck(progText,typeStack);
 
-            # probably want to type check each of these separately???;
+            # now we type check the bodies of each function
             for s in self.children:
                 s.typeCheck(progText,typeStack);
-
+                
                 
         elif (self.label == AST_PUBLIC_FUNCTION):
+            print('\n\nBehram error: have not figured out how to type check ast_public_function\n\n');
+        elif(self.label == AST_FUNCTION):
+            print('\n\nBehram error: have not figured out how to type check ast_function\n\n');
+        elif(self.label == AST_MSG_SEND_FUNCTION):
+            print('\n\nBehram error: have not figured out how to type check ast_msg_send_function\n\n');
+        elif(self.label == AST_MSG_RECEIVE_FUNCTION):
+            print('\n\nBehram error: have not figured out how to type check ast_msg_receive_function\n\n');
+
+            
+        #remove the new context that we had created.  Note: shared
+        #section is intentionally missing.  Want to maintain that 
+        #context while type-checking the endpoint sections.
+        #skip global section too.
+        if ((self.label == AST_ROOT) or
+            (self.label == AST_FUNCTION_BODY) or
+            (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
+            
+            typeStack.popContext();
+
+
+
+    def functionDeclarationTypeCheck(self, progText,typeStack):
+        '''
+        Takes a node of type public function, ast function, message
+        send function, or message receive function.  Does not set any
+        types itself, but rather loads functions into the typeStack
+        itself.
+        '''
+        
+        if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_FUNCTION)):
             funcName = self.children[0].value;
 
             #get return type
@@ -256,27 +291,15 @@ class AstNode():
 
             typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self.children[0].lineNo);
 
-        elif(self.label == AST_FUNCTION):
-            # s.children[1].typeCheck(progText,typeStack);
-            # funcType = getFunctionType(s.children[1].type);
-            # funcType = s.children[1].value;
-            print('\n\nBehram error: have not figured out how to parse ast_function\n\n');
         elif(self.label == AST_MSG_SEND_FUNCTION):
-            print('\n\nBehram error: have not figured out how to parse ast_msg_send_function\n\n');
+            print('\n\nBehram error: have not figured out how to function type check ast_msg_send_function\n\n');
         elif(self.label == AST_MSG_RECEIVE_FUNCTION):
-            print('\n\nBehram error: have not figured out how to parse ast_msg_receive_function\n\n');
+            print('\n\nBehram error: have not figured out how to function type check ast_msg_receive_function\n\n');
+        else:
+            print('\nError, sending an incorrect tag to be loaded into functionDeclarationTypeCheck\n');
+            assert(False);
 
-            
-        #remove the new context that we had created.  Note: shared
-        #section is intentionally missing.  Want to maintain that 
-        #context while type-checking the endpoint sections.
-        #skip global section too.
-        if ((self.label == AST_ROOT) or
-            (self.label == AST_FUNCTION_BODY) or
-            (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
-            
-            typeStack.popContext();
-
+        
 
 
 
