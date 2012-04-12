@@ -60,18 +60,18 @@ class TypeCheckContextStack():
         return None;
 
     
-    def addIdentifier(self,identifierName,identifierType,lineNum = None):
+    def addIdentifier(self,identifierName,identifierType,astNode,lineNum = None):
 
         if(len(self.stack) <= 1):
             print('\nError.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
             
-        self.stack[-1].addIdentifier(identifierName,identifierType,lineNum);
+        self.stack[-1].addIdentifier(identifierName,identifierType,astNode,lineNum);
 
     def isEndpoint(self,endpointName):
         return ((endpointName == self.endpoint1) or (endpointName == self.endpoint2));
 
-    def addFuncIdentifier(self,functionName,functionType,functionArgTypes,lineNum=None):
+    def addFuncIdentifier(self,functionName,functionType,functionArgTypes,astNode,lineNum=None):
         '''
         @param {string} functionName: name of function
         @param {string} functionType:
@@ -83,7 +83,7 @@ class TypeCheckContextStack():
             print('\nError.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
 
-        self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,lineNum);
+        self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,astNode,lineNum);
 
         
 class FuncContext():
@@ -101,7 +101,7 @@ class FuncContext():
         return val.getFuncMatchObject();
 
 
-    def addFuncIdentifier(self,funcIdentifierName,funcIdentifierType,funcArgTypes,lineNum):
+    def addFuncIdentifier(self,funcIdentifierName,funcIdentifierType,funcArgTypes,astNode,lineNum):
         '''
         If identifier already exists in this context, throw an error.
         Cannot have re-definition of existing type.
@@ -123,14 +123,15 @@ class FuncContext():
             print('\nError.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
             assert(False);
 
-        self.dict[funcIdentifierName] = FuncContextElement(funcIdentifierType,funcArgTypes,lineNum);
+        self.dict[funcIdentifierName] = FuncContextElement(funcIdentifierType,funcArgTypes,astNode,lineNum);
 
 
         
 class FuncContextElement():
-    def __init__ (self,funcIdentifierType,funcArgTypes,lineNum):
+    def __init__ (self,funcIdentifierType,funcArgTypes,astNode,lineNum):
         self.funcIdentifierType = funcIdentifierType;
         self.funcArgTypes = funcArgTypes;
+        self.astNode = astNode;
         self.lineNum = lineNum;
 
 
@@ -140,6 +141,9 @@ class FuncContextElement():
         '''
         return FuncMatchObject(self);
 
+
+    #FIXME: make consistent with astNode.  In one place, using
+    #lineNum, in another, lineNo.
     def getLineNum(self):
         return self.lineNum;
 
@@ -178,7 +182,7 @@ class Context():
         return val.getType();
 
         
-    def addIdentifier(self,identifierName,identifierType,lineNum):
+    def addIdentifier(self,identifierName,identifierType,astNode,lineNum):
         '''
         If identifier already exists in this context, throw an error.
         Cannot have re-definition of existing type.
@@ -194,12 +198,13 @@ class Context():
             print('\nError.  Unrecognized identifierType insertion: ' + identifierType + '\n');
             assert(False);
 
-        self.dict[identifierName] = ContextElement(identifierType,lineNum);
+        self.dict[identifierName] = ContextElement(identifierType,astNode,lineNum);
 
         
 class ContextElement():
-    def __init__ (self,identifierType,lineNum):
+    def __init__ (self,identifierType,astNode,lineNum):
         self.identifierType = identifierType;
+        self.astNode = astNode;
         self.lineNum = lineNum;
 
     def getType(self):

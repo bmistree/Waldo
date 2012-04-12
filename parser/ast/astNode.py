@@ -156,7 +156,7 @@ class AstNode():
                     errText += '.  Therefore, cannot name an identifier with this name.';
                     errorFunction(errText,[self],[currentLineNo],progText);
 
-                typeStack.addIdentifier(identifierName,self.type,currentLineNo);
+                typeStack.addIdentifier(identifierName,self.type,self,currentLineNo);
             
         elif(self.label == AST_NUMBER):
             self.type = TYPE_NUMBER;
@@ -212,7 +212,7 @@ class AstNode():
                     errMsg += 'assigned to type [' + rhsType + '].';
                     errorFunction(errMsg,[self],[currentLineNo],progText);
                 
-            typeStack.addIdentifier(name,declaredType,currentLineNo);
+            typeStack.addIdentifier(name,declaredType,self,currentLineNo);
             self.type = declaredType;
 
         elif(self.label == AST_IDENTIFIER):
@@ -298,18 +298,28 @@ class AstNode():
         for t in args:
             argTypeList.append(t.type);
 
-            if ((typeStack.getFuncIdentifierType(funcName) != None) or
-                typeStack.getIdentifierType(funcName) != None):
-                errMsg = 'Error trying to name a function "' + funcName;
-                errMsg += '".  Already have a function or variable with ';
-                errMsg += 'the same name.'
-                errorFunction(errMsg,[self.children[0]],[self.children[0].lineNo],progText);
 
-        typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self.children[0].lineNo);
+        prevFunc = typeStack.getFuncIdentifierType(funcName);
+        prevId = typeStack.getIdentifierType(funcName);
+        if ((prevFunc!= None) or (prevId != None)):
+            errMsg = 'Error trying to name a function "' + funcName;
+            errMsg += '".  Already have a function or variable with ';
+            errMsg += 'the same name.'
+            nodes = [self.children[0]];
+            lineNos = [self.children[0].lineNo];
+            if (prevFunc):
+                nodes.append(prevFunc.element.astNode);
+                lineNos.append(prevFunc.element.lineNum);
+            if (prevId):
+                nodes.append(prevId.astNode);
+                lineNos.append(prevId.lineNum);
+                
+            errorFunction(errMsg,nodes,lineNos,progText);
+            #errorFunction(errMsg,[self.children[0]],[self.children[0].lineNo],progText);
+        else:
+            typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self,self.children[0].lineNo);
 
         
-
-
 
             
     def toJSON(self,indentLevel=0,drawHigh=False):
