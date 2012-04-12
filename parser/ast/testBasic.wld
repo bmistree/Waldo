@@ -21,7 +21,7 @@ Server
         Bool a;
         Bool b = False;
 
-        MsgSend something (Bool a, Bool b)
+        MsgSend something3 (Bool a, Bool b)
         {
         Number c = 4;
         

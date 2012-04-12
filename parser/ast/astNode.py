@@ -266,38 +266,46 @@ class AstNode():
         types itself, but rather loads functions into the typeStack
         itself.
         '''
-        
-        if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_FUNCTION)):
-            funcName = self.children[0].value;
-
-            #get return type
-            self.children[1].typeCheck(progText,typeStack);
-            returnType = self.children[1].type;
-
-            #get types of function arguments
-            self.children[2].typeCheck(progText,typeStack);
-            args = self.children[2].children;
-            
-            argTypeList = [];
-            for t in args:
-                argTypeList.append(t.type);
-
-                if ((typeStack.getFuncIdentifierType(funcName) != None) or
-                    typeStack.getIdentifierType(funcName) != None):
-                    errMsg = 'Error trying to name a function "' + funcName;
-                    errMsg += '".  Already have a function or variable with ';
-                    errMsg += 'the same name.'
-                    errorFunction(errMsg,[self.children[0]],[self.children[0].lineNo],progText);
-
-            typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self.children[0].lineNo);
-
-        elif(self.label == AST_MSG_SEND_FUNCTION):
-            print('\n\nBehram error: have not figured out how to function type check ast_msg_send_function\n\n');
-        elif(self.label == AST_MSG_RECEIVE_FUNCTION):
-            print('\n\nBehram error: have not figured out how to function type check ast_msg_receive_function\n\n');
-        else:
+        if ((self.label != AST_PUBLIC_FUNCTION) and
+            (self.label != AST_FUNCTION) and
+            (self.label != AST_MSG_SEND_FUNCTION) and
+            (self.label != AST_MSG_RECEIVE_FUNCTION)):
             print('\nError, sending an incorrect tag to be loaded into functionDeclarationTypeCheck\n');
             assert(False);
+
+            
+        funcName = self.children[0].value;            
+
+
+        if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_FUNCTION)):
+            #get declared return type (only applicable for functions and public functions)
+            self.children[1].typeCheck(progText,typeStack);
+            returnType = self.children[1].type;
+            argDeclIndex = 2;
+        else:
+            #msg send and msg receive functions do not have declared
+            #return types (for now).  use the return type for each
+            returnType = TYPE_MSG_SEND_FUNCTION if (self.label == AST_MSG_SEND_FUNCTION) else TYPE_MSG_RECEIVE_FUNCTION;
+            argDeclIndex = 1;
+
+
+
+        #get types of function arguments
+        self.children[argDeclIndex].typeCheck(progText,typeStack);
+        args = self.children[argDeclIndex].children;
+            
+        argTypeList = [];
+        for t in args:
+            argTypeList.append(t.type);
+
+            if ((typeStack.getFuncIdentifierType(funcName) != None) or
+                typeStack.getIdentifierType(funcName) != None):
+                errMsg = 'Error trying to name a function "' + funcName;
+                errMsg += '".  Already have a function or variable with ';
+                errMsg += 'the same name.'
+                errorFunction(errMsg,[self.children[0]],[self.children[0].lineNo],progText);
+
+        typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self.children[0].lineNo);
 
         
 

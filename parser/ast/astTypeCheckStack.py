@@ -4,6 +4,9 @@ from astLabels import TYPE_BOOL;
 from astLabels import TYPE_STRING;
 from astLabels import TYPE_NUMBER;
 from astLabels import TYPE_NOTHING;
+from astLabels import TYPE_MSG_SEND_FUNCTION;
+from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
+
 
 
 class TypeCheckContextStack():
@@ -82,6 +85,7 @@ class TypeCheckContextStack():
 
         self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,lineNum);
 
+        
 class FuncContext():
     def __init__(self):
         self.dict = {};
@@ -112,8 +116,9 @@ class FuncContext():
         if ((funcIdentifierType != TYPE_BOOL)   and
             (funcIdentifierType != TYPE_NUMBER) and
             (funcIdentifierType != TYPE_STRING) and
-            (funcIdentifierType != TYPE_NOTHING)):
-
+            (funcIdentifierType != TYPE_NOTHING) and
+            (funcIdentifierType != TYPE_MSG_SEND_FUNCTION) and
+            (funcIdentifierType != TYPE_MSG_RECEIVE_FUNCTION)):
             
             print('\nError.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
             assert(False);

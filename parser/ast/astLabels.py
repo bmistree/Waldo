@@ -81,6 +81,9 @@ TYPE_NUMBER = 'Number';
 TYPE_STRING = 'String';
 TYPE_NOTHING = 'Nothing';
 
+TYPE_MSG_SEND_FUNCTION = 'MsgSendFunc';
+TYPE_MSG_RECEIVE_FUNCTION = 'MsgRecvFunc';
+
 #
 def genFunctionType(returnedType):
     return 'Function ' + returnedType;
