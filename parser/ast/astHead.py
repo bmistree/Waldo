@@ -155,7 +155,7 @@ if __name__ == '__main__':
                 helpArg = True;
 
         if (sys.argv[s] == '-h'):
-            helArg = True;
+            helpArg = True;
 
         if (sys.argv[s] == '-p'):
             printOutputArg = True;
