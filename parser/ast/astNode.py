@@ -113,10 +113,13 @@ class AstNode():
 
         elif(self.label == AST_TRACE_SECTION):
             '''
-            need to check that first part of all TraceItems correspond to an Endpoint.
+            need to check that first part of all TraceItems correspond
+            to an Endpoint.
             need to check that alternate between Endpoints
             need to check that no two traces begin with same TraceItem
-            need to check to ensure all functions referenced match with msg_send and msg_receive (probably can't do that part at this point.  Maybe later).
+            need to check to ensure all functions referenced match
+            with msg_send and msg_receive (probably can't do that part
+            at this point.  Maybe later).
             '''
             print('\nTo do: still must type check trace section\n');
 
@@ -147,6 +150,11 @@ class AstNode():
             if (existsAlready != None):
                 errorFunction('Already have an identifier named ' + identifierName,[self],[currentLineNo, existsAlready.lineNo],progText);
             else:
+                if (typeStack.getFunctionIdentifierType(identifierName)):
+                    errText = 'Already have a function named ' + identifierName;
+                    errText += '.  Therefore, cannot name an identifier with this name.';
+                    errorFunction(errText,[self],[currentLineNo],progText);
+
                 typeStack.addIdentifier(identifierName,self.type,currentLineNo);
             
         elif(self.label == AST_NUMBER):
@@ -216,12 +224,29 @@ class AstNode():
             
         elif(self.label == AST_ENDPOINT_FUNCTION_SECTION):
             #first check that all function names do not conflict.
+
+            probably want to type check each of these separately???;
+            
             for s in self.children:
                 funcName = s.children[0].value;
                 funcType = None;
                 if (s.label == AST_PUBLIC_FUNCTION):
                     s.children[1].checkType(progText,typeStack);
-                    funcType = getFunctionType(s.children[1].type);
+                    returnType = s.children[1].type;
+                    s.children[2].checkType(progText,typeStack);
+                    args = s.children[2];
+                    argTypeList = [];
+                    for t in args:
+                        argTypeList.push(t.type);
+
+                    if ((typeStack.getFuncIdentifierType(funcName) != None) or
+                        typeStack.getIdentifierType(funcName) != None):
+                        errMsg = 'Error trying to name a function ' + funcName;
+                        errMsg += '.  Already have a function or variable with ';
+                        errMsg += 'the same name.'
+                        errorFunction(errMsg,[s.children[0]],s.children[0].lineNo,progText);
+
+                    typeStack.addFuncIdentifier(funcName,returnType,argTypeList,s.children[0].lineNo);
 
                 elif(s.label == AST_FUNCTION):
                     s.children[1].checkType(progText,typeStack);
@@ -229,7 +254,6 @@ class AstNode():
 
                     funcType = s.children[1].value;
                 elif(s.label == AST_MSG_SEND_FUNCTION):
-                    
                     pass;
                 elif(s.label == AST_MSG_RECEIVE_FUNCTION):
                     pass;
