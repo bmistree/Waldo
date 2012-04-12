@@ -49,7 +49,7 @@ class TypeCheckContextStack():
            -FuncMatch object if there is a function with the same name.
         '''
         for s in reversed(range(0,len(self.funcStack))):
-            lookupType = self.funcStack[s].getFunctionIdentifierType(identifierName);
+            lookupType = self.funcStack[s].getFuncIdentifierType(identifierName);
             if (lookupType != None):
                 return lookupType;
 
@@ -79,7 +79,7 @@ class TypeCheckContextStack():
             print('\nError.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
 
-        self.funcStack[-1].addFuncIdentifier(functionIdentifierName,functionIdentifierType,functionArgTypes,lineNum);
+        self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,lineNum);
 
 class FuncContext():
     def __init__(self):
@@ -95,7 +95,7 @@ class FuncContext():
         
         return val.getFuncMatchObject();
 
-    
+
     def addFuncIdentifier(self,funcIdentifierName,funcIdentifierType,funcArgTypes,lineNum):
         '''
         If identifier already exists in this context, throw an error.
@@ -111,7 +111,7 @@ class FuncContext():
         if ((funcIdentifierType != TYPE_BOOL)   and
             (funcIdentifierType != TYPE_NUMBER) and
             (funcIdentifierType != TYPE_STRING)):
-            
+
             print('\nError.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
             assert(False);
 
@@ -125,7 +125,7 @@ class FuncContextElement():
         self.funcArgTypes = funcArgTypes;
         self.lineNum = lineNum;
 
-        lkjs;
+
     def getFuncMatchObject(self):
         '''
         @returns {FuncMatchObject} 

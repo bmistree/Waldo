@@ -52,6 +52,13 @@ Server
             a = 2;
         }
 
+        /*
+        Public Function something (String a, Number b) Returns String
+        {
+            a = 2;
+        }*/
+
+        
         
 /*
         MsgReceive something (Bool a, Number f, String g)

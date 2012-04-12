@@ -150,7 +150,7 @@ class AstNode():
             if (existsAlready != None):
                 errorFunction('Already have an identifier named ' + identifierName,[self],[currentLineNo, existsAlready.lineNo],progText);
             else:
-                if (typeStack.getFunctionIdentifierType(identifierName)):
+                if (typeStack.getFuncIdentifierType(identifierName)):
                     errText = 'Already have a function named ' + identifierName;
                     errText += '.  Therefore, cannot name an identifier with this name.';
                     errorFunction(errText,[self],[currentLineNo],progText);
@@ -165,6 +165,9 @@ class AstNode():
             self.type = TYPE_BOOL;
         elif(self.label == AST_FUNCTION_CALL):
             print('\nNeed to finish type checking for AST_FUNCTION_CALL\n');
+
+        elif (self.label == AST_TYPE):
+            self.type = self.value;
 
             
         elif(self.label == AST_ENDPOINT):
@@ -223,54 +226,46 @@ class AstNode():
                 
             
         elif(self.label == AST_ENDPOINT_FUNCTION_SECTION):
-            #first check that all function names do not conflict.
 
-            probably want to type check each of these separately???;
-            
+            # probably want to type check each of these separately???;
             for s in self.children:
-                funcName = s.children[0].value;
-                funcType = None;
-                if (s.label == AST_PUBLIC_FUNCTION):
-                    s.children[1].checkType(progText,typeStack);
-                    returnType = s.children[1].type;
-                    s.children[2].checkType(progText,typeStack);
-                    args = s.children[2];
-                    argTypeList = [];
-                    for t in args:
-                        argTypeList.push(t.type);
+                s.typeCheck(progText,typeStack);
 
-                    if ((typeStack.getFuncIdentifierType(funcName) != None) or
-                        typeStack.getIdentifierType(funcName) != None):
-                        errMsg = 'Error trying to name a function ' + funcName;
-                        errMsg += '.  Already have a function or variable with ';
-                        errMsg += 'the same name.'
-                        errorFunction(errMsg,[s.children[0]],s.children[0].lineNo,progText);
-
-                    typeStack.addFuncIdentifier(funcName,returnType,argTypeList,s.children[0].lineNo);
-
-                elif(s.label == AST_FUNCTION):
-                    s.children[1].checkType(progText,typeStack);
-                    funcType = getFunctionType(s.children[1].type);
-
-                    funcType = s.children[1].value;
-                elif(s.label == AST_MSG_SEND_FUNCTION):
-                    pass;
-                elif(s.label == AST_MSG_RECEIVE_FUNCTION):
-                    pass;
-                else:
-                    errMsg = 'When parsing enpoint functions, do not know label ';
-                    errMsg += 'type ' + s.label;
-                    print('\n\n');
-                    print(errMsg);
-                    print('\n\n');
-                    assert(False);
-
-                self.type = funcType;
-                funcType = s.children[0]
                 
-            lkjs;
+        elif (self.label == AST_PUBLIC_FUNCTION):
+            funcName = self.children[0].value;
+
+            #get return type
+            self.children[1].typeCheck(progText,typeStack);
+            returnType = self.children[1].type;
+
+            #get types of function arguments
+            self.children[2].typeCheck(progText,typeStack);
+            args = self.children[2].children;
             
-            print('\nStill need to perform type checking on endpoint function section\n');
+            argTypeList = [];
+            for t in args:
+                argTypeList.append(t.type);
+
+                if ((typeStack.getFuncIdentifierType(funcName) != None) or
+                    typeStack.getIdentifierType(funcName) != None):
+                    errMsg = 'Error trying to name a function "' + funcName;
+                    errMsg += '".  Already have a function or variable with ';
+                    errMsg += 'the same name.'
+                    errorFunction(errMsg,[self.children[0]],[self.children[0].lineNo],progText);
+
+            typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self.children[0].lineNo);
+
+        elif(self.label == AST_FUNCTION):
+            # s.children[1].typeCheck(progText,typeStack);
+            # funcType = getFunctionType(s.children[1].type);
+            # funcType = s.children[1].value;
+            print('\n\nBehram error: have not figured out how to parse ast_function\n\n');
+        elif(self.label == AST_MSG_SEND_FUNCTION):
+            print('\n\nBehram error: have not figured out how to parse ast_msg_send_function\n\n');
+        elif(self.label == AST_MSG_RECEIVE_FUNCTION):
+            print('\n\nBehram error: have not figured out how to parse ast_msg_receive_function\n\n');
+
             
         #remove the new context that we had created.  Note: shared
         #section is intentionally missing.  Want to maintain that 
@@ -281,9 +276,6 @@ class AstNode():
             (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
             
             typeStack.popContext();
-
-
-
 
 
 
@@ -366,7 +358,9 @@ class AstNode():
 
 
 ERROR_NUM_LINES_EITHER_SIDE = 4;
-        
+
+
+
 def errorFunction(errorString,astNodes,lineNumbers,progText):
     '''
     @param {String} errorString -- Text associated with error.
