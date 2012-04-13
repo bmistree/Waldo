@@ -360,11 +360,18 @@ class AstNode():
                 errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
             else:
                 typeStack.addIdentifier(argName,argType,self,self.lineNo);
+
+
+        elif (self.label == AST_FUNCTION_BODY_STATEMENT):
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
+            
                 
         else:
             print('\nLabels that still need type checking: ');
             print('\t' + self.label);
                 
+
             
             
         #remove the new context that we had created.  Note: shared

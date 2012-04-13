@@ -17,7 +17,7 @@ Shared
 
 Server
 {
-        Number c = 4;
+        Number topC = 4;
 
         Bool topA;
         Bool topB = False;
