@@ -89,11 +89,13 @@ def p_SharedSection(p):
                      | SHARED CURLY_LEFT CURLY_RIGHT''';
 
     p[0] = AstNode(AST_SHARED_SECTION,p.lineno(0),p.lexpos(0));
-    if (not isEmptyNode(p[3])):
-        p[0].addChildren(p[3].getChildren());
-    else:
-        p[0].addChild(p[3]);
+    if (len(p) == 5):
+        if (not isEmptyNode(p[3])):
+            p[0].addChildren(p[3].getChildren());
+        else:
+            p[0].addChild(p[3]);
 
+            
 def p_SharedBodySection(p):
     '''SharedBodySection : AnnotatedDeclaration SEMI_COLON SharedBodySection
                          | AnnotatedDeclaration SEMI_COLON'''
