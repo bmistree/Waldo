@@ -270,6 +270,9 @@ class AstNode():
             funcName = self.children[0].value;            
 
             stackFunc = typeStack.getFuncIdentifierType(funcName);
+
+            self.lineNo = self.children[0].lineNo;
+
             
             if (stackFunc == None):
                 errMsg = 'Behram error: should have inserted function ';
@@ -279,11 +282,42 @@ class AstNode():
                 print(errMsg);
                 print('\n\n');
                 assert(False);
-
             
             typeStack.setShouldReturn(stackFunc.getReturnType());
             
+            #insert passed in arguments into context;
+            funcDeclArgListIndex = 2;
+            
+            for s in self.children[funcDeclArgListIndex].children:
 
+                #check to ensure that this argument name does not
+                #collide with another
+                identifier = s.children[1];
+                identifierName = identifier.value;
+
+                
+                collisionObj = typeStack.checkCollision(identifierName,self);
+
+                if (collisionObj != None):
+                    #FIXME: for this error message, may want to
+                    #re-phrase with something about scope, so do not
+                    #take the wrong error message away.
+                    
+                    errMsg = 'Error trying to name an argument to your ';
+                    errMsg += 'function "' + identifierName + '".  ';
+                    errMsg += '  You already have a function or variable ';
+                    errMsg += 'with the same name.';
+
+                    errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
+                else:
+                    typer = s.children[0]; #using "typer" instead of "type" b/c "type" is reserved
+                    typerName = typer.value;
+                    typeStack.addIdentifier(identifierName,typerName,s,s.lineNo);
+            
+
+            # type check the actual function body
+            print('\nStill need to type check function body\n');
+            #lkjs;
             
             ## remove the created type context
             typeStack.popContext();
@@ -341,7 +375,14 @@ class AstNode():
 
 
         #get types of function arguments
+            
+        #add a context to type stack for arg declarations and pop it
+        #later so that arg decl arguments do not persist after the
+        #type check of arg text.
+        typeStack.pushContext();
         self.children[argDeclIndex].typeCheck(progText,typeStack);
+        typeStack.popContext();
+
         args = self.children[argDeclIndex].children;
             
         argTypeList = [];

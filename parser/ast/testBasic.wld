@@ -11,17 +11,18 @@ Traces
 
 Shared
 {
-        Server Controls Bool a;
-        Server Controls Bool b = False; 
+/*        Server Controls Bool a;*/
+/*        Server Controls Bool b = False; */
 }
 
 Server
 {
-        Number c = 4;   
+        Number c = 4;
+
         Bool a;
         Bool b = False;
         
-        MsgSend something (Bool a, Bool b)
+        MsgSend somethinger (Bool a, Bool b)
         {
         Number c = 4;
         

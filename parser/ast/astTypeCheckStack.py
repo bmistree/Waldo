@@ -24,6 +24,7 @@ class TypeCheckContextStack():
     def pushContext(self):
         self.stack.append(Context());
         self.funcStack.append(FuncContext());
+
     def popContext(self):
         if (len(self.stack) <= 0):
             print('\nError.  Empty type context stack.  Cannot pop\n');
@@ -47,8 +48,36 @@ class TypeCheckContextStack():
         return None;
 
 
+    def checkCollision(self,identifierName,astNode):
+        '''
+        @param {string} identifierName -- The name of the
+        variable/function we want to determine if there is a collision
+        for.
+
+        @param {AstNode} astNode -- Needed to pass into constructor of
+        CollisionObject (returned if there is a collision; see below).
+        
+        @return none if no variable or function in the current or
+        parent contexts has the same name as identifierName.
+        Otherwise, returns a CollisionObject, from which can get error
+        message information.
+        '''
+
+        idElement = self.getIdentifierElement(identifierName);
+        funcElement = self.getFuncIdentifierType(identifierName);
+
+        if (idElement == None) and (funcElement == None):
+            #no collision
+            return None;
+
+        #there was a collision: generate CollisionObject and return.
+        return CollisionObject(astNode,idElement,funcElement);
+
+
     def getIdentifierElement(self,identifierName):
         '''
+        Usage: should only be called internal to this class.
+        
         @param {String} identifierName The name of the identifier that
         we're looking up in the memory store.
 
@@ -274,3 +303,29 @@ class ContextElement():
 
     def getLineNum(self):
         return self.lineNum;
+
+
+
+class CollisionObject():
+    '''
+    Holds data for error message print outs when there is a collision
+    between variable/function names in declarations.
+    '''
+    def __init__(self,astNode,idElement,funcElement):
+        '''
+        @param {ContextElement or None} idElement
+        @param {FuncContextElement or None} funcElement
+
+        Elements that the declaration in astNode collided with.
+        '''
+        self.nodes = [astNode];
+        self.lineNos = [astNode.lineNo];
+        
+        if (idElement != None):
+            self.nodes.append(idElement.astNode);
+            self.lineNos.append(idElement.lineNum);
+
+        if (funcElement != None):
+            self.nodes.append(funcElement.astNode);
+            self.lineNos.appen(funcElement.lineNum);
+        
