@@ -1,0 +1,26 @@
+Permit commas in numbers.  There's an old paper on novices learning
+PASCAL (I think?) that says this could be a big deal.
+
+Maybe have types for different types of time.  1s versus 1 minute,
+etc.  Addition and subtraction operators would be defined on them
+easily.
+
+
+
+Error Reporting:
+
+The error message should contain a link to the section of the
+rules that the statement violates.  (high-level) to assess: whether
+that reduces the frequency of bugs faster.
+
+
+Have waldo scripts compiled by a server, make waldo scripts a
+service.  This way, can see how it's being used, common bugs, and
+evolve error messages, and feedback.
+
+Compiler error messages are doing interesting things, such as
+reporting function text/listing as part of error message, when have a
+collision, shows where collision is, etc.  These are independently
+interesting questions.
+
+
