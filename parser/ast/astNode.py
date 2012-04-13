@@ -312,31 +312,10 @@ class AstNode():
                 errMsg += 'type when type checking functions\n';
                 print(errMsg);
                 
-            
-            for s in self.children[funcDeclArgListIndex].children:
 
-                #check to ensure that this argument name does not
-                #collide with another
-                identifier = s.children[1];
-                identifierName = identifier.value;
-                
-                collisionObj = typeStack.checkCollision(identifierName,self);
-
-                if (collisionObj != None):
-                    #FIXME: for this error message, may want to
-                    #re-phrase with something about scope, so do not
-                    #take the wrong error message away.
-                    
-                    errMsg = 'Error trying to name an argument to your ';
-                    errMsg += 'function "' + identifierName + '".  ';
-                    errMsg += 'You already have a function or variable ';
-                    errMsg += 'with the same name.';
-
-                    errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
-                else:
-                    typer = s.children[0]; #using "typer" instead of "type" b/c "type" is reserved
-                    typerName = typer.value;
-                    typeStack.addIdentifier(identifierName,typerName,s,s.lineNo);
+            #add all arguments passed in in function declaration to
+            #current context.
+            self.children[funcDeclArgListIndex].typeCheck(progText,typeStack);
             
 
             # type check the actual function body
@@ -347,7 +326,45 @@ class AstNode():
 
 
         elif(self.label == AST_FUNCTION_BODY):
-            print('\nBehram error: got into ast function body.  Still need to evaluate it.\n');
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
+
+        elif (self.label == AST_FUNCTION_DECL_ARGLIST):
+            #iterate through each individual declared argument
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
+
+
+        elif (self.label == AST_FUNCTION_DECL_ARG):
+            '''
+            for declared argument, checks for its collision
+            with existing variables and functions, and then inserts
+            it into a typestack context.
+            '''
+            self.lineNo = self.children[0].lineNo;
+            argType = self.children[0].value;
+            argName = self.children[1].value;
+
+            collisionObj = typeStack.checkCollision(argName,self);
+
+            if (collisionObj != None):
+                #FIXME: for this error message, may want to
+                #re-phrase with something about scope, so do not
+                #take the wrong error message away.
+                    
+                errMsg = 'Error trying to name an argument "';
+                errMsg += argName + '" in your function.  ';
+                errMsg += 'You already have a function or variable ';
+                errMsg += 'with the same name.';
+
+                errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
+            else:
+                typeStack.addIdentifier(argName,argType,self,self.lineNo);
+                
+        else:
+            print('\nLabels that still need type checking: ');
+            print('\t' + self.label);
+                
             
             
         #remove the new context that we had created.  Note: shared

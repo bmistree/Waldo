@@ -22,7 +22,7 @@ Server
         Bool topA;
         Bool topB = False;
         
-        MsgSend somethinger (Bool a, Bool b)
+        MsgSend somethinger (Bool top, Bool b)
         {
         Number c = 4;
         
