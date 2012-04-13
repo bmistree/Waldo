@@ -62,6 +62,29 @@ class TypeCheckContextStack():
         return None;
 
 
+    def setShouldReturn(self,typeToReturn):
+        '''
+        @param {string} typeToReturn
+        
+        Any return statements that are made within the current context
+        should have the type typeToReturn.
+        '''
+        if (len(self.stack) <= 0):
+            errMsg = '\nError.  Empty type context stack.  ';
+            errMsg += 'Cannot set value should be returning\n';
+            print(errMsg);
+            assert(False);
+
+        self.stack[-1].setShouldReturn(typeToReturn);
+
+    def getShouldReturn(self):
+        if (len(self.stack) <= 0):
+            errMsg = '\nError.  Empty type context stack.  ';
+            errMsg += 'Cannot set value should be returning\n';
+            print(errMsg);
+            assert(False);
+        
+        return self.stack[-1].getShouldReturn();
 
     
     def getFuncIdentifierType(self,identifierName):
@@ -183,12 +206,24 @@ class FuncMatchObject():
         
         return True;
 
+    def getReturnType(self):
+        return self.element.funcIdentifierType;
+    
         
         
 class Context():
     def __init__(self):
         self.dict = {};
+        self.typeToReturn = None;
 
+
+    def setShouldReturn(self,typeToReturn):
+        self.typeToReturn = typeToReturn;
+
+    def getShouldReturn(self):
+        return self.typeToReturn;
+
+        
     def getIdentifierElement(self,identifierName):
         '''
         @returns None if doesn't exist.
@@ -232,6 +267,7 @@ class ContextElement():
         self.identifierType = identifierType;
         self.astNode = astNode;
         self.lineNum = lineNum;
+
 
     def getType(self):
         return self.identifierType;

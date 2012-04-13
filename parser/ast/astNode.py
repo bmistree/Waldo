@@ -260,6 +260,34 @@ class AstNode():
                 
                 
         elif (self.label == AST_PUBLIC_FUNCTION):
+            '''
+            type checks the body of the function
+            '''
+
+            ## create a new type context to insert intermediate data
+            ## in.  context is popped at the end of the elif statement.
+            typeStack.pushContext();
+            funcName = self.children[0].value;            
+
+            stackFunc = typeStack.getFuncIdentifierType(funcName);
+            
+            if (stackFunc == None):
+                errMsg = 'Behram error: should have inserted function ';
+                errMsg += 'with name "' + funcName + '" into type stack ';
+                errMsg += 'before type checking function body.'
+                print('\n\n');
+                print(errMsg);
+                print('\n\n');
+                assert(False);
+
+            
+            typeStack.setShouldReturn(stackFunc.getReturnType());
+            
+
+            
+            ## remove the created type context
+            typeStack.popContext();
+
             print('\n\nBehram error: have not figured out how to type check ast_public_function\n\n');
         elif(self.label == AST_FUNCTION):
             print('\n\nBehram error: have not figured out how to type check ast_function\n\n');
