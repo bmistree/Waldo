@@ -64,11 +64,15 @@ class TypeCheckContextStack():
         '''
 
         idElement = self.getIdentifierElement(identifierName);
-        funcElement = self.getFuncIdentifierType(identifierName);
+        funcMatchObj = self.getFuncIdentifierType(identifierName);
 
-        if (idElement == None) and (funcElement == None):
+        if (idElement == None) and (funcMatchObj == None):
             #no collision
             return None;
+
+        funcElement = None;
+        if (funcMatchObj != None):
+            funcElement = funcMatchObj.element;
 
         #there was a collision: generate CollisionObject and return.
         return CollisionObject(astNode,idElement,funcElement);
@@ -327,5 +331,5 @@ class CollisionObject():
 
         if (funcElement != None):
             self.nodes.append(funcElement.astNode);
-            self.lineNos.appen(funcElement.lineNum);
+            self.lineNos.append(funcElement.lineNum);
         

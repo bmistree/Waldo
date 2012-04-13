@@ -11,16 +11,16 @@ Traces
 
 Shared
 {
-/*        Server Controls Bool a;*/
-/*        Server Controls Bool b = False; */
+        Server Controls Bool sharedA;
+        Server Controls Bool sharedB = False; 
 }
 
 Server
 {
         Number c = 4;
 
-        Bool a;
-        Bool b = False;
+        Bool topA;
+        Bool topB = False;
         
         MsgSend somethinger (Bool a, Bool b)
         {
@@ -48,7 +48,7 @@ Server
         Function something2 (String a, Number b) Returns Nothing
         {}
 
-        Public Function something (String a, Number b) Returns String
+        Public Function something (String aer, Number ber) Returns String
         {
             a = 2;
         }

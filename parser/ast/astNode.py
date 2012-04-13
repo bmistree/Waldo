@@ -68,13 +68,17 @@ class AstNode():
         elif(self.label == AST_ROOT):
             typeStack = TypeCheckContextStack();
 
+            
         if ((self.label == AST_ROOT) or
-            (self.label == AST_FUNCTION_BODY) or
             (self.label == AST_SHARED_SECTION) or
             (self.label == AST_ENDPOINT_GLOBAL_SECTION) or
             (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
             #each of these create new contexts.  don't forget to
             #remove several of them at the bottom of the function.
+            #note: do not have ast_function_body here because need to
+            #create a new context before get into function body so
+            #that we can catch arguments passed into the function.
+            
             typeStack.pushContext();
 
 
@@ -258,10 +262,15 @@ class AstNode():
             for s in self.children:
                 s.typeCheck(progText,typeStack);
                 
-                
-        elif (self.label == AST_PUBLIC_FUNCTION):
+
+        elif ((self.label == AST_PUBLIC_FUNCTION) or
+              (self.label == AST_FUNCTION) or
+              (self.label == AST_MSG_SEND_FUNCTION) or
+              (self.label == AST_MSG_RECEIVE_FUNCTION)):
             '''
-            type checks the body of the function
+            begins type check for body of the function, this code
+            pushes arguments into context and then calls recursive
+            type check on function body itself.
             '''
 
             ## create a new type context to insert intermediate data
@@ -270,9 +279,10 @@ class AstNode():
             funcName = self.children[0].value;            
 
             stackFunc = typeStack.getFuncIdentifierType(funcName);
-
+            
+            #set my line number to be the line number of when the
+            #function type was declared.
             self.lineNo = self.children[0].lineNo;
-
             
             if (stackFunc == None):
                 errMsg = 'Behram error: should have inserted function ';
@@ -282,11 +292,26 @@ class AstNode():
                 print(errMsg);
                 print('\n\n');
                 assert(False);
-            
+
+            #when we are checking function body, any return statement
+            #that we hit should return something of the type specfied
+            #by the return type here.
             typeStack.setShouldReturn(stackFunc.getReturnType());
-            
+
+
             #insert passed in arguments into context;
-            funcDeclArgListIndex = 2;
+            
+            if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_FUNCTION)):
+                funcDeclArgListIndex = 2;
+                funcBodyIndex = 3;
+            elif ((self.label == AST_MSG_SEND_FUNCTION) or (self.label == AST_MSG_RECEIVE_FUNCTION)):
+                funcDeclArgListIndex = 1;
+                funcBodyIndex = 2;
+            else:
+                errMsg = '\nBehram error: invalid function ';
+                errMsg += 'type when type checking functions\n';
+                print(errMsg);
+                
             
             for s in self.children[funcDeclArgListIndex].children:
 
@@ -294,7 +319,6 @@ class AstNode():
                 #collide with another
                 identifier = s.children[1];
                 identifierName = identifier.value;
-
                 
                 collisionObj = typeStack.checkCollision(identifierName,self);
 
@@ -305,7 +329,7 @@ class AstNode():
                     
                     errMsg = 'Error trying to name an argument to your ';
                     errMsg += 'function "' + identifierName + '".  ';
-                    errMsg += '  You already have a function or variable ';
+                    errMsg += 'You already have a function or variable ';
                     errMsg += 'with the same name.';
 
                     errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
@@ -316,27 +340,21 @@ class AstNode():
             
 
             # type check the actual function body
-            print('\nStill need to type check function body\n');
-            #lkjs;
+            self.children[funcBodyIndex].typeCheck(progText,typeStack);
             
             ## remove the created type context
             typeStack.popContext();
 
-            print('\n\nBehram error: have not figured out how to type check ast_public_function\n\n');
-        elif(self.label == AST_FUNCTION):
-            print('\n\nBehram error: have not figured out how to type check ast_function\n\n');
-        elif(self.label == AST_MSG_SEND_FUNCTION):
-            print('\n\nBehram error: have not figured out how to type check ast_msg_send_function\n\n');
-        elif(self.label == AST_MSG_RECEIVE_FUNCTION):
-            print('\n\nBehram error: have not figured out how to type check ast_msg_receive_function\n\n');
 
+        elif(self.label == AST_FUNCTION_BODY):
+            print('\nBehram error: got into ast function body.  Still need to evaluate it.\n');
+            
             
         #remove the new context that we had created.  Note: shared
         #section is intentionally missing.  Want to maintain that 
         #context while type-checking the endpoint sections.
         #skip global section too.
         if ((self.label == AST_ROOT) or
-            (self.label == AST_FUNCTION_BODY) or
             (self.label == AST_ENDPOINT_FUNCTION_SECTION)):
             
             typeStack.popContext();
@@ -359,7 +377,8 @@ class AstNode():
 
             
         funcName = self.children[0].value;            
-
+        self.lineNo = self.children[0].lineNo;
+        
 
         if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_FUNCTION)):
             #get declared return type (only applicable for functions and public functions)
@@ -389,25 +408,18 @@ class AstNode():
         for t in args:
             argTypeList.append(t.type);
 
-
-        prevFunc = typeStack.getFuncIdentifierType(funcName);
-        prevId = typeStack.getIdentifierElement(funcName);
-        if ((prevFunc!= None) or (prevId != None)):
+        collisionObj = typeStack.checkCollision(funcName,self);
+        if (collisionObj != None):
+            #FIXME: for this error message, may want to
+            #re-phrase with something about scope, so do not
+            #take the wrong error message away.
             errMsg = 'Error trying to name a function "' + funcName;
             errMsg += '".  Already have a function or variable with ';
             errMsg += 'the same name.'
-            nodes = [self.children[0]];
-            lineNos = [self.children[0].lineNo];
-            if (prevFunc):
-                nodes.append(prevFunc.element.astNode);
-                lineNos.append(prevFunc.element.lineNum);
-            if (prevId):
-                nodes.append(prevId.astNode);
-                lineNos.append(prevId.lineNum);
-                
-            errorFunction(errMsg,nodes,lineNos,progText);
+
+            errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
         else:
-            typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self,self.children[0].lineNo);
+            typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self,self.lineNo);
 
         
 
