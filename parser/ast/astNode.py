@@ -147,15 +147,16 @@ class AstNode():
 
             #actually store the new type
             identifierName = self.children[2].value;
-            existsAlready = typeStack.getIdentifierType(identifierName);
+            existsAlready = typeStack.getIdentifierElement(identifierName);
             if (existsAlready != None):
                 errorFunction('Already have an identifier named ' + identifierName,[self],[currentLineNo, existsAlready.lineNo],progText);
             else:
                 if (typeStack.getFuncIdentifierType(identifierName)):
                     errText = 'Already have a function named ' + identifierName;
                     errText += '.  Therefore, cannot name an identifier with this name.';
-                    errorFunction(errText,[self],[currentLineNo],progText);
+                    errorFunction(errText,[self,existsAlready.astNode],[currentLineNo,existsAlready.lineNo],progText);
 
+                    
                 typeStack.addIdentifier(identifierName,self.type,self,currentLineNo);
             
         elif(self.label == AST_NUMBER):
@@ -207,11 +208,32 @@ class AstNode():
                 self.children[2].typeCheck(progText,typeStack);
                 rhsType = self.children[2].type;
                 if (rhsType != declaredType):
-                    errMsg = 'Type mismatch for variable named ' + name + '.';
+                    errMsg = 'Type mismatch for variable named "' + name + '".';
                     errMsg += '  Declared with type [' + declaredType + '], but ';
                     errMsg += 'assigned to type [' + rhsType + '].';
                     errorFunction(errMsg,[self],[currentLineNo],progText);
-                
+
+                    
+            #check if already have a function or variable with the
+            #targetted name.
+            prevId = typeStack.getIdentifierElement(name);
+            prevFunc = typeStack.getFuncIdentifierType(name);
+            if ((prevId != None) or (prevFunc != None)):
+                nodes =[self];
+                lineNos = [currentLineNo];
+                if (prevId != None):
+                    nodes.append(prevId.astNode);
+                    lineNos.append(prevId.lineNum);
+                if (prevFunc != None):
+                    nodes.append(prevFunc.element.astNode);
+                    lineNos.append(prevId.element.lineNum);
+
+                errMsg = 'Error trying to name a variable "' + name;
+                errMsg += '".  Already have a function or variable with ';
+                errMsg += 'the same name.'
+                errorFunction(errMsg,nodes,lineNos,progText);
+                    
+                    
             typeStack.addIdentifier(name,declaredType,self,currentLineNo);
             self.type = declaredType;
 
@@ -300,7 +322,7 @@ class AstNode():
 
 
         prevFunc = typeStack.getFuncIdentifierType(funcName);
-        prevId = typeStack.getIdentifierType(funcName);
+        prevId = typeStack.getIdentifierElement(funcName);
         if ((prevFunc!= None) or (prevId != None)):
             errMsg = 'Error trying to name a function "' + funcName;
             errMsg += '".  Already have a function or variable with ';
@@ -315,7 +337,6 @@ class AstNode():
                 lineNos.append(prevId.lineNum);
                 
             errorFunction(errMsg,nodes,lineNos,progText);
-            #errorFunction(errMsg,[self.children[0]],[self.children[0].lineNo],progText);
         else:
             typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self,self.children[0].lineNo);
 

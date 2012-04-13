@@ -46,6 +46,24 @@ class TypeCheckContextStack():
                 return lookupType;
         return None;
 
+
+    def getIdentifierElement(self,identifierName):
+        '''
+        @param {String} identifierName The name of the identifier that
+        we're looking up in the memory store.
+
+        @returns None if have no type information for that identifier.
+        Otherwise, returns ContextElement
+        '''
+        for s in reversed(range(0,len(self.stack))):
+            lookupType= self.stack[s].getIdentifierElement(identifierName);
+            if (lookupType != None):
+                return lookupType;
+        return None;
+
+
+
+    
     def getFuncIdentifierType(self,identifierName):
         '''
         @returns {FuncMatch object or None}
@@ -171,16 +189,24 @@ class Context():
     def __init__(self):
         self.dict = {};
 
-    def getIdentifierType(self,identifierName):
+    def getIdentifierElement(self,identifierName):
         '''
         @returns None if doesn't exist.
         '''
         val = self.dict.get(identifierName,None);
-        if (val == None):
-            return val;
-        
-        return val.getType();
+        return val;
 
+        
+    def getIdentifierType(self,identifierName):
+        '''
+        @returns None if doesn't exist.
+        '''
+
+        returner = self.getIdentifierElement(identifierName);
+        if (returner):
+            return returner.getType();
+        return returner;
+        
         
     def addIdentifier(self,identifierName,identifierType,astNode,lineNum):
         '''

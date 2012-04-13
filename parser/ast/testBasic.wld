@@ -20,7 +20,7 @@ Server
         Number c = 4;   
         Bool a;
         Bool b = False;
-
+        
         MsgSend something (Bool a, Bool b)
         {
         Number c = 4;
