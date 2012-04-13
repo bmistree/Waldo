@@ -213,6 +213,10 @@ def p_MsgReceiveFunction(p):
     p[0].addChildren([p[2],p[4]]);
     if (len(p) == 9):
         p[0].addChild(p[7]);
+    else:
+        #means that we had no function body, insert an impostor
+        #function body node.
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
 
 
 def p_MsgSendFunction(p):
@@ -222,7 +226,12 @@ def p_MsgSendFunction(p):
     p[0].addChildren([p[2],p[4]]);
     if (len(p) == 9):
         p[0].addChild(p[7]);
+    else:
+        #means that we had no function body, insert an impostor
+        #function body node.
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
 
+                      
     
 def p_Function(p):
     '''Function : FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
@@ -231,6 +240,10 @@ def p_Function(p):
     p[0].addChildren([p[2],p[7],p[4]]);
     if (len(p) == 11):
         p[0].addChild(p[9]);
+    else:
+        #means that we had no function body, insert an impostor
+        #function body node.
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
 
     
         
@@ -242,6 +255,12 @@ def p_PublicFunction(p):
     p[0].addChildren([p[3],p[8],p[5]]);
     if (len(p) == 12):
         p[0].addChild(p[10]);
+    else:
+        #means that we had no function body, insert an impostor
+        #function body node.
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
+
+                      
 
 def p_FunctionBody(p):
     '''FunctionBody : FunctionBody FunctionBodyStatement
