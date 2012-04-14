@@ -365,7 +365,40 @@ class AstNode():
         elif (self.label == AST_FUNCTION_BODY_STATEMENT):
             for s in self.children:
                 s.typeCheck(progText,typeStack);
+
+        elif (self.label == AST_ASSIGNMENT_STATEMENT):
+
+            lhs = self.children[0];
+            rhs = self.children[1];
+
+            lhsType = lhs.type;
+            if (lhsType == None):
+                errMsg = '\nError in assignment statement.  Left hand side ';
+                errMsg += 'has no type information.\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);
+
+            rhs.typeCheck(progText,typeStack);
+            rhsType = rhs.type;
+
+            if (rhsType == None):
+                errMsg = '\nError in assignment statement.  Right hand side ';
+                errMsg += 'has no type information.\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);
+
+                
+            if (lhsType != rhsType):
+                #FIXME: this should really identify *why* we inferred
+                #the type that we did.  Maybe where the variable was
+                #decalred too.
+                errMsg = '\nError in assignment statement.  Type of ';
+                errMsg += 'left-hand side (' + lhsType + ') does not ';
+                errMsg += 'match type of right-hand side (' + rhsType;
+                errMsg += ').\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);
+                
             
+            print('\nBehram error: Should finish checking assignment statement.\n');
+                
                 
         else:
             print('\nLabels that still need type checking: ');
