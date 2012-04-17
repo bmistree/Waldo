@@ -266,8 +266,11 @@ class AstNode():
                 errMsg += '.  Instead, has type ' + lhs.type + '\n';
                 errorFunction(errMsg, [self],[self.lineNo],progText);
 
-            
-            
+        elif (self.label == AST_ELSE_STATEMENT):
+            #type check else statement
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
+                
             
         elif(self.label == AST_BOOLEAN_CONDITION):
             self.lineNo = self.children[0].lineNo;
