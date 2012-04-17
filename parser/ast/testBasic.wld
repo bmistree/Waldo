@@ -25,31 +25,61 @@ Server
         MsgSend somethinger (Bool top, Bool b)
         {
             Number c;
-            c = 4;
+            Number r;
+            Number s;
+            Number d;
+            Number m;
+            Bool i = True;
             
-        }
-
-         /*
-        
-          If (i)
-             Bool a;
-          ElseIf (c Or d Or e And f Or g)
-          {
             c = 4;
-          }
-          ElseIf(d == e)
+
+          If (i)
+             c =1;
+
+          Bool keie;
+          keie = True Or False;
+          
+
+          If (i)
+             c=2;
+          Else
+             c=3;
+
+          If (i)
+             c=4;
+          ElseIf(i)
+             c=5;
+
+
+          Bool j = False;
+          Bool k = True;
+          Bool l = False;
+          
+          If (i)
+             c=6;
+          ElseIf (i Or j Or k And l Or b)
           {
+            c = 7;
+          }
+          ElseIf(d == c)
+          {
+            c=8;
+          /*
             d =4;
             m = d*d + 3-2;
-            r = a/b;
+            r = a/b;*/
           }
           Else
-            a =1;
+            c=9;
 
+
+
+            /*
             r = (2+3)*4;
             s = 2+3*4;
+            */
         }
-*/
+
 
         Function something2 (String a, Number b) Returns Nothing
         {}

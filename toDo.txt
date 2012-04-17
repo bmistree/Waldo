@@ -30,6 +30,9 @@ Notes:
    
 Questions:
 
+Shoudl decide whether should have basic initializers for variables or
+allow for more complex statements (returnable expressions).
+
 Annotation for shared data seems off.  Right now, just have one
 general CONTROLS annotation.  Can have more nuanced rules, where a
 piece of state can only be modified directly in a message response

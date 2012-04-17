@@ -175,7 +175,120 @@ class AstNode():
         elif (self.label == AST_TYPE):
             self.type = self.value;
 
+        elif (self.label == AST_CONDITION_STATEMENT):
+            #type check all children.  (type checks if, elseif, and
+            #else statements).
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
+
+        elif ((self.label == AST_IF_STATEMENT) or
+              (self.label == AST_ELSE_IF_STATEMENT)):
+            boolCond = self.children[0];
+            condBody = self.children[1];
+
+            boolCond.typeCheck(progText,typeStack);
+            if (boolCond.type != TYPE_BOOL):
+                errMsg = '\nError in If or ElseIf statement.  The condition ';
+                errMsg += 'must evaluate to a TrueFalse type.  Instead, ';
+
+                if (boolCond.type != None):
+                    errMsg += 'it evaluated to a type of ' + boolCond.type;
+                else:
+                    errMsg += 'we could not infer the type';
+                    
+                errMsg += '\n';
+                errorFunction(errMsg,[boolCond],[boolCond.lineNo],progText);            
+
+            condBody.typeCheck(progText,typeStack);
+
+
+        elif(self.label == AST_BOOL_EQUALS) or (self.label == AST_BOOL_NOT_EQUALS):
+            lhs = self.children[0];
+            rhs = self.children[1];
+            lhs.typeCheck(progText,typeStack);
+            rhs.typeCheck(progText,typeStack);
+            self.type = TYPE_BOOL;
+            self.lineNo = lhs.lineNo;
+            if (lhs.type == None):
+                errMsg = '\nError when checking equality. ';
+                errMsg += 'Cannot infer type of left-hand side of expression.\n';
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+                return;
+            if (rhs.type == None):
+                errMsg = '\nError when checking equality. ';
+                errMsg += 'Cannot infer type of right-hand side of expression.\n';
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+                return;
+
+            if (rhs.type != lhs.type):
+                errMsg = '\nError when checking equality.  Both left-hand side ';
+                errMsg += 'of expression and right-hand side of expression should ';
+                errMsg += 'have same type.  Instead, left-hand side has type ';
+                errMsg += lhs.type + ', and right-hand side has type ' + rhs.type;
+                errMsg += '\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);
+
+                
+        elif ((self.label == AST_AND) or (self.label == AST_OR)):
             
+            #keep track of separate expression types to simplify
+            #error-reporting.
+            expressionType = 'And';
+            if (self.label == AST_OR):
+                expressionType = 'Or';
+            
+            lhs = self.children[0];
+            rhs = self.children[1];
+            lhs.typeCheck(progText,typeStack);
+            rhs.typeCheck(progText,typeStack);
+            self.type = TYPE_BOOL;
+            self.lineNo = lhs.lineNo;
+            if (lhs.type == None):
+                errMsg = '\nError when checking ' + expressionType + '. ';
+                errMsg += 'Cannot infer type of left-hand side of expression.\n';
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+                return;
+            if (rhs.type == None):
+                errMsg = '\nError when checking ' + expressionType + '. ';
+                errMsg += 'Cannot infer type of right-hand side of expression.\n';
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+                return;
+
+            if (rhs.type != TYPE_BOOL):
+                errMsg = '\nError whe checking ' + expressionType + '. ';
+                errMsg += 'Right-hand side expression must be ' + TYPE_BOOL;
+                errMsg += '.  Instead, has type ' + rhs.type + '\n';
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+
+            if (lhs.type != TYPE_BOOL):
+                errMsg = '\nError whe checking ' + expressionType + '. ';
+                errMsg += 'Left-hand side expression must be ' + TYPE_BOOL;
+                errMsg += '.  Instead, has type ' + lhs.type + '\n';
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+
+            
+            
+            
+        elif(self.label == AST_BOOLEAN_CONDITION):
+            self.lineNo = self.children[0].lineNo;
+            self.children[0].typeCheck(progText,typeStack);
+            
+            if (self.children[0].type != TYPE_BOOL):
+                errMsg = '\nError in Boolean Condition.  Should have ';
+                errMsg += 'boolean type.  Instead, ';
+                if (self.children[0].type != None):
+                    errMsg += 'has type ' + self.children[0].type;
+                else:
+                    errMsg += 'cannot infer type';
+                errMsg += '.\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);
+            else:
+                self.type = self.children[0].type;
+
+        elif(self.label == AST_ELSE_IF_STATEMENTS):
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
+                
         elif(self.label == AST_ENDPOINT):
             #check if endpoint name matches previous endpoint name
             endName = self.children[0].value;
