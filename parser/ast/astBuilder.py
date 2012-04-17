@@ -432,17 +432,18 @@ def p_ParenthesizedExpression(p):
 def p_InternalReturnableExpression(p):    
     '''InternalReturnableExpression : NonBooleanStatement BooleanOperator InternalReturnableExpression
                                     | NonBooleanStatement'''
-    
-    p[0] = AstNode(AST_INTERNAL_RETURNABLE_EXPRESSION,p.lineno(0),p.lexpos(0));
-    if (len(p) == 4):
-        p[0].addChild(p[2]);
-        p[2].addChild(p[1]);
-        p[2].addChildren(p[3].getChildren());
-    elif(len(p) == 2):
+
+    #skip over internal_returnable_expression label
+    if (len(p) == 2):
+        p[0] = p[1];
+    elif (len(p) == 4):
+        p[0] = p[2];
         p[0].addChild(p[1]);
+        p[0].addChild(p[3]);
     else:
         print('\nIn InternalReturnableExpression, incorrect number of matches\n');
         assert(False);
+    
     
 def p_NonBooleanStatement(p):
     '''NonBooleanStatement : MultDivStatement PlusMinusOperator NonBooleanStatement

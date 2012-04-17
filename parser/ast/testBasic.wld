@@ -24,7 +24,12 @@ Server
         
         MsgSend somethinger (Bool top, Bool b)
         {
-        Number c = 4;
+            Number c;
+            c = 4;
+            
+        }
+
+         /*
         
           If (i)
              Bool a;
@@ -44,20 +49,16 @@ Server
             r = (2+3)*4;
             s = 2+3*4;
         }
+*/
 
         Function something2 (String a, Number b) Returns Nothing
         {}
 
         Public Function something (String aer, Number ber) Returns String
         {
-            a = 2;
+            ber = 2;
         }
 
-        /*
-        Public Function something (String a, Number b) Returns String
-        {
-            a = 2;
-        }*/
 
         
         

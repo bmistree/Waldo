@@ -206,6 +206,15 @@ class AstNode():
 
         elif(self.label == AST_DECLARATION):
             declaredType = self.children[0].value;
+            self.lineNo = self.children[0].lineNo;
+            
+            if (self.children[1].label != AST_IDENTIFIER):
+                errMsg = '\nError at declaration statement. ';
+                errMsg += 'Must have an identifier for left hand ';
+                errMsg += 'side of declaration.\n'
+                errorFunction(errMsg,[self],[currentLineNo],progText);
+                return;
+            
             name = self.children[1].value;
             currentLineNo = self.children[0].lineNo;
             if (len(self.children) == 3):
@@ -366,17 +375,34 @@ class AstNode():
             for s in self.children:
                 s.typeCheck(progText,typeStack);
 
+        elif (self.label == AST_STRING):
+            self.type = TYPE_STRING;
+        elif (self.label == AST_NUMBER):
+            self.type = TYPE_NUMBER;
+        elif (self.label == AST_BOOL):
+            self.type = TYPE_BOOL;
+
+            
         elif (self.label == AST_ASSIGNMENT_STATEMENT):
 
             lhs = self.children[0];
+            self.lineNo = lhs.lineNo;
+            
+            if (lhs.label != AST_IDENTIFIER):
+                errMsg = '\nError in assignment statement.  Can only assign ';
+                errMsg += 'to a variable name.  (Left hand side must be a variable\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);
+                return;
+                
             rhs = self.children[1];
 
-            lhsType = lhs.type;
+            lhsType = typeStack.getIdentifierType(lhs.value);
             if (lhsType == None):
                 errMsg = '\nError in assignment statement.  Left hand side ';
                 errMsg += 'has no type information.\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);
-
+                return;
+                
             rhs.typeCheck(progText,typeStack);
             rhsType = rhs.type;
 
@@ -384,7 +410,7 @@ class AstNode():
                 errMsg = '\nError in assignment statement.  Right hand side ';
                 errMsg += 'has no type information.\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);
-
+                return;
                 
             if (lhsType != rhsType):
                 #FIXME: this should really identify *why* we inferred
@@ -395,10 +421,7 @@ class AstNode():
                 errMsg += 'match type of right-hand side (' + rhsType;
                 errMsg += ').\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);
-                
-            
-            print('\nBehram error: Should finish checking assignment statement.\n');
-                
+
                 
         else:
             print('\nLabels that still need type checking: ');
