@@ -516,7 +516,7 @@ def p_FunctionCall(p):
     
 def p_FunctionArgList(p):
     '''FunctionArgList : ReturnableExpression 
-                       | FunctionDeclArgList COMMA ReturnableExpression 
+                       | FunctionArgList COMMA ReturnableExpression 
                        | Empty'''
     
     p[0] = AstNode(AST_FUNCTION_ARGLIST,p.lineno(0),p.lexpos(0));
