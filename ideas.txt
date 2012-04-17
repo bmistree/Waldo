@@ -6,6 +6,9 @@ etc.  Addition and subtraction operators would be defined on them
 easily.
 
 
+Rename types.  Strings and Bools really should not be Strings and
+Bools.  May be way to perform intermediate study on Mechanical Turk.
+
 
 Error Reporting:
 
