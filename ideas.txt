@@ -13,7 +13,6 @@ The error message should contain a link to the section of the
 rules that the statement violates.  (high-level) to assess: whether
 that reduces the frequency of bugs faster.
 
-
 Have waldo scripts compiled by a server, make waldo scripts a
 service.  This way, can see how it's being used, common bugs, and
 evolve error messages, and feedback.
@@ -23,4 +22,5 @@ reporting function text/listing as part of error message, when have a
 collision, shows where collision is, etc.  These are independently
 interesting questions.
 
-
+Maybe have a warning when performing equality tests on lists and
+maps.  Frequent challenge in equality testing.
