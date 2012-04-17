@@ -288,6 +288,7 @@ def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
     
     p[0] = AstNode(AST_CONDITION_STATEMENT,p.lineno(0),p.lexpos(0));
+
     p[0].addChildren([p[1],p[2],p[3]]);
 
 
@@ -320,7 +321,8 @@ def p_ElseStatement(p):
     if (len(p) == 3):
         p[0].addChild(p[2]);
     elif(len(p) == 2):
-        p[0].addChild(p[1]);
+        #ignore empty statement
+        pass;
     else:
         print('\nIncorrect match count in ElseStatement.\n');
         assert(False);
