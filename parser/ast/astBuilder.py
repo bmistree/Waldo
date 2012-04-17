@@ -279,7 +279,8 @@ def p_FunctionBody(p):
 def p_FunctionBodyStatement(p):
     '''FunctionBodyStatement : Declaration SEMI_COLON
                              | AssignmentStatement SEMI_COLON
-                             | ConditionStatement 
+                             | ConditionStatement
+                             | ReturnableExpression SEMI_COLON                             
     '''
     p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
@@ -373,15 +374,6 @@ def p_BooleanOperator(p):
         assert(False);
     
 
-    
-def emptyElseIf():
-    return AstNode(AST_ELSE_IF_STATEMENT,0,0);
-
-def emptyElse():
-    return AstNode(AST_ELSE_STATEMENT,0,0);
-
-def isElseIfStatement(p):
-    return p.type == AST_ELSE_IF_STATEMENT;
 
 def p_AssignmentStatement(p):
     '''AssignmentStatement : Identifier EQUALS ReturnableExpression
