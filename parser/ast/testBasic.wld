@@ -66,22 +66,23 @@ Server
           ElseIf(d == c)
           {
             c=8;
-            /*
+
             d =4;
             m = d*d + 3-2;
-            r = a/b;
-            */
+            r = d/d;
           }
           Else
             c=9;
 
 
-
-            /*
             r = (2+3)*4;
             s = 2+3*4;
-            */
+
+            String jf;
+            jf = "hi" + "oo";
+            
         }
+
 
 
         Function something2 (String a, Number b) Returns Nothing

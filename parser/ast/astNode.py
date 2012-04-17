@@ -270,8 +270,100 @@ class AstNode():
             #type check else statement
             for s in self.children:
                 s.typeCheck(progText,typeStack);
-                
+
+        elif(self.label == AST_PLUS):
+            #perform plus separately from other math operations to
+            #allow plus overload for concatenating strings.
+            lhs = self.children[0];
+            rhs = self.children[1];
+            self.lineNo = lhs.lineNo;
             
+            lhs.typeCheck(progText,typeStack);
+            rhs.typeCheck(progText,typeStack);
+
+            errSoFar = False;
+            if ((lhs.type != TYPE_NUMBER) and (lhs.type != TYPE_STRING)):
+                errMsg = '\nError with PLUS expression.  ';
+                errMsg += 'Left-hand side should be a Number or a String.  Instead, ';
+                if (lhs.type == None):
+                    errMsg += 'could not infer type.\n';
+                else:
+                    errMsg += 'inferred type ' + lhs.type + '.\n';
+                    
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+                errSoFar = True;
+
+            if ((rhs.type != TYPE_NUMBER) and (rhs.type != TYPE_STRING)):
+                errMsg = '\nError with PLUS expression.  ';
+                errMsg += 'Right-hand side should be a Number or a String.  Instead, ';
+                if (lhs.type == None):
+                    errMsg += 'could not infer type.\n';
+                else:
+                    errMsg += 'inferred type ' + rhs.type + '.\n';
+                    
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+                errSoFar = True;
+
+            #won't be able to do anything further without appropriate
+            #type information.
+            if (errSoFar):
+                return;
+
+            if (rhs.type != lhs.type):
+                errMsg = '\nError with PLUS expression.  Both the left- and ';
+                errMsg += 'right-hand sides should have the same type.  Instead, ';
+                errMsg += 'the left-hand side has type ' + lhs.type + ' and the ';
+                errMsg += 'right-hand side has type ' + rhs.type + '.\n';
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+
+            self.type = rhs.type;
+#check type checking of plus, minus, times, divide;
+
+            
+                
+        elif ((self.label == AST_MINUS) or (self.label == AST_MULTIPLY) or
+              (self.label == AST_DIVIDE)):
+            #left and right hand side should be numbers, returns a number.
+            
+            #for error reporting
+            expressionType  = 'MINUS';
+            if (self.label == AST_MULTIPLY):
+                expressionType = 'MULTIPLY';
+            elif(self.label == AST_DIVIDE):
+                expressionType = 'DIVIDE';
+                
+            lhs = self.children[0];
+            rhs = self.children[1];
+            self.lineNo = lhs.lineNo;
+            
+            lhs.typeCheck(progText,typeStack);
+            rhs.typeCheck(progText,typeStack);
+
+            self.type = TYPE_NUMBER;
+            
+            if (lhs.type != TYPE_NUMBER):
+                errMsg = '\nError with ' + expressionType + ' expression.  ';
+                errMsg += 'Left-hand side should be a Number.  Instead, ';
+                if (lhs.type == None):
+                    errMsg += 'could not infer type.\n';
+                else:
+                    errMsg += 'inferred type ' + lhs.type + '.\n';
+                    
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+                    
+            if (rhs.type != TYPE_NUMBER):
+                errMsg = '\nError with ' + expressionType + ' expression.  ';
+                errMsg += 'Right-hand side should be a Number.  Instead, ';
+                if (lhs.type == None):
+                    errMsg += 'could not infer type.\n';
+                else:
+                    errMsg += 'inferred type ' + rhs.type + '.\n';
+                    
+                errorFunction(errMsg, [self],[self.lineNo],progText);
+                
+
+              
+                
         elif(self.label == AST_BOOLEAN_CONDITION):
             self.lineNo = self.children[0].lineNo;
             self.children[0].typeCheck(progText,typeStack);
