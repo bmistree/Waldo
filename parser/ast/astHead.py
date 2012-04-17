@@ -11,7 +11,7 @@ class GraphicalOutArg():
         self.width = jsonDict.get('w',None);
         self.height = jsonDict.get('h',None);
         self.d3 = jsonDict.get('d3',None);
-
+        
 
 def getFileText(inputFile):
     filer = open(inputFile,'r');
@@ -49,7 +49,7 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
 
 
         
-def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg):
+def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg):
     ast,fileText = genAst(inputFilename);
     if (ast == None):
         print('\nError with program.  Please fix and continue\n');
@@ -67,7 +67,7 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg):
 
         if (not performedOperation):
             printUsage();
-        else:
+        elif(typeCheckArg):
             ast.typeCheck(fileText);
 
 
@@ -100,8 +100,11 @@ def printUsage():
        d3: (optional) <path to d3 so output html can link to it>,
        h: (optional) <int> height of image to be drawn onto output html (default 1000),
        w: (optional) <int> width of image to be drawn onto output html (default 1000)
+
     }
     
+    -tc  (optional) true/false whether to type check the function or not. defaults to True.
+
     -to <filename> spits printed json ast out. (text out)
 
     -p print the json ast directly to screen
@@ -114,6 +117,7 @@ def printUsage():
 
 
 
+    
 if __name__ == '__main__':
 
     inputFilenameArg = None;
@@ -121,6 +125,7 @@ if __name__ == '__main__':
     textOutputArg = None;
     helpArg = None;
     printOutputArg = None;
+    typeCheckArg = True;
     skipNext = False;
     
     for s in range(0,len(sys.argv)):
@@ -135,7 +140,6 @@ if __name__ == '__main__':
             else:
                 #will force printing usage without doing any work.
                 helpArg = True;
-
                 
         if (sys.argv[s] == '-go'):
             if (s+1 < len(sys.argv)):
@@ -145,7 +149,21 @@ if __name__ == '__main__':
                 #will force printing usage without doing any work.
                 helpArg = True;
 
+        if (sys.argv[s] == '-tc'):
+            if (s+1 < len(sys.argv)):
+                
+                typeCheckArg = sys.argv[s+1];
+                skipNext = True;
+                if((typeCheckArg == 'true') or (typeCheckArg == 'True')):
+                    typeCheckArg = True;
+                elif((typeCheckArg == 'false') or (typeCheckArg == 'False')):
+                    typeCheckArg = False;
+                else:
+                    helpArg = True;
+                    print('\nCannot parse type check option.\n');
+                    break;
 
+                
         if (sys.argv[s] == '-to'):
             if (s+1 < len(sys.argv)):
                 textOutputArg = sys.argv[s+1];
@@ -167,5 +185,5 @@ if __name__ == '__main__':
         if (inputFilenameArg == None):
             runTests();
         else:
-            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg);
+            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg);
             
