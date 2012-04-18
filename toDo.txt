@@ -1,25 +1,13 @@
 To Do:
 
-x * Graphically print asts
-x * Separate ast building code from overall parsing code.  want to put
-   a nice frontend on parsing.
-x * Textually print asts
-x * Pass line numbers through for ast building errors and into ast
-   nodes.
-x * Add some notation for trace message functions.
-x  * Do way better parser error reporting
-x    -Line number
-x    -Offending token
- * Add productions to ast builder.
-    -Add Trace constructions to ast builder
-    -Add Shared constructions to ast builder
- * Create test infrastructure for asts
+ * Improve error reporting for when provide incorrectly typed
+   arguments when calling function.
+ 
+ * Fix error that occurs when do not have any declared variables at
+   top of each endpoint section.
  
  * Need to better-define ReturnableExpression.  Right now, can only
    provide literals and function calls.
- * Resolve a bunch of shift-reduce conflicts labeled in parser.out.
-
-
  * During semantic analysis, if have more than one argument in
    funcArgList, check that no arguments are empty.
 
@@ -27,10 +15,12 @@ x    -Offending token
 Notes:
   Ors and Ands have same precedence and are left-associative.
 
-   
+
+
+  
 Questions:
 
-Shoudl decide whether should have basic initializers for variables or
+Should decide whether should have basic initializers for variables or
 allow for more complex statements (returnable expressions).
 
 Annotation for shared data seems off.  Right now, just have one
