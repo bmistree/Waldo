@@ -3,7 +3,7 @@ To Do:
  * Improve error reporting for when provide incorrectly typed
    arguments when calling function.
  
- * Fix error that occurs when do not have any declared variables at
+x * Fix error that occurs when do not have any declared variables at
    top of each endpoint section.
  
  * Need to better-define ReturnableExpression.  Right now, can only

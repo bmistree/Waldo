@@ -176,10 +176,15 @@ def p_EndpointBodySection(p):
                            | EndpointFunctionSection'''
 
     p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[1]]);
     if (len(p) == 3):
-        p[0].addChild(p[2]);
-    # p[0].addChildren([p[1],p[2]]);
+        p[0].addChildren([p[1],p[2]]);
+    elif (len(p) == 2):
+        p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p.lineno(0),p.lexpos(0)));
+        p[0].addChild(p[1]);
+    else:
+        print('\nError in endpoint body section.  Got an unusual number of arguments.\n');
+        assert(False);
+    
 
 def p_EndpointGlobalSection(p):
     '''EndpointGlobalSection : Declaration SEMI_COLON EndpointGlobalSection
