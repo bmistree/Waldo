@@ -226,9 +226,25 @@ class FuncMatchObject():
         self.element = funcContextElement;
 
     def matches(self,funcIdentifierType,funcArgTypes):
-
+        '''
+        @param {String} funcIdentifierType -- the type we assume the
+        function is supposed to return.
+        
+        @param {List of Strings} funcArgTypes -- the types of each
+        argument for the function.
+        '''
+        
         if (funcIdentifierType != self.element.funcIdentifierType):
             return False;
+
+        return self.argMatches(funcArgTypes);
+
+
+    def argMatches(self, funcArgTypes):
+        '''
+        @param {List of Strings} funcArgTypes -- the types of each
+        argument for the function.
+        '''
 
         if (len(funcArgTypes) != len(self.element.funcArgTypes)):
             return False;
@@ -239,6 +255,7 @@ class FuncMatchObject():
         
         return True;
 
+    
     def getReturnType(self):
         return self.element.funcIdentifierType;
     

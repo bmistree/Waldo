@@ -169,12 +169,41 @@ class AstNode():
             self.type = TYPE_STRING;
         elif(self.label == AST_BOOL):
             self.type = TYPE_BOOL;
+
+            
         elif(self.label == AST_FUNCTION_CALL):
-            print('\nNeed to finish type checking for AST_FUNCTION_CALL\n');
+            funcName = self.children[0].value;
+            self.lineNo = self.children[0].lineNo;
+            funcMatchObj = typeStack.getFuncIdentifierType(funcName);
+
+            if (funcMatchObj == None):
+                errMsg = '\nError trying to call function named "' + funcName + '".  ';
+                errMsg += 'That function is not defined anywhere.\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);            
+                return;
+
+
+            #set my type as that returned by the function
+            self.type = funcMatchObj.getReturnType();
+
+            #check the argument types passed into the function
+            funcArgList = self.children[1].children;
+            allArgTypes = [];
+            for s in funcArgList:
+                s.typeCheck(progText,typeStack);
+                allArgTypes.append(s.type);
+
+            if ( not funcMatchObj.argMatches(allArgTypes)):
+                #means that the types of the arguments passed into the
+                #function do not match the arguments that the function
+                #is declared with.
+                print('\n\nError matching functions\n\n\n');
+                assert(False);
 
         elif (self.label == AST_TYPE):
             self.type = self.value;
 
+            
         elif (self.label == AST_CONDITION_STATEMENT):
             #type check all children.  (type checks if, elseif, and
             #else statements).
@@ -691,9 +720,16 @@ class AstNode():
         typeStack.popContext();
 
         args = self.children[argDeclIndex].children;
-            
+
+
         argTypeList = [];
         for t in args:
+            #each t should now be of type FUNCTION_DECL_ARG
+            
+            #set the type of t to the type identifier of the argument.
+            t.type = t.children[0].value;
+
+            #add the argument type to the typeStack representation for this function.
             argTypeList.append(t.type);
 
         collisionObj = typeStack.checkCollision(funcName,self);
@@ -789,8 +825,6 @@ class AstNode():
 
 
 ERROR_NUM_LINES_EITHER_SIDE = 4;
-
-
 
 def errorFunction(errorString,astNodes,lineNumbers,progText):
     '''

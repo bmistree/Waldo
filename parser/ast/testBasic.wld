@@ -79,6 +79,11 @@ Server
             s = 2+3*4;
 
             String jf;
+            jf =          something ("hi" , 4);
+            
+            something("hi",True);
+            
+/*            jf= something ("hi", 4);*/
             jf = "hi" + "oo";
             
         }
