@@ -10,6 +10,15 @@ Rename types.  Strings and Bools really should not be Strings and
 Bools.  May be way to perform intermediate study on Mechanical Turk.
 
 
+When writing about this, stress: we do not have a polished and
+finished feature.  We are evaluating a pre-alpha version of a feature
+against libraries that are being used by hundreds and thousands
+commercially and recreationally (well-used and popular).  We do not
+have popular, but ancillary features, such as named arguments, lint
+tools, etc.  Very much setting a lower bound on usefulness of process
+and feature.  (Abstract data types, etc.)
+
+
 Error Reporting:
 
 The error message should contain a link to the section of the
