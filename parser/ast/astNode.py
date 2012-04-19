@@ -5,6 +5,9 @@ sys.path.append('d3');
 import treeDraw;
 from astLabels import *;
 from astTypeCheckStack import TypeCheckContextStack;
+from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH ;
+from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH;
+
 
 def indentText(text,numIndents):
     returner = '';
@@ -193,12 +196,44 @@ class AstNode():
                 s.typeCheck(progText,typeStack);
                 allArgTypes.append(s.type);
 
-            if ( not funcMatchObj.argMatches(allArgTypes)):
+
+            argError = funcMatchObj.argMatchError(allArgTypes,self);
+            if (argError != None):
                 #means that the types of the arguments passed into the
                 #function do not match the arguments that the function
                 #is declared with.
-                print('\n\nError matching functions\n\n\n');
-                assert(False);
+
+                argError.checkValid(); # just for debugging
+
+                if (argError.errorType == FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH):
+                    #means that expected a different number of
+                    #arguments than what we called it with.
+                    errMsg = '\nError calling function "' + funcName + '".  ';
+                    errMsg += funcName + ' requires ' + str(argError.expected);
+                    errMsg += ' arguments.  Instead, you provided ' + str(argError.provided);
+                    errMsg += '.\n';
+                    
+                    errorFunction(errMsg,argError.astNodes,argError.lineNos,progText); 
+
+                elif (argError.errorType == FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH):
+                    #means that although we got the correct number of
+                    #arguments, we had type mismatches on several of
+                    #them.
+                    errMsg = '\nError calling function "' + funcName + '".  ';
+                    for s in range (0, len(argError.argNos)):
+                        errMsg += '\n\t';
+                        errMsg += 'Argument number ' + str(argError.argNos[s]) + ' was expected ';
+                        errMsg += 'to be of type ' + argError.expected[s] + ', but is inferrred ';
+                        errMsg += 'to have type ' + argError.provided[s];
+
+                    errorFunction(errMsg,argError.astNodes,argError.lineNos,progText); 
+                else:
+                    errMsg = '\nBehram error in AST_FUNCTION_CALL.  Have an error ';
+                    errMsg += 'type for a function that is not recognized.\n'
+                    print(errMsg);
+                    assert(False);
+
+                    
 
         elif (self.label == AST_TYPE):
             self.type = self.value;

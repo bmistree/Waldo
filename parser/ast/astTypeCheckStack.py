@@ -8,6 +8,10 @@ from astLabels import TYPE_MSG_SEND_FUNCTION;
 from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
 
 
+FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
+FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
+
+
 
 class TypeCheckContextStack():
     def __init__ (self):
@@ -237,27 +241,191 @@ class FuncMatchObject():
         if (funcIdentifierType != self.element.funcIdentifierType):
             return False;
 
-        return self.argMatches(funcArgTypes);
+        if (self.argMathces(funcArgTypes) == None):
+            return True;
+
+        return False;
+
+    def getReturnType(self):
+        return self.element.funcIdentifierType;
 
 
-    def argMatches(self, funcArgTypes):
+    def argMatchError(self, funcArgTypes, callingAstNode):
         '''
         @param {List of Strings} funcArgTypes -- the types of each
         argument for the function.
+
+        @param {AstNode} callingAstNode -- the astNode where the
+        function call is actually being invoked.
+        
+        @return FuncCallArgMatchError object if the arguments do not
+                match.
+        
+                None if the arguments match (ie, there is no type
+                error in arguments).
+                
         '''
 
-        if (len(funcArgTypes) != len(self.element.funcArgTypes)):
-            return False;
+        #check if have the same number of arguments
+        numArgsExpected = len(self.element.funcArgTypes );
+        numArgsProvided = len(funcArgTypes);
+        if (numArgsExpected != numArgsProvided):
+            returner = FuncCallArgMatchError(
+                self.element.lineNum,self.element.astNode,
+                FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH, callingAstNode);
+            
+            returner.setArgLengthMismatchError(numArgsExpected,numArgsProvided);
+            return returner;
+
+
+        #check if types match between arguments provided and expected.
+        returner = None;
 
         for s in range(0,len(funcArgTypes)):
-            if (funcArgTypes[s] != self.element.funcArgTypes[s]):
-                return False;
-        
-        return True;
+            expectedType = self.element.funcArgTypes[s];
+            providedType = funcArgTypes[s];
+            if (providedType != expectedType):
+                #means had a type error mismatch
+                if (returner == None):
+                    #means it was our first type error mismatch, and
+                    #we should craft a FuncCallArgMatchError object to
+                    #return.
+                    returner = FuncCallArgMatchError(
+                        self.element.lineNum,self.element.astNode,
+                        FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH,callingAstNode);
 
+                #append an error
+                returner.addMatchError(s+1,expectedType,providedType);
+
+                    
+        return returner;
+
+        
+class FuncCallArgMatchError():
     
-    def getReturnType(self):
-        return self.element.funcIdentifierType;
+    '''
+    Stores data used for error reporting when try to call a function
+    but either have incorrect number of arguments or have mismatched
+    arguments.
+
+    It is good form to make a call to checkValid before trying to use
+    internal fields, and after you think the object is completely
+    constructed.
+
+    See more documentation in init method's docstring to get a sense
+    of what internal data looks like/can be used for.
+    
+    '''
+    def __init__ (self,funcLineNo,funcAstNode, errorType,callAstNode):
+        '''
+        
+        @param {int} funcLineNo -- line where the actual function
+        signature is declared.
+
+        @param {AstNode} funcAstNode -- ast node corresponding to
+        actual function.
+
+        @param {int} errorType --
+        FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH if error is
+        mismatched number of arguments (in which case, creator of
+        error must subsequently call setArgLengthMismatchError before
+        using object).  Error objects of this type place the required
+        number of arguments in self.expected (as a number) and the
+        provided number of arguments (as a number) in self.provided.
+
+        FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH if error is that got
+        the correct number of arguments, but some of the arguments had
+        the wrong type.  In this case, user specifies which arguments
+        were incorrect through calls to addMatchError.  In this case,
+        self.argNos is a list whose elements are the index of the
+        arguments that disagreed.  self.expected is a list whose
+        elements are the types that the function required for those
+        arguments that mismatched.  self.provided is a list whose
+        elements are the types that the function call was provided
+        with for those arguments that mismatched.
+
+        More concretely, if I have a function:
+        
+        function foo (Number a, Bool b)
+        and I call it as
+        foo (1, 20);
+
+        I should have
+        self.argNos = [2];
+        self.expected = [Bool];
+        self.provided = [Number];
+
+        @param {AstNode} callAstNode -- The ast node corresponding to
+        where the actual function call was performed.
+        
+        '''
+        self.lineNos = [callAstNode.lineNo , funcLineNo];
+        self.astNodes = [callAstNode,funcAstNode];
+        
+        self.errorType = errorType;
+
+        self.valid = False;
+        
+        self.argNos = None;
+        self.expected = None;
+        self.provided = None;
+
+    def checkValid(self):
+        '''
+        Should only call when trying to use (not set) internal data of
+        object.  Just ensures that actual data for different types of
+        errors has actually been set before being used.
+        '''
+        if (not self.valid):
+            print('\nValidity check for FuncCallArgMatchError object failed.\n');
+            assert(False);
+        
+        
+    def setArgLengthMismatchError(self,numArgsExpected,numArgsProvided):
+        '''
+        @param {int} numArgsExpected
+        @param {int} numArgsProvided
+        
+        Called to set the number of arguments expected vs the number
+        provided when have an argument length mismatch error.
+        '''
+        if (self.errorType != FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH):
+            errMsg = '\nBehram error: should not be setting a num arguments '
+            errMsg += 'mismatch error if have declared the error type as a ';
+            errMsg += 'type mismatch error.';
+            errMsg += '\n';
+            print(errMsg);
+            assert(False);
+            
+        self.expected = numArgsExpected;
+        self.provided = numArgsProvided;
+        self.valid = True;
+        
+    def addMatchError(self,argNo,expectedType,providedType):
+        '''
+        @param {int} argNo
+        @param {String} expectedType
+        @param {String} providedType
+        '''
+        
+        if (self.errorType != FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH):
+            errMsg = '\nBehram error: should not add a specific argument ';
+            errMsg += 'type mismatch error when already specified that ';
+            errMsg += 'error was a length mismatch.\n';
+            print(errMsg);
+            assert(False);
+
+        #first error added
+        if (self.argNos == None):
+            self.argNos = [];
+            self.expected = [];
+            self.provided = [];
+
+        self.argNos.append(argNo);
+        self.expected.append(expectedType);
+        self.provided.append(providedType);
+        self.valid = True;
+
     
         
         
@@ -270,6 +438,7 @@ class Context():
     def setShouldReturn(self,typeToReturn):
         self.typeToReturn = typeToReturn;
 
+        
     def getShouldReturn(self):
         return self.typeToReturn;
 

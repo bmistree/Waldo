@@ -16,7 +16,8 @@ against libraries that are being used by hundreds and thousands
 commercially and recreationally (well-used and popular).  We do not
 have popular, but ancillary features, such as named arguments, lint
 tools, etc.  Very much setting a lower bound on usefulness of process
-and feature.  (Abstract data types, etc.)
+and feature.  (Abstract data types, variadic arguments, default
+arguments, etc.)
 
 
 Error Reporting:

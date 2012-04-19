@@ -1,6 +1,6 @@
 To Do:
 
- * Improve error reporting for when provide incorrectly typed
+x * Improve error reporting for when provide incorrectly typed
    arguments when calling function.
  
 x * Fix error that occurs when do not have any declared variables at
