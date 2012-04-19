@@ -5,7 +5,7 @@ sys.path.append('d3');
 import treeDraw;
 from astLabels import *;
 from astTypeCheckStack import TypeCheckContextStack;
-from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH ;
+from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH;
 from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH;
 
 
@@ -94,13 +94,16 @@ class AstNode():
             #handling alias section
             aliasSection = self.children[1];
 
+
             #endpoint 1
             typeStack.endpoint1 = aliasSection.children[0].value; 
             typeStack.endpoint1LineNo = aliasSection.children[0].lineNo;
-
+            typeStack.endpoint1Ast = aliasSection.children[0];
+            
             #endpoint 2
             typeStack.endpoint2 = aliasSection.children[1].value; 
             typeStack.endpoint2LineNo = aliasSection.children[1].lineNo;
+            typeStack.endpoint2Ast = aliasSection.children[1];             
             
             if (typeStack.endpoint1 == typeStack.endpoint2):
                 errorFunction('Cannot use same names for endpoints',[typeStack.endpoint1,typeStack.endpoint2],[typeStack.endpoint1LineNo,typeStack.endpoint2LineNo],progText);
@@ -128,8 +131,84 @@ class AstNode():
             need to check to ensure all functions referenced match
             with msg_send and msg_receive (probably can't do that part
             at this point.  Maybe later).
+
+              
             '''
-            print('\nTo do: still must type check trace section\n');
+            for s in self.children:
+                s.typeCheck(progText,typeStack);
+
+        elif(self.label == AST_TRACE_LINE):
+            '''
+              Check:
+                * Trace line alternates between one side and other
+            
+                * All functions in trace line exist
+              
+                * There are no msgSend/msgReceive functions that are not
+                  in a traceline
+
+                * Each traceline begins with a msgSend
+
+                * Middles and ends of each traceline are msgReceives
+
+                * No two tracelines begin with the same msgSend
+            '''
+                
+            #first, checking that each trace item has an endpoint
+            #prefix, and second that the prefixes alternate so that
+            #messages are being sent between different endpoints.
+
+            #will hold the name of the last endpoint used in trace line.
+            lastEndpoint = None;
+            for traceItem in self.children:
+                endpointName = traceItem.children[0].value;
+                currentLineNo = traceItem.children[0].lineNo;
+                funcName = traceItem.children[1].value;
+
+                endpoint1Ast = typeStack.endpoint1Ast;
+                endpoint2Ast = typeStack.endpoint2Ast;
+                endpoint1Name = typeStack.endpoint1;
+                endpoint2Name = typeStack.endpoint2;
+                endpoint1LineNo = typeStack.endpoint1LineNo;
+                endpoint2LineNo = typeStack.endpoint2LineNo;
+
+                #check that are using declared endpoints.
+                if (not typeStack.isEndpoint(endpointName)):
+                    
+                    errMsg = '\nError in trace declaration.  Each element ';
+                    errMsg += 'in the trace line should have the form ';
+                    errMsg += '<Endpoint Name>.<Function name>.  For <Endpoint Name>, ';
+                    errMsg += 'you entered "' + endpointName + '".  You should have entered ';
+                    errMsg += 'either "' + endpoint1Name + '" or "' + endpoint2Name;
+                    errMsg += '" to agree with your endpoint declarations.\n';
+
+                    astErrorNodes = [self,endpoint1Ast,endpoint2Ast];
+                    astLineNos = [currentLineNo, endpoint1LineNo, endpoint2LineNo];
+                    errorFunction(errMsg,astErrorNodes,astLineNos,progText);        
+                    continue;
+
+                #check for alternating between endpoints
+                if (lastEndpoint != None):
+                    if (lastEndpoint == endpointName):
+                        #means that we had a repeat between the endpoints
+                        errMsg = '\nError in trace declaration for item ';
+                        errMsg += '"' + endpointName + '.' + funcName  +  '".  ';
+                        errMsg += 'Messages in a trace should alternate which side ';
+                        errMsg += 'receives them.  Instead of having "' + endpointName + '" ';
+                        errMsg += 'receive two messages in a row, you should have "';
+                        if (endpointName == endpoint1Name):
+                            errMsg += endpoint2Name;
+                        else:
+                            errMsg += endpoint1Name;
+                            
+                        errMsg += '" receive a message in between.\n';
+                        errorFunction(errMsg,[self],[currentLineNo],progText);        
+
+                lastEndpoint = endpointName;
+
+                
+            print('\nTo do: still must do much more trace line type checking\n');
+
 
         elif(self.label == AST_SHARED_SECTION):
             #each child will be an annotated declaration.
@@ -381,12 +460,11 @@ class AstNode():
                 errorFunction(errMsg, [self],[self.lineNo],progText);
 
             self.type = rhs.type;
-#check type checking of plus, minus, times, divide;
 
-            
                 
         elif ((self.label == AST_MINUS) or (self.label == AST_MULTIPLY) or
               (self.label == AST_DIVIDE)):
+            #check type checking of plus, minus, times, divide;
             #left and right hand side should be numbers, returns a number.
             
             #for error reporting
@@ -483,7 +561,7 @@ class AstNode():
             if (self.children[1].label != AST_IDENTIFIER):
                 errMsg = '\nError at declaration statement. ';
                 errMsg += 'Must have an identifier for left hand ';
-                errMsg += 'side of declaration.\n'
+                errMsg += 'side of declaration.\n';
                 errorFunction(errMsg,[self],[currentLineNo],progText);
                 return;
             

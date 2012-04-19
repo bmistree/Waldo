@@ -55,7 +55,6 @@ Server
           Bool k = True;
           Bool l = False;
 
-
           
           If (i)
              c=6;
@@ -79,11 +78,10 @@ Server
             s = 2+3*4;
 
             String jf;
-            jf =          something ("hi" , 4);
+            jf = something2 ("hi" , 4);
+            jf = something("hi",3);
             
-            something("hi",True);
-            
-/*            jf= something ("hi", 4);*/
+
             jf = "hi" + "oo";
             
         }

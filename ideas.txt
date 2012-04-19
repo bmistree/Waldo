@@ -19,6 +19,9 @@ tools, etc.  Very much setting a lower bound on usefulness of process
 and feature.  (Abstract data types, variadic arguments, default
 arguments, etc.)
 
+Goal of language is for a complete language user guide to take less
+than 2 pages.  As such, eschewing high-level features.
+
 
 Error Reporting:
 

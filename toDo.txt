@@ -5,13 +5,49 @@ x * Improve error reporting for when provide incorrectly typed
  
 x * Fix error that occurs when do not have any declared variables at
    top of each endpoint section.
+
+ * Type check traces
+ * Add other endpoint into type checking
+ * For incorrectly declared variables, maybe present some "you may
+   have meant XXXXX" error message.
+
+ * Test that do not write to any variable that do not control.
+   
+ * Determine syntax for generics Map and List; determine if want
+   syntax for doing things by value
+ * Eventually, may want to lex/parse for common errors.  For instance,
+   if use "Equals" instead of "==", parse for "==" and report error.
+
+ * Warn unused functions.  Error on unused functions?
+
+ * Need to ensure that all msgReceive functions have same type
+   signature.
+
+ * Ensure that nothing makes a function call to a msgReceive function.
  
  * Need to better-define ReturnableExpression.  Right now, can only
    provide literals and function calls.
  * During semantic analysis, if have more than one argument in
    funcArgList, check that no arguments are empty.
 
-
+Major to dos:
+  1) Decide on how discovery should work
+  2) Determine exact rules for trying to send a message (do you queue
+     more than one message, etc.)
+  3) Specifying error conditions/what happens on error/after some time
+  4) What is structure of message?  Can we type check it?
+  5) How does time play into when respond?  Do we have a notion of
+     time/timers?  What is it?
+  5) Come up with overall experiment
+  6) Come up with ideal micro-evaluations
+     -Turk for names "Bool" vs "TrueFalse"; "String" vs "Text".
+  7) Decide which target to generate code for (likely python).
+  8) Decide on interface between target code and existin code
+     -What visualizations allow programmer to see how things work?
+  9) Decide on visualizations to present error messages and do some
+     work on what error messages should look like.
+   
+   
 Notes:
   Ors and Ands have same precedence and are left-associative.
 

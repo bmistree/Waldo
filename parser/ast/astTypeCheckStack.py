@@ -24,6 +24,9 @@ class TypeCheckContextStack():
         self.endpoint2 = None;
         self.endpoint1LineNo = None;
         self.endpoint2LineNo = None;
+        self.endpoint1Ast = None;
+        self.endpoint2Ast = None;
+
         
     def pushContext(self):
         self.stack.append(Context());
