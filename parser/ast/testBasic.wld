@@ -15,6 +15,16 @@ Shared
         Server Controls Bool sharedB = False; 
 }
 
+Client
+{
+        Number topC = 3;
+        MsgSend somethinger (Bool top, Bool b)
+        {
+            Number c;
+            Number r;
+        }
+}
+
 Server
 {
         Number topC = 4;
@@ -78,7 +88,6 @@ Server
             s = 2+3*4;
 
             String jf;
-            jf = something2 ("hi" , 4);
             jf = something("hi",3);
             
 

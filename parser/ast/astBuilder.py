@@ -30,9 +30,9 @@ lexer = constructLexer();
 
 
 def p_RootExpression(p):
-    'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection EndpointSection';
+    'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection EndpointSection EndpointSection';
     p[0] = AstNode(AST_ROOT,p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[1],p[2],p[3],p[4],p[5]]);
+    p[0].addChildren([p[1],p[2],p[3],p[4],p[5],p[6]]);
     
 
 def p_NameSection(p):

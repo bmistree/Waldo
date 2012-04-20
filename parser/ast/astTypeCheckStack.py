@@ -522,3 +522,4 @@ class CollisionObject():
             self.nodes.append(funcElement.astNode);
             self.lineNos.append(funcElement.lineNum);
         
+        

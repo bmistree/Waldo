@@ -6,8 +6,15 @@ x * Improve error reporting for when provide incorrectly typed
 x * Fix error that occurs when do not have any declared variables at
    top of each endpoint section.
 
+x * Add other endpoint into type checking
+
+
  * Type check traces
- * Add other endpoint into type checking
+ * Throw okay error if do not name endpoint at top endpoint section
+   correctly (eg., name both the same thing).
+
+ * Throw better error if endpoint is empty.
+ 
  * For incorrectly declared variables, maybe present some "you may
    have meant XXXXX" error message.
 

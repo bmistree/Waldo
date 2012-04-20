@@ -108,6 +108,12 @@ class AstNode():
             if (typeStack.endpoint1 == typeStack.endpoint2):
                 errorFunction('Cannot use same names for endpoints',[typeStack.endpoint1,typeStack.endpoint2],[typeStack.endpoint1LineNo,typeStack.endpoint2LineNo],progText);
 
+                            
+            #Do first level of type chcecking trace items.  see notes
+            #in corresponding elif.
+            self.children[2].typeCheck(progText,typeStack);
+
+                
             #get into shared section
             #note: shared section should leave its context on the stack.
             self.children[3].typeCheck(progText,typeStack);
@@ -115,11 +121,12 @@ class AstNode():
             #check one endpoint
             self.children[4].typeCheck(progText,typeStack);
 
-            print('\nWarning, still need to add other endpoint to parser for checking\n');
+            #check one endpoint
+            self.children[5].typeCheck(progText,typeStack);
+
+
+            print('\nStill need to do final type checking of traces\n');
             
-            #go back and type check trace items.  see notes in
-            #corresponding elif.
-            self.children[2].typeCheck(progText,typeStack);
                 
 
         elif(self.label == AST_TRACE_SECTION):
@@ -163,6 +170,10 @@ class AstNode():
             for traceItem in self.children:
                 endpointName = traceItem.children[0].value;
                 currentLineNo = traceItem.children[0].lineNo;
+
+                if (self.lineNo == None):
+                    self.lineNo = currentLineNo;
+                    
                 funcName = traceItem.children[1].value;
 
                 endpoint1Ast = typeStack.endpoint1Ast;
