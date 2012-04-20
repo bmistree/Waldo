@@ -10,14 +10,25 @@ x * Add other endpoint into type checking
 
 
  * Type check traces
+ * Do more testing of trace type checking to make sure hit seven
+   conditions that need to be satisfied.
+ 
  * Throw okay error if do not name endpoint at top endpoint section
    correctly (eg., name both the same thing).
 
+ * Throw better error if we add an identifier that we already have
+   declared (see addIdentifier of astTypeCheckStack.py).
+   
  * Throw better error if endpoint is empty.
+
+ * Think through what arguments msgReceive function should take, and
+   throw type errors if get more info.
  
  * For incorrectly declared variables, maybe present some "you may
    have meant XXXXX" error message.
 
+
+   
  * Test that do not write to any variable that do not control.
    
  * Determine syntax for generics Map and List; determine if want
@@ -37,6 +48,12 @@ x * Add other endpoint into type checking
  * During semantic analysis, if have more than one argument in
    funcArgList, check that no arguments are empty.
 
+ * Is it possible to specify shared functions?  What about shared
+   msgSend and msgReceive functions?
+
+
+
+   
 Major to dos:
   1) Decide on how discovery should work
   2) Determine exact rules for trying to send a message (do you queue

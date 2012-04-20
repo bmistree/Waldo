@@ -6,7 +6,7 @@ Endpoint Client;
 Traces
 {
         Server.one -> Client.two;
-        Server.one -> Client.two -> Server.three -> Client.four;
+//        Server.one -> Client.two -> Server.three -> Client.four;
 }
 
 Shared
@@ -18,7 +18,8 @@ Shared
 Client
 {
         Number topC = 3;
-        MsgSend somethinger (Bool top, Bool b)
+        
+        MsgReceive two ()
         {
             Number c;
             Number r;
@@ -32,7 +33,7 @@ Server
         Bool topA;
         Bool topB = False;
         
-        MsgSend somethinger (Bool top, Bool b)
+        MsgSend one (Bool top, Bool b)
         {
             Number c;
             Number r;

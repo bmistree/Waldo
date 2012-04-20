@@ -125,46 +125,54 @@ class AstNode():
             self.children[5].typeCheck(progText,typeStack);
 
 
-            print('\nStill need to do final type checking of traces\n');
-            
+            #Checks if there were msgSends or msgReceives assumed in a
+            #trace line that weren't actually defined in an endpoint
+            #section.
+            typeStack.checkUndefinedTraceItems();
                 
 
         elif(self.label == AST_TRACE_SECTION):
             '''
-            need to check that first part of all TraceItems correspond
-            to an Endpoint.
-            need to check that alternate between Endpoints
-            need to check that no two traces begin with same TraceItem
-            need to check to ensure all functions referenced match
-            with msg_send and msg_receive (probably can't do that part
-            at this point.  Maybe later).
-
+            All the type rules of an ast trace section are:
+              Check:
+                1) Trace line alternates between one side and other
+            
+                2) All functions in trace line exist
               
+                3) There are no msgSend/msgReceive functions that are not
+                   in a traceline
+
+                4) Each traceline begins with a msgSend
+
+                5) Middles and ends of each traceline are msgReceives
+
+                6) No two tracelines begin with the same msgSend
+
+                7) Each trace item begins with a valid endpoint name.
+
+             At this level of type checking, we only handle #1 and #7.
+             Type checking in rest of body takes care of #3, #4, #5, and  #6.
+                          
+             After type checking rest of body, then return check #2 by
+             calling typeStack.checkUndefinedTraceItems in type check of astRoot.
             '''
+
+            typeStack.setAstTraceSectionNode(self);
             for s in self.children:
                 s.typeCheck(progText,typeStack);
 
-        elif(self.label == AST_TRACE_LINE):
-            '''
-              Check:
-                * Trace line alternates between one side and other
-            
-                * All functions in trace line exist
-              
-                * There are no msgSend/msgReceive functions that are not
-                  in a traceline
 
-                * Each traceline begins with a msgSend
-
-                * Middles and ends of each traceline are msgReceives
-
-                * No two tracelines begin with the same msgSend
-            '''
                 
+        elif(self.label == AST_TRACE_LINE):
             #first, checking that each trace item has an endpoint
             #prefix, and second that the prefixes alternate so that
             #messages are being sent between different endpoints.
 
+            #add trace line to traceManager of typeStack so can do
+            #type checks after endpoint bodies are type checked.
+            typeStack.addTraceLine(self);
+            
+            
             #will hold the name of the last endpoint used in trace line.
             lastEndpoint = None;
             for traceItem in self.children:
@@ -540,17 +548,27 @@ class AstNode():
         elif(self.label == AST_ENDPOINT):
             #check if endpoint name matches previous endpoint name
             endName = self.children[0].value;
+
+            #tell typestack that we are currently in this endpoint
+            #body section.  unset it at end of elif.
+            typeStack.setCurrentEndpointName(endName);
+            
             currentLineNo = self.children[0].lineNo;
             if (not typeStack.isEndpoint(endName)):
                 errMsg = 'Endpoint named ' + endName + ' was not defined at top of file ';
                 errMsg = ' are you sure your endpoints match?';
-                errorFunction(errMsg,[self],[currentLineNo,typeStack.endpoint1LineNo,typeStack.endpoint2LineNo],progText);
+                errLineNos = [currentLineNo,typeStack.endpoint1LineNo,typeStack.endpoint2LineNo];
+                errorFunction(errMsg,[self],errLineNos,progText);
 
             #check endpoint body section
             self.children[1].typeCheck(progText,typeStack);
 
+            #matches above set call.
+            typeStack.unsetCurrentEndpointName();
+            
 
-        elif(self.label == AST_ENDPOINT_BODY_SECTION):
+        elif(self.label == AST_ENDPOINT_BODY_SECTION):            
+            
             #typecheck global section
             self.children[0].typeCheck(progText,typeStack);
             #check function section.
@@ -849,8 +867,13 @@ class AstNode():
         argTypeList = [];
         for t in args:
             #each t should now be of type FUNCTION_DECL_ARG
+
+            if (len(t.children) == 0):
+                #means that we have a function that takes no arguments.
+                continue;
             
             #set the type of t to the type identifier of the argument.
+
             t.type = t.children[0].value;
 
             #add the argument type to the typeStack representation for this function.

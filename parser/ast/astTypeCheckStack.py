@@ -7,6 +7,7 @@ from astLabels import TYPE_NOTHING;
 from astLabels import TYPE_MSG_SEND_FUNCTION;
 from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
 
+from traceLine import TraceLineManager;
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -27,6 +28,18 @@ class TypeCheckContextStack():
         self.endpoint1Ast = None;
         self.endpoint2Ast = None;
 
+        #handles keeping track of msgSend and msgReceive functions
+        #(both their specification in the trace section as well as
+        #their definitions in endpoint sections.
+        self.traceManager = TraceLineManager(self);
+
+        #this keeps track of which endpoint body section we're type
+        #checking through.  It's None if we are not currently type
+        #checking an endpoint's body section.  It's a string
+        #otherwise.  Used for type checking with trace lines (in 
+        #self.traceManager).
+        self.currentEndpointName = None;
+        
         
     def pushContext(self):
         self.stack.append(Context());
@@ -54,6 +67,15 @@ class TypeCheckContextStack():
                 return lookupType;
         return None;
 
+
+    def checkUndefinedTraceItems(self):
+        '''
+        Runs through all elements in trace line to ensure that if a
+        msgSend or msgReceive is declared in the trace section, it was
+        actually defined in an endpoint section.
+        '''
+        self.traceManager.checkUndefinedMsgSendOrReceive();
+    
 
     def checkCollision(self,identifierName,astNode):
         '''
@@ -164,8 +186,55 @@ class TypeCheckContextStack():
             print('\nError.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
 
+
+        #if it's a msgSend function or msgReceive function, then
+        #notify the traceLineManager that a msgSend or msgreceive
+        #function has been defined;
+        currentEndpointName = self.currentEndpointName;
+        if (currentEndpointName == None):
+            errMsg = '\nBehram error: should ony be adding a ';
+            errMsg += 'func identifier in the body of an endpoint section.\n';
+            print(errMsg);
+            assert(False);
+
+        if (functionType == TYPE_MSG_SEND_FUNCTION):
+            self.traceManager.addMsgSendFunction(astNode, currentEndpointName);
+        elif (functionType == TYPE_MSG_RECEIVE_FUNCTION):
+            self.traceManager.addMsgRecvFunction(astNode, currentEndpointName);
+
+
+        #add the function identifier itself to function context.
         self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,astNode,lineNum);
 
+
+    def setCurrentEndpointName(self,endpointName):
+        '''
+        When begin type checking the body of an endpoint function,
+        call this with the endpoint's name.  
+        '''
+        self.currentEndpointName = endpointName;
+
+    def unsetCurrentEndpointName(self):
+        '''
+        After finished type checking the body of an endpoint function,
+        call this function to unset currentEndpointname.
+        '''
+        self.currentEndpointName = None;
+
+    def setAstTraceSectionNode(self,traceSectionAstNode):
+        '''
+        @param {AstNode} traceSectionAstNode
+        '''
+        self.traceManager.setAstTraceSectionNode(traceSectionAstNode);
+
+        
+    def addTraceLine(self,traceLineAstNode):
+        '''
+        @param{AstNode} traceLineAst
+        '''
+        self.traceManager.addTraceLine(traceLineAstNode);
+        
+        
         
 class FuncContext():
     def __init__(self):
@@ -471,7 +540,7 @@ class Context():
         Cannot have re-definition of existing type.
         '''
         if (self.getIdentifierType(identifierName) != None):
-            #Fixme: this should turn into a more formal error-reporting system.
+            #FIXME: this should turn into a more formal error-reporting system.
             print('\nError, overwriting existing type with name ' + identifierName + '\n');
             assert(False);
 
@@ -521,5 +590,3 @@ class CollisionObject():
         if (funcElement != None):
             self.nodes.append(funcElement.astNode);
             self.lineNos.append(funcElement.lineNum);
-        
-        
