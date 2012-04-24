@@ -9,30 +9,37 @@ x * Fix error that occurs when do not have any declared variables at
 x * Add other endpoint into type checking
 
 
- * Type check traces
- * Do more testing of trace type checking to make sure hit seven
+x * Type check traces
+x * Do more testing of trace type checking to make sure hit seven
    conditions that need to be satisfied.
- 
+   
+ * Currently producing syntax errors when have not filled in lines in
+   traces sections or if don't have functions defined in an endpoint
+   section.  These are poor errors.  Instead, may want to produce a
+   type check error.
+   
  * Throw okay error if do not name endpoint at top endpoint section
    correctly (eg., name both the same thing).
 
+ * To do: right now, have problem where if function takes no
+   arguments, try to type check EMPTY statements.  (prints these as
+   well.  probably want to parse differently so that these don't show
+   up.)
+   
  * Throw better error if we add an identifier that we already have
    declared (see addIdentifier of astTypeCheckStack.py).
-   
- * Throw better error if endpoint is empty.
 
  * Think through what arguments msgReceive function should take, and
    throw type errors if get more info.
  
  * For incorrectly declared variables, maybe present some "you may
    have meant XXXXX" error message.
-
-
    
  * Test that do not write to any variable that do not control.
    
  * Determine syntax for generics Map and List; determine if want
    syntax for doing things by value
+   
  * Eventually, may want to lex/parse for common errors.  For instance,
    if use "Equals" instead of "==", parse for "==" and report error.
 

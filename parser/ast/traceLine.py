@@ -11,6 +11,21 @@ def traceItemToString(traceItem):
     
     
 
+class TraceLineError():
+    def __init__(self,nodes,errMsg):
+        '''
+        @param {array of AstNodes} nodes -- Each AstNode involved as
+        part of error
+        '''
+        self.nodes = nodes;
+        self.lineNos = [];
+        for s in nodes:
+            self.lineNos.append(s.lineNo);
+            
+        self.errMsg = errMsg;
+            
+        
+
 class TraceLineManager():
     '''
     Stores data for each trace line.  Does some basic error checking
@@ -26,17 +41,22 @@ class TraceLineManager():
     
         
     def addTraceLine(self,traceLineAst):
+        '''
+        @returns None if addition is successful.
+                 TraceLineError object if unsuccessful.
+        '''
         msgStarter = traceItemToString(traceLineAst.children[0]);
         
         index = self.traceLines.get(msgStarter, None);
         if (index != None):
+            tLineAst = self.traceLines[msgStrarter];
             errMsg = '\nError: already have a trace line ';
-            errMsg += 'that starts with this function.\n';
-            print(errMsg);
-            assert(False);
+            errMsg += 'that starts with "' + msgStarter + '" function.\n';
+            return TraceLineError([traceLineAst, tLineAst],errMsg);
             
         self.traceLines[msgStarter] = TraceLine(traceLineAst);
-            
+        return None;
+        
 
     def addMsgSendFunction(self,msgSendFuncAstNode, endpointName):
         '''
@@ -209,7 +229,7 @@ class TraceLine ():
         for s in range(0,len(self.definedUndefinedList)):
             if (self.definedUndefinedList[s] == 0):
                 errMsg = '\nError: using a function named ';
-                errMsg += '"' + self.stringifiedTraceitems[s] + '" in ';
+                errMsg += '"' + self.stringifiedTraceItems[s] + '" in ';
                 errMsg += 'a trace, but never actually defined it.\n';
                 print(errMsg);
                 assert(False);

@@ -561,7 +561,8 @@ class AstNode():
                 errorFunction(errMsg,[self],errLineNos,progText);
 
             #check endpoint body section
-            self.children[1].typeCheck(progText,typeStack);
+            if (len(self.children) >= 2):
+                self.children[1].typeCheck(progText,typeStack);
 
             #matches above set call.
             typeStack.unsetCurrentEndpointName();
@@ -781,7 +782,7 @@ class AstNode():
                 errMsg += 'has no type information.\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);
                 return;
-                
+
             rhs.typeCheck(progText,typeStack);
             rhsType = rhs.type;
 
@@ -831,6 +832,9 @@ class AstNode():
             (self.label != AST_FUNCTION) and
             (self.label != AST_MSG_SEND_FUNCTION) and
             (self.label != AST_MSG_RECEIVE_FUNCTION)):
+            print('\n\n');
+            print(self.label);
+            print('\n\n');
             print('\nError, sending an incorrect tag to be loaded into functionDeclarationTypeCheck\n');
             assert(False);
 
