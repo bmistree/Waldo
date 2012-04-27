@@ -173,12 +173,13 @@ def p_EndpointSection(p):
 
 def p_EndpointBodySection(p):
     '''EndpointBodySection : EndpointGlobalSection EndpointFunctionSection
-                           | EndpointFunctionSection'''
+                           | EndpointFunctionSection
+                           '''
 
     p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p.lineno(0),p.lexpos(0));
     if (len(p) == 3):
         p[0].addChildren([p[1],p[2]]);
-    elif (len(p) == 2):
+    elif ((len(p) == 2) and (not isEmptyNode(p[1]))):
         p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p.lineno(0),p.lexpos(0)));
         p[0].addChild(p[1]);
     else:
@@ -202,11 +203,13 @@ def p_EndpointFunctionSection(p):
                                |  MsgSendFunction EndpointFunctionSection
                                |  MsgSendFunction
                                |  MsgReceiveFunction EndpointFunctionSection
-                               |  MsgReceiveFunction                               
+                               |  MsgReceiveFunction
                                '''
     
     p[0] = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p.lineno(0),p.lexpos(0));
+    
     p[0].addChild(p[1]);
+        
     if (len(p) == 3):
         p[0].addChildren(p[2].getChildren());
 
