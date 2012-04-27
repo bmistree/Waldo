@@ -42,7 +42,9 @@ x * Do more testing of trace type checking to make sure hit seven
    
  * Eventually, may want to lex/parse for common errors.  For instance,
    if use "Equals" instead of "==", parse for "==" and report error.
-
+   +=, ++ as well.
+   
+   
  * Warn unused functions.  Error on unused functions?
 
  * Need to ensure that all msgReceive functions have same type
@@ -58,7 +60,12 @@ x * Do more testing of trace type checking to make sure hit seven
  * Is it possible to specify shared functions?  What about shared
    msgSend and msgReceive functions?
 
+----------------------------
+Emitting:
+ * Not handling initializer expressions for variables correctly.
+   Search for FIXME in astEmit.py.
 
+   
 
    
 Major to dos:
