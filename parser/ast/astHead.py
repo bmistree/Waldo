@@ -3,6 +3,8 @@
 from astBuilder import getParser;
 import sys;
 import json;
+import astEmit;
+
 
 class GraphicalOutArg():
     def __init__(self,jsonDict):
@@ -49,7 +51,7 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
 
 
         
-def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg):
+def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emit):
     ast,fileText = genAst(inputFilename);
     if (ast == None):
         print('\nError with program.  Please fix and continue\n');
@@ -67,8 +69,14 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
 
         if (not performedOperation):
             printUsage();
-        elif(typeCheckArg):
+            return;
+        
+        if(typeCheckArg):
             ast.typeCheck(fileText);
+
+        if (emit):
+            astEmit.runEmitter(ast);
+
 
 
 
@@ -111,6 +119,8 @@ def printUsage():
 
     -h print options
 
+    -e Emit the generated code
+
     no args ... run ast tests
     
     ''');
@@ -127,6 +137,8 @@ if __name__ == '__main__':
     printOutputArg = None;
     typeCheckArg = True;
     skipNext = False;
+    emit = False;
+    
     
     for s in range(0,len(sys.argv)):
         if (skipNext):
@@ -177,6 +189,9 @@ if __name__ == '__main__':
 
         if (sys.argv[s] == '-p'):
             printOutputArg = True;
+
+        if (sys.argv[s] == '-e'):
+            emit = True;
             
 
     if (helpArg):
@@ -185,5 +200,5 @@ if __name__ == '__main__':
         if (inputFilenameArg == None):
             runTests();
         else:
-            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg);
+            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emit);
             
