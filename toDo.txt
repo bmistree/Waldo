@@ -1,3 +1,7 @@
+Command to run from parser/ast/ 
+    ./astHead.py -f testBasic.wld -go '{"file":"astOut.html", "h": 3000, "w": 5000}' -e emitted.py
+
+
 To Do:
 
 x * Improve error reporting for when provide incorrectly typed

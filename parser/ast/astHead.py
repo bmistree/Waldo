@@ -51,7 +51,7 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
 
 
         
-def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emit):
+def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg):
     ast,fileText = genAst(inputFilename);
     if (ast == None):
         print('\nError with program.  Please fix and continue\n');
@@ -74,8 +74,20 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
         if(typeCheckArg):
             ast.typeCheck(fileText);
 
-        if (emit):
-            astEmit.runEmitter(ast);
+        if (emitArg != None):
+            emitText = astEmit.runEmitter(ast);
+            if (emitText == None):
+                errMsg = '\nBehram error when requesting emission of ';
+                errMsg += 'source code from astHead.py.\n';
+                print(errMsg);
+                assert(False);
+                
+            filer = open(emitArg,'w');
+            filer.write(emitText);
+            filer.flush();
+            filer.close();
+
+
 
 
 
@@ -119,7 +131,7 @@ def printUsage():
 
     -h print options
 
-    -e Emit the generated code
+    -e <filename> Emit the generated code to filename
 
     no args ... run ast tests
     
@@ -135,9 +147,10 @@ if __name__ == '__main__':
     textOutputArg = None;
     helpArg = None;
     printOutputArg = None;
+    emitArg = None;
     typeCheckArg = True;
     skipNext = False;
-    emit = False;
+
     
     
     for s in range(0,len(sys.argv)):
@@ -191,7 +204,12 @@ if __name__ == '__main__':
             printOutputArg = True;
 
         if (sys.argv[s] == '-e'):
-            emit = True;
+            if (s+1 < len(sys.argv)):
+                emitArg = sys.argv[s+1]
+                skipNext = True;
+            else:
+                helpArg = True;
+
             
 
     if (helpArg):
@@ -200,5 +218,5 @@ if __name__ == '__main__':
         if (inputFilenameArg == None):
             runTests();
         else:
-            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emit);
+            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg);
             

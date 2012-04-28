@@ -3,7 +3,9 @@ from astLabels import *;
 
 
 def runEmitter(astNode,protObj=None):
-
+    '''
+    @returns{String or None} -- See comments at end of function.
+    '''
     
     if (astNode.label == AST_ROOT):
         #getting protocol
@@ -12,6 +14,7 @@ def runEmitter(astNode,protObj=None):
         protObjName = astNode.children[0].value;
         protObj = ProtocolObject(protObjName);
 
+        
         #handling alias section
         aliasSection = astNode.children[1];
         
@@ -34,8 +37,6 @@ def runEmitter(astNode,protObj=None):
         ept2 = astNode.children[5];
         runEmitter(ept2,protObj);
 
-        #now actually emit
-        protObj.emit();
 
         
     elif(astNode.label == AST_SHARED_SECTION):
@@ -45,6 +46,9 @@ def runEmitter(astNode,protObj=None):
             runEmitter(s,protObj);
 
     elif (astNode.label == AST_ANNOTATED_DECLARATION):
+        #only place we see *annotated* declarations should be in
+        #shared section.
+        
         varName = astNode.children[2].value;
         varVal = None;
         if (len(astNode.children) == 4):
@@ -55,12 +59,44 @@ def runEmitter(astNode,protObj=None):
 
         protObj.addShared(varName,varVal);
 
+    elif (astNode.label == AST_ENDPOINT):
+        endName =  astNode.children[0].value;
+        protObj.setCurrentEndpoint(endName);
+
+        endBody = astNode.children[1];
+        for s in endBody.children:
+            #first iteration, runs over global variable section
+            #second iteration, runs over declared functions.
+            runEmitter(s,protObj);
+            
+
+        protObj.popCurrentEndpoint(endName);
+    elif(astNode.label == AST_ENDPOINT_GLOBAL_SECTION):
+        print('\n\nIn emitter.  Need to finish endpoint global section\n\n');
+        
+    elif (astNode.label == AST_ENDPOINT_BODY_SECTION):
+        print('\n\nIn emitter.  Need to finish endpoint body section\n\n');
         
     else:
         print('\nIn emitter.  Not sure what to do with label ');
         print(astNode.label);
         print('\n\n');
 
+
+        
+    if (protObj == None):
+        errMsg = '\nBehram error: protObj should be a protocolObject\n';
+        print(errMsg);
+        assert(False);
+
+
+    if (astNode.label == AST_ROOT):
+        #should only need to return text when asked to run on root ast
+        #node.  cannot emit from partial tree.
+        return  protObj.emit();
+    
+    return None;
+        
         
 
 class ProtocolObject():
@@ -69,23 +105,54 @@ class ProtocolObject():
         self.ept1 = None;
         self.ept2 = None;
 
+        #keep track of which endpoint section we're parsing so we know
+        #which endpoint class to save new variables and functions to.
+        self.currentEndpointName =None;
+        
         '''
         takes a variable name and returns what the variable should
         actually be named in the program text.
         '''
         self.mappings = {};
-        
 
+
+
+    def popCurrentEndpoint(self,endName):
+        if (self.currentEndpointName != endName):
+            errMsg = '\nBehram error.  Requesting invalid endpoint ';
+            errMsg += 'name to pop.\n';
+            print (errMsg);
+            assert(False);
+        self.currentEndpointName = None;
+        
+    def setCurrentEndpoint(self,endpointName):
+        if (self.currentEndpointName != None):
+            errMsg = '\nBehram error.  Cannot setCurrentEndpoint in ';
+            errMsg += 'emit before having popped previous.\n';
+            print(errMsg);
+            assert(False);
+            
+        #ensures that ept1 and ept2 are not None and also that they
+        #agree with endpointName.
+        if (self.ept1.name != endpointName) and (self.ept2.name != endpointName):
+            errMsg = '\nBehram error: attempting to set current endpoint ';
+            errMsg += 'to an unknown value.\n';
+            print(errMsg);
+            assert(False);
+
+        self.currentEndpointName = endpointName;
+
+            
         
     def addShared(self,sharedName,sharedVal):
         self.checkUsageError('addShared');
 
         sharedName = self.addVarOrFuncNameToMap(sharedName);
         sharedVar = Variable (sharedName,sharedVal);
-        self.ept1.sharedVariables.append(sharedVar);
-        self.ept2.sharedVariables.append(sharedVar);
+        self.ept1.addSharedVariable(sharedVar);
+        self.ept2.addSharedVariable(sharedVar);
+        return sharedName;
 
-    
         
     def addVarOrFuncNameToMap(self,varName,root=True):
         '''
@@ -142,8 +209,8 @@ class ProtocolObject():
         returnString += '\n\n\n';
         returnString += self.ept2.emit();
         returnString += '\n\n\n';
-        
-        print(returnString);
+        return returnString;
+
 
 #From http://pentangle.net/python/handbook/node52.html
 #I also personally added self.
@@ -213,10 +280,7 @@ def isPythonReserved(varName):
     @returns True if varName is a reserved word in python.  False
     otherwise.
     '''
-    print('\nTesting: ' + varName + '\n');
     returner = varName in PYTHON_RESERVED_WORD_DICT;
-    print(returner);
-    print('\n\n');
     return returner;
     
     
@@ -238,6 +302,9 @@ class Endpoint():
         self.sharedVariables = [];
         self.endpointVariables = [];
 
+    def addSharedVariable(self,varToAdd):
+        self.sharedVariables.append(varToAdd);
+        
     def varName(self,potentialName):
         '''
         @param {String} potentialName -- Waldo name of variable being
@@ -353,9 +420,6 @@ class Variable():
         self.val = None;
 
     def emit(self):
-        print('\n\nThis is self.name: ');
-        print(self.name);
-        print('\n\n');
         returnString = self.name;
         returnString += ' = ';
         

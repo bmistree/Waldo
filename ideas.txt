@@ -11,6 +11,22 @@ Bools.  May be way to perform intermediate study on Mechanical Turk.
 
 Transfer comments into generated code.
 
+Tension between flexibility and inflexibility:
+Allowing people to write code in most natural way for them means that
+others cannot read it.  Programming language that supports flexible
+re-composition.  (Should facilitate large structural changes back and
+forth so that people can view in own best way, and translate to what
+they like ----> View message stream inline vs. separated by endpoint.
+
+Name each message line.  Idea is that want to present error messages
+with context.  Any code that has a separate internal mental
+representation should have a proper noun so that it can be referenced
+in error messages and leverage priming.
+
+
+
+
+
 
 When writing about this, stress: we do not have a polished and
 finished feature.  We are evaluating a pre-alpha version of a feature
