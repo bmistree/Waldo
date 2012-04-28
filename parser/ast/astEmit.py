@@ -69,13 +69,60 @@ class ProtocolObject():
         self.ept1 = None;
         self.ept2 = None;
 
+        '''
+        takes a variable name and returns what the variable should
+        actually be named in the program text.
+        '''
+        self.mappings = {};
+        
+
+        
     def addShared(self,sharedName,sharedVal):
         self.checkUsageError('addShared');
 
+        sharedName = self.addVarOrFuncNameToMap(sharedName);
         sharedVar = Variable (sharedName,sharedVal);
         self.ept1.sharedVariables.append(sharedVar);
         self.ept2.sharedVariables.append(sharedVar);
 
+    
+        
+    def addVarOrFuncNameToMap(self,varName,root=True):
+        '''
+        self.mappings maps the name of the variable that the scripter
+        used in Waldo source text to an internal name that does not
+        conflict with any python keyword (eg, 'if', 'not', 'self', etc.)
+
+        This function inserts the variable into this map, and returns
+        with what name a variable with this name should take..
+        '''
+        self.checkUsageError('addVarOrFuncNameToMap');
+        if (isPythonReserved(varName) or self.isAlreadyUsed(varName)):
+            newName = self.addVarOrFuncNameToMap('_' + varName,False);
+            if (root):
+                self.mappings[varName] = newName;
+            
+            return newName;
+
+        return varName;
+
+    def isAlreadyUsed(self,varName):
+        '''
+        @returns True if another variable or function in the program
+        already uses the name varName.  False otherwise.
+
+        We know if another variable in the program is using the name
+        varName if one of the values in the self.mappings dict is the
+        same as varName.
+        '''
+        #FIXME: Inefficient
+
+        for s in self.mappings.keys():
+            if (self.mappings[s] == varName):
+                return True;
+
+        return False;
+        
     def checkUsageError(self,whichFunc):
         '''
         For sanity-checking/debugging.
@@ -97,23 +144,149 @@ class ProtocolObject():
         returnString += '\n\n\n';
         
         print(returnString);
-        
-        
+
+#From http://pentangle.net/python/handbook/node52.html
+#I also personally added self.
+PYTHON_RESERVED_WORD_DICT = {
+    'self': True,
+    'and':True,
+    'assert':True,
+    'break':True,
+    'class':True,
+    'continue':True,
+    'def':True,
+    'del':True,
+    'elif':True,
+    'else':True,
+    'except':True,
+    'exec':True,
+    'finally':True,
+    'for':True,
+    'from':True,
+    'global':True,
+    'if':True,
+    'import':True,
+    'in':True,
+    'is':True,
+    'lambda':True,
+    'not':True,
+    'or':True,
+    'pass':True,
+    'print':True,
+    'raise':True,
+    'return':True,
+    'try':True,
+    'while':True,
+    'Data':True,
+    'Float':True,
+    'Int':True,
+    'Numeric':True,
+    'Oxphys':True,
+    'array': True,
+    'close':True,
+    'float':True,
+    'int':True,
+    'input':True,
+    'open':True,
+    'range':True,
+    'type':True,
+    'write':True,
+    'zeros':True,
+    'acos':True,
+    'asin':True,
+    'atan':True,
+    'cos':True,
+    'e':True,
+    'exp':True,
+    'fabs':True,
+    'floor':True,
+    'log':True,
+    'log10':True,
+    'pi':True,
+    'sin':True,
+    'sqrt':True,
+    'tan':True
+    }
+
+def isPythonReserved(varName):
+    '''
+    @returns True if varName is a reserved word in python.  False
+    otherwise.
+    '''
+    print('\nTesting: ' + varName + '\n');
+    returner = varName in PYTHON_RESERVED_WORD_DICT;
+    print(returner);
+    print('\n\n');
+    return returner;
+    
+    
         
 class Endpoint():
     def __init__(self,name):
         self.name = name;
+
+        #decided to make these arrays instead of dicts, because in
+        #certain instances, order of declaration matters.  (for
+        #instance, shared variables.)
         self.publicMethods = [];
         self.internalMethods = [];
         
         self.msgReceiverMethods = [];
         self.msgSendMethods = [];
 
-        #list of strings of variables
+        #list of Variable objects
         self.sharedVariables = [];
-
         self.endpointVariables = [];
 
+    def varName(self,potentialName):
+        '''
+        @param {String} potentialName -- Waldo name of variable being
+        used.
+
+        @returns {String} either self.potentialName or potentialName,
+        depending on whether the variable that is being assigned/used
+        is a method of the endpoint's class or if it's not,
+        respectively.
+        '''
+        #tradeoff of making the shared/endpoint/methods containers
+        #arrays is that I actually have to iterate over full array to
+        #check if potentialName exists in them.
+
+        if (potentialName in self.mappings):
+            potentialName = self.mappings[potentialName];
+        
+        for s in self.publicMethods:
+            if (s.name == potentialName):
+                return 'self.' + potentialName;
+
+        for s in self.internalMethods:
+            if (s.name == potentialName):
+                return 'self.' + potentialName;
+
+        for s in self.internalMethods:
+            if (s.name == potentialName):
+                return 'self.' + potentialName;
+
+        for s in self.msgReceiverMethods:
+            if (s.name == potentialName):
+                return 'self.' + potentialName;
+            
+        for s in self.msgSendMethods:
+            if (s.name == potentialName):
+                return 'self.' + potentialName;
+
+        #list of strings of variables
+        for s in self.sharedVariables:
+            if (s.name == potentialName):
+                return 'self.' + potentialName;
+
+        for s in self.endpointVariables:
+            if (s.name == potentialName):
+                return 'self.' + potentialName;
+
+        return potentialName;
+
+        
     def emit(self):
         '''
         @returns {String} class for this endpoint

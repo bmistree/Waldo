@@ -42,7 +42,7 @@ x * Do more testing of trace type checking to make sure hit seven
    
  * Eventually, may want to lex/parse for common errors.  For instance,
    if use "Equals" instead of "==", parse for "==" and report error.
-   +=, ++ as well.
+   +=, ++ as well.  Cannot begin a variable name with _
    
    
  * Warn unused functions.  Error on unused functions?
@@ -65,6 +65,9 @@ Emitting:
  * Not handling initializer expressions for variables correctly.
    Search for FIXME in astEmit.py.
 
+ * varName method of endpoint should try to avoid conflicts with
+   internal python keywords (such as self, not, and, etc.)
+   
    
 
    

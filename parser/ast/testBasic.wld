@@ -12,7 +12,9 @@ Traces
 Shared
 {
         Server Controls Bool sharedA;
-        Server Controls Bool sharedB = False; 
+        Server Controls Bool sharedB = False;
+        Server Controls Bool self;
+
 }
 
 Client

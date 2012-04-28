@@ -9,6 +9,8 @@ easily.
 Rename types.  Strings and Bools really should not be Strings and
 Bools.  May be way to perform intermediate study on Mechanical Turk.
 
+Transfer comments into generated code.
+
 
 When writing about this, stress: we do not have a polished and
 finished feature.  We are evaluating a pre-alpha version of a feature
