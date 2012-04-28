@@ -57,7 +57,7 @@ def runEmitter(astNode,protObj=None):
             errMsg = '\n\nNot handling initializers for annotated declarations correctly.\n\n';
             print(errMsg);
 
-        protObj.addShared(varName,varVal);
+        protObj.addSharedVariable(varName,varVal);
 
     elif (astNode.label == AST_ENDPOINT):
         endName =  astNode.children[0].value;
@@ -72,7 +72,20 @@ def runEmitter(astNode,protObj=None):
 
         protObj.popCurrentEndpoint(endName);
     elif(astNode.label == AST_ENDPOINT_GLOBAL_SECTION):
-        print('\n\nIn emitter.  Need to finish endpoint global section\n\n');
+        #each of the children here should be a global variable.
+        for s in astNode.children:
+            #each should be a declaration.
+            varName = s.children[1].value;
+            varInitializerVal = None;
+            if (len(s.children) == 3):
+                #means there was an initializer for this variable.
+                errMsg = '\n\nBehram error: Still do not know what to do with var ';
+                errMsg += 'initializer data when emitting for endpoint ';
+                errMsg += 'global section.\n\n';
+                print(errMsg);
+
+            protObj.addEndpointGlobalVariable(varName,varInitializerVal);
+
         
     elif (astNode.label == AST_ENDPOINT_BODY_SECTION):
         print('\n\nIn emitter.  Need to finish endpoint body section\n\n');
@@ -91,13 +104,13 @@ def runEmitter(astNode,protObj=None):
 
 
     if (astNode.label == AST_ROOT):
-        #should only need to return text when asked to run on root ast
-        #node.  cannot emit from partial tree.
+        # should only need to return text when asked to run on root ast
+        # node.  cannot emit from partial tree.
         return  protObj.emit();
     
     return None;
         
-        
+
 
 class ProtocolObject():
     def __init__(self, name):
@@ -108,6 +121,7 @@ class ProtocolObject():
         #keep track of which endpoint section we're parsing so we know
         #which endpoint class to save new variables and functions to.
         self.currentEndpointName =None;
+        self.currentEndpoint = None;
         
         '''
         takes a variable name and returns what the variable should
@@ -124,6 +138,7 @@ class ProtocolObject():
             print (errMsg);
             assert(False);
         self.currentEndpointName = None;
+        self.currentEndpoint = None;
         
     def setCurrentEndpoint(self,endpointName):
         if (self.currentEndpointName != None):
@@ -134,18 +149,48 @@ class ProtocolObject():
             
         #ensures that ept1 and ept2 are not None and also that they
         #agree with endpointName.
-        if (self.ept1.name != endpointName) and (self.ept2.name != endpointName):
+        self.currentEndpointName = endpointName;
+        if (self.ept1.name == endpointName):
+            self.currentEndpoint = self.ept1;
+        elif(self.ept2.name == endpointName):
+            self.currentEndpoint = self.ept2;
+        else:
             errMsg = '\nBehram error: attempting to set current endpoint ';
             errMsg += 'to an unknown value.\n';
             print(errMsg);
             assert(False);
 
-        self.currentEndpointName = endpointName;
 
-            
+
+
+    def addEndpointGlobalVariable(self,globalName,globalVal):
+        '''
+        @param {String} globalName
+        @param {String or None} globalVal ---> What the variable will
+        be initialized with.
+        '''
+        self.checkUsageError('addEndpointGlobalVariable');
+        if (self.currentEndpointName == None):
+            errMsg = '\nBehram error: attempting to set a global ';
+            errMsg += 'variable for an endpoint when we are not ';
+            errMsg += 'inside an endpoint.\n\n';
+            print(errMsg);
+            assert(False);
+
+        globalVarName = self.addVarOrFuncNameToMap(globalName);
+        globalVar = Variable (globalVarName,globalVal);
+        self.currentEndpoint.addEndpointGlobalVariable(globalVar);
+
+
         
-    def addShared(self,sharedName,sharedVal):
-        self.checkUsageError('addShared');
+
+    def addSharedVariable(self,sharedName,sharedVal):
+        '''
+        @param {String} sharedName
+        @param {String or None} sharedVal ---> What the variable will
+        be initialized with.
+        '''
+        self.checkUsageError('addSharedVariable');
 
         sharedName = self.addVarOrFuncNameToMap(sharedName);
         sharedVar = Variable (sharedName,sharedVal);
@@ -304,7 +349,10 @@ class Endpoint():
 
     def addSharedVariable(self,varToAdd):
         self.sharedVariables.append(varToAdd);
-        
+
+    def addEndpointGlobalVariable(self,varToAdd):
+        self.endpointVariables.append(varToAdd);
+
     def varName(self,potentialName):
         '''
         @param {String} potentialName -- Waldo name of variable being
