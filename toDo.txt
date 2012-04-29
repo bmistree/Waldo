@@ -2,6 +2,10 @@ Command to run from parser/ast/
     ./astHead.py -f testBasic.wld -go '{"file":"astOut.html", "h": 3000, "w": 5000}' -e emitted.py
 
 
+Lots of todos still in code.  Largest: sort through initializers for
+variables and finish runFunctionBodyInternalEmit.
+
+    
 To Do:
 
 x * Improve error reporting for when provide incorrectly typed

@@ -150,11 +150,7 @@ class ProtocolObject():
         self.currentEndpointName =None;
         self.currentEndpoint = None;
         
-        '''
-        takes a variable name and returns what the variable should
-        actually be named in the program text.
-        '''
-        self.mappings = {};
+
 
 
 
@@ -191,30 +187,30 @@ class ProtocolObject():
     def addPublicFunction(self,publicFunctionName,publicFuncAstNode):
         self.checkUsageError('addPublicFunction');
         self.checkCurrentEndpointUsage('addPublicFunction');
-        publicFunctionName = self.addVarOrFuncNameToMap(publicFunctionName);
-        pubFunc = PublicFunction(publicFunctionName,publicFuncAstNode);
-        self.currentEndpoint.addPublicFunction(pubFunc);
+        # publicFunctionName = self.addVarOrFuncNameToMap(publicFunctionName);
+        # pubFunc = PublicFunction(publicFunctionName,publicFuncAstNode,self.currentEndpoint);
+        self.currentEndpoint.addPublicFunction(publicFunctionName,publicFuncAstNode,self);
 
     def addInternalFunction(self,internalFunctionName,internalFuncAstNode):
         self.checkUsageError('addInternalFunction');
         self.checkCurrentEndpointUsage('addInternalFunction');
-        internalFunctionName = self.addVarOrFuncNameToMap(internalFunctionName);
-        internalFunc = InternalFunction(internalFunctionName,internalFuncAstNode);
-        self.currentEndpoint.addInternalFunction(internalFunc);
+        # internalFunctionName = self.addVarOrFuncNameToMap(internalFunctionName);
+        # internalFunc = InternalFunction(internalFunctionName,internalFuncAstNode,self.currentEndpoint);
+        self.currentEndpoint.addInternalFunction(internalFunctionName,internalFuncAstNode,self);
 
     def addMsgSendFunction(self,msgSendFunctionName,msgSendFuncAstNode):
         self.checkUsageError('msgSendFunction');
         self.checkCurrentEndpointUsage('msgSendFunction');
-        msgSendFunctionName = self.addVarOrFuncNameToMap(msgSendFunctionName);
-        msgSendFunc = MsgSendFunction(msgSendFunctionName,msgSendFuncAstNode);
-        self.currentEndpoint.addMsgSendFunction(msgSendFunc);
+        # msgSendFunctionName = self.addVarOrFuncNameToMap(msgSendFunctionName);
+        # msgSendFunc = MsgSendFunction(msgSendFunctionName,msgSendFuncAstNode,self.currentEndpoint);
+        self.currentEndpoint.addMsgSendFunction(msgSendFunctionName,msgSendFuncAstNode,self);
 
     def addMsgReceiveFunction(self,msgReceiveFunctionName,msgReceiveFuncAstNode):
         self.checkUsageError('msgReceiveFunction');
         self.checkCurrentEndpointUsage('msgReceiveFunction');
-        msgReceiveFunctionName = self.addVarOrFuncNameToMap(msgReceiveFunctionName);
-        msgReceiveFunc = MsgSendFunction(msgReceiveFunctionName,msgReceiveFuncAstNode);
-        self.currentEndpoint.addMsgReceiveFunction(msgReceiveFunc);
+#        msgReceiveFunctionName = self.addVarOrFuncNameToMap(msgReceiveFunctionName);
+#        msgReceiveFunc = MsgSendFunction(msgReceiveFunctionName,msgReceiveFuncAstNode,self.currentEndpoint);
+        self.currentEndpoint.addMsgReceiveFunction(msgReceiveFunctionName,msgReceiveFuncAstNode,self);
 
 
             
@@ -226,10 +222,7 @@ class ProtocolObject():
         '''
         self.checkUsageError('addEndpointGlobalVariable');
         self.checkCurrentEndpointUsage('addEndpointGlobalVariable');
-
-        globalVarName = self.addVarOrFuncNameToMap(globalName);
-        globalVar = Variable (globalVarName,globalVal);
-        self.currentEndpoint.addEndpointGlobalVariable(globalVar);
+        self.currentEndpoint.addEndpointGlobalVariable(globalName,globalVal);
 
     def checkCurrentEndpointUsage(self,functionFrom):
         if (self.currentEndpointName == None):
@@ -240,8 +233,6 @@ class ProtocolObject():
             assert(False);
         
 
-        
-
     def addSharedVariable(self,sharedName,sharedVal):
         '''
         @param {String} sharedName
@@ -250,48 +241,11 @@ class ProtocolObject():
         '''
         self.checkUsageError('addSharedVariable');
 
-        sharedName = self.addVarOrFuncNameToMap(sharedName);
-        sharedVar = Variable (sharedName,sharedVal);
-        self.ept1.addSharedVariable(sharedVar);
-        self.ept2.addSharedVariable(sharedVar);
-        return sharedName;
+        self.ept1.addSharedVariable(sharedName,sharedVal);
+        self.ept2.addSharedVariable(sharedName,sharedVal);
+
 
         
-    def addVarOrFuncNameToMap(self,varName,root=True):
-        '''
-        self.mappings maps the name of the variable that the scripter
-        used in Waldo source text to an internal name that does not
-        conflict with any python keyword (eg, 'if', 'not', 'self', etc.)
-
-        This function inserts the variable into this map, and returns
-        with what name a variable with this name should take..
-        '''
-        self.checkUsageError('addVarOrFuncNameToMap');
-        if (isPythonReserved(varName) or self.isAlreadyUsed(varName)):
-            newName = self.addVarOrFuncNameToMap('_' + varName,False);
-            if (root):
-                self.mappings[varName] = newName;
-            
-            return newName;
-
-        return varName;
-
-    def isAlreadyUsed(self,varName):
-        '''
-        @returns True if another variable or function in the program
-        already uses the name varName.  False otherwise.
-
-        We know if another variable in the program is using the name
-        varName if one of the values in the self.mappings dict is the
-        same as varName.
-        '''
-        #FIXME: Inefficient
-
-        for s in self.mappings.keys():
-            if (self.mappings[s] == varName):
-                return True;
-
-        return False;
         
     def checkUsageError(self,whichFunc):
         '''
@@ -396,6 +350,11 @@ class Endpoint():
         #certain instances, order of declaration matters.  (for
         #instance, shared variables.)
 
+
+        # takes a variable name and returns what the variable should
+        # actually be named in the program text.
+        self.mappings = {};
+        
         #Each element of these arrays should inherit from Function.
         self.publicMethods = [];
         self.internalMethods = [];
@@ -407,24 +366,78 @@ class Endpoint():
         self.sharedVariables = [];
         self.endpointVariables = [];
 
-    def addInternalFunction(self,internalFuncToAdd):
-        self.internalMethods.append(internalFuncToAdd);
+    def addInternalFunction(self,internalFuncName,internalFuncAstNode,protObj):
+        internalFuncName = self.addVarOrFuncNameToMap(internalFuncName);
+        internalFunc = InternalFunction(internalFuncName,internalFuncAstNode,protObj);
+        self.internalMethods.append(internalFunc);
         
-    def addPublicFunction(self,publicFuncToAdd):
-        self.publicMethods.append(publicFuncToAdd);
+    def addPublicFunction(self,pubFuncName,pubFuncAstNode,protObj):
+        pubFuncName = self.addVarOrFuncNameToMap(pubFuncName);
+        pubFunc = PublicFunction(pubFuncName,pubFuncAstNode,protObj);
+        self.publicMethods.append(pubFunc);
 
-    def addMsgReceiveFunction(self,msgReceiveFuncToAdd):
-        self.msgReceiveMethods.append(msgReceiveFuncToAdd);
+    def addMsgReceiveFunction(self,msgReceiveFuncName,msgReceiveFuncAstNode,protObj):
+        msgReceiveFuncName = self.addVarOrFuncNameToMap(msgReceiveFuncName);
+        msgRecvFunc = MsgReceiveFunction(msgReceiveFuncName,msgReceiveFuncAstNode,protObj);
+        self.msgReceiveMethods.append(msgRecvFunc);
         
-    def addMsgSendFunction(self,msgSendFuncToAdd):
-        self.msgSendMethods.append(msgSendFuncToAdd);
-                            
-    def addSharedVariable(self,varToAdd):
+    def addMsgSendFunction(self,msgSendFuncName,msgSendFuncAstNode,protObj):
+        msgSendFuncName = self.addVarOrFuncNameToMap(msgSendFuncName);
+        msgSendFunc = MsgSendFunction(msgSendFuncName,msgSendFuncAstNode,protObj);
+        self.msgSendMethods.append(msgSendFunc);
+
+
+    def addSharedVariable(self,varName,varVal):
+        varName = self.addVarOrFuncNameToMap(varName);
+        varToAdd = Variable(varName,self,varVal);
         self.sharedVariables.append(varToAdd);
 
-    def addEndpointGlobalVariable(self,varToAdd):
+    def addEndpointGlobalVariable(self,varName,varVal):
+        varName = self.addVarOrFuncNameToMap(varName);
+        varToAdd = Variable(varName,self,varVal);
         self.endpointVariables.append(varToAdd);
 
+    def addVarOrFuncNameToMap(self,varName,root=True):
+        '''
+        self.mappings maps the name of the variable that the scripter
+        used in Waldo source text to an internal name that does not
+        conflict with any python keyword (eg, 'if', 'not', 'self', etc.)
+
+        This function inserts the variable into this map, and returns
+        with what name a variable with this name should take..
+        '''
+        if (isPythonReserved(varName) or self.isAlreadyUsed(varName)):
+            newName = self.addVarOrFuncNameToMap('_' + varName,False);
+            if (root):
+                self.mappings[varName] = newName;
+            return newName;
+
+        return varName;
+
+    def removeVarOrFuncNameFromMap(self,varName):
+        if (varName in self.mappings):
+            del self.mappings[varName];
+            
+    
+    def isAlreadyUsed(self,varName):
+        '''
+        @returns True if another variable or function in the program
+        within the current scope already uses the name varName.  False
+        otherwise.
+
+        We know if another variable in the program is using the name
+        varName if one of the values in the self.mappings dict is the
+        same as varName.
+        '''
+        #FIXME: Inefficient
+
+        for s in self.mappings.keys():
+            if (self.mappings[s] == varName):
+                return True;
+
+        return False;
+
+        
     def varName(self,potentialName):
         '''
         @param {String} potentialName -- Waldo name of variable being
@@ -438,6 +451,7 @@ class Endpoint():
         #tradeoff of making the shared/endpoint/methods containers
         #arrays is that I actually have to iterate over full array to
         #check if potentialName exists in them.
+
 
         if (potentialName in self.mappings):
             potentialName = self.mappings[potentialName];
@@ -454,7 +468,7 @@ class Endpoint():
             if (s.name == potentialName):
                 return 'self.' + potentialName;
 
-        for s in self.msgReceiverMethods:
+        for s in self.msgReceiveMethods:
             if (s.name == potentialName):
                 return 'self.' + potentialName;
             
@@ -556,19 +570,21 @@ def indentString(string,indentAmount):
     indenter = '';
     for s in range(0,indentAmount):
         indenter += '    ';
-    
+
     for s in splitOnNewLine:
-        returnString += indenter + s + '\n';
+        if (len(s) != 0):
+            returnString += indenter + s + '\n';
 
     return returnString;
     
 class Variable():
-    def __init__(self,name,val=None):
+    def __init__(self,name,endpoint,val=None):
         self.name = name;
         self.val = None;
+        self.endpoint = endpoint;
 
     def emit(self):
-        returnString = self.name;
+        returnString = self.endpoint.varName(self.name);
         returnString += ' = ';
         
         if (self.val == None):
@@ -581,23 +597,57 @@ class Variable():
 
 
 class Function(object):
-    def __init__(self,name,astNode):
+    def __init__(self,name,astNode,protObj,declArgListIndex):
+        '''
+        @param {String} name -- Should already be guaranteed not to
+        collide with python variable and other global vars.
+        
+        @param {Int} declArgListIndex -- Each function astNode
+        (public, msgReceive, ...) has many children.  declArgListIndex is
+        the index of astNode.children that contains declArgList appears.
+        '''
         self.name = name;
         self.astNode = astNode;
+        self.protObj = protObj;
+        self.endpoint = self.protObj.currentEndpoint;
+        self.declArgListIndex = declArgListIndex;
+        
     def emit():
         errMsg = '\nBehram error: pure virtual method emit of Function ';
         errMsg += 'called.\n';
         assert(False);
+
+    def createMethodHeader(self):
+        #already know that self.name does not conflict with python
+        #because was checked before constructed.
+        methodHeader = 'def %s(self' % self.name;
+
         
+        #fill in arguments
+        declArgsList = self.astNode.children[self.declArgListIndex];
+        for s in declArgsList.children:
+            #each s is a declArg
+            if (len(s.children) == 0):
+                continue;
+
+
+            argName = s.children[1].value;
+            argName = self.endpoint.varName(argName);
+            methodHeader += ', ' + argName;
+        
+        methodHeader += '):\n';
+        return methodHeader;
+
+
 class InternalFunction(Function):
-    def __init__(self,name,astNode):
-        super(InternalFunction,self).__init__(name,astNode);
+    def __init__(self,name,astNode,protObj):
+        #see astBuilder or the graphical ast:
+        functionArgDeclIndex = 2;        
+        super(InternalFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
     def emit(self):
         print('\nBehram error: in InternalFunction, need to finish emit method\n');
-        methodHeader = '''
-def %s(self):
-''' % self.name;
-        methodBody = 'pass;';
+        methodHeader = self.createMethodHeader();
+        methodBody = 'pass';
         
         returnString = indentString(methodHeader,1);
         returnString += indentString(methodBody,2);
@@ -605,14 +655,15 @@ def %s(self):
 
 
 class PublicFunction(Function):
-    def __init__(self,name,astNode):
-        super(PublicFunction,self).__init__(name,astNode);
+    def __init__(self,name,astNode,protObj):
+        #see astBuilder or the graphical ast:
+        functionArgDeclIndex = 2;
+        super(PublicFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
 
     def emit(self):
         print('\nBehram error: in PublicFunction, need to finish emit method\n');
-        methodHeader = '''
-def %s(self):
-''' % self.name;
+        methodHeader = self.createMethodHeader();        
+
         methodBody = 'pass;';
         
         returnString = indentString(methodHeader,1);
@@ -621,15 +672,19 @@ def %s(self):
 
         
 class MsgSendFunction(Function):
-    def __init__(self,name,astNode):
-        super(MsgSendFunction,self).__init__(name,astNode);
-
+    def __init__(self,name,astNode,protObj):
+        #see astBuilder or the graphical ast:
+        functionArgDeclIndex = 1;
+        super(MsgSendFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
+        
+        
     def emit(self):
         print('\nBehram error: in MsgSendFunction, need to finish emit method\n');
-        methodHeader = '''
-def %s(self):
-''' % self.name;
-        methodBody = 'pass;';
+
+        methodHeader = self.createMethodHeader();
+        
+        funcBodyNode = self.astNode.children[2];
+        methodBody = runFunctionBodyInternalEmit(funcBodyNode,self.protObj);
         
         returnString = indentString(methodHeader,1);
         returnString += indentString(methodBody,2);
@@ -638,17 +693,60 @@ def %s(self):
 
         
 class MsgReceiveFunction(Function):
-    def __init__(self,name,astNode):
-        super(MsgReceiveFunction,self).__init__(name,astNode);
+    def __init__(self,name,astNode,protObj):
+        #see astBuilder or the graphical ast:
+        functionArgDeclIndex = 1;
+        super(MsgReceiveFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
 
 
     def emit(self):
         print('\nBehram error: in MsgReceiveFunction, need to finish emit method\n');
-        methodHeader = '''
-def %s(self):
-''' % self.name;
+        methodHeader = self.createMethodHeader();                
         methodBody = 'pass;';
         
         returnString = indentString(methodHeader,1);
         returnString += indentString(methodBody,2);
         return returnString;
+
+#lkjs;
+def runFunctionBodyInternalEmit(astNode,protObj,returnString = '',indentLevel=0):
+    '''
+    @param {AstNode} astNode -- when called from externally,
+    should have label AST_FUNCTION_BODY
+    
+    @param {ProtocolObject} protObj -- So that can check for
+    appropriate variable names
+
+    @returns {String} with funcition text.  base indent level is 0.
+    '''
+
+    if (astNode.label == AST_FUNCTION_BODY):
+        for s in astNode.children:
+            funcStatementString = runFunctionBodyInternalEmit(s,protObj,returnString,indentLevel);
+            if (len(funcStatementString) != 0):
+                returnString += indentString(funcStatementString,indentLevel);
+                returnString += '\n';
+                
+    elif (astNode.label == AST_DECLARATION):
+        idName = astNode.children[1];
+        decString = idName + '= STILL NEED TO FIX IN RUNFUNCTIONBODYINTERNALEMIT;';
+        returnString += indentString(decString,indentLevel);
+        returnString += '\n';
+    else:
+        errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';
+        errMsg += 'do not know how to handle label ' + astNode.label + '\n';
+        print(errMsg);
+
+
+    return returnString;
+
+
+# if __name__ == '__main__':
+
+#     # something = '\na\nb\nc\nd';
+#     something = '\n';
+#     print('\n\na');
+#     print(indentString(something,1));
+#     print('b\n\n');
+#     print(indentString(something,5));
+#     print('\n\n');

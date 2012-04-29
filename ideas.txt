@@ -23,7 +23,10 @@ with context.  Any code that has a separate internal mental
 representation should have a proper noun so that it can be referenced
 in error messages and leverage priming.
 
-
+Maybe goal of Waldo is to support Epistemic actions.  Trace line.
+Something that does not move directly closer to goal, but which
+reduces cognitive load.  (Part of that could be re-arranging source
+more easily.)
 
 
 
