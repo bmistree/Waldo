@@ -88,8 +88,35 @@ def runEmitter(astNode,protObj=None):
 
         
     elif (astNode.label == AST_ENDPOINT_BODY_SECTION):
-        print('\n\nIn emitter.  Need to finish endpoint body section\n\n');
+        for s in astNode.children:
+            runEmitter(s,protObj);
+
+    elif (astNode.label == AST_ENDPOINT_FUNCTION_SECTION):
+        for s in astNode.children:
+            runEmitter(s,protObj);
+
+    elif (astNode.label == AST_PUBLIC_FUNCTION):
+        publicFunctionName =  astNode.children[0].value;            
+        publicFuncAstNode = astNode;
+        protObj.addPublicFunction(publicFunctionName,publicFuncAstNode);
+
+    elif(astNode.label == AST_FUNCTION):
+        internalFunctionName =  astNode.children[0].value;            
+        internalFuncAstNode = astNode;
+        protObj.addInternalFunction(internalFunctionName,internalFuncAstNode);
         
+    elif (astNode.label == AST_MSG_SEND_FUNCTION):
+        msgSendFunctionName =  astNode.children[0].value;            
+        msgSendFuncAstNode = astNode;
+        protObj.addMsgSendFunction(msgSendFunctionName,msgSendFuncAstNode);
+
+    elif (astNode.label == AST_MSG_RECEIVE_FUNCTION):
+        msgReceiveFunctionName =  astNode.children[0].value;            
+        msgReceiveFuncAstNode = astNode;
+        protObj.addMsgReceiveFunction(msgReceiveFunctionName,msgReceiveFuncAstNode);
+
+
+
     else:
         print('\nIn emitter.  Not sure what to do with label ');
         print(astNode.label);
@@ -161,8 +188,36 @@ class ProtocolObject():
             assert(False);
 
 
+    def addPublicFunction(self,publicFunctionName,publicFuncAstNode):
+        self.checkUsageError('addPublicFunction');
+        self.checkCurrentEndpointUsage('addPublicFunction');
+        publicFunctionName = self.addVarOrFuncNameToMap(publicFunctionName);
+        pubFunc = PublicFunction(publicFunctionName,publicFuncAstNode);
+        self.currentEndpoint.addPublicFunction(pubFunc);
+
+    def addInternalFunction(self,internalFunctionName,internalFuncAstNode):
+        self.checkUsageError('addInternalFunction');
+        self.checkCurrentEndpointUsage('addInternalFunction');
+        internalFunctionName = self.addVarOrFuncNameToMap(internalFunctionName);
+        internalFunc = InternalFunction(internalFunctionName,internalFuncAstNode);
+        self.currentEndpoint.addInternalFunction(internalFunc);
+
+    def addMsgSendFunction(self,msgSendFunctionName,msgSendFuncAstNode):
+        self.checkUsageError('msgSendFunction');
+        self.checkCurrentEndpointUsage('msgSendFunction');
+        msgSendFunctionName = self.addVarOrFuncNameToMap(msgSendFunctionName);
+        msgSendFunc = MsgSendFunction(msgSendFunctionName,msgSendFuncAstNode);
+        self.currentEndpoint.addMsgSendFunction(msgSendFunc);
+
+    def addMsgReceiveFunction(self,msgReceiveFunctionName,msgReceiveFuncAstNode):
+        self.checkUsageError('msgReceiveFunction');
+        self.checkCurrentEndpointUsage('msgReceiveFunction');
+        msgReceiveFunctionName = self.addVarOrFuncNameToMap(msgReceiveFunctionName);
+        msgReceiveFunc = MsgSendFunction(msgReceiveFunctionName,msgReceiveFuncAstNode);
+        self.currentEndpoint.addMsgReceiveFunction(msgReceiveFunc);
 
 
+            
     def addEndpointGlobalVariable(self,globalName,globalVal):
         '''
         @param {String} globalName
@@ -170,17 +225,20 @@ class ProtocolObject():
         be initialized with.
         '''
         self.checkUsageError('addEndpointGlobalVariable');
-        if (self.currentEndpointName == None):
-            errMsg = '\nBehram error: attempting to set a global ';
-            errMsg += 'variable for an endpoint when we are not ';
-            errMsg += 'inside an endpoint.\n\n';
-            print(errMsg);
-            assert(False);
+        self.checkCurrentEndpointUsage('addEndpointGlobalVariable');
 
         globalVarName = self.addVarOrFuncNameToMap(globalName);
         globalVar = Variable (globalVarName,globalVal);
         self.currentEndpoint.addEndpointGlobalVariable(globalVar);
 
+    def checkCurrentEndpointUsage(self,functionFrom):
+        if (self.currentEndpointName == None):
+            errMsg = '\nBehram error: attempting to perform an emit '
+            errMsg += 'operation on an endpoint when have no current ';
+            errMsg += 'endpoint in function ' + functionFrom + '.\n';
+            print(errMsg);
+            assert(False);
+        
 
         
 
@@ -249,11 +307,11 @@ class ProtocolObject():
     def emit(self):
         self.checkUsageError('emit');
         returnString = '';
-        returnString += '\n\n\n';
+        returnString += '\n';
         returnString += self.ept1.emit();
-        returnString += '\n\n\n';
+        returnString += '\n\n';
         returnString += self.ept2.emit();
-        returnString += '\n\n\n';
+        returnString += '\n';
         return returnString;
 
 
@@ -337,16 +395,30 @@ class Endpoint():
         #decided to make these arrays instead of dicts, because in
         #certain instances, order of declaration matters.  (for
         #instance, shared variables.)
+
+        #Each element of these arrays should inherit from Function.
         self.publicMethods = [];
         self.internalMethods = [];
         
-        self.msgReceiverMethods = [];
+        self.msgReceiveMethods = [];
         self.msgSendMethods = [];
 
         #list of Variable objects
         self.sharedVariables = [];
         self.endpointVariables = [];
 
+    def addInternalFunction(self,internalFuncToAdd):
+        self.internalMethods.append(internalFuncToAdd);
+        
+    def addPublicFunction(self,publicFuncToAdd):
+        self.publicMethods.append(publicFuncToAdd);
+
+    def addMsgReceiveFunction(self,msgReceiveFuncToAdd):
+        self.msgReceiveMethods.append(msgReceiveFuncToAdd);
+        
+    def addMsgSendFunction(self,msgSendFuncToAdd):
+        self.msgSendMethods.append(msgSendFuncToAdd);
+                            
     def addSharedVariable(self,varToAdd):
         self.sharedVariables.append(varToAdd);
 
@@ -411,7 +483,35 @@ class Endpoint():
         returnString += '\n\n';
         returnString += self.emitClassInit();
         returnString += '\n\n';
+        returnString += self.emitFunctions();
         return returnString;
+
+
+    def emitFunctions(self):
+        returnString = '';
+        returnString += '\n#public methods\n';
+        for s in self.publicMethods:
+            returnString += s.emit();
+            returnString += '\n';
+            
+        returnString += '\n#internal methods\n';
+        for s in self.internalMethods:
+            returnString += s.emit();
+            returnString += '\n';
+
+        returnString += '\n#msgReceive methods\n';            
+        for s in self.msgReceiveMethods:
+            returnString += s.emit();
+            returnString += '\n';
+            
+        returnString += '\n#msgSend methods\n';                        
+        for s in self.msgSendMethods:
+            returnString += s.emit();
+            returnString += '\n';
+
+        return returnString;
+
+
         
     def emitClassHeader(self):
         returnString = '''
@@ -477,4 +577,78 @@ class Variable():
             returnString += self.val;
         returnString += ';';
         
+        return returnString;
+
+
+class Function(object):
+    def __init__(self,name,astNode):
+        self.name = name;
+        self.astNode = astNode;
+    def emit():
+        errMsg = '\nBehram error: pure virtual method emit of Function ';
+        errMsg += 'called.\n';
+        assert(False);
+        
+class InternalFunction(Function):
+    def __init__(self,name,astNode):
+        super(InternalFunction,self).__init__(name,astNode);
+    def emit(self):
+        print('\nBehram error: in InternalFunction, need to finish emit method\n');
+        methodHeader = '''
+def %s(self):
+''' % self.name;
+        methodBody = 'pass;';
+        
+        returnString = indentString(methodHeader,1);
+        returnString += indentString(methodBody,2);
+        return returnString;
+
+
+class PublicFunction(Function):
+    def __init__(self,name,astNode):
+        super(PublicFunction,self).__init__(name,astNode);
+
+    def emit(self):
+        print('\nBehram error: in PublicFunction, need to finish emit method\n');
+        methodHeader = '''
+def %s(self):
+''' % self.name;
+        methodBody = 'pass;';
+        
+        returnString = indentString(methodHeader,1);
+        returnString += indentString(methodBody,2);
+        return returnString;
+
+        
+class MsgSendFunction(Function):
+    def __init__(self,name,astNode):
+        super(MsgSendFunction,self).__init__(name,astNode);
+
+    def emit(self):
+        print('\nBehram error: in MsgSendFunction, need to finish emit method\n');
+        methodHeader = '''
+def %s(self):
+''' % self.name;
+        methodBody = 'pass;';
+        
+        returnString = indentString(methodHeader,1);
+        returnString += indentString(methodBody,2);
+        return returnString;
+
+
+        
+class MsgReceiveFunction(Function):
+    def __init__(self,name,astNode):
+        super(MsgReceiveFunction,self).__init__(name,astNode);
+
+
+    def emit(self):
+        print('\nBehram error: in MsgReceiveFunction, need to finish emit method\n');
+        methodHeader = '''
+def %s(self):
+''' % self.name;
+        methodBody = 'pass;';
+        
+        returnString = indentString(methodHeader,1);
+        returnString += indentString(methodBody,2);
         return returnString;
