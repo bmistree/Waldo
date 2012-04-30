@@ -724,7 +724,32 @@ def runFunctionBodyInternalEmit(astNode,protObj,indentLevel=0):
                 
     elif (astNode.label == AST_DECLARATION):
         idName = astNode.children[1].value;
-        decString = idName + '= STILL NEED TO FIX IN RUNFUNCTIONBODYINTERNALEMIT;';
+        decString = idName + ' = ';
+
+
+        #check if have an initializer value
+        if (len(astNode.children) == 3):
+            #have an initializer value;
+            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,0);
+            decString += rhsInitializer;
+        else:
+            #no initializer value, specify defaults.
+            typeName = astNode.type;        
+            if (typeName == TYPE_BOOL):
+                decString += 'False;';
+            elif (typeName == TYPE_NUMBER):
+                decString += '0;';
+            elif (typeName == TYPE_STRING):
+                decString += '"";';
+            elif (typeName == TYPE_NOTHING):
+                decString += 'None;';
+            else:
+                errMsg = '\nBehram error.  Unknown declaration type when ';
+                errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
+                print(errMsg);
+                decString += 'None;';
+
+        
         returnString += indentString(decString,indentLevel);
         returnString += '\n';
 
