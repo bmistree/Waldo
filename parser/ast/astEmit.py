@@ -187,29 +187,21 @@ class ProtocolObject():
     def addPublicFunction(self,publicFunctionName,publicFuncAstNode):
         self.checkUsageError('addPublicFunction');
         self.checkCurrentEndpointUsage('addPublicFunction');
-        # publicFunctionName = self.addVarOrFuncNameToMap(publicFunctionName);
-        # pubFunc = PublicFunction(publicFunctionName,publicFuncAstNode,self.currentEndpoint);
         self.currentEndpoint.addPublicFunction(publicFunctionName,publicFuncAstNode,self);
 
     def addInternalFunction(self,internalFunctionName,internalFuncAstNode):
         self.checkUsageError('addInternalFunction');
         self.checkCurrentEndpointUsage('addInternalFunction');
-        # internalFunctionName = self.addVarOrFuncNameToMap(internalFunctionName);
-        # internalFunc = InternalFunction(internalFunctionName,internalFuncAstNode,self.currentEndpoint);
         self.currentEndpoint.addInternalFunction(internalFunctionName,internalFuncAstNode,self);
 
     def addMsgSendFunction(self,msgSendFunctionName,msgSendFuncAstNode):
         self.checkUsageError('msgSendFunction');
         self.checkCurrentEndpointUsage('msgSendFunction');
-        # msgSendFunctionName = self.addVarOrFuncNameToMap(msgSendFunctionName);
-        # msgSendFunc = MsgSendFunction(msgSendFunctionName,msgSendFuncAstNode,self.currentEndpoint);
         self.currentEndpoint.addMsgSendFunction(msgSendFunctionName,msgSendFuncAstNode,self);
 
     def addMsgReceiveFunction(self,msgReceiveFunctionName,msgReceiveFuncAstNode):
         self.checkUsageError('msgReceiveFunction');
         self.checkCurrentEndpointUsage('msgReceiveFunction');
-#        msgReceiveFunctionName = self.addVarOrFuncNameToMap(msgReceiveFunctionName);
-#        msgReceiveFunc = MsgSendFunction(msgReceiveFunctionName,msgReceiveFuncAstNode,self.currentEndpoint);
         self.currentEndpoint.addMsgReceiveFunction(msgReceiveFunctionName,msgReceiveFuncAstNode,self);
 
 
@@ -708,8 +700,7 @@ class MsgReceiveFunction(Function):
         returnString += indentString(methodBody,2);
         return returnString;
 
-#lkjs;
-def runFunctionBodyInternalEmit(astNode,protObj,returnString = '',indentLevel=0):
+def runFunctionBodyInternalEmit(astNode,protObj,indentLevel=0):
     '''
     @param {AstNode} astNode -- when called from externally,
     should have label AST_FUNCTION_BODY
@@ -720,18 +711,39 @@ def runFunctionBodyInternalEmit(astNode,protObj,returnString = '',indentLevel=0)
     @returns {String} with funcition text.  base indent level is 0.
     '''
 
+    returnString = '';
     if (astNode.label == AST_FUNCTION_BODY):
         for s in astNode.children:
-            funcStatementString = runFunctionBodyInternalEmit(s,protObj,returnString,indentLevel);
+            funcStatementString = runFunctionBodyInternalEmit(s,protObj,indentLevel);
             if (len(funcStatementString) != 0):
                 returnString += indentString(funcStatementString,indentLevel);
                 returnString += '\n';
+        if (len(returnString) == 0):
+            returnString += indentString('pass;',indentLevel);
+
                 
     elif (astNode.label == AST_DECLARATION):
-        idName = astNode.children[1];
+        idName = astNode.children[1].value;
         decString = idName + '= STILL NEED TO FIX IN RUNFUNCTIONBODYINTERNALEMIT;';
         returnString += indentString(decString,indentLevel);
         returnString += '\n';
+
+    elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
+        idName = astNode.children[0].value;
+        lhsAssignString = idName + '= ';
+
+        assignTo = astNode.children[0];
+        rhsAssignString = '';
+        for s in assignTo.children:
+            rhsAssignStringString += runFunctionBodyInternalEmit(s,protObj,0);
+
+        returnString += indentString(lhsAssignString + rhsAssignString,indentLevel);
+        returnString += '\n';
+
+    elif (astNode.label == AST_FUNCTION_BODY_STATEMENT):
+        for s in astNode.children:
+            returnString += runFunctionBodyInternalEmit(s,protObj,indentLevel);
+        
     else:
         errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';
         errMsg += 'do not know how to handle label ' + astNode.label + '\n';
