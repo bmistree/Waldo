@@ -84,6 +84,7 @@ def runEmitter(astNode,protObj=None):
                 errMsg += 'global section.\n\n';
                 print(errMsg);
 
+                #lkjs;
             protObj.addEndpointGlobalVariable(varName,varInitializerVal);
 
         
@@ -150,8 +151,6 @@ class ProtocolObject():
         self.currentEndpointName =None;
         self.currentEndpoint = None;
         
-
-
 
 
     def popCurrentEndpoint(self,endName):
@@ -578,7 +577,8 @@ class Variable():
     def emit(self):
         returnString = self.endpoint.varName(self.name);
         returnString += ' = ';
-        
+
+
         if (self.val == None):
             returnString += 'None';
         else:
@@ -676,7 +676,7 @@ class MsgSendFunction(Function):
         methodHeader = self.createMethodHeader();
         
         funcBodyNode = self.astNode.children[2];
-        methodBody = runFunctionBodyInternalEmit(funcBodyNode,self.protObj);
+        methodBody = runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint);
         
         returnString = indentString(methodHeader,1);
         returnString += indentString(methodBody,2);
@@ -700,21 +700,23 @@ class MsgReceiveFunction(Function):
         returnString += indentString(methodBody,2);
         return returnString;
 
-def runFunctionBodyInternalEmit(astNode,protObj,indentLevel=0):
+def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
     '''
-    @param {AstNode} astNode -- when called from externally,
-    should have label AST_FUNCTION_BODY
+    @param {AstNode} astNode -- the ast node that we want evaluation
+    to start from.  When called externally, this will generally have
+    label AST_FUNCTION_BODY.  However, because this code also emits
+    bool, string, and number literals, it may also be used to emit the
+    initialization statement for shared and global variables.
     
     @param {ProtocolObject} protObj -- So that can check for
     appropriate variable names
 
     @returns {String} with funcition text.  base indent level is 0.
     '''
-
     returnString = '';
     if (astNode.label == AST_FUNCTION_BODY):
         for s in astNode.children:
-            funcStatementString = runFunctionBodyInternalEmit(s,protObj,indentLevel);
+            funcStatementString = runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
             if (len(funcStatementString) != 0):
                 returnString += indentString(funcStatementString,indentLevel);
                 returnString += '\n';
@@ -724,13 +726,13 @@ def runFunctionBodyInternalEmit(astNode,protObj,indentLevel=0):
                 
     elif (astNode.label == AST_DECLARATION):
         idName = astNode.children[1].value;
+        idName = endpoint.varName(idName);
         decString = idName + ' = ';
-
 
         #check if have an initializer value
         if (len(astNode.children) == 3):
             #have an initializer value;
-            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,0);
+            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,endpoint,0);
             decString += rhsInitializer;
         else:
             #no initializer value, specify defaults.
@@ -753,21 +755,30 @@ def runFunctionBodyInternalEmit(astNode,protObj,indentLevel=0):
         returnString += indentString(decString,indentLevel);
         returnString += '\n';
 
+    elif (astNode.label == AST_BOOL):
+        return ' ' + astNode.value + ' ';
+
+    elif (astNode.label == AST_STRING):
+        return ' "'  + astNode.value + '" ';
+
+    elif (astNode.label == AST_NUMBER):
+        return ' '  + astNode.value + ' ';
+
+    
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
-        idName = astNode.children[0].value;
-        lhsAssignString = idName + '= ';
-
         assignTo = astNode.children[0];
-        rhsAssignString = '';
-        for s in assignTo.children:
-            rhsAssignStringString += runFunctionBodyInternalEmit(s,protObj,0);
+        idName = assignTo.value;
+        idName = endpoint.varName(idName);
+        lhsAssignString = idName + ' = ';
+        
 
+        rhsAssignString = runFunctionBodyInternalEmit(astNode.children[1],protObj,endpoint,0);
         returnString += indentString(lhsAssignString + rhsAssignString,indentLevel);
         returnString += '\n';
 
     elif (astNode.label == AST_FUNCTION_BODY_STATEMENT):
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,indentLevel);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
         
     else:
         errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';

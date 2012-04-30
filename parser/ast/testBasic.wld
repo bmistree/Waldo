@@ -37,13 +37,14 @@ Server
         
         MsgSend one (Bool top, Bool b)
         {
-            Number c;
+            Number c = 29;
             Number r;
             Number s;
             Number d;
             Number m;
             Bool i = True;
-            
+
+            topC = 20;
             c = 4;
 
           If (i)
