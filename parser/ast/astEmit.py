@@ -764,6 +764,46 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
     elif (astNode.label == AST_NUMBER):
         return ' '  + astNode.value + ' ';
 
+    elif ((astNode.label == AST_PLUS) or (astNode.label == AST_MINUS) or
+          (astNode.label == AST_MULTIPLY) or (astNode.label == AST_DIVIDE) or 
+          (astNode.label == AST_AND) or (astNode.label == AST_OR) or
+          (astNode.label == AST_BOOL_EQUALS) or (astNode.label == AST_BOOL_NOT_EQUALS)):
+
+        if (astNode.label == AST_PLUS):
+            operator = '+';
+        elif(astNode.label == AST_MINUS):
+            operator = '-';
+        elif(astNode.label == AST_MULTIPLY):
+            operator = '*';
+        elif(astNode.label == AST_DIVIDE):
+            operator = '/';
+        elif(astNode.label == AST_AND):
+            operator = 'and';
+        elif(astNode.label == AST_OR):
+            operator = 'or';
+        elif(astNode.label == AST_BOOL_EQUALS):
+            operator = '==';
+        elif(astNode.label == AST_BOOL_NOT_EQUALS):
+            operator = '!=';
+
+            
+        else:
+            errMsg = '\nBehram error.  Unknown operator type when ';
+            errMsg += 'emitting from runFunctionBodyInternalEmit.\n'
+            print(errMsg);
+            assert(False);
+            
+        lhsNode = astNode.children[0];
+        rhsNode = astNode.children[1];
+
+        lhsText = runFunctionBodyInternalEmit(lhsNode,protObj,endpoint,0);
+        rhsText = runFunctionBodyInternalEmit(rhsNode,protObj,endpoint,0);
+
+        overallLine = lhsText + ' '+ operator + ' (' + rhsText + ') ';
+        return overallLine;
+
+
+    
     
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
         assignTo = astNode.children[0];
