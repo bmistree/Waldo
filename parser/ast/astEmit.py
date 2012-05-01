@@ -865,6 +865,27 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
         
         returnString = indentString(elseHead,indentLevel) + '\n' + indentString(elseBodyStr, indentLevel +1);
 
+    elif (astNode.label == AST_FUNCTION_CALL):
+        funcNameNode = astNode.children[0];
+        funcNameStr = endpoint.varName(funcNameNode.value);
+        funcArgListNode = astNode.children[1];
+        funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,0);
+        returnString = indentString(funcNameStr + funcArgStr,indentLevel);
+
+    elif (astNode.label == AST_FUNCTION_ARGLIST):
+        returnString = '(';
+
+        counter = 0;
+        for s in astNode.children:
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,0);
+            counter +=1;
+            
+            if (counter != len(astNode.children)):
+                returnString += ',';
+        
+        returnString += ')';
+        returnString = indentString(returnString,indentLevel);
+
         
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
         assignTo = astNode.children[0];
