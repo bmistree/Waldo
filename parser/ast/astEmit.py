@@ -803,8 +803,26 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
         return overallLine;
 
 
-    
-    
+    elif (astNode.label == AST_CONDITION_STATEMENT):
+        returnString = '';
+        for s in astNode.children:
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
+            returnString += '\n';
+            
+
+    elif (astNode.label == AST_IF_STATEMENT):
+        ifHead = 'if ';
+        booleanConditionNode = astNode.children[0];
+        ifBodyNode = astNode.children[1];
+
+        boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,0);
+        ifBodyStr = runFunctionBodyInternalEmit(ifBodyNode,protObj,endpoint,0);
+        if (ifBodyStr == ''):
+            ifBodyStr = 'pass;';
+        ifHead += boolCondStr + ':'
+
+        returnString = indentString(ifHead,indentLevel) + '\n' + indentString(ifBodyStr, indentLevel +1);
+            
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
         assignTo = astNode.children[0];
         idName = assignTo.value;
