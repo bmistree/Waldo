@@ -810,19 +810,62 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
             returnString += '\n';
             
 
-    elif (astNode.label == AST_IF_STATEMENT):
-        ifHead = 'if ';
+    elif (astNode.label == AST_BOOLEAN_CONDITION):
+        returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,indentLevel);
+
+    elif (astNode.label == AST_IDENTIFIER):
+        returnString = astNode.value;
+
+    elif (astNode.label == AST_ELSE_IF_STATEMENTS):
+        returnString = '';
+        for s in astNode.children:
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,0);
+            returnString += '\n';
+
+        if (returnString != ''):
+            returnString = indentString(returnString,indentLevel);
+
+    elif ((astNode.label == AST_IF_STATEMENT) or
+          (astNode.label == AST_ELSE_IF_STATEMENT)):
+
+        if (astNode.label == AST_IF_STATEMENT):
+            condHead = 'if ';
+        elif(astNode.label == AST_ELSE_IF_STATEMENT):
+            condHead = 'elif ';
+        else:
+            errMsg = '\nBehram error: got an unknown condition label ';
+            errMsg += 'in runFunctionBodyInternalEmit.\n';
+            print(errMsg);
+            assert(False);
+            
         booleanConditionNode = astNode.children[0];
-        ifBodyNode = astNode.children[1];
+        condBodyNode = astNode.children[1];
 
         boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,0);
-        ifBodyStr = runFunctionBodyInternalEmit(ifBodyNode,protObj,endpoint,0);
-        if (ifBodyStr == ''):
-            ifBodyStr = 'pass;';
-        ifHead += boolCondStr + ':'
+        condHead += boolCondStr + ':'
+        
+        condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,0);
+        if (condBodyStr == ''):
+            condBodyStr = 'pass;';
 
-        returnString = indentString(ifHead,indentLevel) + '\n' + indentString(ifBodyStr, indentLevel +1);
-            
+
+        returnString = indentString(condHead,indentLevel) + '\n' + indentString(condBodyStr, indentLevel +1);
+
+    elif(astNode.label == AST_ELSE_STATEMENT):
+        if (len(astNode.children) == 0):
+            return '';
+        
+        elseHead = 'else: \n';
+        elseBody = astNode.children[0];
+
+        elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,0);
+
+        if (elseBodyStr == ''):
+            elseBodyStr = 'pass;';
+        
+        returnString = indentString(elseHead,indentLevel) + '\n' + indentString(elseBodyStr, indentLevel +1);
+
+        
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
         assignTo = astNode.children[0];
         idName = assignTo.value;
@@ -847,12 +890,3 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
     return returnString;
 
 
-# if __name__ == '__main__':
-
-#     # something = '\na\nb\nc\nd';
-#     something = '\n';
-#     print('\n\na');
-#     print(indentString(something,1));
-#     print('b\n\n');
-#     print(indentString(something,5));
-#     print('\n\n');
