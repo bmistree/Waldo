@@ -32,19 +32,10 @@ variables and finish runFunctionBodyInternalEmit.
     
 To Do:
 
-x * Improve error reporting for when provide incorrectly typed
-   arguments when calling function.
- 
-x * Fix error that occurs when do not have any declared variables at
-   top of each endpoint section.
+ * Actually perform type check for send statements.  (And functions
+   with sends in them.  Right now, skipping that and printing a
+   warning instead.)
 
-x * Add other endpoint into type checking
-
-
-x * Type check traces
-x * Do more testing of trace type checking to make sure hit seven
-   conditions that need to be satisfied.
-   
  * Currently producing syntax errors when have not filled in lines in
    traces sections or if don't have functions defined in an endpoint
    section.  These are poor errors.  Instead, may want to produce a

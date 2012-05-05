@@ -23,7 +23,9 @@ tokens = (
     "MULTI_LINE_COMMENT_BEGIN",
     "MULTI_LINE_COMMENT_END",
 
-
+    
+    "SEND_OPERATOR",
+    "TO_OPERATOR",
     "EQUALS",
 
     #boolean logic
@@ -262,6 +264,15 @@ def t_BOOL_NOT_EQUALS(t):
 def t_EQUALS(t):
     '\='
     return mStateMachine.addToken(t);
+
+def t_SEND_OPERATOR(t):
+    'Send'
+    return mStateMachine.addToken(t);
+
+def t_TO_OPERATOR(t):
+    'To'
+    return mStateMachine.addToken(t);
+
 
 def t_IF(t):
     'If'

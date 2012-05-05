@@ -286,13 +286,21 @@ def p_FunctionBody(p):
         
 def p_FunctionBodyStatement(p):
     '''FunctionBodyStatement : Declaration SEMI_COLON
+                             | SendStatement SEMI_COLON
                              | AssignmentStatement SEMI_COLON
                              | ConditionStatement
-                             | ReturnableExpression SEMI_COLON                             
+                             | ReturnableExpression SEMI_COLON
     '''
     p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p.lineno(0),p.lexpos(0));
     p[0].addChild(p[1]);
 
+def p_SendStatement(p):
+    '''SendStatement : SEND_OPERATOR Identifier TO_OPERATOR Identifier
+    '''
+    p[0] = AstNode(AST_SEND_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[2],p[4]]);
+
+    
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
     

@@ -25,6 +25,7 @@ Client
         {
             Number c;
             Number r;
+            Send r To Server;
         }
 }
 

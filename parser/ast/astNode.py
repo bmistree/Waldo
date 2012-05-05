@@ -66,10 +66,12 @@ class AstNode():
         #line numbers.
         
         if ((self.label != AST_ROOT) and (typeStack == None)):
-            print('\nError.  Must have typeStack unless root node\n');
+            print('\nBehram error.  Must have typeStack unless root node\n');
             assert(False);
         elif(self.label == AST_ROOT):
             typeStack = TypeCheckContextStack();
+
+
 
             
         if ((self.label == AST_ROOT) or
@@ -227,6 +229,15 @@ class AstNode():
 
                 
             print('\nTo do: still must do much more trace line type checking\n');
+
+        elif (self.label == AST_SEND_STATEMENT):
+            errMsg = '\nBehram warn: need to actually perform type ';
+            errMsg += 'check for send statement in astNode.py.  ';
+            errMsg += 'Similarly, type check message being sent as ';
+            errMsg += 'well as msg send and receive functions to ';
+            errMsg += 'ensure that each has a send statement in it.\n';
+            print(errMsg);
+
 
 
         elif(self.label == AST_SHARED_SECTION):
