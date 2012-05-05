@@ -4,6 +4,7 @@ from astLabels import TYPE_BOOL;
 from astLabels import TYPE_STRING;
 from astLabels import TYPE_NUMBER;
 from astLabels import TYPE_NOTHING;
+from astLabels import TYPE_MESSAGE;
 from astLabels import TYPE_MSG_SEND_FUNCTION;
 from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
 
@@ -267,6 +268,7 @@ class FuncContext():
             (funcIdentifierType != TYPE_NUMBER) and
             (funcIdentifierType != TYPE_STRING) and
             (funcIdentifierType != TYPE_NOTHING) and
+            (funcIdentifierType != TYPE_MESSAGE) and
             (funcIdentifierType != TYPE_MSG_SEND_FUNCTION) and
             (funcIdentifierType != TYPE_MSG_RECEIVE_FUNCTION)):
             
@@ -546,7 +548,8 @@ class Context():
 
         #note: if appending to this condition, will have to import
         #additional types at top of file.
-        if ((identifierType != TYPE_BOOL) and (identifierType != TYPE_NUMBER) and (identifierType != TYPE_STRING)):
+        if ((identifierType != TYPE_BOOL) and (identifierType != TYPE_NUMBER) and
+            (identifierType != TYPE_STRING) and (identifierType != TYPE_MESSAGE)):
             print('\nError.  Unrecognized identifierType insertion: ' + identifierType + '\n');
             assert(False);
 

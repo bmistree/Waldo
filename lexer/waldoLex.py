@@ -45,6 +45,7 @@ tokens = (
     "LIST_TYPE",
     "BOOL_TYPE",
     "NOTHING_TYPE",
+    "MESSAGE_TYPE",
     
     #whitespace
     "SPACE",
@@ -55,7 +56,8 @@ tokens = (
     "CONTROLS",
     "SEMI_COLON",    
     "COMMA",
-
+    "COLON",
+    
 
     #boolean operators
     "AND",
@@ -291,6 +293,9 @@ def t_NOTHING_TYPE(t):
     "Nothing"
     return mStateMachine.addToken(t);
 
+def t_MESSAGE_TYPE(t):
+    "Message"
+    return mStateMachine.addToken(t);
 
 def t_NOT(t):
     'Not'
@@ -353,6 +358,11 @@ def t_RIGHT_PAREN(t):
 def t_COMMA(t):
     '\,'
     return mStateMachine.addToken(t);
+
+def t_COLON(t):
+    '\:'
+    return mStateMachine.addToken(t);
+
 
 def t_LEFT_BRACKET(t):
     '\['

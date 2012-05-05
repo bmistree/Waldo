@@ -25,7 +25,11 @@ Client
         {
             Number c;
             Number r;
-            Send r To Server;
+            Message msg = {
+            'a': r
+            };
+            
+            Send msg To Server;
         }
 }
 

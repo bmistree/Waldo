@@ -238,6 +238,12 @@ class AstNode():
             errMsg += 'ensure that each has a send statement in it.\n';
             print(errMsg);
 
+        elif (self.label == AST_MESSAGE_LITERAL):
+            errMsg = '\nBehram warn: need to actually perform type ';
+            errMsg += 'check for message literal astNode.py.\n';
+            print(errMsg);
+            self.type = TYPE_MESSAGE;
+
 
 
         elif(self.label == AST_SHARED_SECTION):

@@ -122,6 +122,7 @@ def p_Type(p):
             | LIST_TYPE
             | BOOL_TYPE
             | NOTHING_TYPE
+            | MESSAGE_TYPE
             '''
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),p[1]);
 
@@ -132,10 +133,51 @@ def p_Initializer(p):
                    | String
                    | Bool
                    | FunctionCall
+                   | MessageLiteral
                    ''';
     p[0] = p[1];
 
+def p_MessageLiteral(p):
+    '''
+    MessageLiteral : CURLY_LEFT InternalMessageLiteral CURLY_RIGHT
+                   | CURLY_LEFT CURLY_RIGHT
+    '''
+
+    if (len(p) == 4):
+        p[0] = p[2];
+    elif(len(p) == 3):
+        p[0]= AstNode(AST_MESSAGE_LITERAL,p.lineno(0),p.lexpos(0));
+    else:
+        print('\nError in MessageLiteral.  Unexpected length to match\n');
+        assert(False);
+        
+def p_InternalMessageLiteral(p):
+    '''InternalMessageLiteral : MessageLiteralElement 
+                              | InternalMessageLiteral COMMA MessageLiteralElement
+                              '''
     
+    p[0]= AstNode(AST_MESSAGE_LITERAL,p.lineno(0),p.lexpos(0));
+
+    if (len(p) == 4):
+        p[0].addChildren(p[1].getChildren());
+        p[0].addChild(p[3]);
+    elif(len(p) == 2):
+        p[0].addChild(p[1]);
+    else:
+        print('\nError in InternalMessageLiteral.  Unexpected length to match\n');
+        assert(False);
+
+    
+
+    
+def p_MessageLiteralElement(p):
+    '''
+    MessageLiteralElement : String COLON Initializer
+    '''
+    p[0] = AstNode(AST_MESSAGE_LITERAL_ELEMENT, p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[1],p[3]]);
+    
+
 
 def p_Number(p):
     '''Number : NUMBER '''

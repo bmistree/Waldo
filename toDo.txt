@@ -29,6 +29,13 @@ Im emitting:
 Lots of todos still in code.  Largest: sort through initializers for
 variables and finish runFunctionBodyInternalEmit.
 
+Decide on whether can pass messages through function calls.
+
+Decide on whether can use a message literal in a send statement.
+(Parse for it too, maybe).
+
+Maybe make messages immutable???
+
     
 To Do:
 
