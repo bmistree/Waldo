@@ -1,7 +1,10 @@
 #!/usr/bin/python
 
 import threading;
+import time;
 
+#in seconds
+SIM_HOW_LONG_TO_DELAY = .5;
 
 class ConnectionObject():
     '''
@@ -102,9 +105,9 @@ class LocalEndpointsConnection(ConnectionObject):
             print(errMsg);
             assert(False);
 
-        #queues the message to be sent after a 1.5s delay.
+        #queues the message to be sent after a SIM_HOW_LONG_TO_DELAY (s) delay.
         waitAndDeliver = SimulatedDelay();
-        waitAndDeliver.run(1.5,self,dictToWrite,msgSenderName);
+        waitAndDeliver.run(SIM_HOW_LONG_TO_DELAY,self,dictToWrite,msgSenderName);
 
     def _actuallyWriteMsg(self,dictToWrite,msgSenderName):
         '''
