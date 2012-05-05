@@ -1,0 +1,75 @@
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Traces
+{
+        Ping.one -> Pong.two -> Ping.three -> Pong.four;
+}
+
+Shared
+{
+        Ping Controls Number pingCounter = 0;
+        Pong Controls Number pongCounter = 0;
+}
+
+Ping
+{
+        Number responses = 0;
+
+        Public Function initiateSend() Returns Nothing
+        {
+            one();
+        }
+        
+        MsgSend one ()
+        {
+            pingCounter = pingCounter + 1;
+            Message msg = {
+              'responses' : responses
+            };
+            
+            Send msg To Pong;
+        }
+
+        MsgRecv three (Message msg)
+        {
+            pingCounter = pingCounter + 1;  
+            responses = responses + 1;
+            Message msgResponse = {
+              'responses' : responses
+            };
+
+            Send msgResponse To Pong;
+        }
+}
+
+
+Pong
+{
+        Number responses = 0;
+        
+        MsgRecv two (Message msg)
+        {
+            pongCounter = pongCounter + 1;
+            responses = responses + 1;
+            Message msgResponse = {
+              'responses' : responses
+            };
+            
+            Send msgResponse To Ping;
+        }
+
+        MsgRecv four (Message msg)
+        {
+            pongCounter = pongCounter + 1;  
+            responses = responses + 1;
+            Message msgResponse = {
+              'responses' : responses
+            };
+
+            Send msgResponse To Ping;
+        }
+}

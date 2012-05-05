@@ -28,7 +28,25 @@ Something that does not move directly closer to goal, but which
 reduces cognitive load.  (Part of that could be re-arranging source
 more easily.)
 
+Argue that existing frameworks are too deferential to edge case
+programs.  Novices will be happy with approximate.  So will
+prototyping languages.  Maybe argue that probability of certain errors
+is less than that of disk failure?
 
+Takes 20 minutes to get back into the swing of programming things.
+Value in shorter, more self-contained tasks.  Compare to frequency of
+interruption to demonstrate how valuable a task actually is.
+
+Winograd's large theoretical contribution to HCI is that do not need
+to provide a detailed model to user until the underlying system
+breaks.  (Eg, a driver does not need to know how an engine actually
+works until he/she snaps a fan belt.)  Similar idea in Waldo: why have
+users have to deal with serialization of data and other minor tasks?
+
+
+May want to add a discussion of how in Python there are no private
+variables.  User could use functions that they are not intended to
+use.  Did not see that.
 
 
 When writing about this, stress: we do not have a polished and

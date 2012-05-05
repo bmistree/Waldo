@@ -2,6 +2,30 @@ Command to run from parser/ast/
     ./astHead.py -f testBasic.wld -go '{"file":"astOut.html", "h": 3000, "w": 5000}' -e emitted.py
 
 
+In examples:
+may want to make Ready a keyword so that do not have conflicts with
+sending messages.
+
+What about public function names in general so that do not have
+conflicts with python?  should they be p_Something?
+  
+Ignoring connection setup.
+
+Ignoring checks to make sure that the connection is set up before
+continuing.  Maybe block until the connection is set up?
+
+May want to use underscores for all data internal to an endpoint in
+generated code to discourage direct access
+
+For Contexts, may want to use a different name from myPriority and
+theirPriority.  May have some variables begin with underscores, and
+some generic variables begin with two or three underscores.
+
+Handle deep copies in contexts.
+
+
+Im emitting:
+    
 Lots of todos still in code.  Largest: sort through initializers for
 variables and finish runFunctionBodyInternalEmit.
 
