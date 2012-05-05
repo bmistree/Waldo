@@ -256,32 +256,78 @@ def p_EndpointFunctionSection(p):
         p[0].addChildren(p[2].getChildren());
 
 
+def p_TypedSendsStatement(p):
+    '''
+    TypedSendsStatement : SENDS CURLY_LEFT CURLY_RIGHT
+                        | SENDS CURLY_LEFT TypedMessageSendsLines CURLY_RIGHT
+    '''
+    
+    p[0] = AstNode(AST_TYPED_SENDS_STATEMENT, p.lineno(0),p.lexpos(0));
+
+    if (len(p) == 5):
+        p[0].addChildren(p[3].getChildren());
+
+def p_TypedMessageSendsLines(p):
+    '''
+    TypedMessageSendsLines : TypedMessageSendsLine
+                           | TypedMessageSendsLines COMMA TypedMessageSendsLine
+    '''
+
+    #This p[0] ends up getting skipped because of ordering of p_TypedSendsStatement
+    p[0] = AstNode(AST_TYPED_SENDS_STATEMENT,p.lineno(0),p.lexpos(0));
+    if (len(p) == 4):
+        p[0].addChildren(p[1].getChildren());
+        p[0].addChild(p[3]);
+    elif(len(p) == 2):
+        p[0].addChild(p[1]);
+    else:
+        print('\nError in TypedMessageSendsLines.  Unexpected length to match\n');
+        assert(False);
+
+        
+
+def p_TypedMessageSendsLine(p):
+    '''
+    TypedMessageSendsLine : Type Identifier  
+    '''
+    p[0] = AstNode(AST_TYPED_SENDS_LINE,p.lineno(0),p.lexpos(0));
+    p[0].addChildren([p[1],p[2]]);
+
+    
+    
 def p_MsgReceiveFunction(p):
-    '''MsgReceiveFunction : MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
-                          | MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT'''
+    '''MsgReceiveFunction : MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
+                          | MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT  CURLY_RIGHT'''
     p[0] = AstNode(AST_MSG_RECEIVE_FUNCTION, p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[2],p[4]]);
-    if (len(p) == 9):
-        p[0].addChild(p[7]);
+    if (len(p) == 10):
+        p[0].addChild(p[8]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
         p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
 
+    #add the send statement on to the end.
+    p[0].addChild(p[6]);
 
+
+        
 def p_MsgSendFunction(p):
-    '''MsgSendFunction : MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
-                       | MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT'''
+    '''MsgSendFunction : MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
+                       | MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT  CURLY_RIGHT'''
+
+
     p[0] = AstNode(AST_MSG_SEND_FUNCTION, p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[2],p[4]]);
-    if (len(p) == 9):
-        p[0].addChild(p[7]);
+    if (len(p) == 10):
+        p[0].addChild(p[8]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
         p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
 
-                      
+    #add the send statement on to the end.
+    p[0].addChild(p[6]);
     
 def p_Function(p):
     '''Function : FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT

@@ -235,7 +235,9 @@ class AstNode():
             errMsg += 'check for send statement in astNode.py.  ';
             errMsg += 'Similarly, type check message being sent as ';
             errMsg += 'well as msg send and receive functions to ';
-            errMsg += 'ensure that each has a send statement in it.\n';
+            errMsg += 'ensure that each has a send statement in it.  ';
+            errMsg += 'Oh.  Also, don\'t forget to type check sends ';
+            errMsg += 'statement.\n';
             print(errMsg);
 
         elif (self.label == AST_MESSAGE_LITERAL):
@@ -713,6 +715,9 @@ class AstNode():
             elif ((self.label == AST_MSG_SEND_FUNCTION) or (self.label == AST_MSG_RECEIVE_FUNCTION)):
                 funcDeclArgListIndex = 1;
                 funcBodyIndex = 2;
+                errMsg = '\nBehram warn: not performing any type checking on send statement ';
+                errMsg += 'in type check of astNode.py.\n';
+                print(errMsg);
             else:
                 errMsg = '\nBehram error: invalid function ';
                 errMsg += 'type when type checking functions\n';
@@ -871,7 +876,9 @@ class AstNode():
             returnType = TYPE_MSG_SEND_FUNCTION if (self.label == AST_MSG_SEND_FUNCTION) else TYPE_MSG_RECEIVE_FUNCTION;
             argDeclIndex = 1;
 
-
+            errMsg = '\nBehram warn: not performing any type checking on send statement ';
+            errMsg += 'in functionDeclarationTypeCheck of astNode.py.\n';
+            print(errMsg);
 
         #get types of function arguments
             

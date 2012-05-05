@@ -22,11 +22,19 @@ Client
         Number topC = 3;
         
         MsgReceive two ()
+          Sends {
+            Bool a,
+            Bool b,
+            Bool c
+          }
+        
         {
             Number c;
             Number r;
             Message msg = {
-            'a': r
+            'a': r,
+            'b': False,
+            'c': True
             };
             
             Send msg To Server;
@@ -41,6 +49,12 @@ Server
         Bool topB = False;
         
         MsgSend one (Bool top, Bool b)
+          Sends {
+            Bool a,
+            Bool b,
+            Bool c
+          }
+        
         {
             Number c = 29;
             Number r = 1;

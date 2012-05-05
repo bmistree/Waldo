@@ -14,6 +14,7 @@ tokens = (
     "MSG_RECEIVE",
     "PUBLIC",
     "RETURNS",
+    "SENDS",
     
     #messsage notation
     "SEND_ARROW",
@@ -235,6 +236,9 @@ def t_RETURNS(t):
     "Returns";
     return mStateMachine.addToken(t);
 
+def t_SENDS(t):
+    "Sends";
+    return mStateMachine.addToken(t);
 
 
 def t_SEND_ARROW(t):
