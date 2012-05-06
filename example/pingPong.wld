@@ -24,7 +24,7 @@ Ping
             one();
         }
         
-        MsgSend one ()
+        MsgSend one () Sends { Number responses }
         {
             pingCounter = pingCounter + 1;
             Message msg = {
@@ -34,7 +34,7 @@ Ping
             Send msg To Pong;
         }
 
-        MsgRecv three (Message msg)
+        MsgReceive three (Message msg) Sends { Number responses }
         {
             pingCounter = pingCounter + 1;  
             responses = responses + 1;
@@ -51,7 +51,7 @@ Pong
 {
         Number responses = 0;
         
-        MsgRecv two (Message msg)
+        MsgReceive two (Message msg) Sends { Number responses }
         {
             pongCounter = pongCounter + 1;
             responses = responses + 1;
@@ -62,7 +62,7 @@ Pong
             Send msgResponse To Ping;
         }
 
-        MsgRecv four (Message msg)
+        MsgReceive four (Message msg) Sends { Number responses }
         {
             pongCounter = pongCounter + 1;  
             responses = responses + 1;

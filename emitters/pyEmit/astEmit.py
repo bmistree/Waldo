@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from astLabels import *;
 import emitHelper;
-
+import emitFunctions;
 
 def runEmitter(astNode,protObj=None):
     '''
@@ -321,22 +321,22 @@ class Endpoint():
 
     def addInternalFunction(self,internalFuncName,internalFuncAstNode,protObj):
         internalFuncName = self.addVarOrFuncNameToMap(internalFuncName);
-        internalFunc = InternalFunction(internalFuncName,internalFuncAstNode,protObj);
+        internalFunc = emitFunctions.InternalFunction(internalFuncName,internalFuncAstNode,protObj);
         self.internalMethods.append(internalFunc);
         
     def addPublicFunction(self,pubFuncName,pubFuncAstNode,protObj):
         pubFuncName = self.addVarOrFuncNameToMap(pubFuncName);
-        pubFunc = PublicFunction(pubFuncName,pubFuncAstNode,protObj);
+        pubFunc = emitFunctions.PublicFunction(pubFuncName,pubFuncAstNode,protObj);
         self.publicMethods.append(pubFunc);
 
     def addMsgReceiveFunction(self,msgReceiveFuncName,msgReceiveFuncAstNode,protObj):
         msgReceiveFuncName = self.addVarOrFuncNameToMap(msgReceiveFuncName);
-        msgRecvFunc = MsgReceiveFunction(msgReceiveFuncName,msgReceiveFuncAstNode,protObj);
+        msgRecvFunc = emitFunctions.MsgReceiveFunction(msgReceiveFuncName,msgReceiveFuncAstNode,protObj);
         self.msgReceiveMethods.append(msgRecvFunc);
         
     def addMsgSendFunction(self,msgSendFuncName,msgSendFuncAstNode,protObj):
         msgSendFuncName = self.addVarOrFuncNameToMap(msgSendFuncName);
-        msgSendFunc = MsgSendFunction(msgSendFuncName,msgSendFuncAstNode,protObj);
+        msgSendFunc = emitFunctions.MsgSendFunction(msgSendFuncName,msgSendFuncAstNode,protObj);
         self.msgSendMethods.append(msgSendFunc);
 
 
@@ -502,33 +502,11 @@ def __init__(self):
         for s in self.endpointVariables:
             initBodyString += s.emit() + '\n';
         
-        returnString = indentString(initHeaderString,1);
-        returnString += indentString(initBodyString,2);
+        returnString = emitHelper.indentString(initHeaderString,1);
+        returnString += emitHelper.indentString(initBodyString,2);
         return returnString;
 
 
-def indentString(string,indentAmount):
-    '''
-    @param {String} string -- Each line in this string we will insert
-    indentAmount number of tabs before and return the new, resulting
-    string.
-    
-    @param {Int} indentAmount 
-
-    @returns {String}
-    '''
-    splitOnNewLine = string.split('\n');
-    returnString = '';
-
-    indenter = '';
-    for s in range(0,indentAmount):
-        indenter += '    ';
-
-    for s in splitOnNewLine:
-        if (len(s) != 0):
-            returnString += indenter + s + '\n';
-
-    return returnString;
     
 class Variable():
     def __init__(self,name,endpoint,val=None):
@@ -548,328 +526,5 @@ class Variable():
         returnString += ';';
         
         return returnString;
-
-
-class Function(object):
-    def __init__(self,name,astNode,protObj,declArgListIndex):
-        '''
-        @param {String} name -- Should already be guaranteed not to
-        collide with python variable and other global vars.
-        
-        @param {Int} declArgListIndex -- Each function astNode
-        (public, msgReceive, ...) has many children.  declArgListIndex is
-        the index of astNode.children that contains declArgList appears.
-        '''
-        self.name = name;
-        self.astNode = astNode;
-        self.protObj = protObj;
-        self.endpoint = self.protObj.currentEndpoint;
-        self.declArgListIndex = declArgListIndex;
-        
-    def emit():
-        errMsg = '\nBehram error: pure virtual method emit of Function ';
-        errMsg += 'called.\n';
-        assert(False);
-
-    def createMethodHeader(self):
-        #already know that self.name does not conflict with python
-        #because was checked before constructed.
-        methodHeader = 'def %s(self' % self.name;
-
-        
-        #fill in arguments
-        declArgsList = self.astNode.children[self.declArgListIndex];
-        for s in declArgsList.children:
-            #each s is a declArg
-            if (len(s.children) == 0):
-                continue;
-
-
-            argName = s.children[1].value;
-            argName = self.endpoint.varName(argName);
-            methodHeader += ', ' + argName;
-        
-        methodHeader += '):\n';
-        return methodHeader;
-
-
-class InternalFunction(Function):
-    def __init__(self,name,astNode,protObj):
-        #see astBuilder or the graphical ast:
-        functionArgDeclIndex = 2;        
-        super(InternalFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
-    def emit(self):
-        print('\nBehram error: in InternalFunction, need to finish emit method\n');
-        methodHeader = self.createMethodHeader();
-        methodBody = 'pass';
-        
-        returnString = indentString(methodHeader,1);
-        returnString += indentString(methodBody,2);
-        return returnString;
-
-
-class PublicFunction(Function):
-    def __init__(self,name,astNode,protObj):
-        #see astBuilder or the graphical ast:
-        functionArgDeclIndex = 2;
-        super(PublicFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
-
-    def emit(self):
-        print('\nBehram error: in PublicFunction, need to finish emit method\n');
-        methodHeader = self.createMethodHeader();        
-
-        methodBody = 'pass;';
-        
-        returnString = indentString(methodHeader,1);
-        returnString += indentString(methodBody,2);
-        return returnString;
-
-        
-class MsgSendFunction(Function):
-    def __init__(self,name,astNode,protObj):
-        #see astBuilder or the graphical ast:
-        functionArgDeclIndex = 1;
-        super(MsgSendFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
-        
-        
-    def emit(self):
-        print('\nBehram error: in MsgSendFunction, need to finish emit method\n');
-
-        methodHeader = self.createMethodHeader();
-        
-        funcBodyNode = self.astNode.children[2];
-        methodBody = runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint);
-        
-        returnString = indentString(methodHeader,1);
-        returnString += indentString(methodBody,2);
-        return returnString;
-
-
-        
-class MsgReceiveFunction(Function):
-    def __init__(self,name,astNode,protObj):
-        #see astBuilder or the graphical ast:
-        functionArgDeclIndex = 1;
-        super(MsgReceiveFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
-
-
-    def emit(self):
-        print('\nBehram error: in MsgReceiveFunction, need to finish emit method\n');
-        methodHeader = self.createMethodHeader();                
-        methodBody = 'pass;';
-        
-        returnString = indentString(methodHeader,1);
-        returnString += indentString(methodBody,2);
-        return returnString;
-
-def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
-    '''
-    @param {AstNode} astNode -- the ast node that we want evaluation
-    to start from.  When called externally, this will generally have
-    label AST_FUNCTION_BODY.  However, because this code also emits
-    bool, string, and number literals, it may also be used to emit the
-    initialization statement for shared and global variables.
-    
-    @param {ProtocolObject} protObj -- So that can check for
-    appropriate variable names
-
-    @returns {String} with funcition text.  base indent level is 0.
-    '''
-    returnString = '';
-    if (astNode.label == AST_FUNCTION_BODY):
-        for s in astNode.children:
-            funcStatementString = runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
-            if (len(funcStatementString) != 0):
-                returnString += indentString(funcStatementString,indentLevel);
-                returnString += '\n';
-        if (len(returnString) == 0):
-            returnString += indentString('pass;',indentLevel);
-
-                
-    elif (astNode.label == AST_DECLARATION):
-        idName = astNode.children[1].value;
-        idName = endpoint.varName(idName);
-        decString = idName + ' = ';
-
-        #check if have an initializer value
-        if (len(astNode.children) == 3):
-            #have an initializer value;
-            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,endpoint,0);
-            decString += rhsInitializer;
-        else:
-            #no initializer value, specify defaults.
-            typeName = astNode.type;        
-            if (typeName == TYPE_BOOL):
-                decString += 'False;';
-            elif (typeName == TYPE_NUMBER):
-                decString += '0;';
-            elif (typeName == TYPE_STRING):
-                decString += '"";';
-            elif (typeName == TYPE_NOTHING):
-                decString += 'None;';
-            else:
-                errMsg = '\nBehram error.  Unknown declaration type when ';
-                errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
-                print(errMsg);
-                decString += 'None;';
-
-        
-        returnString += indentString(decString,indentLevel);
-        returnString += '\n';
-
-    elif (astNode.label == AST_BOOL):
-        return ' ' + astNode.value + ' ';
-
-    elif (astNode.label == AST_STRING):
-        return ' "'  + astNode.value + '" ';
-
-    elif (astNode.label == AST_NUMBER):
-        return ' '  + astNode.value + ' ';
-
-    elif ((astNode.label == AST_PLUS) or (astNode.label == AST_MINUS) or
-          (astNode.label == AST_MULTIPLY) or (astNode.label == AST_DIVIDE) or 
-          (astNode.label == AST_AND) or (astNode.label == AST_OR) or
-          (astNode.label == AST_BOOL_EQUALS) or (astNode.label == AST_BOOL_NOT_EQUALS)):
-
-        if (astNode.label == AST_PLUS):
-            operator = '+';
-        elif(astNode.label == AST_MINUS):
-            operator = '-';
-        elif(astNode.label == AST_MULTIPLY):
-            operator = '*';
-        elif(astNode.label == AST_DIVIDE):
-            operator = '/';
-        elif(astNode.label == AST_AND):
-            operator = 'and';
-        elif(astNode.label == AST_OR):
-            operator = 'or';
-        elif(astNode.label == AST_BOOL_EQUALS):
-            operator = '==';
-        elif(astNode.label == AST_BOOL_NOT_EQUALS):
-            operator = '!=';
-
-            
-        else:
-            errMsg = '\nBehram error.  Unknown operator type when ';
-            errMsg += 'emitting from runFunctionBodyInternalEmit.\n'
-            print(errMsg);
-            assert(False);
-            
-        lhsNode = astNode.children[0];
-        rhsNode = astNode.children[1];
-
-        lhsText = runFunctionBodyInternalEmit(lhsNode,protObj,endpoint,0);
-        rhsText = runFunctionBodyInternalEmit(rhsNode,protObj,endpoint,0);
-
-        overallLine = lhsText + ' '+ operator + ' (' + rhsText + ') ';
-        return overallLine;
-
-
-    elif (astNode.label == AST_CONDITION_STATEMENT):
-        returnString = '';
-        for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
-            returnString += '\n';
-            
-
-    elif (astNode.label == AST_BOOLEAN_CONDITION):
-        returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,indentLevel);
-
-    elif (astNode.label == AST_IDENTIFIER):
-        returnString = astNode.value;
-
-    elif (astNode.label == AST_ELSE_IF_STATEMENTS):
-        returnString = '';
-        for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,0);
-            returnString += '\n';
-
-        if (returnString != ''):
-            returnString = indentString(returnString,indentLevel);
-
-    elif ((astNode.label == AST_IF_STATEMENT) or
-          (astNode.label == AST_ELSE_IF_STATEMENT)):
-
-        if (astNode.label == AST_IF_STATEMENT):
-            condHead = 'if ';
-        elif(astNode.label == AST_ELSE_IF_STATEMENT):
-            condHead = 'elif ';
-        else:
-            errMsg = '\nBehram error: got an unknown condition label ';
-            errMsg += 'in runFunctionBodyInternalEmit.\n';
-            print(errMsg);
-            assert(False);
-            
-        booleanConditionNode = astNode.children[0];
-        condBodyNode = astNode.children[1];
-
-        boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,0);
-        condHead += boolCondStr + ':'
-        
-        condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,0);
-        if (condBodyStr == ''):
-            condBodyStr = 'pass;';
-
-
-        returnString = indentString(condHead,indentLevel) + '\n' + indentString(condBodyStr, indentLevel +1);
-
-    elif(astNode.label == AST_ELSE_STATEMENT):
-        if (len(astNode.children) == 0):
-            return '';
-        
-        elseHead = 'else: \n';
-        elseBody = astNode.children[0];
-
-        elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,0);
-
-        if (elseBodyStr == ''):
-            elseBodyStr = 'pass;';
-        
-        returnString = indentString(elseHead,indentLevel) + '\n' + indentString(elseBodyStr, indentLevel +1);
-
-    elif (astNode.label == AST_FUNCTION_CALL):
-        funcNameNode = astNode.children[0];
-        funcNameStr = endpoint.varName(funcNameNode.value);
-        funcArgListNode = astNode.children[1];
-        funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,0);
-        returnString = indentString(funcNameStr + funcArgStr,indentLevel);
-
-    elif (astNode.label == AST_FUNCTION_ARGLIST):
-        returnString = '(';
-
-        counter = 0;
-        for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,0);
-            counter +=1;
-            
-            if (counter != len(astNode.children)):
-                returnString += ',';
-        
-        returnString += ')';
-        returnString = indentString(returnString,indentLevel);
-
-        
-    elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
-        assignTo = astNode.children[0];
-        idName = assignTo.value;
-        idName = endpoint.varName(idName);
-        lhsAssignString = idName + ' = ';
-        
-
-        rhsAssignString = runFunctionBodyInternalEmit(astNode.children[1],protObj,endpoint,0);
-        returnString += indentString(lhsAssignString + rhsAssignString,indentLevel);
-        returnString += '\n';
-
-    elif (astNode.label == AST_FUNCTION_BODY_STATEMENT):
-        for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
-        
-    else:
-        errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';
-        errMsg += 'do not know how to handle label ' + astNode.label + '\n';
-        print(errMsg);
-
-
-    return returnString;
 
 
