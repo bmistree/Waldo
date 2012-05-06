@@ -367,6 +367,7 @@ class Ping():
                 self._reset(); #flash the intermediate context back to committed
                 self.msgSendQueue.insert(0,self.outstandingSend);
                 self.outstandingSend = None;
+                self._unlock();
                 return;
 
             

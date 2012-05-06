@@ -165,12 +165,28 @@ class Endpoint():
         '''
         returnString = '\n\n';
 
-
+# lkjs;
+# probably want to change order emit file so that public and message functions are at the top;
+# lkjs;
+        
         returnString += emitContext.emitContextClass(self);
         returnString += '\n\n';        
         returnString += self.emitClassHeader();
         returnString += '\n\n';
         returnString += self.emitClassInit();
+        returnString += '\n\n';
+        returnString += self.emitSmallHelperUtilities();
+        returnString += '\n\n';
+
+        
+        returnString += self.emitGeneralReceiveMessageUtility();
+        returnString += '\n\n';
+        returnString += self.emitResetAndCommit();
+        returnString += '\n\n';
+        returnString += self.emitTrySendNext();
+
+        # lkjs;
+        returnString += self.emitGeneralSendMessageUtility();
         returnString += '\n\n';
         returnString += self.emitFunctions();
         return returnString;
@@ -209,6 +225,30 @@ class %s:
 ''' % self.name;
 
         return returnString;
+
+
+    
+    def emitSmallHelperUtilities(self):
+        '''
+        Short functions used inside each endpoint.  
+        '''
+
+        # FIXME: lkjs;
+        # name "ready" could conflict with public function name.
+        readyHead = '\ndef ready (self):\n';
+        readyBody = '#EXACT\nreturn self.connectionObject.ready();\n'
+        readyStr = readyHead + emitHelper.indentString(readyBody,1);
+
+
+        lockHead = '\ndef _lock(self):\n';
+        lockBody = '#EXACT\nself.mutex.acquire();\n';
+        lockStr = lockHead + emitHelper.indentString(lockBody,1);
+
+        unlockHead = '\ndef _unlock(self):\n';
+        unlockBody = '#EXACT\nself.mutex.release();\n';
+        unlockStr = unlockHead + emitHelper.indentString(unlockBody,1);
+
+        return emitHelper.indentString(readyStr + lockStr + unlockStr,1);
 
     
     def emitClassInit(self):
@@ -272,6 +312,286 @@ self.connectionObject.addEndpoint(self);
         returnString += emitHelper.indentString(initBodyString,2);
         return returnString;
 
+
+
+    def emitGeneralReceiveMessageUtility(self):
+
+        msgReceiveHead = '''
+def _msgReceive(self,msg):
+''';
+        msgReceiveBody = r"""
+'''
+EXACT
+        
+called whenever receive message from other side.  performs
+dispatch, sending message to appropriate receiving function
+'''
+
+DEBUG('ping', 'Received a message');
+# thread safety
+self._lock();
+        
+#check case for simultaneous open
+if (msg['iInitiated'] and self.outstandingSend != None): """
+
+        externalIfBody = '''
+#means that we had a case of simultaneous open
+
+#endpoint with higher priority always wins
+if (self.committed._myPriority < self.committed._theirPriority):
+''';
+        internalIfBody = '''
+#we must back off our send, inserting outstanding back
+#into message queue.
+                
+self._reset(); #flash the intermediate context back to committed
+self.msgSendQueue.insert(0,self.outstandingSend);
+self.outstandingSend = None;
+self._unlock();
+return;
+''';
+        externalIfBody += emitHelper.indentString(internalIfBody,1);
+        msgReceiveBody += emitHelper.indentString(externalIfBody,1);
+
+        msgReceiveBody += r"""
+            
+# update shared environment data in intermediate
+self.intermediate.updateEnvironmentData(msg['environmentData']);
+
+if (msg['dispatchTo'] == STREAM_TAIL_SENTINEL):
+""";
+
+        externalIfBody = r"""
+# means that there is nothing to dispatch to on our side.
+# (ie, the other side performed the last operation
+# specified on the trace line.)  Send an empty dispatchTo
+# message to ensure that the shared variables get updated
+# correctly.
+
+# commit all outstanding changes to shared variables and
+# return after unlocking.  (Note: _commit also sets
+# self.amInTrace and self.outstandingSend for us.)
+self._commit();
+self._unlock();
+return;
+""";
+
+        msgReceiveBody += emitHelper.indentString(externalIfBody,1);
+
+        msgReceiveBody += r"""
+#choose who to dispatch received message to;
+dispatchSrcStr = 'self.%s (' % msg['dispatchTo'];
+dispatchSrcStr += 'msg["data"]);';
+
+#actually evaluate the receive message function
+obj = compile(dispatchSrcStr,'','exec');
+eval(obj);
+
+#thread safety
+self._unlock();
+
+""";
+        
+        indentedHead = emitHelper.indentString(msgReceiveHead,1);
+        indentedBody = emitHelper.indentString(msgReceiveBody,2);
+        return indentedHead + '\n' + indentedBody;
+
+
+    
+    def emitResetAndCommit(self):
+
+        resetHead = '\ndef _reset(self):\n';
+        resetBody = r"""
+'''
+EXACT
+
+Remove any changes made to intermediate.
+'''
+self.intermediate = self.commmited.copy();
+""";
+
+        commitHead = '\ndef _commit(self):\n';
+        commitBody = r"""
+'''
+EXACT
+
+All the changes that have been made to intermediate throughout
+the course of a message's being sent should be committed to
+self.committed.
+'''
+        
+# expensive deep copy of full environment.  eventually,
+# may use deltas or some other strategy.
+
+self.committed = self.intermediate.copy();
+self.amInTrace = False;
+
+self.outstandingSend = None;
+
+# check if there's a queued function to send from one side to
+# other.
+self._trySendNext();
+""";
+        
+        resetStr = emitHelper.indentString(resetHead,1) + emitHelper.indentString(resetBody,2);
+        commitStr = emitHelper.indentString(commitHead,1) + emitHelper.indentString(commitBody,2);
+        return resetStr + '\n' + commitStr;
+
+        
+        
+    def emitTrySendNext(self):
+
+        trySendNextHead = '\ndef _trySendNext(self):\n';
+
+        trySendNextBody = r"""
+'''
+EXACT
+        
+Checks if there is an outstanding message in the queue to send.
+        
+Should only be called from _commit, (ie after know that
+previously executing trace is done).
+'''
+if (self.outstandingSend != None):
+""";
+        ifBody =  r"""
+errMsg = '\nBehram error in _trySendNext of Ping.  ';
+errMsg += 'Should not have an outstanding message.\n';
+print(errMsg);
+assert(False);
+
+""";
+        trySendNextBody += emitHelper.indentString(ifBody,1);
+
+        trySendNextBody += r"""
+if (self.amInTrace == True):
+""";
+        ifBody = r"""
+errMsg = '\nBehram error in _trySendNext of Ping.  ';
+errMsg += 'Should not already be in trace.\n';
+print(errMsg);
+assert(False);
+
+""";
+        trySendNextBody += emitHelper.indentString(ifBody,1);
+
+        trySendNextBody += r"""
+if (len(self.msgSendQueue) == 0):
+"""
+
+        ifBody = r"""
+#no work to do.
+return;
+
+""";
+        trySendNextBody += emitHelper.indentString(ifBody,1);
+
+
+        trySendNextBody += r"""
+        
+# means that we have to remove from front of queue and try to
+# execute a queued message send
+self.outstandingSend = self.msgSendQueue[0];
+self.msgSendQueue = self.msgSendQueue[1:];
+     
+
+# re-perform send action
+funcName = self.outstandingSend.sendFuncName;
+args = self.outstandingSend.argsArray;
+
+# string to eval to replay send action
+commandString = 'self.%s (' % funcName;
+
+# pass args to function
+for s in range(0,len(args)):
+""";
+        forBody = r"""
+commandString += 'args[' + str(s) + ']';
+if (s != len(args) -1):
+""";
+        ifBody = "commandString += ','\n";
+        forBody += emitHelper.indentString(ifBody,1);
+
+        trySendNextBody += emitHelper.indentString(forBody,1);
+
+        trySendNextBody += r"""
+commandString += ');'
+
+#actually re-exec function
+obj = compile(src,'','exec');
+eval(obj);
+
+""";
+        
+        
+        indentedHead = emitHelper.indentString(trySendNextHead,1);
+        indentedBody = emitHelper.indentString(trySendNextBody,2);
+        return indentedHead + '\n' + indentedBody;
+
+
+    def emitGeneralSendMessageUtility(self):
+        sendMsgHead = '\ndef _sendMsg (self,msg,funcNameFrom):\n';
+        
+        sendMsgBody = r"""
+'''
+@param {dictionary} msg -- The data payload (should not
+include shared variables.  This function adds a separate field
+to the message for shared variable payload.
+
+@param {String} funcNameFrom -- The name of the function that
+called _sendMsg.  (Examples: _msgSendOne, _msgReceiveTwo,
+etc.)  This is used to determine the 'dispatchTo' field for
+the other endpoint to determine what to do with the message.
+
+NOT EXACT -- Highlighted the section of code that can't be
+exactly copied.  It has to do with specifying the function to
+dispatch to on the other side.
+'''
+
+DEBUG('ping', 'Actually sending message');
+# actual json-izable dict we will be sending to the other side
+msgToSend = {};
+
+iInitiated = True;
+if (self.outstandingSend == None):
+""";
+
+        ifBody = 'iInitiated = False;\n';
+        sendMsgBody += emitHelper.indentString(ifBody,1);
+
+        sendMsgBody += r"""
+# keep track of who initiator of message stream was to handle
+# case of simultaneous stream start
+msgToSend['iInitiated'] = iInitiated;
+
+msgToSend['environmentData'] = self.intermediate.generateEnvironmentData();
+
+
+'''
+NOT EXACT PART: determine dispatchTo field based on what on
+this endpoint called this function.
+'''
+dispatchTo = None;
+"""
+
+        sendMsgBody += r"""
+BEHRAM NEEDS TO FILL IN THE INTERNAL PART OF _SENDMSG;
+"""
+
+
+        sendMsgBody += r"""
+'''
+END NOT EXACT PART
+'''
+
+msgToSend['data'] = msg;
+msgToSend['dispatchTo'] = dispatchTo;
+self.connectionObject.writeMsg(msgToSend,self.name);
+""";
+
+        indentedHead = emitHelper.indentString(sendMsgHead,1);
+        indentedBody = emitHelper.indentString(sendMsgBody,2);
+        return indentedHead + '\n' + indentedBody;
 
 
 class Variable():
