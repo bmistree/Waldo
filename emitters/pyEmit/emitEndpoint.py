@@ -2,13 +2,14 @@
 
 import emitHelper;
 import emitFunctions;
-
+import emitContext;
     
         
 class Endpoint():
     def __init__(self,name):
         self.name = name;
-
+        self.contextClassName = '_' + name + 'Context';
+        
         #decided to make these arrays instead of dicts, because in
         #certain instances, order of declaration matters.  (for
         #instance, shared variables.)
@@ -155,13 +156,18 @@ class Endpoint():
         '''
         @returns {String} class for this endpoint
         '''
-        returnString = '';
+        returnString = '\n\n';
+
+        
+        returnString += emitContext.emitContextClass(self);
+        returnString += '\n\n';        
         returnString += self.emitClassHeader();
         returnString += '\n\n';
         returnString += self.emitClassInit();
         returnString += '\n\n';
         returnString += self.emitFunctions();
         return returnString;
+
 
 
     def emitFunctions(self):
@@ -224,8 +230,13 @@ class Variable():
         self.val = None;
         self.endpoint = endpoint;
 
-    def emit(self):
-        returnString = self.endpoint.varName(self.name);
+    def getUsedName (self):
+        return self.name;
+        # return self.endpoint.varName(self.name);
+    
+    def emit(self,optionalVarPrefix=''):
+        returnString = optionalVarPrefix + self.name;
+        # returnString = optionalVarPrefix + self.endpoint.varName(self.name);
         returnString += ' = ';
 
 

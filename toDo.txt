@@ -23,6 +23,13 @@ some generic variables begin with two or three underscores.
 
 Handle deep copies in contexts.
 
+Handle deep copies of internal variables.
+
+Make concrete decisions about what should happen if a public method
+generates a conflict with data we are operating on.
+
+
+
 
 Im emitting:
     
