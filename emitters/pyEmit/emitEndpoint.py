@@ -47,15 +47,59 @@ class Endpoint():
         pubFunc = emitFunctions.PublicFunction(pubFuncName,pubFuncAstNode,protObj);
         self.publicMethods.append(pubFunc);
 
-    def addMsgReceiveFunction(self,msgReceiveFuncName,msgReceiveFuncAstNode,protObj):
-        msgReceiveFuncName = self.addVarOrFuncNameToMap(msgReceiveFuncName);
-        msgRecvFunc = emitFunctions.MsgReceiveFunction(msgReceiveFuncName,msgReceiveFuncAstNode,protObj);
-        self.msgReceiveMethods.append(msgRecvFunc);
+
+
+    def setMsgReceiveFunctionAstNode(self,msgReceiveFuncName,msgReceiveFuncAstNode):
+        '''
+        Not actually adding, looking up name in existing msgRecv
+        methods, and setting astNode for it.  Should already have the
+        node from running over trace lines.
+        '''
+        for s in self.msgReceiveMethods:
+            if (s.name == msgReceiveFuncName):
+                s.setAstNode(msgReceiveFuncAstNode);
+                return;
+
+        errMsg = '\nBehram error: could not find a message receive method when ';
+        errMsg += 'trying to set its astNode.\n';
+        print(errMsg);
+        assert(False);
         
-    def addMsgSendFunction(self,msgSendFuncName,msgSendFuncAstNode,protObj):
+    def addMsgReceiveFunction(self,msgReceiveFuncName,protObj):
+        print('\nWarning when adding msg receive: may not want to change name early.\n');
+        # note: may not want to do the addvarorfuncnameto map, but
+        # instead, use the pythonized version of the name;
+        msgReceiveFuncName = self.addVarOrFuncNameToMap(msgReceiveFuncName);
+        msgRecvFunc = emitFunctions.MsgReceiveFunction(msgReceiveFuncName,protObj);
+        self.msgReceiveMethods.append(msgRecvFunc);
+        return msgRecvFunc;
+
+        
+    def setMsgSendFunctionAstNode(self,msgSendFuncName,msgSendFuncAstNode):
+        '''
+        Not actually adding, looking up name in existing msgSend
+        methods, and setting astNode for it.  Should already have the
+        node from running over trace lines.
+        '''
+        for s in self.msgSendMethods:
+            if (s.name == msgSendFuncName):
+                s.setAstNode(msgSendFuncAstNode);
+                return;
+
+        errMsg = '\nBehram error: could not find a message send method when ';
+        errMsg += 'trying to set its astNode.\n';
+        print(errMsg);
+        assert(False);
+
+        
+    def addMsgSendFunction(self,msgSendFuncName,protObj):
+        print('\nWarning when adding msg receive: may not want to change name early.\n');
+        # note: may not want to do the addvarorfuncnameto map, but
+        # instead, use the pythonized version of the name;
         msgSendFuncName = self.addVarOrFuncNameToMap(msgSendFuncName);
-        msgSendFunc = emitFunctions.MsgSendFunction(msgSendFuncName,msgSendFuncAstNode,protObj);
+        msgSendFunc = emitFunctions.MsgSendFunction(msgSendFuncName,protObj);
         self.msgSendMethods.append(msgSendFunc);
+        return msgSendFunc;
 
 
     def addSharedVariable(self,varName,varVal):

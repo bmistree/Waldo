@@ -26,9 +26,12 @@ def runEmitter(astNode,protObj=None):
 
         protObj.addEndpoint(ept1Name);
         protObj.addEndpoint(ept2Name);
-        # protObj.ept1 = emitEndpoint.Endpoint(ept1Name);
-        # protObj.ept2 = emitEndpoint.Endpoint(ept2Name);
 
+        #run over trace section
+        traceSection = astNode.children[2];
+        runEmitter(traceSection,protObj);
+
+        
         #run emitter over shared section
         sharedSection = astNode.children[3];
         runEmitter(sharedSection,protObj);
@@ -41,7 +44,41 @@ def runEmitter(astNode,protObj=None):
         ept2 = astNode.children[5];
         runEmitter(ept2,protObj);
 
+    elif(astNode.label == AST_TRACE_SECTION):
+        for s in astNode.children:
+            runEmitter(s,protObj);
 
+    elif(astNode.label == AST_TRACE_LINE):
+        # all children should have labels of AST_TRACE_ITEM.
+        # first item in line should be the msg send
+
+        if (len(astNode.children) == 0):
+            errMsg = '\nBehram error: in astEmit, trace line is emtpy.\n';
+            print(errMsg);
+            assert(False);
+
+        msgSendTraceItem = astNode.children[0];
+        msgSendEndpointName = msgSendTraceItem.children[0].value;
+        msgSendFuncName = msgSendTraceItem.children[1].value;
+
+        # challenge is to ensure that each message function ends up
+        # with a copy of the MessageReceiveFunction object that it
+        # sends its message to.  (Set this value via setSendsTo.)
+        # Purpose of this is so that each time send, specifies who
+        # receives function, ensuring other endpoint can dispatch
+        # directly from message.
+        
+        previousMsgFunc = protObj.addMsgSendFunction(msgSendEndpointName,msgSendFuncName);
+        
+        for s in range(1,len(astNode.children)):
+            msgRecvTraceItem = astNode.children[s];
+            msgRecvEndpointName = msgRecvTraceItem.children[0].value;
+            msgRecvFuncName = msgRecvTraceItem.children[1].value;
+            
+            nextPreviousMsgFunc = protObj.addMsgReceiveFunction(msgRecvEndpointName,msgRecvFuncName);
+            previousMsgFunc.setSendsTo(nextPreviousMsgFunc);
+            previousMsgFunc = nextPreviousMsgFunc;
+            
         
     elif(astNode.label == AST_SHARED_SECTION):
         #add the shared values to each endpoints class
@@ -72,9 +109,10 @@ def runEmitter(astNode,protObj=None):
             #first iteration, runs over global variable section
             #second iteration, runs over declared functions.
             runEmitter(s,protObj);
-            
 
         protObj.popCurrentEndpoint(endName);
+
+        
     elif(astNode.label == AST_ENDPOINT_GLOBAL_SECTION):
         #each of the children here should be a global variable.
         for s in astNode.children:
@@ -113,13 +151,12 @@ def runEmitter(astNode,protObj=None):
     elif (astNode.label == AST_MSG_SEND_FUNCTION):
         msgSendFunctionName =  astNode.children[0].value;            
         msgSendFuncAstNode = astNode;
-        protObj.addMsgSendFunction(msgSendFunctionName,msgSendFuncAstNode);
-
+        protObj.setMsgSendFunctionAstNode(msgSendFunctionName,msgSendFuncAstNode);
+        
     elif (astNode.label == AST_MSG_RECEIVE_FUNCTION):
         msgReceiveFunctionName =  astNode.children[0].value;            
         msgReceiveFuncAstNode = astNode;
-        protObj.addMsgReceiveFunction(msgReceiveFunctionName,msgReceiveFuncAstNode);
-
+        protObj.setMsgReceiveFunctionAstNode(msgReceiveFunctionName,msgReceiveFuncAstNode);
 
 
     else:
@@ -209,15 +246,51 @@ class ProtocolObject():
         self.checkCurrentEndpointUsage('addInternalFunction');
         self.currentEndpoint.addInternalFunction(internalFunctionName,internalFuncAstNode,self);
 
-    def addMsgSendFunction(self,msgSendFunctionName,msgSendFuncAstNode):
-        self.checkUsageError('msgSendFunction');
-        self.checkCurrentEndpointUsage('msgSendFunction');
-        self.currentEndpoint.addMsgSendFunction(msgSendFunctionName,msgSendFuncAstNode,self);
 
-    def addMsgReceiveFunction(self,msgReceiveFunctionName,msgReceiveFuncAstNode):
-        self.checkUsageError('msgReceiveFunction');
-        self.checkCurrentEndpointUsage('msgReceiveFunction');
-        self.currentEndpoint.addMsgReceiveFunction(msgReceiveFunctionName,msgReceiveFuncAstNode,self);
+    def addMsgSendFunction(self,msgSendEndpointName,msgSendFunctionName):
+        self.checkUsageError('addMsgSendFunction');
+        whichEndpoint = None;
+        if (self.ept1.name == msgSendEndpointName):
+            whichEndpoint = self.ept1;
+        elif(self.ept2.name == msgSendEndpointName):
+            whichEndpoint = self.ept2;
+        else:
+            errMsg = '\nBehram error: should not be trying to add a ';
+            errMsg += 'message send function for an endpoint that does ';
+            errMsg += 'not exist.\n';
+            print(errMsg);
+            assert(False);
+
+        return whichEndpoint.addMsgSendFunction(msgSendFunctionName,self);
+
+
+    def addMsgReceiveFunction(self,msgReceiveEndpointName,msgReceiveFunctionName):
+        self.checkUsageError('addMsgReceiveFunction');
+        whichEndpoint = None;
+        if (self.ept1.name == msgReceiveEndpointName):
+            whichEndpoint = self.ept1;
+        elif(self.ept2.name == msgReceiveEndpointName):
+            whichEndpoint = self.ept2;
+        else:
+            errMsg = '\nBehram error: should not be trying to add a ';
+            errMsg += 'message receive function for an endpoint that does ';
+            errMsg += 'not exist.\n';
+            print(errMsg);
+            assert(False);
+
+        return whichEndpoint.addMsgReceiveFunction(msgReceiveFunctionName,self);
+
+    
+    def setMsgSendFunctionAstNode(self,msgSendFunctionName,msgSendFuncAstNode):
+        self.checkUsageError('setAstNodeForMsgSend');
+        self.checkCurrentEndpointUsage('setAstNodeForMsgSend');
+        self.currentEndpoint.setMsgSendFunctionAstNode(msgSendFunctionName,msgSendFuncAstNode);
+
+    def setMsgReceiveFunctionAstNode(self,msgReceiveFunctionName,msgReceiveFuncAstNode):
+        self.checkUsageError('setAstNodeForMsgReceive');
+        self.checkCurrentEndpointUsage('setAstNodeForMsgReceive');
+        self.currentEndpoint.setMsgReceiveFunctionAstNode(msgReceiveFunctionName,msgReceiveFuncAstNode);
+
 
 
             

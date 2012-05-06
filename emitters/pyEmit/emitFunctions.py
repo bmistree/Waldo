@@ -24,6 +24,9 @@ class Function(object):
         errMsg += 'called.\n';
         assert(False);
 
+    def pythonizeName(self):
+        return self.name;
+        
     def createMethodHeader(self):
         #already know that self.name does not conflict with python
         #because was checked before constructed.
@@ -77,13 +80,51 @@ class PublicFunction(Function):
         returnString += emitHelper.indentString(methodBody,2);
         return returnString;
 
-        
-class MsgSendFunction(Function):
-    def __init__(self,name,astNode,protObj):
+class MsgFunction(Function):
+    def __init__ (self,name,protObj):
         #see astBuilder or the graphical ast:
         functionArgDeclIndex = 1;
-        super(MsgSendFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
+        self.sendsTo = None;
         
+        super(MsgFunction,self).__init__(name,None,protObj,functionArgDeclIndex);
+
+        
+    def setSendsTo(self,sendsTo):
+        '''
+        Each message function should know the function on the other
+        endpoint it is sending to.  This allows it to specify which
+        handler on the receiver should fire in the message.
+        '''
+        self.sendsTo = sendsTo;
+
+
+    def setAstNode(self,astNode):
+        '''
+        Message functions are created when running through the traces
+        section of the code (so that it's easy to determine which msg
+        function sends a msg to which other msg function).  At that
+        point, we do not have the ast node corresponding to the actual
+        message function.  Therefore, we have to allow ourselves to
+        set it separately and later.
+        '''
+        self.astNode = astNode;
+
+        # FIXME: super-hack.
+        # lkjs
+        self.endpoint = self.protObj.currentEndpoint;
+        
+        
+class MsgSendFunction(MsgFunction):
+    def __init__(self,name,protObj):
+        super(MsgSendFunction,self).__init__(name,protObj);
+
+    def pythonizeName(self):
+        '''
+        Using a convention of changing a msg send function's name from
+        <FuncName> to _msgSend<FuncName>
+        '''
+        return '_msgSend' + self.name;
+
         
     def emit(self):
         print('\nBehram error: in MsgSendFunction, need to finish emit method\n');
@@ -99,13 +140,18 @@ class MsgSendFunction(Function):
 
 
         
-class MsgReceiveFunction(Function):
-    def __init__(self,name,astNode,protObj):
-        #see astBuilder or the graphical ast:
-        functionArgDeclIndex = 1;
-        super(MsgReceiveFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
+class MsgReceiveFunction(MsgFunction):
+    def __init__(self,name,protObj):
+        super(MsgReceiveFunction,self).__init__(name,protObj);
 
-
+    def pythonizeName(self):
+        '''
+        Using a convention of changing a msg send function's name from
+        <FuncName> to _msgRecv<FuncName>
+        '''
+        return '_msgRecv' + self.name;
+        
+        
     def emit(self):
         print('\nBehram error: in MsgReceiveFunction, need to finish emit method\n');
         methodHeader = self.createMethodHeader();                
