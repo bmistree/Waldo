@@ -3,12 +3,19 @@
 import emitHelper;
 import emitFunctions;
 import emitContext;
-    
+import random;    
         
 class Endpoint():
-    def __init__(self,name):
+    def __init__(self,name,myPriority,theirPriority):
+        '''
+        To handle cases where both sides try sending simultaneously,
+        default to endpoint with higher priority.
+        '''
         self.name = name;
         self.contextClassName = '_' + name + 'Context';
+
+        self.myPriority = myPriority;
+        self.theirPriority = theirPriority;
         
         #decided to make these arrays instead of dicts, because in
         #certain instances, order of declaration matters.  (for
@@ -158,7 +165,7 @@ class Endpoint():
         '''
         returnString = '\n\n';
 
-        
+
         returnString += emitContext.emitContextClass(self);
         returnString += '\n\n';        
         returnString += self.emitClassHeader();
@@ -207,18 +214,61 @@ class %s:
     def emitClassInit(self):
         
         initHeaderString = '''
-def __init__(self):
+def __init__(self,connectionObject):
 '''
-        initBodyString = '';
-        initBodyString += '\n#shared variables section\n'
-        for s in self.sharedVariables:
-            initBodyString += s.emit() + '\n';
 
-        initBodyString += '\n#endpoint global variables section\n'
-        for s in self.endpointVariables:
-            initBodyString += s.emit() + '\n';
+        # each endpoint needs a unique name for reference in
+        # the current connection object implementation.
+        # FIXME: does not actually guarantee
+        # distinct names for each endpoint.  lkjs;
+        fakeName = str(random.random());
+
+
+        initBodyString = r"""
+'''
+EXACT, except for initialization stuff.  maybe think about
+that later.
+'''
+errMsg = '\nBehram FIXME: ignoring initial connection handshake ';
+errMsg += 'in favor of passing in a pre-existing connection.  ';
+errMsg += 'Also, avoiding initializing variables correctly.  Handle later.\n';
+print(errMsg);
+
+
+self.committed = _PingContext(%s,%s);
+self.intermediate = self.committed.copy();
+self.whichEnv = COMMITTED_CONTEXT;
+
+#should use different names for each endpoint
+self.name = '%s'; #will actually be a string created from a random float.
+        
+#lkjs may actually want to use underscores for all of these variables;        
+
+#for synchronization: lkjs: unclear if want recursive or
+#non-recursive here
+self.mutex = threading.RLock();
+        
+
+########## trace management code ########
+        
+self.amInTrace = False;
+self.msgSendQueue = [];
+
+# must store details about the last outstanding send function
+# to handle cases where both I and the other side try to send
+# simultaneously.  (In these cases, one side will revert its
+# send.  It should then prepend the send it was performing to
+# the front of the msgSendQueue.
+self.outstandingSend = None;
+
+self.connectionObject = connectionObject;
+self.connectionObject.addEndpoint(self);
+
+""" % (str(self.myPriority),str(self.theirPriority),fakeName);
+
         
         returnString = emitHelper.indentString(initHeaderString,1);
+        returnString += '\n';
         returnString += emitHelper.indentString(initBodyString,2);
         return returnString;
 

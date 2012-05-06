@@ -24,8 +24,10 @@ def runEmitter(astNode,protObj=None):
         ept1Name = aliasSection.children[0].value; 
         ept2Name = aliasSection.children[1].value;
 
-        protObj.ept1 = emitEndpoint.Endpoint(ept1Name);
-        protObj.ept2 = emitEndpoint.Endpoint(ept2Name);
+        protObj.addEndpoint(ept1Name);
+        protObj.addEndpoint(ept2Name);
+        # protObj.ept1 = emitEndpoint.Endpoint(ept1Name);
+        # protObj.ept2 = emitEndpoint.Endpoint(ept2Name);
 
         #run emitter over shared section
         sharedSection = astNode.children[3];
@@ -154,6 +156,18 @@ class ProtocolObject():
         self.currentEndpoint = None;
         
 
+    def addEndpoint(self,eptName):
+
+        if (self.ept1 == None):
+            self.ept1 = emitEndpoint.Endpoint(eptName,0,1);
+        elif(self.ept2 == None):
+            self.ept2 = emitEndpoint.Endpoint(eptName,1,0);
+        else:
+            errMsg = '\nBehram error: Trying to add too many endpoints to ';
+            errMsg += 'message stream in addEndpoint of ProtocolObject.\n';
+            print(errMsg);
+            assert(False);
+                # protObj.ept2 = emitEndpoint.Endpoint(ept2Name);
 
     def popCurrentEndpoint(self,endName):
         if (self.currentEndpointName != endName):
