@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from astLabels import *;
+import emitHelper;
 
 
 def runEmitter(astNode,protObj=None):
@@ -253,6 +254,8 @@ class ProtocolObject():
         self.checkUsageError('emit');
         returnString = '';
         returnString += '\n';
+        returnString += self.emitHead();
+        returnString += '\n';
         returnString += self.ept1.emit();
         returnString += '\n\n';
         returnString += self.ept2.emit();
@@ -260,77 +263,36 @@ class ProtocolObject():
         return returnString;
 
 
-#From http://pentangle.net/python/handbook/node52.html
-#I also personally added self.
-PYTHON_RESERVED_WORD_DICT = {
-    'self': True,
-    'and':True,
-    'assert':True,
-    'break':True,
-    'class':True,
-    'continue':True,
-    'def':True,
-    'del':True,
-    'elif':True,
-    'else':True,
-    'except':True,
-    'exec':True,
-    'finally':True,
-    'for':True,
-    'from':True,
-    'global':True,
-    'if':True,
-    'import':True,
-    'in':True,
-    'is':True,
-    'lambda':True,
-    'not':True,
-    'or':True,
-    'pass':True,
-    'print':True,
-    'raise':True,
-    'return':True,
-    'try':True,
-    'while':True,
-    'Data':True,
-    'Float':True,
-    'Int':True,
-    'Numeric':True,
-    'Oxphys':True,
-    'array': True,
-    'close':True,
-    'float':True,
-    'int':True,
-    'input':True,
-    'open':True,
-    'range':True,
-    'type':True,
-    'write':True,
-    'zeros':True,
-    'acos':True,
-    'asin':True,
-    'atan':True,
-    'cos':True,
-    'e':True,
-    'exp':True,
-    'fabs':True,
-    'floor':True,
-    'log':True,
-    'log10':True,
-    'pi':True,
-    'sin':True,
-    'sqrt':True,
-    'tan':True
-    }
+    def emitHead(self):
+        '''
+        Emit boiler plate code that must go at top of shared file
+        '''
 
-def isPythonReserved(varName):
-    '''
-    @returns True if varName is a reserved word in python.  False
-    otherwise.
-    '''
-    returner = varName in PYTHON_RESERVED_WORD_DICT;
-    return returner;
+        emitString = r'''
+#!/usr/bin/python
+
+
+#EXACT
+import threading;
     
+INTERMEDIATE_CONTEXT = 0;
+COMMITTED_CONTEXT = 1;
+
+# When last message fires, it sends a message back to other endpoint.
+# This message is used to synchronize shared variables between two
+# endpoints.  Gets passed in dispatchTo field of received messages.
+STREAM_TAIL_SENTINEL = 'None';
+
+def DEBUG(className,msg):
+    toPrint = className + ':    ' + msg;
+    print('\n');
+    print(toPrint);
+    print('\n');
+
+        '''
+        return emitString;
+
+
     
         
 class Endpoint():
@@ -397,7 +359,7 @@ class Endpoint():
         This function inserts the variable into this map, and returns
         with what name a variable with this name should take..
         '''
-        if (isPythonReserved(varName) or self.isAlreadyUsed(varName)):
+        if (emitHelper.isPythonReserved(varName) or self.isAlreadyUsed(varName)):
             newName = self.addVarOrFuncNameToMap('_' + varName,False);
             if (root):
                 self.mappings[varName] = newName;
