@@ -1,5 +1,5 @@
 Command to run from parser/ast/ 
-    ./astHead.py -f testBasic.wld -go '{"file":"astOut.html", "h": 3000, "w": 5000}' -e emitted.py
+    ./head.py -f testBasic.wld -go '{"file":"astOut.html", "h": 3000, "w": 5000}' -e emitted.py
 
 
 In examples:

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 import sys;
-sys.path.append('d3');
-import treeDraw;
+import os;
+
+import d3.treeDraw as treeDraw;
 from astLabels import *;
 from astTypeCheckStack import TypeCheckContextStack;
 from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH;

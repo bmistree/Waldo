@@ -1,7 +1,12 @@
 #!/usr/bin/python
 
-from astBuilder import getParser;
 import sys;
+import os;
+sys.path.append(os.path.join('..','..','parser','ast'));
+
+from astBuilder import getParser;
+
+
 import json;
 import astEmit;
 
@@ -12,8 +17,8 @@ class GraphicalOutArg():
         self.outFile = jsonDict['file'];
         self.width = jsonDict.get('w',None);
         self.height = jsonDict.get('h',None);
-        self.d3 = jsonDict.get('d3',None);
-        
+        self.d3 = jsonDict.get('d3','../../parser/ast/d3');
+
 
 def getFileText(inputFile):
     filer = open(inputFile,'r');
