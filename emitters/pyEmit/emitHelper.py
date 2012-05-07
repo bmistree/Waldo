@@ -257,6 +257,26 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         returnString += ')';
         returnString = indentString(returnString,indentLevel);
 
+    elif(astNode.label == AST_MESSAGE_LITERAL):
+        # each child is a message literal element, which has a left
+        # child (identifier name) and a right child (identifier value)
+
+        #creates a simple python dict.
+        returnString = '{';
+        for s in range(0,len(astNode.children)):
+            msgLine = astNode.children[s];
+            msgLineElementNameStr = msgLine.children[0].value;
+            msgLineElementValueStr = runFunctionBodyInternalEmit(msgLine.children[1],protObj,endpoint,prefixCode,0);
+            returnString += "'%s' : %s" % (msgLineElementNameStr,msgLineElementValueStr);
+
+            if (s != len(astNode.children) -1):
+                returnString += ',';
+            
+            
+        returnString += '}';
+        returnString = indentString(returnString,indentLevel);
+
+
         
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
         assignTo = astNode.children[0];
