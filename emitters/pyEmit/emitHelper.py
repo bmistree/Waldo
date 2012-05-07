@@ -209,8 +209,11 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
 
         boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,prefixCode,0);
         condHead += boolCondStr + ':'
-        
-        condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,prefixCode,0);
+
+        # occasionally, have empty bodies for if/else if statements.
+        condBodyStr = '';
+        if (condBodyNode.label != AST_EMPTY):
+            condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,prefixCode,0);
         if (condBodyStr == ''):
             condBodyStr = 'pass;';
 
@@ -226,8 +229,10 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         elseHead = 'else: \n';
         elseBody = astNode.children[0];
 
-        elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,prefixCode,0);
-
+        # handles empty body for else statement
+        elseBodyStr = '';
+        if (elseBody.label != AST_EMPTY):
+            elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,prefixCode,0);
         if (elseBodyStr == ''):
             elseBodyStr = 'pass;';
 

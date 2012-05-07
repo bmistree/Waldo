@@ -606,7 +606,8 @@ def p_FunctionDeclArgList(p):
         p[0].addChildren(p[1].getChildren());
         p[0].addChild(p[3]);
     elif(len(p) == 2):
-        p[0].addChild(p[1]);
+        if (not isEmptyNode(p[1])):
+            p[0].addChild(p[1]);
     else:
         print('\nError in FunctionDeclArgList.  Unexpected length to match\n');
         assert(False);

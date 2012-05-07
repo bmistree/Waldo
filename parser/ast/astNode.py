@@ -381,7 +381,8 @@ class AstNode():
                 errMsg += '\n';
                 errorFunction(errMsg,[boolCond],[boolCond.lineNo],progText);            
 
-            condBody.typeCheck(progText,typeStack);
+            if (condBody.label != AST_EMPTY):
+                condBody.typeCheck(progText,typeStack);
 
 
         elif(self.label == AST_BOOL_EQUALS) or (self.label == AST_BOOL_NOT_EQUALS):
@@ -451,7 +452,8 @@ class AstNode():
         elif (self.label == AST_ELSE_STATEMENT):
             #type check else statement
             for s in self.children:
-                s.typeCheck(progText,typeStack);
+                if (s.label != AST_EMPTY):
+                    s.typeCheck(progText,typeStack);
 
         elif(self.label == AST_PLUS):
             #perform plus separately from other math operations to
