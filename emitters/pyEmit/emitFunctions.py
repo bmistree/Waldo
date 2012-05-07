@@ -34,15 +34,17 @@ class Function(object):
 
         
         #fill in arguments
+        
+        # FIXME: lkjs;
+        # argument names may conflict with python keywords.  should
+        # fix eventually.
         declArgsList = self.astNode.children[self.declArgListIndex];
         for s in declArgsList.children:
             #each s is a declArg
             if (len(s.children) == 0):
                 continue;
 
-
             argName = s.children[1].value;
-            argName = self.endpoint.varName(argName);
             methodHeader += ', ' + argName;
         
         methodHeader += '):\n';

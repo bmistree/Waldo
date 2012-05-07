@@ -38,12 +38,10 @@ class Endpoint():
         self.endpointVariables = [];
 
     def addInternalFunction(self,internalFuncName,internalFuncAstNode,protObj):
-        internalFuncName = self.addVarOrFuncNameToMap(internalFuncName);
         internalFunc = emitFunctions.InternalFunction(internalFuncName,internalFuncAstNode,protObj);
         self.internalMethods.append(internalFunc);
         
     def addPublicFunction(self,pubFuncName,pubFuncAstNode,protObj):
-        pubFuncName = self.addVarOrFuncNameToMap(pubFuncName);
         pubFunc = emitFunctions.PublicFunction(pubFuncName,pubFuncAstNode,protObj);
         self.publicMethods.append(pubFunc);
 
@@ -122,7 +120,6 @@ class Endpoint():
         print('\nWarning when adding msg receive: may not want to change name early.\n');
         # note: may not want to do the addvarorfuncnameto map, but
         # instead, use the pythonized version of the name;
-        msgReceiveFuncName = self.addVarOrFuncNameToMap(msgReceiveFuncName);
         msgRecvFunc = emitFunctions.MsgReceiveFunction(msgReceiveFuncName,protObj);
         self.msgReceiveMethods.append(msgRecvFunc);
         return msgRecvFunc;
@@ -149,111 +146,19 @@ class Endpoint():
         print('\nWarning when adding msg receive: may not want to change name early.\n');
         # note: may not want to do the addvarorfuncnameto map, but
         # instead, use the pythonized version of the name;
-        msgSendFuncName = self.addVarOrFuncNameToMap(msgSendFuncName);
         msgSendFunc = emitFunctions.MsgSendFunction(msgSendFuncName,protObj);
         self.msgSendMethods.append(msgSendFunc);
         return msgSendFunc;
 
 
     def addSharedVariable(self,varName,varVal):
-        varName = self.addVarOrFuncNameToMap(varName);
         varToAdd = Variable(varName,self,varVal);
         self.sharedVariables.append(varToAdd);
 
     def addEndpointGlobalVariable(self,varName,varVal):
-        varName = self.addVarOrFuncNameToMap(varName);
         varToAdd = Variable(varName,self,varVal);
         self.endpointVariables.append(varToAdd);
 
-    def addVarOrFuncNameToMap(self,varName,root=True):
-        '''
-        self.mappings maps the name of the variable that the scripter
-        used in Waldo source text to an internal name that does not
-        conflict with any python keyword (eg, 'if', 'not', 'self', etc.)
-
-        This function inserts the variable into this map, and returns
-        with what name a variable with this name should take..
-        '''
-        if (emitHelper.isPythonReserved(varName) or self.isAlreadyUsed(varName)):
-            newName = self.addVarOrFuncNameToMap('_' + varName,False);
-            if (root):
-                self.mappings[varName] = newName;
-            return newName;
-
-        return varName;
-
-    def removeVarOrFuncNameFromMap(self,varName):
-        if (varName in self.mappings):
-            del self.mappings[varName];
-            
-    
-    def isAlreadyUsed(self,varName):
-        '''
-        @returns True if another variable or function in the program
-        within the current scope already uses the name varName.  False
-        otherwise.
-
-        We know if another variable in the program is using the name
-        varName if one of the values in the self.mappings dict is the
-        same as varName.
-        '''
-        #FIXME: Inefficient
-
-        for s in self.mappings.keys():
-            if (self.mappings[s] == varName):
-                return True;
-
-        return False;
-
-        
-    def varName(self,potentialName):
-        '''
-        @param {String} potentialName -- Waldo name of variable being
-        used.
-
-        @returns {String} either self.potentialName or potentialName,
-        depending on whether the variable that is being assigned/used
-        is a method of the endpoint's class or if it's not,
-        respectively.
-        '''
-        #tradeoff of making the shared/endpoint/methods containers
-        #arrays is that I actually have to iterate over full array to
-        #check if potentialName exists in them.
-
-
-        if (potentialName in self.mappings):
-            potentialName = self.mappings[potentialName];
-        
-        for s in self.publicMethods:
-            if (s.name == potentialName):
-                return 'self.' + potentialName;
-
-        for s in self.internalMethods:
-            if (s.name == potentialName):
-                return 'self.' + potentialName;
-
-        for s in self.internalMethods:
-            if (s.name == potentialName):
-                return 'self.' + potentialName;
-
-        for s in self.msgReceiveMethods:
-            if (s.name == potentialName):
-                return 'self.' + potentialName;
-            
-        for s in self.msgSendMethods:
-            if (s.name == potentialName):
-                return 'self.' + potentialName;
-
-        #list of strings of variables
-        for s in self.sharedVariables:
-            if (s.name == potentialName):
-                return 'self.' + potentialName;
-
-        for s in self.endpointVariables:
-            if (s.name == potentialName):
-                return 'self.' + potentialName;
-
-        return potentialName;
 
         
     def emit(self):
@@ -282,7 +187,6 @@ class Endpoint():
         returnString += '\n\n';
         returnString += self.emitTrySendNext();
 
-        # lkjs;
         returnString += self.emitGeneralSendMessageUtility();
         returnString += '\n\n';
         returnString += self.emitFunctions();

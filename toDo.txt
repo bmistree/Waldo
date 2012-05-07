@@ -29,7 +29,8 @@ Make concrete decisions about what should happen if a public method
 generates a conflict with data we are operating on.
 
 
-
+Playing fast and loose with the names of variables that the user can
+pass in as arguments in emitting.  Fix.
 
 Im emitting:
     
