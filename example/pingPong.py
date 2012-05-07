@@ -429,6 +429,8 @@ class Ping():
         #sets environment for further calls
         self.whichEnv = INTERMEDIATE_CONTEXT;
 
+
+        
         # I know it is stupid to do this check in a msgSend,
         # msgReceive, or Public function.  However, it will
         # be necessary in an internal function, and I would

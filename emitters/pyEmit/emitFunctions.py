@@ -30,7 +30,7 @@ class Function(object):
     def createMethodHeader(self):
         #already know that self.name does not conflict with python
         #because was checked before constructed.
-        methodHeader = 'def %s(self' % self.name;
+        methodHeader = 'def %s(self' % self.pythonizeName();
 
         
         #fill in arguments
@@ -181,7 +181,44 @@ class MsgSendFunction(MsgFunction):
         methodHeader = self.createMethodHeader();
         
         funcBodyNode = self.astNode.children[2];
-        methodBody = emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint);
+
+
+        methodBodyTop = r"""
+# means that we are already processing a trace stream.
+# schedule this for another time
+if (self.amInTrace):
+""";
+
+        ifBody = """
+queueElementName = '%s';
+queueElementArgs = []; # no args beyond self were passed into the send function.
+queueElement = _MessageSendQueueElement(queueElementName,queueElementArgs);
+
+self.msgSendQueue.append(queueElement);
+return;
+""" % self.pythonizeName();
+
+        methodBodyTop += emitHelper.indentString(ifBody,1);
+
+        methodBodyTop += """
+# blocks further send messages from executing
+self.amInTrace = True;
+
+#stores intermediate send function
+self.outstandingSend = _MessageSendQueueElement('%s',[]);
+
+#sets environment for further calls
+self.whichEnv = INTERMEDIATE_CONTEXT;
+
+
+# actually write the user-specified "guts" of the function.
+""" % self.pythonizeName();
+
+        
+
+        methodBodyBottom = emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.INTERMEDIATE_PREFIX);
+
+        methodBody = methodBodyTop + methodBodyBottom;
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);

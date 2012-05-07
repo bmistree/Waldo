@@ -2,6 +2,14 @@
 
 from astLabels import *;
 
+
+# pass one of these parameters to runFunctionBodyInternalEmit so that
+# the function knows whether to prefix global and shared variables
+# with "self.committed" or "self.intermediate".
+INTERMEDIATE_PREFIX = 0;
+COMMITTED_PREFIX = 1;
+
+
 def indentString(string,indentAmount):
     '''
     @param {String} string -- Each line in this string we will insert
@@ -100,7 +108,7 @@ def isPythonReserved(varName):
 
 
 
-def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
+def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=0):
     '''
     @param {AstNode} astNode -- the ast node that we want evaluation
     to start from.  When called externally, this will generally have
@@ -111,12 +119,33 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
     @param {ProtocolObject} protObj -- So that can check for
     appropriate variable names
 
+    @param {Int} prefixCode -- Either INTERMEDIATE_PREFIX or
+    COMMITTED_PREFIX (both defined at top of the file).  Referenced
+    global or shared variables should be refered to through either
+    self.intermediate.<var name> or self.commited.<var name>,
+    depending on which is set/passed through.
+    
+    
     @returns {String} with funcition text.  base indent level is 0.
     '''
+
+
+    if (prefixCode == INTERMEDIATE_PREFIX):
+        prefix = 'self.intermediate.';
+    elif(prefixCode == COMMITTED_PREFIX):
+        prefix = 'self.committed.';
+    else:
+        errMsg = '\nBehram error: runFunctionBodyInternalEmit should be passed ';
+        errMsg += 'a valid prefixCode.\n';
+        print(errMsg);
+        assert(False);
+
+        
+    
     returnString = '';
     if (astNode.label == AST_FUNCTION_BODY):
         for s in astNode.children:
-            funcStatementString = runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
+            funcStatementString = runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,indentLevel);
             if (len(funcStatementString) != 0):
                 returnString += indentString(funcStatementString,indentLevel);
                 returnString += '\n';
@@ -126,13 +155,17 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
                 
     elif (astNode.label == AST_DECLARATION):
         idName = astNode.children[1].value;
-        idName = endpoint.varName(idName);
-        decString = idName + ' = ';
+        if (endpoint.isGlobalOrShared(idName)):
+            idName = prefix + idName;
+
+        decString = idName + ' = ';            
+        
+
 
         #check if have an initializer value
         if (len(astNode.children) == 3):
             #have an initializer value;
-            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,endpoint,0);
+            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,endpoint,prefixCode,0);
             decString += rhsInitializer;
         else:
             #no initializer value, specify defaults.
@@ -196,8 +229,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
 
-        lhsText = runFunctionBodyInternalEmit(lhsNode,protObj,endpoint,0);
-        rhsText = runFunctionBodyInternalEmit(rhsNode,protObj,endpoint,0);
+        lhsText = runFunctionBodyInternalEmit(lhsNode,protObj,endpoint,prefixCode,0);
+        rhsText = runFunctionBodyInternalEmit(rhsNode,protObj,endpoint,prefixCode,0);
 
         overallLine = lhsText + ' '+ operator + ' (' + rhsText + ') ';
         return overallLine;
@@ -206,20 +239,24 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
     elif (astNode.label == AST_CONDITION_STATEMENT):
         returnString = '';
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,indentLevel);
             returnString += '\n';
             
 
     elif (astNode.label == AST_BOOLEAN_CONDITION):
-        returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,indentLevel);
+        returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefixCode,indentLevel);
 
     elif (astNode.label == AST_IDENTIFIER):
-        returnString = astNode.value;
+        idName = astNode.value;
+        if (endpoint.isGlobalOrShared(idName)):
+            idName = prefix + idName;     
+        returnString = idName;
 
+        
     elif (astNode.label == AST_ELSE_IF_STATEMENTS):
         returnString = '';
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,0);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,0);
             returnString += '\n';
 
         if (returnString != ''):
@@ -241,10 +278,10 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
         booleanConditionNode = astNode.children[0];
         condBodyNode = astNode.children[1];
 
-        boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,0);
+        boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,prefixCode,0);
         condHead += boolCondStr + ':'
         
-        condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,0);
+        condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,prefixCode,0);
         if (condBodyStr == ''):
             condBodyStr = 'pass;';
 
@@ -260,7 +297,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
         elseHead = 'else: \n';
         elseBody = astNode.children[0];
 
-        elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,0);
+        elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,prefixCode,0);
 
         if (elseBodyStr == ''):
             elseBodyStr = 'pass;';
@@ -272,9 +309,9 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
 
     elif (astNode.label == AST_FUNCTION_CALL):
         funcNameNode = astNode.children[0];
-        funcNameStr = endpoint.varName(funcNameNode.value);
+        funcNameStr = endpoint.getPythonizedFunctionName(funcNameNode.value);
         funcArgListNode = astNode.children[1];
-        funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,0);
+        funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,prefixCode,0);
         returnString = indentString(funcNameStr + funcArgStr,indentLevel);
 
     elif (astNode.label == AST_FUNCTION_ARGLIST):
@@ -282,7 +319,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
 
         counter = 0;
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,0);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,0);
             counter +=1;
             
             if (counter != len(astNode.children)):
@@ -295,17 +332,19 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,indentLevel=0):
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
         assignTo = astNode.children[0];
         idName = assignTo.value;
-        idName = endpoint.varName(idName);
+        if (endpoint.isGlobalOrShared(idName)):
+            idName = prefix + idName;
+
         lhsAssignString = idName + ' = ';
         
 
-        rhsAssignString = runFunctionBodyInternalEmit(astNode.children[1],protObj,endpoint,0);
+        rhsAssignString = runFunctionBodyInternalEmit(astNode.children[1],protObj,endpoint,prefixCode,0);
         returnString += indentString(lhsAssignString + rhsAssignString,indentLevel);
         returnString += '\n';
 
     elif (astNode.label == AST_FUNCTION_BODY_STATEMENT):
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,indentLevel);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,indentLevel);
         
     else:
         errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';

@@ -48,6 +48,59 @@ class Endpoint():
         self.publicMethods.append(pubFunc);
 
 
+    def isGlobalOrShared(self,idName):
+        '''
+        @param {String} idName -- the user-defined Waldo name of a variable.
+        
+        @returns {Bool} True if idName is either an endpoint or shared variable.
+                        False otherwise
+        '''
+        for s in self.sharedVariables:
+            if (s.name == idName):
+                return True;
+
+        for s in self.endpointVariables:
+            if (s.name == idName):
+                return True;
+            
+        return False;
+
+    def getPythonizedFunctionName(self,funcName):
+        '''
+        @param {String} funcName -- The user-defined Waldo name of a
+        function he/she wants to reference.
+
+        @returns {String} -- The way the function can be called in the
+        translated version.  For instance, if a user had declared an
+        internal function mFunc in Waldo, this function would return
+        self._mFunc.
+
+        @throws Throws error if funcName does not exist in public,
+        internal, msgRev, or msgSend methods.
+        '''
+
+        for s in self.publicMethods:
+            if (s.name == funcName):
+                return s.pythonizeName();
+            
+        for s in self.internalMethods:
+            if (s.name == funcName):
+                return s.pythonizeName();
+
+        for s in self.msgReceiveMethods:
+            if (s.name == funcName):
+                return s.pythonizeName();
+
+        for s in self.msgSendMethods:
+            if (s.name == funcName):
+                return s.pythonizeName();
+
+
+        errMsg = '\nBehram error: requesting a function name to call that ';
+        errMsg += 'does not exist in this endpoint.\n';
+        assert(False);
+
+
 
     def setMsgReceiveFunctionAstNode(self,msgReceiveFuncName,msgReceiveFuncAstNode):
         '''
