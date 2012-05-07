@@ -626,9 +626,11 @@ def p_FunctionArgList(p):
     p[0] = AstNode(AST_FUNCTION_ARGLIST,p.lineno(0),p.lexpos(0));
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());
+                
         p[0].addChild(p[3]);
     elif(len(p) == 2):
-        p[0].addChild(p[1]);
+        if (not isEmptyNode(p[1])):
+            p[0].addChild(p[1]);
     else:
         print('\nError in FunctionArgList.  Unexpected length to match\n');
         assert(False);
@@ -709,7 +711,7 @@ def findErrorCol(progText,p):
     return returner;
 
 def isEmptyNode(nodeToCheck):
-    return (nodeToCheck.type == AST_EMPTY);
+    return (nodeToCheck.label == AST_EMPTY);
 
 
 def getParser(programText=None):
