@@ -112,6 +112,55 @@ class MsgFunction(Function):
         # FIXME: super-hack.
         # lkjs
         self.endpoint = self.protObj.currentEndpoint;
+
+
+    def caseBasedDispatch(self,first,indentLevel):
+        '''
+        Each message should be structured to include the name of the
+        function on the other endpoint that should handle it.  The
+        code that handles the message labeling itself is a large
+        if-elif-else statement found in the _sendMsg function of the
+        emitted code (and populated in the @see
+        emitGeneralSendMessageUtility function of class Endpoint in
+        emitEndpoint.py).  In general, it should end up looking
+        something like:
+
+        dispatchTo = None;
+        if (funcNameFrom == '_msgRecvTwo'):
+            dispatchTo = '_msgRecvThree';
+        elif(funcNameFrom == '_msgRecvFour'):
+            dispatchTo = STREAM_TAIL_SENTINEL;
+        else:
+            errMsg = '\nBehram Error.  Provided an invalid ';
+            errMsg += 'funcNameFrom argument in Pong.\n';
+            print(errMsg);
+            assert(False);
+            
+        Each if/elif statement itself is composed by a separate
+        MsgFunction in this method.
+        '''
+
+        ifElifOperator = 'elif';
+        if (first):
+            ifElifOperator = 'if';
+
+        ifHead = ifElifOperator + " (funcNameFrom == '" + self.pythonizeName() + "'):\n";
+
+        ifBody = "dispatchTo  = ";
+
+        if (self.sendsTo == None):
+            # means that this was the last message receive in a trace
+            # line: we should set dispacthTo equal to the sentinnel
+            # value representing this case.
+            ifBody += 'STREAM_TAIL_SENTINEL;\n';
+        else:
+            ifBody += "'" + self.sendsTo.pythonizeName() + "';\n";
+
+            
+        indentedHead = emitHelper.indentString(ifHead,indentLevel);
+        indentedBody = emitHelper.indentString(ifBody,indentLevel+1);
+
+        return indentedHead + indentedBody;
         
         
 class MsgSendFunction(MsgFunction):

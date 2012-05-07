@@ -618,9 +618,39 @@ this endpoint called this function.
 dispatchTo = None;
 """
 
-        sendMsgBody += r"""
-BEHRAM NEEDS TO FILL IN THE INTERNAL PART OF _SENDMSG;
-"""
+        # Each message should be structured to include the name of the
+        # function on the other endpoint that should handle it.  The
+        # bit of code below handles adding the if-elif-else statements
+        # for this message labeling.
+        caseBasedDispatch = '';
+        first = True;
+        for s in self.msgSendMethods:
+            caseBasedDispatch += s.caseBasedDispatch(first,0);
+            first = False;
+            
+        for s in self.msgReceiveMethods:
+            caseBasedDispatch += s.caseBasedDispatch(first,0);
+            first = False;
+
+
+            
+        if (not first):
+            # means we had some messages to send
+            # add in a slip of compiler debugging code.
+            caseBasedDispatch += 'else:\n';
+            elseBody = r"""
+errMsg = '\nBehram Error.  Provided an invalid ';
+errMsg += 'funcNameFrom argument in Pong.\n';
+print(errMsg);
+assert(False);
+
+""";
+            caseBasedDispatch += emitHelper.indentString(elseBody,1);
+
+            
+        # actually add the caseBasedDispatch code onto the end of
+        # sendMsgBody.
+        sendMsgBody += caseBasedDispatch;
 
 
         sendMsgBody += r"""
