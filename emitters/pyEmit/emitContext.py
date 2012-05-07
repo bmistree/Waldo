@@ -175,12 +175,12 @@ self._theirPriority = _theirPriority;
 
     initBody += '### emitting shared variables \n'
     for s in endpoint.sharedVariables:
-        initBody += s.emit('self');
+        initBody += s.emit('self.');
         initBody += '\n';
 
     initBody += '### emitting endpoint global variables \n'            
     for s in endpoint.endpointVariables:
-        initBody += s.emit('self');
+        initBody += s.emit('self.');
         initBody += '\n';
 
     indentedInitHead = emitHelper.indentString(initHead,indentLevel);
