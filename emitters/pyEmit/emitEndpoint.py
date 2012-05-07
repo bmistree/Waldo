@@ -16,16 +16,19 @@ class Endpoint():
 
         self.myPriority = myPriority;
         self.theirPriority = theirPriority;
-        
+
+        # keep track of which function we are currently emitting: for
+        # send statements, will need to refer to this value to know
+        # what string token to pass to auto-generated _sendMsg
+        # function.  Only the emitting functions set and reset this
+        # variable.  It is read by runFunctionBodyInternalEmit of
+        # emitHelper.py.
+        self.currentlyEmittingFunction = None;
+
         #decided to make these arrays instead of dicts, because in
         #certain instances, order of declaration matters.  (for
         #instance, shared variables.)
 
-
-        # takes a variable name and returns what the variable should
-        # actually be named in the program text.
-        self.mappings = {};
-        
         #Each element of these arrays should inherit from Function.
         self.publicMethods = [];
         self.internalMethods = [];

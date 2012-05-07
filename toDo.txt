@@ -32,6 +32,13 @@ generates a conflict with data we are operating on.
 Playing fast and loose with the names of variables that the user can
 pass in as arguments in emitting.  Fix.
 
+Throw an error if a Send LKJDJ To LKJljdf appears in anything besides
+a message receive and message send function.  If it appears in a tail
+msg receive function, throw an error.
+
+May want to provide a commit callback to fire when action is totally
+finished on both sides.
+
 Im emitting:
     
 Lots of todos still in code.  Largest: sort through initializers for

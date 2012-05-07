@@ -57,6 +57,9 @@ class InternalFunction(Function):
         functionArgDeclIndex = 2;        
         super(InternalFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
     def emit(self):
+        
+        self.endpoint.currentlyEmittingFunction = self;
+        
         methodHeader = self.createMethodHeader();
 
         funcBodyNode = self.astNode.children[3];
@@ -91,6 +94,7 @@ assert(False);
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);
+        self.endpoint.currentlyEmittingFunction = None;
         return returnString;
 
 
@@ -101,6 +105,7 @@ class PublicFunction(Function):
         super(PublicFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
 
     def emit(self):
+        self.endpoint.currentlyEmittingFunction = self;
         methodHeader = self.createMethodHeader();        
 
         funcBodyNode = self.astNode.children[3];
@@ -113,6 +118,7 @@ self.whichEnv = COMMITTED_CONTEXT;
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);
+        self.endpoint.currentlyEmittingFunction = None;
         return returnString;
 
 class MsgFunction(Function):
@@ -211,7 +217,7 @@ class MsgSendFunction(MsgFunction):
 
         
     def emit(self):
-        print('\nBehram error: in MsgSendFunction, need to finish emit method\n');
+        self.endpoint.currentlyEmittingFunction = self;
 
         methodHeader = self.createMethodHeader();
         
@@ -257,6 +263,7 @@ self.whichEnv = INTERMEDIATE_CONTEXT;
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);
+        self.endpoint.currentlyEmittingFunction = None;        
         return returnString;
 
 
@@ -274,6 +281,7 @@ class MsgReceiveFunction(MsgFunction):
 
         
     def emit(self):
+        self.endpoint.currentlyEmittingFunction = self;        
         funcBodyNode = self.astNode.children[2];
 
         
@@ -286,4 +294,5 @@ self.whichEnv = INTERMEDIATE_CONTEXT;
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);
+        self.endpoint.currentlyEmittingFunction = None;        
         return returnString;

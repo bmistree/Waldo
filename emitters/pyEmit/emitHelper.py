@@ -277,6 +277,21 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         returnString = indentString(returnString,indentLevel);
 
 
+    elif(astNode.label == AST_SEND_STATEMENT):
+
+        if (endpoint.currentlyEmittingFunction == None):
+            errMsg = '\nBehram error when processing send statement.  ';
+            errMsg += 'Endpoint is not tracking a currentlyEmittingFunction.\n';
+            print(errMsg);
+            assert(False);
+
+        msgNode = astNode.children[0];
+        msgStr = runFunctionBodyInternalEmit(msgNode,protObj,endpoint,prefixCode,0);
+        emittedSenderFuncName = endpoint.currentlyEmittingFunction.pythonizeName();
+        returnString += '''self._sendMsg (%s,'%s');  # actually send the message;''' % (msgStr,emittedSenderFuncName);
+        returnString = indentString(returnString,indentLevel);
+
+
         
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
         assignTo = astNode.children[0];
