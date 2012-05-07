@@ -341,7 +341,6 @@ class ProtocolObject():
     def emit(self):
         self.checkUsageError('emit');
         returnString = '';
-        returnString += '\n';
         returnString += self.emitHead();
         returnString += '\n';
         returnString += self.ept1.emit();
@@ -356,8 +355,7 @@ class ProtocolObject():
         Emit boiler plate code that must go at top of shared file
         '''
 
-        emitString = r"""
-#!/usr/bin/python
+        emitString = r"""#!/usr/bin/python
 
 
 #EXACT

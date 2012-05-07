@@ -238,7 +238,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
 
     elif (astNode.label == AST_FUNCTION_CALL):
         funcNameNode = astNode.children[0];
-        funcNameStr = endpoint.getPythonizedFunctionName(funcNameNode.value);
+        funcNameStr = 'self.' + endpoint.getPythonizedFunctionName(funcNameNode.value);
         funcArgListNode = astNode.children[1];
         funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,prefixCode,0);
         returnString = indentString(funcNameStr + funcArgStr,indentLevel);

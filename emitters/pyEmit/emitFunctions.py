@@ -57,9 +57,37 @@ class InternalFunction(Function):
         functionArgDeclIndex = 2;        
         super(InternalFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
     def emit(self):
-        print('\nBehram error: in InternalFunction, need to finish emit method\n');
         methodHeader = self.createMethodHeader();
-        methodBody = 'pass';
+
+        funcBodyNode = self.astNode.children[3];
+        
+        methodBody = '''
+if (self.whichEnv == COMMITTED_CONTEXT):
+''';
+        inCommittedBody = emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.COMMITTED_PREFIX);
+
+        methodBody += emitHelper.indentString(inCommittedBody, 1);
+
+        methodBody += '''
+elif (self.whichEnv == INTERMEDIATE_CONTEXT):
+''';
+        
+        inIntermediateBody = emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.INTERMEDIATE_PREFIX);
+        methodBody += emitHelper.indentString(inIntermediateBody, 1);
+
+        
+        methodBody += '''
+else:
+''';
+        elseBody = r"""
+errMsg = '\nBehram error: do not know which context to execute internal function in.  Aborting.\n';
+print(errMsg);
+assert(False);
+""";
+
+        methodBody += emitHelper.indentString(elseBody, 1);
+        
+
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);
@@ -73,10 +101,15 @@ class PublicFunction(Function):
         super(PublicFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
 
     def emit(self):
-        print('\nBehram error: in PublicFunction, need to finish emit method\n');
         methodHeader = self.createMethodHeader();        
 
-        methodBody = 'pass;';
+        funcBodyNode = self.astNode.children[3];
+        
+        methodBody = '''
+self.whichEnv = COMMITTED_CONTEXT;
+'''
+        methodBody += emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.COMMITTED_PREFIX);
+        
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);
@@ -238,12 +271,18 @@ class MsgReceiveFunction(MsgFunction):
         <FuncName> to _msgRecv<FuncName>
         '''
         return '_msgRecv' + self.name;
-        
+
         
     def emit(self):
-        print('\nBehram error: in MsgReceiveFunction, need to finish emit method\n');
-        methodHeader = self.createMethodHeader();                
-        methodBody = 'pass;';
+        funcBodyNode = self.astNode.children[2];
+
+        
+        methodHeader = self.createMethodHeader();
+        methodBody = '''
+self.whichEnv = INTERMEDIATE_CONTEXT;
+'''
+        methodBody += emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.INTERMEDIATE_PREFIX);
+        
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);
