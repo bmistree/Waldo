@@ -425,7 +425,8 @@ def t_DOT(t):
     return mStateMachine.addToken(t);
     
 def t_NUMBER(t):
-    '[\-]?\d+(\.\d*)?'
+    '\d+(\.\d*)?'
+    # '[\-]?\d+(\.\d*)?'
     return mStateMachine.addToken(t);
 
 def t_IDENTIFIER(t):

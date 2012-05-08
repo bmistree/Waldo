@@ -128,19 +128,43 @@ def p_Type(p):
 
 
 
-# lkjs;    
+
 def p_TerminalReturnable(p):
-    '''TerminalReturnable : Number
-                          | BracketStatement    
-                          | Identifier
-                          | String
-                          | Bool
-                          | FunctionCall
-                          | PrintCall
-                          | MessageLiteral
-                          ''';
+    '''
+    TerminalReturnable : OperatableOn
+                       | NonOperatableOn
+    '''
     p[0] = p[1];
 
+    
+def p_NonOperatableOn(p):
+    '''
+    NonOperatableOn : MessageLiteral
+                    | PrintCall
+    '''
+    #cannot use operators between PrintCall and message literal (they
+    #are not operatable on).  Everything in OperatableOn we can put
+    #operators between (except for == ).  Gets rid of reduce/reduce
+    #conflict from having a minus sign after a message literal to
+    #separate into terminal returnable, nonoperatableon, and
+    #operatableon.
+    p[0] = p[1];
+    
+    
+                      
+    
+def p_OperatableOn(p):
+    '''OperatableOn : Number
+                    | BracketStatement    
+                    | Identifier
+                    | String
+                    | Bool
+                    | FunctionCall
+                    ''';
+    p[0] = p[1];
+
+    
+    
 
 def p_PrintCall(p):
     '''
@@ -206,8 +230,20 @@ def p_MessageLiteralElement(p):
 
 
 def p_Number(p):
-    '''Number : NUMBER '''
-    p[0] = AstNode(AST_NUMBER,p.lineno(1),p.lexpos(1),p[1]);
+    '''Number : NUMBER
+              | MINUS NUMBER'''
+
+    if (len(p) == 2):
+        p[0] = AstNode(AST_NUMBER,p.lineno(1),p.lexpos(1),p[1]);
+    elif(len(p) == 3):
+        p[0] = AstNode(AST_NUMBER,p.lineno(2),p.lexpos(2),'-'+p[2]);
+    else:
+        errMsg = '\nBehram error when parsing for number.  Incorrect ';
+        errMsg += 'num statements when matching.\n';
+        print(errMsg);
+        assert(False);
+
+        
     p[0].type = TYPE_NUMBER;
     
 def p_String(p):
@@ -511,7 +547,7 @@ def p_AssignmentStatement(p):
     p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[1],p[3]]);
 
-
+    
     
 def p_ReturnableExpression(p):
     '''ReturnableExpression : LEFT_PAREN ReturnableExpression RIGHT_PAREN BinaryOperator ReturnableExpression
@@ -571,7 +607,9 @@ def p_InternalReturnableExpression(p):
     
 def p_NonBooleanStatement(p):
     '''NonBooleanStatement : MultDivStatement PlusMinusOperator NonBooleanStatement
-                           | MultDivStatement'''
+                           | MultDivStatement
+                           | NonOperatableOn
+                           '''
 
     if(len(p) == 4):
         p[0] = p[2];
@@ -595,9 +633,10 @@ def p_PlusMinusOperator(p):
         print('\nIncorrect number of matches in PlusMinusOperator\n');
         assert(False);
 
+
 def p_MultDivStatement(p):
-    '''MultDivStatement : TerminalReturnable MultDivOperator MultDivStatement
-                        | TerminalReturnable'''
+    '''MultDivStatement : OperatableOn MultDivOperator MultDivStatement
+                        | OperatableOn'''
 
     if(len(p) == 4):
         p[0] = p[2];
