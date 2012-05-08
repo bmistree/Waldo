@@ -54,6 +54,9 @@ Maybe make messages immutable???
 Major questions about how should be allowed to initialize shared and
 endpoint global variables.
 
+Type check to ensure that nothing happens after return statement or
+send statement?
+
     
 To Do:
 

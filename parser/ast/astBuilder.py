@@ -131,6 +131,7 @@ def p_Type(p):
 # lkjs;    
 def p_TerminalReturnable(p):
     '''TerminalReturnable : Number
+                          | BracketStatement    
                           | Identifier
                           | String
                           | Bool
@@ -142,32 +143,23 @@ def p_TerminalReturnable(p):
 
 
 def p_PrintCall(p):
-    ''' PrintCall : PRINT LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    '''
+    PrintCall : PRINT LEFT_PAREN ReturnableExpression RIGHT_PAREN
     '''
 
+    
     p[0] = AstNode(AST_PRINT,p.lineno(1),p.lexpos(1));
     p[0].addChild(p[3]);
 
+
+def p_BracketStatement(p):
+    '''
+    BracketStatement : Identifier LEFT_BRACKET ReturnableExpression RIGHT_BRACKET
+    '''
     
-# def p_BasicInitializer(p):
-#     '''BasicInitializer : Number
-#                         | Identifier
-#                         | String
-#                         | Bool
-#                         | FunctionCall
-#                         | MessageLiteral
-#                         ''';
-#     p[0] = p[1];
-
+    p[0] = AstNode(AST_BRACKET_STATEMENT,p.lineno(1),p.lexpos(1));
+    p[0].addChildren([p[1],p[3]]);
     
-
-# def p_Initializer(p):
-#     '''Initializer : ReturnableExpression
-#                    ''';
-#     p[0] = p[1];
-
-    
-
     
 def p_MessageLiteral(p):
     '''
@@ -182,6 +174,8 @@ def p_MessageLiteral(p):
     else:
         print('\nError in MessageLiteral.  Unexpected length to match\n');
         assert(False);
+
+    p[0].type = TYPE_MESSAGE;
         
 def p_InternalMessageLiteral(p):
     '''InternalMessageLiteral : MessageLiteralElement 

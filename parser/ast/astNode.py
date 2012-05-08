@@ -163,6 +163,39 @@ class AstNode():
                 s.typeCheck(progText,typeStack);
 
 
+        elif(self.label == AST_BRACKET_STATEMENT):
+            #left node must be a message
+            #right node must be a string if it's a message
+            toReadFrom = self.children[0];
+            index = self.children[1];
+            toReadFrom.typeCheck(progText,typeStack);
+            index.typeCheck(progText,typeStack);
+
+            self.lineNo = index.lineNo;
+            
+            if (toReadFrom.type != TYPE_MESSAGE):
+                errMsg = '\nError when using "[" and "]".  Can only ';
+                errMsg += 'look up an element from a Message.  The type ';
+                errMsg += 'of ' + toReadFrom.value + ' is ' + toReadFrom.type;
+                errMsg += '\n';
+                astErrorNodes = [self];
+                astLineNos = [self.lineNo];
+                errorFunction(errMsg,astErrorNodes,astLineNos,progText);                    
+
+            if (index.type != TYPE_STRING):
+                errMsg = '\nTo index into a message, you must use ';
+                errMsg += 'the name of the field you are looking for.  ';
+                errMsg += 'This name must be a String.  However, you ';
+                errMsg += 'provided a ' + index.type + '\n';
+                astErrorNodes = [self];
+                astLineNos = [self.lineNo];
+                errorFunction(errMsg,astErrorNodes,astLineNos,progText);                    
+
+            errMsg += '\nBehram warn: must assign a type to a bracketed lookup.  ';
+            errMsg += 'Similarly, must ensure that field trying to look up in message ';
+            errMsg += 'exists.\n';
+            print(errMsg);
+
                 
         elif(self.label == AST_TRACE_LINE):
             #first, checking that each trace item has an endpoint
