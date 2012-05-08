@@ -383,11 +383,12 @@ if (endpointClassName == None):
         ifBody = "endpointClassName = 'Unknown class name';\n"
         debugPrintBody += emitHelper.indentString (ifBody,1);
         debugPrintBody += r"""
-printStr = str(lineNo);
-printStr += ':   ' + endpointClassName;
-printStr += '\n';
-printStr += str(toPrint);
-print(printStr);
+# printStr = str(lineNo);
+# printStr += ':   ' + endpointClassName;
+# printStr += '\n';
+# printStr += str(toPrint);
+printStr = str(toPrint);
+print printStr;
 """
         emitString += emitHelper.indentString(debugPrintBody,1);
 
