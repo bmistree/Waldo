@@ -631,12 +631,12 @@ self.connectionObject.writeMsg(msgToSend,self.name);
 class Variable():
     def __init__(self,name,endpoint,val=None):
         self.name = name;
-        self.val = None;
+        self.val = val;
         self.endpoint = endpoint;
 
     def getUsedName (self):
         return self.name;
-        # return self.endpoint.varName(self.name);
+
     
     def emit(self,optionalVarPrefix=''):
         returnString = optionalVarPrefix + self.name;

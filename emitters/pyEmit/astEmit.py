@@ -89,15 +89,16 @@ def runEmitter(astNode,protObj=None):
     elif (astNode.label == AST_ANNOTATED_DECLARATION):
         #only place we see *annotated* declarations should be in
         #shared section.
-        
+
+
         varName = astNode.children[2].value;
-        varVal = None;
+        varVal = emitHelper.getDefaultValForType(astNode);
         if (len(astNode.children) == 4):
             #FIXME: Not handling initializers for annotated declarations correctly.
             #lkjs;
             errMsg = '\n\nNot handling initializers for annotated declarations correctly.\n\n';
             print(errMsg);
-
+            
         protObj.addSharedVariable(varName,varVal);
 
     elif (astNode.label == AST_ENDPOINT):
@@ -118,7 +119,8 @@ def runEmitter(astNode,protObj=None):
         for s in astNode.children:
             #each should be a declaration.
             varName = s.children[1].value;
-            varInitializerVal = None;
+            varInitializerVal = emitHelper.getDefaultValForType(s);
+            
             if (len(s.children) == 3):
                 #means there was an initializer for this variable.
                 errMsg = '\n\nBehram error: Still do not know what to do with var ';

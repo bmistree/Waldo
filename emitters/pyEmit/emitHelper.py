@@ -34,7 +34,29 @@ def indentString(string,indentAmount):
     return returnString;
 
 
+def getDefaultValForType(astTypedNode):
+    '''
+    @param astTypedNode should have valid type data.
+    '''
+    typeName = astTypedNode.type;
 
+    if (typeName == TYPE_BOOL):
+        decString = 'False';
+    elif (typeName == TYPE_NUMBER):
+        decString = '0';
+    elif (typeName == TYPE_STRING):
+        decString = '""';
+    elif (typeName == TYPE_NOTHING):
+        decString = 'None';
+    elif (typeName == TYPE_MESSAGE):
+        decString = '{}';
+    else:
+        errMsg = '\nBehram error.  Unknown declaration type when ';
+        errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
+        print(errMsg);
+        assert(False);
+
+    return decString;
 
 
 def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=0):
@@ -88,8 +110,6 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
             idName = prefix + idName;
 
         decString = idName + ' = ';            
-        
-
 
         #check if have an initializer value
         if (len(astNode.children) == 3):
@@ -97,21 +117,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
             rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,endpoint,prefixCode,0);
             decString += rhsInitializer;
         else:
-            #no initializer value, specify defaults.
-            typeName = astNode.type;        
-            if (typeName == TYPE_BOOL):
-                decString += 'False;';
-            elif (typeName == TYPE_NUMBER):
-                decString += '0;';
-            elif (typeName == TYPE_STRING):
-                decString += '"";';
-            elif (typeName == TYPE_NOTHING):
-                decString += 'None;';
-            else:
-                errMsg = '\nBehram error.  Unknown declaration type when ';
-                errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
-                print(errMsg);
-                decString += 'None;';
+            decString = getDefaultValForType(astNode);
 
         
         returnString += indentString(decString,indentLevel);
