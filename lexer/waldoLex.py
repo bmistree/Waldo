@@ -429,7 +429,7 @@ def t_NUMBER(t):
     return mStateMachine.addToken(t);
 
 def t_IDENTIFIER(t):
-    '[a-zA-Z][a-zA-z0-9\_]*';
+    r'[a-zA-Z][a-zA-Z_0-9_]*'
     return mStateMachine.addToken(t);
 
 def t_MULTI_LINE_STRING(t):
