@@ -365,13 +365,6 @@ COMMITTED_CONTEXT = 1;
 # endpoints.  Gets passed in dispatchTo field of received messages.
 STREAM_TAIL_SENTINEL = 'None';
 
-def DEBUG(className,msg):
-    toPrint = className + ':    ' + msg;
-    print('\n');
-    print(toPrint);
-    print('\n');
-
-
 
 class _MessageSendQueueElement():
     '''

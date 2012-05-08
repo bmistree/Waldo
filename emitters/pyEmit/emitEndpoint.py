@@ -332,7 +332,6 @@ called whenever receive message from other side.  performs
 dispatch, sending message to appropriate receiving function
 '''
 
-DEBUG('ping', 'Received a message');
 # thread safety
 self._lock();
         
@@ -553,7 +552,6 @@ exactly copied.  It has to do with specifying the function to
 dispatch to on the other side.
 '''
 
-DEBUG('ping', 'Actually sending message');
 # actual json-izable dict we will be sending to the other side
 msgToSend = {};
 
