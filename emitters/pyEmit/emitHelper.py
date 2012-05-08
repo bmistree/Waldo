@@ -199,6 +199,15 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         returnString = indentString(returnString,indentLevel);
 
 
+    elif (astNode.label == AST_BRACKET_STATEMENT):
+        indexIntoNode = astNode.children[0];
+        indexNode = astNode.children[1];
+        
+        indexIntoStr = runFunctionBodyInternalEmit(indexIntoNode,protObj,endpoint,prefix,0);
+        indexStr = runFunctionBodyInternalEmit(indexNode,protObj,endpoint,prefix,0);
+
+        bracketStr = indexIntoStr + '[' + indexStr + ']';
+        returnString = indentString(bracketStr,indentLevel);
         
     elif (astNode.label == AST_BOOLEAN_CONDITION):
         returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,indentLevel);
