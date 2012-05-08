@@ -72,8 +72,6 @@ class AstNode():
         elif(self.label == AST_ROOT):
             typeStack = TypeCheckContextStack();
 
-
-
             
         if ((self.label == AST_ROOT) or
             (self.label == AST_SHARED_SECTION) or
@@ -247,6 +245,19 @@ class AstNode():
             print(errMsg);
             self.type = TYPE_MESSAGE;
 
+        elif (self.label == AST_PRINT):
+            #check to ensure that it's passed a string
+            argument = self.children[0];
+            argument.typeCheck(progText,typeStack);
+            if ((argument.type != TYPE_STRING) and (argument.type != TYPE_NUMBER) and
+                (argument.type != TYPE_BOOL)):
+                errorString = 'Print requires a String, Bool, or a Number ';
+                errorString += 'to be passed in.  ';
+                errorString += 'It seems that you passed in a ';
+                errorString += argument.type + '.';
+                errorFunction(errorString,[self],[self.lineNo],progText);
+
+            self.type = TYPE_NOTHING;
 
 
         elif(self.label == AST_SHARED_SECTION):

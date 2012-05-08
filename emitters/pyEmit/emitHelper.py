@@ -180,8 +180,26 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         for s in astNode.children:
             returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,indentLevel);
             returnString += '\n';
-            
 
+    elif (astNode.label == AST_PRINT):
+        #Print: line number, class name, print statement
+        returnString += '_DEBUG_PRINT(' + str(astNode.lineNo);
+        returnString += ','
+        if (endpoint != None):
+            returnString += '"' + endpoint.name + '"';
+        else:
+            returnString += 'None';
+        returnString += ',';
+
+        printArg = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,0);
+        #now actually emit what the user wants to print
+        returnString += printArg;
+        returnString += ')';
+        
+        returnString = indentString(returnString,indentLevel);
+
+
+        
     elif (astNode.label == AST_BOOLEAN_CONDITION):
         returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,indentLevel);
 

@@ -69,7 +69,8 @@ tokens = (
     "MINUS",
     "DIVIDE",
     "MULTIPLY",
-    
+
+    "PRINT",
     
     #brackets/braces
     "LEFT_PAREN",
@@ -279,6 +280,9 @@ def t_TO_OPERATOR(t):
     'To'
     return mStateMachine.addToken(t);
 
+def t_PRINT(t):
+    'Print'
+    return mStateMachine.addToken(t);
 
 def t_IF(t):
     'If'

@@ -135,10 +135,20 @@ def p_TerminalReturnable(p):
                           | String
                           | Bool
                           | FunctionCall
+                          | PrintCall
                           | MessageLiteral
                           ''';
     p[0] = p[1];
 
+
+def p_PrintCall(p):
+    ''' PrintCall : PRINT LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    '''
+
+    p[0] = AstNode(AST_PRINT,p.lineno(1),p.lexpos(1));
+    p[0].addChild(p[3]);
+
+    
 # def p_BasicInitializer(p):
 #     '''BasicInitializer : Number
 #                         | Identifier

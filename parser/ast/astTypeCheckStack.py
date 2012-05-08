@@ -93,6 +93,10 @@ class TypeCheckContextStack():
         message information.
         '''
 
+        if (identifierName == 'Print'):
+            return CollisionObject(astNode,None,None);
+
+        
         idElement = self.getIdentifierElement(identifierName);
         funcMatchObj = self.getFuncIdentifierType(identifierName);
 

@@ -346,6 +346,16 @@ class ProtocolObject():
         return returnString;
 
 
+    def _DEBUG_PRINT(lineNo, endpointClassName,toPrint):
+        if (endpointClassName == None):
+            endpointClassName = 'Unknown class name';
+
+        printStr = str(lineNo);
+        printStr += ':   ' + endpointClassName;
+        printStr += '\n';
+        printStr += toPrint;
+
+    
     def emitHead(self):
         '''
         Emit boiler plate code that must go at top of shared file
@@ -365,29 +375,54 @@ COMMITTED_CONTEXT = 1;
 # endpoints.  Gets passed in dispatchTo field of received messages.
 STREAM_TAIL_SENTINEL = 'None';
 
+def _DEBUG_PRINT(lineNo, endpointClassName, toPrint):
+"""
+        debugPrintBody = r"""
+if (endpointClassName == None):
+"""
+        ifBody = "endpointClassName = 'Unknown class name';\n"
+        debugPrintBody += emitHelper.indentString (ifBody,1);
+        debugPrintBody += r"""
+printStr = str(lineNo);
+printStr += ':   ' + endpointClassName;
+printStr += '\n';
+printStr += str(toPrint);
+print(printStr);
+"""
+        emitString += emitHelper.indentString(debugPrintBody,1);
 
-class _MessageSendQueueElement():
-    '''
-    EXACT -- may want to rename to prevent conflicts with
-    endpoint...eg, use underscore prefix.
+
+        emitString += 'class _MessageSendQueueElement():\n';
+
+        classBody = r"""
+'''
+EXACT -- may want to rename to prevent conflicts with
+endpoint...eg, use underscore prefix.
     
-    _MessageSendQueueElements store calls that could not be processed
-    because we were already in a trace, or that were reverted because
-    two messages collided.
-    '''
+_MessageSendQueueElements store calls that could not be processed
+because we were already in a trace, or that were reverted because
+two messages collided.
+'''
 
-    def __init__ (self,sendFuncName, argsArray):
-        '''
-        @param {String} sendFuncName -- An identifier to use to
-        distinguish which message send function was queued.
+def __init__ (self,sendFuncName, argsArray):
+"""
+        
+        initBody = r"""
+'''
+@param {String} sendFuncName -- An identifier to use to
+distinguish which message send function was queued.
 
-        @param {Array} argsArray -- All arguments that were passed
-        into the function (excluding self).
-        '''
-        self.sendFuncName = sendFuncName;
-        self.argsArray = argsArray;
+@param {Array} argsArray -- All arguments that were passed
+into the function (excluding self).
+'''
+self.sendFuncName = sendFuncName;
+self.argsArray = argsArray;
 
 """;
+
+        classBody += emitHelper.indentString(initBody,1);
+        emitString += emitHelper.indentString(classBody,1);
+        
         return emitString;
 
 
