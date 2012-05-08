@@ -94,10 +94,8 @@ def runEmitter(astNode,protObj=None):
         varName = astNode.children[2].value;
         varVal = emitHelper.getDefaultValForType(astNode);
         if (len(astNode.children) == 4):
-            #FIXME: Not handling initializers for annotated declarations correctly.
-            #lkjs;
-            errMsg = '\n\nNot handling initializers for annotated declarations correctly.\n\n';
-            print(errMsg);
+            varVal = emitHelper.runFunctionBodyInternalEmit(astNode.children[3],protObj,None,emitHelper.SELF_PREFIX,0);
+            
             
         protObj.addSharedVariable(varName,varVal);
 
@@ -122,13 +120,9 @@ def runEmitter(astNode,protObj=None):
             varInitializerVal = emitHelper.getDefaultValForType(s);
             
             if (len(s.children) == 3):
-                #means there was an initializer for this variable.
-                errMsg = '\n\nBehram error: Still do not know what to do with var ';
-                errMsg += 'initializer data when emitting for endpoint ';
-                errMsg += 'global section.\n\n';
-                print(errMsg);
+                varInitializerVal = emitHelper.runFunctionBodyInternalEmit(s.children[2],protObj,protObj.currentEndpoint,emitHelper.SELF_PREFIX,0);
+                
 
-                #lkjs;
             protObj.addEndpointGlobalVariable(varName,varInitializerVal);
 
         

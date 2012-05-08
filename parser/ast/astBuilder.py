@@ -108,7 +108,7 @@ def p_SharedBodySection(p):
         
 def p_AnnotatedDeclaration(p):
     '''AnnotatedDeclaration : Identifier CONTROLS Type Identifier 
-                            | Identifier CONTROLS Type Identifier EQUALS Initializer'''
+                            | Identifier CONTROLS Type Identifier EQUALS TerminalReturnable'''
     p[0] = AstNode(AST_ANNOTATED_DECLARATION,p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[1],p[3],p[4]]);
     
@@ -129,14 +129,14 @@ def p_Type(p):
 
 
 # lkjs;    
-def p_Initializer(p):
-    '''Initializer : Number
-                   | Identifier
-                   | String
-                   | Bool
-                   | FunctionCall
-                   | MessageLiteral
-                   ''';
+def p_TerminalReturnable(p):
+    '''TerminalReturnable : Number
+                          | Identifier
+                          | String
+                          | Bool
+                          | FunctionCall
+                          | MessageLiteral
+                          ''';
     p[0] = p[1];
 
 # def p_BasicInitializer(p):
@@ -592,8 +592,8 @@ def p_PlusMinusOperator(p):
         assert(False);
 
 def p_MultDivStatement(p):
-    '''MultDivStatement : Initializer MultDivOperator MultDivStatement
-                        | Initializer'''
+    '''MultDivStatement : TerminalReturnable MultDivOperator MultDivStatement
+                        | TerminalReturnable'''
 
     if(len(p) == 4):
         p[0] = p[2];

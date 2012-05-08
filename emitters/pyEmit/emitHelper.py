@@ -5,10 +5,11 @@ from astLabels import *;
 
 # pass one of these parameters to runFunctionBodyInternalEmit so that
 # the function knows whether to prefix global and shared variables
-# with "self.committed" or "self.intermediate".
-INTERMEDIATE_PREFIX = 0;
-COMMITTED_PREFIX = 1;
-
+# with "self.committed" or "self.intermediate" or "self." (for case of
+# wanting to initialize variables themselves.
+INTERMEDIATE_PREFIX = 'self.intermediate.';
+COMMITTED_PREFIX = 'self.committed.';
+SELF_PREFIX = 'self.'
 
 def indentString(string,indentAmount):
     '''
@@ -59,7 +60,7 @@ def getDefaultValForType(astTypedNode):
     return decString;
 
 
-def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=0):
+def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
     '''
     @param {AstNode} astNode -- the ast node that we want evaluation
     to start from.  When called externally, this will generally have
@@ -70,24 +71,22 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
     @param {ProtocolObject} protObj -- So that can check for
     appropriate variable names
 
-    @param {Int} prefixCode -- Either INTERMEDIATE_PREFIX or
-    COMMITTED_PREFIX (both defined at top of the file).  Referenced
-    global or shared variables should be refered to through either
-    self.intermediate.<var name> or self.commited.<var name>,
-    depending on which is set/passed through.
+    @param {Int} prefix -- Either INTERMEDIATE_PREFIX,
+    COMMITTED_PREFIX, or SELF_PREFIX, (all defined at top of the
+    file).  Referenced global or shared variables should be refered to
+    through either self.intermediate.<var name>,self.commited.<var
+    name>, or self.<varName> (for case of initializing shared and
+    global vars) depending on which is set/passed through.
     
-    
+
     @returns {String} with funcition text.  base indent level is 0.
     '''
 
-
-    if (prefixCode == INTERMEDIATE_PREFIX):
-        prefix = 'self.intermediate.';
-    elif(prefixCode == COMMITTED_PREFIX):
-        prefix = 'self.committed.';
-    else:
+    if ((prefix != INTERMEDIATE_PREFIX) and (prefix != COMMITTED_PREFIX) and
+        (prefix != SELF_PREFIX)):
+        
         errMsg = '\nBehram error: runFunctionBodyInternalEmit should be passed ';
-        errMsg += 'a valid prefixCode.\n';
+        errMsg += 'a valid prefix.\n';
         print(errMsg);
         assert(False);
 
@@ -96,7 +95,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
     returnString = '';
     if (astNode.label == AST_FUNCTION_BODY):
         for s in astNode.children:
-            funcStatementString = runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,indentLevel);
+            funcStatementString = runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,indentLevel);
             if (len(funcStatementString) != 0):
                 returnString += indentString(funcStatementString,indentLevel);
                 returnString += '\n';
@@ -106,6 +105,11 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
                 
     elif (astNode.label == AST_DECLARATION):
         idName = astNode.children[1].value;
+
+        # do not need to worry about case where endpoint equals None
+        # because that only happens when we are in the Shared section.
+        # In the shared section, there are no declarations, just
+        # annotated declarations.
         if (endpoint.isGlobalOrShared(idName)):
             idName = prefix + idName;
 
@@ -114,7 +118,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         #check if have an initializer value
         if (len(astNode.children) == 3):
             #have an initializer value;
-            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,endpoint,prefixCode,0);
+            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,endpoint,prefix,0);
             decString += rhsInitializer;
         else:
             decString = getDefaultValForType(astNode);
@@ -164,8 +168,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
 
-        lhsText = runFunctionBodyInternalEmit(lhsNode,protObj,endpoint,prefixCode,0);
-        rhsText = runFunctionBodyInternalEmit(rhsNode,protObj,endpoint,prefixCode,0);
+        lhsText = runFunctionBodyInternalEmit(lhsNode,protObj,endpoint,prefix,0);
+        rhsText = runFunctionBodyInternalEmit(rhsNode,protObj,endpoint,prefix,0);
 
         overallLine = lhsText + ' '+ operator + ' (' + rhsText + ') ';
         return overallLine;
@@ -174,16 +178,23 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
     elif (astNode.label == AST_CONDITION_STATEMENT):
         returnString = '';
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,indentLevel);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,indentLevel);
             returnString += '\n';
             
 
     elif (astNode.label == AST_BOOLEAN_CONDITION):
-        returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefixCode,indentLevel);
+        returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,indentLevel);
 
     elif (astNode.label == AST_IDENTIFIER):
         idName = astNode.value;
-        if (endpoint.isGlobalOrShared(idName)):
+        
+        if ((endpoint == None) and (prefix == SELF_PREFIX)):
+            # means that we are handling the shared section and we
+            # have no endpoint and therefore, all identifers should
+            # use the self prefix.
+            idName = SELF_PREFIX + idName;
+            
+        elif (endpoint.isGlobalOrShared(idName)):
             idName = prefix + idName;     
         returnString = idName;
 
@@ -191,7 +202,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
     elif (astNode.label == AST_ELSE_IF_STATEMENTS):
         returnString = '';
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,0);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,0);
             returnString += '\n';
 
         if (returnString != ''):
@@ -213,13 +224,13 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         booleanConditionNode = astNode.children[0];
         condBodyNode = astNode.children[1];
 
-        boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,prefixCode,0);
+        boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,prefix,0);
         condHead += boolCondStr + ':'
 
         # occasionally, have empty bodies for if/else if statements.
         condBodyStr = '';
         if (condBodyNode.label != AST_EMPTY):
-            condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,prefixCode,0);
+            condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,prefix,0);
         if (condBodyStr == ''):
             condBodyStr = 'pass;';
 
@@ -238,7 +249,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         # handles empty body for else statement
         elseBodyStr = '';
         if (elseBody.label != AST_EMPTY):
-            elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,prefixCode,0);
+            elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,prefix,0);
         if (elseBodyStr == ''):
             elseBodyStr = 'pass;';
 
@@ -249,9 +260,16 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
 
     elif (astNode.label == AST_FUNCTION_CALL):
         funcNameNode = astNode.children[0];
-        funcNameStr = 'self.' + endpoint.getPythonizedFunctionName(funcNameNode.value);
+
+        funcCallPrefix = 'self.'
+        if (prefix == SELF_PREFIX):
+            # means that we are in the context object: need to use the
+            # self.endpoint instead.
+            funcCallPrefix = 'self._endpoint.';
+        
+        funcNameStr = funcCallPrefix + endpoint.getPythonizedFunctionName(funcNameNode.value);
         funcArgListNode = astNode.children[1];
-        funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,prefixCode,0);
+        funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,prefix,0);
         returnString = indentString(funcNameStr + funcArgStr,indentLevel);
 
     elif (astNode.label == AST_FUNCTION_ARGLIST):
@@ -259,7 +277,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
 
         counter = 0;
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,0);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,0);
             counter +=1;
             
             if (counter != len(astNode.children)):
@@ -277,7 +295,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         for s in range(0,len(astNode.children)):
             msgLine = astNode.children[s];
             msgLineElementNameStr = msgLine.children[0].value;
-            msgLineElementValueStr = runFunctionBodyInternalEmit(msgLine.children[1],protObj,endpoint,prefixCode,0);
+            msgLineElementValueStr = runFunctionBodyInternalEmit(msgLine.children[1],protObj,endpoint,prefix,0);
             returnString += "'%s' : %s" % (msgLineElementNameStr,msgLineElementValueStr);
 
             if (s != len(astNode.children) -1):
@@ -297,7 +315,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
             assert(False);
 
         msgNode = astNode.children[0];
-        msgStr = runFunctionBodyInternalEmit(msgNode,protObj,endpoint,prefixCode,0);
+        msgStr = runFunctionBodyInternalEmit(msgNode,protObj,endpoint,prefix,0);
         emittedSenderFuncName = endpoint.currentlyEmittingFunction.pythonizeName();
         returnString += '''self._sendMsg (%s,'%s');  # actually send the message;''' % (msgStr,emittedSenderFuncName);
         returnString = indentString(returnString,indentLevel);
@@ -313,13 +331,13 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefixCode,indentLevel=
         lhsAssignString = idName + ' = ';
         
 
-        rhsAssignString = runFunctionBodyInternalEmit(astNode.children[1],protObj,endpoint,prefixCode,0);
+        rhsAssignString = runFunctionBodyInternalEmit(astNode.children[1],protObj,endpoint,prefix,0);
         returnString += indentString(lhsAssignString + rhsAssignString,indentLevel);
         returnString += '\n';
 
     elif (astNode.label == AST_FUNCTION_BODY_STATEMENT):
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefixCode,indentLevel);
+            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,indentLevel);
         
     else:
         errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';

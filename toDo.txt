@@ -51,6 +51,9 @@ Decide on whether can use a message literal in a send statement.
 
 Maybe make messages immutable???
 
+Major questions about how should be allowed to initialize shared and
+endpoint global variables.
+
     
 To Do:
 

@@ -128,15 +128,16 @@ def emitCopy(endpoint,indentLevel):
 def copy(self):
 ''';
 
+
     copyBody = '''
-returner = _PingContext(self._myPriority,self._theirPriority);
+returner = _%sContext(self._myPriority,self._theirPriority,self._endpoint);
 returner._myPriority = self._myPriority;
 returner._theirPriority = self._theirPriority;
 
         
 #note, may need to perform deep copies of these as well.
 
-'''
+'''% endpoint.name;
 
     #actually specify the data that need to be copied over;
     copyBody += '\n#####shared variables####\n';
@@ -163,10 +164,15 @@ return returner;
 
 
 def emitInit(endpoint,indentLevel):
-    initHead = """
-def __init__(self,_myPriority,_theirPriority):
-"""
-    initBody = """
+    initHead = r"""
+def __init__(self,_myPriority,_theirPriority, endpoint):
+""";
+    
+    initBody = r"""
+# pass through endpoint for cases that need to initialize
+# values with functions.
+self._endpoint = endpoint;
+
 # In cases where to sides simultaneously send, indicates which
 # side should send first (the one with the greater priority).
 self._myPriority = _myPriority;

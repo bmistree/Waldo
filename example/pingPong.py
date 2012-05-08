@@ -74,7 +74,11 @@ class _PingContext():
     '''
     NOT EXACT
     '''
-    def __init__(self,myPriority,theirPriority):
+    def __init__(self,myPriority,theirPriority,endpoint):
+        # pass through endpoint for cases that need to initialize
+        # values with functions.
+        self._endpoint = endpoint;
+        
         self.pingCounter = 0;
         self.pongCounter = 0;
 
@@ -139,7 +143,10 @@ class _PongContext():
     '''
     NOT EXACT
     '''
-    def __init__(self,myPriority,theirPriority):
+    def __init__(self,myPriority,theirPriority,endpoint):
+
+        self._endpoint = endpoint;
+        
         self.pingCounter = 0;
         self.pongCounter = 0;
 

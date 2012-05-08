@@ -268,6 +268,7 @@ def __init__(self,connectionObject):
         fakeName = str(random.random());
 
 
+
         initBodyString = r"""
 '''
 EXACT, except for initialization stuff.  maybe think about
@@ -279,7 +280,7 @@ errMsg += 'Also, avoiding initializing variables correctly.  Handle later.\n';
 print(errMsg);
 
 
-self.committed = _PingContext(%s,%s);
+self.committed = _%sContext(%s,%s,self);
 self.intermediate = self.committed.copy();
 self.whichEnv = COMMITTED_CONTEXT;
 
@@ -308,7 +309,7 @@ self.outstandingSend = None;
 self.connectionObject = connectionObject;
 self.connectionObject.addEndpoint(self);
 
-""" % (str(self.myPriority),str(self.theirPriority),fakeName);
+""" % (self.name,str(self.myPriority),str(self.theirPriority),fakeName);
 
         
         returnString = emitHelper.indentString(initHeaderString,1);
