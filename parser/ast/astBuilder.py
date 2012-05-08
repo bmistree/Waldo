@@ -127,6 +127,8 @@ def p_Type(p):
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),p[1]);
 
 
+
+# lkjs;    
 def p_Initializer(p):
     '''Initializer : Number
                    | Identifier
@@ -137,6 +139,26 @@ def p_Initializer(p):
                    ''';
     p[0] = p[1];
 
+# def p_BasicInitializer(p):
+#     '''BasicInitializer : Number
+#                         | Identifier
+#                         | String
+#                         | Bool
+#                         | FunctionCall
+#                         | MessageLiteral
+#                         ''';
+#     p[0] = p[1];
+
+    
+
+# def p_Initializer(p):
+#     '''Initializer : ReturnableExpression
+#                    ''';
+#     p[0] = p[1];
+
+    
+
+    
 def p_MessageLiteral(p):
     '''
     MessageLiteral : CURLY_LEFT InternalMessageLiteral CURLY_RIGHT
@@ -172,7 +194,7 @@ def p_InternalMessageLiteral(p):
     
 def p_MessageLiteralElement(p):
     '''
-    MessageLiteralElement : String COLON Initializer
+    MessageLiteralElement : String COLON ReturnableExpression
     '''
     p[0] = AstNode(AST_MESSAGE_LITERAL_ELEMENT, p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[1],p[3]]);
@@ -644,10 +666,10 @@ def p_FunctionDeclArg(p):
     p[0] = AstNode(AST_FUNCTION_DECL_ARG,p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[1],p[2]]);
     
-    
+
 def p_Declaration(p):
     '''Declaration : Type Identifier
-                   | Type Identifier EQUALS Initializer'''
+                   | Type Identifier EQUALS ReturnableExpression'''
     p[0] = AstNode(AST_DECLARATION,p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[1],p[2]]);
     if (len(p) == 5):
