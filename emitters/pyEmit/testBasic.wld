@@ -56,7 +56,7 @@ Ping
               'responses' : responses
             };
 
-            Bool value = msg['responses'];
+            Number value = msg['responses'];
             Print(value);
             
             Send msgResponse To Pong;

@@ -844,7 +844,8 @@ class AstNode():
                 #add all arguments passed in in function declaration to
                 #current context.
                 self.children[funcDeclArgListIndex].typeCheck(progText,typeStack);
-            else:
+
+            if (self.label == AST_MSG_RECEIVE_FUNCTION):
                 # we are in the message receive function, and must
                 # add the input argument name to current context
                 incomingMessageNameNode = self.children[1];
@@ -873,8 +874,13 @@ class AstNode():
                 # re-define type for OutgoingMessage
                 outgoingTypeNode = self.children[3];
                 typeStack.addOutgoing(outgoingTypeNode);
-
-
+                
+            elif(self.label == AST_MSG_SEND_FUNCTION):
+                # re-define type for OutgoingMessage
+                outgoingTypeNode = self.children[3];
+                typeStack.addOutgoing(outgoingTypeNode);
+                
+                
             # type check the actual function body
             self.children[funcBodyIndex].typeCheck(progText,typeStack);
             
