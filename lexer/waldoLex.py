@@ -15,6 +15,7 @@ tokens = (
     "PUBLIC",
     "RETURNS",
     "SENDS",
+    "RECEIVES",
     
     #messsage notation
     "SEND_ARROW",
@@ -46,7 +47,7 @@ tokens = (
     "LIST_TYPE",
     "BOOL_TYPE",
     "NOTHING_TYPE",
-    "MESSAGE_TYPE",
+    # "MESSAGE_TYPE",
     
     #whitespace
     "SPACE",
@@ -238,8 +239,13 @@ def t_RETURNS(t):
     return mStateMachine.addToken(t);
 
 def t_SENDS(t):
-    "Sends";
+    "OutgoingMessage";
     return mStateMachine.addToken(t);
+
+def t_RECEIVES(t):
+    "IncomingMessage";
+    return mStateMachine.addToken(t);
+
 
 
 def t_SEND_ARROW(t):
@@ -301,9 +307,9 @@ def t_NOTHING_TYPE(t):
     "Nothing"
     return mStateMachine.addToken(t);
 
-def t_MESSAGE_TYPE(t):
-    "Message"
-    return mStateMachine.addToken(t);
+# def t_MESSAGE_TYPE(t):
+#     "Message"
+#     return mStateMachine.addToken(t);
 
 def t_NOT(t):
     'Not'

@@ -1,150 +1,108 @@
-Basic
+PingPong
 
-Endpoint Server;
-Endpoint Client;
+Endpoint Ping;
+Endpoint Pong;
+
 
 Traces
 {
-        Server.one -> Client.two;
-//        Server.one -> Client.two -> Server.three -> Client.four;
+        Ping.one -> Pong.two -> Ping.three -> Pong.four;
 }
 
 Shared
 {
-        Server Controls Bool sharedA;
-        Server Controls Bool sharedB = False;
-        Server Controls Bool self;
-
+        Ping Controls Number pingCounter = 20;
+        Pong Controls Number pongCounter = 0;
+        Ping Controls Number pp = pongCounter;
 }
 
-Client
+Ping
 {
-        Number topC = 3;
+        Number responses = 30;
+        Bool something;
         
-        MsgReceive two ()
-          Sends {
-            Bool a,
-            Bool b,
-            Bool c
-          }
-        
+        Public Function initiateSend() Returns Nothing
         {
-            Number c;
-            Number r;
-            Message msg = {
-            'a': r,
-            'b': False,
-            'c': True
+            Print('Initiating send');
+            one();
+        }
+        
+        MsgSend one () OutgoingMessage { Number responses }
+        {
+            pingCounter = pingCounter + 1;
+            OutgoingMessage msg = {
+              'responses' : responses
             };
+
+            Print('I got a message');
+            Print(pingCounter);
+            Send msg To Pong;
             
-            Send msg To Server;
+        }
+
+        MsgReceive three
+           IncomingMessage msg:
+           {
+              Number responses
+           }
+           OutgoingMessage:
+           {
+               Number responses
+           }
+        {
+            pingCounter = pingCounter + 1;  
+            responses = responses + 1;
+            OutgoingMessage msgResponse = {
+              'responses' : responses
+            };
+
+            Send msgResponse To Pong;
         }
 }
 
-Server
+
+Pong
 {
-        Number topC = 4;
-
-        Bool topA;
-        Bool topB = False;
+        Number responses = 0;
         
-        MsgSend one (Bool top, Bool b)
-          Sends {
-            Bool a,
-            Bool b,
-            Bool c
-          }
-        
+        MsgReceive two
+           IncomingMessage msg:
+           {
+              Number responses
+           }
+           OutgoingMessage:
+           {
+               Number responses
+           }
         {
-            Number c = 29;
-            Number r = 1;
-            Number s = r;
-            Number d;
-            Number m;
-            Bool i = True;
+            pongCounter = pongCounter + 1;
+            responses = responses + 1;
+            OutgoingMessage msgResponse = {
+              'responses' : responses
+            };
 
-            topC = 20;
-            c = 4;
-
-          If (i)
-             c =1;
-
-          Bool keie;
-          keie = True Or False;
-          
-
-          If (i)
-             c=2;
-          Else
-             c=3;
-
-          If (i)
-             c=4;
-          ElseIf(i)
-             c=5;
-
-
-          Bool j = False;
-          Bool k = True;
-          Bool l = False;
-
-          
-          If (i)
-             c=6;
-          ElseIf (i Or j Or k And l Or b)
-          {
-            c = 7;
-          }
-          ElseIf (False)
-          {
-        
-          }
-          ElseIf(d == c)
-          {
-            c=8;
-
-            d =4;
-            m = d*d + 3-2;
-            r = d/d;
-          }
-          Else
-            c=9;
-
-
-            r = (2+3)*4;
-            s = 2+3*4;
-
-            String jf;
-            jf = something("hi",3);
+            responses = -2;
+            responses = 3-2;
             
-
-            jf = "hi" + "oo";
-            
+            Send msgResponse To Ping;
         }
 
-
-
-        Function something2 (String a, Number b) Returns Nothing
-        {}
-
-        Public Function something (String aer, Number ber) Returns String
+        MsgReceive four
+           IncomingMessage msg:
+           {
+              Number responses
+           }
+           OutgoingMessage:
+           {
+               Number responses
+           }
         {
-            ber = 2;
+            pongCounter = pongCounter + 1;  
+            responses = responses + 1;
+            OutgoingMessage msgResponse = {
+              'responses' : responses
+            };
+
+            Send msgResponse To Ping;
         }
-
-
-        
-        
-/*
-        MsgReceive something (Bool a, Number f, String g)
-        {
-        }
-        
-
-        Public Function something ()
-        {
-        }
-
-  */      
-        
 }

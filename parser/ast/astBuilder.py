@@ -122,7 +122,8 @@ def p_Type(p):
             | LIST_TYPE
             | BOOL_TYPE
             | NOTHING_TYPE
-            | MESSAGE_TYPE
+            | SENDS
+            | RECEIVES
             '''
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),p[1]);
 
@@ -199,7 +200,6 @@ def p_MessageLiteral(p):
         print('\nError in MessageLiteral.  Unexpected length to match\n');
         assert(False);
 
-    p[0].type = TYPE_MESSAGE;
         
 def p_InternalMessageLiteral(p):
     '''InternalMessageLiteral : MessageLiteralElement 
@@ -320,14 +320,14 @@ def p_EndpointFunctionSection(p):
 
 def p_TypedSendsStatement(p):
     '''
-    TypedSendsStatement : SENDS CURLY_LEFT CURLY_RIGHT
-                        | SENDS CURLY_LEFT TypedMessageSendsLines CURLY_RIGHT
+    TypedSendsStatement : CURLY_LEFT CURLY_RIGHT
+                        | CURLY_LEFT TypedMessageSendsLines CURLY_RIGHT
     '''
-    
+
     p[0] = AstNode(AST_TYPED_SENDS_STATEMENT, p.lineno(0),p.lexpos(0));
 
-    if (len(p) == 5):
-        p[0].addChildren(p[3].getChildren());
+    if (len(p) == 4):
+        p[0].addChildren(p[2].getChildren());
 
 def p_TypedMessageSendsLines(p):
     '''
@@ -358,38 +358,42 @@ def p_TypedMessageSendsLine(p):
     
     
 def p_MsgReceiveFunction(p):
-    '''MsgReceiveFunction : MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
-                          | MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT  CURLY_RIGHT'''
+    '''MsgReceiveFunction : MSG_RECEIVE Identifier RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
+                          | MSG_RECEIVE Identifier RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT CURLY_RIGHT
+                          ''';
+    
+    # '''MsgReceiveFunction : MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
+    #                       | MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT  CURLY_RIGHT'''
+
+    
     p[0] = AstNode(AST_MSG_RECEIVE_FUNCTION, p.lineno(0),p.lexpos(0));
-    p[0].addChildren([p[2],p[4]]);
-    if (len(p) == 10):
-        p[0].addChild(p[8]);
+    p[0].addChildren([p[2],p[4],p[6],p[9]]);
+    if (len(p) == 13):
+        p[0].addChild(p[11]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
         p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
 
-    #add the send statement on to the end.
-    p[0].addChild(p[6]);
 
 
         
 def p_MsgSendFunction(p):
-    '''MsgSendFunction : MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
-                       | MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT  CURLY_RIGHT'''
+    '''MsgSendFunction : MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN SENDS TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
+                       | MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN SENDS TypedSendsStatement CURLY_LEFT  CURLY_RIGHT'''
 
 
     p[0] = AstNode(AST_MSG_SEND_FUNCTION, p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[2],p[4]]);
-    if (len(p) == 10):
-        p[0].addChild(p[8]);
+    if (len(p) == 11):
+        p[0].addChild(p[9]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
         p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
 
     #add the send statement on to the end.
-    p[0].addChild(p[6]);
+    p[0].addChild(p[7]);
     
 def p_Function(p):
     '''Function : FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT

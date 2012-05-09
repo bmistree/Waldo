@@ -85,7 +85,9 @@ TYPE_BOOL = 'Bool';
 TYPE_NUMBER = 'Number';
 TYPE_STRING = 'String';
 TYPE_NOTHING = 'Nothing';
-TYPE_MESSAGE = 'Message';
+TYPE_OUTGOING_MESSAGE = 'OutgoingMessage';
+TYPE_INCOMING_MESSAGE = 'IncomingMessage';
+TYPE_MESSAGE_LITERAL = 'MessageLiteral';
 
 TYPE_MSG_SEND_FUNCTION = 'MsgSendFunc';
 TYPE_MSG_RECEIVE_FUNCTION = 'MsgRecvFunc';

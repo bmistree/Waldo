@@ -4,15 +4,28 @@ from astLabels import TYPE_BOOL;
 from astLabels import TYPE_STRING;
 from astLabels import TYPE_NUMBER;
 from astLabels import TYPE_NOTHING;
-from astLabels import TYPE_MESSAGE;
+from astLabels import TYPE_INCOMING_MESSAGE;
+from astLabels import TYPE_OUTGOING_MESSAGE;
 from astLabels import TYPE_MSG_SEND_FUNCTION;
 from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
+from astLabels import AST_TYPED_SENDS_STATEMENT;
 
 from traceLine import TraceLineManager;
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
 
+
+# used as return values for fieldAgreesWithIncomingMessage and
+# fieldAgreesWithOutgoingMessage.  TYPE_MISMATCH means that user is
+# accessing a field and expecting an incorrect type.
+# NAME_DOES_NOT_EXIST means that user is accessing a field that is not
+# declared in this message.  SUCCEED means that the field and type
+# agreed in the incoming/outgoing message with the name and type
+# submitted.
+MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH = 0;
+MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST = 2;
+MESSAGE_TYPE_CHECK_SUCCEED = 1;
 
 
 class TypeCheckContextStack():
@@ -40,7 +53,146 @@ class TypeCheckContextStack():
         #otherwise.  Used for type checking with trace lines (in 
         #self.traceManager).
         self.currentEndpointName = None;
+
+        self.currentOutgoing = None;
+        self.currentIncoming = None;
         
+
+    def addOutgoing(self,node):
+        '''
+        @param {astNode} of type TypedSendsStatement
+
+        Used whenever accessing a member from an OutgoingMessage to
+        ensure that it has the field (and the type of the field is
+        correct).
+        '''
+        if (node.label != AST_TYPED_SENDS_STATEMENT):
+            errMsg = '\nBehram error: adding incoming node with incorrect ';
+            errMsg += 'type.\n';
+            assert(False);
+            
+        self.currentOutgoing = node;
+        
+    def addIncoming(self,node):
+        '''
+        @param {astNode} of type TypedSendsStatement
+
+        Used whenever accessing a member from an IncomingMessage to
+        ensure that it has the field (and the type of the field is
+        correct).
+        '''
+        if (node.label != AST_TYPED_SENDS_STATEMENT):
+            errMsg = '\nBehram error: adding incoming node with incorrect ';
+            errMsg += 'type.\n';
+            assert(False);
+        
+        self.currentIncoming = node;
+
+
+    def literalAgreesWithOutgoingMessage(self,literal):
+        return self._literalAgreesWithMessage(self.currentOutgoing,literal);
+    
+    def literalAgreesWithIncomingMessage(self,literal):
+        return self._literalAgreesWithMessage(self.currentIncoming,literal);
+
+    def _literalAgreesWithMessage(self,declaredTypedSendsNode,literal):
+        '''
+        '''
+        if (declaredTypedSendsNode == None):
+            errMsg = '\nBehram error: should have an incoming or outgoing node ';
+            errMsg += 'if trying to check agreement.\n';
+            print(errMsg);
+            return;
+            assert(False);
+        
+        # first checks that everything that is in
+        # declaredTypedSendsNode is in literal and types agree.
+        for sendLine in declaredTypedSendsNode.children:
+            lineType = sendLine.children[0].value;
+            lineName = sendLine.children[1].value;
+
+            found = False;
+            # check that these appear in the literal
+            for literalLine in literal.children:
+                llineType = literalLine.children[1].type;
+                llineName = literalLine.children[0].value;
+                if (lineName == llineName):
+
+                    if (lineType == llineType):
+                        found = True;
+                        break;
+                    else:
+                        print('\nHad same fields but incorrect types.\n');
+                        assert(False);
+
+            if (not found):
+                print('\nLiteral is missing field named ' + lineName);
+                assert(False);
+                
+        # now checks that there aren't any fields in literal that do
+        # not appear in declaredTypeSendsNode.
+        for literalLine in literal.children:
+            llineType = literalLine.children[1].type;
+            llineName = literalLine.children[0].value;
+            exists,additional = self._fieldAgreesWithMessage(declaredTypedSendsNode,llineName,llineType);
+            if (exists == MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST):
+                print('\nLiteral contains a field that declared does not named ' + llineName);
+                assert(False);
+
+        print('\nFix error reporting on literalAgreesWithMessage');
+        return None;
+                
+                    
+                
+        
+    def fieldAgreesWithCurrentIncoming(self,fieldName,fieldType):
+        '''
+        @param{String} fieldName - 
+        @param{String} fieldType - "Bool", "String", etc.
+
+        We want to check in self.currentIncomingNode to see if the
+        typedSendsStatement had a field in it named fieldName with
+        type fieldType.
+
+        @returns MESSAGE_TYPE_CHECK_SUCCEED, None if it does
+        
+                 MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH, type (String)
+                 if the field existed, but had a different type.
+
+                 MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST, None if
+                 the field did not exist.
+        '''
+        return self._fieldAgreesWithMessage(self.currentIncomingNode,fieldName,fieldType);
+    
+    def fieldAgreesWithCurrentOutgoing(self,fieldName,fieldType):
+        '''
+        @see fieldAgreesWithCurrentIncoming
+        '''
+        return self._fieldAgreesWithMessage(self.currentOutgoingNode,fieldName,fieldType);
+        
+    def _fieldAgreesWithMessage(self,currentNode,fieldName,fieldType):
+        if (currentNode == None):
+            errMsg = '\nBehram error: incoming message is not defined ';
+            errMsg += 'by the time that you want to check that a field ';
+            errMsg += 'exists.\n';
+            print(errMsg);
+            assert(False);
+            
+        for sendLine in currentNode.children:
+            lineType = sendLine.children[0].value;
+            lineName = sendLine.children[1].value;
+            if (fieldName == lineName):
+                
+                if (fieldType != lineType):
+                    # user error: using a name for a different type of
+                    # value.
+                    return MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH, lineType;
+                else:
+                    return MESSAGE_TYPE_CHECK_SUCCEED, None;
+
+            return MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST, None;
+                
+
         
     def pushContext(self):
         self.stack.append(Context());
@@ -52,6 +204,8 @@ class TypeCheckContextStack():
             assert(False);
         self.stack.pop();
         self.funcStack.pop();
+        self.currentOutgoing = None;
+        self.currentIncoming = None;        
         
     def getIdentifierType(self,identifierName):
         '''
@@ -272,7 +426,8 @@ class FuncContext():
             (funcIdentifierType != TYPE_NUMBER) and
             (funcIdentifierType != TYPE_STRING) and
             (funcIdentifierType != TYPE_NOTHING) and
-            (funcIdentifierType != TYPE_MESSAGE) and
+            (funcIdentifierType != TYPE_INCOMING_MESSAGE) and
+            (funcIdentifierType != TYPE_OUTGOING_MESSAGE) and
             (funcIdentifierType != TYPE_MSG_SEND_FUNCTION) and
             (funcIdentifierType != TYPE_MSG_RECEIVE_FUNCTION)):
             
@@ -553,7 +708,8 @@ class Context():
         #note: if appending to this condition, will have to import
         #additional types at top of file.
         if ((identifierType != TYPE_BOOL) and (identifierType != TYPE_NUMBER) and
-            (identifierType != TYPE_STRING) and (identifierType != TYPE_MESSAGE)):
+            (identifierType != TYPE_STRING) and (identifierType != TYPE_INCOMING_MESSAGE) and
+             (identifierType != TYPE_OUTGOING_MESSAGE)):
             print('\nError.  Unrecognized identifierType insertion: ' + identifierType + '\n');
             assert(False);
 

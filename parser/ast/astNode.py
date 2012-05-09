@@ -173,7 +173,7 @@ class AstNode():
 
             self.lineNo = index.lineNo;
             
-            if (toReadFrom.type != TYPE_MESSAGE):
+            if (toReadFrom.type != TYPE_INCOMING_MESSAGE) and (toReadFrom.type != TYPE_OUTGOING_MESSAGE):
                 errMsg = '\nError when using "[" and "]".  Can only ';
                 errMsg += 'look up an element from a Message.  The type ';
                 errMsg += 'of ' + toReadFrom.value + ' is ' + toReadFrom.type;
@@ -263,20 +263,33 @@ class AstNode():
             print('\nTo do: still must do much more trace line type checking\n');
 
         elif (self.label == AST_SEND_STATEMENT):
-            errMsg = '\nBehram warn: need to actually perform type ';
-            errMsg += 'check for send statement in astNode.py.  ';
-            errMsg += 'Similarly, type check message being sent as ';
-            errMsg += 'well as msg send and receive functions to ';
-            errMsg += 'ensure that each has a send statement in it.  ';
-            errMsg += 'Oh.  Also, don\'t forget to type check sends ';
-            errMsg += 'statement.\n';
-            print(errMsg);
 
+            sendMsgNode = self.children[0];
+            sendMsgNode.typeCheck(progText,typeStack);
+
+            if (sendMsgNode.type != TYPE_OUTGOING_MESSAGE):
+                errMsg = '\nError in send statement.  You can only ';
+                errMsg += 'send an outgoing message.  You are trying ';
+                errMsg += 'to send something with type ' + sendMsgNode.type;
+                errMsg += '.\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);        
+
+            self.type = TYPE_NOTHING;
+                
         elif (self.label == AST_MESSAGE_LITERAL):
-            errMsg = '\nBehram warn: need to actually perform type ';
-            errMsg += 'check for message literal astNode.py.\n';
-            print(errMsg);
-            self.type = TYPE_MESSAGE;
+            # because a message literal can be either an incoming or
+            # outgoing message, do not perform type check against
+            # declared incoming/outgoing types.  We must wait until
+            # assignment to perform these checks.
+
+            # ensure that all the values in the literal do not have
+            # type errors (eg, adding a bool to a string) and that
+            # they are labeled with types.
+            for literalLine in self.children:
+                literalValueNode = literalLine.children[1];
+                literalValueNode.typeCheck(progText,typeStack);
+            
+            self.type = TYPE_MESSAGE_LITERAL;
 
         elif (self.label == AST_PRINT):
             #check to ensure that it's passed a string
@@ -664,9 +677,11 @@ class AstNode():
             name = self.children[1].value;
             currentLineNo = self.children[0].lineNo;
             if (len(self.children) == 3):
-                self.children[2].typeCheck(progText,typeStack);
-                rhsType = self.children[2].type;
-                if (rhsType != declaredType):
+                rhs = self.children[2];
+                rhs.typeCheck(progText,typeStack);
+                rhsType = rhs.type;
+
+                if (checkTypeMismatch(rhs,declaredType,rhsType,typeStack)):
                     errMsg = 'Type mismatch for variable named "' + name + '".';
                     errMsg += '  Declared with type [' + declaredType + '], but ';
                     errMsg += 'assigned to type [' + rhsType + '].';
@@ -716,7 +731,7 @@ class AstNode():
             # now we type check the bodies of each function
             for s in self.children:
                 s.typeCheck(progText,typeStack);
-                
+
 
         elif ((self.label == AST_PUBLIC_FUNCTION) or
               (self.label == AST_FUNCTION) or
@@ -759,22 +774,56 @@ class AstNode():
             if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_FUNCTION)):
                 funcDeclArgListIndex = 2;
                 funcBodyIndex = 3;
-            elif ((self.label == AST_MSG_SEND_FUNCTION) or (self.label == AST_MSG_RECEIVE_FUNCTION)):
+            elif (self.label == AST_MSG_SEND_FUNCTION):
                 funcDeclArgListIndex = 1;
                 funcBodyIndex = 2;
                 errMsg = '\nBehram warn: not performing any type checking on send statement ';
                 errMsg += 'in type check of astNode.py.\n';
                 print(errMsg);
+            elif(self.label == AST_MSG_RECEIVE_FUNCTION):
+                # 1 should contain name of the IncomingMessage;
+                funcBodyIndex = 4;
+                funcDeclArgListIndex = None;
             else:
                 errMsg = '\nBehram error: invalid function ';
                 errMsg += 'type when type checking functions\n';
                 print(errMsg);
                 
 
-            #add all arguments passed in in function declaration to
-            #current context.
-            self.children[funcDeclArgListIndex].typeCheck(progText,typeStack);
-            
+            if (funcDeclArgListIndex != None):
+                #add all arguments passed in in function declaration to
+                #current context.
+                self.children[funcDeclArgListIndex].typeCheck(progText,typeStack);
+            else:
+                # we are in the message receive function, and must
+                # add the input argument name to current context
+                incomingMessageNameNode = self.children[1];
+                argName = incomingMessageNameNode.value;
+                
+                collisionObj = typeStack.checkCollision(argName,self);
+                
+                if (collisionObj != None):
+                    #FIXME: for this error message, may want to
+                    #re-phrase with something about scope, so do not
+                    #take the wrong error message away.
+                    
+                    errMsg = 'Error trying to name an argument "';
+                    errMsg += argName + '" in your function.  ';
+                    errMsg += 'You already have a function or variable ';
+                    errMsg += 'with the same name.';
+
+                    errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
+                else:
+                    typeStack.addIdentifier(argName,TYPE_INCOMING_MESSAGE,self,self.lineNo);
+
+                # re-define type for IncomingMessage
+                incomingTypeNode = self.children[2];
+                typeStack.addIncoming(incomingTypeNode);
+                
+                # re-define type for OutgoingMessage
+                outgoingTypeNode = self.children[3];
+                typeStack.addOutgoing(outgoingTypeNode);
+
 
             # type check the actual function body
             self.children[funcBodyIndex].typeCheck(progText,typeStack);
@@ -846,6 +895,7 @@ class AstNode():
             rhs = self.children[1];
 
             lhsType = typeStack.getIdentifierType(lhs.value);
+            lhs.type  = lhsType;
             if (lhsType == None):
                 errMsg = '\nError in assignment statement.  Left hand side ';
                 errMsg += 'has no type information.\n';
@@ -860,8 +910,8 @@ class AstNode():
                 errMsg += 'has no type information.\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);
                 return;
-                
-            if (lhsType != rhsType):
+
+            if (checkTypeMismatch(rhs,lhsType,rhsType,typeStack)):
                 #FIXME: this should really identify *why* we inferred
                 #the type that we did.  Maybe where the variable was
                 #decalred too.
@@ -904,7 +954,7 @@ class AstNode():
             print('\n\n');
             print(self.label);
             print('\n\n');
-            print('\nError, sending an incorrect tag to be loaded into functionDeclarationTypeCheck\n');
+            print('\nBehram error, sending an incorrect tag to be loaded into functionDeclarationTypeCheck\n');
             assert(False);
 
             
@@ -917,15 +967,27 @@ class AstNode():
             self.children[1].typeCheck(progText,typeStack);
             returnType = self.children[1].type;
             argDeclIndex = 2;
-        else:
+        elif(self.label == AST_MSG_SEND_FUNCTION):
             #msg send and msg receive functions do not have declared
             #return types (for now).  use the return type for each
-            returnType = TYPE_MSG_SEND_FUNCTION if (self.label == AST_MSG_SEND_FUNCTION) else TYPE_MSG_RECEIVE_FUNCTION;
+            
+            returnType = TYPE_MSG_SEND_FUNCTION;
             argDeclIndex = 1;
-
             errMsg = '\nBehram warn: not performing any type checking on send statement ';
             errMsg += 'in functionDeclarationTypeCheck of astNode.py.\n';
             print(errMsg);
+        elif(self.label == AST_MSG_RECEIVE_FUNCTION):
+            #msg send and msg receive functions do not have declared
+            #return types (for now).  use the return type for each
+            
+            returnType = TYPE_MSG_RECEIVE_FUNCTION;
+            argDeclIndex = None;
+            errMsg = '\nBehram warn: not performing any type checking on send statement ';
+            errMsg += 'in functionDeclarationTypeCheck of astNode.py.\n';
+            print(errMsg);
+            
+
+            
 
         #get types of function arguments
             
@@ -933,27 +995,40 @@ class AstNode():
         #later so that arg decl arguments do not persist after the
         #type check of arg text.
         typeStack.pushContext();
-        self.children[argDeclIndex].typeCheck(progText,typeStack);
+        if (argDeclIndex != None):
+            self.children[argDeclIndex].typeCheck(progText,typeStack);
         typeStack.popContext();
 
-        args = self.children[argDeclIndex].children;
 
-
+        
         argTypeList = [];
-        for t in args:
-            #each t should now be of type FUNCTION_DECL_ARG
+        if (argDeclIndex != None):
+            args = self.children[argDeclIndex].children;
 
-            if (len(t.children) == 0):
-                #means that we have a function that takes no arguments.
-                continue;
+            for t in args:
+                #each t should now be of type FUNCTION_DECL_ARG
+                
+                if (len(t.children) == 0):
+                    #means that we have a function that takes no arguments.
+                    continue;
             
-            #set the type of t to the type identifier of the argument.
+                #set the type of t to the type identifier of the argument.
 
-            t.type = t.children[0].value;
+                t.type = t.children[0].value;
 
-            #add the argument type to the typeStack representation for this function.
-            argTypeList.append(t.type);
+                #add the argument type to the typeStack representation for this function.
+                argTypeList.append(t.type);
 
+        else:
+            # means that we are a message receive fucntion.  we do not
+            # actually need to be careful here, because you cannot
+            # directly call a message receive function (the system
+            # calls it for you when you receive a message).  So just
+            # insert gibberish for argument.
+            argTypeList.append(TYPE_NOTHING);
+
+
+            
         collisionObj = typeStack.checkCollision(funcName,self);
         if (collisionObj != None):
             #FIXME: for this error message, may want to
@@ -1044,6 +1119,50 @@ class AstNode():
             height = 3000;
             
         treeDraw.prettyDrawTree(filename=filename,data=self.toJSON(),pathToD3=pathToD3,width=width,height=height);
+
+
+
+        
+def checkTypeMismatch(rhs,lhsType,rhsType,typeStack):
+    '''
+    @returns {Bool} True if should throw type mismatch error.  False
+    otherwise.
+
+    Reasons not to indicate type mismatch error
+    
+       * lhsType and rhsType are the same
+       
+       * rhsType is a message literal and is being assigned to an
+         outgoing or incoming message and all its fields agree with
+         those.
+    
+    '''
+    errorTrue = False;
+    if (lhsType != rhsType):
+        errorTrue = True;
+        # message literals have indeterminate types until
+        # they're assigned to an identifier that expects them
+        # to have an OutgoingMessage or IncomingMessage type.
+        # Here is where we check that.
+
+        if (rhsType==TYPE_MESSAGE_LITERAL):
+
+            if (lhsType == TYPE_OUTGOING_MESSAGE):
+                # check that the message literal has all the
+                # expected fields of the outgoing message
+                typeStack.literalAgreesWithOutgoingMessage(rhs);
+                errorTrue = False;
+                #lkjs
+                print('\nBehram warn: should actually try to collect error and make a nicer message\n');
+            elif(lhsType == TYPE_INCOMING_MESSAGE):
+                typeStack.literalAgreesWithIncomingMessage(rhs);
+                errorTrue = False;
+                #lkjs
+                print('\nBehram warn: should actually try to collect error and make a nicer message\n');
+
+    return errorTrue;
+
+
 
 
 ERROR_NUM_LINES_EITHER_SIDE = 4;

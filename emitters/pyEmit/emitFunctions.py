@@ -281,15 +281,18 @@ class MsgReceiveFunction(MsgFunction):
 
         
     def emit(self):
-        self.endpoint.currentlyEmittingFunction = self;        
-        funcBodyNode = self.astNode.children[2];
+        self.endpoint.currentlyEmittingFunction = self;
 
-        
         methodHeader = self.createMethodHeader();
         methodBody = '''
 self.whichEnv = INTERMEDIATE_CONTEXT;
 '''
-        methodBody += emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.INTERMEDIATE_PREFIX);
+        if (len(self.astNode.children) == 4):
+            # means that msg receive had no body.
+            pass;
+        else:
+            funcBodyNode = self.astNode.children[4];
+            methodBody += emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.INTERMEDIATE_PREFIX);
         
         
         returnString = emitHelper.indentString(methodHeader,1);
