@@ -522,7 +522,7 @@ if (s != len(args) -1):
 commandString += ');'
 
 #actually re-exec function
-obj = compile(src,'','exec');
+obj = compile(commandString,'','exec');
 eval(obj);
 
 """;
