@@ -91,7 +91,7 @@ class _PingContext():
 
         
     def copy(self):
-        returner = _PingContext(self._myPriority,self._theirPriority);
+        returner = _PingContext(self._myPriority,self._theirPriority,self._endpoint);
         
         #note, may need to perform deep copies of these as well.
         returner.pingCounter = self.pingCounter;
@@ -159,7 +159,7 @@ class _PongContext():
 
         
     def copy(self):
-        returner = _PongContext(self._myPriority,self._theirPriority);
+        returner = _PongContext(self._myPriority,self._theirPriority,self._endpoint);
         
         #note, may need to perform deep copies of these as well.
         returner.pingCounter = self.pingCounter;
@@ -222,7 +222,7 @@ class Ping():
         print(errMsg);
 
 
-        self.committed = _PingContext(1,0);
+        self.committed = _PingContext(1,0,self);
         self.intermediate = self.committed.copy();
         self.whichEnv = COMMITTED_CONTEXT;
 
@@ -578,7 +578,7 @@ class Ping():
         commandString += ');'
 
         #actually re-exec function
-        obj = compile(src,'','exec');
+        obj = compile(commandString,'','exec');
         eval(obj);
         
         
@@ -607,7 +607,7 @@ class Pong():
         print(errMsg);
 
 
-        self.committed = _PongContext(0,1);
+        self.committed = _PongContext(0,1,self);
         self.intermediate = self.committed.copy();
         self.whichEnv = COMMITTED_CONTEXT;
 
@@ -908,7 +908,7 @@ class Pong():
         commandString += ');'
 
         #actually re-exec function
-        obj = compile(src,'','exec');
+        obj = compile(commandString,'','exec');
         eval(obj);
         
         

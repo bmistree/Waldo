@@ -48,10 +48,7 @@ class ConnectionObject():
 
 
 class SimulatedDelay(threading.Thread):
-    def __init__(self):
-	threading.Thread.__init__(self)
-
-    def run(self,timeInSeconds,connection,toWrite,senderName):
+    def __init__(self,timeInSeconds,connection,toWrite,senderName):
         '''
         @param {Float} timeInSeconds -- Amount of time to sleep before
         delivering message.
@@ -63,9 +60,16 @@ class SimulatedDelay(threading.Thread):
         
         @param {String} senderName @see writeMsg function of abstract
         ConnectionObject class.
-        '''
-        time.sleep(timeInSeconds);
-        connection._actuallyWriteMsg(toWrite,senderName);
+        '''        
+        self.timeInSeconds = timeInSeconds;
+        self.connection = connection;
+        self.toWrite = toWrite;
+        self.senderName = senderName;
+	threading.Thread.__init__(self)
+
+    def run(self):
+        time.sleep(self.timeInSeconds);
+        self.connection._actuallyWriteMsg(self.toWrite,self.senderName);
         
 
         
@@ -106,9 +110,10 @@ class LocalEndpointsConnection(ConnectionObject):
             assert(False);
 
         #queues the message to be sent after a SIM_HOW_LONG_TO_DELAY (s) delay.
-        waitAndDeliver = SimulatedDelay();
-        waitAndDeliver.run(SIM_HOW_LONG_TO_DELAY,self,dictToWrite,msgSenderName);
-
+        waitAndDeliver = SimulatedDelay(SIM_HOW_LONG_TO_DELAY,self,dictToWrite,msgSenderName);
+        # waitAndDeliver.start(SIM_HOW_LONG_TO_DELAY,self,dictToWrite,msgSenderName);
+        waitAndDeliver.start();
+        
     def _actuallyWriteMsg(self,dictToWrite,msgSenderName):
         '''
         Gets called after a timer expires from SimulatedDelay class.
