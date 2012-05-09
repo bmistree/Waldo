@@ -1,24 +1,37 @@
 PingPong
 
+/**
+  * Simple example: user can start a message stream by calling the public
+  * function initiateSend on Ping.  This starts a sequence of three
+  * messages that increment counters on both endpoints, printing along the
+  * way.
+*/
+
+
 Endpoint Ping;
 Endpoint Pong;
 
 
 Traces
 {
+        // specifies order of handlers that will be called
         Ping.one -> Pong.two -> Ping.three -> Pong.four;
 }
 
+
+/**** Data shared between both ends */
 Shared
 {
-        Ping Controls Number pingCounter = 20;
+        //both of these are rarely used in this program.
+        Ping Controls Number pingCounter = 0;
         Pong Controls Number pongCounter = 0;
-        Ping Controls Number pp = pongCounter;
 }
 
+
+/****  New endpoint *********/
 Ping
 {
-        Number responses = 30;
+        Number responses = 0;
         Bool something;
         
         Public Function initiateSend() Returns Nothing
@@ -33,50 +46,50 @@ Ping
             OutgoingMessage msg = {
               'responses' : responses
             };
-
-            Print('I got a message');
-            Print(pingCounter);
-            Send msg To Pong;
             
+            Send msg To Pong;
         }
 
+        
         MsgReceive three
-           IncomingMessage msg:
-           {
-              Number responses
-           }
-           OutgoingMessage:
-           {
-               Number responses
-           }
+             IncomingMessage msg:
+             {
+                Number responses
+             }
+             OutgoingMessage:
+             {
+                 Number responses
+             }
         {
+        
             pingCounter = pingCounter + 1;  
             responses = responses + 1;
             OutgoingMessage msgResponse = {
               'responses' : responses
             };
 
-            Number value = msg['responses'];
-            Print(value);
+
+            Print(msg['responses']);
             
             Send msgResponse To Pong;
         }
 }
 
 
+/****  New endpoint *********/
 Pong
 {
         Number responses = 0;
         
         MsgReceive two
-           IncomingMessage msg:
-           {
-              Number responses
-           }
-           OutgoingMessage:
-           {
-               Number responses
-           }
+             IncomingMessage msg:
+             {
+                Number responses
+             }
+             OutgoingMessage:
+             {
+                 Number responses
+             }
         {
             pongCounter = pongCounter + 1;
             responses = responses + 1;
@@ -84,21 +97,21 @@ Pong
               'responses' : responses
             };
 
-            responses = -2;
-            responses = 3-2;
+
+            Print(msg['responses']);
             
             Send msgResponse To Ping;
         }
 
         MsgReceive four
-           IncomingMessage msg:
-           {
-              Number responses
-           }
-           OutgoingMessage:
-           {
-               Number responses
-           }
+             IncomingMessage msg:
+             {
+                Number responses
+             }
+             OutgoingMessage:
+             {
+                 Number responses
+             }
         {
             pongCounter = pongCounter + 1;  
             responses = responses + 1;
@@ -106,6 +119,8 @@ Pong
               'responses' : responses
             };
 
+            Print(msg['responses']);
+            
             Send msgResponse To Ping;
         }
 }
