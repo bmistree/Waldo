@@ -366,6 +366,7 @@ class ProtocolObject():
 
 #EXACT
 import threading;
+import time;
     
 INTERMEDIATE_CONTEXT = 0;
 COMMITTED_CONTEXT = 1;
@@ -422,6 +423,36 @@ self.argsArray = argsArray;
 """;
 
         classBody += emitHelper.indentString(initBody,1);
+        emitString += emitHelper.indentString(classBody,1);
+
+        #emit the delay code
+        emitString += r"""
+HOW_LONG_TO_DELAY_IN_SECONDS = .01;
+class _Delay(threading.Thread):
+""";
+
+        classBody = r"""
+def __init__(self,endpoint,msg,funcNameFrom):
+""";
+        initBody = r"""
+threading.Thread.__init__(self);
+self.endpoint = endpoint;
+self.msg = msg;
+self.funcNameFrom = funcNameFrom;
+""";
+        classBody += emitHelper.indentString(initBody,1);
+
+        classBody += r"""
+def run(self):
+""";
+
+        runBody = r"""
+time.sleep(HOW_LONG_TO_DELAY_IN_SECONDS);
+self.endpoint._internalSendMsg(self.msg,self.funcNameFrom);
+""";
+        classBody += emitHelper.indentString(runBody,1);
+    
+
         emitString += emitHelper.indentString(classBody,1);
         
         return emitString;

@@ -534,7 +534,17 @@ eval(obj);
 
 
     def emitGeneralSendMessageUtility(self):
-        sendMsgHead = '\ndef _sendMsg (self,msg,funcNameFrom):\n';
+        firstSendMsgHead = '\ndef _sendMsg(self,msg,funcNameFrom):\n';
+        firstSendMsgBody = r"""
+        delay = _Delay(self,msg,funcNameFrom);
+        delay.start();
+        delay.join();
+""";
+
+        
+
+        
+        sendMsgHead = '\ndef _internalSendMsg (self,msg,funcNameFrom):\n';
         
         sendMsgBody = r"""
 '''
@@ -624,7 +634,15 @@ self.connectionObject.writeMsg(msgToSend,self.name);
 
         indentedHead = emitHelper.indentString(sendMsgHead,1);
         indentedBody = emitHelper.indentString(sendMsgBody,2);
-        return indentedHead + '\n' + indentedBody;
+
+        internalReturner = indentedHead + '\n' + indentedBody;
+
+
+        indentedHead = emitHelper.indentString(firstSendMsgHead,1);
+        indentedBody = emitHelper.indentString(firstSendMsgBody,2);
+        externalReturner = indentedHead + '\n' + indentedBody;
+        
+        return internalReturner + '\n' + externalReturner;
 
 
 class Variable():
