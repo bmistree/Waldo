@@ -110,6 +110,12 @@ class PublicFunction(Function):
         funcBodyNode = self.astNode.children[3];
         
         methodBody = '''
+while self.amInTrace:
+'''
+        whileBody = 'time.sleep(.01);\n';
+        methodBody += emitHelper.indentString(whileBody,1);
+        
+        methodBody += '''
 self.whichEnv = COMMITTED_CONTEXT;
 '''
         methodBody += emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.COMMITTED_PREFIX);
