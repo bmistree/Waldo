@@ -8,6 +8,11 @@ from astLabels import *;
 from astTypeCheckStack import TypeCheckContextStack;
 from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH;
 from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH;
+from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH;
+from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST;
+from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
+
+
 
 
 def indentText(text,numIndents):
@@ -172,15 +177,7 @@ class AstNode():
             index.typeCheck(progText,typeStack);
 
             self.lineNo = index.lineNo;
-            
-            if (toReadFrom.type != TYPE_INCOMING_MESSAGE) and (toReadFrom.type != TYPE_OUTGOING_MESSAGE):
-                errMsg = '\nError when using "[" and "]".  Can only ';
-                errMsg += 'look up an element from a Message.  The type ';
-                errMsg += 'of ' + toReadFrom.value + ' is ' + toReadFrom.type;
-                errMsg += '\n';
-                astErrorNodes = [self];
-                astLineNos = [self.lineNo];
-                errorFunction(errMsg,astErrorNodes,astLineNos,progText);                    
+
 
             if (index.type != TYPE_STRING):
                 errMsg = '\nTo index into a message, you must use ';
@@ -189,12 +186,65 @@ class AstNode():
                 errMsg += 'provided a ' + index.type + '\n';
                 astErrorNodes = [self];
                 astLineNos = [self.lineNo];
-                errorFunction(errMsg,astErrorNodes,astLineNos,progText);                    
+                errorFunction(errMsg,astErrorNodes,astLineNos,progText);
 
-            errMsg += '\nBehram warn: must assign a type to a bracketed lookup.  ';
-            errMsg += 'Similarly, must ensure that field trying to look up in message ';
-            errMsg += 'exists.\n';
-            print(errMsg);
+            indexStr = index.value;
+                
+            if (toReadFrom.type == TYPE_INCOMING_MESSAGE):
+
+                # checking if the referenced field exists in the
+                # incoming message.  inserting a dummy type to ensure
+                # that we will get back what the real type of the
+                # field should be if the field name exists.
+                result,expectedType = typeStack.fieldAgreesWithCurrentIncoming(indexStr,TYPE_NOTHING);
+                checkResult = True;
+                potentialErrNode = typeStack.currentIncoming;
+                potentialErrMsg = 'incoming';
+                
+            elif(toReadFrom.type == TYPE_OUTGOING_MESSAGE):
+                result,expectedType = typeStack.fieldAgreesWithCurrentOutgoing(indexStr,TYPE_NOTHING);
+                checkResult = True;
+                potentialErrNode = typeStack.currentOutgoing;
+                potentialErrMsg = 'outgoing';
+            else:
+                checkResult = False;
+                errMsg = '\nError when using "[" and "]".  Can only ';
+                errMsg += 'look up an element from a Message.  The type ';
+                errMsg += 'of ' + toReadFrom.value + ' is ' + toReadFrom.type;
+                errMsg += '\n';
+                astErrorNodes = [self];
+                astLineNos = [self.lineNo];
+                errorFunction(errMsg,astErrorNodes,astLineNos,progText);                                    
+
+
+            if (checkResult):
+                #means that it was an incoming or outgoing message
+                #that we were indexing into.  actually check the
+                #result of the indexing.
+                if (result == MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST):
+                    # means that this field does not exist in incoming
+                    # message field, throw an error.
+                    errMsg = '\nAccessing a field "' + indexStr + '" of an ';
+                    errMsg += potentialErrMsg;
+                    errMsg += ' message that does not exist.  Compare ';
+                    errMsg += 'to the actual type of the incoming message before ';
+                    errMsg += 'proceeding.\n';
+                    astErrorNodes = [self,potentialErrNode];
+                    astLineNos = [self.lineNo,potentialErrNode.lineNo];
+                    errorFunction(errMsg,astErrorNodes,astLineNos,progText);
+
+                    # assign to nothing type so can continue with type checking.
+                    self.type = TYPE_NOTHING;
+                    
+                elif (result == MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH):
+                    # expected because we used
+                    # TYPE_NOTHING. expectedType now contains what the
+                    # type of this statement should be.
+                    self.type = expectedType;
+                else:
+                    errMsg = '\nBehram error.  Should have no data in a message that ';
+                    errMsg += 'matches type nothing\n';
+                    assert(False);
 
                 
         elif(self.label == AST_TRACE_LINE):

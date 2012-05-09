@@ -24,8 +24,8 @@ FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
 # agreed in the incoming/outgoing message with the name and type
 # submitted.
 MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH = 0;
-MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST = 2;
-MESSAGE_TYPE_CHECK_SUCCEED = 1;
+MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST = 1;
+MESSAGE_TYPE_CHECK_SUCCEED = 2;
 
 
 class TypeCheckContextStack():
@@ -162,13 +162,13 @@ class TypeCheckContextStack():
                  MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST, None if
                  the field did not exist.
         '''
-        return self._fieldAgreesWithMessage(self.currentIncomingNode,fieldName,fieldType);
+        return self._fieldAgreesWithMessage(self.currentIncoming,fieldName,fieldType);
     
     def fieldAgreesWithCurrentOutgoing(self,fieldName,fieldType):
         '''
         @see fieldAgreesWithCurrentIncoming
         '''
-        return self._fieldAgreesWithMessage(self.currentOutgoingNode,fieldName,fieldType);
+        return self._fieldAgreesWithMessage(self.currentOutgoing,fieldName,fieldType);
         
     def _fieldAgreesWithMessage(self,currentNode,fieldName,fieldType):
         if (currentNode == None):
@@ -177,7 +177,7 @@ class TypeCheckContextStack():
             errMsg += 'exists.\n';
             print(errMsg);
             assert(False);
-            
+
         for sendLine in currentNode.children:
             lineType = sendLine.children[0].value;
             lineName = sendLine.children[1].value;
@@ -190,7 +190,7 @@ class TypeCheckContextStack():
                 else:
                     return MESSAGE_TYPE_CHECK_SUCCEED, None;
 
-            return MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST, None;
+        return MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST, None;
                 
 
         

@@ -31,7 +31,6 @@ class Function(object):
         #already know that self.name does not conflict with python
         #because was checked before constructed.
         methodHeader = 'def %s(self' % self.pythonizeName();
-
         
         #fill in arguments
         
@@ -299,3 +298,22 @@ self.whichEnv = INTERMEDIATE_CONTEXT;
         returnString += emitHelper.indentString(methodBody,2);
         self.endpoint.currentlyEmittingFunction = None;        
         return returnString;
+
+
+    def createMethodHeader(self):
+        # had to override so that would correctly fill in input
+        # arg. (does not take an arglist like the other functions.)
+        
+        #already know that self.name does not conflict with python
+        #because was checked before constructed.
+        methodHeader = 'def %s(self,' % self.pythonizeName();
+        
+        #fill in arguments
+        
+        # FIXME: lkjs;
+        # argument names may conflict with python keywords.  should
+        # fix eventually.
+        methodHeader += self.astNode.children[1].value;
+        
+        methodHeader += '):\n';
+        return methodHeader;

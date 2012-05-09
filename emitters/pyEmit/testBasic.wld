@@ -56,6 +56,9 @@ Ping
               'responses' : responses
             };
 
+            Bool value = msg['responses'];
+            Print(value);
+            
             Send msgResponse To Pong;
         }
 }
