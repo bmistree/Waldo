@@ -13,7 +13,7 @@ from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
 
 
-
+TYPE_ERROR_ENCOUNTERED = False;
 
 def indentText(text,numIndents):
     returner = '';
@@ -1222,7 +1222,17 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack):
 
 ERROR_NUM_LINES_EITHER_SIDE = 4;
 
+def setErrorEncountered():
+    global TYPE_ERROR_ENCOUNTERED;
+    TYPE_ERROR_ENCOUNTERED = True;
+
+def getErrorEncountered():
+    global TYPE_ERROR_ENCOUNTERED;
+    return TYPE_ERROR_ENCOUNTERED;
+
 def errorFunction(errorString,astNodes,lineNumbers,progText):
+    setErrorEncountered();
+    
     '''
     @param {String} errorString -- Text associated with error.
     @param {Array < AstNode>} astNodes -- Contains all ast nodes associated with the error.

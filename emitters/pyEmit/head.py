@@ -5,7 +5,7 @@ import os;
 sys.path.append(os.path.join('..','..','parser','ast'));
 
 from astBuilder import getParser;
-
+from astBuilder import getErrorEncountered;
 
 import json;
 import astEmit;
@@ -79,18 +79,26 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
         if(typeCheckArg):
             ast.typeCheck(fileText);
 
+            
         if (emitArg != None):
-            emitText = astEmit.runEmitter(ast);
-            if (emitText == None):
-                errMsg = '\nBehram error when requesting emission of ';
-                errMsg += 'source code from astHead.py.\n';
+            
+            if (getErrorEncountered()):
+                # do not emit any code if got a type error when tyring
+                # to compile.
+                errMsg = '\nType error: cancelling code emit\n';
                 print(errMsg);
-                assert(False);
+            else:
+                emitText = astEmit.runEmitter(ast);
+                if (emitText == None):
+                    errMsg = '\nBehram error when requesting emission of ';
+                    errMsg += 'source code from astHead.py.\n';
+                    print(errMsg);
+                    assert(False);
                 
-            filer = open(emitArg,'w');
-            filer.write(emitText);
-            filer.flush();
-            filer.close();
+                filer = open(emitArg,'w');
+                filer.write(emitText);
+                filer.flush();
+                filer.close();
 
 
 

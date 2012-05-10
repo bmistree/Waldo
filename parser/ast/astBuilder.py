@@ -6,7 +6,10 @@ from waldoLex import tokens;
 from waldoLex import constructLexer;
 from astLabels import *;
 from astNode import AstNode;
+from astNode import setErrorEncountered;
+from astNode import getErrorEncountered as astGetErrorEncountered;
 import ply.yacc as yacc;
+
 
 #Program text that we are parsing.  Set in getParser function.  Allows
 #us to output surrounding lines when reporting an error.
@@ -726,6 +729,7 @@ def p_Empty(p):
     
 def p_error(p):
 
+    setErrorEncountered();
     if (p == None):
         print('\nError: end of file and missing some structure\n');
     else:
@@ -787,3 +791,6 @@ def getParser(programText=None):
     ProgramText = programText;
     return returner;
 
+
+def getErrorEncountered():
+    return astGetErrorEncountered();
