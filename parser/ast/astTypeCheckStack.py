@@ -378,7 +378,7 @@ class TypeCheckContextStack():
         if (functionType == TYPE_MSG_SEND_FUNCTION):
             traceError = self.traceManager.addMsgSendFunction(astNode, currentEndpointName);
         elif (functionType == TYPE_MSG_RECEIVE_FUNCTION):
-            self.traceManager.addMsgRecvFunction(astNode, currentEndpointName);
+            traceError = self.traceManager.addMsgRecvFunction(astNode, currentEndpointName);
 
 
         #add the function identifier itself to function context.

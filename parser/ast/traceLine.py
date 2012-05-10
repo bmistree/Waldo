@@ -118,18 +118,32 @@ class TraceLineManager():
 
     def addMsgRecvFunction(self,msgRecvFuncAstNode,endpointName):
         '''
-        Throws an error if msg receive function is not being used by
-        any trace.  Similarly, throws an error if msg receive function
-        is being used to begin a trace line.
+        @returns {None or TraceLineError} --
+
+        TraceLineErrorr if msg receive function is not being used by
+        any trace or if msg receive function is being used to begin a
+        trace line.
+
+        Otherwise, returns None.
+        
         '''
         funcName = msgRecvFuncAstNode.children[0].value;
         index = endpointFuncNameToString(endpointName,funcName);
 
-        if (self.traceLines.get(index,None) != None):
-            errMsg = '\nError: you cannot start a trace line ';
-            errMsg += 'with a message receive function.\n';
-            print(errMsg);
-            assert(False);
+
+        tLine = self.traceLines.get(index,None);
+        if (tLine != None):
+            errMsg = '\nError: you are starting a trace line with ';
+            errMsg += '"' + funcName + '", which is declared to be ';
+            errMsg += 'a message receive function.  The first element ';
+            errMsg += 'in a trace line should be a message send function.  ';
+            errMsg += 'The difference is that a message send does not require ';
+            errMsg += 'an incoming message, whereas a message receive function does.  ';
+            errMsg += 'You should either change "' + funcName + '" to be a message send ';
+            errMsg += 'function, or select a message send function to use.\n';
+            
+            nodes = [msgRecvFuncAstNode,tLine.traceLineAst];
+            return TraceLineError(nodes,errMsg);
 
         
         used = False;
@@ -137,19 +151,19 @@ class TraceLineManager():
             '''
             checks to ensure that msgRecvFunction is actually used in trace section.
             '''
-            
             usedOnLine = self.traceLines[s].checkMsgRecvFunction(msgRecvFuncAstNode,endpointName);
             used = usedOnLine or used;
 
-# lkjs;            
+
         if (not used):
             #means that we never used this msgRecv function.
             errMsg = '\nError: message receive function named "';
             errMsg += funcName + '" in endpoint named "' + endpointName + '" ';
-            errMsg += 'was not used in any trace.\n';
-            print(errMsg);
-            assert(False);
+            errMsg += 'was not used in any trace line.\n';
+            nodes = [msgRecvFuncAstNode,self.traceSectionAstNode];
+            return TraceLineError(nodes,errMsg);
 
+        return None;
             
     def checkUndefinedMsgSendOrReceive(self):
         '''
