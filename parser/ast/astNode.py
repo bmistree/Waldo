@@ -317,8 +317,6 @@ class AstNode():
 
                 lastEndpoint = endpointName;
 
-                
-            print('\nTo do: still must do much more trace line type checking\n');
 
         elif (self.label == AST_SEND_STATEMENT):
 
@@ -835,9 +833,6 @@ class AstNode():
             elif (self.label == AST_MSG_SEND_FUNCTION):
                 funcDeclArgListIndex = 1;
                 funcBodyIndex = 2;
-                errMsg = '\nBehram warn: not performing any type checking on send statement ';
-                errMsg += 'in type check of astNode.py.\n';
-                print(errMsg);
             elif(self.label == AST_MSG_RECEIVE_FUNCTION):
                 # 1 should contain name of the IncomingMessage;
                 funcBodyIndex = 4;
@@ -1037,19 +1032,13 @@ class AstNode():
             
             returnType = TYPE_MSG_SEND_FUNCTION;
             argDeclIndex = 1;
-            errMsg = '\nBehram warn: not performing any type checking on send statement ';
-            errMsg += 'in functionDeclarationTypeCheck of astNode.py.\n';
-            print(errMsg);
         elif(self.label == AST_MSG_RECEIVE_FUNCTION):
             #msg send and msg receive functions do not have declared
             #return types (for now).  use the return type for each
             
             returnType = TYPE_MSG_RECEIVE_FUNCTION;
             argDeclIndex = None;
-            errMsg = '\nBehram warn: not performing any type checking on send statement ';
-            errMsg += 'in functionDeclarationTypeCheck of astNode.py.\n';
-            print(errMsg);
-            
+
 
             
 
