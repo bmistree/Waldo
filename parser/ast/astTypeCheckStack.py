@@ -417,9 +417,11 @@ class TypeCheckContextStack():
         elif (functionType == TYPE_MSG_RECEIVE_FUNCTION):
             traceError = self.traceManager.addMsgRecvFunction(astNode, currentEndpointName);
 
+        if (traceError != None):
+            returnTraceError;
 
         #add the function identifier itself to function context.
-        self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,astNode,lineNum);
+        traceError = self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,astNode,lineNum);
         return traceError;
         
         
@@ -455,6 +457,7 @@ class TypeCheckContextStack():
         
 class FuncContext():
     def __init__(self):
+        # contains funcContextElement-s
         self.dict = {};
 
     def getFuncIdentifierType(self,funcIdentifierName):
@@ -470,15 +473,19 @@ class FuncContext():
 
     def addFuncIdentifier(self,funcIdentifierName,funcIdentifierType,funcArgTypes,astNode,lineNum):
         '''
-        If identifier already exists in this context, throw an error.
-        Cannot have re-definition of existing type.
+        @returns {None or TypeCheckError} -- If identifier already
+        exists in this context, return TypeCheckError (cannot have
+        re-definition of existing type).  Otherwise, return None to
+        indicate no error.
         '''
-        if (self.getFuncIdentifierType(funcIdentifierName) != None):
-            #Fixme: this should turn into a more formal error-reporting system.
-            print('\nError, overwriting existing type with name ' + funcIdentifierName + '\n');
-            assert(False);
+        prevDecl = self.getFuncIdentifierType(funcIdentifierName);
+        if (prevDecl != None):
+            errMsg =  '\nError.  You already declared a function named ';
+            errMsg += '"' + funcIdentifierName + '".  You cannot declare another.\n';
+            nodes = [astNode,prevDecl.astNode];
+            return TypeCheckError(nodes,errMsg);
 
-# lkjs;
+
             
         #note: if appending to this condition, will have to import
         #additional types at top of file.
@@ -495,7 +502,8 @@ class FuncContext():
             assert(False);
 
         self.dict[funcIdentifierName] = FuncContextElement(funcIdentifierType,funcArgTypes,astNode,lineNum);
-
+        return None;
+        
 
         
 class FuncContextElement():
@@ -765,13 +773,18 @@ class Context():
             print('\nError, overwriting existing type with name ' + identifierName + '\n');
             assert(False);
 
-# lkjs;
+        prevDecl = self.getIdentifierType(identifierName);
+        if (prevDecl != None):
+            errMsg =  '\nError.  You already declared a variable named ';
+            errMsg += '"' + identifierName + '".  You cannot declare another.\n';
+            nodes = [astNode,prevDecl.astNode];
+            return TypeCheckError(nodes,errMsg);
             
         #note: if appending to this condition, will have to import
         #additional types at top of file.
         if ((identifierType != TYPE_BOOL) and (identifierType != TYPE_NUMBER) and
             (identifierType != TYPE_STRING) and (identifierType != TYPE_INCOMING_MESSAGE) and
-             (identifierType != TYPE_OUTGOING_MESSAGE)):
+            (identifierType != TYPE_OUTGOING_MESSAGE)):
             print('\nBehram Error.  Unrecognized identifierType insertion: ' + identifierType + '\n');
             assert(False);
 
