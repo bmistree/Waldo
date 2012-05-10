@@ -76,30 +76,44 @@ class TraceLineManager():
         
     def addMsgSendFunction(self,msgSendFuncAstNode, endpointName):
         '''
-        Throws an error, if the function is not used in a trace.  (ie,
-        no entry in self.traceLines corresponding to the string-ified
-        function.)
+        Returns a TraceLineError object if the function is not used in
+        a trace.  (ie, no entry in self.traceLines corresponding to
+        the string-ified function.)
 
-        Also, throws an error if it appears that msg send function was
+        Also, returns a TraceLineError if it appears that msg send function was
         used as a message receive function in a trace.
 
+        Otherwise, returns None.
+        
         Right now, doing an extremely inefficient job of actually
         checking through traces for errors.
+        
+        @returns {None or TraceLineError} -- Returns TraceLineError if
+        any non-first part of the trace line uses the msgSend
+        function.  Returns None to indicate no error.
+        
         '''
         funcName = msgSendFuncAstNode.children[0].value;
         index = endpointFuncNameToString(endpointName,funcName);
         if (self.traceLines.get(index,None) == None):
-            errMsg = '\nError: declaring a msgSend function ';
-            errMsg += 'that is not used\n';
-            print(errMsg);
-            assert(False);
+            errMsg = '\nError: declaring a msg send function named "';
+            errMsg += funcName + '" in ' + endpointName;
+            errMsg += ' that is not used in any trace line.\n';
+            nodes = [msgSendFuncAstNode,self.traceSectionAstNode];
+            return TraceLineError(nodes,errMsg);
 
+        
         for s in self.traceLines.keys():
             '''
             run through all trace lines to see if they are using this
             msgSend function in some way that they shouldn't.
             '''
-            self.traceLines[s].checkMsgSendFunction(msgSendFuncAstNode,endpointName);
+            traceError = self.traceLines[s].checkMsgSendFunction(msgSendFuncAstNode,endpointName);
+            if (traceError != None):
+                return traceError;
+
+        return None;
+
 
 
     def addMsgRecvFunction(self,msgRecvFuncAstNode,endpointName):
@@ -332,8 +346,9 @@ class TraceLine ():
         
     def checkMsgSendFunction(self,msgSendFuncAstNode,endpointName):
         '''
-        Throws an error if any non-first part of the trace line uses
-        the msgSend function
+        @returns {None or TraceLineError} -- Returns TraceLineError if
+        any non-first part of the trace line uses the msgSend
+        function.  Returns None to indicate no error.
         '''
         funcName = msgSendFuncAstNode.children[0].value;
 
@@ -351,16 +366,25 @@ class TraceLine ():
             self.usedNodes[0] = msgSendFuncAstNode;
 
 
-# lkjs;
-
         #start at 1 so that skip over msgSendFunction that initiates trace.
         for s in range(1,len(self.stringifiedTraceItems)):
             if (self.stringifiedTraceItems[s] == stringifiedFuncName):
-                errMsg = '\nError: with "' + stringifiedFuncName + '".  ';
-                errMsg += 'cannot use it as msg receive function in trace.\n';
-                print(errMsg);
-                assert(False);
+                errMsg = '\nMessage send error: You are using a message send ';
+                errMsg += 'function named "' + funcName + '", in the middle ';
+                errMsg += 'of a sequence of messages.  You cannot use a message ';
+                errMsg += 'send function in the middle of a sequence of messages.  '
+                errMsg += 'This is because message send functions do not take any ';
+                errMsg += 'input messages.  ';
+                errMsg += 'You should use a message receive function instead or ';
+                errMsg += 'change "' + funcName + '" to a message receive function.\n';
 
+                nodes = [self.traceLineAst,msgSendFuncAstNode];
+                return TraceLineError(nodes,errMsg);
+
+            
+        return None;
+
+    
 
     def checkMsgRecvFunction(self,msgRecvFuncAstNode,endpointName):
         '''

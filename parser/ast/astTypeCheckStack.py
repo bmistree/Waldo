@@ -353,6 +353,10 @@ class TypeCheckContextStack():
         @param {list} functionArgTypes: ordered (from left to right)
         list of types for function arguments.
         @param {int} lineNum: line number that function was declared on.
+
+        @returns {None or TraceLineError} -- None if nothing is wrong
+        with trace, TraceLineError otherwise.
+        
         '''
         if(len(self.funcStack) <= 1):
             print('\nError.  Cannot insert into type check stack because stack is empty.\n');
@@ -369,15 +373,19 @@ class TypeCheckContextStack():
             print(errMsg);
             assert(False);
 
+        traceError = None;
+
         if (functionType == TYPE_MSG_SEND_FUNCTION):
-            self.traceManager.addMsgSendFunction(astNode, currentEndpointName);
+            traceError = self.traceManager.addMsgSendFunction(astNode, currentEndpointName);
         elif (functionType == TYPE_MSG_RECEIVE_FUNCTION):
             self.traceManager.addMsgRecvFunction(astNode, currentEndpointName);
 
 
         #add the function identifier itself to function context.
         self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,astNode,lineNum);
-
+        return traceError;
+        
+        
 
     def setCurrentEndpointName(self,endpointName):
         '''

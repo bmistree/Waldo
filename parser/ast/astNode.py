@@ -1104,7 +1104,9 @@ class AstNode():
 
             errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
         else:
-            typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self,self.lineNo);
+            traceError = typeStack.addFuncIdentifier(funcName,returnType,argTypeList,self,self.lineNo);
+            if (traceError != None):
+                errorFunction(traceError.errMsg,traceError.nodes,traceError.lineNos,progText);
 
         
 
