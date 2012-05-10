@@ -536,9 +536,9 @@ eval(obj);
     def emitGeneralSendMessageUtility(self):
         firstSendMsgHead = '\ndef _sendMsg(self,msg,funcNameFrom):\n';
         firstSendMsgBody = r"""
-        delay = _Delay(self,msg,funcNameFrom);
-        delay.start();
-        delay.join();
+delay = _Delay(self,msg,funcNameFrom);
+delay.start();
+delay.join();
 """;
 
         
