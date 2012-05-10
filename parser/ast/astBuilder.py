@@ -125,6 +125,7 @@ def p_Type(p):
             | SENDS
             | RECEIVES
             '''
+
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),p[1]);
 
 
@@ -324,7 +325,7 @@ def p_TypedSendsStatement(p):
                         | CURLY_LEFT TypedMessageSendsLines CURLY_RIGHT
     '''
 
-    p[0] = AstNode(AST_TYPED_SENDS_STATEMENT, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_TYPED_SENDS_STATEMENT, p.lineno(1),p.lexpos(1));
 
     if (len(p) == 4):
         p[0].addChildren(p[2].getChildren());
@@ -336,7 +337,7 @@ def p_TypedMessageSendsLines(p):
     '''
 
     #This p[0] ends up getting skipped because of ordering of p_TypedSendsStatement
-    p[0] = AstNode(AST_TYPED_SENDS_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_TYPED_SENDS_STATEMENT,p[1].lineNo,p[1].linePos);
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());
         p[0].addChild(p[3]);
@@ -352,7 +353,7 @@ def p_TypedMessageSendsLine(p):
     '''
     TypedMessageSendsLine : Type Identifier  
     '''
-    p[0] = AstNode(AST_TYPED_SENDS_LINE,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_TYPED_SENDS_LINE,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[2]]);
 
     

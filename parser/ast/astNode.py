@@ -138,8 +138,9 @@ class AstNode():
 
             # check that output of one trace line matched input of
             # another
-            typeStack.checkTraceItemInputOutput();
-
+            traceError =  typeStack.checkTraceItemInputOutput();
+            if (traceError != None):
+                errorFunction(traceError.errMsg,traceError.nodes,traceError.lineNos,progText);
 
             
         elif(self.label == AST_TRACE_SECTION):

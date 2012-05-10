@@ -58,10 +58,20 @@ class TraceLineManager():
         return None;
         
     def checkTraceItemInputOutput(self):
-        # run through all trace lines to see if the message outputs
-        # match the message inputs.
+        '''
+        run through all trace lines to see if the message outputs
+        match the message inputs.
+
+        @return {None or TraceLineError} -- None if inputs and outputs
+        agree.  TraceLineError if they do not.
+        '''
+
         for s in self.traceLines:
-            self.traceLines[s].checkTraceItemInputOutput();
+            traceError = self.traceLines[s].checkTraceItemInputOutput();
+            if (traceError != None):
+                return traceError;
+
+        return None;
 
         
     def addMsgSendFunction(self,msgSendFuncAstNode, endpointName):
@@ -191,7 +201,8 @@ class TraceLine ():
         one function sends agrees with the message its recipient
         anticipated.
 
-        @throws error if there's a mismatch
+        @returns {None or TraceLineError} -- None if all the inputs
+        and outputs match.  TraceLineError if they do not.
         '''
 
         for s in self.usedNodes:
@@ -199,27 +210,47 @@ class TraceLine ():
                 # means that we had an undefined item in the trace
                 # line, and we cannot check input/output.  Should
                 # abort further check.
-                return;
 
+                # returning None because something else should catch
+                # this error (@see errorOnUndefined).
+                return None;
+
+            
         msgSendNode = self.usedNodes[0];
+        outgoingFuncName = msgSendNode.children[0].value;
         typedOutgoingMsgNode = msgSendNode.children[3];
         for s in range(1,len(self.usedNodes)):
             msgRecvNode = self.usedNodes[s];
             typedIncomingMsgNode = msgRecvNode.children[2];
+            incomingFuncName = msgRecvNode.children[0].value;
 
-            disagree = self.incomingOutgoingDisagree(typedIncomingMsgNode,typedOutgoingMsgNode);
-            if (disagree != None):
-                errMsg = '\nOutput of one does not equal the input of another\n';
-                print('\n\n');
-                print(errMsg);
-                print('\n\n');
-                assert(False);
+            disagreeError = self.incomingOutgoingDisagree(typedIncomingMsgNode,typedOutgoingMsgNode,incomingFuncName,outgoingFuncName);
+            if (disagreeError != None):
+                return disagreeError;
 
             # get outgoing to compare to incoming for next
+            outgoingFuncName = incomingFuncName;
             typedOutgoingMsgNode = msgRecvNode.children[3];
 
+        return None;
             
-    def incomingOutgoingDisagree(self,typedIncomingMsgNode,typedOutgoingMsgNode):
+            
+    def incomingOutgoingDisagree(self,typedIncomingMsgNode,typedOutgoingMsgNode,incomingFuncName,outgoingFuncName):
+        '''
+        @param {astNode with label typed_sends_statement}
+        typedIncomingMsgNode,typedOutgoingMsgNode
+        
+        @param {String} incomingFuncName,outgoingFuncName -- the names
+        of the msgSend/receive functions that have entry and exit
+        messages of typedIncomingMsgNode and typedOutgoingMsgNode,
+        respectively.  These are used for error reporting.
+        
+        @returns None or TraceLineError -- None if every field of
+        typedIncomingMsgNode appears in every field of
+        typedOutgoingMsgNode (and the types agree) and every field of
+        typedOutgoingMsgNode appears in every field of
+        typedIncomingMsgNode.  Otherwise, returns TraceLineError.
+        '''
         # every field of typedIncomingMsgNode should be in every field
 
         # check that every field that's in incoming is also in
@@ -235,10 +266,18 @@ class TraceLine ():
 
                 if (incomingFieldName == outgoingFieldName):
                     if (outgoingTypeName != incomingTypeName):
-                        errMsg = '\nError.  Mismatched types when checking ';
-                        errMsg += 'incoming and outgoing.\n';
-                        print(errMsg);
-                        assert(False);
+                        errMsg = '\nMismatched type error.  ';
+                        errMsg += 'The message produced by "' + outgoingFuncName + '"  ';
+                        errMsg += 'has an element named "' + outgoingFieldName + '" with ';
+                        errMsg += 'type "' + outgoingTypeName + '".  '
+                        errMsg += 'The message that "' + incomingFuncName + '" takes in ';
+                        errMsg += 'also has a field with that name, but has a different type: "';
+                        errMsg += incomingTypeName + '".  Please change either the message sender ';
+                        errMsg += 'or receiver so that "' + outgoingFieldName + '" has the same type.\n';
+
+                        nodes = [outgoingLine, incomingLine];
+                        
+                        return TraceLineError(nodes,errMsg);
                     else:
                         found = True;
                         break;
@@ -246,12 +285,14 @@ class TraceLine ():
             if (not found):
                 # means that incoming expected a field that was not
                 # present in outgoing.
-                errMsg = '\nError.  Incoming expected a field that ';
-                errMsg += 'outgoing did not provide.\n';
-                print(errMsg);
-                assert(False);
+                errMsg = '\nMissing input error.  ';
+                errMsg += 'The message read by "' + incomingFuncName + '" ';
+                errMsg += 'expects a message that has a field named "' + incomingFieldName +'".  ';
+                errMsg += '"' + outgoingFuncName + '" did not provide it.\n';
+                nodes = [incomingLine,typedOutgoingMsgNode];
+                return TraceLineError(nodes,errMsg);
 
-                
+            
         # check that every field that's in outgoing is also in
         # incoming.  Do not need to check for matching types, because
         # did that above.
@@ -267,11 +308,16 @@ class TraceLine ():
                     break;
 
             if (not found):
-                errMsg = '\nError.  Outgoing provides a field that ';
-                errMsg += 'incoming did not expect.\n';
-                print(errMsg);
-                assert(False);
-            
+                errMsg = '\nExtra output error.  ';
+                errMsg += 'The message sent by "' + outgoingFuncName + '" ';
+                errMsg += 'contains an extra field, "' + outgoingFieldName + '", ';
+                errMsg += 'that the message receiving function, "' + incomingFuncName + '" ';
+                errMsg += 'did not expect\n';
+
+                nodes = [outgoingLine,typedIncomingMsgNode];
+                return TraceLineError(nodes,errMsg);
+
+        return None;
                 
 
         

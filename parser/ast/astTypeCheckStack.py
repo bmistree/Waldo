@@ -89,9 +89,14 @@ class TypeCheckContextStack():
         self.currentIncoming = node;
 
     def checkTraceItemInputOutput(self):
-        # run through all trace lines to see if the message outputs
-        # match the message inputs.
-        self.traceManager.checkTraceItemInputOutput();
+        '''
+        run through all trace lines to see if the message outputs
+        match the message inputs.
+
+        @return {None or TraceLineError} -- None if inputs and outputs
+        agree.  TraceLineError if they do not.
+        '''
+        return self.traceManager.checkTraceItemInputOutput();
 
         
     def literalAgreesWithOutgoingMessage(self,literal):
