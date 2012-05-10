@@ -34,7 +34,7 @@ lexer = constructLexer();
 
 def p_RootExpression(p):
     'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection EndpointSection EndpointSection';
-    p[0] = AstNode(AST_ROOT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ROOT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[2],p[3],p[4],p[5],p[6]]);
     
 
@@ -42,12 +42,10 @@ def p_NameSection(p):
     'NameSection : Identifier'
     p[0] = p[1];
     p[0].setNote(AST_PROT_OBJ_NAME);
-    # p[0] = AstNode(AST_PROT_OBJ_NAME,p.lineno(0),p.lexpos(0));
-    # p[0].addChild(p[1]);
 
 def p_EndpointAliasSection(p):
     'EndpointAliasSection : ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON';
-    p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[2], p[5]]);
 
 def p_TraceSection(p):
@@ -91,7 +89,7 @@ def p_SharedSection(p):
     '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
                      | SHARED CURLY_LEFT CURLY_RIGHT''';
 
-    p[0] = AstNode(AST_SHARED_SECTION,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1));
     if (len(p) == 5):
         if (not isEmptyNode(p[3])):
             p[0].addChildren(p[3].getChildren());
@@ -102,7 +100,7 @@ def p_SharedSection(p):
 def p_SharedBodySection(p):
     '''SharedBodySection : AnnotatedDeclaration SEMI_COLON SharedBodySection
                          | AnnotatedDeclaration SEMI_COLON'''
-    p[0] = AstNode(AST_SHARED_BODY_SECTION, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_SHARED_BODY_SECTION, p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);
     if (len(p) == 4):
         p[0].addChildren(p[3].getChildren());
@@ -112,7 +110,7 @@ def p_SharedBodySection(p):
 def p_AnnotatedDeclaration(p):
     '''AnnotatedDeclaration : Identifier CONTROLS Type Identifier 
                             | Identifier CONTROLS Type Identifier EQUALS TerminalReturnable'''
-    p[0] = AstNode(AST_ANNOTATED_DECLARATION,p.lineno(1),p.lexpos(1));
+    p[0] = AstNode(AST_ANNOTATED_DECLARATION,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3],p[4]]);
     
     if (len(p) == 7):
@@ -186,7 +184,7 @@ def p_BracketStatement(p):
     BracketStatement : Identifier LEFT_BRACKET ReturnableExpression RIGHT_BRACKET
     '''
     
-    p[0] = AstNode(AST_BRACKET_STATEMENT,p.lineno(1),p.lexpos(1));
+    p[0] = AstNode(AST_BRACKET_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
     
     
@@ -273,7 +271,7 @@ def p_Identifier(p):
 def p_EndpointSection(p):
     '''EndpointSection : Identifier CURLY_LEFT EndpointBodySection CURLY_RIGHT
                        | Identifier CURLY_LEFT CURLY_RIGHT'''
-    p[0] = AstNode(AST_ENDPOINT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ENDPOINT,p[1].lineNo,p[1].linePos);
 
     p[0].addChild(p[1]);
     if (len(p) == 5):
@@ -284,11 +282,11 @@ def p_EndpointBodySection(p):
                            | EndpointFunctionSection
                            '''
 
-    p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p[1].lineNo,p[1].linePos);
     if (len(p) == 3):
         p[0].addChildren([p[1],p[2]]);
     elif ((len(p) == 2) and (not isEmptyNode(p[1]))):
-        p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p.lineno(0),p.lexpos(0)));
+        p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linPos));
         p[0].addChild(p[1]);
     else:
         print('\nError in endpoint body section.  Got an unusual number of arguments.\n');
@@ -298,7 +296,7 @@ def p_EndpointBodySection(p):
 def p_EndpointGlobalSection(p):
     '''EndpointGlobalSection : Declaration SEMI_COLON EndpointGlobalSection
                              | Declaration SEMI_COLON'''
-    p[0] = AstNode(AST_ENDPOINT_GLOBAL_SECTION, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);
     if (len(p) == 4):
         p[0].addChildren(p[3].getChildren());
@@ -314,7 +312,7 @@ def p_EndpointFunctionSection(p):
                                |  MsgReceiveFunction
                                '''
     
-    p[0] = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos);
     
     p[0].addChild(p[1]);
         
@@ -366,14 +364,14 @@ def p_MsgReceiveFunction(p):
                           | MSG_RECEIVE Identifier RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT CURLY_RIGHT
                           ''';
     
-    p[0] = AstNode(AST_MSG_RECEIVE_FUNCTION, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_MSG_RECEIVE_FUNCTION, p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[2],p[4],p[6],p[9]]);
     if (len(p) == 13):
         p[0].addChild(p[11]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
-        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
 
 
@@ -383,14 +381,14 @@ def p_MsgSendFunction(p):
                        | MSG_SEND Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN SENDS TypedSendsStatement CURLY_LEFT  CURLY_RIGHT'''
 
 
-    p[0] = AstNode(AST_MSG_SEND_FUNCTION, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_MSG_SEND_FUNCTION, p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[2],p[4]]);
     if (len(p) == 11):
         p[0].addChild(p[9]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
-        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
     #add the send statement on to the end.
     p[0].addChild(p[7]);
@@ -398,14 +396,14 @@ def p_MsgSendFunction(p):
 def p_Function(p):
     '''Function : FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
                 | FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT'''
-    p[0] = AstNode(AST_FUNCTION, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_FUNCTION, p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[2],p[7],p[4]]);
     if (len(p) == 11):
         p[0].addChild(p[9]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
-        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
     
         
@@ -413,21 +411,21 @@ def p_PublicFunction(p):
     '''PublicFunction : PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
                       | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT'''
     
-    p[0] = AstNode(AST_PUBLIC_FUNCTION, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_PUBLIC_FUNCTION, p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[3],p[8],p[5]]);
     if (len(p) == 12):
         p[0].addChild(p[10]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
-        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0)));
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
                       
 
 def p_FunctionBody(p):
     '''FunctionBody : FunctionBody FunctionBodyStatement
                     | FunctionBodyStatement'''
-    p[0] = AstNode(AST_FUNCTION_BODY, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_FUNCTION_BODY, p[1].lineNo,p[1].linePos);
     if (len(p) == 3):
         p[0].addChildren(p[1].getChildren());
         p[0].addChild(p[2]);
@@ -445,27 +443,27 @@ def p_FunctionBodyStatement(p):
                              | ConditionStatement
                              | ReturnableExpression SEMI_COLON
     '''
-    p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);
 
 def p_SendStatement(p):
     '''SendStatement : SEND_OPERATOR Identifier TO_OPERATOR Identifier
     '''
-    p[0] = AstNode(AST_SEND_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_SEND_STATEMENT,p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[2],p[4]]);
 
     
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
     
-    p[0] = AstNode(AST_CONDITION_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_CONDITION_STATEMENT,p[1].lineNo,p[1].linePos);
 
     p[0].addChildren([p[1],p[2],p[3]]);
 
 
 def p_IfStatement(p):
     '''IfStatement : IF BooleanCondition SingleLineOrMultilineCurliedBlock '''
-    p[0] = AstNode(AST_IF_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_IF_STATEMENT,p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[2],p[3]]);
 
     
@@ -473,14 +471,14 @@ def p_ElseIfStatements(p):
     '''ElseIfStatements : Empty
                         | ElseIfStatements ElseIfStatement'''
     
-    p[0] = AstNode(AST_ELSE_IF_STATEMENTS,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ELSE_IF_STATEMENTS,p[1].lineNo,p[1].linePos);
     if (len(p) == 3):
         p[0].addChildren(p[1].getChildren());
         p[0].addChild(p[2]);
 
 def p_ElseIfStatement(p):
     '''ElseIfStatement : ELSE_IF BooleanCondition SingleLineOrMultilineCurliedBlock'''
-    p[0] = AstNode(AST_ELSE_IF_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ELSE_IF_STATEMENT,p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[2],p[3]]);
 
     
@@ -488,12 +486,13 @@ def p_ElseIfStatement(p):
 def p_ElseStatement(p):
     '''ElseStatement : Empty
                      | ELSE SingleLineOrMultilineCurliedBlock '''
-    p[0] = AstNode(AST_ELSE_STATEMENT,p.lineno(0),p.lexpos(0));
+
     if (len(p) == 3):
+        p[0] = AstNode(AST_ELSE_STATEMENT,p.lineno(0),p.lexpos(0));
         p[0].addChild(p[2]);
     elif(len(p) == 2):
-        #ignore empty statement
-        pass;
+        p[0] = AstNode(AST_ELSE_STATEMENT,p[1].lineNo,p[1].linePos);
+
     else:
         print('\nIncorrect match count in ElseStatement.\n');
         assert(False);
@@ -507,7 +506,7 @@ def p_SingleLineOrMultilineCurliedBlock(p):
     
 
     if (len(p) == 2):
-        p[0] = AstNode(AST_FUNCTION_BODY,p.lineno(0),p.lexpos(0));
+        p[0] = AstNode(AST_FUNCTION_BODY,p[1].lineNo,p[1].linePos);
         p[0].addChild(p[1]);        
     elif(len(p) == 4):
         p[0] = p[2];
@@ -520,7 +519,7 @@ def p_SingleLineOrMultilineCurliedBlock(p):
     
 def p_BooleanCondition(p):
     '''BooleanCondition : LEFT_PAREN ReturnableExpression RIGHT_PAREN'''
-    p[0] = AstNode(AST_BOOLEAN_CONDITION, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_BOOLEAN_CONDITION, p.lineno(1),p.lexpos(1));
     p[0].addChild(p[2]);
 
         
@@ -548,7 +547,7 @@ def p_BooleanOperator(p):
 def p_AssignmentStatement(p):
     '''AssignmentStatement : Identifier EQUALS ReturnableExpression
     '''
-    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
 
     
@@ -583,7 +582,7 @@ def p_ParenthesizedExpression(p):
                                | InternalReturnableExpression
     '''
     if (len(p) == 3):
-        p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(0),p.lexpos(0));
+        p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(1),p.lexpos(1));
         p[0].addChild(p[2]);
     elif(len(p) == 2):
         p[0] = p[1];
@@ -670,7 +669,7 @@ def p_FunctionDeclArgList(p):
                            | FunctionDeclArgList COMMA FunctionDeclArg
                            | Empty'''
 
-    p[0] = AstNode(AST_FUNCTION_DECL_ARGLIST,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_FUNCTION_DECL_ARGLIST,p[1].lineNo,p[1].linePos);
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());
         p[0].addChild(p[3]);
@@ -684,7 +683,7 @@ def p_FunctionDeclArgList(p):
 
 def p_FunctionCall(p):
     '''FunctionCall : Identifier LEFT_PAREN FunctionArgList RIGHT_PAREN'''
-    p[0] = AstNode(AST_FUNCTION_CALL,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_FUNCTION_CALL,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
 
     
@@ -693,7 +692,7 @@ def p_FunctionArgList(p):
                        | FunctionArgList COMMA ReturnableExpression 
                        | Empty'''
     
-    p[0] = AstNode(AST_FUNCTION_ARGLIST,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_FUNCTION_ARGLIST,p[1].lineNo,p[1].linePos);
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());
                 
@@ -710,14 +709,14 @@ def p_FunctionArgList(p):
         
 def p_FunctionDeclArg(p):
     '''FunctionDeclArg : Type Identifier'''
-    p[0] = AstNode(AST_FUNCTION_DECL_ARG,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_FUNCTION_DECL_ARG,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[2]]);
     
 
 def p_Declaration(p):
     '''Declaration : Type Identifier
                    | Type Identifier EQUALS ReturnableExpression'''
-    p[0] = AstNode(AST_DECLARATION,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_DECLARATION,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[2]]);
     if (len(p) == 5):
         p[0].addChild(p[4]);
