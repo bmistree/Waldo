@@ -134,7 +134,9 @@ class AstNode():
             #Checks if there were msgSends or msgReceives assumed in a
             #trace line that weren't actually defined in an endpoint
             #section.
-            typeStack.checkUndefinedTraceItems();
+            traceError = typeStack.checkUndefinedTraceItems();
+            if (traceError != None):
+                errorFunction(traceError.errMsg,traceError.nodes,traceError.lineNos,progText);
 
             # check that output of one trace line matched input of
             # another

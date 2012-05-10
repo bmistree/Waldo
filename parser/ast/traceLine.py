@@ -127,6 +127,7 @@ class TraceLineManager():
             usedOnLine = self.traceLines[s].checkMsgRecvFunction(msgRecvFuncAstNode,endpointName);
             used = usedOnLine or used;
 
+# lkjs;            
         if (not used):
             #means that we never used this msgRecv function.
             errMsg = '\nError: message receive function named "';
@@ -135,10 +136,18 @@ class TraceLineManager():
             print(errMsg);
             assert(False);
 
-
+            
     def checkUndefinedMsgSendOrReceive(self):
+        '''
+        @return{None or TraceLineError} -- None if no error,
+        TraceLineError otherwise.
+        '''
         for s in self.traceLines.keys():
-            self.traceLines[s].errorOnUndefined();
+            undefinedError = self.traceLines[s].errorOnUndefined();
+            if (undefinedError != None):
+                return undefinedError;
+            
+        return None;
 
 
 
@@ -341,6 +350,9 @@ class TraceLine ():
             self.definedUndefinedList[0] += 1;
             self.usedNodes[0] = msgSendFuncAstNode;
 
+
+# lkjs;
+
         #start at 1 so that skip over msgSendFunction that initiates trace.
         for s in range(1,len(self.stringifiedTraceItems)):
             if (self.stringifiedTraceItems[s] == stringifiedFuncName):
@@ -383,12 +395,17 @@ class TraceLine ():
         have a zero value in definedUndefinedList).
 
         THIS IS A TEMPORARY FUNCTION AND SHOULD EVENTUALLY BE SWAPPED
-        OUT EVENTUALLY.
+        OUT.
+
+        @return{None or TraceLineError} -- None if no error,
+        TraceLineError otherwise.
         '''
         for s in range(0,len(self.definedUndefinedList)):
             if (self.definedUndefinedList[s] == 0):
                 errMsg = '\nError: using a function named ';
                 errMsg += '"' + self.stringifiedTraceItems[s] + '" in ';
-                errMsg += 'a trace, but never actually defined it.\n';
-                print(errMsg);
-                assert(False);
+                errMsg += 'trace, but never actually defined it.\n';
+                return TraceLineError([self.traceLineAst],errMsg);
+
+        # nothing was undefined: there is no error.
+        return None;

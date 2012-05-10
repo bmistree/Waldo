@@ -238,8 +238,11 @@ class TypeCheckContextStack():
         Runs through all elements in trace line to ensure that if a
         msgSend or msgReceive is declared in the trace section, it was
         actually defined in an endpoint section.
+        
+        @return{None or TraceLineError} -- None if no error,
+        TraceLineError otherwise.
         '''
-        self.traceManager.checkUndefinedMsgSendOrReceive();
+        return self.traceManager.checkUndefinedMsgSendOrReceive();
     
 
     def checkCollision(self,identifierName,astNode):

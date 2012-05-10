@@ -50,7 +50,7 @@ def p_EndpointAliasSection(p):
 def p_TraceSection(p):
     'TraceSection : TRACES CURLY_LEFT TraceBodySection CURLY_RIGHT';
     #note: this is an intermediate production, and will get skipped.
-    p[0] = AstNode(AST_TRACE_SECTION,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_TRACE_SECTION,p.lineno(1),p.lexpos(1));
     
     #getting TraceBodySection's children removes it as an intermediate node.
     p[0].addChildren(p[3].getChildren());
@@ -60,14 +60,14 @@ def p_TraceItem(p):
     'TraceItem : Identifier DOT Identifier'
     #Each TraceItem is connected by arrows in Trace section
     # TraceItem -> TraceItem -> TraceItem;
-    p[0] = AstNode(AST_TRACE_ITEM,p.lineno(1),p.lexpos(1));
+    p[0] = AstNode(AST_TRACE_ITEM,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
 
 def p_TraceBodySection(p):
     '''TraceBodySection : TraceLine SEMI_COLON TraceBodySection
                         | TraceLine SEMI_COLON''';
     #note: currently, cannot have empty trace body section.
-    p[0] = AstNode(AST_TRACE_BODY_SECTION,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_TRACE_BODY_SECTION,p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);
     if(len(p) == 4):
         #flattens all TraceLines into siblings
@@ -78,7 +78,7 @@ def p_TraceLine(p):
     '''TraceLine : TraceItem  SEND_ARROW TraceLine
                  | TraceItem  '''
 
-    p[0] = AstNode(AST_TRACE_LINE,p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_TRACE_LINE,p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);
     if (len(p) == 4):
         #have additional parts of trace body to grab.
@@ -362,10 +362,6 @@ def p_MsgReceiveFunction(p):
     '''MsgReceiveFunction : MSG_RECEIVE Identifier RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
                           | MSG_RECEIVE Identifier RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT CURLY_RIGHT
                           ''';
-    
-    # '''MsgReceiveFunction : MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
-    #                       | MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN TypedSendsStatement CURLY_LEFT  CURLY_RIGHT'''
-
     
     p[0] = AstNode(AST_MSG_RECEIVE_FUNCTION, p.lineno(0),p.lexpos(0));
     p[0].addChildren([p[2],p[4],p[6],p[9]]);
