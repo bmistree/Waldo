@@ -737,7 +737,7 @@ class AstNode():
                 rhs.typeCheck(progText,typeStack);
                 rhsType = rhs.type;
 
-                if (checkTypeMismatch(rhs,declaredType,rhsType,typeStack)):
+                if (checkTypeMismatch(rhs,declaredType,rhsType,typeStack,progText)):
                     errMsg = 'Type mismatch for variable named "' + name + '".';
                     errMsg += '  Declared with type [' + declaredType + '], but ';
                     errMsg += 'assigned to type [' + rhsType + '].';
@@ -970,7 +970,7 @@ class AstNode():
                 errorFunction(errMsg,[self],[self.lineNo],progText);
                 return;
 
-            if (checkTypeMismatch(rhs,lhsType,rhsType,typeStack)):
+            if (checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText)):
                 #FIXME: this should really identify *why* we inferred
                 #the type that we did.  Maybe where the variable was
                 #decalred too.
@@ -1178,7 +1178,7 @@ class AstNode():
 
 
         
-def checkTypeMismatch(rhs,lhsType,rhsType,typeStack):
+def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
     '''
     @returns {Bool} True if should throw type mismatch error.  False
     otherwise.
@@ -1205,19 +1205,20 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack):
             if (lhsType == TYPE_OUTGOING_MESSAGE):
                 # check that the message literal has all the
                 # expected fields of the outgoing message
-                typeStack.literalAgreesWithOutgoingMessage(rhs);
+                typeCheckError = typeStack.literalAgreesWithOutgoingMessage(rhs);
                 errorTrue = False;
-                #lkjs
-                print('\nBehram warn: should actually try to collect error and make a nicer message\n');
+                if (typeCheckError != None):
+                    errorTrue = True;
+                    errorFunction(typeCheckError.errMsg,typeCheckError.nodes,typeCheckError.lineNos,progText);
+
             elif(lhsType == TYPE_INCOMING_MESSAGE):
-                typeStack.literalAgreesWithIncomingMessage(rhs);
+                typeCheckError = typeStack.literalAgreesWithIncomingMessage(rhs);
                 errorTrue = False;
-                #lkjs
-                print('\nBehram warn: should actually try to collect error and make a nicer message\n');
+                if (typeCheckError != None):
+                    errorTrue = True;
+                    errorFunction(typeCheckError.errMsg,typeCheckError.nodes,typeCheckError.lineNos,progText);
 
     return errorTrue;
-
-
 
 
 ERROR_NUM_LINES_EITHER_SIDE = 4;

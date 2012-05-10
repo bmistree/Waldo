@@ -199,7 +199,7 @@ def p_MessageLiteral(p):
     if (len(p) == 4):
         p[0] = p[2];
     elif(len(p) == 3):
-        p[0]= AstNode(AST_MESSAGE_LITERAL,p.lineno(0),p.lexpos(0));
+        p[0]= AstNode(AST_MESSAGE_LITERAL,p.lineno(1),p.lexpos(1));
     else:
         print('\nError in MessageLiteral.  Unexpected length to match\n');
         assert(False);
@@ -210,7 +210,7 @@ def p_InternalMessageLiteral(p):
                               | InternalMessageLiteral COMMA MessageLiteralElement
                               '''
     
-    p[0]= AstNode(AST_MESSAGE_LITERAL,p.lineno(0),p.lexpos(0));
+    p[0]= AstNode(AST_MESSAGE_LITERAL,p[1].lineNo,p[1].linePos);
 
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());
@@ -228,7 +228,7 @@ def p_MessageLiteralElement(p):
     '''
     MessageLiteralElement : String COLON ReturnableExpression
     '''
-    p[0] = AstNode(AST_MESSAGE_LITERAL_ELEMENT, p.lineno(0),p.lexpos(0));
+    p[0] = AstNode(AST_MESSAGE_LITERAL_ELEMENT, p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
     
 

@@ -11,6 +11,7 @@ from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
 from astLabels import AST_TYPED_SENDS_STATEMENT;
 
 from traceLine import TraceLineManager;
+from traceLine import TypeCheckError;
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -26,6 +27,8 @@ FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
 MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH = 0;
 MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST = 1;
 MESSAGE_TYPE_CHECK_SUCCEED = 2;
+
+
 
 
 class TypeCheckContextStack():
@@ -93,26 +96,42 @@ class TypeCheckContextStack():
         run through all trace lines to see if the message outputs
         match the message inputs.
 
-        @return {None or TraceLineError} -- None if inputs and outputs
-        agree.  TraceLineError if they do not.
+        @return {None or TypeCheckError} -- None if inputs and outputs
+        agree.  TypeCheckError if they do not.
         '''
         return self.traceManager.checkTraceItemInputOutput();
 
         
     def literalAgreesWithOutgoingMessage(self,literal):
-        return self._literalAgreesWithMessage(self.currentOutgoing,literal);
+        return self._literalAgreesWithMessage(self.currentOutgoing,literal,'outgoing');
     
     def literalAgreesWithIncomingMessage(self,literal):
-        return self._literalAgreesWithMessage(self.currentIncoming,literal);
+        return self._literalAgreesWithMessage(self.currentIncoming,literal,'incoming');
 
-    def _literalAgreesWithMessage(self,declaredTypedSendsNode,literal):
+
+
+    def _literalAgreesWithMessage(self,declaredTypedSendsNode,literal,toCompareToName):
         '''
+        @param{AstNode} declaredTypedSendsNode -- ast node with label
+        == AST_TYPED_SENDS_NODE
+
+        @param{AstNode} literal -- ast node with label ==
+        AST_MESSAGE_LITERAL
+
+        @param{String} toCompareToName -- Used for error reporting.
+        
+        @returns {None or TypeCheckError}.  TypeCheckError object if
+        several fields existed in the literal that did not exist in
+        the declared type or their types did not match or several
+        fields existed in the declared type that did not exist in the
+        literal.
+
+        None if no errors.
         '''
         if (declaredTypedSendsNode == None):
             errMsg = '\nBehram error: should have an incoming or outgoing node ';
             errMsg += 'if trying to check agreement.\n';
             print(errMsg);
-            return;
             assert(False);
         
         # first checks that everything that is in
@@ -132,12 +151,26 @@ class TypeCheckContextStack():
                         found = True;
                         break;
                     else:
-                        print('\nHad same fields but incorrect types.\n');
-                        assert(False);
+                        errMsg = '\nType mismatch error: Both the message object that ';
+                        errMsg += 'you are creating and the ' + toCompareToName + ' message ';
+                        errMsg += 'type have a field named "' + llineName + '".  But the ';
+                        errMsg += 'message object you are declaring has type "' + llineType + '", ';
+                        errMsg += 'whereas it should have type "' + lineType + '" to agree ';
+                        errMsg += 'with ' + toCompareToName + ' message type.\n';
+                        nodes = [literal,declaredTypedSendsNode];
+                        return TypeCheckError(nodes,errMsg);
 
             if (not found):
-                print('\nLiteral is missing field named ' + lineName);
-                assert(False);
+                errMsg = '\nMissing field error: When you are creating a new ';
+                errMsg += toCompareToName + ' message, it must include all fields ';
+                errMsg += 'specified in the ' + toCompareToName + ' declaration.  ';
+                errMsg += 'The message that you are trying to ';
+                errMsg += 'create should have a field named "' + lineName + '" to ';
+                errMsg += 'agree with the ' + toCompareToName + ' message type that ';
+                errMsg += 'you declared.\n';
+                nodes = [literal,declaredTypedSendsNode];
+                return TypeCheckError(nodes,errMsg);
+                
                 
         # now checks that there aren't any fields in literal that do
         # not appear in declaredTypeSendsNode.
@@ -146,10 +179,14 @@ class TypeCheckContextStack():
             llineName = literalLine.children[0].value;
             exists,additional = self._fieldAgreesWithMessage(declaredTypedSendsNode,llineName,llineType);
             if (exists == MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST):
-                print('\nLiteral contains a field that declared does not named ' + llineName);
-                assert(False);
+                errMsg = '\nAdditional field error: The message that you are trying to ';
+                errMsg += 'create has a field named "' + llineName + '" that does not ';
+                errMsg += 'exist with the ' + toCompareToName + ' message type that ';
+                errMsg += 'you declared.\n';
+                nodes = [literal,declaredTypedSendsNode];
+                return TypeCheckError(nodes,errMsg);
+                
 
-        print('\nFix error reporting on literalAgreesWithMessage');
         return None;
                 
                     
@@ -210,7 +247,7 @@ class TypeCheckContextStack():
 
     def popContext(self):
         if (len(self.stack) <= 0):
-            print('\nError.  Empty type context stack.  Cannot pop\n');
+            print('\nBehram Error.  Empty type context stack.  Cannot pop\n');
             assert(False);
         self.stack.pop();
         self.funcStack.pop();
@@ -239,8 +276,8 @@ class TypeCheckContextStack():
         msgSend or msgReceive is declared in the trace section, it was
         actually defined in an endpoint section.
         
-        @return{None or TraceLineError} -- None if no error,
-        TraceLineError otherwise.
+        @return{None or TypeCheckError} -- None if no error,
+        TypeCheckError otherwise.
         '''
         return self.traceManager.checkUndefinedMsgSendOrReceive();
     
@@ -304,7 +341,7 @@ class TypeCheckContextStack():
         should have the type typeToReturn.
         '''
         if (len(self.stack) <= 0):
-            errMsg = '\nError.  Empty type context stack.  ';
+            errMsg = '\nBehram Error.  Empty type context stack.  ';
             errMsg += 'Cannot set value should be returning\n';
             print(errMsg);
             assert(False);
@@ -313,7 +350,7 @@ class TypeCheckContextStack():
 
     def getShouldReturn(self):
         if (len(self.stack) <= 0):
-            errMsg = '\nError.  Empty type context stack.  ';
+            errMsg = '\nBehram Error.  Empty type context stack.  ';
             errMsg += 'Cannot set value should be returning\n';
             print(errMsg);
             assert(False);
@@ -338,7 +375,7 @@ class TypeCheckContextStack():
     def addIdentifier(self,identifierName,identifierType,astNode,lineNum = None):
 
         if(len(self.stack) <= 1):
-            print('\nError.  Cannot insert into type check stack because stack is empty.\n');
+            print('\nBehram Error.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
             
         self.stack[-1].addIdentifier(identifierName,identifierType,astNode,lineNum);
@@ -354,12 +391,12 @@ class TypeCheckContextStack():
         list of types for function arguments.
         @param {int} lineNum: line number that function was declared on.
 
-        @returns {None or TraceLineError} -- None if nothing is wrong
-        with trace, TraceLineError otherwise.
+        @returns {None or TyepCheckError} -- None if nothing is wrong
+        with trace, TypeCheckError otherwise.
         
         '''
         if(len(self.funcStack) <= 1):
-            print('\nError.  Cannot insert into type check stack because stack is empty.\n');
+            print('\nBehram Error.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
 
 
@@ -441,6 +478,8 @@ class FuncContext():
             print('\nError, overwriting existing type with name ' + funcIdentifierName + '\n');
             assert(False);
 
+# lkjs;
+            
         #note: if appending to this condition, will have to import
         #additional types at top of file.
         if ((funcIdentifierType != TYPE_BOOL)   and
@@ -452,7 +491,7 @@ class FuncContext():
             (funcIdentifierType != TYPE_MSG_SEND_FUNCTION) and
             (funcIdentifierType != TYPE_MSG_RECEIVE_FUNCTION)):
             
-            print('\nError.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
+            print('\nBehram Error.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
             assert(False);
 
         self.dict[funcIdentifierName] = FuncContextElement(funcIdentifierType,funcArgTypes,astNode,lineNum);
@@ -726,12 +765,14 @@ class Context():
             print('\nError, overwriting existing type with name ' + identifierName + '\n');
             assert(False);
 
+# lkjs;
+            
         #note: if appending to this condition, will have to import
         #additional types at top of file.
         if ((identifierType != TYPE_BOOL) and (identifierType != TYPE_NUMBER) and
             (identifierType != TYPE_STRING) and (identifierType != TYPE_INCOMING_MESSAGE) and
              (identifierType != TYPE_OUTGOING_MESSAGE)):
-            print('\nError.  Unrecognized identifierType insertion: ' + identifierType + '\n');
+            print('\nBehram Error.  Unrecognized identifierType insertion: ' + identifierType + '\n');
             assert(False);
 
         self.dict[identifierName] = ContextElement(identifierType,astNode,lineNum);

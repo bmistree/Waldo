@@ -11,7 +11,7 @@ def traceItemToString(traceItem):
     
     
 
-class TraceLineError():
+class TypeCheckError():
     def __init__(self,nodes,errMsg):
         '''
         @param {array of AstNodes} nodes -- Each AstNode involved as
@@ -43,7 +43,7 @@ class TraceLineManager():
     def addTraceLine(self,traceLineAst):
         '''
         @returns None if addition is successful.
-                 TraceLineError object if unsuccessful.
+                 TypeCheckError object if unsuccessful.
         '''
         msgStarter = traceItemToString(traceLineAst.children[0]);
         
@@ -52,7 +52,7 @@ class TraceLineManager():
             tLineAst = self.traceLines[msgStrarter];
             errMsg = '\nError: already have a trace line ';
             errMsg += 'that starts with "' + msgStarter + '" function.\n';
-            return TraceLineError([traceLineAst, tLineAst],errMsg);
+            return TypeCheckError([traceLineAst, tLineAst],errMsg);
             
         self.traceLines[msgStarter] = TraceLine(traceLineAst);
         return None;
@@ -62,8 +62,8 @@ class TraceLineManager():
         run through all trace lines to see if the message outputs
         match the message inputs.
 
-        @return {None or TraceLineError} -- None if inputs and outputs
-        agree.  TraceLineError if they do not.
+        @return {None or TypeCheckError} -- None if inputs and outputs
+        agree.  TypeCheckError if they do not.
         '''
 
         for s in self.traceLines:
@@ -76,11 +76,11 @@ class TraceLineManager():
         
     def addMsgSendFunction(self,msgSendFuncAstNode, endpointName):
         '''
-        Returns a TraceLineError object if the function is not used in
+        Returns a TypeCheckError object if the function is not used in
         a trace.  (ie, no entry in self.traceLines corresponding to
         the string-ified function.)
 
-        Also, returns a TraceLineError if it appears that msg send function was
+        Also, returns a TypeCheckError if it appears that msg send function was
         used as a message receive function in a trace.
 
         Otherwise, returns None.
@@ -88,7 +88,7 @@ class TraceLineManager():
         Right now, doing an extremely inefficient job of actually
         checking through traces for errors.
         
-        @returns {None or TraceLineError} -- Returns TraceLineError if
+        @returns {None or TypeCheckError} -- Returns TypeCheckError if
         any non-first part of the trace line uses the msgSend
         function.  Returns None to indicate no error.
         
@@ -100,7 +100,7 @@ class TraceLineManager():
             errMsg += funcName + '" in ' + endpointName;
             errMsg += ' that is not used in any trace line.\n';
             nodes = [msgSendFuncAstNode,self.traceSectionAstNode];
-            return TraceLineError(nodes,errMsg);
+            return TypeCheckError(nodes,errMsg);
 
         
         for s in self.traceLines.keys():
@@ -118,9 +118,9 @@ class TraceLineManager():
 
     def addMsgRecvFunction(self,msgRecvFuncAstNode,endpointName):
         '''
-        @returns {None or TraceLineError} --
+        @returns {None or TypeCheckError} --
 
-        TraceLineErrorr if msg receive function is not being used by
+        TypeCheckError if msg receive function is not being used by
         any trace or if msg receive function is being used to begin a
         trace line.
 
@@ -143,7 +143,7 @@ class TraceLineManager():
             errMsg += 'function, or select a message send function to use.\n';
             
             nodes = [msgRecvFuncAstNode,tLine.traceLineAst];
-            return TraceLineError(nodes,errMsg);
+            return TypeCheckError(nodes,errMsg);
 
         
         used = False;
@@ -161,14 +161,14 @@ class TraceLineManager():
             errMsg += funcName + '" in endpoint named "' + endpointName + '" ';
             errMsg += 'was not used in any trace line.\n';
             nodes = [msgRecvFuncAstNode,self.traceSectionAstNode];
-            return TraceLineError(nodes,errMsg);
+            return TypeCheckError(nodes,errMsg);
 
         return None;
             
     def checkUndefinedMsgSendOrReceive(self):
         '''
-        @return{None or TraceLineError} -- None if no error,
-        TraceLineError otherwise.
+        @return{None or TypeCheckError} -- None if no error,
+        TypeCheckError otherwise.
         '''
         for s in self.traceLines.keys():
             undefinedError = self.traceLines[s].errorOnUndefined();
@@ -238,8 +238,8 @@ class TraceLine ():
         one function sends agrees with the message its recipient
         anticipated.
 
-        @returns {None or TraceLineError} -- None if all the inputs
-        and outputs match.  TraceLineError if they do not.
+        @returns {None or TypeCheckError} -- None if all the inputs
+        and outputs match.  TypeCheckError if they do not.
         '''
 
         for s in self.usedNodes:
@@ -282,11 +282,11 @@ class TraceLine ():
         messages of typedIncomingMsgNode and typedOutgoingMsgNode,
         respectively.  These are used for error reporting.
         
-        @returns None or TraceLineError -- None if every field of
+        @returns None or TypeCheckError -- None if every field of
         typedIncomingMsgNode appears in every field of
         typedOutgoingMsgNode (and the types agree) and every field of
         typedOutgoingMsgNode appears in every field of
-        typedIncomingMsgNode.  Otherwise, returns TraceLineError.
+        typedIncomingMsgNode.  Otherwise, returns TypeCheckError.
         '''
         # every field of typedIncomingMsgNode should be in every field
 
@@ -314,7 +314,7 @@ class TraceLine ():
 
                         nodes = [outgoingLine, incomingLine];
                         
-                        return TraceLineError(nodes,errMsg);
+                        return TypeCheckError(nodes,errMsg);
                     else:
                         found = True;
                         break;
@@ -327,7 +327,7 @@ class TraceLine ():
                 errMsg += 'expects a message that has a field named "' + incomingFieldName +'".  ';
                 errMsg += '"' + outgoingFuncName + '" did not provide it.\n';
                 nodes = [incomingLine,typedOutgoingMsgNode];
-                return TraceLineError(nodes,errMsg);
+                return TypeCheckError(nodes,errMsg);
 
             
         # check that every field that's in outgoing is also in
@@ -352,7 +352,7 @@ class TraceLine ():
                 errMsg += 'did not expect\n';
 
                 nodes = [outgoingLine,typedIncomingMsgNode];
-                return TraceLineError(nodes,errMsg);
+                return TypeCheckError(nodes,errMsg);
 
         return None;
                 
@@ -360,7 +360,7 @@ class TraceLine ():
         
     def checkMsgSendFunction(self,msgSendFuncAstNode,endpointName):
         '''
-        @returns {None or TraceLineError} -- Returns TraceLineError if
+        @returns {None or TypeCheckError} -- Returns TypeCheckError if
         any non-first part of the trace line uses the msgSend
         function.  Returns None to indicate no error.
         '''
@@ -393,7 +393,7 @@ class TraceLine ():
                 errMsg += 'change "' + funcName + '" to a message receive function.\n';
 
                 nodes = [self.traceLineAst,msgSendFuncAstNode];
-                return TraceLineError(nodes,errMsg);
+                return TypeCheckError(nodes,errMsg);
 
             
         return None;
@@ -435,15 +435,15 @@ class TraceLine ():
         THIS IS A TEMPORARY FUNCTION AND SHOULD EVENTUALLY BE SWAPPED
         OUT.
 
-        @return{None or TraceLineError} -- None if no error,
-        TraceLineError otherwise.
+        @return{None or TypeCheckError} -- None if no error,
+        TypeCheckError otherwise.
         '''
         for s in range(0,len(self.definedUndefinedList)):
             if (self.definedUndefinedList[s] == 0):
                 errMsg = '\nError: using a function named ';
                 errMsg += '"' + self.stringifiedTraceItems[s] + '" in ';
                 errMsg += 'trace, but never actually defined it.\n';
-                return TraceLineError([self.traceLineAst],errMsg);
+                return TypeCheckError([self.traceLineAst],errMsg);
 
         # nothing was undefined: there is no error.
         return None;
