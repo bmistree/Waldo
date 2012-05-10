@@ -57,7 +57,13 @@ class TraceLineManager():
         self.traceLines[msgStarter] = TraceLine(traceLineAst);
         return None;
         
+    def checkTraceItemInputOutput(self):
+        # run through all trace lines to see if the message outputs
+        # match the message inputs.
+        for s in self.traceLines:
+            self.traceLines[s].checkTraceItemInputOutput();
 
+        
     def addMsgSendFunction(self,msgSendFuncAstNode, endpointName):
         '''
         Throws an error, if the function is not used in a trace.  (ie,
@@ -166,7 +172,109 @@ class TraceLine ():
             self.stringifiedTraceItems.append(toAppend);
             self.definedUndefinedList.append(0);
 
+
+        # keeps a list of all the ast nodes of the message sending and
+        # receiving functions.  (not the trace line ast nodes, but the
+        # actual AST_MSG_SEND_FUNCTION and AST_MSG_RECEIVE_FUNCTION.
+        # This list should be maintained in sorted order (ie, index 0
+        # should be the msg send statement, index 1 should be the
+        # receive statement that gets input from the 0 statement,
+        # etc.).  It is used to ensure that the messages declared as
+        # the output of one function agrees with the type of message
+        # expected by the input function.
+        self.usedNodes = [0] * len(self.stringifiedTraceItems);
+
+
+    def checkTraceItemInputOutput(self):
+        '''
+        Runs through self.usedNodes to ensure that the message that
+        one function sends agrees with the message its recipient
+        anticipated.
+
+        @throws error if there's a mismatch
+        '''
+
+        for s in self.usedNodes:
+            if (s == 0):
+                # means that we had an undefined item in the trace
+                # line, and we cannot check input/output.  Should
+                # abort further check.
+                return;
+
+        msgSendNode = self.usedNodes[0];
+        typedOutgoingMsgNode = msgSendNode.children[3];
+        for s in range(1,len(self.usedNodes)):
+            msgRecvNode = self.usedNodes[s];
+            typedIncomingMsgNode = msgRecvNode.children[2];
+
+            disagree = self.incomingOutgoingDisagree(typedIncomingMsgNode,typedOutgoingMsgNode);
+            if (disagree != None):
+                errMsg = '\nOutput of one does not equal the input of another\n';
+                print('\n\n');
+                print(errMsg);
+                print('\n\n');
+                assert(False);
+
+            # get outgoing to compare to incoming for next
+            typedOutgoingMsgNode = msgRecvNode.children[3];
+
             
+    def incomingOutgoingDisagree(self,typedIncomingMsgNode,typedOutgoingMsgNode):
+        # every field of typedIncomingMsgNode should be in every field
+
+        # check that every field that's in incoming is also in
+        # outgoing (and that they have matching types)
+        for incomingLine in typedIncomingMsgNode.children:
+            incomingTypeName = incomingLine.children[0].value;
+            incomingFieldName = incomingLine.children[1].value;
+
+            found = False;
+            for outgoingLine in typedOutgoingMsgNode.children:
+                outgoingTypeName = outgoingLine.children[0].value;
+                outgoingFieldName = outgoingLine.children[1].value;
+
+                if (incomingFieldName == outgoingFieldName):
+                    if (outgoingTypeName != incomingTypeName):
+                        errMsg = '\nError.  Mismatched types when checking ';
+                        errMsg += 'incoming and outgoing.\n';
+                        print(errMsg);
+                        assert(False);
+                    else:
+                        found = True;
+                        break;
+                    
+            if (not found):
+                # means that incoming expected a field that was not
+                # present in outgoing.
+                errMsg = '\nError.  Incoming expected a field that ';
+                errMsg += 'outgoing did not provide.\n';
+                print(errMsg);
+                assert(False);
+
+                
+        # check that every field that's in outgoing is also in
+        # incoming.  Do not need to check for matching types, because
+        # did that above.
+        for outgoingLine in typedOutgoingMsgNode.children:
+            outgoingFieldName = outgoingLine.children[1].value;
+
+            found = False;
+            for incomingLine in typedIncomingMsgNode.children:
+                incomingFieldName = incomingLine.children[1].value;
+
+                if (outgoingFieldName == incomingFieldName):
+                    found = True;
+                    break;
+
+            if (not found):
+                errMsg = '\nError.  Outgoing provides a field that ';
+                errMsg += 'incoming did not expect.\n';
+                print(errMsg);
+                assert(False);
+            
+                
+
+        
     def checkMsgSendFunction(self,msgSendFuncAstNode,endpointName):
         '''
         Throws an error if any non-first part of the trace line uses
@@ -185,6 +293,7 @@ class TraceLine ():
             
         if (self.stringifiedTraceItems[0] == stringifiedFuncName):
             self.definedUndefinedList[0] += 1;
+            self.usedNodes[0] = msgSendFuncAstNode;
 
         #start at 1 so that skip over msgSendFunction that initiates trace.
         for s in range(1,len(self.stringifiedTraceItems)):
@@ -210,6 +319,10 @@ class TraceLine ():
         for s in range(1,len(self.stringifiedTraceItems)):
             if (self.stringifiedTraceItems[s] == stringifiedFuncName):
                 self.definedUndefinedList[s] += 1;
+                # puts trace node into usedNodes so can iterate over
+                # usedNodes later to check if message sending and
+                # receiving signatures match.
+                self.usedNodes[s] = msgRecvFuncAstNode;
                 returner = True;
                 #note: do not return here because may have repeats of
                 #message receptions.

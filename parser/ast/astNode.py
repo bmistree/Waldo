@@ -135,8 +135,13 @@ class AstNode():
             #trace line that weren't actually defined in an endpoint
             #section.
             typeStack.checkUndefinedTraceItems();
-                
 
+            # check that output of one trace line matched input of
+            # another
+            typeStack.checkTraceItemInputOutput();
+
+
+            
         elif(self.label == AST_TRACE_SECTION):
             '''
             All the type rules of an ast trace section are:
