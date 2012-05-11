@@ -1,7 +1,9 @@
 Command to run from parser/ast/ 
     ./head.py -f testBasic.wld -go '{"file":"astOut.html", "h": 3000, "w": 5000}' -e emitted.py
 
+Actually emit return statement.
 
+    
 In examples:
 may want to make Ready a keyword so that do not have conflicts with
 sending messages.
@@ -25,31 +27,19 @@ Handle deep copies in contexts.
 
 Handle deep copies of internal variables.
 
-Make concrete decisions about what should happen if a public method
-generates a conflict with data we are operating on.
-
 
 Playing fast and loose with the names of variables that the user can
 pass in as arguments in emitting.  Fix.
-
-Throw an error if a Send LKJDJ To LKJljdf appears in anything besides
-a message receive and message send function.  If it appears in a tail
-msg receive function, throw an error.
 
 May want to provide a commit callback to fire when action is totally
 finished on both sides.
 
 Im emitting:
-    
-Lots of todos still in code.  Largest: sort through initializers for
-variables and finish runFunctionBodyInternalEmit.
 
 Decide on whether can pass messages through function calls.
 
 Decide on whether can use a message literal in a send statement.
 (Parse for it too, maybe).
-
-Maybe make messages immutable???
 
 Major questions about how should be allowed to initialize shared and
 endpoint global variables.
@@ -60,33 +50,11 @@ send statement?
     
 To Do:
 
- * Actually perform type check for send statements.  (And functions
-   with sends in them.  Right now, skipping that and printing a
-   warning instead.)
-
- * Currently producing syntax errors when have not filled in lines in
-   traces sections or if don't have functions defined in an endpoint
-   section.  These are poor errors.  Instead, may want to produce a
-   type check error.
-
  * Not handling escaping strings for string literals correctly when
    emitting in runFunctionBodyInternalEmit of astEmit.py.
    
  * Throw okay error if do not name endpoint at top endpoint section
    correctly (eg., name both the same thing).
-
- * To do: right now, cannot handle parsing negative numbers.
-   
- * To do: right now, have problem where if function takes no
-   arguments, try to type check EMPTY statements.  (prints these as
-   well.  probably want to parse differently so that these don't show
-   up.)
-   
- * Throw better error if we add an identifier that we already have
-   declared (see addIdentifier of astTypeCheckStack.py).
-
- * Think through what arguments msgReceive function should take, and
-   throw type errors if get more info.
  
  * For incorrectly declared variables, maybe present some "you may
    have meant XXXXX" error message.
@@ -103,52 +71,32 @@ To Do:
    
  * Warn unused functions.  Error on unused functions?
 
- * Need to ensure that all msgReceive functions have same type
-   signature.
-
  * Ensure that nothing makes a function call to a msgReceive function.
  
- * Need to better-define ReturnableExpression.  Right now, can only
-   provide literals and function calls.
- * During semantic analysis, if have more than one argument in
-   funcArgList, check that no arguments are empty.
-
  * Is it possible to specify shared functions?  What about shared
    msgSend and msgReceive functions?
 
-----------------------------
-Emitting:
- * Not handling initializer expressions for variables correctly.
-   Search for FIXME in astEmit.py.
-
- * varName method of endpoint should try to avoid conflicts with
-   internal python keywords (such as self, not, and, etc.)
-   
    
 
    
 Major to dos:
   1) Decide on how discovery should work
-  2) Determine exact rules for trying to send a message (do you queue
+x  2) Determine exact rules for trying to send a message (do you queue
      more than one message, etc.)
   3) Specifying error conditions/what happens on error/after some time
-  4) What is structure of message?  Can we type check it?
+x  4) What is structure of message?  Can we type check it?
   5) How does time play into when respond?  Do we have a notion of
      time/timers?  What is it?
   5) Come up with overall experiment
   6) Come up with ideal micro-evaluations
      -Turk for names "Bool" vs "TrueFalse"; "String" vs "Text".
-  7) Decide which target to generate code for (likely python).
-  8) Decide on interface between target code and existin code
+x  7) Decide which target to generate code for (likely python).
+  8) Decide on interface between target code and existing code
      -What visualizations allow programmer to see how things work?
   9) Decide on visualizations to present error messages and do some
      work on what error messages should look like.
    
-   
-Notes:
-  Ors and Ands have same precedence and are left-associative.
-
-
+ 
 
   
 Questions:
