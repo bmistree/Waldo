@@ -50,6 +50,49 @@ class Function(object):
         return methodHeader;
 
 
+class OnCreateFunction(Function):
+    def __init__(self,name,astNode,protObj):
+        #see astBuilder or the graphical ast:
+        functionArgDeclIndex = 1;        
+        super(OnCreateFunction,self).__init__(name,astNode,protObj,functionArgDeclIndex);
+
+    def getInitArgs(self):
+        '''
+        Returns the string values of all identifier names the oncreate
+        function takes in.  (not including self.)
+        '''
+        returner = [];
+        declArgsList = self.astNode.children[self.declArgListIndex];
+        for s in declArgsList.children:
+            #each s is a declArg
+            if (len(s.children) == 0):
+                continue;
+            argName = s.children[1].value;
+            returner.append(argName);
+
+        return returner;
+        
+
+        
+    def emit(self):
+        self.endpoint.currentlyEmittingFunction = self;
+        methodHeader = self.createMethodHeader();        
+
+        funcBodyNode = self.astNode.children[2];
+        
+        methodBody = '''
+self.whichEnv = COMMITTED_CONTEXT;
+'''
+        methodBody += emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.COMMITTED_PREFIX);
+        
+        returnString = emitHelper.indentString(methodHeader,1);
+        returnString += emitHelper.indentString(methodBody,2);
+        self.endpoint.currentlyEmittingFunction = None;
+        
+        return returnString;
+
+
+
 class InternalFunction(Function):
     def __init__(self,name,astNode,protObj):
         #see astBuilder or the graphical ast:

@@ -139,6 +139,11 @@ def runEmitter(astNode,protObj=None):
         publicFuncAstNode = astNode;
         protObj.addPublicFunction(publicFunctionName,publicFuncAstNode);
 
+    elif (astNode.label == AST_ONCREATE_FUNCTION):
+        onCreateName = astNode.children[0].value;
+        protObj.addOnCreateFunction(onCreateName,astNode);
+
+        
     elif(astNode.label == AST_FUNCTION):
         internalFunctionName =  astNode.children[0].value;            
         internalFuncAstNode = astNode;
@@ -231,6 +236,12 @@ class ProtocolObject():
             print(errMsg);
             assert(False);
 
+    def addOnCreateFunction(self,onCreateName,onCreateAstNode):
+        self.checkUsageError('addOnCreateFunction');
+        self.checkCurrentEndpointUsage('addOnCreateFunction');
+        self.currentEndpoint.addOnCreateFunction(onCreateName,onCreateAstNode,self);
+
+            
 
     def addPublicFunction(self,publicFunctionName,publicFuncAstNode):
         self.checkUsageError('addPublicFunction');

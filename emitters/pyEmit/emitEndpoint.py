@@ -40,6 +40,8 @@ class Endpoint():
         self.sharedVariables = [];
         self.endpointVariables = [];
 
+        self.onCreateMethod = None;
+        
     def addInternalFunction(self,internalFuncName,internalFuncAstNode,protObj):
         internalFunc = emitFunctions.InternalFunction(internalFuncName,internalFuncAstNode,protObj);
         self.internalMethods.append(internalFunc);
@@ -48,7 +50,15 @@ class Endpoint():
         pubFunc = emitFunctions.PublicFunction(pubFuncName,pubFuncAstNode,protObj);
         self.publicMethods.append(pubFunc);
 
+    def addOnCreateFunction(self,onCreateName,onCreateAstNode,protObj):
+        if (self.onCreateMethod != None):
+            errMsg = '\nBehram error.  Already had an onCreate method.\n';
+            print(errMsg);
+            assert(False);
 
+        self.onCreateMethod = emitFunctions.OnCreateFunction(onCreateName,onCreateAstNode,protObj);
+        
+        
     def isGlobalOrShared(self,idName):
         '''
         @param {String} idName -- the user-defined Waldo name of a variable.
@@ -174,6 +184,8 @@ class Endpoint():
         returnString += '\n\n';
         returnString += self.emitClassInit();
         returnString += '\n\n';
+        returnString += self.emitOnCreate();
+        returnString += '\n\n';
         returnString += self.emitSmallHelperUtilities();
         returnString += '\n\n';
 
@@ -190,7 +202,20 @@ class Endpoint():
         return returnString;
 
 
-
+    def emitOnCreate(self):
+        returnString = '';
+        returnString += '\n#OnCreate method\n';
+        if (self.onCreateMethod == None):
+            returnString += 'def OnCreate(self):\n';
+            bodyString = 'pass;\n';
+            returnString += emitHelper.indentString(bodyString,1);
+            returnString = emitHelper.indentString(returnString,1);
+        else:
+            returnString += self.onCreateMethod.emit();
+                    
+        return returnString;
+    
+    
     def emitFunctions(self):
         returnString = '';
         returnString += '\n#public methods\n';
@@ -248,13 +273,24 @@ class %s:
 
         return emitHelper.indentString(readyStr + lockStr + unlockStr,1);
 
-    
-    def emitClassInit(self):
-        
-        initHeaderString = '''
-def __init__(self,connectionObject):
-'''
 
+
+    def emitClassInit(self):
+
+
+        onCreateInitArgs = [];
+        if (self.onCreateMethod != None):
+            onCreateInitArgs = self.onCreateMethod.getInitArgs();
+
+            
+        initHeaderString = '''def __init__(self,connectionObject''';
+
+        for s in onCreateInitArgs:
+            initHeaderString += ',' + s;
+        initHeaderString += '):\n';
+
+
+        
         # each endpoint needs a unique name for reference in
         # the current connection object implementation.
         # FIXME: does not actually guarantee
@@ -304,6 +340,14 @@ self.connectionObject = connectionObject;
 self.connectionObject.addEndpoint(self);
 
 """ % (self.name,str(self.myPriority),str(self.theirPriority),fakeName);
+
+
+        initBodyString += 'self.OnCreate(';
+        for s in range(0,len(onCreateInitArgs)):
+            initBodyString += onCreateInitArgs[s];
+            if (s != len(onCreateInitArgs) -1):
+                initBodyString += ',';
+        initBodyString += ');\n';
 
         
         returnString = emitHelper.indentString(initHeaderString,1);
