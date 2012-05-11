@@ -28,11 +28,15 @@ def indentString(string,indentAmount):
     for s in range(0,indentAmount):
         indenter += '    ';
 
-    for s in splitOnNewLine:
-        if (len(s) != 0):
-            returnString += indenter + s + '\n';
+
+    for s in range(0,len(splitOnNewLine)):
+        if (len(splitOnNewLine[s]) != 0):
+            returnString += indenter + splitOnNewLine[s];
+        if (s != len(splitOnNewLine) -1):
+            returnString += '\n';
 
     return returnString;
+
 
 
 def getDefaultValForType(astTypedNode):
@@ -208,7 +212,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
 
         bracketStr = indexIntoStr + '[' + indexStr + ']';
         returnString = indentString(bracketStr,indentLevel);
-        
+
     elif (astNode.label == AST_BOOLEAN_CONDITION):
         returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,indentLevel);
 
@@ -350,13 +354,24 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
 
         
     elif (astNode.label == AST_ASSIGNMENT_STATEMENT):
-        assignTo = astNode.children[0];
-        idName = assignTo.value;
-        if (endpoint.isGlobalOrShared(idName)):
-            idName = prefix + idName;
+        assignToNode = astNode.children[0];
 
+        if (assignToNode.label == AST_IDENTIFIER):
+            idName = assignToNode.value;
+            if (endpoint.isGlobalOrShared(idName)):
+                idName = prefix + idName;
+        elif(assignToNode.label == AST_BRACKET_STATEMENT):
+            idName = runFunctionBodyInternalEmit(assignToNode,protObj,endpoint,prefix,0);
+
+        else:
+            errMsg = '\nBehram error.  In emission of assignment statement, ';
+            errMsg += 'should have gotten either an identifier or bracekt.\n';
+            print(errMsg);
+            assert(False);
+
+                
         lhsAssignString = idName + ' = ';
-        
+
 
         rhsAssignString = runFunctionBodyInternalEmit(astNode.children[1],protObj,endpoint,prefix,0);
         returnString += indentString(lhsAssignString + rhsAssignString,indentLevel);

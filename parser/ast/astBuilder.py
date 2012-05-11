@@ -562,6 +562,7 @@ def p_BooleanOperator(p):
 
 def p_AssignmentStatement(p):
     '''AssignmentStatement : Identifier EQUALS ReturnableExpression
+                           | BracketStatement EQUALS ReturnableExpression
     '''
     p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);

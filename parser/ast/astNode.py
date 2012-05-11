@@ -959,16 +959,22 @@ class AstNode():
             lhs = self.children[0];
             self.lineNo = lhs.lineNo;
             
-            if (lhs.label != AST_IDENTIFIER):
+            if (lhs.label != AST_IDENTIFIER) and (lhs.label != AST_BRACKET_STATEMENT):
                 errMsg = '\nError in assignment statement.  Can only assign ';
-                errMsg += 'to a variable name.  (Left hand side must be a variable\n';
+                errMsg += 'to a variable.  (Left hand side must be a variable)\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);
                 return;
-                
+
+            
             rhs = self.children[1];
 
-            lhsType = typeStack.getIdentifierType(lhs.value);
-            lhs.type  = lhsType;
+            if (lhs.label == AST_IDENTIFIER):
+                lhsType = typeStack.getIdentifierType(lhs.value);
+                lhs.type  = lhsType;
+            else:
+                lhs.typeCheck(progText,typeStack);
+                lhsType = lhs.type;
+
             if (lhsType == None):
                 errMsg = '\nError in assignment statement.  Left hand side ';
                 errMsg += 'has no type information.\n';
