@@ -72,9 +72,6 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
             astProduceGraphicalOutput(ast,graphicalOutputArg);
             performedOperation = True;
 
-        if (not performedOperation):
-            printUsage();
-            return;
         
         if(typeCheckArg):
             ast.typeCheck(fileText);
