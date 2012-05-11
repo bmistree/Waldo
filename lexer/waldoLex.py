@@ -27,6 +27,7 @@ tokens = (
 
     
     "SEND_OPERATOR",
+    "RETURN_OPERATOR",
     "TO_OPERATOR",
     "EQUALS",
 
@@ -281,6 +282,11 @@ def t_EQUALS(t):
 def t_SEND_OPERATOR(t):
     'Send'
     return mStateMachine.addToken(t);
+
+def t_RETURN_OPERATOR(t):
+    'Return'
+    return mStateMachine.addToken(t);
+
 
 def t_TO_OPERATOR(t):
     'To'

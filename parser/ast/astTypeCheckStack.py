@@ -9,7 +9,9 @@ from astLabels import TYPE_OUTGOING_MESSAGE;
 from astLabels import TYPE_MSG_SEND_FUNCTION;
 from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
 from astLabels import AST_TYPED_SENDS_STATEMENT;
-
+from astLabels import AST_RETURN_STATEMENT;
+from astLabels import AST_PUBLIC_FUNCTION;
+from astLabels import AST_FUNCTION;
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
 
@@ -59,8 +61,53 @@ class TypeCheckContextStack():
 
         self.currentOutgoing = None;
         self.currentIncoming = None;
-        
 
+        # used to type check return statements to ensure that a
+        # function actually returns the type that it says it will.
+        self.currentPublicInternalNode = None;
+
+    def addCurrentPublicInternalNode(self,node):
+        if (node.label != AST_PUBLIC_FUNCTION) and (node.label != AST_FUNCTION):
+            errMsg = '\nBehram error: adding internal or public node with incorrect ';
+            errMsg += 'type.\n';
+            print(errMsg);
+            assert(False);
+
+        self.currentPublicInternalNode = node;
+
+    def checkReturnStatement(self,returnNode):
+        if (returnNode.label != AST_RETURN_STATEMENT):
+            errMsg = '\nBehram error: trying to check a ';
+            errMsg += 'return statement without a return statement node.\n';
+            print(errMsg);
+            assert(False);
+
+
+        if (self.currentPublicInternalNode == None):
+            errMsg = '\nReturn error.  You are only allowed to put Return ';
+            errMsg += 'statements in the body of a Public or Internal ';
+            errMsg += 'function.\n';
+            return TypeCheckError([returnNode],errMsg);
+
+
+        returnsTypeNode = self.currentPublicInternalNode.children[1];
+        declaredType = returnsTypeNode.value;
+        returnStatementType = returnNode.children[0].type;
+
+
+        if (declaredType != returnStatementType):
+            funcName = self.currentPublicInternalNode.children[0].value;
+            errMsg = '\nReturn error.  You have declared that the function ';
+            errMsg += 'named "' + funcName + '" ';
+            errMsg += 'should return type "' + declaredType + '", ';
+            errMsg += 'but your Return statement actually returns type "';
+            errMsg += returnStatementType + '".\n';
+            nodes= [returnsTypeNode,returnNode];
+            return TypeCheckError(nodes,errMsg);
+
+        return None;
+        
+        
     def addOutgoing(self,node):
         '''
         @param {astNode} of type TypedSendsStatement
@@ -72,6 +119,7 @@ class TypeCheckContextStack():
         if (node.label != AST_TYPED_SENDS_STATEMENT):
             errMsg = '\nBehram error: adding incoming node with incorrect ';
             errMsg += 'type.\n';
+            print(errMsg);
             assert(False);
             
         self.currentOutgoing = node;
@@ -87,6 +135,7 @@ class TypeCheckContextStack():
         if (node.label != AST_TYPED_SENDS_STATEMENT):
             errMsg = '\nBehram error: adding incoming node with incorrect ';
             errMsg += 'type.\n';
+            print(errMsg);
             assert(False);
         
         self.currentIncoming = node;
@@ -128,6 +177,8 @@ class TypeCheckContextStack():
 
         None if no errors.
         '''
+
+        # lkjs;
         if (declaredTypedSendsNode == None):
             errMsg = '\nBehram error: should have an incoming or outgoing node ';
             errMsg += 'if trying to check agreement.\n';
@@ -252,7 +303,10 @@ class TypeCheckContextStack():
         self.stack.pop();
         self.funcStack.pop();
         self.currentOutgoing = None;
-        self.currentIncoming = None;        
+        self.currentIncoming = None;
+        self.currentPublicInternalNode = None;
+
+
         
     def getIdentifierType(self,identifierName):
         '''

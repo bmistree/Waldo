@@ -767,6 +767,15 @@ class AstNode():
             typeStack.addIdentifier(name,declaredType,self,currentLineNo);
             self.type = declaredType;
 
+        elif(self.label == AST_RETURN_STATEMENT):
+            self.children[0].typeCheck(progText,typeStack);
+            
+            typeCheckError = typeStack.checkReturnStatement(self);
+            if (typeCheckError != None):
+                errorFunction(typeCheckError.errMsg,typeCheckError.nodes,typeCheckError.lineNos,progText);
+            self.type = TYPE_NOTHING;
+            
+            
         elif(self.label == AST_IDENTIFIER):
             name = self.value;
             typer = typeStack.getIdentifierType(name);
@@ -882,6 +891,11 @@ class AstNode():
                 # re-define type for OutgoingMessage
                 outgoingTypeNode = self.children[3];
                 typeStack.addOutgoing(outgoingTypeNode);
+            else:
+                # both public and internal functions place their
+                # return types in the second child slot.
+                typeStack.addCurrentPublicInternalNode(self);
+
                 
                 
             # type check the actual function body

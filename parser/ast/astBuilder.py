@@ -405,6 +405,7 @@ def p_Function(p):
         #function body node.
         p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
+
     
         
 def p_PublicFunction(p):
@@ -420,7 +421,7 @@ def p_PublicFunction(p):
         #function body node.
         p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
-                      
+        
 
 def p_FunctionBody(p):
     '''FunctionBody : FunctionBody FunctionBodyStatement
@@ -442,10 +443,25 @@ def p_FunctionBodyStatement(p):
                              | AssignmentStatement SEMI_COLON
                              | ConditionStatement
                              | ReturnableExpression SEMI_COLON
+                             | ReturnStatement SEMI_COLON
     '''
     p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);
 
+def p_ReturnStatement(p):
+    '''
+    ReturnStatement : RETURN_OPERATOR ReturnableExpression
+                    | RETURN_OPERATOR Empty
+    '''
+    p[0] = AstNode(AST_RETURN_STATEMENT,p.lineno(1),p.lexpos(1));
+    if (isEmptyNode(p[2])):
+        # insert type nothing node so can still perform check
+        p[0].addChild(AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_NOTHING));
+    else:
+        # insert returnable expression
+        p[0].addChild(p[2]);
+
+    
 def p_SendStatement(p):
     '''SendStatement : SEND_OPERATOR Identifier TO_OPERATOR Identifier
     '''
