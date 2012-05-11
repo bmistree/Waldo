@@ -202,7 +202,22 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         
         returnString = indentString(returnString,indentLevel);
 
+    elif(astNode.label == AST_RETURN_STATEMENT):
+        whatToReturnNode = astNode.children[0];
+        
 
+        returnString = 'return ';
+        if (whatToReturnNode.label == TYPE_NOTHING):
+            # if node is TYPE_NOTHING, means that user did not want to
+            # return anything, just halt execution of function.
+            pass
+        else:
+            whatToReturnString = runFunctionBodyInternalEmit(whatToReturnNode,protObj,endpoint,prefix,0);
+            returnString += whatToReturnString;
+
+        returnString = indentString(returnString,indentLevel);
+
+        
     elif (astNode.label == AST_BRACKET_STATEMENT):
         indexIntoNode = astNode.children[0];
         indexNode = astNode.children[1];

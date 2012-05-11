@@ -39,6 +39,11 @@ Ping
             Print('Initiating send');
             one();
         }
+
+        Public Function getResponses() Returns Number
+        {
+            Return responses;
+        }   
         
         MsgSend one () OutgoingMessage { Number responses }
         {

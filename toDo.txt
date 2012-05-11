@@ -3,6 +3,7 @@ Command to run from parser/ast/
 
 Actually emit return statement.
 
+Deep copy returns from public statements.
     
 In examples:
 may want to make Ready a keyword so that do not have conflicts with
