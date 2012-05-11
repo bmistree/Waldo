@@ -12,6 +12,7 @@ from astLabels import AST_TYPED_SENDS_STATEMENT;
 from astLabels import AST_RETURN_STATEMENT;
 from astLabels import AST_PUBLIC_FUNCTION;
 from astLabels import AST_FUNCTION;
+from astLabels import AST_ONCREATE_FUNCTION;
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
 
@@ -67,7 +68,8 @@ class TypeCheckContextStack():
         self.currentPublicInternalNode = None;
 
     def addCurrentPublicInternalNode(self,node):
-        if (node.label != AST_PUBLIC_FUNCTION) and (node.label != AST_FUNCTION):
+        if ((node.label != AST_PUBLIC_FUNCTION) and (node.label != AST_FUNCTION) and
+            (node.label != AST_ONCREATE_FUNCTION)):
             errMsg = '\nBehram error: adding internal or public node with incorrect ';
             errMsg += 'type.\n';
             print(errMsg);
@@ -534,8 +536,14 @@ class FuncContext():
         '''
         prevDecl = self.getFuncIdentifierType(funcIdentifierName);
         if (prevDecl != None):
-            errMsg =  '\nError.  You already declared a function named ';
-            errMsg += '"' + funcIdentifierName + '".  You cannot declare another.\n';
+
+            if (astNode.label == AST_ONCREATE_FUNCTION):
+                errMsg = '\nOnCreate error.  You can only declare one ';
+                errMsg += 'OnCreate function per endpoint.\n';
+            else:
+                errMsg =  '\nError.  You already declared a function named ';
+                errMsg += '"' + funcIdentifierName + '".  You cannot declare another.\n';
+                
             nodes = [astNode,prevDecl.astNode];
             return TypeCheckError(nodes,errMsg);
 

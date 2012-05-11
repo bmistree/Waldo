@@ -310,6 +310,8 @@ def p_EndpointFunctionSection(p):
                                |  MsgSendFunction
                                |  MsgReceiveFunction EndpointFunctionSection
                                |  MsgReceiveFunction
+                               |  OnCreateFunction EndpointFunctionSection
+                               |  OnCreateFunction 
                                '''
     
     p[0] = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos);
@@ -461,7 +463,16 @@ def p_ReturnStatement(p):
         # insert returnable expression
         p[0].addChild(p[2]);
 
+
+def p_OnCreateFunction(p):
+    '''
+    OnCreateFunction : ONCREATE  LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+    '''
+    p[0] = AstNode(AST_ONCREATE_FUNCTION,p.lineno(1),p.lexpos(1));
+    onCreateName = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
+    p[0].addChildren([onCreateName,p[3],p[6]]);
     
+
 def p_SendStatement(p):
     '''SendStatement : SEND_OPERATOR Identifier TO_OPERATOR Identifier
     '''

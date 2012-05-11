@@ -33,6 +33,19 @@ Ping
 {
         Number responses = 0;
         Bool something;
+
+        OnCreate (Bool m)
+        {
+           String toPrint = 'Initialized False';
+           If (m)
+           {
+              toPrint = 'Initialized True';
+           }
+
+           Print(toPrint);
+        }
+
+        
         
         Public Function initiateSend() Returns Nothing
         {

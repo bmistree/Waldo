@@ -31,6 +31,8 @@ tokens = (
     "TO_OPERATOR",
     "EQUALS",
 
+    "ONCREATE",
+    
     #boolean logic
     "IF",
     "ELSE_IF",
@@ -247,7 +249,9 @@ def t_RECEIVES(t):
     "IncomingMessage";
     return mStateMachine.addToken(t);
 
-
+def t_ONCREATE(t):
+    "OnCreate";
+    return mStateMachine.addToken(t);
 
 def t_SEND_ARROW(t):
     '-\>'

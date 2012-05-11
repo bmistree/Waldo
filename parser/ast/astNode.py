@@ -410,13 +410,22 @@ class AstNode():
             self.lineNo = self.children[0].lineNo;
             funcMatchObj = typeStack.getFuncIdentifierType(funcName);
 
+
+            
             if (funcMatchObj == None):
                 errMsg = '\nError trying to call function named "' + funcName + '".  ';
                 errMsg += 'That function is not defined anywhere.\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);            
                 return;
 
+            if (funcMatchObj.element.astNode.label == AST_ONCREATE_FUNCTION):
+                errMsg = '\nError trying to call OnCreate function.  ';
+                errMsg += 'You are not allowed to call OnCreate yourself.  ';
+                errMsg += 'The Waldo system itself will call the function ';
+                errMsg += 'when creating your endpoint.\n';
+                errorFunction(errMsg,[self],[self.lineNo],progText);            
 
+            
             #set my type as that returned by the function
             self.type = funcMatchObj.getReturnType();
 
@@ -801,7 +810,8 @@ class AstNode():
         elif ((self.label == AST_PUBLIC_FUNCTION) or
               (self.label == AST_FUNCTION) or
               (self.label == AST_MSG_SEND_FUNCTION) or
-              (self.label == AST_MSG_RECEIVE_FUNCTION)):
+              (self.label == AST_MSG_RECEIVE_FUNCTION) or
+              (self.label == AST_ONCREATE_FUNCTION)):
             '''
             begins type check for body of the function, this code
             pushes arguments into context and then calls recursive
@@ -846,6 +856,9 @@ class AstNode():
                 # 1 should contain name of the IncomingMessage;
                 funcBodyIndex = 4;
                 funcDeclArgListIndex = None;
+            elif(self.label == AST_ONCREATE_FUNCTION):
+                funcBodyIndex = 2;
+                funcDeclArgListIndex = 1;
             else:
                 errMsg = '\nBehram error: invalid function ';
                 errMsg += 'type when type checking functions\n';
@@ -1029,7 +1042,8 @@ class AstNode():
         if ((self.label != AST_PUBLIC_FUNCTION) and
             (self.label != AST_FUNCTION) and
             (self.label != AST_MSG_SEND_FUNCTION) and
-            (self.label != AST_MSG_RECEIVE_FUNCTION)):
+            (self.label != AST_MSG_RECEIVE_FUNCTION) and
+            (self.label != AST_ONCREATE_FUNCTION)):
             print('\n\n');
             print(self.label);
             print('\n\n');
@@ -1059,8 +1073,10 @@ class AstNode():
             returnType = TYPE_MSG_RECEIVE_FUNCTION;
             argDeclIndex = None;
 
+        elif(self.label == AST_ONCREATE_FUNCTION):
+            returnType = TYPE_NOTHING;
+            argDeclIndex = 1;
 
-            
 
         #get types of function arguments
             
@@ -1071,8 +1087,6 @@ class AstNode():
         if (argDeclIndex != None):
             self.children[argDeclIndex].typeCheck(progText,typeStack);
         typeStack.popContext();
-
-
         
         argTypeList = [];
         if (argDeclIndex != None):
