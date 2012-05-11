@@ -3,6 +3,7 @@
 import sys;
 sys.path.append('../../lexer/')
 from waldoLex import tokens;
+from waldoLex import ONCREATE_TOKEN;
 from waldoLex import constructLexer;
 from astLabels import *;
 from astNode import AstNode;
@@ -755,6 +756,13 @@ def p_Empty(p):
 
     
 def p_error(p):
+
+    print(p.value);
+    if (p.value == ONCREATE_TOKEN):
+        errMsg = '\nError: OnCreate is a reserved word that  ';
+        errMsg += 'cannot be called directly from other functions.\n';
+        print(errMsg);
+
 
     setErrorEncountered();
     if (p == None):

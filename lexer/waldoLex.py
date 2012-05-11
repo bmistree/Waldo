@@ -2,6 +2,9 @@
 
 from ply import lex
 
+ONCREATE_TOKEN =  "OnCreate";
+
+
 tokens = (
     #high-level structure
     "ENDPOINT",
