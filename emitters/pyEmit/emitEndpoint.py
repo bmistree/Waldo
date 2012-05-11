@@ -120,9 +120,6 @@ class Endpoint():
         assert(False);
         
     def addMsgReceiveFunction(self,msgReceiveFuncName,protObj):
-        print('\nWarning when adding msg receive: may not want to change name early.\n');
-        # note: may not want to do the addvarorfuncnameto map, but
-        # instead, use the pythonized version of the name;
         msgRecvFunc = emitFunctions.MsgReceiveFunction(msgReceiveFuncName,protObj);
         self.msgReceiveMethods.append(msgRecvFunc);
         return msgRecvFunc;
@@ -146,9 +143,6 @@ class Endpoint():
 
         
     def addMsgSendFunction(self,msgSendFuncName,protObj):
-        print('\nWarning when adding msg receive: may not want to change name early.\n');
-        # note: may not want to do the addvarorfuncnameto map, but
-        # instead, use the pythonized version of the name;
         msgSendFunc = emitFunctions.MsgSendFunction(msgSendFuncName,protObj);
         self.msgSendMethods.append(msgSendFunc);
         return msgSendFunc;
