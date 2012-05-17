@@ -763,16 +763,16 @@ def p_Empty(p):
     
 def p_error(p):
 
-    errPrint(p.value);
-    if (p.value == ONCREATE_TOKEN):
-        errMsg = '\nError: OnCreate is a reserved word that  ';
-        errMsg += 'cannot be called directly from other functions.\n';
-        errPrint(errMsg);
+
 
 
     setErrorEncountered();
     if (p == None):
         errPrint('\nError: end of file and missing some structure\n');
+    elif(p.value == ONCREATE_TOKEN):
+        errMsg = '\nError: OnCreate is a reserved word that  ';
+        errMsg += 'cannot be called directly from other functions.\n';
+        errPrint(errMsg);
     else:
         errPrint('\nSyntax error on "' + p.value + '"');
         errPrint('Line number: ' + str(p.lineno));
