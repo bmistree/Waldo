@@ -1281,18 +1281,19 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
     @param {String} progText -- The source text of the program.
     '''
     
-    errPrint('\n\n');
+    # errPrint('\n\n');
     errPrint('*************************');
-    errPrint('Error in type checking:');
+    # errPrint('Error in type checking:');
     errPrint(errorString);
 
-    errPrint('-------\nAST node labels:');
-    for s in astNodes:
-        errPrint(s.label)
+    # errPrint('-------\nAST node labels:');
+    # for s in astNodes:
+    #     errPrint(s.label)
         
     errPrint('-------\nLine numbers:');
     for s in lineNumbers:
         errPrint(s);
+
 
     programTextArray = progText.split('\n');
     errPrint('-------\nProgram text:');
@@ -1317,3 +1318,15 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
     errPrint('*************************');
     errPrint('\n\n');
 
+    raise WaldoTypeCheckException('');
+
+
+class WaldoTypeCheckException(Exception):
+
+   def __init__(self, errMsg):
+       self.value = errMsg;
+
+   def __str__(self):
+       return repr(self.value)
+    
+    

@@ -9,6 +9,8 @@ from astBuilder import getParser;
 from astBuilder import getErrorEncountered;
 from astBuilder import resetErrorEncountered;
 
+from astNode import WaldoTypeCheckException;
+
 import json;
 astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'emitters','pyEmit');
 sys.path.insert(0, astEmitPath);
@@ -84,7 +86,11 @@ def compileText(progText,outputErrStream):
         resetErrorEncountered();
         return None;
 
-    astRootNode.typeCheck(progText);
+    try:
+        astRootNode.typeCheck(progText);
+    except WaldoTypeCheckException as excep:
+        resetErrorEncountered();
+        return None;
 
     
     if (getErrorEncountered()):
@@ -121,7 +127,10 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
 
         
         if(typeCheckArg):
-            ast.typeCheck(fileText);
+            try:
+                ast.typeCheck(fileText);
+            except WaldoTypeCheckException as excep:
+                pass;
 
             
         if (emitArg != None):

@@ -475,7 +475,7 @@ class TypeCheckContextStack():
             traceError = self.traceManager.addMsgRecvFunction(astNode, currentEndpointName);
 
         if (traceError != None):
-            returnTraceError;
+            return traceError;
 
         #add the function identifier itself to function context.
         traceError = self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,astNode,lineNum);

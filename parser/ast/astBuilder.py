@@ -37,7 +37,7 @@ ERROR_NUM_LINES_EITHER_SIDE = 4;
 #note: otherwise, starts at first rule.  
 start = 'RootExpression';
 #need to have something named lexer for parser to chew into
-lexer = constructLexer();
+lexer = None;
 
 
 def p_RootExpression(p):
@@ -828,19 +828,14 @@ def isEmptyNode(nodeToCheck):
 
 
 def getParser(programText=None,outputErrsTo=sys.stderr):
-# def getParser(programText=None):    
+    global lexer;
+    lexer = constructLexer();
+
     global ProgramText;
     returner = yacc.yacc();
     ProgramText = programText;
 
     setOutputErrorsTo(outputErrsTo);
-    # global OutputErrsTo;
-    # OutputErrsTo = outputErrsTo;
-
-    # if (outputErrsTo == sys.stderr):
-    #     print('\nIt was stderr\n');
-    # else:
-    #     print('\nIt was something else\n');
     
     return returner;
 
