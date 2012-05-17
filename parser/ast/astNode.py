@@ -1265,6 +1265,12 @@ def getErrorEncountered():
     global TYPE_ERROR_ENCOUNTERED;
     return TYPE_ERROR_ENCOUNTERED;
 
+def resetErrorEncountered():
+    global TYPE_ERROR_ENCOUNTERED;
+    TYPE_ERROR_ENCOUNTERED = False;
+
+
+
 def errorFunction(errorString,astNodes,lineNumbers,progText):
     setErrorEncountered();
     

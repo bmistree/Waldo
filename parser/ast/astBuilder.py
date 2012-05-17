@@ -13,6 +13,7 @@ from astLabels import *;
 from astNode import AstNode;
 from astNode import setErrorEncountered;
 from astNode import getErrorEncountered as astGetErrorEncountered;
+from astNode import resetErrorEncountered as astResetErrorEncountered;
 import ply.yacc as yacc;
 from parserUtil import errPrint;
 from parserUtil import setOutputErrorsTo;
@@ -846,4 +847,7 @@ def getParser(programText=None,outputErrsTo=sys.stderr):
 
 def getErrorEncountered():
     return astGetErrorEncountered();
+
+def resetErrorEncountered():
+    return astResetErrorEncountered();
 

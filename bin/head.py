@@ -7,6 +7,7 @@ astParserPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','p
 sys.path.insert(0, astParserPath);
 from astBuilder import getParser;
 from astBuilder import getErrorEncountered;
+from astBuilder import resetErrorEncountered;
 
 import json;
 astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'emitters','pyEmit');
@@ -80,14 +81,20 @@ def compileText(progText,outputErrStream):
     astRootNode, other = genAst(progText,outputErrStream);
     if (astRootNode == None):
         # means there was an error
+        resetErrorEncountered();
         return None;
 
     astRootNode.typeCheck(progText);
 
+    
     if (getErrorEncountered()):
+        resetErrorEncountered();
+
+        
         # means there was a type error.  should not continue.
         return None;
-    
+
+    resetErrorEncountered();
     emitText = astEmit.runEmitter(astRootNode,None,outputErrStream);
     return emitText; # will be none if encountered an error during
                      # emit.  otherwise, file text.
