@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from parserUtil import errPrint;
+
 
 def endpointFuncNameToString(endpointName, funcName):
     return endpointName + '.' + funcName;
@@ -370,7 +372,7 @@ class TraceLine ():
         if (len(self.stringifiedTraceItems) == 0):
             errMsg = '\nBehram error: you should never have a case where ';
             errMsg += 'self.stringifiedTraceItems is empty.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         stringifiedFuncName = endpointFuncNameToString(endpointName,funcName);

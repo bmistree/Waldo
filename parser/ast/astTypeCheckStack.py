@@ -15,6 +15,7 @@ from astLabels import AST_FUNCTION;
 from astLabels import AST_ONCREATE_FUNCTION;
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
+from parserUtil import errPrint;
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -72,7 +73,7 @@ class TypeCheckContextStack():
             (node.label != AST_ONCREATE_FUNCTION)):
             errMsg = '\nBehram error: adding internal or public node with incorrect ';
             errMsg += 'type.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         self.currentPublicInternalNode = node;
@@ -81,7 +82,7 @@ class TypeCheckContextStack():
         if (returnNode.label != AST_RETURN_STATEMENT):
             errMsg = '\nBehram error: trying to check a ';
             errMsg += 'return statement without a return statement node.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
 
@@ -121,7 +122,7 @@ class TypeCheckContextStack():
         if (node.label != AST_TYPED_SENDS_STATEMENT):
             errMsg = '\nBehram error: adding incoming node with incorrect ';
             errMsg += 'type.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
             
         self.currentOutgoing = node;
@@ -137,7 +138,7 @@ class TypeCheckContextStack():
         if (node.label != AST_TYPED_SENDS_STATEMENT):
             errMsg = '\nBehram error: adding incoming node with incorrect ';
             errMsg += 'type.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
         
         self.currentIncoming = node;
@@ -184,7 +185,7 @@ class TypeCheckContextStack():
         if (declaredTypedSendsNode == None):
             errMsg = '\nBehram error: should have an incoming or outgoing node ';
             errMsg += 'if trying to check agreement.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
         
         # first checks that everything that is in
@@ -275,7 +276,7 @@ class TypeCheckContextStack():
             errMsg = '\nBehram error: incoming message is not defined ';
             errMsg += 'by the time that you want to check that a field ';
             errMsg += 'exists.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         for sendLine in currentNode.children:
@@ -300,7 +301,7 @@ class TypeCheckContextStack():
 
     def popContext(self):
         if (len(self.stack) <= 0):
-            print('\nBehram Error.  Empty type context stack.  Cannot pop\n');
+            errPrint('\nBehram Error.  Empty type context stack.  Cannot pop\n');
             assert(False);
         self.stack.pop();
         self.funcStack.pop();
@@ -399,7 +400,7 @@ class TypeCheckContextStack():
         if (len(self.stack) <= 0):
             errMsg = '\nBehram Error.  Empty type context stack.  ';
             errMsg += 'Cannot set value should be returning\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         self.stack[-1].setShouldReturn(typeToReturn);
@@ -408,7 +409,7 @@ class TypeCheckContextStack():
         if (len(self.stack) <= 0):
             errMsg = '\nBehram Error.  Empty type context stack.  ';
             errMsg += 'Cannot set value should be returning\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
         
         return self.stack[-1].getShouldReturn();
@@ -431,7 +432,7 @@ class TypeCheckContextStack():
     def addIdentifier(self,identifierName,identifierType,astNode,lineNum = None):
 
         if(len(self.stack) <= 1):
-            print('\nBehram Error.  Cannot insert into type check stack because stack is empty.\n');
+            errPrint('\nBehram Error.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
             
         self.stack[-1].addIdentifier(identifierName,identifierType,astNode,lineNum);
@@ -452,7 +453,7 @@ class TypeCheckContextStack():
         
         '''
         if(len(self.funcStack) <= 1):
-            print('\nBehram Error.  Cannot insert into type check stack because stack is empty.\n');
+            errPrint('\nBehram Error.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
 
 
@@ -463,7 +464,7 @@ class TypeCheckContextStack():
         if (currentEndpointName == None):
             errMsg = '\nBehram error: should ony be adding a ';
             errMsg += 'func identifier in the body of an endpoint section.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         traceError = None;
@@ -560,7 +561,7 @@ class FuncContext():
             (funcIdentifierType != TYPE_MSG_SEND_FUNCTION) and
             (funcIdentifierType != TYPE_MSG_RECEIVE_FUNCTION)):
             
-            print('\nBehram Error.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
+            errPrint('\nBehram Error.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
             assert(False);
 
         self.dict[funcIdentifierName] = FuncContextElement(funcIdentifierType,funcArgTypes,astNode,lineNum);
@@ -740,7 +741,7 @@ class FuncCallArgMatchError():
         errors has actually been set before being used.
         '''
         if (not self.valid):
-            print('\nValidity check for FuncCallArgMatchError object failed.\n');
+            errPrint('\nValidity check for FuncCallArgMatchError object failed.\n');
             assert(False);
         
         
@@ -757,7 +758,7 @@ class FuncCallArgMatchError():
             errMsg += 'mismatch error if have declared the error type as a ';
             errMsg += 'type mismatch error.';
             errMsg += '\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
             
         self.expected = numArgsExpected;
@@ -775,7 +776,7 @@ class FuncCallArgMatchError():
             errMsg = '\nBehram error: should not add a specific argument ';
             errMsg += 'type mismatch error when already specified that ';
             errMsg += 'error was a length mismatch.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         #first error added
@@ -832,7 +833,7 @@ class Context():
         '''
         if (self.getIdentifierType(identifierName) != None):
             #FIXME: this should turn into a more formal error-reporting system.
-            print('\nError, overwriting existing type with name ' + identifierName + '\n');
+            errPrint('\nError, overwriting existing type with name ' + identifierName + '\n');
             assert(False);
 
         prevDecl = self.getIdentifierType(identifierName);
@@ -847,7 +848,7 @@ class Context():
         if ((identifierType != TYPE_BOOL) and (identifierType != TYPE_NUMBER) and
             (identifierType != TYPE_STRING) and (identifierType != TYPE_INCOMING_MESSAGE) and
             (identifierType != TYPE_OUTGOING_MESSAGE)):
-            print('\nBehram Error.  Unrecognized identifierType insertion: ' + identifierType + '\n');
+            errPrint('\nBehram Error.  Unrecognized identifierType insertion: ' + identifierType + '\n');
             assert(False);
 
         self.dict[identifierName] = ContextElement(identifierType,astNode,lineNum);

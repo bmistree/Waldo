@@ -320,9 +320,6 @@ def t_NOTHING_TYPE(t):
     "Nothing"
     return mStateMachine.addToken(t);
 
-# def t_MESSAGE_TYPE(t):
-#     "Message"
-#     return mStateMachine.addToken(t);
 
 def t_NOT(t):
     'Not'

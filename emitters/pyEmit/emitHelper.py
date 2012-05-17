@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from astLabels import *;
-
+import sys;
 
 # pass one of these parameters to runFunctionBodyInternalEmit so that
 # the function knows whether to prefix global and shared variables
@@ -10,6 +10,8 @@ from astLabels import *;
 INTERMEDIATE_PREFIX = 'self.intermediate.';
 COMMITTED_PREFIX = 'self.committed.';
 SELF_PREFIX = 'self.'
+
+OutputErrsTo = sys.stderr;
 
 def indentString(string,indentAmount):
     '''
@@ -37,6 +39,14 @@ def indentString(string,indentAmount):
 
     return returnString;
 
+def errPrint(toPrint):
+    '''
+    @param{String} toPrint
+    Outputs toPrint on stderr
+    '''
+    print >> OutputErrsTo , toPrint
+
+
 
 
 def getDefaultValForType(astTypedNode):
@@ -58,7 +68,7 @@ def getDefaultValForType(astTypedNode):
     else:
         errMsg = '\nBehram error.  Unknown declaration type when ';
         errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
-        print(errMsg);
+        errPrint(errMsg);
         assert(False);
 
     return decString;
@@ -91,7 +101,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         
         errMsg = '\nBehram error: runFunctionBodyInternalEmit should be passed ';
         errMsg += 'a valid prefix.\n';
-        print(errMsg);
+        errPrint(errMsg);
         assert(False);
 
         
@@ -166,7 +176,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         else:
             errMsg = '\nBehram error.  Unknown operator type when ';
             errMsg += 'emitting from runFunctionBodyInternalEmit.\n'
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
             
         lhsNode = astNode.children[0];
@@ -264,7 +274,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         else:
             errMsg = '\nBehram error: got an unknown condition label ';
             errMsg += 'in runFunctionBodyInternalEmit.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
             
         booleanConditionNode = astNode.children[0];
@@ -357,7 +367,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         if (endpoint.currentlyEmittingFunction == None):
             errMsg = '\nBehram error when processing send statement.  ';
             errMsg += 'Endpoint is not tracking a currentlyEmittingFunction.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         msgNode = astNode.children[0];
@@ -381,7 +391,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         else:
             errMsg = '\nBehram error.  In emission of assignment statement, ';
             errMsg += 'should have gotten either an identifier or bracekt.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
                 
@@ -399,7 +409,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
     else:
         errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';
         errMsg += 'do not know how to handle label ' + astNode.label + '\n';
-        print(errMsg);
+        errPrint(errMsg);
 
 
     return returnString;

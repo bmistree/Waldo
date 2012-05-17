@@ -4,7 +4,8 @@ import emitHelper;
 import emitFunctions;
 import emitContext;
 import random;    
-        
+from emitHelper import errPrint;
+
 class Endpoint():
     def __init__(self,name,myPriority,theirPriority):
         '''
@@ -53,7 +54,7 @@ class Endpoint():
     def addOnCreateFunction(self,onCreateName,onCreateAstNode,protObj):
         if (self.onCreateMethod != None):
             errMsg = '\nBehram error.  Already had an onCreate method.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         self.onCreateMethod = emitFunctions.OnCreateFunction(onCreateName,onCreateAstNode,protObj);
@@ -126,7 +127,7 @@ class Endpoint():
 
         errMsg = '\nBehram error: could not find a message receive method when ';
         errMsg += 'trying to set its astNode.\n';
-        print(errMsg);
+        errPrint(errMsg);
         assert(False);
         
     def addMsgReceiveFunction(self,msgReceiveFuncName,protObj):
@@ -148,7 +149,7 @@ class Endpoint():
 
         errMsg = '\nBehram error: could not find a message send method when ';
         errMsg += 'trying to set its astNode.\n';
-        print(errMsg);
+        errPrint(errMsg);
         assert(False);
 
         

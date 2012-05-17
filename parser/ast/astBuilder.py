@@ -14,6 +14,8 @@ from astNode import AstNode;
 from astNode import setErrorEncountered;
 from astNode import getErrorEncountered as astGetErrorEncountered;
 import ply.yacc as yacc;
+from parserUtil import errPrint;
+from parserUtil import setOutputErrorsTo;
 
 
 #Program text that we are parsing.  Set in getParser function.  Allows
@@ -204,7 +206,7 @@ def p_MessageLiteral(p):
     elif(len(p) == 3):
         p[0]= AstNode(AST_MESSAGE_LITERAL,p.lineno(1),p.lexpos(1));
     else:
-        print('\nError in MessageLiteral.  Unexpected length to match\n');
+        errPrint('\nError in MessageLiteral.  Unexpected length to match\n');
         assert(False);
 
         
@@ -221,7 +223,7 @@ def p_InternalMessageLiteral(p):
     elif(len(p) == 2):
         p[0].addChild(p[1]);
     else:
-        print('\nError in InternalMessageLiteral.  Unexpected length to match\n');
+        errPrint('\nError in InternalMessageLiteral.  Unexpected length to match\n');
         assert(False);
 
     
@@ -247,7 +249,7 @@ def p_Number(p):
     else:
         errMsg = '\nBehram error when parsing for number.  Incorrect ';
         errMsg += 'num statements when matching.\n';
-        print(errMsg);
+        errPrint(errMsg);
         assert(False);
 
         
@@ -294,7 +296,7 @@ def p_EndpointBodySection(p):
         p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linPos));
         p[0].addChild(p[1]);
     else:
-        print('\nError in endpoint body section.  Got an unusual number of arguments.\n');
+        errPrint('\nError in endpoint body section.  Got an unusual number of arguments.\n');
         assert(False);
     
 
@@ -352,7 +354,7 @@ def p_TypedMessageSendsLines(p):
     elif(len(p) == 2):
         p[0].addChild(p[1]);
     else:
-        print('\nError in TypedMessageSendsLines.  Unexpected length to match\n');
+        errPrint('\nError in TypedMessageSendsLines.  Unexpected length to match\n');
         assert(False);
 
         
@@ -440,7 +442,7 @@ def p_FunctionBody(p):
     elif (len(p) == 2):
         p[0].addChild(p[1]);
     else:
-        print('\nError statement length mismatch in FunctionBody\n');
+        errPrint('\nError statement length mismatch in FunctionBody\n');
         assert(False);
 
         
@@ -526,7 +528,7 @@ def p_ElseStatement(p):
         p[0] = AstNode(AST_ELSE_STATEMENT,p[1].lineNo,p[1].linePos);
 
     else:
-        print('\nIncorrect match count in ElseStatement.\n');
+        errPrint('\nIncorrect match count in ElseStatement.\n');
         assert(False);
 
 
@@ -545,7 +547,7 @@ def p_SingleLineOrMultilineCurliedBlock(p):
     elif(len(p) == 3):
         p[0] = AstNode(AST_EMPTY);
     else:
-        print('\nIncorrect match vector in SingleLineOrMultilineCurliedBlock\n');
+        errPrint('\nIncorrect match vector in SingleLineOrMultilineCurliedBlock\n');
         assert(False);
 
     
@@ -571,7 +573,7 @@ def p_BooleanOperator(p):
     elif(p[1] == '!='):
         p[0] = AstNode(AST_BOOL_NOT_EQUALS,p.lineno(1),p.lexpos(1));        
     else:
-        print('\nIncorrect boolean operator: ' + p[1] + '\n');
+        errPrint('\nIncorrect boolean operator: ' + p[1] + '\n');
         assert(False);
     
 
@@ -599,7 +601,7 @@ def p_ReturnableExpression(p):
     elif(len(p) == 4):
         p[0] = p[2];
     else:
-        print('\nIncorrect number of matches in ReturnableExpression\n');
+        errPrint('\nIncorrect number of matches in ReturnableExpression\n');
         assert(False);
 
 def p_BinaryOperator(p):
@@ -620,7 +622,7 @@ def p_ParenthesizedExpression(p):
     elif(len(p) == 2):
         p[0] = p[1];
     else:
-        print('\nIncorrect matching in ReturnableExpression\n');
+        errPrint('\nIncorrect matching in ReturnableExpression\n');
         assert(False);
 
         
@@ -637,7 +639,7 @@ def p_InternalReturnableExpression(p):
         p[0].addChild(p[1]);
         p[0].addChild(p[3]);
     else:
-        print('\nIn InternalReturnableExpression, incorrect number of matches\n');
+        errPrint('\nIn InternalReturnableExpression, incorrect number of matches\n');
         assert(False);
     
     
@@ -653,7 +655,7 @@ def p_NonBooleanStatement(p):
     elif(len(p) == 2):
         p[0] = p[1];
     else:
-        print('\nIncorrect number of matches in NonBooleanStatement\n');
+        errPrint('\nIncorrect number of matches in NonBooleanStatement\n');
         assert(False);
         
     
@@ -666,7 +668,7 @@ def p_PlusMinusOperator(p):
     elif(p[1] == '-'):
         p[0] = AstNode(AST_MINUS, p.lineno(1),p.lexpos(1));
     else:
-        print('\nIncorrect number of matches in PlusMinusOperator\n');
+        errPrint('\nIncorrect number of matches in PlusMinusOperator\n');
         assert(False);
 
 
@@ -680,7 +682,7 @@ def p_MultDivStatement(p):
     elif(len(p) == 2):
         p[0] = p[1];
     else:
-        print('\nIncorrect number of matches in MultDivStatement\n');
+        errPrint('\nIncorrect number of matches in MultDivStatement\n');
         assert(False);
 
         
@@ -693,7 +695,7 @@ def p_MultDivOperator(p):
     elif(p[1] == '/'):
         p[0] = AstNode(AST_DIVIDE, p.lineno(1),p.lexpos(1));
     else:
-        print('\nIncorrect number of matches in MultDivOperator\n');
+        errPrint('\nIncorrect number of matches in MultDivOperator\n');
         assert(False);
     
     
@@ -710,7 +712,7 @@ def p_FunctionDeclArgList(p):
         if (not isEmptyNode(p[1])):
             p[0].addChild(p[1]);
     else:
-        print('\nError in FunctionDeclArgList.  Unexpected length to match\n');
+        errPrint('\nError in FunctionDeclArgList.  Unexpected length to match\n');
         assert(False);
 
 
@@ -734,7 +736,7 @@ def p_FunctionArgList(p):
         if (not isEmptyNode(p[1])):
             p[0].addChild(p[1]);
     else:
-        print('\nError in FunctionArgList.  Unexpected length to match\n');
+        errPrint('\nError in FunctionArgList.  Unexpected length to match\n');
         assert(False);
         
 
@@ -761,20 +763,20 @@ def p_Empty(p):
     
 def p_error(p):
 
-    print(p.value);
+    errPrint(p.value);
     if (p.value == ONCREATE_TOKEN):
         errMsg = '\nError: OnCreate is a reserved word that  ';
         errMsg += 'cannot be called directly from other functions.\n';
-        print(errMsg);
+        errPrint(errMsg);
 
 
     setErrorEncountered();
     if (p == None):
-        print('\nError: end of file and missing some structure\n');
+        errPrint('\nError: end of file and missing some structure\n');
     else:
-        print('\nSyntax error on "' + p.value + '"');
-        print('Line number: ' + str(p.lineno));
-        print('\n');
+        errPrint('\nSyntax error on "' + p.value + '"');
+        errPrint('Line number: ' + str(p.lineno));
+        errPrint('\n');
 
         if (ProgramText != None):
             #have program text, can actually print out the error.
@@ -804,7 +806,7 @@ def p_error(p):
                     lexPosLine += '^\n';
                     errorText += lexPosLine;
 
-            print(errorText);
+            errPrint(errorText);
 
 
 def findErrorCol(progText,p):
@@ -824,12 +826,24 @@ def isEmptyNode(nodeToCheck):
     return (nodeToCheck.label == AST_EMPTY);
 
 
-def getParser(programText=None):
+def getParser(programText=None,outputErrsTo=sys.stderr):
+# def getParser(programText=None):    
     global ProgramText;
     returner = yacc.yacc();
     ProgramText = programText;
+
+    setOutputErrorsTo(outputErrsTo);
+    # global OutputErrsTo;
+    # OutputErrsTo = outputErrsTo;
+
+    # if (outputErrsTo == sys.stderr):
+    #     print('\nIt was stderr\n');
+    # else:
+    #     print('\nIt was something else\n');
+    
     return returner;
 
 
 def getErrorEncountered():
     return astGetErrorEncountered();
+

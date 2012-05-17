@@ -3,11 +3,19 @@ from astLabels import *;
 import emitHelper;
 import emitFunctions;
 import emitEndpoint;
+from emitHelper import errPrint;
 
-def runEmitter(astNode,protObj=None):
+from emitHelper import OutputErrsTo;
+
+def runEmitter(astNode,protObj=None,errOutputTo=None):
     '''
     @returns{String or None} -- See comments at end of function.
     '''
+
+    if (errOutputTo != None):
+        global OutputErrsTo;
+        OutputErrsTo = errOutputTo;
+    
     
     if (astNode.label == AST_ROOT):
         #getting protocol
@@ -54,7 +62,7 @@ def runEmitter(astNode,protObj=None):
 
         if (len(astNode.children) == 0):
             errMsg = '\nBehram error: in astEmit, trace line is emtpy.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         msgSendTraceItem = astNode.children[0];
@@ -161,15 +169,15 @@ def runEmitter(astNode,protObj=None):
 
 
     else:
-        print('\nIn emitter.  Not sure what to do with label ');
-        print(astNode.label);
-        print('\n\n');
+        errPrint('\nIn emitter.  Not sure what to do with label ');
+        errPrint(astNode.label);
+        errPrint('\n\n');
 
 
         
     if (protObj == None):
         errMsg = '\nBehram error: protObj should be a protocolObject\n';
-        print(errMsg);
+        errPrint(errMsg);
         assert(False);
 
 
@@ -203,7 +211,7 @@ class ProtocolObject():
         else:
             errMsg = '\nBehram error: Trying to add too many endpoints to ';
             errMsg += 'message stream in addEndpoint of ProtocolObject.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
                 # protObj.ept2 = emitEndpoint.Endpoint(ept2Name);
 
@@ -211,7 +219,7 @@ class ProtocolObject():
         if (self.currentEndpointName != endName):
             errMsg = '\nBehram error.  Requesting invalid endpoint ';
             errMsg += 'name to pop.\n';
-            print (errMsg);
+            errPrint (errMsg);
             assert(False);
         self.currentEndpointName = None;
         self.currentEndpoint = None;
@@ -220,7 +228,7 @@ class ProtocolObject():
         if (self.currentEndpointName != None):
             errMsg = '\nBehram error.  Cannot setCurrentEndpoint in ';
             errMsg += 'emit before having popped previous.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
             
         #ensures that ept1 and ept2 are not None and also that they
@@ -233,7 +241,7 @@ class ProtocolObject():
         else:
             errMsg = '\nBehram error: attempting to set current endpoint ';
             errMsg += 'to an unknown value.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
     def addOnCreateFunction(self,onCreateName,onCreateAstNode):
@@ -265,7 +273,7 @@ class ProtocolObject():
             errMsg = '\nBehram error: should not be trying to add a ';
             errMsg += 'message send function for an endpoint that does ';
             errMsg += 'not exist.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         return whichEndpoint.addMsgSendFunction(msgSendFunctionName,self);
@@ -282,7 +290,7 @@ class ProtocolObject():
             errMsg = '\nBehram error: should not be trying to add a ';
             errMsg += 'message receive function for an endpoint that does ';
             errMsg += 'not exist.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
 
         return whichEndpoint.addMsgReceiveFunction(msgReceiveFunctionName,self);
@@ -316,7 +324,7 @@ class ProtocolObject():
             errMsg = '\nBehram error: attempting to perform an emit '
             errMsg += 'operation on an endpoint when have no current ';
             errMsg += 'endpoint in function ' + functionFrom + '.\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
         
 
@@ -342,7 +350,7 @@ class ProtocolObject():
             errMsg = '\n\nBehram error: should have set ';
             errMsg += 'both endpoints before calling ';
             errMsg += whichFunc + '.\n\n';
-            print(errMsg);
+            errPrint(errMsg);
             assert(False);
         
     def emit(self):

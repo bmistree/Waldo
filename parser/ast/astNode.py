@@ -11,7 +11,7 @@ from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
-
+from parserUtil import errPrint;
 
 TYPE_ERROR_ENCOUNTERED = False;
 
@@ -72,7 +72,7 @@ class AstNode():
         #line numbers.
         
         if ((self.label != AST_ROOT) and (typeStack == None)):
-            print('\nBehram error.  Must have typeStack unless root node\n');
+            errPrint('\nBehram error.  Must have typeStack unless root node\n');
             assert(False);
         elif(self.label == AST_ROOT):
             typeStack = TypeCheckContextStack();
@@ -470,7 +470,7 @@ class AstNode():
                 else:
                     errMsg = '\nBehram error in AST_FUNCTION_CALL.  Have an error ';
                     errMsg += 'type for a function that is not recognized.\n'
-                    print(errMsg);
+                    errPrint(errMsg);
                     assert(False);
 
                     
@@ -833,9 +833,9 @@ class AstNode():
                 errMsg = 'Behram error: should have inserted function ';
                 errMsg += 'with name "' + funcName + '" into type stack ';
                 errMsg += 'before type checking function body.'
-                print('\n\n');
-                print(errMsg);
-                print('\n\n');
+                errPrint('\n\n');
+                errPrint(errMsg);
+                errPrint('\n\n');
                 assert(False);
 
             #when we are checking function body, any return statement
@@ -862,7 +862,7 @@ class AstNode():
             else:
                 errMsg = '\nBehram error: invalid function ';
                 errMsg += 'type when type checking functions\n';
-                print(errMsg);
+                errPrint(errMsg);
                 
 
             if (funcDeclArgListIndex != None):
@@ -1015,8 +1015,8 @@ class AstNode():
 
                 
         else:
-            print('\nLabels that still need type checking: ');
-            print('\t' + self.label);
+            errPrint('\nLabels that still need type checking: ');
+            errPrint('\t' + self.label);
                 
 
             
@@ -1044,10 +1044,10 @@ class AstNode():
             (self.label != AST_MSG_SEND_FUNCTION) and
             (self.label != AST_MSG_RECEIVE_FUNCTION) and
             (self.label != AST_ONCREATE_FUNCTION)):
-            print('\n\n');
-            print(self.label);
-            print('\n\n');
-            print('\nBehram error, sending an incorrect tag to be loaded into functionDeclarationTypeCheck\n');
+            errPrint('\n\n');
+            errPrint(self.label);
+            errPrint('\n\n');
+            errPrint('\nBehram error, sending an incorrect tag to be loaded into functionDeclarationTypeCheck\n');
             assert(False);
 
             
@@ -1275,23 +1275,23 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
     @param {String} progText -- The source text of the program.
     '''
     
-    print('\n\n');
-    print('*************************');
-    print('Error in type checking:');
-    print(errorString);
+    errPrint('\n\n');
+    errPrint('*************************');
+    errPrint('Error in type checking:');
+    errPrint(errorString);
 
-    print('-------\nAST node labels:');
+    errPrint('-------\nAST node labels:');
     for s in astNodes:
-        print(s.label)
+        errPrint(s.label)
         
-    print('-------\nLine numbers:');
+    errPrint('-------\nLine numbers:');
     for s in lineNumbers:
-        print(s);
+        errPrint(s);
 
     programTextArray = progText.split('\n');
-    print('-------\nProgram text:');
+    errPrint('-------\nProgram text:');
     for errorLine in lineNumbers:
-        print('\n\n');
+        errPrint('\n\n');
         lowerLineNum = max(0,errorLine - ERROR_NUM_LINES_EITHER_SIDE);
         upperLineNum = min(len(programTextArray),errorLine + ERROR_NUM_LINES_EITHER_SIDE);
 
@@ -1305,9 +1305,9 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
                 errorText += '    ';
                     
             errorText += programTextArray[s];
-            print(errorText);
+            errPrint(errorText);
 
         
-    print('*************************');
-    print('\n\n');
+    errPrint('*************************');
+    errPrint('\n\n');
 

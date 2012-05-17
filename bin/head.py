@@ -36,9 +36,9 @@ def runTests():
     print('Still to fill in');
 
 
-def genAst(inputFilename):
+def genAst(inputFilename,outputErrsTo):
     fileText = getFileText(inputFilenameArg);
-    parser = getParser(fileText);
+    parser = getParser(fileText,outputErrsTo);
     astNode = parser.parse(fileText);
     return astNode,fileText;
 
@@ -60,9 +60,12 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
 
         
 def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg):
-    ast,fileText = genAst(inputFilename);
+    errOutputStream = sys.stderr;
+
+    
+    ast,fileText = genAst(inputFilename,errOutputStream);
     if (ast == None):
-        print('\nError with program.  Please fix and continue\n');
+        print >> errOutputStream, '\nError with program.  Please fix and continue\n';
     else:
         performedOperation = False;
         if (textOutputArg != None):
@@ -86,13 +89,13 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
                 # do not emit any code if got a type error when tyring
                 # to compile.
                 errMsg = '\nType error: cancelling code emit\n';
-                print(errMsg);
+                print >> errOutputStream, errMsg;
             else:
-                emitText = astEmit.runEmitter(ast);
+                emitText = astEmit.runEmitter(ast,None,errOutputStream);
                 if (emitText == None):
                     errMsg = '\nBehram error when requesting emission of ';
                     errMsg += 'source code from astHead.py.\n';
-                    print(errMsg);
+                    print >> errOutputStream, errMsg;
                     assert(False);
                 
                 filer = open(emitArg,'w');
