@@ -2,7 +2,6 @@
 
 import sys;
 import os;
-# sys.path.append(os.path.join('..','..','parser','ast'));
 astParserPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast');
 sys.path.insert(0, astParserPath);
 from astBuilder import getParser;
@@ -15,6 +14,9 @@ import json;
 astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'emitters','pyEmit');
 sys.path.insert(0, astEmitPath);
 import astEmit;
+
+lexPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'lexer');
+from waldoLex import WaldoLexException;
 
 
 class GraphicalOutArg():
@@ -80,7 +82,13 @@ def compileText(progText,outputErrStream):
     encountered, then returns None.
     '''
 
-    astRootNode, other = genAst(progText,outputErrStream);
+
+    try:
+        astRootNode, other = genAst(progText,outputErrStream);
+    except WaldoLexException as excep:
+        print >> outputErrStream, excep.value;
+        return None;
+        
     if (astRootNode == None):
         # means there was an error
         resetErrorEncountered();
@@ -109,8 +117,15 @@ def compileText(progText,outputErrStream):
         
 def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg):
     errOutputStream = sys.stderr;
+
+
+    try:
+        ast,fileText = genAstFromFile(inputFilename,errOutputStream);
+    except WaldoLexException as excep:
+        print >> errOutputStream, excep.value;
+        return;
+
     
-    ast,fileText = genAstFromFile(inputFilename,errOutputStream);
     if (ast == None):
         print >> errOutputStream, '\nError with program.  Please fix and continue\n';
     else:

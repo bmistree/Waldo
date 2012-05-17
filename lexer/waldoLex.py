@@ -155,7 +155,7 @@ class LexStateMachine():
                 errMsg = 'Should not have gotten an ';
                 errMsg += 'all else when not in comment';
                 errMsg += '\n' + repr(toke.value) + '\n';
-                raise TypeError(generateTypeError(errMsg, toke));
+                raise WaldoLexException(generateTypeError(errMsg, toke));
             
 
         #adjust state machine
@@ -194,7 +194,7 @@ class LexStateMachine():
             if (tokeType == "MULTI_LINE_COMMENT_END"):
                 errMsg = "Cannot lex.  multi-line comment ";
                 errMsg = "end occurred before multi-line begin."
-                raise TypeError(generateTypeError(errMsg,toke));
+                raise WaldoLexException(generateTypeError(errMsg,toke));
 
 
         if (returner.type == SkipTokenType):
@@ -463,7 +463,21 @@ def t_ALL_ELSE(t):
     return mStateMachine.addToken(t);
 
 def t_error(t):
-    raise TypeError("Unknown text '%s'  at line number '%s'" % (t.value,t.lexer.lineno));
+    raise WaldoLexException("Unknown text '%s'  at line number '%s'" % (t.value,t.lexer.lineno));
+
+
+class WaldoLexException(Exception):
+
+   def __init__(self, errMsg):
+       self.value = errMsg;
+
+   def __str__(self):
+       return repr(self.value)
+    
+    
+
+
+
 
 
 
