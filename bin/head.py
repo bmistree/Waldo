@@ -2,12 +2,15 @@
 
 import sys;
 import os;
-sys.path.append(os.path.join('..','..','parser','ast'));
-
+# sys.path.append(os.path.join('..','..','parser','ast'));
+astParserPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast');
+sys.path.insert(0, astParserPath);
 from astBuilder import getParser;
 from astBuilder import getErrorEncountered;
 
 import json;
+astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'emitters','pyEmit');
+sys.path.insert(0, astEmitPath);
 import astEmit;
 
 
@@ -17,7 +20,7 @@ class GraphicalOutArg():
         self.outFile = jsonDict['file'];
         self.width = jsonDict.get('w',None);
         self.height = jsonDict.get('h',None);
-        self.d3 = jsonDict.get('d3','../../parser/ast/d3');
+        self.d3 = jsonDict.get('d3','../parser/ast/d3');
 
 
 def getFileText(inputFile):

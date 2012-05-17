@@ -1,7 +1,11 @@
 #!/usr/bin/python
 
 import sys;
-sys.path.append('../../lexer/')
+import os;
+
+lexerPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','..','lexer');
+sys.path.insert(0, lexerPath);
+
 from waldoLex import tokens;
 from waldoLex import ONCREATE_TOKEN;
 from waldoLex import constructLexer;
