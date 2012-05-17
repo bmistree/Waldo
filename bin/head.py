@@ -82,7 +82,7 @@ def compileText(progText,outputErrStream):
         # means there was an error
         return None;
 
-    ast.typeCheck(progText);
+    astRootNode.typeCheck(progText);
 
     if (getErrorEncountered()):
         # means there was a type error.  should not continue.
