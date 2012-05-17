@@ -36,11 +36,10 @@ def runTests():
     print('Still to fill in');
 
 
-def genAst(inputFilename,outputErrsTo):
+def genAstFromFile(inputFilename,outputErrsTo):
     fileText = getFileText(inputFilenameArg);
-    parser = getParser(fileText,outputErrsTo);
-    astNode = parser.parse(fileText);
-    return astNode,fileText;
+    return genAst(fileText,outputErrsTo);
+
 
 def astProduceTextOutput(astNode,textOutFilename):
     astNode.printAst(textOutFilename);
@@ -58,12 +57,47 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
     return astNode;
 
 
+def genAst(progText,outputErrsTo):
+    parser = getParser(progText,outputErrsTo);
+    astNode = parser.parse(progText);
+    return astNode,progText;
+
+def compileText(progText,outputErrStream):
+    '''
+    Mostly will be used when embedding in another project.  
+    
+    @param {String} progText -- The source text that we are trying to
+    compile.
+
+    @param{File-like object} outputErrStream -- The stream that we should use to output
+    error messages to.
+
+    @returns {String or None} -- if no errors were encountered,
+    returns the compiled source of the file.  If compile errors were
+    encountered, then returns None.
+    '''
+
+    astRootNode, other = genAst(progText,outputErrStream);
+    if (astRootNode == None):
+        # means there was an error
+        return None;
+
+    ast.typeCheck(progText);
+
+    if (getErrorEncountered()):
+        # means there was a type error.  should not continue.
+        return None;
+    
+    emitText = astEmit.runEmitter(astRootNode,None,outputErrStream);
+    return emitText; # will be none if encountered an error during
+                     # emit.  otherwise, file text.
+
+
         
 def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg):
     errOutputStream = sys.stderr;
-
     
-    ast,fileText = genAst(inputFilename,errOutputStream);
+    ast,fileText = genAstFromFile(inputFilename,errOutputStream);
     if (ast == None):
         print >> errOutputStream, '\nError with program.  Please fix and continue\n';
     else:
