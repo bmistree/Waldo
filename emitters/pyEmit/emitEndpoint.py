@@ -305,10 +305,10 @@ class %s:
 EXACT, except for initialization stuff.  maybe think about
 that later.
 '''
-errMsg = '\nBehram FIXME: ignoring initial connection handshake ';
-errMsg += 'in favor of passing in a pre-existing connection.  ';
-errMsg += 'Also, avoiding initializing variables correctly.  Handle later.\n';
-print(errMsg);
+# errMsg = '\nBehram FIXME: ignoring initial connection handshake ';
+# errMsg += 'in favor of passing in a pre-existing connection.  ';
+# errMsg += 'Also, avoiding initializing variables correctly.  Handle later.\n';
+# print(errMsg);
 
 
 self.committed = _%sContext(%s,%s,self);
