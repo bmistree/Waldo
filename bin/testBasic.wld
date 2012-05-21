@@ -39,6 +39,15 @@ Ping
         {
            Text toPrint = 'Initialized False';
            Print(toPrint);
+           If (1 < 2)
+           {
+                TrueFalse c = (2 >=2);
+                TrueFalse d = 2 > 1;
+                TrueFalse e = 2 <=1;
+                Print(e);
+                Print(c);
+                Print(d);
+           }
         }
 
         

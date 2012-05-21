@@ -59,7 +59,10 @@ AST_AND = 'AND';
 AST_OR  = 'OR';
 AST_BOOL_EQUALS = '==';
 AST_BOOL_NOT_EQUALS = '!=';
-
+AST_GREATER_THAN = '>';
+AST_GREATER_THAN_EQ = '>='
+AST_LESS_THAN = '<';
+AST_LESS_THAN_EQ = '<='
 
 ##arithmetic
 AST_PLUS = '+';

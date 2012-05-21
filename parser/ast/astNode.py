@@ -626,16 +626,32 @@ class AstNode():
 
                 
         elif ((self.label == AST_MINUS) or (self.label == AST_MULTIPLY) or
-              (self.label == AST_DIVIDE)):
+              (self.label == AST_DIVIDE) or (self.label == AST_GREATER_THAN) or
+              (self.label == AST_GREATER_THAN_EQ) or (self.label == AST_LESS_THAN) or
+              (self.label == AST_LESS_THAN_EQ)):
             #check type checking of plus, minus, times, divide;
             #left and right hand side should be numbers, returns a number.
             
             #for error reporting
             expressionType  = 'MINUS';
+            self.type = TYPE_NUMBER;                
             if (self.label == AST_MULTIPLY):
                 expressionType = 'MULTIPLY';
             elif(self.label == AST_DIVIDE):
                 expressionType = 'DIVIDE';
+            elif(self.label == AST_GREATER_THAN):
+                expressionType = 'GREATER THAN';
+                self.type = TYPE_BOOL;                
+            elif(self.label == AST_GREATER_THAN_EQ):
+                expressionType = 'GREATER THAN EQUAL';                
+                self.type = TYPE_BOOL;                
+            elif(self.label == AST_LESS_THAN):
+                expressionType = 'LESS THAN';
+                self.type = TYPE_BOOL;                
+            elif(self.label == AST_LESS_THAN_EQ):
+                expressionType = 'LESS THAN EQUAL';
+                self.type = TYPE_BOOL;                
+
                 
             lhs = self.children[0];
             rhs = self.children[1];
@@ -644,7 +660,7 @@ class AstNode():
             lhs.typeCheck(progText,typeStack);
             rhs.typeCheck(progText,typeStack);
 
-            self.type = TYPE_NUMBER;
+
             
             if (lhs.type != TYPE_NUMBER):
                 errMsg = '\nError with ' + expressionType + ' expression.  ';

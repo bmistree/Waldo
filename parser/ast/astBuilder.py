@@ -569,7 +569,11 @@ def p_BooleanOperator(p):
     '''BooleanOperator : AND
                        | OR
                        | BOOL_EQUALS
-                       | BOOL_NOT_EQUALS 
+                       | BOOL_NOT_EQUALS
+                       | GREATER_THAN
+                       | GREATER_THAN_EQ
+                       | LESS_THAN
+                       | LESS_THAN_EQ
                        '''
 
     if (p[1] == 'And'):
@@ -579,7 +583,15 @@ def p_BooleanOperator(p):
     elif(p[1] == '=='):
         p[0] = AstNode(AST_BOOL_EQUALS,p.lineno(1),p.lexpos(1));
     elif(p[1] == '!='):
-        p[0] = AstNode(AST_BOOL_NOT_EQUALS,p.lineno(1),p.lexpos(1));        
+        p[0] = AstNode(AST_BOOL_NOT_EQUALS,p.lineno(1),p.lexpos(1));
+    elif(p[1] == '>'):
+        p[0] = AstNode(AST_GREATER_THAN,p.lineno(1),p.lexpos(1));
+    elif(p[1] == '>='):
+        p[0] = AstNode(AST_GREATER_THAN_EQ,p.lineno(1),p.lexpos(1));
+    elif(p[1] == '<'):
+        p[0] = AstNode(AST_LESS_THAN,p.lineno(1),p.lexpos(1));
+    elif(p[1] == '<='):
+        p[0] = AstNode(AST_LESS_THAN_EQ,p.lineno(1),p.lexpos(1));        
     else:
         errPrint('\nIncorrect boolean operator: ' + p[1] + '\n');
         assert(False);

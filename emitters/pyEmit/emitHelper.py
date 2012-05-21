@@ -153,7 +153,9 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
     elif ((astNode.label == AST_PLUS) or (astNode.label == AST_MINUS) or
           (astNode.label == AST_MULTIPLY) or (astNode.label == AST_DIVIDE) or 
           (astNode.label == AST_AND) or (astNode.label == AST_OR) or
-          (astNode.label == AST_BOOL_EQUALS) or (astNode.label == AST_BOOL_NOT_EQUALS)):
+          (astNode.label == AST_BOOL_EQUALS) or (astNode.label == AST_BOOL_NOT_EQUALS) or
+          (astNode.label == AST_GREATER_THAN) or (astNode.label == AST_GREATER_THAN_EQ) or
+          (astNode.label == AST_LESS_THAN) or (astNode.label == AST_LESS_THAN_EQ)):
 
         if (astNode.label == AST_PLUS):
             operator = '+';
@@ -171,7 +173,16 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
             operator = '==';
         elif(astNode.label == AST_BOOL_NOT_EQUALS):
             operator = '!=';
+        elif(astNode.label == AST_GREATER_THAN):
+            operator = '>';
+        elif(astNode.label == AST_GREATER_THAN_EQ):
+            operator = '>=';
+        elif(astNode.label == AST_LESS_THAN):
+            operator = '<';            
+        elif(astNode.label == AST_LESS_THAN_EQ):
+            operator = '<=';
 
+            
             
         else:
             errMsg = '\nBehram error.  Unknown operator type when ';

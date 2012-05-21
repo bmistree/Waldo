@@ -43,6 +43,11 @@ tokens = (
     "BOOL_EQUALS",
     "BOOL_NOT_EQUALS",
     "NOT",
+    
+    "GREATER_THAN_EQ",
+    "GREATER_THAN",
+    "LESS_THAN_EQ",
+    "LESS_THAN",
 
     
     "BOOL_TYPE",
@@ -280,6 +285,24 @@ def t_BOOL_EQUALS(t):
 
 def t_BOOL_NOT_EQUALS(t):
     "\!\="
+    return mStateMachine.addToken(t);
+
+
+def t_LESS_THAN_EQ(t):
+    "\<\="
+    return mStateMachine.addToken(t);
+
+def t_LESS_THAN(t):
+    "\<"
+    return mStateMachine.addToken(t);
+
+
+def t_GREATER_THAN_EQ(t):
+    "\>\="
+    return mStateMachine.addToken(t);
+
+def t_GREATER_THAN(t):
+    "\>"
     return mStateMachine.addToken(t);
 
 
