@@ -499,7 +499,7 @@ class Ping():
 
         Remove any changes made to intermediate.
         '''
-        self.intermediate = self.commmited.copy();
+        self.intermediate = self.committed.copy();
 
         
         
@@ -829,7 +829,7 @@ class Pong():
 
         Remove any changes made to intermediate.
         '''
-        self.intermediate = self.commmited.copy();
+        self.intermediate = self.committed.copy();
 
         
         
