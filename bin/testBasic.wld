@@ -54,7 +54,7 @@ Ping
             Return responses;
         }   
         
-        MsgSend one () OutgoingMessage { Number responses }
+        MessageSend one () OutgoingMessage { Number responses }
         {
             pingCounter = pingCounter + 1;
             OutgoingMessage msg = {
@@ -65,7 +65,7 @@ Ping
         }
 
         
-        MsgReceive three
+        MessageReceive three
              IncomingMessage msg:
              {
                 Number responses
@@ -95,7 +95,7 @@ Pong
 {
         Number responses = 0;
         
-        MsgReceive two
+        MessageReceive two
              IncomingMessage msg:
              {
                 Number responses
@@ -117,7 +117,7 @@ Pong
             Send msgResponse To Ping;
         }
 
-        MsgReceive four
+        MessageReceive four
              IncomingMessage msg:
              {
                 Number responses

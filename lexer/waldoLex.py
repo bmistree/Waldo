@@ -230,11 +230,11 @@ def t_FUNCTION(t):
     return mStateMachine.addToken(t);
 
 def t_MSG_SEND(t):
-    'MsgSend';
+    'MessageSend';
     return mStateMachine.addToken(t);
 
 def t_MSG_RECEIVE(t):
-    'MsgReceive';
+    'MessageReceive';
     return mStateMachine.addToken(t);
 
 def t_PUBLIC(t):
