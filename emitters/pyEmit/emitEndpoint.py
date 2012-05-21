@@ -669,7 +669,13 @@ END NOT EXACT PART
 msgToSend['data'] = msg;
 msgToSend['dispatchTo'] = dispatchTo;
 self.connectionObject.writeMsg(msgToSend,self.name);
+if (dispatchTo == STREAM_TAIL_SENTINEL):  # auto-commit if last message
 """;
+        ifBody = r"""
+self._commit();  
+"""
+        sendMsgBody += emitHelper.indentString(ifBody,1);
+        
 
         indentedHead = emitHelper.indentString(sendMsgHead,1);
         indentedBody = emitHelper.indentString(sendMsgBody,2);
