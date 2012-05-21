@@ -301,7 +301,7 @@ def p_EndpointBodySection(p):
     if (len(p) == 3):
         p[0].addChildren([p[1],p[2]]);
     elif ((len(p) == 2) and (not isEmptyNode(p[1]))):
-        p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linPos));
+        p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linePos));
         p[0].addChild(p[1]);
     else:
         errPrint('\nError in endpoint body section.  Got an unusual number of arguments.\n');
