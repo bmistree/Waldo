@@ -24,7 +24,8 @@ Shared
 {
         //both of these are rarely used in this program.
         Ping Controls Number pingCounter = 0;
-        Pong Controls Number pongCounter = 0;
+        Nothing Controls Number pongCounter = 0;
+        
 }
 
 
@@ -34,15 +35,9 @@ Ping
         Number responses = 0;
         TrueFalse something;
 
-        OnCreate (TrueFalse m)
+        OnCreate ()
         {
            Text toPrint = 'Initialized False';
-           If (m)
-           {
-              toPrint = 'Initialized True';
-           }
-
-           
            Print(toPrint);
         }
 

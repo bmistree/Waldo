@@ -114,10 +114,18 @@ def p_SharedBodySection(p):
         p[0].addChildren(p[3].getChildren());
 
         
-        
 def p_AnnotatedDeclaration(p):
     '''AnnotatedDeclaration : Identifier CONTROLS Type Identifier 
-                            | Identifier CONTROLS Type Identifier EQUALS TerminalReturnable'''
+                            | Identifier CONTROLS Type Identifier EQUALS TerminalReturnable
+                            | NOTHING_TYPE CONTROLS Type Identifier
+                            | NOTHING_TYPE CONTROLS Type Identifier EQUALS TerminalReturnable
+                            '''
+
+
+    if (p[1] == TYPE_NOTHING):
+        # create an Identifier with controls as nothing
+        p[1] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
+
     p[0] = AstNode(AST_ANNOTATED_DECLARATION,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3],p[4]]);
     
