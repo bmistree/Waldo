@@ -1,7 +1,9 @@
 Command to run from parser/ast/ 
     ./head.py -f testBasic.wld -go '{"file":"astOut.html", "h": 3000, "w": 5000}' -e emitted.py
 
-Actually emit return statement.
+Read about potential threading bug in commit 69e6af
+    
+x   Actually emit return statement.
 
 Deep copy returns from public statements.
     
