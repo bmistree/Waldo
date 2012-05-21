@@ -353,7 +353,7 @@ class AstNode():
             argument.typeCheck(progText,typeStack);
             if ((argument.type != TYPE_STRING) and (argument.type != TYPE_NUMBER) and
                 (argument.type != TYPE_BOOL)):
-                errorString = 'Print requires a String, Bool, or a Number ';
+                errorString = 'Print requires a Text, TrueFalse, or a Number ';
                 errorString += 'to be passed in.  ';
                 errorString += 'It seems that you passed in a ';
                 errorString += argument.type + '.';
@@ -666,16 +666,14 @@ class AstNode():
                     
                 errorFunction(errMsg, [self],[self.lineNo],progText);
                 
-
-              
                 
         elif(self.label == AST_BOOLEAN_CONDITION):
             self.lineNo = self.children[0].lineNo;
             self.children[0].typeCheck(progText,typeStack);
             
             if (self.children[0].type != TYPE_BOOL):
-                errMsg = '\nError in Boolean Condition.  Should have ';
-                errMsg += 'boolean type.  Instead, ';
+                errMsg = '\nError in predicate of condition statement.  Should have ';
+                errMsg += 'TrueFalse type.  Instead, ';
                 if (self.children[0].type != None):
                     errMsg += 'has type ' + self.children[0].type;
                 else:

@@ -128,7 +128,6 @@ def p_AnnotatedDeclaration(p):
 def p_Type(p):
     '''Type : NUMBER_TYPE
             | STRING_TYPE
-            | LIST_TYPE
             | BOOL_TYPE
             | NOTHING_TYPE
             | SENDS

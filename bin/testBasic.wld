@@ -32,11 +32,11 @@ Shared
 Ping
 {
         Number responses = 0;
-        Bool something;
+        TrueFalse something;
 
-        OnCreate (Bool m)
+        OnCreate (TrueFalse m)
         {
-           String toPrint = 'Initialized False';
+           Text toPrint = 'Initialized False';
            If (m)
            {
               toPrint = 'Initialized True';

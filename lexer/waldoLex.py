@@ -43,17 +43,18 @@ tokens = (
     "BOOL_EQUALS",
     "BOOL_NOT_EQUALS",
     "NOT",
+
+    
+    "BOOL_TYPE",
+    
     "TRUE",
     "FALSE",
     
     #data types
-    "MAP_TYPE",
     "NUMBER_TYPE",
     "STRING_TYPE",
-    "LIST_TYPE",
-    "BOOL_TYPE",
     "NOTHING_TYPE",
-    # "MESSAGE_TYPE",
+
     
     #whitespace
     "SPACE",
@@ -325,6 +326,13 @@ def t_NOT(t):
     'Not'
     return mStateMachine.addToken(t);
 
+
+def t_BOOL_TYPE(t):
+    #re-name to something more friendly than boolean.
+    'TrueFalse'
+    return mStateMachine.addToken(t);
+
+
 def t_TRUE(t):
     'True'
     return mStateMachine.addToken(t);
@@ -333,26 +341,15 @@ def t_FALSE(t):
     'False'
     return mStateMachine.addToken(t);
 
-def t_MAP_TYPE(t):
-    'Map'
-    return mStateMachine.addToken(t);
 
 def t_NUMBER_TYPE(t):
     'Number'
     return mStateMachine.addToken(t);
 
 def t_STRING_TYPE(t):
-    'String'
+    'Text'
     return mStateMachine.addToken(t);
 
-def t_LIST_TYPE(t):
-    'List'
-    return mStateMachine.addToken(t);
-
-def t_BOOL_TYPE(t):
-    #re-name to something more friendly than boolean.
-    'Bool'
-    return mStateMachine.addToken(t);
 
 
 def t_SPACE(t):
