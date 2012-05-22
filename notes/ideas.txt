@@ -62,6 +62,18 @@ Goal of language is for a complete language user guide to take less
 than 2 pages.  As such, eschewing high-level features.
 
 
+Waldo provides a solid base to hang a lot of other things off of.  Its
+type system and requirement to explicitly specify message traces can
+support simple tools for epistemic action.
+
+Where Waldo may fail:
+  ...Value in continuous incremental feedback.  Can you build Waldo up
+  in pieces.
+  ...Missing operators
+  ...Operators expected from other languages/frameworks?  Smarter
+  error reporting.
+  ...High barrier to getting something working.
+
 Error Reporting:
 
 The error message should contain a link to the section of the
