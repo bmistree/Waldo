@@ -115,6 +115,46 @@ Still to add:
 
 SkipTokenType = "SPACE";
 
+def generateTokenErrMessage(toke):
+    '''
+    @returns {String} -- An error message based on the
+    token value seen when get into ALL_ELSE.
+
+    For common errors, eg using _ to start an identifier, will provide
+    additional information.
+    '''
+
+    tVal = repr(toke.value);
+    errMsg = 'Error lexing input.  ';
+    errMsg += '\n' + tVal + '\n';
+
+    tVal = toke.value;
+    additional = None;
+    if (tVal == None):
+        return errMsg,additional;
+    
+    if (tVal == '!'):
+        additional = 'Maybe you should try using the keyword "Not" instead.  ';
+        additional += 'Or use "!=" for "not equals".\n';
+    elif (tVal == '&'):
+        additional = 'Maybe you should try using the keyword "And" instead ';
+        additional += 'if you are performing a logical operation.  There is ';
+        additional += 'no way to take the bitwise-and in Waldo.\n'
+    elif (tVal == '|'):
+        additional = 'Maybe you should try using the keyword "Or" instead ';
+        additional += 'if you are performing a logical operation.  There is ';
+        additional += 'no way to take the bitwise-or in Waldo.\n'
+    elif (tVal == '#'):
+        additional = 'If you were trying to write a comment, comments in ';
+        additional += 'Waldo are written with // or /* */'
+    elif (tVal == '_'):
+        additional = 'If you were trying to begin a variable name with "_", ';
+        additional += 'This is not allowed.';
+    elif(tVal == '%'):
+        additional = 'There is no modulo operator in Waldo yet';
+
+    return errMsg, additional;
+
 class LexStateMachine():
     def __init__ (self):
         self.inMultiLineComment  = False;
@@ -158,10 +198,11 @@ class LexStateMachine():
             if ((self.inMultiLineComment) or (self.inSingleLineComment)):
                 returner.type = SkipTokenType;
             else:
-                errMsg = 'Should not have gotten an ';
-                errMsg += 'all else when not in comment';
-                errMsg += '\n' + repr(toke.value) + '\n';
-                raise WaldoLexException(generateTypeError(errMsg, toke));
+                errMsg,additionalMsg= generateTokenErrMessage(toke);
+                # errMsg = 'Should not have gotten an ';
+                # errMsg += 'all else when not in comment';
+                # errMsg += '\n' + repr(toke.value) + '\n';
+                raise WaldoLexException(generateTypeError(errMsg, toke,additionalMsg));
             
 
         #adjust state machine
@@ -209,8 +250,14 @@ class LexStateMachine():
 
 mStateMachine = LexStateMachine();    
     
-def generateTypeError(errMsg, token):
-    return errMsg + ' at line number ' + str(token.lexer.lineno);
+def generateTypeError(errMsg, token,additionalMsg=None):
+
+    errBody = errMsg + ' at line number ' + str(token.lexer.lineno);
+
+    if (additionalMsg != None):
+        errBody += '\n' + additionalMsg;
+    
+    return errBody;
 
 '''
 Rule definitions
