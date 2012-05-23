@@ -794,8 +794,8 @@ def p_error(p):
         errMsg += 'cannot be called directly from other functions.\n';
         errPrint(errMsg);
     else:
-        errPrint('\nSyntax error on "' + p.value + '"');
-        errPrint('Line number: ' + str(p.lineno));
+        errPrint('\nSyntax error near on "' + p.value + '"');
+        errPrint('Near line number: ' + str(p.lineno));
         errPrint('\n');
 
         if (ProgramText != None):
@@ -826,6 +826,12 @@ def p_error(p):
                     lexPosLine += '^\n';
                     errorText += lexPosLine;
 
+            errorText += '\nThe actual error may be one or two lines ';
+            errorText += 'above or below this point.  \nCommon errors ';
+            errorText += 'include forgetting a semi-colon or not capitalizing ';
+            errorText += 'a \nkeyword operator (for instance "return 3;" instead ';
+            errorText += 'of \n"Return 3;".\n';
+            
             errPrint(errorText);
 
 
