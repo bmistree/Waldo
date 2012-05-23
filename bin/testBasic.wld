@@ -63,7 +63,7 @@ Ping
             Return responses;
         }   
         
-        MessageSend one () OutgoingMessage { Number responses }
+        MessageSend one () OutgoingMessage: { Number responses }
         {
             pingCounter = pingCounter + 1;
             OutgoingMessage msg = {
