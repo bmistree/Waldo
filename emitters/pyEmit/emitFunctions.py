@@ -281,11 +281,27 @@ if (self.amInTrace):
         ifBody = """
 queueElementName = '%s';
 queueElementArgs = []; # no args beyond self were passed into the send function.
+""" % self.pythonizeName();
+
+
+        # save each argument for later
+        declArgsList = self.astNode.children[self.declArgListIndex];
+        for s in declArgsList.children:
+            #each s is a declArg
+            if (len(s.children) == 0):
+                continue;
+
+            argName = s.children[1].value;
+            ifBody += 'queueElementArgs.append(' + argName + ');\n';
+        
+        
+
+        ifBody += """
 queueElement = _MessageSendQueueElement(queueElementName,queueElementArgs);
 
 self.msgSendQueue.append(queueElement);
 return;
-""" % self.pythonizeName();
+""" ;
 
         methodBodyTop += emitHelper.indentString(ifBody,1);
 
@@ -294,7 +310,22 @@ return;
 self.amInTrace = True;
 
 #stores intermediate send function
-self.outstandingSend = _MessageSendQueueElement('%s',[]);
+queueArgs = [];
+"""
+
+        # save each argument for later
+        declArgsList = self.astNode.children[self.declArgListIndex];
+        for s in declArgsList.children:
+            #each s is a declArg
+            if (len(s.children) == 0):
+                continue;
+
+            argName = s.children[1].value;
+            methodBodyTop += 'queueArgs.append(' + argName + ');\n';
+        
+
+        methodBodyTop += """
+self.outstandingSend = _MessageSendQueueElement('%s',queueArgs);
 
 #sets environment for further calls
 self.whichEnv = INTERMEDIATE_CONTEXT;
