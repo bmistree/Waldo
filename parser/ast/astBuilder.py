@@ -482,11 +482,17 @@ def p_ReturnStatement(p):
 def p_OnCreateFunction(p):
     '''
     OnCreateFunction : ONCREATE  LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                     | ONCREATE  LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
     '''
     p[0] = AstNode(AST_ONCREATE_FUNCTION,p.lineno(1),p.lexpos(1));
     onCreateName = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
-    p[0].addChildren([onCreateName,p[3],p[6]]);
-    
+    p[0].addChildren([onCreateName,p[3]]);
+    if (len(p) == 8):
+        p[0].addChild(p[6]);
+    else:
+        #means that we had no function body, insert an impostor
+        #function body node.
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
 def p_SendStatement(p):
     '''SendStatement : SEND_OPERATOR Identifier TO_OPERATOR Identifier

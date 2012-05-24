@@ -37,24 +37,16 @@ Ping
 
         OnCreate ()
         {
-           Text toPrint = 'Initialized False';
-           Print(toPrint);
-           If (1 < 2)
-           {
-                TrueFalse c = (2 >=2);
-                TrueFalse d = 2 > 1;
-                TrueFalse e = 2 <=1;
-                Print(e);
-                Print(c);
-                Print(d);
-           }
+
         }
 
         
         
         Public Function initiateSend() Returns Nothing
         {
-            Print('Initiating send');
+            pongCounter = 20;
+            Print(pongCounter);            
+            Print('Initiating send ****');
             one();
         }
 
