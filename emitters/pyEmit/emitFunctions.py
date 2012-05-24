@@ -309,6 +309,8 @@ return;
 # blocks further send messages from executing
 self.amInTrace = True;
 
+self.intermediate = self.committed.copy();
+
 #stores intermediate send function
 queueArgs = [];
 """

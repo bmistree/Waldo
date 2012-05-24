@@ -45,11 +45,11 @@ Ping
         Public Function initiateSend() Returns Nothing
         {
             pongCounter = 20;
-            Print(pongCounter);            
             Print('Initiating send ****');
             one();
         }
 
+        
         Public Function getResponses() Returns Number
         {
             Return responses;
@@ -134,6 +134,7 @@ Pong
               'responses' : responses
             };
 
+            Print(pongCounter);
             Print(msg['responses']);
             
             Send msgResponse To Ping;
