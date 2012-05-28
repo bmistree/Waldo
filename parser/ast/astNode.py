@@ -1298,7 +1298,9 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
     # errPrint('\n\n');
     errPrint('*************************');
     # errPrint('Error in type checking:');
-    errPrint(errorString);
+
+    # reformat errorString so that doesn't print off side
+    errPrint(splitString(errorString,80));
 
     # errPrint('-------\nAST node labels:');
     # for s in astNodes:
@@ -1333,6 +1335,36 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
     errPrint('\n\n');
 
     raise WaldoTypeCheckException('');
+
+
+def splitString(string,maxLineLen):
+    '''
+    Inserts newlines into string to ensure that
+    no line is longer than maxLineLen
+
+    Warning: Performs poorly for case where words are much longer than maxLineLen
+    '''
+
+    strArray = string.split(' ');
+
+    toReturn = '';
+    lineCounter = 0;
+
+    for index in range(0,len(strArray)):
+
+        strToAdd = strArray[index] + ' ';
+
+        if (len(strToAdd) + lineCounter > maxLineLen):
+            toReturn += '\n';
+            lineCounter = 0;
+
+        toReturn += strToAdd;
+        lineCounter += len(strToAdd);
+
+
+    return toReturn;
+
+
 
 
 class WaldoTypeCheckException(Exception):
