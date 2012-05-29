@@ -427,7 +427,7 @@ def t_SPACE(t):
     return mStateMachine.addToken(t);
 
 def t_NEWLINE(t):
-    r"[\n]"
+    r"[\r]?[\n]"
     t.lexer.lineno += len(t.value);
     t.value = r"\n";
     return mStateMachine.addToken(t);

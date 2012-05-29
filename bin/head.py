@@ -7,7 +7,7 @@ sys.path.insert(0, astParserPath);
 from astBuilder import getParser;
 from astBuilder import getErrorEncountered;
 from astBuilder import resetErrorEncountered;
-
+import re;
 from astNode import WaldoTypeCheckException;
 
 import json;
@@ -34,8 +34,11 @@ def getFileText(inputFile):
     for s in filer:
         returner += s;
     filer.close();
+    returner = stripWindowsLineEndings(returner);
     return returner;
 
+def stripWindowsLineEndings(textToStripFrom):
+    return re.sub(r'\r','',textToStripFrom)
 
 def runTests():
     print('Still to fill in');
@@ -63,6 +66,7 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
 
 
 def genAst(progText,outputErrsTo):
+    progText = stripWindowsLineEndings(progText);
     parser = getParser(progText,outputErrsTo);
     astNode = parser.parse(progText);
     return astNode,progText;
