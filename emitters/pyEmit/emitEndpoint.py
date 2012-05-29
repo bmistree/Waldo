@@ -390,8 +390,7 @@ if (self.committed._myPriority < self.committed._theirPriority):
 self._reset(); #flash the intermediate context back to committed
 self.msgSendQueue.insert(0,self.outstandingSend);
 self.outstandingSend = None;
-self._unlock();
-return;
+#self._unlock();
 ''';
         externalIfBody += emitHelper.indentString(internalIfBody,1);
         msgReceiveBody += emitHelper.indentString(externalIfBody,1);
