@@ -390,11 +390,23 @@ if (self.committed._myPriority < self.committed._theirPriority):
 self._reset(); #flash the intermediate context back to committed
 self.msgSendQueue.insert(0,self.outstandingSend);
 self.outstandingSend = None;
-#self._unlock();
 ''';
         externalIfBody += emitHelper.indentString(internalIfBody,1);
         msgReceiveBody += emitHelper.indentString(externalIfBody,1);
 
+        externalElseBody = '''
+else: 
+'''
+        internalElseBody = '''
+#means that this endpoint is not backing out its changes, and 
+#should ignore the incoming message.
+return;
+        '''
+        externalElseBody += emitHelper.indentString(internalElseBody,1);
+        msgReceiveBody += emitHelper.indentString(externalElseBody,1);
+        
+
+        
         msgReceiveBody += r"""
             
 # update shared environment data in intermediate
