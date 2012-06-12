@@ -57,15 +57,17 @@ def runEmitter(astNode,protObj=None,errOutputTo=None):
             runEmitter(s,protObj);
 
     elif(astNode.label == AST_TRACE_LINE):
-        # all children should have labels of AST_TRACE_ITEM.
-        # first item in line should be the msg send
+        # all children should have labels of AST_TRACE_ITEM, except
+        # first item.  First item should have name of trace line.
+        # Second item in line should be the msg send
 
         if (len(astNode.children) == 0):
             errMsg = '\nBehram error: in astEmit, trace line is emtpy.\n';
             errPrint(errMsg);
             assert(False);
 
-        msgSendTraceItem = astNode.children[0];
+            
+        msgSendTraceItem = astNode.children[1];
         msgSendEndpointName = msgSendTraceItem.children[0].value;
         msgSendFuncName = msgSendTraceItem.children[1].value;
 
@@ -77,8 +79,9 @@ def runEmitter(astNode,protObj=None,errOutputTo=None):
         # directly from message.
         
         previousMsgFunc = protObj.addMsgSendFunction(msgSendEndpointName,msgSendFuncName);
-        
-        for s in range(1,len(astNode.children)):
+
+        # start at 2 because that's the first msgReceive
+        for s in range(2,len(astNode.children)):
             msgRecvTraceItem = astNode.children[s];
             msgRecvEndpointName = msgRecvTraceItem.children[0].value;
             msgRecvFuncName = msgRecvTraceItem.children[1].value;

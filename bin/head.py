@@ -4,9 +4,15 @@ import sys;
 import os;
 astParserPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast');
 sys.path.insert(0, astParserPath);
-from astBuilder import getParser;
-from astBuilder import getErrorEncountered;
-from astBuilder import resetErrorEncountered;
+
+# from astBuilder import getParser;
+# from astBuilder import getErrorEncountered;
+# from astBuilder import resetErrorEncountered;
+
+from astBuilder_v2 import getParser;
+from astBuilder_v2 import getErrorEncountered;
+from astBuilder_v2 import resetErrorEncountered;
+
 import re;
 from astNode import WaldoTypeCheckException;
 

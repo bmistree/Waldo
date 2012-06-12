@@ -15,7 +15,7 @@ Endpoint Pong;
 Traces
 {
         // specifies order of handlers that will be called
-        Ping.one -> Pong.two -> Ping.three -> Pong.four;
+         Ping.one -> Pong.two -> Ping.three -> Pong.four;
 }
 
 

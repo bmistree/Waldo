@@ -73,19 +73,15 @@ def p_TraceItem(p):
     p[0].addChildren([p[1],p[3]]);
 
 def p_TraceBodySection(p):
-    '''TraceBodySection : TraceLine SEMI_COLON TraceBodySection
-                        | TraceLine SEMI_COLON''';
+    '''TraceBodySection : Identifier COLON TraceLine SEMI_COLON TraceBodySection
+                        | Identifier COLON TraceLine SEMI_COLON''';
     #note: currently, cannot have empty trace body section.
     p[0] = AstNode(AST_TRACE_BODY_SECTION,p[1].lineNo,p[1].linePos);
-    
-    # to make ast consistent with other tree inserting blank name for
-    # trace line.
-    p[1].prependChild(AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),''));
-    
-    p[0].addChild(p[1]);
-    if(len(p) == 4):
+    p[3].prependChild(p[1]);
+    p[0].addChild(p[3]);
+    if(len(p) == 6):
         #flattens all TraceLines into siblings
-        p[0].addChildren(p[3].getChildren());
+        p[0].addChildren(p[5].getChildren());
     
 
 def p_TraceLine(p):

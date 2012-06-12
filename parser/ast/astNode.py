@@ -47,6 +47,9 @@ class AstNode():
     def addChild(self, childToAdd):
         self.children.append(childToAdd);
 
+
+    def prependChild(self,childToPrepend):
+        self.children.insert(0,childToPrepend);
         
     def addChildren(self, childrenToAdd):
         for s in childrenToAdd:
@@ -172,6 +175,8 @@ class AstNode():
             '''
 
             typeStack.setAstTraceSectionNode(self);
+            
+            # skip the first child, which is a name for the 
             for s in self.children:
                 s.typeCheck(progText,typeStack);
 
@@ -267,7 +272,16 @@ class AstNode():
             
             #will hold the name of the last endpoint used in trace line.
             lastEndpoint = None;
+            firstChild = True;
             for traceItem in self.children:
+                
+                # skip first item, because that is the potential name
+                # of the trace line messsage sequence.
+                if firstChild:
+                    firstChild = False;
+                    continue;
+
+                
                 endpointName = traceItem.children[0].value;
                 currentLineNo = traceItem.children[0].lineNo;
 
@@ -1287,7 +1301,6 @@ def resetErrorEncountered():
 
 def errorFunction(errorString,astNodes,lineNumbers,progText):
     setErrorEncountered();
-    
     '''
     @param {String} errorString -- Text associated with error.
     @param {Array < AstNode>} astNodes -- Contains all ast nodes associated with the error.

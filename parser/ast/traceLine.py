@@ -47,7 +47,10 @@ class TraceLineManager():
         @returns None if addition is successful.
                  TypeCheckError object if unsuccessful.
         '''
-        msgStarter = traceItemToString(traceLineAst.children[0]);
+        
+        # start at 2nd child because first child is the name of the
+        # sequence of messages.
+        msgStarter = traceItemToString(traceLineAst.children[1]);
         
         index = self.traceLines.get(msgStarter, None);
         if (index != None):
@@ -215,8 +218,15 @@ class TraceLine ():
         #the item has been declared in a trace, but never actually
         #defined below.
         self.definedUndefinedList = [];
-        
+
+        self.sequenceName = traceLineAst.children[0].value;
+
+        firstChild = True;
         for traceItem in traceLineAst.children:
+            if firstChild:
+                firstChild = False;
+                continue;
+            
             toAppend = traceItemToString(traceItem);
             self.stringifiedTraceItems.append(toAppend);
             self.definedUndefinedList.append(0);
