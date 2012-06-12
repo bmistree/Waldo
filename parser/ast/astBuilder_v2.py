@@ -41,10 +41,101 @@ lexer = None;
 
 
 def p_RootExpression(p):
-    'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection EndpointSection EndpointSection';
-    p[0] = AstNode(AST_ROOT,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[2],p[3],p[4],p[5],p[6]]);
+    'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection MessageSequenceSection EndpointSection EndpointSection';
     
+    p[0] = AstNode(AST_ROOT,p[1].lineNo,p[1].linePos);
+    p[0].addChildren([p[1],p[2],p[3],p[4],p[6],p[7], p[5]]);  # message section gets added to end
+
+
+def p_MessageSequenceSection(p):
+    '''MessageSequenceSection : MessageSequence MessageSequenceSection
+                              | MessageSequence
+    '''
+    
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    
+    if (len(p) == 3):
+        #flattens all message sequences into siblings
+        p[0].addChildren(p[2].getChildren());
+
+                   
+def p_MessageSequence(p):
+    '''
+    MessageSequence : SEQUENCE Identifier CURLY_LEFT MessageSequenceGlobalSection MessageSequenceFunctions CURLY_RIGHT
+    MessageSequence : SEQUENCE Identifier CURLY_LEFT MessageSequenceFunctions CURLY_RIGHT
+    '''
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE,p[2].lineNo,p[2].linePos);
+    # default to empty message sequence globals section if not defined
+    globs = AstNode(AST_MESSAGE_SEQUENCE_GLOBALS,p[2].lineNo,p[2].linePos);
+    sequenceFunctions = p[4];
+    if (len(p) == 7):
+        globs = p[4];
+        sequenceFunctions = p[5];
+
+    p[0].addChildren([p[2],globs,sequenceFunctions]);
+            
+    
+
+
+def p_MessageSequenceGlobalSection(p):
+    '''MessageSequenceGlobalSection : Declaration SEMI_COLON MessageSequenceGlobalSection
+                                    | Declaration SEMI_COLON '''
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE_GLOBALS,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        p[0].addChildren(p[3].getChildren());
+
+
+def p_MessageSequenceFunctions(p):
+    '''MessageSequenceFunctions : MessageSendSequenceFunction MessageReceiveSequenceFunctions
+    '''
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE_FUNCTIONS,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    p[0].addChildren(p[2].getChildren());
+
+def p_MessageSendSequenceFunction(p):
+    '''
+    MessageSendSequenceFunction : Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
+                                | Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+    '''
+
+    p[0] = AstNode(AST_MESSAGE_SEND_SEQUENCE_FUNCTION,p[1].lineNo,p[1].linePos);
+    p[0].addChildren([p[1],p[3],p[5]]);
+    if (len(p) == 10):
+        p[0].addChild(p[8]);
+    else:
+        #means that we had no function body, insert an impostor
+        #function body node.
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p[1].lineNo,p[1].linePos));
+
+
+        
+def p_MessageReceiveSequenceFunctions(p):
+    '''
+    MessageReceiveSequenceFunctions : MessageReceiveSequenceFunction MessageReceiveSequenceFunctions
+                                    | MessageReceiveSequenceFunction
+    '''
+    # intermediate ast node, will get removed by above parsing layer
+    p[0] = AstNode(AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTIONS, p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    if (len(p) == 3):
+        p[0].addChildren(p[2].getChildren());
+
+    
+def p_MessageReceiveSequenceFunction(p):
+    '''
+    MessageReceiveSequenceFunction : Identifier DOT Identifier CURLY_LEFT CURLY_RIGHT
+                                   | Identifier DOT Identifier CURLY_LEFT FunctionBody CURLY_RIGHT
+    '''
+    p[0] = AstNode(AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION,p[1].lineNo,p[1].linePos);
+    p[0].addChildren([p[1],p[3]]);
+    if (len(p) == 7):
+        p[0].addChild(p[5]);
+    else:
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p[1].lineNo,p[1].linePos));
+
+        
 
 def p_NameSection(p):
     'NameSection : Identifier'

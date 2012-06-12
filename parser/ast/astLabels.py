@@ -100,3 +100,14 @@ TYPE_MESSAGE_LITERAL = 'MessageLiteral';
 TYPE_MSG_SEND_FUNCTION = 'MsgSendFunc';
 TYPE_MSG_RECEIVE_FUNCTION = 'MsgRecvFunc';
 
+
+
+# v2
+AST_MESSAGE_SEQUENCE_SECTION = 'MessageSequenceSection';
+AST_MESSAGE_SEQUENCE = 'MessageSequence';
+AST_MESSAGE_SEQUENCE_GLOBALS = 'MessageSequenceGlobals';
+AST_MESSAGE_SEQUENCE_FUNCTIONS = 'MessageSequenceFunctions';
+AST_MESSAGE_SEQUENCE_FUNCTION = 'MessageSequenceFunction';
+AST_MESSAGE_SEND_SEQUENCE_FUNCTION = 'MessageSendSequenceFunction';
+AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTIONS = 'MessageReceiveSequenceFunctions';
+AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION = 'MessageReceiveSequenceFunction';

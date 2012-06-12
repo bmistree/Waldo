@@ -28,6 +28,7 @@ tokens = (
     "MULTI_LINE_COMMENT_BEGIN",
     "MULTI_LINE_COMMENT_END",
 
+    "SEQUENCE",
     
     "SEND_OPERATOR",
     "RETURN_OPERATOR",
@@ -291,6 +292,10 @@ def t_MSG_RECEIVE(t):
 
 def t_PUBLIC(t):
     'Public';
+    return mStateMachine.addToken(t);
+
+def t_SEQUENCE(t):
+    "MessageSequence";
     return mStateMachine.addToken(t);
 
 def t_RETURNS(t):
