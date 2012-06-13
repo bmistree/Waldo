@@ -102,7 +102,7 @@ TYPE_MSG_RECEIVE_FUNCTION = 'MsgRecvFunc';
 
 
 
-# v2
+# VERSION 2 labels....all of these get dropped when converted to version 1.
 AST_MESSAGE_SEQUENCE_SECTION = 'MessageSequenceSection';
 AST_MESSAGE_SEQUENCE = 'MessageSequence';
 AST_MESSAGE_SEQUENCE_GLOBALS = 'MessageSequenceGlobals';

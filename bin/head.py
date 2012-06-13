@@ -8,10 +8,15 @@ sys.path.insert(0, astParserPath);
 # from astBuilder import getParser;
 # from astBuilder import getErrorEncountered;
 # from astBuilder import resetErrorEncountered;
+# VERSION = 1;
 
+import canonicalize;
 from astBuilder_v2 import getParser;
 from astBuilder_v2 import getErrorEncountered;
 from astBuilder_v2 import resetErrorEncountered;
+VERSION = 2;
+
+
 
 import re;
 from astNode import WaldoTypeCheckException;
@@ -75,6 +80,15 @@ def genAst(progText,outputErrsTo):
     progText = stripWindowsLineEndings(progText);
     parser = getParser(progText,outputErrsTo);
     astNode = parser.parse(progText);
+    if (VERSION == 1):
+        pass;
+    elif(VERSION == 2):
+        canonicalize.v2ToV1Ast(astNode);
+    else:
+        print('\nError, no version information provided\n');
+        assert(False);
+
+        
     return astNode,progText;
 
 def compileText(progText,outputErrStream):
