@@ -5,16 +5,30 @@ import os;
 astParserPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast');
 sys.path.insert(0, astParserPath);
 
-# from astBuilder import getParser;
-# from astBuilder import getErrorEncountered;
-# from astBuilder import resetErrorEncountered;
-# VERSION = 1;
+from astBuilder import getParser as v1GetParser;
+from astBuilder import getErrorEncountered as v1GetErrorEncountered;
+from astBuilder import resetErrorEncountered as v1ResetErrorEncountered;
+
 
 import canonicalize;
-from astBuilder_v2 import getParser;
-from astBuilder_v2 import getErrorEncountered;
-from astBuilder_v2 import resetErrorEncountered;
-VERSION = 2;
+from astBuilder_v2 import getParser as v2GetParser;
+from astBuilder_v2 import getErrorEncountered as v2GetErrorEncountered;
+from astBuilder_v2 import resetErrorEncountered as v2ResetErrorEncountered;
+
+def getParser(progText,outputErrsTo,versionNum):
+    if versionNum == 1:
+        return v1GetParser(progText,outputErrsTo);
+    return v2GetParser(progText,outputErrsTo);
+
+def getErrorEncountered(versionNum):
+    if versionNum == 1:
+        return v1GetErrorEncountered();
+    return v2GetErrorEncountered();
+
+def resetErrorEncountered(versionNum):
+    if versionNum == 1:
+        return v1ResetErrorEncountered();
+    return v2ResetErrorEncountered();
 
 
 
@@ -22,11 +36,11 @@ import re;
 from astNode import WaldoTypeCheckException;
 
 import json;
-astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'emitters','pyEmit');
+astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','emitters','pyEmit');
 sys.path.insert(0, astEmitPath);
 import astEmit;
 
-lexPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'lexer');
+lexPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','lexer');
 from waldoLex import WaldoLexException;
 
 
@@ -55,9 +69,9 @@ def runTests():
     print('Still to fill in');
 
 
-def genAstFromFile(inputFilename,outputErrsTo):
+def genAstFromFile(inputFilename,outputErrsTo,versionNum):
     fileText = getFileText(inputFilenameArg);
-    return genAst(fileText,outputErrsTo);
+    return genAst(fileText,outputErrsTo,versionNum);
 
 
 def astProduceTextOutput(astNode,textOutFilename):
@@ -76,13 +90,13 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
     return astNode;
 
 
-def genAst(progText,outputErrsTo):
+def genAst(progText,outputErrsTo,versionNum):
     progText = stripWindowsLineEndings(progText);
-    parser = getParser(progText,outputErrsTo);
+    parser = getParser(progText,outputErrsTo,versionNum);
     astNode = parser.parse(progText);
-    if (VERSION == 1):
+    if (versionNum == 1):
         pass;
-    elif(VERSION == 2):
+    elif(versionNum == 2):
         canonicalize.v2ToV1Ast(astNode);
     else:
         print('\nError, no version information provided\n');
@@ -91,7 +105,7 @@ def genAst(progText,outputErrsTo):
         
     return astNode,progText;
 
-def compileText(progText,outputErrStream):
+def compileText(progText,outputErrStream,versionNum):
     '''
     Mostly will be used when embedding in another project.  
     
@@ -101,6 +115,8 @@ def compileText(progText,outputErrStream):
     @param{File-like object} outputErrStream -- The stream that we should use to output
     error messages to.
 
+    @param {Int} versionNum 1 or 2.
+    
     @returns {String or None} -- if no errors were encountered,
     returns the compiled source of the file.  If compile errors were
     encountered, then returns None.
@@ -115,36 +131,36 @@ def compileText(progText,outputErrStream):
         
     if (astRootNode == None):
         # means there was an error
-        resetErrorEncountered();
+        resetErrorEncountered(versionNum);
         return None;
 
     try:
         astRootNode.typeCheck(progText);
     except WaldoTypeCheckException as excep:
-        resetErrorEncountered();
+        resetErrorEncountered(versionNum);
         return None;
 
     
-    if (getErrorEncountered()):
-        resetErrorEncountered();
+    if (getErrorEncountered(versionNum)):
+        resetErrorEncountered(versionNum);
 
         
         # means there was a type error.  should not continue.
         return None;
 
-    resetErrorEncountered();
+    resetErrorEncountered(versionNum);
     emitText = astEmit.runEmitter(astRootNode,None,outputErrStream);
     return emitText; # will be none if encountered an error during
                      # emit.  otherwise, file text.
 
 
         
-def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg):
+def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg,versionNum):
     errOutputStream = sys.stderr;
 
 
     try:
-        ast,fileText = genAstFromFile(inputFilename,errOutputStream);
+        ast,fileText = genAstFromFile(inputFilename,errOutputStream,versionNum);
     except WaldoLexException as excep:
         print >> errOutputStream, excep.value;
         return;
@@ -174,7 +190,7 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
             
         if (emitArg != None):
             
-            if (getErrorEncountered()):
+            if (getErrorEncountered(versionNum)):
                 # do not emit any code if got a type error when tyring
                 # to compile.
                 errMsg = '\nType error: cancelling code emit\n';
@@ -238,6 +254,8 @@ def printUsage():
 
     -e <filename> Emit the generated code to filename
 
+    -v <version number 1 or 2> Input file is of version 1 or version 2.  Default is version 1
+
     no args ... run ast tests
     
     ''');
@@ -255,7 +273,7 @@ if __name__ == '__main__':
     emitArg = None;
     typeCheckArg = True;
     skipNext = False;
-
+    versionNum = 1;
     
     
     for s in range(0,len(sys.argv)):
@@ -265,11 +283,20 @@ if __name__ == '__main__':
 
         if (sys.argv[s] == '-f'):
             if (s + 1< len(sys.argv)):
-                inputFilenameArg =  sys.argv[s+1];
+                inputFilenameArg = sys.argv[s+1];
                 skipNext = True;
             else:
                 #will force printing usage without doing any work.
                 helpArg = True;
+
+        if (sys.argv[s] == '-v'):
+            if (s + 1 < len(sys.argv)):
+                versionNum = int(sys.argv[s+1]);
+                skipNext = True;
+                if (versionNum != 1) and (versionNum != 2):
+                    print('\nI can only handle Waldo versions 1 or 2.\n');
+                    helpArg = True;
+
                 
         if (sys.argv[s] == '-go'):
             if (s+1 < len(sys.argv)):
@@ -323,5 +350,5 @@ if __name__ == '__main__':
         if (inputFilenameArg == None):
             runTests();
         else:
-            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg);
+            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg,versionNum);
             
