@@ -142,13 +142,13 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         returnString += '\n';
 
     elif (astNode.label == AST_BOOL):
-        return ' ' + astNode.value + ' ';
+        return '' + astNode.value + ' ';
 
     elif (astNode.label == AST_STRING):
-        return ' "'  + astNode.value + '" ';
+        return '"'  + astNode.value + '" ';
 
     elif (astNode.label == AST_NUMBER):
-        return ' '  + astNode.value + ' ';
+        return ''  + astNode.value + ' ';
 
     elif ((astNode.label == AST_PLUS) or (astNode.label == AST_MINUS) or
           (astNode.label == AST_MULTIPLY) or (astNode.label == AST_DIVIDE) or 
