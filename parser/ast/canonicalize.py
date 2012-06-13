@@ -15,9 +15,13 @@ OUTGOING_MESSAGE_NAME = 'Text';   # overloading outgoing message with
                                   # be used because it's a reserved
                                   # word.
 
-
-
-def v2ToV1Ast(astNode):
+# types of errors that need to check for:
+#   1: sequence global variable interferes with endpoint or overall global or function or endpoint names;
+#   2: arguments passed into message send arguments interfere with sequence globals;
+#   3: labels for traces interfere with an endpoint;
+#x   4: endpoint name for function is not defined correctly;
+  
+def v2ToV1Ast(astNode,progText):
     '''
     @param {AstNode} astNode --- Root of the version 2 ast.
     
@@ -39,12 +43,12 @@ def v2ToV1Ast(astNode):
     endPt2Section = astNode.children[5];
 
     for sequence in sequencesSection.children:
-        updateWithMsgSequence(sequence,endPt1Section,endPt2Section);
+        updateWithMsgSequence(sequence,endPt1Section,endPt2Section,progText);
 
     del astNode.children[6];
 
         
-def updateWithMsgSequence(sequence,endPt1Section,endPt2Section):
+def updateWithMsgSequence(sequence,endPt1Section,endPt2Section,progText):
     '''
     @param{AstNode} sequence --- A node of type AST_MESSAGE_SEQUENCE
     @param{AstNode} endPt1Section --- A node of type AST_ENDPOINT
@@ -82,9 +86,14 @@ def updateWithMsgSequence(sequence,endPt1Section,endPt2Section):
         else:
             errMsg = '\nSyntax error: should match given endpoint names\n';
             # lkjs: make into real error message.
-            print(errMsg);
-            assert(False);
+            errMsg = '\nInvalid endpoint name prefixing message sequence ';
+            errMsg += 'function with name "' + funcNameNode.value + '".  ';
+            errMsg += 'Found name "' + endPtName + '".  Should be either ';
+            errMsg += '"'+endPt1Name+'" or "' + endPt2Name + '".\n';
+            errorFunction(errMsg,[funcNameNode],[funcNameNode.lineNo],progText);
 
+
+            
         # should just need to add the created function as an
         # additional child of endPtFuncSection.
         if (len(endPtToAddTo.children) == 1):
@@ -289,10 +298,6 @@ def updateVariableNames(toAddNode,seqGlobalsNode):
 
 
 def replaceAndRecurse(node,checkDict):
-    # if (node.label == AST_IDENTIFIER):
-    #     if (node.value in checkDict):
-    #         node.value = checkDict[node.value];
-
     # there shouldn't be any cycles in ast, so we should be okay with
     # basic recursion.
 

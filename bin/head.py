@@ -97,12 +97,11 @@ def genAst(progText,outputErrsTo,versionNum):
     if (versionNum == 1):
         pass;
     elif(versionNum == 2):
-        canonicalize.v2ToV1Ast(astNode);
+        canonicalize.v2ToV1Ast(astNode,progText);
     else:
         print('\nError, no version information provided\n');
         assert(False);
 
-        
     return astNode,progText;
 
 def compileText(progText,outputErrStream,versionNum):
@@ -128,7 +127,12 @@ def compileText(progText,outputErrStream,versionNum):
     except WaldoLexException as excep:
         print >> outputErrStream, excep.value;
         return None;
-        
+    except WaldoTypeCheckException as excep:
+        print >> errOutputStream, excep.value;
+        return;
+
+
+    
     if (astRootNode == None):
         # means there was an error
         resetErrorEncountered(versionNum);
@@ -164,7 +168,9 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
     except WaldoLexException as excep:
         print >> errOutputStream, excep.value;
         return;
-
+    except WaldoTypeCheckException as excep:
+        print >> errOutputStream, excep.value;
+        return;
     
     if (ast == None):
         print >> errOutputStream, '\nError with program.  Please fix and continue\n';

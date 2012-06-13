@@ -33,12 +33,8 @@ MessageSequence Something
         Number someNumber = 0;
        Ping.one()
        {
-            5+2;
-            5+2;    
-            5+2;
             pingCounter = pingCounter + 1;
-            5+2;    
-            5+2;            
+            
        }
        Pong.two
        {
