@@ -91,3 +91,6 @@ interesting questions.
 
 Maybe have a warning when performing equality tests on lists and
 maps.  Frequent challenge in equality testing.
+
+We take a very conservative approach to variable name collisions.
+This should make the code much more readable.

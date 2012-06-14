@@ -30,11 +30,10 @@ Shared
 
 MessageSequence Something
 {
-        Number someNumber = 0;
+       Number something = 0;
        Ping.one()
        {
             pingCounter = pingCounter + 1;
-            
        }
        Pong.two
        {
@@ -49,6 +48,8 @@ MessageSequence Something
             pongCounter = pongCounter + 1;  
        }
 }
+
+
 
 /****  New endpoint *********/
 Ping

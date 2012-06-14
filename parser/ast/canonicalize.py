@@ -15,11 +15,6 @@ OUTGOING_MESSAGE_NAME = 'Text';   # overloading outgoing message with
                                   # be used because it's a reserved
                                   # word.
 
-# types of errors that need to check for:
-#   1: sequence global variable interferes with endpoint or overall global or function or endpoint names;
-#   2: arguments passed into message send arguments interfere with sequence globals;
-#   3: labels for traces interfere with an endpoint;
-#x   4: endpoint name for function is not defined correctly;
   
 def v2ToV1Ast(astNode,progText):
     '''
@@ -41,13 +36,148 @@ def v2ToV1Ast(astNode,progText):
     
     endPt1Section = astNode.children[4];
     endPt2Section = astNode.children[5];
+    sharedSection = astNode.children[3];
+    tracesSection = astNode.children[2];
 
+    v2TypeCheck(sequencesSection,tracesSection,sharedSection,endPt1Section,endPt2Section,progText);
+    
     for sequence in sequencesSection.children:
         updateWithMsgSequence(sequence,endPt1Section,endPt2Section,progText);
-
+        
     del astNode.children[6];
 
+
+def v2TypeCheck(sequencesSection,tracesSection,sharedSection,endPt1Section,endPt2Section,progText):
+    '''
+    Performs four types of v2-specific type checking, throwing errors if needed:
+    
+      1: Checks that sequence global variable names do not interfere with
+         endpoint globals or shared variables.
+      
+      2: Checks that labels for traces do not interfere with endpoints.
+
+      3: Checks that each trace line has a sequence section.
+
+      4: Checks that no sequence section exists that does not have a trace line.
+    '''
+    
+    # build a dict of sequence global variable names
+    seqGlobNamesDict =  {};
+
+
+    filledInSequenceNames = {};
+    for sequence in sequencesSection.children:
+        sequenceName = sequence.children[0].value;
+        filledInSequenceNames[sequenceName] = sequence;
+        seqGlobSection = sequence.children[1];
+        for seqGlobNode in seqGlobSection.children:
+            name = seqGlobNode.children[1].value;
+            seqGlobNamesDict[name] = seqGlobNode;
+
+            
+    # check through the endpoint globals
+    for sharedItemNode in sharedSection.children:
+        #sharedItemNode is of type annotatedDeclaration
+        name = sharedItemNode.children[2].value;
         
+        if name in seqGlobNamesDict:
+            # means that there is a naming conflict between sequence
+            # global and full-file global: throw error
+            conflictNode = seqGlobNamesDict[name];
+            
+            errMsg = '\nError.  You declared "' + name + '" to be ';
+            errMsg += 'a globally shared variable, but then re-declared ';
+            errMsg += 'it to be shared during a message sequence.  Either ';
+            errMsg += 're-name or delete one.\n';
+            errorFunction(errMsg,[conflictNode,sharedItemNode],[conflictNode.lineNo,sharedItemNode.lineNo],progText);      
+
+    # check through the endpoint globals.
+    v2TypeCheckEndPtGlobs(seqGlobNamesDict,endPt1Section,progText);
+    v2TypeCheckEndPtGlobs(seqGlobNamesDict,endPt2Section,progText);
+
+    endPt1Name = endPt1Section.children[0].value;
+    endPt2Name = endPt2Section.children[0].value;
+    
+    # check that labels for traces do not interfere with endpoints
+    traceLineNames = {};
+    for traceLineNode in tracesSection.children:
+        traceLineName = traceLineNode.children[0].value;
+        traceLineNames[traceLineName] = traceLineNode;
+        conflictNode = None;
+        if (traceLineName == endPt1Name):
+            conflictNode = endPt1Section;
+        elif(traceLineName == endPt2Name):
+            conflictNode = endPt2Section;
+
+        if (conflictNode != None):
+            # means that one of the trace lines has the same name as
+            # an endpoint.  emit error.
+            errMsg = '\nError.  You declared both a trace line and an ';
+            errMsg += 'endpoint to have the same name: "' + traceLineName + '".  ';
+            errMsg += 'Either re-name or delete one.\n';
+            errorFunction(errMsg,[conflictNode,traceLineNode],[conflictNode.lineNo,traceLineNode.lineNo],progText);
+
+
+    ######CHECK that each trace line has a sequence section
+    for traceName in traceLineNames.keys():
+        if not (traceName in filledInSequenceNames):
+            # specified a trace without specifying its sequence.
+            errMsg = '\nError.  You specified a trace with name "' +traceName + '" ';
+            errMsg += 'without filling in its associated sequence.\n';
+            traceNode = traceLineNames[traceName];
+            errorFunction(errMsg,[traceNode],[traceNode.lineNo],progText);
+            
+    ######CHECK that each sequence section has a matching trace line
+    for sequenceName in filledInSequenceNames.keys():
+        if not (sequenceName in traceLineNames):
+            # specified a sequence without specifying its trace line
+            errMsg = '\nError.  You specified a message sequence block "' +sequenceName + '" ';
+            errMsg += 'without filling in its associated trace line.\n';
+            sequenceBlockNode = filledInSequenceNames[sequenceName];
+            errorFunction(errMsg,[sequenceBlockNode],[sequenceBlockNode.lineNo],progText);
+            
+            
+    # if got to this point, then no error.
+
+
+            
+
+def v2TypeCheckEndPtGlobs(seqGlobNamesDict,endPtSec,progText):
+    '''
+    @param {dict<String,AstNode>} seqGlobNamesDict --- Keys are the
+    names of the declared functions, values are the Declaration
+    AstNodes in the sequences section that are associated with the
+    sequences-global variable.
+
+    @param {AstNode} endPtSec --- Endpoint section to check through to
+    see if its global variables interfere with the sequence's global
+    variables.
+
+    Runs through the endpoint, checking to ensure that the endpoint's
+    global variables do not collide with the sequence's globals.
+    '''
+    if (len(endPtSec.children) != 2):
+        return;
+    if (len(endPtSec.children[1].children) == 0):
+        return;
+        
+    endPtGlobs = endPtSec.children[1].children[0];
+    endPtName = endPtSec.children[0].value;
+
+    for globNode in endPtGlobs.children:
+        # globNode is a Declaration
+        name = globNode.children[1].value;
+        if name in seqGlobNamesDict:
+            conflictNode = seqGlobNamesDict[name];
+            
+            errMsg = '\nError.  You declared "' + name + '" to be ';
+            errMsg += 'a variable for your endpoint named "' + endPtName;
+            errMsg += '", but then re-declared ';
+            errMsg += 'it to be shared during a message sequence.  Either ';
+            errMsg += 're-name or delete one.\n';
+            errorFunction(errMsg,[conflictNode,globNode],[conflictNode.lineNo,globNode.lineNo],progText);      
+    
+                                     
 def updateWithMsgSequence(sequence,endPt1Section,endPt2Section,progText):
     '''
     @param{AstNode} sequence --- A node of type AST_MESSAGE_SEQUENCE
@@ -162,12 +292,12 @@ def updateWithMsgSequence(sequence,endPt1Section,endPt2Section,progText):
                     # means that we have an initializer
                     valueNode = seqParamNode.children[2];
                 else:
-                    if (typeNode.value == AST_BOOL):
+                    if (typeNode.value == TYPE_BOOL):
                         valueNode = AstNode(AST_BOOL,typeNode.lineNo,typeNode.linePos,'False');
-                    elif(typeNode.value == AST_STRING):
+                    elif(typeNode.value == TYPE_STRING):
                         valueNode = AstNode(AST_STRING,typeNode.lineNo,typeNode.linePos,'');
-                    elif (typeNode.value == AST_NUMBER):
-                        valueNode = AstNode(AST_NUMBER,typeNode.lineNo,typeNode.linePos,0);
+                    elif (typeNode.value == TYPE_NUMBER):
+                        valueNode = AstNode(AST_NUMBER,typeNode.lineNo,typeNode.linePos,'0');
                     else:
                         print('\nUnknown type: ' + typeNode.value + '\n');
                         assert(False);
