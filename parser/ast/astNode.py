@@ -823,6 +823,18 @@ class AstNode():
                     errMsg += 'assigned to type [' + rhsType + '].';
                     errorFunction(errMsg,[self],[currentLineNo],progText);
 
+            else:
+                # not initialization information.  There are several
+                # types that require initialization information.  Most
+                # importantly, user-defined functions do.  Throw an
+                # error if user-defined function does not.
+                if (isFunctionType(declaredType)):
+                    errMsg = 'Error when declaring a user-defined function ';
+                    errMsg += 'named "' + name + '".  Every user-defined ';
+                    errMsg += 'requires that it should be initialized.  ';
+                    errMsg += 'That means that you have to set ' + name + ' ';
+                    errMsg += 'to a valid function when you declare it.';
+                    errorFunction(errMsg,[self],[currentLineNo],progText);
                     
             #check if already have a function or variable with the
             #targetted name.
@@ -1123,7 +1135,6 @@ class AstNode():
             
         funcName = self.children[0].value;            
         self.lineNo = self.children[0].lineNo;
-        
 
         if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_PRIVATE_FUNCTION)):
             #get declared return type (only applicable for functions and public functions)
@@ -1170,7 +1181,8 @@ class AstNode():
                     continue;
             
                 #set the type of t to the type identifier of the argument.
-
+                t.children[0].typeCheck(progText,typeStack);
+                
                 t.type = t.children[0].value;
 
                 #add the argument type to the typeStack representation for this function.

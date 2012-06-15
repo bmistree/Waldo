@@ -63,8 +63,10 @@ def getDefaultValForType(astTypedNode):
         decString = '""';
     elif (typeName == TYPE_NOTHING):
         decString = 'None';
-    elif (typeName == TYPE_MESSAGE):
+    elif (typeName == TYPE_INCOMING_MESSAGE):
         decString = '{}';
+    elif (typeName == TYPE_OUTGOING_MESSAGE):
+        decString = '{}';        
     else:
         errMsg = '\nBehram error.  Unknown declaration type when ';
         errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
@@ -181,8 +183,6 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
             operator = '<';            
         elif(astNode.label == AST_LESS_THAN_EQ):
             operator = '<=';
-
-            
             
         else:
             errMsg = '\nBehram error.  Unknown operator type when ';
@@ -328,13 +328,31 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
     elif (astNode.label == AST_FUNCTION_CALL):
         funcNameNode = astNode.children[0];
 
-        funcCallPrefix = 'self.'
-        if (prefix == SELF_PREFIX):
-            # means that we are in the context object: need to use the
-            # self.endpoint instead.
-            funcCallPrefix = 'self._endpoint.';
+
+        pythonFuncName = endpoint.getPythonizedFunctionName(funcNameNode.value);
+        funcNameStr = funcNameNode.value;
         
-        funcNameStr = funcCallPrefix + endpoint.getPythonizedFunctionName(funcNameNode.value);
+        if (pythonFuncName == None):
+
+            # means that we're calling a user-defined function.
+            if ((endpoint == None) and (prefix == SELF_PREFIX)):
+                # means that we are handling the shared section and we
+                # have no endpoint and therefore, all identifers should
+                # use the self prefix.
+                funcNameStr = SELF_PREFIX + funcNameNode.value;
+            
+            elif (endpoint.isGlobalOrShared(funcNameNode.value)):
+                funcNameStr = prefix + funcNameNode.value;     
+
+        else:
+            funcCallPrefix = 'self.'
+            if (prefix == SELF_PREFIX):
+                # means that we are in the context object: need to use the
+                # self.endpoint instead.
+                funcCallPrefix = 'self._endpoint.';
+            funcNameStr = funcCallPrefix + pythonFuncName;
+
+        
         funcArgListNode = astNode.children[1];
         funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,prefix,0);
         returnString = indentString(funcNameStr + funcArgStr,indentLevel);

@@ -107,11 +107,8 @@ class Endpoint():
             if (s.name == funcName):
                 return s.pythonizeName();
 
-
-        errMsg = '\nBehram error: requesting a function name to call that ';
-        errMsg += 'does not exist in this endpoint.\n';
-        assert(False);
-
+        # means that we are calling a user-defined function variable.
+        return None;
 
 
     def setMsgReceiveFunctionAstNode(self,msgReceiveFuncName,msgReceiveFuncAstNode):
@@ -290,15 +287,11 @@ class %s:
             initHeaderString += ',' + s;
         initHeaderString += '):\n';
 
-
-        
         # each endpoint needs a unique name for reference in
         # the current connection object implementation.
         # FIXME: does not actually guarantee
         # distinct names for each endpoint.  lkjs;
         fakeName = str(random.random());
-
-
 
         initBodyString = r"""
 '''
@@ -577,7 +570,6 @@ eval(obj);
 
 """;
         
-        
         indentedHead = emitHelper.indentString(trySendNextHead,1);
         indentedBody = emitHelper.indentString(trySendNextBody,2);
         return indentedHead + '\n' + indentedBody;
@@ -591,9 +583,6 @@ delay.start();
 delay.join();
 """;
 
-        
-
-        
         sendMsgHead = '\ndef _internalSendMsg (self,msg,funcNameFrom):\n';
         
         sendMsgBody = r"""
@@ -651,8 +640,6 @@ dispatchTo = None;
             caseBasedDispatch += s.caseBasedDispatch(first,0);
             first = False;
 
-
-            
         if (not first):
             # means we had some messages to send
             # add in a slip of compiler debugging code.
