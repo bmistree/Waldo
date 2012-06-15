@@ -131,7 +131,8 @@ def p_MessageReceiveSequenceFunction(p):
 
 def p_TraceBodySection(p):
     '''TraceBodySection : Identifier COLON TraceLine SEMI_COLON TraceBodySection
-                        | Identifier COLON TraceLine SEMI_COLON''';
+                        | Identifier COLON TraceLine SEMI_COLON
+                        ''';
     #note: currently, cannot have empty trace body section.
     p[0] = AstNode(AST_TRACE_BODY_SECTION,p[1].lineNo,p[1].linePos);
     p[3].prependChild(p[1]);

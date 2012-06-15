@@ -16,6 +16,7 @@ tokens = (
     "MSG_SEND",
     "MSG_RECEIVE",
     "PUBLIC",
+    "PRIVATE",
     "RETURNS",
     "SENDS",
     "RECEIVES",
@@ -294,6 +295,11 @@ def t_MSG_RECEIVE(t):
 def t_PUBLIC(t):
     'Public';
     return mStateMachine.addToken(t);
+
+def t_PRIVATE(t):
+    'Private';
+    return mStateMachine.addToken(t);
+
 
 def t_SEQUENCE(t):
     "MessageSequence";
