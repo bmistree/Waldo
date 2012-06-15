@@ -11,7 +11,10 @@ from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
+from astTypeCheckStack import createFuncMatchObjFromJsonStr;
 from parserUtil import errPrint;
+import json;
+
 
 TYPE_ERROR_ENCOUNTERED = False;
 
@@ -418,19 +421,32 @@ class AstNode():
         elif(self.label == AST_BOOL):
             self.type = TYPE_BOOL;
 
-            
         elif(self.label == AST_FUNCTION_CALL):
             funcName = self.children[0].value;
             self.lineNo = self.children[0].lineNo;
+            
+            # first check if the function has been declared by the
+            # programmer directly
             funcMatchObj = typeStack.getFuncIdentifierType(funcName);
-
-
             
             if (funcMatchObj == None):
-                errMsg = '\nError trying to call function named "' + funcName + '".  ';
-                errMsg += 'That function is not defined anywhere.\n';
-                errorFunction(errMsg,[self],[self.lineNo],progText);            
-                return;
+                # the function has not been defined in the source file.
+                # check if this is an identifier that points at a function.
+                # ie. maybe the usef passed in an argument that was a function.
+                idElement = typeStack.getIdentifierElement(funcName);
+                if (idElement != None):
+                    funcType = idElement.identifierType;
+                    if (isFunctionType(funcType)):
+                        # the coder is trying to call a function variable.  generate
+                        # a function match object from that variable's type signature
+                        # to perform type checking on the input arguments that the
+                        # scripter provided
+                        funcMatchObj = createFuncMatchObjFromJsonStr(funcType,idElement.astNode);
+                else:
+                    errMsg = '\nError trying to call function named "' + funcName + '".  ';
+                    errMsg += 'That function is not defined anywhere.\n';
+                    errorFunction(errMsg,[self],[self.lineNo],progText);            
+
 
             if (funcMatchObj.element.astNode.label == AST_ONCREATE_FUNCTION):
                 errMsg = '\nError trying to call OnCreate function.  ';
@@ -490,8 +506,29 @@ class AstNode():
                     
 
         elif (self.label == AST_TYPE):
-            self.type = self.value;
+            if(self.value != TYPE_FUNCTION):
+                self.type = self.value;
+            else:
+                # more compilcated types for functions
+                
+                # create a dictionary for the function type.
+                # Function (In: Number, TrueFalse; Out: Text)
+                # becomes:
+                # { type: {
+                #    In: [
+                        # {
+                        #     type: "Number"
+                        # },
+                        # {
+                        #     type: "TrueFalse"
+                        # }],
+                #    Out: { type: "Text"}
+                # }
+                typeSignature = buildFuncTypeSignature(self,progText,typeStack);
+                self.type = json.dumps(typeSignature);
+                self.value = self.type;
 
+                
             
         elif (self.label == AST_CONDITION_STATEMENT):
             #type check all children.  (type checks if, elseif, and
@@ -756,7 +793,13 @@ class AstNode():
             for s in self.children:
                 s.typeCheck(progText,typeStack);
 
+            
         elif(self.label == AST_DECLARATION):
+
+            # type check the declared type statement (necessary
+            # because of function statements).
+            self.children[0].typeCheck(progText,typeStack);
+
             declaredType = self.children[0].value;
             self.lineNo = self.children[0].lineNo;
             
@@ -836,7 +879,7 @@ class AstNode():
 
 
         elif ((self.label == AST_PUBLIC_FUNCTION) or
-              (self.label == AST_FUNCTION) or
+              (self.label == AST_PRIVATE_FUNCTION) or
               (self.label == AST_MSG_SEND_FUNCTION) or
               (self.label == AST_MSG_RECEIVE_FUNCTION) or
               (self.label == AST_ONCREATE_FUNCTION)):
@@ -874,7 +917,7 @@ class AstNode():
 
             #insert passed in arguments into context;
             
-            if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_FUNCTION)):
+            if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_PRIVATE_FUNCTION)):
                 funcDeclArgListIndex = 2;
                 funcBodyIndex = 3;
             elif (self.label == AST_MSG_SEND_FUNCTION):
@@ -994,7 +1037,6 @@ class AstNode():
         elif (self.label == AST_BOOL):
             self.type = TYPE_BOOL;
 
-            
         elif (self.label == AST_ASSIGNMENT_STATEMENT):
 
             lhs = self.children[0];
@@ -1068,7 +1110,7 @@ class AstNode():
         itself.
         '''
         if ((self.label != AST_PUBLIC_FUNCTION) and
-            (self.label != AST_FUNCTION) and
+            (self.label != AST_PRIVATE_FUNCTION) and
             (self.label != AST_MSG_SEND_FUNCTION) and
             (self.label != AST_MSG_RECEIVE_FUNCTION) and
             (self.label != AST_ONCREATE_FUNCTION)):
@@ -1083,7 +1125,7 @@ class AstNode():
         self.lineNo = self.children[0].lineNo;
         
 
-        if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_FUNCTION)):
+        if ((self.label == AST_PUBLIC_FUNCTION) or (self.label == AST_PRIVATE_FUNCTION)):
             #get declared return type (only applicable for functions and public functions)
             self.children[1].typeCheck(progText,typeStack);
             returnType = self.children[1].type;
@@ -1377,6 +1419,84 @@ def splitString(string,maxLineLen):
 
     return toReturn;
 
+
+def isFunctionType(typeLabel):
+    '''
+    Nodes can have many different type labels.  Some are specified by
+    strings (mostly nodes with basic types, eg. Number, String, etc.).
+
+    Nodes for user-defined function types do not just have one
+    annotation, but rather a json-ized type.  To check if a node's
+    label is one of these user-defined function types, we check to
+    exclude all of the other types it could be.
+
+    Returns true if it is a user-defined function type, false otherwise.
+    
+    '''
+    if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
+        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_INCOMING_MESSAGE) and
+        (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING)):
+        return True;
+
+    return False;
+
+
+def buildFuncTypeSignature(node,progText,typeStack):
+    '''
+    @param {AstNode} node --- Has value of FUNCTION_TYPE and type of
+    AST_TYPE.  (Similar to the node that is generated for each type.)
+    For instance, when declare
+
+    Function (In: TrueFalse; Returns: Nothing) a;
+
+    The node corresponds to the node generated from
+
+    Function (In: TrueFalse; Returns: Nothing)
+
+
+    @returns {dictionary}.  For the above example, dictionary would look like this:
+
+    {
+       Type: 'Function',
+       In: [ { Type: 'TrueFalse'} ],
+       Returns: { Type: 'Nothing'}
+    }
+    '''
+    returner = {};
+    returner['Type'] = TYPE_FUNCTION;
+
+    
+    ##### HANDLE INPUT ARGS #####
+    inArgNode = node.children[0];
+    inputTypes = [];
+    if (inArgNode.label != AST_EMPTY):
+        # means that we have a node of type typelist.  each of its
+        # children should be an independent type.
+        for typeNode in inArgNode.children:
+            
+            typeNode.typeCheck(progText,typeStack);
+
+            if (isFunctionType(typeNode.type)):
+                inputTypes.append(json.loads(typeNode.type));
+            else:
+                toAppend = {
+                    'Type': typeNode.type
+                    };
+                inputTypes.append(toAppend);
+                
+    returner['In'] = inputTypes;
+
+    ##### HANDLE OUTPUT ARGS #####
+    outArgNode = node.children[1];
+    outArgNode.typeCheck(progText,typeStack);
+    if (isFunctionType(outArgNode.type)):
+        returner['Returns'] = json.loads(outArgNode.type);
+    else:
+        returner['Returns'] = {
+            'Type': outArgNode.type
+            };
+
+    return returner;
 
 
 

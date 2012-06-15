@@ -155,7 +155,7 @@ def runEmitter(astNode,protObj=None,errOutputTo=None):
         protObj.addOnCreateFunction(onCreateName,astNode);
 
         
-    elif(astNode.label == AST_FUNCTION):
+    elif(astNode.label == AST_PRIVATE_FUNCTION):
         internalFunctionName =  astNode.children[0].value;            
         internalFuncAstNode = astNode;
         protObj.addInternalFunction(internalFunctionName,internalFuncAstNode);

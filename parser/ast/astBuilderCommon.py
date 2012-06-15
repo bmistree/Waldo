@@ -115,7 +115,8 @@ def p_Type(p):
     else:
         # means that has function type
         p[0].value = TYPE_FUNCTION;
-        p[0].addChild(p[1]);
+        p[0] = p[1];
+
 
         
 def p_FunctionType(p):
@@ -123,13 +124,12 @@ def p_FunctionType(p):
     FunctionType : FUNCTION LEFT_PAREN IN COLON TypeList SEMI_COLON RETURNS COLON Type RIGHT_PAREN
     FunctionType : FUNCTION LEFT_PAREN RETURNS COLON Type RIGHT_PAREN
     '''
-
-    p[0] = AstNode(AST_FUNCTION, p.lineno(1),p.lexpos(1));
+    p[0] = AstNode(AST_TYPE, p.lineno(1),p.lexpos(1),TYPE_FUNCTION);
 
     inToAdd = AstNode(AST_EMPTY,p.lineno(1),p.lexpos(1));
     returnsToAdd = p[5];
     if (len(p) == 11):
-        inToAdd = p[6];
+        inToAdd = p[5];
         returnsToAdd = p[9];
         
     p[0].addChildren([inToAdd, returnsToAdd]);
@@ -271,7 +271,7 @@ def p_EndpointGlobalSection(p):
 def p_Function(p):
     '''Function : PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
                 | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT'''
-    p[0] = AstNode(AST_FUNCTION, p.lineno(1),p.lexpos(1));
+    p[0] = AstNode(AST_PRIVATE_FUNCTION, p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[3],p[8],p[5]]);
     if (len(p) == 12):
         p[0].addChild(p[10]);

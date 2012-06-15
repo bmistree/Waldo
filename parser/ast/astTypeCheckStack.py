@@ -11,11 +11,12 @@ from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
 from astLabels import AST_TYPED_SENDS_STATEMENT;
 from astLabels import AST_RETURN_STATEMENT;
 from astLabels import AST_PUBLIC_FUNCTION;
-from astLabels import AST_FUNCTION;
+from astLabels import AST_PRIVATE_FUNCTION;
 from astLabels import AST_ONCREATE_FUNCTION;
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
 from parserUtil import errPrint;
+import json;
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -69,7 +70,7 @@ class TypeCheckContextStack():
         self.currentPublicInternalNode = None;
 
     def addCurrentPublicInternalNode(self,node):
-        if ((node.label != AST_PUBLIC_FUNCTION) and (node.label != AST_FUNCTION) and
+        if ((node.label != AST_PUBLIC_FUNCTION) and (node.label != AST_PRIVATE_FUNCTION) and
             (node.label != AST_ONCREATE_FUNCTION)):
             errMsg = '\nBehram error: adding internal or public node with incorrect ';
             errMsg += 'type.\n';
@@ -527,7 +528,6 @@ class FuncContext():
         
         return val.getFuncMatchObject();
 
-
     def addFuncIdentifier(self,funcIdentifierName,funcIdentifierType,funcArgTypes,astNode,lineNum):
         '''
         @returns {None or TypeCheckError} -- If identifier already
@@ -549,21 +549,6 @@ class FuncContext():
             return TypeCheckError(nodes,errMsg);
 
 
-            
-        #note: if appending to this condition, will have to import
-        #additional types at top of file.
-        if ((funcIdentifierType != TYPE_BOOL)   and
-            (funcIdentifierType != TYPE_NUMBER) and
-            (funcIdentifierType != TYPE_STRING) and
-            (funcIdentifierType != TYPE_NOTHING) and
-            (funcIdentifierType != TYPE_INCOMING_MESSAGE) and
-            (funcIdentifierType != TYPE_OUTGOING_MESSAGE) and
-            (funcIdentifierType != TYPE_MSG_SEND_FUNCTION) and
-            (funcIdentifierType != TYPE_MSG_RECEIVE_FUNCTION)):
-            
-            errPrint('\nBehram Error.  Unrecognized identifierType insertion: ' + funcIdentifierType + '\n');
-            assert(False);
-
         self.dict[funcIdentifierName] = FuncContextElement(funcIdentifierType,funcArgTypes,astNode,lineNum);
         return None;
         
@@ -582,13 +567,55 @@ class FuncContextElement():
         @returns {FuncMatchObject} 
         '''
         return FuncMatchObject(self);
-
-
+    
     #FIXME: make consistent with astNode.  In one place, using
     #lineNum, in another, lineNo.
     def getLineNum(self):
         return self.lineNum;
 
+
+def createFuncMatchObjFromJsonStr(jsonStr,astNode):
+    '''
+    Now have types for functions, such as:
+
+    Function (In: Number, TrueFalse; Returns: Text) someFunc;
+
+    The nodes for these have types that are generated from
+    buildFuncTypeSignature(node,progText,typeStack) in astNode.py.
+
+    The above would have a string-ified type of :
+    {
+       Type: 'Function',
+       In: [ { Type: 'Number'}, {Type: 'TrueFalse'} ],
+       Returns: { Type: 'Text'}
+    }
+
+    This is passed in as jsonStr.  We take this jsonStr, and turn it
+    into a FuncMatchObject.
+    '''
+    typeDict = json.loads(jsonStr);
+    
+    argTypes = [];
+    for arg in typeDict['In']:
+        aType = arg['Type'];
+        if (not isinstance(aType,basestring)):
+            
+            # means that the actual argument is a more-deeply nested
+            # function.  Instead of getting all the args for that
+            # function, can just keep as string for comparison.
+            aType = json.dumps(aType);
+            
+            
+        argTypes.append(aType);
+
+    returnType = typeDict['Returns'];
+    if (not isinstance(returnType,basestring)):
+        returnType = json.dumps(returnType);
+        
+    fce = FuncContextElement(returnType,argTypes,astNode,astNode.lineNo);
+    return FuncMatchObject(fce);
+
+    
 class FuncMatchObject():
     def __init__(self,funcContextElement):
         self.element = funcContextElement;
@@ -605,7 +632,7 @@ class FuncMatchObject():
         if (funcIdentifierType != self.element.funcIdentifierType):
             return False;
 
-        if (self.argMathces(funcArgTypes) == None):
+        if (self.argMatches(funcArgTypes) == None):
             return True;
 
         return False;
@@ -842,14 +869,6 @@ class Context():
             errMsg += '"' + identifierName + '".  You cannot declare another.\n';
             nodes = [astNode,prevDecl.astNode];
             return TypeCheckError(nodes,errMsg);
-            
-        #note: if appending to this condition, will have to import
-        #additional types at top of file.
-        if ((identifierType != TYPE_BOOL) and (identifierType != TYPE_NUMBER) and
-            (identifierType != TYPE_STRING) and (identifierType != TYPE_INCOMING_MESSAGE) and
-            (identifierType != TYPE_OUTGOING_MESSAGE)):
-            errPrint('\nBehram Error.  Unrecognized identifierType insertion: ' + identifierType + '\n');
-            assert(False);
 
         self.dict[identifierName] = ContextElement(identifierType,astNode,lineNum);
 
