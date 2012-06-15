@@ -25,7 +25,6 @@ Shared
         //both of these are rarely used in this program.
         Ping Controls Number pingCounter = 0;
         Nothing Controls Number pongCounter = 0;
-        
 }
 
 

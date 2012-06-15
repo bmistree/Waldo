@@ -5,9 +5,9 @@ import os;
 astParserPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast');
 sys.path.insert(0, astParserPath);
 
-from astBuilder import getParser as v1GetParser;
-from astBuilder import getErrorEncountered as v1GetErrorEncountered;
-from astBuilder import resetErrorEncountered as v1ResetErrorEncountered;
+from astBuilder_v1 import getParser as v1GetParser;
+from astBuilder_v1 import getErrorEncountered as v1GetErrorEncountered;
+from astBuilder_v1 import resetErrorEncountered as v1ResetErrorEncountered;
 
 
 import canonicalize;
