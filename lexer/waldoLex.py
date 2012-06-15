@@ -61,6 +61,7 @@ tokens = (
     "STRING_TYPE",
     "NOTHING_TYPE",
 
+    "IN",
     
     #whitespace
     "SPACE",
@@ -308,6 +309,10 @@ def t_SENDS(t):
 
 def t_RECEIVES(t):
     "IncomingMessage";
+    return mStateMachine.addToken(t);
+
+def t_IN(t):
+    "In";
     return mStateMachine.addToken(t);
 
 def t_ONCREATE(t):

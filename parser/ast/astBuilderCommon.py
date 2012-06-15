@@ -106,13 +106,53 @@ def p_Type(p):
             | NOTHING_TYPE
             | SENDS
             | RECEIVES
+            | FunctionType
             '''
 
-    p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),p[1]);
+    p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1));    
+    if (isinstance(p[1],basestring)):
+        p[0].value = p[1];
+    else:
+        # means that has function type
+        p[0].value = TYPE_FUNCTION;
+        p[0].addChild(p[1]);
+
+        
+def p_FunctionType(p):
+    '''
+    FunctionType : FUNCTION LEFT_PAREN IN COLON TypeList SEMI_COLON RETURNS COLON Type RIGHT_PAREN
+    FunctionType : FUNCTION LEFT_PAREN RETURNS COLON Type RIGHT_PAREN
+    '''
+
+    p[0] = AstNode(AST_FUNCTION, p.lineno(1),p.lexpos(1));
+
+    inToAdd = AstNode(AST_EMPTY,p.lineno(1),p.lexpos(1));
+    returnsToAdd = p[5];
+    if (len(p) == 11):
+        inToAdd = p[6];
+        returnsToAdd = p[9];
+        
+    p[0].addChildren([inToAdd, returnsToAdd]);
 
 
+def p_TypeList(p):
+    '''
+    TypeList : Type
+             | TypeList COMMA Type
+    '''
+
+    p[0] = AstNode(AST_TYPE_LIST,p[1].lineNo,p[1].linePos);
+    if (len(p) == 4):
+        p[0].addChildren(p[1].getChildren());
+        p[0].addChild(p[3]);
+    elif(len(p) == 2):
+        p[0].addChild(p[1]);
+    else:
+        errPrint('\nError in TypeList.  Unexpected length to match\n');
+        assert(False);
 
 
+    
 def p_TerminalReturnable(p):
     '''
     TerminalReturnable : OperatableOn
