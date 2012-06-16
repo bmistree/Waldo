@@ -262,9 +262,19 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
             idName = SELF_PREFIX + idName;
             
         elif (endpoint.isGlobalOrShared(idName)):
-            idName = prefix + idName;     
+            idName = prefix + idName;
+        elif(endpoint.getPythonizedFunctionName(idName) != None):
+            funcCallPrefix = 'self.'
+            if (prefix == SELF_PREFIX):
+                # means that we are in the context object: need to use the
+                # self.endpoint instead.
+                funcCallPrefix = 'self._endpoint.';
+                
+            idName = funcCallPrefix + endpoint.getPythonizedFunctionName(idName);
+
         returnString = idName;
 
+        
         
     elif (astNode.label == AST_ELSE_IF_STATEMENTS):
         returnString = '';
@@ -327,7 +337,6 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
 
     elif (astNode.label == AST_FUNCTION_CALL):
         funcNameNode = astNode.children[0];
-
 
         pythonFuncName = endpoint.getPythonizedFunctionName(funcNameNode.value);
         funcNameStr = funcNameNode.value;

@@ -34,12 +34,18 @@ Ping
         Number responses = 0;
         TrueFalse something;
 
+        
         OnCreate ()
         {
-
+            Function (In: Number; Returns: TrueFalse) someFunc = tmp;
+            someFunc(3);
         }
 
-        
+        Private Function tmp (Number a) Returns TrueFalse
+        {
+            Print("\n\nI got into tmp\n\n");
+            Return False;
+        }
         
         Public Function initiateSend() Returns Nothing
         {

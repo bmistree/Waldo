@@ -4,6 +4,7 @@ from astLabels import TYPE_BOOL;
 from astLabels import TYPE_STRING;
 from astLabels import TYPE_NUMBER;
 from astLabels import TYPE_NOTHING;
+from astLabels import TYPE_FUNCTION;
 from astLabels import TYPE_INCOMING_MESSAGE;
 from astLabels import TYPE_OUTGOING_MESSAGE;
 from astLabels import TYPE_MSG_SEND_FUNCTION;
@@ -16,6 +17,7 @@ from astLabels import AST_ONCREATE_FUNCTION;
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
 from parserUtil import errPrint;
+from parserUtil import isFunctionType;
 import json;
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
@@ -640,6 +642,32 @@ class FuncMatchObject():
 
     def getReturnType(self):
         return self.element.funcIdentifierType;
+
+    def createJsonType(self):
+        returner = {
+            'Type':TYPE_FUNCTION
+            };
+
+        # input args
+        inArgs = [];
+        for item in self.element.funcArgTypes:
+            toAppend = { 'Type': item }
+            if (isFunctionType(item)):
+                toAppend = json.loads(item);
+
+            inArgs.append(toAppend);
+
+        returner["In"] = inArgs;
+
+        # output args
+        returnType = {
+            'Type': self.element.funcIdentifierType
+            };
+        if (isFunctionType(self.element.funcIdentifierType)):
+            returnType = json.loads(self.element.funcIdentifierType);
+            
+        returner["Returns"] = returnType;
+        return returner;
 
 
     def argMatchError(self, funcArgTypes, callingAstNode):

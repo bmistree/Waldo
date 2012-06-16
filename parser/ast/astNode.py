@@ -13,6 +13,7 @@ from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
 from astTypeCheckStack import createFuncMatchObjFromJsonStr;
 from parserUtil import errPrint;
+from parserUtil import isFunctionType;
 import json;
 
 
@@ -822,7 +823,7 @@ class AstNode():
                     errMsg += '  Declared with type [' + declaredType + '], but ';
                     errMsg += 'assigned to type [' + rhsType + '].';
                     errorFunction(errMsg,[self],[currentLineNo],progText);
-
+                    
             else:
                 # not initialization information.  There are several
                 # types that require initialization information.  Most
@@ -872,12 +873,18 @@ class AstNode():
             name = self.value;
             typer = typeStack.getIdentifierType(name);
             if (typer == None):
-                errMsg = 'Cannot infer type of ' + name + '.  Are you sure it is valid?';
-                errorFunction(errMsg,[self],[self.lineNo],progText);
-                self.type = 'Undefined';
+                # also check if it's an identifier for a non-variable
+                # function.
+                funcType = typeStack.getFuncIdentifierType(name);
+                if (funcType == None):
+                    errMsg = 'Cannot infer type of ' + name + '.  Are you sure it is valid?';
+                    errorFunction(errMsg,[self],[self.lineNo],progText);
+                    self.type = 'Undefined';
+                else:
+                    self.type = json.dumps(funcType.createJsonType());
             else:
                 self.type = typer;
-                
+
             
         elif(self.label == AST_ENDPOINT_FUNCTION_SECTION):
             # this just type checks the headers of each function.
@@ -1432,29 +1439,11 @@ def splitString(string,maxLineLen):
     return toReturn;
 
 
-def isFunctionType(typeLabel):
-    '''
-    Nodes can have many different type labels.  Some are specified by
-    strings (mostly nodes with basic types, eg. Number, String, etc.).
-
-    Nodes for user-defined function types do not just have one
-    annotation, but rather a json-ized type.  To check if a node's
-    label is one of these user-defined function types, we check to
-    exclude all of the other types it could be.
-
-    Returns true if it is a user-defined function type, false otherwise.
-    
-    '''
-    if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
-        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_INCOMING_MESSAGE) and
-        (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING)):
-        return True;
-
-    return False;
-
-
 def buildFuncTypeSignature(node,progText,typeStack):
     '''
+    @see createJsonType of FuncMatchObject in
+    astTypeCheckStack.py....needs to be consistent between both.
+    
     @param {AstNode} node --- Has value of FUNCTION_TYPE and type of
     AST_TYPE.  (Similar to the node that is generated for each type.)
     For instance, when declare
