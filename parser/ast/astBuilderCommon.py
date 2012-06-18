@@ -170,6 +170,7 @@ def p_OperatableOn(p):
                     | String
                     | Bool
                     | FunctionCall
+                    | ToTextCall
                     ''';
     p[0] = p[1];
 
@@ -186,6 +187,14 @@ def p_PrintCall(p):
     p[0].addChild(p[3]);
 
 
+def p_ToTextCall(p):
+    '''
+    ToTextCall : TOTEXT LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_TOTEXT_FUNCTION,p.lineno(1),p.lexpos(1));
+    p[0].addChild(p[3]);
+
+    
 def p_BracketStatement(p):
     '''
     BracketStatement : Identifier LEFT_BRACKET ReturnableExpression RIGHT_BRACKET

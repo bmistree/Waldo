@@ -206,6 +206,16 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
             returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,indentLevel);
             returnString += '\n';
 
+    elif (astNode.label == AST_TOTEXT_FUNCTION):
+        returnString = 'str(';
+
+        # write argument
+        toTextArg = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,0);
+        returnString += toTextArg;
+
+        returnString += ')'; # closes str opening
+        returnString = indentString(returnString,indentLevel);
+            
     elif (astNode.label == AST_PRINT):
         #Print: line number, class name, print statement
         returnString += '_DEBUG_PRINT(' + str(astNode.lineNo);

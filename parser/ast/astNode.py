@@ -379,7 +379,22 @@ class AstNode():
 
             self.type = TYPE_NOTHING;
 
+        elif(self.label == AST_TOTEXT_FUNCTION):
+            # check to ensure that it's passed a Text, TrueFalse, or a
+            # Number.  If it is passed anything else, indicate that
+            # can't handle it.
+            argumentNode = self.children[0];
+            argumentNode.typeCheck(progText,typeStack);
+            if ((argumentNode.type != TYPE_STRING) and (argumentNode.type != TYPE_NUMBER) and
+                (argumentNode.type != TYPE_BOOL)):
+                errorString = 'ToText requires a Text, TrueFalse, or a Number ';
+                errorString += 'to be passed in.  It seems that you passed in a ';
+                errorString += argumentNode.type + '.';
+                errorFunction(errorString,[self],[self.lineNo],progText);
 
+            self.type = TYPE_STRING;
+
+            
         elif(self.label == AST_SHARED_SECTION):
             #each child will be an annotated declaration.
             for s in self.children:

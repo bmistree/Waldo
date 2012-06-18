@@ -36,6 +36,7 @@ tokens = (
     "TO_OPERATOR",
     "EQUALS",
 
+    "TOTEXT",
     "ONCREATE",
     
     #boolean logic
@@ -319,6 +320,10 @@ def t_RECEIVES(t):
 
 def t_IN(t):
     "In";
+    return mStateMachine.addToken(t);
+
+def t_TOTEXT(t):
+    "ToText";
     return mStateMachine.addToken(t);
 
 def t_ONCREATE(t):
