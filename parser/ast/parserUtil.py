@@ -2,7 +2,7 @@
 
 import sys;
 from  astLabels import *;
-
+import json;
 
 OutputErrsTo = sys.stderr;
 
@@ -19,13 +19,34 @@ def isFunctionType(typeLabel):
     Returns true if it is a user-defined function type, false otherwise.
     
     '''
+    
+    if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
+        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_INCOMING_MESSAGE) and
+        (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING)):
+
+        jsonType = json.loads(typeLabel);
+        if (jsonType.get('Type',None) == None):
+            errMsg = '\nBehram error.  got a json object that did not have ';
+            errMsg += 'a type field.\n';
+            print(errMsg);
+            assert (False);
+            
+        if (jsonType['Type'] == TYPE_FUNCTION):
+            return True;
+
+    return False;
+
+
+def isTemplatedType(typeLabel):
+    '''
+    @returns{bool} True if it's a function or list type, false otherwise.
+    '''
     if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
         (typeLabel != TYPE_STRING) and (typeLabel != TYPE_INCOMING_MESSAGE) and
         (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING)):
         return True;
 
     return False;
-
 
 
 def setOutputErrorsTo(toOutputTo):

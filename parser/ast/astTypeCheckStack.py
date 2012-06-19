@@ -17,7 +17,7 @@ from astLabels import AST_ONCREATE_FUNCTION;
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
 from parserUtil import errPrint;
-from parserUtil import isFunctionType;
+from parserUtil import isTemplatedType;
 import json;
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
@@ -574,7 +574,9 @@ class FuncContext():
             return TypeCheckError(nodes,errMsg);
 
 
-        self.dict[funcIdentifierName] = FuncContextElement(funcIdentifierType,funcArgTypes,astNode,lineNum);
+        self.dict[funcIdentifierName] = FuncContextElement(
+            funcIdentifierType,funcArgTypes,astNode,lineNum);
+        
         return None;
         
 
@@ -675,7 +677,7 @@ class FuncMatchObject():
         inArgs = [];
         for item in self.element.funcArgTypes:
             toAppend = { 'Type': item }
-            if (isFunctionType(item)):
+            if (isTemplatedType(item)):
                 toAppend = json.loads(item);
 
             inArgs.append(toAppend);
@@ -686,7 +688,7 @@ class FuncMatchObject():
         returnType = {
             'Type': self.element.funcIdentifierType
             };
-        if (isFunctionType(self.element.funcIdentifierType)):
+        if (isTemplatedType(self.element.funcIdentifierType)):
             returnType = json.loads(self.element.funcIdentifierType);
             
         returner["Returns"] = returnType;

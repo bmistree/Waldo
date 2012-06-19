@@ -38,6 +38,9 @@ tokens = (
 
     "TOTEXT",
     "ONCREATE",
+
+    "LIST",
+    "ELEMENT",
     
     #boolean logic
     "IF",
@@ -283,6 +286,14 @@ def t_SHARED(t):
 
 def t_FUNCTION(t):
     'Function';
+    return mStateMachine.addToken(t);
+
+def t_LIST(t):
+    'List';
+    return mStateMachine.addToken(t);
+
+def t_ELEMENT(t):
+    'Element';
     return mStateMachine.addToken(t);
 
 def t_MSG_SEND(t):

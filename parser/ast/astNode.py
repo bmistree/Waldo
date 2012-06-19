@@ -14,6 +14,7 @@ from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
 from astTypeCheckStack import createFuncMatchObjFromJsonStr;
 from parserUtil import errPrint;
 from parserUtil import isFunctionType;
+from parserUtil import isTemplatedType;
 import json;
 
 
@@ -72,7 +73,6 @@ class AstNode():
         else:
             print(self.toJSON());
 
-            
 
     def typeCheck(self,progText,typeStack=None):
         #based on types of children, check my type.  Also, pass up
@@ -126,7 +126,6 @@ class AstNode():
             #in corresponding elif.
             self.children[2].typeCheck(progText,typeStack);
 
-                
             #get into shared section
             #note: shared section should leave its context on the stack.
             self.children[3].typeCheck(progText,typeStack);
@@ -136,7 +135,6 @@ class AstNode():
 
             #check one endpoint
             self.children[5].typeCheck(progText,typeStack);
-
 
             #Checks if there were msgSends or msgReceives assumed in a
             #trace line that weren't actually defined in an endpoint
@@ -548,29 +546,45 @@ class AstNode():
                     
 
         elif (self.label == AST_TYPE):
-            if(self.value != TYPE_FUNCTION):
-                self.type = self.value;
-            else:
+
+            if self.value == TYPE_FUNCTION:
                 # more compilcated types for functions
                 
                 # create a dictionary for the function type.
                 # Function (In: Number, TrueFalse; Out: Text)
                 # becomes:
-                # { type: {
+                # { Type: 'Function',
                 #    In: [
-                        # {
-                        #     type: "Number"
-                        # },
-                        # {
-                        #     type: "TrueFalse"
-                        # }],
-                #    Out: { type: "Text"}
+                #          {
+                #            Type: "Number"
+                #          },
+                #          {
+                #            Type: "TrueFalse"
+                #          }],
+                #    Returns: { Type: "Text"}
                 # }
                 typeSignature = buildFuncTypeSignature(self,progText,typeStack);
                 self.type = json.dumps(typeSignature);
                 self.value = self.type;
 
-                
+            elif self.value == TYPE_LIST:
+                # more complicated types for lists
+                # create a dictionary for the list type
+                # List (Element: Number)
+                # becomes
+                # { Type: 'List',
+                #   Element: { Type: "Number" }}
+                #
+                typeSignature = buildListTypeSignature(self,progText,typeStack);
+                self.type = json.dumps(typeSignature);
+                self.value = self.type;
+
+            else:
+                # just assign the type directly since it is one of the
+                # basic types Text, TrueFalse, or Number.
+                self.type = self.value;
+
+                                
             
         elif (self.label == AST_CONDITION_STATEMENT):
             #type check all children.  (type checks if, elseif, and
@@ -1540,7 +1554,7 @@ def buildFuncTypeSignature(node,progText,typeStack):
             
             typeNode.typeCheck(progText,typeStack);
 
-            if (isFunctionType(typeNode.type)):
+            if (isTemplatedType(typeNode.type)):
                 inputTypes.append(json.loads(typeNode.type));
             else:
                 toAppend = {
@@ -1553,7 +1567,7 @@ def buildFuncTypeSignature(node,progText,typeStack):
     ##### HANDLE OUTPUT ARGS #####
     outArgNode = node.children[1];
     outArgNode.typeCheck(progText,typeStack);
-    if (isFunctionType(outArgNode.type)):
+    if (isTemplatedType(outArgNode.type)):
         returner['Returns'] = json.loads(outArgNode.type);
     else:
         returner['Returns'] = {
@@ -1562,6 +1576,21 @@ def buildFuncTypeSignature(node,progText,typeStack):
 
     return returner;
 
+
+
+def buildListTypeSignature(node, progText,typeStack):
+    elementTypeNode = node.children[0];
+    elementTypeNode.typeCheck(progText,typeStack);
+
+    elementType = elementTypeNode.type;
+    if isTemplatedType(elementTypeNode.type):
+        elementType = json.loads(elementType);
+
+    returner = {
+        'Type': TYPE_LIST,
+        'ElementType': elementType
+    };
+    return returner;
 
 
 class WaldoTypeCheckException(Exception):

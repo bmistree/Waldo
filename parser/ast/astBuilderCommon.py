@@ -100,23 +100,33 @@ def p_AnnotatedDeclaration(p):
         p[0].addChild(p[6]);
 
 def p_Type(p):
-    '''Type : NUMBER_TYPE
-            | STRING_TYPE
-            | BOOL_TYPE
-            | NOTHING_TYPE
-            | SENDS
-            | RECEIVES
-            | FunctionType
+    '''
+    Type : NUMBER_TYPE
+         | STRING_TYPE
+         | BOOL_TYPE
+         | NOTHING_TYPE
+         | SENDS
+         | RECEIVES
+         | FunctionType
+         | ListType
             '''
 
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1));    
     if (isinstance(p[1],basestring)):
         p[0].value = p[1];
     else:
-        # means that has function type
-        p[0].value = TYPE_FUNCTION;
+        # means that has function or list type
         p[0] = p[1];
 
+
+
+def p_ListType(p):
+    '''
+    ListType : LIST LEFT_PAREN ELEMENT COLON Type RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_LIST);
+    # defines the type of the list
+    p[0].addChild(p[5]);
 
         
 def p_FunctionType(p):

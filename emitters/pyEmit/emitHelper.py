@@ -2,6 +2,7 @@
 
 from astLabels import *;
 import sys;
+import json;
 
 # pass one of these parameters to runFunctionBodyInternalEmit so that
 # the function knows whether to prefix global and shared variables
@@ -66,12 +67,22 @@ def getDefaultValForType(astTypedNode):
     elif (typeName == TYPE_INCOMING_MESSAGE):
         decString = '{}';
     elif (typeName == TYPE_OUTGOING_MESSAGE):
-        decString = '{}';        
+        decString = '{}';
+        
     else:
-        errMsg = '\nBehram error.  Unknown declaration type when ';
-        errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
-        errPrint(errMsg);
-        assert(False);
+
+        listType  = False;
+        try:
+            jsonType = json.loads(typeName);
+            if jsonType['Type'] == TYPE_LIST:
+                decString = '[]';
+                listType = True;
+        finally:
+            if not listType:
+                errMsg = '\nBehram error.  Unknown declaration type when ';
+                errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
+                errPrint(errMsg);
+                assert(False);
 
     return decString;
 
