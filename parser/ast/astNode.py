@@ -1118,6 +1118,7 @@ class AstNode():
             else:
                 lhs.typeCheck(progText,typeStack);
                 lhsType = lhs.type;
+                controlledBy = None;
 
             if (lhsType == None):
                 errMsg = '\nError in assignment statement.  Left hand side ';

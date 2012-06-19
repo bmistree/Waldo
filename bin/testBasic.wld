@@ -1,12 +1,15 @@
-PingPong
-
-/**
+/** VERSION 1
+  * 
   * Simple example: user can start a message stream by calling the public
-  * function initiateSend on Ping.  This starts a sequence of three
-  * messages that increment counters on both endpoints, printing along the
-  * way.
+  * function initiateSend on Ping.  This starts a sequence of 
+  * messages that increment counters shared between endpoints.  To
+  * demonstrate how message exchanges work, keeping track of number of
+  * messages sent per message sequence as 'numMsgs' field of a
+  * incoming and outgoing messages.
 */
 
+
+PingPong
 
 Endpoint Ping;
 Endpoint Pong;
@@ -14,134 +17,113 @@ Endpoint Pong;
 
 Traces
 {
-        // specifies order of handlers that will be called
-         Ping.one -> Pong.two -> Ping.three -> Pong.four;
+    // specifies order of handlers that will be called
+    Ping.one -> Pong.two -> Ping.three -> Pong.four;
 }
 
 
 /**** Data shared between both ends */
 Shared
 {
-        //both of these are rarely used in this program.
-        Ping Controls Number pingCounter = 0;
-        Nothing Controls Number pongCounter = 0;
+    // Any time hit a message function in ping/pong,
+    // update pingCounter/pongCounter.
+    Ping Controls Number pingCounter = 0;
+    Pong Controls Number pongCounter = 0;
 }
 
 
-/****  New endpoint *********/
+/****  Ping endpoint *********/
 Ping
 {
-        Number responses = 0;
-        TrueFalse something;
+    OnCreate ()
+    {
+        Text printMsg = 'Ping has been created.  ';
+        printMsg = printMsg + 'No initialization to  perform.';
+        Print(printMsg);
+    }
+        
+    Public Function initiateSend() Returns Nothing
+    {
+        Print('**** Initiating send ****');
+        one();
+    }
 
-        
-        OnCreate ()
+                
+    MessageSend one ()
+        OutgoingMessage:
         {
-            Function (In: Number; Returns: TrueFalse) someFunc = tmp;
-            someFunc(3);
+            Number numMsgs
         }
-
-        Private Function tmp (Number a) Returns TrueFalse
-        {
-            Print("\n\nI got into tmp\n\n");
-            Return False;
-        }
+    {
+        pingCounter = pingCounter + 1;
         
-        Public Function initiateSend() Returns Nothing
-        {
-            pongCounter = 20;
-            Print('Initiating send ****');
-            one();
-        }
-
-        
-        Public Function getResponses() Returns Number
-        {
-            Return responses;
-        }   
-        
-        MessageSend one () OutgoingMessage: { Number responses }
-        {
-            pingCounter = pingCounter + 1;
-            OutgoingMessage msg = {
-              'responses' : responses
-            };
+        OutgoingMessage msg = {
+          'numMsgs' : 0
+        };
             
-            Send msg To Pong;
-        }
+        Send msg To Pong;
+    }
 
         
-        MessageReceive three
-             IncomingMessage msg:
-             {
-                Number responses
-             }
-             OutgoingMessage:
-             {
-                 Number responses
-             }
+    MessageReceive three
+        IncomingMessage msg:
         {
-        
-            pingCounter = pingCounter + 1;  
-            responses = responses + 1;
-            OutgoingMessage msgResponse = {
-              'responses' : responses
-            };
-
-
-            Print(msg['responses']);
-            
-            Send msgResponse To Pong;
+            Number numMsgs
         }
+        OutgoingMessage:
+        {
+            Number numMsgs
+        }
+    {
+        pingCounter = pingCounter + 1;
+
+        OutgoingMessage msgResponse = {
+          'numMsgs' : msg['numMsgs'] + 1
+        };
+            
+        Send msgResponse To Pong;
+    }
 }
 
 
-/****  New endpoint *********/
+/****  Pong endpoint *********/
 Pong
 {
-        Number responses = 0;
-        
-        MessageReceive two
-             IncomingMessage msg:
-             {
-                Number responses
-             }
-             OutgoingMessage:
-             {
-                 Number responses
-             }
+    MessageReceive two
+        IncomingMessage msg:
         {
-            pongCounter = pongCounter + 1;
-            responses = responses + 1;
-            OutgoingMessage msgResponse = {
-              'responses' : responses
-            };
-
-
-            Print(msg['responses']);
-            
-            Send msgResponse To Ping;
+            Number numMsgs
         }
-
-        MessageReceive four
-             IncomingMessage msg:
-             {
-                Number responses
-             }
-             OutgoingMessage:
-             {
-                 Number responses
-             }
+        OutgoingMessage:
         {
-            pongCounter = pongCounter + 1;  
-            responses = responses + 1;
-            OutgoingMessage msgResponse = {
-              'responses' : responses
-            };
-
-            Print(pongCounter);
-            Print(msg['responses']);
-            
-            Send msgResponse To Ping;
+            Number numMsgs
         }
+    {
+        pongCounter = pongCounter + 1;
+            
+        OutgoingMessage msgResponse = {
+          'numMsgs' : msg['numMsgs'] + 1
+        };
+
+        Send msgResponse To Ping;
+    }
+
+    MessageReceive four
+        IncomingMessage msg:
+        {
+            Number numMsgs
+        }
+        OutgoingMessage:
+        {
+            Number numMsgs
+        }
+   {
+        pongCounter = pongCounter + 1;  
+
+        OutgoingMessage msgResponse = {
+          'numMsgs' : msg['numMsgs'] + 1
+        };
+            
+        Send msgResponse To Ping;
+   }
 }
