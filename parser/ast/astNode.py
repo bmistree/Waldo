@@ -420,16 +420,42 @@ class AstNode():
             identifierName = self.children[2].value;
             existsAlready = typeStack.getIdentifierElement(identifierName);
             if (existsAlready != None):
-                errorFunction('Already have an identifier named ' + identifierName,[self],[currentLineNo, existsAlready.lineNo],progText);
+                errorFunction('Already have an identifier named ' + identifierName,
+                              [self],[currentLineNo, existsAlready.lineNo],progText);
             else:
-                if (typeStack.getFuncIdentifierType(identifierName)):
+                controlledByNode = self.children[0];
+                idType = typeStack.getFuncIdentifierType(identifierName);
+                if (idType):
                     errText = 'Already have a function named ' + identifierName;
                     errText += '.  Therefore, cannot name an identifier with this name.';
-                    errorFunction(errText,[self,existsAlready.astNode],[currentLineNo,existsAlready.lineNo],progText);
+                    errorFunction(errText,
+                                  [self,existsAlready.astNode],
+                                  [currentLineNo,existsAlready.lineNo],
+                                  progText);
 
-                    
-                typeStack.addIdentifier(identifierName,self.type,self,currentLineNo);
-            
+                # check to ensure that specified a valid endpoint to
+                # control the shared variable.
+                controlledByStr = controlledByNode.value;
+                end1Name = typeStack.endpoint1
+                if ((controlledByStr != TYPE_NOTHING) and
+                    (controlledByStr != typeStack.endpoint1) and
+                    (controlledByStr != typeStack.endpoint2)):
+                    errText = 'Can only specify an endpoint or Nothing to control ';
+                    errText += 'a shared variable.  The available endpoint names are '
+                    errText += typeStack.endpoint1 + ' and ' + typeStack.endpoint2;
+                    errText += ', but you specified ' + controlledByStr + '.';
+                    errorFunction(errText,
+                                  [self],
+                                  [currentLineNo],
+                                  progText);
+
+
+                # actually add the shared variable.
+                typeStack.addIdentifier(identifierName,
+                                        self.type,
+                                        controlledByStr,self,currentLineNo);
+
+                
         elif(self.label == AST_NUMBER):
             self.type = TYPE_NUMBER;
         elif(self.label == AST_STRING):
@@ -872,7 +898,7 @@ class AstNode():
                 errorFunction(errMsg,nodes,lineNos,progText);
                     
                     
-            typeStack.addIdentifier(name,declaredType,self,currentLineNo);
+            typeStack.addIdentifier(name,declaredType,None,self,currentLineNo);
             self.type = declaredType;
 
         elif(self.label == AST_RETURN_STATEMENT):
@@ -886,7 +912,7 @@ class AstNode():
             
         elif(self.label == AST_IDENTIFIER):
             name = self.value;
-            typer = typeStack.getIdentifierType(name);
+            typer,ctrldBy = typeStack.getIdentifierType(name);
             if (typer == None):
                 # also check if it's an identifier for a non-variable
                 # function.
@@ -995,7 +1021,7 @@ class AstNode():
 
                     errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
                 else:
-                    typeStack.addIdentifier(argName,TYPE_INCOMING_MESSAGE,self,self.lineNo);
+                    typeStack.addIdentifier(argName,TYPE_INCOMING_MESSAGE,None,self,self.lineNo);
 
                 # re-define type for IncomingMessage
                 incomingTypeNode = self.children[2];
@@ -1057,7 +1083,7 @@ class AstNode():
 
                 errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
             else:
-                typeStack.addIdentifier(argName,argType,self,self.lineNo);
+                typeStack.addIdentifier(argName,argType,None,self,self.lineNo);
 
 
         elif (self.label == AST_FUNCTION_BODY_STATEMENT):
@@ -1071,6 +1097,7 @@ class AstNode():
         elif (self.label == AST_BOOL):
             self.type = TYPE_BOOL;
 
+            
         elif (self.label == AST_ASSIGNMENT_STATEMENT):
 
             lhs = self.children[0];
@@ -1086,7 +1113,7 @@ class AstNode():
             rhs = self.children[1];
 
             if (lhs.label == AST_IDENTIFIER):
-                lhsType = typeStack.getIdentifierType(lhs.value);
+                lhsType,controlledBy = typeStack.getIdentifierType(lhs.value);
                 lhs.type  = lhsType;
             else:
                 lhs.typeCheck(progText,typeStack);
@@ -1098,6 +1125,26 @@ class AstNode():
                 errorFunction(errMsg,[self],[self.lineNo],progText);
                 return;
 
+
+            if (controlledBy != None) and (controlledBy != TYPE_NOTHING):
+                # check if the variable that we are assigning to is
+                # controlled by this endpoint or another endpoint.
+
+                if (typeStack.currentEndpointName != controlledBy):
+                    errMsg = '\nError: you are trying to write to a ';
+                    errMsg += 'variable named "' + lhs.value + '" in ';
+                    errMsg += 'endpoint "' + typeStack.currentEndpointName + '".  ';
+                    errMsg += 'However, this variable is controlled by "';
+                    errMsg += typeStack.getOtherEndpointName() + '," which ';
+                    errMsg += 'means that only functions in ';
+                    errMsg += typeStack.getOtherEndpointName() + ' can assign ';
+                    errMsg += 'it values.  Either change who controls ';
+                    errMsg += lhs.value + ' in the Shared section, or ';
+                    errMsg += 'do not write to it in ' + typeStack.getOtherEndpointName();
+                    errMsg += '.\n';
+                    errorFunction(errMsg,[self],[self.lineNo],progText);
+            
+            
             rhs.typeCheck(progText,typeStack);
             rhsType = rhs.type;
 

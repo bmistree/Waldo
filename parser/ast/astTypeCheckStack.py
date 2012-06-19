@@ -71,6 +71,19 @@ class TypeCheckContextStack():
         # function actually returns the type that it says it will.
         self.currentPublicInternalNode = None;
 
+    def getOtherEndpointName(self):
+        if (self.currentEndpointName == None) or (self.endpoint1 == None) or (self.endpoint2 == None):
+            errMsg = '\nBehram error: should not call getOtherEndpointName in ';
+            errMsg += 'astTypeCheckStack.py unless we are currently in an endpoint ';
+            errMsg += 'and all endpoints are defined.\n';
+            errPrint(errMsg);
+            assert(False);
+
+        if (self.currentEndpointName != self.endpoint1):
+            return self.endpoint1;
+        return self.endpoint2;
+
+        
     def addCurrentPublicInternalNode(self,node):
         if ((node.label != AST_PUBLIC_FUNCTION) and (node.label != AST_PRIVATE_FUNCTION) and
             (node.label != AST_ONCREATE_FUNCTION)):
@@ -312,22 +325,23 @@ class TypeCheckContextStack():
         self.currentIncoming = None;
         self.currentPublicInternalNode = None;
 
-
         
     def getIdentifierType(self,identifierName):
         '''
         @param {String} identifierName The name of the identifier that
         we're looking up in the memory store.
 
-        @returns None if have no type information for that identifier.
-        String with type name otherwise.  Typenames come from
-        AST_LABELS file....maybe.
+        @returns {tuple} (None,None) if have no type information for
+        that identifier.  Otherwise, ( a, b).
+        a:  String with type name.
+        b:  String name of the endpoint that controls the shared
+            variable (or None, if no one controls variable.
         '''
         for s in reversed(range(0,len(self.stack))):
-            lookupType= self.stack[s].getIdentifierType(identifierName);
+            lookupType, controlledBy= self.stack[s].getIdentifierType(identifierName);
             if (lookupType != None):
-                return lookupType;
-        return None;
+                return lookupType,controlledBy;
+        return None,None;
 
 
     def checkUndefinedTraceItems(self):
@@ -432,13 +446,18 @@ class TypeCheckContextStack():
         return None;
 
     
-    def addIdentifier(self,identifierName,identifierType,astNode,lineNum = None):
-
+    def addIdentifier(self,identifierName,identifierType,controlledBy,astNode,lineNum = None):
+        '''
+        @param {String} controlledBy --- name of the endpoint that is
+        authoritative for this variable if it's a shared variable.
+        None if it's not a shared variable or if no one is
+        authoritative for it.
+        '''
+        
         if(len(self.stack) <= 1):
             errPrint('\nBehram Error.  Cannot insert into type check stack because stack is empty.\n');
             assert(False);
-            
-        self.stack[-1].addIdentifier(identifierName,identifierType,astNode,lineNum);
+        self.stack[-1].addIdentifier(identifierName,identifierType,controlledBy,astNode,lineNum);
 
     def isEndpoint(self,endpointName):
         return ((endpointName == self.endpoint1) or (endpointName == self.endpoint2));
@@ -456,7 +475,9 @@ class TypeCheckContextStack():
         
         '''
         if(len(self.funcStack) <= 1):
-            errPrint('\nBehram Error.  Cannot insert into type check stack because stack is empty.\n');
+            errMsg = '\nBehram Error.  Cannot insert into type ';
+            errMsg += 'check stack because stack is empty.\n';
+            errPrint(errMsg);
             assert(False);
 
 
@@ -481,7 +502,9 @@ class TypeCheckContextStack():
             return traceError;
 
         #add the function identifier itself to function context.
-        traceError = self.funcStack[-1].addFuncIdentifier(functionName,functionType,functionArgTypes,astNode,lineNum);
+        traceError = self.funcStack[-1].addFuncIdentifier(
+            functionName,functionType,functionArgTypes,astNode,lineNum);
+        
         return traceError;
         
         
@@ -870,45 +893,62 @@ class Context():
         val = self.dict.get(identifierName,None);
         return val;
 
-        
+
     def getIdentifierType(self,identifierName):
         '''
+        @returns {tuple} (None,None) if does not exist.
+        Otherwise, ( a, b).
+        
+        a:  String with type name.
+        b:  String name of the endpoint that controls the shared
+            variable (or None, if no one controls variable.
         @returns None if doesn't exist.
         '''
 
         returner = self.getIdentifierElement(identifierName);
         if (returner):
-            return returner.getType();
-        return returner;
+            return returner.getType(), returner.getControlledBy();
+        return None,None;
+
+
         
-        
-    def addIdentifier(self,identifierName,identifierType,astNode,lineNum):
+    def addIdentifier(self,identifierName,identifierType,controlledBy,astNode,lineNum):
         '''
         If identifier already exists in this context, throw an error.
         Cannot have re-definition of existing type.
         '''
-        if (self.getIdentifierType(identifierName) != None):
+        exists,ctrldBy  = self.getIdentifierType(identifierName);
+        if (exists != None):
             #FIXME: this should turn into a more formal error-reporting system.
             errPrint('\nError, overwriting existing type with name ' + identifierName + '\n');
             assert(False);
 
-        prevDecl = self.getIdentifierType(identifierName);
+        prevDecl,ctrldBy = self.getIdentifierType(identifierName);
         if (prevDecl != None):
             errMsg =  '\nError.  You already declared a variable named ';
             errMsg += '"' + identifierName + '".  You cannot declare another.\n';
             nodes = [astNode,prevDecl.astNode];
             return TypeCheckError(nodes,errMsg);
 
-        self.dict[identifierName] = ContextElement(identifierType,astNode,lineNum);
+        self.dict[identifierName] = ContextElement(identifierType,controlledBy,astNode,lineNum);
 
         
 class ContextElement():
-    def __init__ (self,identifierType,astNode,lineNum):
+    def __init__ (self,identifierType,controlledBy,astNode,lineNum):
         self.identifierType = identifierType;
         self.astNode = astNode;
         self.lineNum = lineNum;
+        self.controlledBy = controlledBy;
 
+    def getControlledBy(self):
+        '''
+        @returns {String} name of the endpoint that is authoritative
+        for this variable if it's a shared variable.  None if it's not
+        a shared variable or if no one is authoritative for it.
+        '''
+        return self.controlledBy;
 
+        
     def getType(self):
         return self.identifierType;
 
