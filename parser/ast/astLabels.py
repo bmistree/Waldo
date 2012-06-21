@@ -79,7 +79,7 @@ AST_TYPE = 'TYPE';
 AST_IDENTIFIER = 'IDENTIFIER';
 AST_EMPTY = 'EMPTY';
 
-# AST_TYPE_LIST = 'LIST_LITERAL';
+AST_LIST = 'LIST_LITERAL';
 
 
 AST_SEND_STATEMENT = 'SEND_STATEMENT';
@@ -105,6 +105,7 @@ TYPE_MSG_SEND_FUNCTION = 'MsgSendFunc';
 TYPE_MSG_RECEIVE_FUNCTION = 'MsgRecvFunc';
 
 
+EMPTY_LIST_SENTINEL = 'empty_list';
 
 
 # VERSION 2 labels....all of these get dropped when converted to version 1.

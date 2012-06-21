@@ -22,9 +22,11 @@ def isFunctionType(typeLabel):
     
     if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
         (typeLabel != TYPE_STRING) and (typeLabel != TYPE_INCOMING_MESSAGE) and
-        (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING)):
+        (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING) and
+        (typeLabel != EMPTY_LIST_SENTINEL)):
 
         jsonType = json.loads(typeLabel);
+        
         if (jsonType.get('Type',None) == None):
             errMsg = '\nBehram error.  got a json object that did not have ';
             errMsg += 'a type field.\n';
@@ -36,6 +38,12 @@ def isFunctionType(typeLabel):
 
     return False;
 
+
+def isListType(typeLabel):
+    '''
+    Automatically handles case of EMPTY_LIST_SENTINEL
+    '''
+    return isTemplatedType(typeLabel) and (not isFunctionType(typeLabel));
 
 def isTemplatedType(typeLabel):
     '''

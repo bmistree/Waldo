@@ -179,6 +179,7 @@ def p_OperatableOn(p):
                     | Identifier
                     | String
                     | Bool
+                    | List
                     | FunctionCall
                     | ToTextCall
                     ''';
@@ -246,6 +247,13 @@ def p_Bool(p):
     p[0] = AstNode(AST_BOOL,p.lineno(1),p.lexpos(1),p[1]);
     p[0].type = TYPE_BOOL;
     
+def p_List(p):
+    '''
+    List : LEFT_BRACKET FunctionArgList RIGHT_BRACKET
+    '''
+    p[0] = AstNode(AST_LIST,p.lineno(1),p.lexpos(1));
+    p[0].addChild(p[2]);
+
     
     
 def p_Identifier(p):

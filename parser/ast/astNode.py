@@ -15,6 +15,7 @@ from astTypeCheckStack import createFuncMatchObjFromJsonStr;
 from parserUtil import errPrint;
 from parserUtil import isFunctionType;
 from parserUtil import isTemplatedType;
+from parserUtil import isListType;
 import json;
 
 
@@ -585,7 +586,50 @@ class AstNode():
                 self.type = self.value;
 
                                 
+
+        elif (self.label == AST_LIST):
+
+
+            elementNodes = self.children[0];
+            self.type = EMPTY_LIST_SENTINEL;
+            allTypes = [];
             
+            # get all types from element nodes
+            for element in elementNodes.children:
+                element.typeCheck(progText,typeStack);
+                allTypes.append(element.type);
+
+
+            # using nested for loop to ensure that all types are
+            # tested against one another.  Type testing here is not
+            # transitive (ie if a and b do not produce an error and b
+            # and c do not produce an error, it does not mean that a
+            # and c will not produce an error.  This is because of
+            # empty lists: [] will match [Number] and [] will match
+            # [TrueFalse], but [Number] will not match [TrueFalse].
+            for typeCheckingIndex in range(0,len(allTypes)):
+
+                potentialType = buildListTypeSignatureFromTypeName(
+                    allTypes[typeCheckingIndex]);
+
+                potentialType = json.dumps(potentialType);
+                
+                self.type = moreSpecificListType(self.type,potentialType);
+                
+                for subTypeCheckingIndex in range(typeCheckingIndex,len(allTypes)):
+
+                    firstType = allTypes[typeCheckingIndex];
+                    secondType = allTypes[subTypeCheckingIndex];
+                    
+                    if checkTypeMismatch(element,firstType,secondType,typeStack,progText):
+                        errMsg = '\nError in list statement.  Different elements in the ';
+                        errMsg += 'list have different types.  The ' + str(typeCheckingIndex+1);
+                        errMsg += 'th element in the list has type [' + firstType + '].  The ';
+                        errMsg += str(subTypeCheckingIndex + 1) + 'th has type [' + secondType + '].\n';
+                        errorFunction(errMsg,[self], [self.lineNo], progText);
+
+                        
+                    
         elif (self.label == AST_CONDITION_STATEMENT):
             #type check all children.  (type checks if, elseif, and
             #else statements).
@@ -1418,7 +1462,80 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
                     errorTrue = True;
                     errorFunction(typeCheckError.errMsg,typeCheckError.nodes,typeCheckError.lineNos,progText);
 
+
+        else:
+            # Must use special checks to type check lists.  For
+            # instance, if one side presents empty_list and other is
+            # [Number], should not produce typecheck error.
+
+            # determine if lists are involved
+            if (isListType(lhsType) and isListType(rhsType)):
+                errorTrue = listTypeMismatch(lhsType,rhsType);
+            else:
+                # both sides were not lists and there types did not
+                # match.  will throw an error.
+                errorTrue = True;
+             
     return errorTrue;
+
+
+def listTypeMismatch(listTypeA, listTypeB):
+    '''
+    @param{String} listTypeA, listTypeB: both are known to be list
+    types.
+    
+    @returns{Bool} True if there is a mismatch, False otherwise.
+
+    Note, that for list types it is inadequate to do a pure equality
+    test type signatures (ie listTypeA == listTypeB) to determine if
+    there is or is not a type mismatch.  This is because of the following case:
+
+    List(Element: Number) l = [];
+
+    The lhs has type [Number] and the rhs has type
+    [EMPTY_LIST_SENTINEL].  However, the assignment is okay and should
+    not produce a type mismatch.
+
+    The following however should produce a type mismatch:
+    
+    List(Element: Number) l = [True];
+        
+    '''
+    if (listTypeA == EMPTY_LIST_SENTINEL) or (listTypeB == EMPTY_LIST_SENTINEL):
+        # any time one side or the other side is an empty list, we
+        # know we're okay because both sides have to be lists.
+        return False;
+
+    
+    dictA = json.loads(listTypeA);
+    dictB = json.loads(listTypeB);
+
+    elementTypeA = dictA['ElementType'];
+    elementTypeB = dictB['ElementType'];
+
+
+    elTypeA = elementTypeA;
+    if (not isinstance(elementTypeA,basestring)):
+        elTypeA = json.dumps(elementTypeA);
+
+    elTypeB = elementTypeB;
+    if (not isinstance(elementTypeB,basestring)):
+        elTypeB = json.dumps(elementTypeB);
+        
+    
+    if (not isListType(elTypeA)) or (not isListType(elTypeB)):
+        # handles all cases where one or both are not lists
+        return (elTypeA != elTypeB);
+
+    # both elements are list types.  know that we can quit if one or other is a sentinel.
+    if (elTypeA == EMPTY_LIST_SENTINEL) or (elTypeB == EMPTY_LIST_SENTINEL):
+        return False;
+    
+    # turn them back into strings and recurse
+    stringElA = json.dumps(elementTypeA);
+    stringElB = json.dumps(elementTypeB);
+    return listTypeMismatch(stringElA,stringElB);
+
 
 
 ERROR_NUM_LINES_EITHER_SIDE = 4;
@@ -1577,6 +1694,95 @@ def buildFuncTypeSignature(node,progText,typeStack):
     return returner;
 
 
+def moreSpecificListType(typeA,typeB,starter = None):
+    '''
+    @param {String} typeA --- string-ified version of json list type.
+    @param {String} typeB --- string-ified version of json list type.
+
+    @returns{String} typeA or typeB, depending on which is more
+    specific.
+
+    In particular, if
+       typeA = []
+       and
+       typeB = [Number]
+    will return typeB
+    Similarly, if
+       typeA = [ [] ]
+       and
+       typeB = [ [TrueFalse] ]
+    will return typeB
+
+    If both typeA and typeB are equally specific but conflict, returns
+    either.  For example, if 
+       typeA = [ Number ]
+       and
+       typeB = [ TrueFalse ]
+    could return either typeA or typeB.
+    '''
+
+    if (typeA == EMPTY_LIST_SENTINEL):
+        return typeB;
+
+    if (typeB == EMPTY_LIST_SENTINEL):
+        return typeA;
+
+    
+    dictA = json.loads(typeA);
+    dictB = json.loads(typeB);
+
+    # grab the types of elements for each list.
+    elementTypeA = dictA['ElementType'];
+    elementTypeB = dictB['ElementType'];
+
+    
+    if (elementTypeA == EMPTY_LIST_SENTINEL):
+        # means that typeB is at least as specific
+        return typeB;
+
+    if (elementTypeB == EMPTY_LIST_SENTINEL):
+        # means that typeA is at least as specific        
+        return typeA;
+
+
+    elTypeA = elementTypeA;
+    if (not isinstance(elementTypeA,basestring)):
+        elTypeA = json.dumps(elementTypeA);
+        
+    elTypeB = elementTypeB;
+    if (not isinstance(elementTypeB,basestring)):
+        elTypeB = json.dumps(elementTypeB);
+
+        
+    if ((not isListType(elTypeA) ) or
+        (not isListType(elTypeB) )):
+        # if one or both are not lists, that means that we've reached
+        # the maximum comparison depth and we cannot get more
+        # specific, so just return one or the other.
+        return typeA;
+
+    
+    # each element itself is a list.  
+    recursionResult = moreSpecificListType(
+        json.dumps(elementTypeA),json.dumps(elementTypeB), 1);
+
+    # must rebuild surrounding list type signature to match typeA or
+    # typeB.
+    jsonToReturn = buildListTypeSignatureFromTypeName(recursionResult);
+    return json.dumps(jsonToReturn);
+    
+
+
+def buildListTypeSignatureFromTypeName(typeName):
+    
+    if (isTemplatedType(typeName)):
+        if (typeName != EMPTY_LIST_SENTINEL):
+            typeName = json.loads(typeName);
+
+    return {
+        'Type': TYPE_LIST,
+        'ElementType': typeName
+        };
 
 def buildListTypeSignature(node, progText,typeStack):
     elementTypeNode = node.children[0];
@@ -1586,11 +1792,7 @@ def buildListTypeSignature(node, progText,typeStack):
     if isTemplatedType(elementTypeNode.type):
         elementType = json.loads(elementType);
 
-    returner = {
-        'Type': TYPE_LIST,
-        'ElementType': elementType
-    };
-    return returner;
+    return buildListTypeSignatureFromTypeName(elementType);
 
 
 class WaldoTypeCheckException(Exception):
