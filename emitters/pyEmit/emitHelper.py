@@ -252,7 +252,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         if (whatToReturnNode.label == TYPE_NOTHING):
             # if node is TYPE_NOTHING, means that user did not want to
             # return anything, just halt execution of function.
-            pass
+            pass;
         else:
             whatToReturnString = runFunctionBodyInternalEmit(whatToReturnNode,protObj,endpoint,prefix,0);
             returnString += whatToReturnString;

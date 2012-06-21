@@ -297,11 +297,27 @@ def p_EndpointGlobalSection(p):
 
 def p_Function(p):
     '''Function : PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
-                | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT'''
+                | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT
+                | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT
+                '''                 
     p[0] = AstNode(AST_PRIVATE_FUNCTION, p.lineno(1),p.lexpos(1));
-    p[0].addChildren([p[3],p[8],p[5]]);
+
+    # if no returns type was declared, then insert it for user so that it returns nothing
+    returnsTypeNode = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_NOTHING);
+    if (len(p) == 12) or (len(p) == 11):
+        # handles cases where returns type was declared
+        returnsTypeNode = p[8];
+
+    
+    p[0].addChildren([p[3],returnsTypeNode,p[5]]);
+
     if (len(p) == 12):
+        # return type and function body
         p[0].addChild(p[10]);
+    elif(len(p) == 10):
+        # no return type and function body
+        p[0].addChild(p[8]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
@@ -310,13 +326,28 @@ def p_Function(p):
     
         
 def p_PublicFunction(p):
-    '''PublicFunction : PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
-                      | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT'''
+    '''
+    PublicFunction : PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
+                   | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT
+                   | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                   | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
+                   '''
     
     p[0] = AstNode(AST_PUBLIC_FUNCTION, p.lineno(1),p.lexpos(1));
-    p[0].addChildren([p[3],p[8],p[5]]);
+
+    # if no returns type was declared, then insert it for user so that it returns nothing
+    returnsTypeNode = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_NOTHING);
+    if (len(p) == 12) or (len(p) == 11):
+        # handles cases where returns type was declared
+        returnsTypeNode = p[8];
+        
+    p[0].addChildren([p[3],returnsTypeNode,p[5]]);
     if (len(p) == 12):
+        # return type and function body
         p[0].addChild(p[10]);
+    elif len(p) == 10:
+        # no return type and function body
+        p[0].addChild(p[8]);
     else:
         #means that we had no function body, insert an impostor
         #function body node.
