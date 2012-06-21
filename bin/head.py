@@ -97,7 +97,8 @@ def genAst(progText,outputErrsTo,versionNum):
     if (versionNum == 1):
         pass;
     elif(versionNum == 2):
-        canonicalize.v2ToV1Ast(astNode,progText);
+        if (not getErrorEncountered(versionNum)):
+            canonicalize.v2ToV1Ast(astNode,progText);
     else:
         print('\nError, no version information provided\n');
         assert(False);

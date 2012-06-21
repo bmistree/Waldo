@@ -31,9 +31,7 @@ def v2ToV1Ast(astNode,progText):
 
     All changes to astNode happen through reference.
     '''
-
     sequencesSection = astNode.children[6];
-    
     endPt1Section = astNode.children[4];
     endPt2Section = astNode.children[5];
     sharedSection = astNode.children[3];
