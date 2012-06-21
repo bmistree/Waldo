@@ -1,0 +1,138 @@
+
+Type Checking Documentation:
+
+The majority of type checking occurs in the recursive method typeCheck
+in parser/ast/astNode.py.  However, it has several helper functions in
+parser/ast/parserUtil.py and parser/ast/astTypeStack.py.  
+
+
+source function   ---> Named and defined in source text of program.
+
+function variable ---> Variable declared with type that is then
+                       assigned to a function.
+
+**About typeStack**
+
+  The typeStack is a stack of contexts.  Each context contains the
+  names of functions and identifiers that have been declared within
+  that context.  If an identifier cannot be found in the context on
+  the top of the stack, we check the next context on the stack (and
+  the next and the next...).  If the identifier is not found, we
+  return None.
+
+  If the identifier is found and it was associated with a source
+  function (rather than a function variable), we return a function
+  match object.  The function match object automatically type checks
+  calls to the function, ensuring type correctness for arguments
+  passed in and the return type.
+
+  If the identifier is found and it was associated with a variable, we
+  return the tuple: (a, b)
+
+     a: <String: type of variable>
+     
+     b: <String: name of endpoint that controls the variable, or None
+         if no one controls>
+
+  The type of the variable returned for templated types (lists and
+  function variables) is complicated and described below in the
+  Templated Types section.  For all other base types (Number,
+  TrueFalse, Text, Nothing, MessageLiteral, OutgoingMessage, and
+  IncomingMessage), the type string is just one of the AST labels in
+  parser/ast/astLabels.py that is preceded by "TYPE_".  
+
+  You push and pop contexts from typeStack any time you enter or exit
+  a new scope, respectively.
+  
+
+**Templated Types**
+
+  There are currently two templated types, Lists and Function Objects,
+  however, OutgoingMessages, IncomingMessages, and MessageLiterals
+  should probably also have been templated types.  This may eventually
+  get fixed.  Nodes that are function objects have types that are
+  json-ized strings.  When loaded into json, these types should have
+  the following form:
+
+  {
+    Type: astLabels.TYPE_FUNCTION,
+    In: [ <some type 1>, <some type 2>, ...],
+    Returns: [<some type>]
+  }
+
+  The array pointed at by "In" corresponds to the arguments that the
+  function takes in.  The array is ordered left-to-right, meaning that
+  the 0 element in the array provides the leftmost argument that the
+  function takes in.  Note that each argument that the function takes
+  in may be a dictionary if the type corresponds to a templated type,
+  or a string if the type corresponds to a non-templated type (or the
+  special EMPTY_LIST_SENTINEL, discussed below).
+
+  Utility functions for functions:
+  
+     isFunctionType in parser/ast/parserUtil.py: Returns True if a
+     node's type indicates that it is a function.
+
+     buildFuncTypeSignature in parser/ast/astNode.py: Given a function
+     node, returns the dict above.
+
+     createFuncMatchObjFromJsonStr in parser/ast/astTypeCheckStack.py:
+     takes a json-ized string for the function object and constructs a
+     functionMatchObject out of it.  (See above for how
+     functionMatchObjects can be used to type check function calls.)
+
+
+   Because you can have a list of Number-s a list of TrueFalse-s, a
+   list of lists of Number-s, etc., lists are also templated.  Nodes
+   with list types are either json-ized strings or the special
+   EMPTY_LIST_SENTINEL, defined in parser/ast/astLabels.py.  First,
+   let's talk about the json-ized version.  When loaded, it has the
+   form:
+
+   {
+      Type: astLabels.TYPE_LIST,
+      ElementType: <some type>
+   }
+
+   The ElementType field can point to additional dicts (if elements in
+   the list are templated types) or strings (eg the ElementType is
+   Number or Text).
+
+   The challenge of type checking lists lies in the existence of a
+   literal list type.  The right-hand sides of the following
+   assignments are the literal lists:
+   
+      a = [1,2,3];
+      b = [];
+      c = [ [True], [False] ];
+
+   Focus on the second line above.  We do not know the types of
+   elements in the literal list type.  Without additional information,
+   [] could be a list of Number-s, Text-s, or lists of lists of lists
+   of Text-s.  The special EMPTY_LIST_SENTINEL is used to represent
+   this wildcard behavior.  
+
+   Lists have helper functions to help with their type checking:
+
+     isListType in parser/ast/parserUtil.py: Returns True if a node's
+     type indicates it is a list.  Note that the type may be either a
+     json-ized string or the EMPTY_LIST_SENTINEL.
+
+     buildListTypeSignature in parser/ast/astNode.py: given a list
+     node, returns a dict that can be json-dumped into the correct
+     type signature.
+
+     moreSpecificListType in parser/ast/astNode.py: used to find the
+     correct type for a list literal.  For instance, if we have
+        [ [], [True] ] 
+     we want this to evaluate to a list of list of TrueFalse-s, rather
+     than a list of EMPTY_LIST_SENTINEL-s.  See the function comments
+     for a better sense of how to use it.
+
+     listTypeMismatch in parser/ast/astNode.py: checks that the type
+     signatures of two lists agree with each other.  This is not a
+     strict test to ensure that the type strings of each list node are
+     equal.  This is because of empty lists.  For instance, a node
+     with type EMPTY_LIST_SENTINEL should match a node with type
+     [ [ TrueFalse] ].  
+     

@@ -16,6 +16,11 @@ from parserUtil import errPrint;
 from parserUtil import isFunctionType;
 from parserUtil import isTemplatedType;
 from parserUtil import isListType;
+from parserUtil import JSON_TYPE_FIELD;
+from parserUtil import JSON_FUNC_RETURNS_FIELD;
+from parserUtil import JSON_FUNC_IN_FIELD;
+from parserUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
+
 import json;
 
 
@@ -1510,8 +1515,8 @@ def listTypeMismatch(listTypeA, listTypeB):
     dictA = json.loads(listTypeA);
     dictB = json.loads(listTypeB);
 
-    elementTypeA = dictA['ElementType'];
-    elementTypeB = dictB['ElementType'];
+    elementTypeA = dictA[JSON_LIST_ELEMENT_TYPE_FIELD];
+    elementTypeB = dictB[JSON_LIST_ELEMENT_TYPE_FIELD];
 
 
     elTypeA = elementTypeA;
@@ -1658,7 +1663,7 @@ def buildFuncTypeSignature(node,progText,typeStack):
     }
     '''
     returner = {};
-    returner['Type'] = TYPE_FUNCTION;
+    returner[JSON_TYPE_FIELD] = TYPE_FUNCTION;
 
     
     ##### HANDLE INPUT ARGS #####
@@ -1675,26 +1680,26 @@ def buildFuncTypeSignature(node,progText,typeStack):
                 inputTypes.append(json.loads(typeNode.type));
             else:
                 toAppend = {
-                    'Type': typeNode.type
+                    JSON_TYPE_FIELD: typeNode.type
                     };
                 inputTypes.append(toAppend);
                 
-    returner['In'] = inputTypes;
+    returner[JSON_FUNC_IN_FIELD] = inputTypes;
 
     ##### HANDLE OUTPUT ARGS #####
     outArgNode = node.children[1];
     outArgNode.typeCheck(progText,typeStack);
     if (isTemplatedType(outArgNode.type)):
-        returner['Returns'] = json.loads(outArgNode.type);
+        returner[JSON_FUNC_RETURNS_FIELD] = json.loads(outArgNode.type);
     else:
-        returner['Returns'] = {
-            'Type': outArgNode.type
+        returner[JSON_FUNC_RETURNS_FIELD] = {
+            JSON_TYPE_FIELD: outArgNode.type
             };
 
     return returner;
 
 
-def moreSpecificListType(typeA,typeB,starter = None):
+def moreSpecificListType(typeA,typeB):
     '''
     @param {String} typeA --- string-ified version of json list type.
     @param {String} typeB --- string-ified version of json list type.
@@ -1732,8 +1737,8 @@ def moreSpecificListType(typeA,typeB,starter = None):
     dictB = json.loads(typeB);
 
     # grab the types of elements for each list.
-    elementTypeA = dictA['ElementType'];
-    elementTypeB = dictB['ElementType'];
+    elementTypeA = dictA[JSON_LIST_ELEMENT_TYPE_FIELD];
+    elementTypeB = dictB[JSON_LIST_ELEMENT_TYPE_FIELD];
 
     
     if (elementTypeA == EMPTY_LIST_SENTINEL):
@@ -1780,8 +1785,8 @@ def buildListTypeSignatureFromTypeName(typeName):
             typeName = json.loads(typeName);
 
     return {
-        'Type': TYPE_LIST,
-        'ElementType': typeName
+        JSON_TYPE_FIELD: TYPE_LIST,
+        JSON_LIST_ELEMENT_TYPE_FIELD: typeName
         };
 
 def buildListTypeSignature(node, progText,typeStack):

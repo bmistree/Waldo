@@ -18,7 +18,14 @@ from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
 from parserUtil import errPrint;
 from parserUtil import isTemplatedType;
+
+from parserUtil import JSON_TYPE_FIELD;
+from parserUtil import JSON_FUNC_RETURNS_FIELD;
+from parserUtil import JSON_FUNC_IN_FIELD;
+from parserUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
+
 import json;
+
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -603,6 +610,8 @@ class FuncContextElement():
 
 def createFuncMatchObjFromJsonStr(jsonStr,astNode):
     '''
+    @param {String} jsonStr
+    
     Now have types for functions, such as:
 
     Function (In: Number, TrueFalse; Returns: Text) someFunc;
@@ -624,8 +633,8 @@ def createFuncMatchObjFromJsonStr(jsonStr,astNode):
     typeDict = json.loads(jsonStr);
     
     argTypes = [];
-    for arg in typeDict['In']:
-        aType = arg['Type'];
+    for arg in typeDict[JSON_FUNC_IN_FIELD]:
+        aType = arg[JSON_TYPE_FIELD];
         if (not isinstance(aType,basestring)):
             
             # means that the actual argument is a more-deeply nested
@@ -636,7 +645,7 @@ def createFuncMatchObjFromJsonStr(jsonStr,astNode):
             
         argTypes.append(aType);
 
-    returnType = typeDict['Returns'];
+    returnType = typeDict[JSON_FUNC_RETURNS_FIELD];
     if (not isinstance(returnType,basestring)):
         returnType = json.dumps(returnType);
         
@@ -670,28 +679,28 @@ class FuncMatchObject():
 
     def createJsonType(self):
         returner = {
-            'Type':TYPE_FUNCTION
+            JSON_TYPE_FIELD:TYPE_FUNCTION
             };
 
         # input args
         inArgs = [];
         for item in self.element.funcArgTypes:
-            toAppend = { 'Type': item }
+            toAppend = { JSON_TYPE_FIELD: item }
             if (isTemplatedType(item)):
                 toAppend = json.loads(item);
 
             inArgs.append(toAppend);
 
-        returner["In"] = inArgs;
+        returner[JSON_FUNC_IN_FIELD] = inArgs;
 
         # output args
         returnType = {
-            'Type': self.element.funcIdentifierType
+            JSON_TYPE_FIELD: self.element.funcIdentifierType
             };
         if (isTemplatedType(self.element.funcIdentifierType)):
             returnType = json.loads(self.element.funcIdentifierType);
             
-        returner["Returns"] = returnType;
+        returner[JSON_FUNC_RETURNS_FIELD] = returnType;
         return returner;
 
 

@@ -6,6 +6,13 @@ import json;
 
 OutputErrsTo = sys.stderr;
 
+JSON_TYPE_FIELD = 'Type';
+JSON_FUNC_RETURNS_FIELD = 'Returns';
+JSON_FUNC_IN_FIELD = 'In';
+
+JSON_LIST_ELEMENT_TYPE_FIELD = 'ElementType';
+
+
 def isFunctionType(typeLabel):
     '''
     Nodes can have many different type labels.  Some are specified by
@@ -27,13 +34,13 @@ def isFunctionType(typeLabel):
 
         jsonType = json.loads(typeLabel);
         
-        if (jsonType.get('Type',None) == None):
+        if (jsonType.get(JSON_TYPE_FIELD,None) == None):
             errMsg = '\nBehram error.  got a json object that did not have ';
             errMsg += 'a type field.\n';
             print(errMsg);
             assert (False);
             
-        if (jsonType['Type'] == TYPE_FUNCTION):
+        if (jsonType[JSON_TYPE_FIELD] == TYPE_FUNCTION):
             return True;
 
     return False;
