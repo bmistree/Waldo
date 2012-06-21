@@ -115,13 +115,29 @@ def p_MessageReceiveSequenceFunctions(p):
     if (len(p) == 3):
         p[0].addChildren(p[2].getChildren());
 
-    
+        
 def p_MessageReceiveSequenceFunction(p):
     '''
     MessageReceiveSequenceFunction : Identifier DOT Identifier CURLY_LEFT CURLY_RIGHT
                                    | Identifier DOT Identifier CURLY_LEFT FunctionBody CURLY_RIGHT
+
+                                   | Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
+                                   | Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                                   
     '''
     p[0] = AstNode(AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION,p[1].lineNo,p[1].linePos);
+
+    # specifically parsing for error of putting parens at end of message receive statement
+    if (len(p) == 9) or (len(p) == 10):
+        funcName = p[1].value + p[2] + p[3].value;
+        errMsg = '\nError in MessageSequence on "' + funcName + '".  ';
+        errMsg += 'Only the first function can take in arguments.  ';
+        errMsg += 'Subsequent functions are automatically called by ';
+        errMsg += 'the system.  You should remove the parentheses at the end of ';
+        errMsg += 'the function.\n';
+        p[0].value = funcName;
+        raise WaldoParseException(p[0],errMsg);
+    
     p[0].addChildren([p[1],p[3]]);
     if (len(p) == 7):
         p[0].addChild(p[5]);

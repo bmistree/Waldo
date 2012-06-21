@@ -701,52 +701,76 @@ def isEmptyNode(nodeToCheck):
     return (nodeToCheck.label == AST_EMPTY);
 
 
-
 def p_error(p):
-    setErrorEncountered();
-    if (p == None):
-        errPrint('\nError: end of file and missing some structure\n');
-    elif(p.value == ONCREATE_TOKEN):
-        errMsg = '\nError: OnCreate is a reserved word that  ';
-        errMsg += 'cannot be called directly from other functions.\n';
-        errPrint(errMsg);
-    else:
-        errPrint('\nSyntax error near on "' + p.value + '"');
-        errPrint('Near line number: ' + str(p.lineno));
-        errPrint('\n');
+    raise WaldoParseException(p);
 
-        if (ProgramText != None):
-            #have program text, can actually print out the error.
-            programTextArray = ProgramText.split('\n');
-            errorLine = p.lineno;
-            errorCol  = findErrorCol(ProgramText,p);
-            errorText = '';
-            lowerLineNum = max(0,errorLine - ERROR_NUM_LINES_EITHER_SIDE);
-            upperLineNum = min(len(programTextArray),errorLine + ERROR_NUM_LINES_EITHER_SIDE);
-            for s in range(lowerLineNum, upperLineNum):
-                preamble = str(s+1);
+class WaldoParseException(Exception):
 
-                if (s == errorLine -1):
-                    preamble += '*   ';
-                else:
-                    preamble += '    ';
+   def __init__(self, p, msg=None):
+
+       if (msg != None):
+           # means that we raised the error ourselves, not lexpy.  Do
+           # some basic translation to ensure that our astnode methods
+           # line up with those that are passed through in ply.
+           p.lineno = p.lineNo;
+           p.lexpos = p.linePos;
+           
+       
+       setErrorEncountered();
+       self.value = '';
+       if (p == None):
+           self.value += '\nError: end of file and missing some structure\n';
+       elif p.value == ONCREATE_TOKEN:
+           errMsg = '\nError: OnCreate is a reserved word that  ';
+           errMsg += 'cannot be called directly from other functions.\n';
+           self.value += errMsg;
+       else:
+        
+           if msg != None:
+               self.value += msg;
+
+        
+           self.value += '\nSyntax error on "' + p.value + '".\n';
+           self.value += 'Near line number: ' + str(p.lineno);
+           self.value += '\n';
+
+           if (ProgramText != None):
+               #have program text, can actually print out the error.
+               programTextArray = ProgramText.split('\n');
+               errorLine = p.lineno;
+               errorCol  = findErrorCol(ProgramText,p);
+               errorText = '';
+               lowerLineNum = max(0,errorLine - ERROR_NUM_LINES_EITHER_SIDE);
+               upperLineNum = min(len(programTextArray),errorLine + ERROR_NUM_LINES_EITHER_SIDE);
+               for s in range(lowerLineNum, upperLineNum):
+                   preamble = str(s+1);
+
+                   if (s == errorLine -1):
+                       preamble += '*   ';
+                   else:
+                       preamble += '    ';
                     
-                errorText += preamble;
-                errorText += programTextArray[s];
-                errorText += '\n';
+                   errorText += preamble;
+                   errorText += programTextArray[s];
+                   errorText += '\n';
                 
-                if (s == errorLine -1):
-                    #want to highlight the column that the error occurred.
-                    lexPosLine = '';
-                    for t in range(0,len(preamble) + errorCol - 1):
-                        lexPosLine += ' ';
-                    lexPosLine += '^\n';
-                    errorText += lexPosLine;
+                   if (s == errorLine -1):
+                       #want to highlight the column that the error occurred.
+                       lexPosLine = '';
+                       for t in range(0,len(preamble) + errorCol - 1):
+                           lexPosLine += ' ';
+                       lexPosLine += '^\n';
+                       errorText += lexPosLine;
 
-            errorText += '\nThe actual error may be one or two lines ';
-            errorText += 'above or below this point.  \nCommon errors ';
-            errorText += 'include forgetting a semi-colon or not capitalizing ';
-            errorText += 'a \nkeyword operator (for instance "return 3;" instead ';
-            errorText += 'of \n"Return 3;".\n';
-            
-            errPrint(errorText);
+               errorText += '\nThe actual error may be one or two lines ';
+               errorText += 'above or below this point.  \nCommon errors ';
+               errorText += 'include forgetting a semi-colon or not capitalizing ';
+               errorText += 'a \nkeyword operator (for instance "return 3;" instead ';
+               errorText += 'of \n"Return 3;".\n';
+
+               self.value += errorText;
+
+
+   def __str__(self):
+       return repr(self.value);
+    

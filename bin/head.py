@@ -35,10 +35,12 @@ def resetErrorEncountered(versionNum):
 import re;
 from astNode import WaldoTypeCheckException;
 
+
 import json;
 astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','emitters','pyEmit');
 sys.path.insert(0, astEmitPath);
 import astEmit;
+from astBuilderCommon import WaldoParseException;
 
 lexPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','lexer');
 from waldoLex import WaldoLexException;
@@ -128,10 +130,12 @@ def compileText(progText,outputErrStream,versionNum):
     except WaldoLexException as excep:
         print >> outputErrStream, excep.value;
         return None;
+    except WaldoParseException as excep:
+        print >> outputErrStream, excep.value;
+        return None;
     except WaldoTypeCheckException as excep:
         print >> errOutputStream, excep.value;
-        return;
-
+        return None;
 
     
     if (astRootNode == None):
@@ -167,6 +171,9 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
     try:
         ast,fileText = genAstFromFile(inputFilename,errOutputStream,versionNum);
     except WaldoLexException as excep:
+        print >> errOutputStream, excep.value;
+        return;
+    except WaldoParseException as excep:
         print >> errOutputStream, excep.value;
         return;
     except WaldoTypeCheckException as excep:

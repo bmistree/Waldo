@@ -573,11 +573,6 @@ class WaldoLexException(Exception):
    def __str__(self):
        return repr(self.value)
     
-    
-
-
-
-
 
 
 def constructLexer():

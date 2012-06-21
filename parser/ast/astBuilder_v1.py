@@ -170,9 +170,23 @@ def p_TypedMessageSendsLine(p):
 def p_MsgReceiveFunction(p):
     '''MsgReceiveFunction : MSG_RECEIVE Identifier RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
                           | MSG_RECEIVE Identifier RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT CURLY_RIGHT
+
+                          | MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT FunctionBody CURLY_RIGHT
+                          | MSG_RECEIVE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RECEIVES Identifier COLON TypedSendsStatement SENDS COLON TypedSendsStatement CURLY_LEFT CURLY_RIGHT
                           ''';
-    
+
     p[0] = AstNode(AST_MSG_RECEIVE_FUNCTION, p.lineno(1),p.lexpos(1));
+    
+    # last two lines should be caught and presented as errors: message
+    # receive functions should not take arguments.
+    if (len(p) == 16) or (len(p) == 15):
+        errMsg = '\nError specifying a ' + p[1] + ' function named "';
+        errMsg += p[2].value + '".  ' + p[1] + ' functions should not take ';
+        errMsg += 'arguments.  Therefore, it should not have parentheses.  ';
+        errMsg += 'Instead, use the IncomingMessage and OutgoingMessage syntax.\n';
+        p[0].value = p[2].value;
+        raise WaldoParseException(p[0],errMsg);
+
     p[0].addChildren([p[2],p[4],p[6],p[9]]);
     if (len(p) == 13):
         p[0].addChild(p[11]);
