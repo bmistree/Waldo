@@ -259,6 +259,20 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
 
         returnString = indentString(returnString,indentLevel);
 
+    elif (astNode.label == AST_LIST):
+        # emitting list literal
+        returnString += '[';
+
+        # repurposed funcarglist for this
+        elementHolder = astNode.children[0];
+        
+        for listElement in elementHolder.children:
+            returnString += runFunctionBodyInternalEmit(listElement,protObj,endpoint,prefix,0);
+            returnString += ',';
+
+        returnString += ' ]';
+        returnString = indentString(returnString,indentLevel);
+
         
     elif (astNode.label == AST_BRACKET_STATEMENT):
         indexIntoNode = astNode.children[0];
