@@ -275,7 +275,7 @@ class MsgSendFunction(MsgFunction):
         methodBodyTop = r"""
 # means that we are already processing a trace stream.
 # schedule this for another time
-if (self.amInTrace):
+if (self.amInTrace) or (len(self.msgSendQueue) != 0):
 """;
 
         ifBody = """
