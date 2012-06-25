@@ -87,7 +87,7 @@ def getDefaultValForType(astTypedNode):
     return decString;
 
 
-def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
+def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0,requiresUnlock=False):
     '''
     @param {AstNode} astNode -- the ast node that we want evaluation
     to start from.  When called externally, this will generally have
@@ -104,6 +104,9 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
     through either self.intermediate.<var name>,self.commited.<var
     name>, or self.<varName> (for case of initializing shared and
     global vars) depending on which is set/passed through.
+
+    @param {Bool} requiresUnlock --- True if we require that we call
+    self._unlock() before issuing a return statement.
     
 
     @returns {String} with funcition text.  base indent level is 0.
@@ -118,11 +121,11 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         assert(False);
 
         
-    
     returnString = '';
     if (astNode.label == AST_FUNCTION_BODY):
         for s in astNode.children:
-            funcStatementString = runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,indentLevel);
+            funcStatementString = runFunctionBodyInternalEmit(
+                s,protObj,endpoint,prefix,indentLevel,requiresUnlock);
             if (len(funcStatementString) != 0):
                 returnString += indentString(funcStatementString,indentLevel);
                 returnString += '\n';
@@ -145,7 +148,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         #check if have an initializer value
         if (len(astNode.children) == 3):
             #have an initializer value;
-            rhsInitializer = runFunctionBodyInternalEmit(astNode.children[2],protObj,endpoint,prefix,0);
+            rhsInitializer = runFunctionBodyInternalEmit(
+                astNode.children[2],protObj,endpoint,prefix,0,requiresUnlock);
             decString += rhsInitializer;
         else:
             decString = getDefaultValForType(astNode);
@@ -204,8 +208,10 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
 
-        lhsText = runFunctionBodyInternalEmit(lhsNode,protObj,endpoint,prefix,0);
-        rhsText = runFunctionBodyInternalEmit(rhsNode,protObj,endpoint,prefix,0);
+        lhsText = runFunctionBodyInternalEmit(
+            lhsNode,protObj,endpoint,prefix,0,requiresUnlock);
+        rhsText = runFunctionBodyInternalEmit(
+            rhsNode,protObj,endpoint,prefix,0,requiresUnlock);
 
         overallLine = lhsText + ' '+ operator + ' (' + rhsText + ') ';
         return overallLine;
@@ -214,14 +220,16 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
     elif (astNode.label == AST_CONDITION_STATEMENT):
         returnString = '';
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,indentLevel);
+            returnString += runFunctionBodyInternalEmit(
+                s,protObj,endpoint,prefix,indentLevel,requiresUnlock);
             returnString += '\n';
 
     elif (astNode.label == AST_TOTEXT_FUNCTION):
         returnString = 'str(';
 
         # write argument
-        toTextArg = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,0);
+        toTextArg = runFunctionBodyInternalEmit(
+            astNode.children[0],protObj,endpoint,prefix,0,requiresUnlock);
         returnString += toTextArg;
 
         returnString += ')'; # closes str opening
@@ -237,7 +245,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
             returnString += 'None';
         returnString += ',';
 
-        printArg = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,0);
+        printArg = runFunctionBodyInternalEmit(
+            astNode.children[0],protObj,endpoint,prefix,0,requiresUnlock);
         #now actually emit what the user wants to print
         returnString += printArg;
         returnString += ')';
@@ -246,15 +255,20 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
 
     elif(astNode.label == AST_RETURN_STATEMENT):
         whatToReturnNode = astNode.children[0];
-        
 
-        returnString = 'return ';
+        returnString = '';
+        if requiresUnlock:
+            # unlock before returning out of function
+            returnString += 'self._unlock();\n';
+        
+        returnString += 'return ';
         if (whatToReturnNode.label == TYPE_NOTHING):
             # if node is TYPE_NOTHING, means that user did not want to
             # return anything, just halt execution of function.
             pass;
         else:
-            whatToReturnString = runFunctionBodyInternalEmit(whatToReturnNode,protObj,endpoint,prefix,0);
+            whatToReturnString = runFunctionBodyInternalEmit(
+                whatToReturnNode,protObj,endpoint,prefix,0,requiresUnlock);
             returnString += whatToReturnString;
 
         returnString = indentString(returnString,indentLevel);
@@ -267,7 +281,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         elementHolder = astNode.children[0];
         
         for listElement in elementHolder.children:
-            returnString += runFunctionBodyInternalEmit(listElement,protObj,endpoint,prefix,0);
+            returnString += runFunctionBodyInternalEmit(
+                listElement,protObj,endpoint,prefix,0,requiresUnlock);
             returnString += ',';
 
         returnString += ' ]';
@@ -278,14 +293,17 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         indexIntoNode = astNode.children[0];
         indexNode = astNode.children[1];
         
-        indexIntoStr = runFunctionBodyInternalEmit(indexIntoNode,protObj,endpoint,prefix,0);
-        indexStr = runFunctionBodyInternalEmit(indexNode,protObj,endpoint,prefix,0);
+        indexIntoStr = runFunctionBodyInternalEmit(
+            indexIntoNode,protObj,endpoint,prefix,0,requiresUnlock);
+        indexStr = runFunctionBodyInternalEmit(
+            indexNode,protObj,endpoint,prefix,0,requiresUnlock);
 
         bracketStr = indexIntoStr + '[' + indexStr + ']';
         returnString = indentString(bracketStr,indentLevel);
 
     elif (astNode.label == AST_BOOLEAN_CONDITION):
-        returnString = runFunctionBodyInternalEmit(astNode.children[0],protObj,endpoint,prefix,indentLevel);
+        returnString = runFunctionBodyInternalEmit(
+            astNode.children[0],protObj,endpoint,prefix,indentLevel,requiresUnlock);
 
     elif (astNode.label == AST_IDENTIFIER):
         idName = astNode.value;
@@ -314,7 +332,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
     elif (astNode.label == AST_ELSE_IF_STATEMENTS):
         returnString = '';
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,0);
+            returnString += runFunctionBodyInternalEmit(
+                s,protObj,endpoint,prefix,0,requiresUnlock);
             returnString += '\n';
 
         if (returnString != ''):
@@ -336,13 +355,15 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         booleanConditionNode = astNode.children[0];
         condBodyNode = astNode.children[1];
 
-        boolCondStr = runFunctionBodyInternalEmit(booleanConditionNode,protObj,endpoint,prefix,0);
+        boolCondStr = runFunctionBodyInternalEmit(
+            booleanConditionNode,protObj,endpoint,prefix,0,requiresUnlock);
         condHead += boolCondStr + ':'
 
         # occasionally, have empty bodies for if/else if statements.
         condBodyStr = '';
         if (condBodyNode.label != AST_EMPTY):
-            condBodyStr = runFunctionBodyInternalEmit(condBodyNode,protObj,endpoint,prefix,0);
+            condBodyStr = runFunctionBodyInternalEmit(
+                condBodyNode,protObj,endpoint,prefix,0,requiresUnlock);
         if (condBodyStr == ''):
             condBodyStr = 'pass;';
 
@@ -361,7 +382,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         # handles empty body for else statement
         elseBodyStr = '';
         if (elseBody.label != AST_EMPTY):
-            elseBodyStr = runFunctionBodyInternalEmit(elseBody,protObj,endpoint,prefix,0);
+            elseBodyStr = runFunctionBodyInternalEmit(
+                elseBody,protObj,endpoint,prefix,0,requiresUnlock);
         if (elseBodyStr == ''):
             elseBodyStr = 'pass;';
 
@@ -398,7 +420,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
 
         
         funcArgListNode = astNode.children[1];
-        funcArgStr = runFunctionBodyInternalEmit(funcArgListNode,protObj,endpoint,prefix,0);
+        funcArgStr = runFunctionBodyInternalEmit(
+            funcArgListNode,protObj,endpoint,prefix,0,requiresUnlock);
         returnString = indentString(funcNameStr + funcArgStr,indentLevel);
 
     elif (astNode.label == AST_FUNCTION_ARGLIST):
@@ -406,7 +429,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
 
         counter = 0;
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,0);
+            returnString += runFunctionBodyInternalEmit(
+                s,protObj,endpoint,prefix,0,requiresUnlock);
             counter +=1;
             
             if (counter != len(astNode.children)):
@@ -424,7 +448,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         for s in range(0,len(astNode.children)):
             msgLine = astNode.children[s];
             msgLineElementNameStr = msgLine.children[0].value;
-            msgLineElementValueStr = runFunctionBodyInternalEmit(msgLine.children[1],protObj,endpoint,prefix,0);
+            msgLineElementValueStr = runFunctionBodyInternalEmit(
+                msgLine.children[1],protObj,endpoint,prefix,0,requiresUnlock);
             returnString += "'%s' : %s" % (msgLineElementNameStr,msgLineElementValueStr);
 
             if (s != len(astNode.children) -1):
@@ -444,7 +469,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
             assert(False);
 
         msgNode = astNode.children[0];
-        msgStr = runFunctionBodyInternalEmit(msgNode,protObj,endpoint,prefix,0);
+        msgStr = runFunctionBodyInternalEmit(
+            msgNode,protObj,endpoint,prefix,0,requiresUnlock);
         emittedSenderFuncName = endpoint.currentlyEmittingFunction.pythonizeName();
         returnString += '''self._sendMsg (%s,'%s');  # actually send the message;''' % (msgStr,emittedSenderFuncName);
         returnString = indentString(returnString,indentLevel);
@@ -459,7 +485,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
             if (endpoint.isGlobalOrShared(idName)):
                 idName = prefix + idName;
         elif(assignToNode.label == AST_BRACKET_STATEMENT):
-            idName = runFunctionBodyInternalEmit(assignToNode,protObj,endpoint,prefix,0);
+            idName = runFunctionBodyInternalEmit(
+                assignToNode,protObj,endpoint,prefix,0,requiresUnlock);
 
         else:
             errMsg = '\nBehram error.  In emission of assignment statement, ';
@@ -471,13 +498,15 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0):
         lhsAssignString = idName + ' = ';
 
 
-        rhsAssignString = runFunctionBodyInternalEmit(astNode.children[1],protObj,endpoint,prefix,0);
+        rhsAssignString = runFunctionBodyInternalEmit(
+            astNode.children[1],protObj,endpoint,prefix,0,requiresUnlock);
         returnString += indentString(lhsAssignString + rhsAssignString,indentLevel);
         returnString += '\n';
 
     elif (astNode.label == AST_FUNCTION_BODY_STATEMENT):
         for s in astNode.children:
-            returnString += runFunctionBodyInternalEmit(s,protObj,endpoint,prefix,indentLevel);
+            returnString += runFunctionBodyInternalEmit(
+                s,protObj,endpoint,prefix,indentLevel,requiresUnlock);
         
     else:
         errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';

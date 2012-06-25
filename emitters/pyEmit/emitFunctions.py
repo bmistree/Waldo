@@ -153,16 +153,33 @@ class PublicFunction(Function):
         funcBodyNode = self.astNode.children[3];
         
         methodBody = '''
-while self.amInTrace:
+self._lock();
+
+if self.amInTrace:
 '''
-        whileBody = 'time.sleep(.01);\n';
-        methodBody += emitHelper.indentString(whileBody,1);
+        ifBody = '''
+self._unlock();
+time.sleep(.01);
+return self.%s(''' % (self.pythonizeName());
+
+
+        for argument in self.astNode.children[self.declArgListIndex].children:
+            if (len(argument.children) == 0):
+                continue;
+            argName = argument.children[1].value;
+            ifBody +=  argName + ', ';
+
+        ifBody += ');\n'
+
+        methodBody += emitHelper.indentString(ifBody,1);
         
         methodBody += '''
 self.whichEnv = COMMITTED_CONTEXT;
 '''
-        methodBody += emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.COMMITTED_PREFIX);
-        
+        methodBody += emitHelper.runFunctionBodyInternalEmit(
+            funcBodyNode,self.protObj,self.endpoint,emitHelper.COMMITTED_PREFIX,0,True);
+
+        methodBody += '\nself._unlock();';
         
         returnString = emitHelper.indentString(methodHeader,1);
         returnString += emitHelper.indentString(methodBody,2);
