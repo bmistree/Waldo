@@ -578,10 +578,16 @@ eval(obj);
     def emitGeneralSendMessageUtility(self):
         firstSendMsgHead = '\ndef _sendMsg(self,msg,funcNameFrom):\n';
         firstSendMsgBody = r"""
-delay = _Delay(self,msg,funcNameFrom);
-delay.start();
-delay.join();
+# previously used delay code below: meant that test infrastructure
+# and connection objects did not need to be multi-threaded.
+# instead, short-circuting and going directly to _internalSendMsg.
+# Ensures 
+self._internalSendMsg(msg,funcNameFrom);
+# delay = _Delay(self,msg,funcNameFrom);
+# delay.start();
+# delay.join();
 """;
+
 
         sendMsgHead = '\ndef _internalSendMsg (self,msg,funcNameFrom):\n';
         
