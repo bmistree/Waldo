@@ -275,8 +275,9 @@ class AstNode():
 
             #add trace line to traceManager of typeStack so can do
             #type checks after endpoint bodies are type checked.
-            typeStack.addTraceLine(self);
-            
+            traceError = typeStack.addTraceLine(self);
+            if traceError != None:
+                errorFunction(traceError.errMsg,traceError.nodes,traceError.lineNos,progText);
             
             #will hold the name of the last endpoint used in trace line.
             lastEndpoint = None;

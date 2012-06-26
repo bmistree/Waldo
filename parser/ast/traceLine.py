@@ -51,14 +51,47 @@ class TraceLineManager():
         # start at 2nd child because first child is the name of the
         # sequence of messages.
         msgStarter = traceItemToString(traceLineAst.children[1]);
-        
+
         index = self.traceLines.get(msgStarter, None);
         if (index != None):
             tLineAst = self.traceLines[msgStrarter];
             errMsg = '\nError: already have a trace line ';
             errMsg += 'that starts with "' + msgStarter + '" function.\n';
             return TypeCheckError([traceLineAst, tLineAst],errMsg);
-            
+
+        # check to ensure that within trace line, have not repeated
+        # the same function
+        # skip first index because that's the name of the trace.
+        for traceItemNodeIndex in range(1,len(traceLineAst.children)):
+            traceItemNode = traceLineAst.children[traceItemNodeIndex];
+            tItemNodeStr = traceItemToString(traceItemNode);
+
+            # # check to ensure none of this trace line's own elements
+            # # recycle message receive functions
+            for otherNodeIndex in range(traceItemNodeIndex + 1, len(traceLineAst.children)):
+                otherNode = traceLineAst.children[otherNodeIndex];
+
+                oNodeStr = traceItemToString(otherNode);
+                if tItemNodeStr == oNodeStr:
+                    errMsg = '\nError: cannot reuse the same function with name "';
+                    errMsg += tItemNodeStr + '" within same trace line.\n';
+                    nodes = [traceItemNode,otherNode];
+                    return TypeCheckError(nodes,errMsg);
+
+            # check to ensure no other trace line's elements recycle
+            # message receive functions.
+            for tLineKey in self.traceLines.keys():
+                tLine = self.traceLines[tLineKey];
+
+                usesSameNode = tLine.usesSameTraceItem(traceItemNode);
+                if usesSameNode != None:
+                    errMsg = '\nError: cannot reuse the same function with name "';
+                    errMsg += tItemNodeStr + '" between trace lines.  Each item ';
+                    errMsg += 'in a message trace must be unique.\n';
+                    nodes = [traceItemNode,usesSameNode];
+                    return TypeCheckError(nodes,errMsg);
+
+        
         self.traceLines[msgStarter] = TraceLine(traceLineAst);
         return None;
         
@@ -226,7 +259,7 @@ class TraceLine ():
             if firstChild:
                 firstChild = False;
                 continue;
-            
+
             toAppend = traceItemToString(traceItem);
             self.stringifiedTraceItems.append(toAppend);
             self.definedUndefinedList.append(0);
@@ -244,6 +277,32 @@ class TraceLine ():
         self.usedNodes = [0] * len(self.stringifiedTraceItems);
 
 
+    def usesSameTraceItem(self,traceItemNode):
+        '''
+        Checks if this trace line uses the same trace item within its
+        sequence of messages.  If it does, then returns the node
+        associated with the conflicting trace item.  If it does not,
+        return None.
+        '''
+        toStringOther = traceItemToString(traceItemNode);
+        
+        # skip the first child because that is just the name of the
+        # trace line.
+        firstChild = True;
+        for traceItemLocal in self.traceLineAst.children:
+            if firstChild:
+                firstChild = False;
+                continue;
+
+            toStringLocal = traceItemToString(traceItemLocal);
+
+            if toStringLocal == toStringOther:
+                return traceItemLocal;
+        
+        return None;
+
+        
+        
     def checkTraceItemInputOutput(self):
         '''
         Runs through self.usedNodes to ensure that the message that
@@ -253,7 +312,6 @@ class TraceLine ():
         @returns {None or TypeCheckError} -- None if all the inputs
         and outputs match.  TypeCheckError if they do not.
         '''
-
         for s in self.usedNodes:
             if (s == 0):
                 # means that we had an undefined item in the trace
@@ -264,7 +322,6 @@ class TraceLine ():
                 # this error (@see errorOnUndefined).
                 return None;
 
-            
         msgSendNode = self.usedNodes[0];
         outgoingFuncName = msgSendNode.children[0].value;
         typedOutgoingMsgNode = msgSendNode.children[3];

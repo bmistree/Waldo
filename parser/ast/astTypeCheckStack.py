@@ -541,7 +541,7 @@ class TypeCheckContextStack():
         '''
         @param{AstNode} traceLineAst
         '''
-        self.traceManager.addTraceLine(traceLineAstNode);
+        return self.traceManager.addTraceLine(traceLineAstNode);
         
         
         
