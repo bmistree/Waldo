@@ -78,6 +78,17 @@ class TypeCheckContextStack():
         # function actually returns the type that it says it will.
         self.currentPublicInternalNode = None;
 
+        # want to type check to ensure that all message send and
+        # message receive functions have a send function inside of
+        # them.  Whenever start type checking a message send or a
+        # message receive, set this to false.  Whenever encounter a
+        # sends statement, set this flag to true.  After type checking
+        # a message send's or receive's body, check this flag.  If it's
+        # still false, then throw an error.  Otherwise, reset and proceed.
+        self.containedSend = False;
+
+        
+        
     def getOtherEndpointName(self):
         if (self.currentEndpointName == None) or (self.endpoint1 == None) or (self.endpoint2 == None):
             errMsg = '\nBehram error: should not call getOtherEndpointName in ';

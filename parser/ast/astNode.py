@@ -353,6 +353,8 @@ class AstNode():
                 errMsg += '.\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);        
 
+            typeStack.containedSend = True;
+                
             self.type = TYPE_NOTHING;
                 
         elif (self.label == AST_MESSAGE_LITERAL):
@@ -1047,10 +1049,12 @@ class AstNode():
             elif (self.label == AST_MSG_SEND_FUNCTION):
                 funcDeclArgListIndex = 1;
                 funcBodyIndex = 2;
+                typeStack.containedSend = False;
             elif(self.label == AST_MSG_RECEIVE_FUNCTION):
                 # 1 should contain name of the IncomingMessage;
                 funcBodyIndex = 4;
                 funcDeclArgListIndex = None;
+                typeStack.containedSend = False;
             elif(self.label == AST_ONCREATE_FUNCTION):
                 funcBodyIndex = 2;
                 funcDeclArgListIndex = 1;
@@ -1112,6 +1116,24 @@ class AstNode():
             ## remove the created type context
             typeStack.popContext();
 
+            # check to ensure that if it was a message send or message
+            # receive that we actually encountered a send statement.
+            if self.label == AST_MSG_SEND_FUNCTION:
+                if not typeStack.containedSend:
+                    errMsg = '\nType error: All MessageSend functions should ';
+                    errMsg += 'contain a Send statement.\n';
+                    errorFunction(errMsg,[self],[self.lineNo],progText);
+
+            elif self.label == AST_MSG_RECEIVE_FUNCTION:
+                if not typeStack.containedSend:
+                    errMsg = '\nType error: All MessageReceive functions (even ';
+                    errMsg += 'the last one) should contain a Send statement.\n';
+                    errorFunction(errMsg,[self],[self.lineNo],progText);
+
+            # reset the containedSend error.
+            typeStack.containedSend = False;
+
+            
 
         elif(self.label == AST_FUNCTION_BODY):
             for s in self.children:
