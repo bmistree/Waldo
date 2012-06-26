@@ -126,7 +126,7 @@ def compileText(progText,outputErrStream,versionNum):
 
 
     try:
-        astRootNode, other = genAst(progText,outputErrStream);
+        astRootNode, other = genAst(progText,outputErrStream,versionNum);
     except WaldoLexException as excep:
         print >> outputErrStream, excep.value;
         return None;
