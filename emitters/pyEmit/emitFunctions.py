@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 import emitHelper;
-
+from emitHelper import ROLLBACK_POINT_VAR_NAME;
+from emitHelper import DEFAULT_ROLLBACK_VAR_VALUE;
 
 class Function(object):
     def __init__(self,name,astNode,protObj,declArgListIndex):
@@ -26,7 +27,47 @@ class Function(object):
 
     def pythonizeName(self):
         return self.name;
+
+    def handleRollbackArgumentsText(self):
+        '''
+        Many functions need to keep track of whether they are the root
+        of a transaction, in which case we will need to rollback all
+        the way to it in case of simultaneous transaction start on
+        each endpoint.
+
+        This function emits src text to handle the logic of the
+        rollback.  Here's the basic idea:
         
+        to handle rollback:
+           1: Check if this is the root function of the potential
+              entire transaction (ie, rollback variable is default
+              value)
+           2: If it is, then create a new variable for rollback.
+        '''
+
+        returnStr = '''
+if %s == %s:
+''' % (ROLLBACK_POINT_VAR_NAME, DEFAULT_ROLLBACK_VAR_VALUE);
+
+        ifBody = '''
+_queueArgs = [];
+''';
+        declArgsList = self.astNode.children[self.declArgListIndex];
+        for s in declArgsList.children:
+            if len(s.children) == 0:
+                continue;
+            argName = s.children[1].value;
+            ifBody += '_queueArgs.append(' + argName + ');\n';
+
+        ifBody += '''
+%s = _MessageSendQueueElement('%s',_queueArgs);
+
+''' % (ROLLBACK_POINT_VAR_NAME,self.pythonizeName());
+
+        returnStr += emitHelper.indentString(ifBody,1);
+        return returnStr;
+
+    
     def createMethodHeader(self):
         #already know that self.name does not conflict with python
         #because was checked before constructed.
@@ -45,7 +86,13 @@ class Function(object):
 
             argName = s.children[1].value;
             methodHeader += ', ' + argName;
-        
+
+        if (isinstance(self,PublicFunction) or isinstance(self,InternalFunction) or
+            isinstance(self,MsgSendFunction)):
+            # means that we should add an additional argument for rollbacks
+            methodHeader += ', ' + ROLLBACK_POINT_VAR_NAME  + '= ' + DEFAULT_ROLLBACK_VAR_VALUE;
+
+            
         methodHeader += '):\n';
         return methodHeader;
 
@@ -105,8 +152,11 @@ class InternalFunction(Function):
         methodHeader = self.createMethodHeader();
 
         funcBodyNode = self.astNode.children[3];
+
+        methodBody = self.handleRollbackArgumentsText();
         
-        methodBody = '''
+        methodBody += '''
+
 if (self.whichEnv == COMMITTED_CONTEXT):
 ''';
         inCommittedBody = emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.COMMITTED_PREFIX);
@@ -172,6 +222,11 @@ return self.%s(''' % (self.pythonizeName());
         ifBody += ');\n'
 
         methodBody += emitHelper.indentString(ifBody,1);
+
+
+        # to handle rollback:
+        methodBody += self.handleRollbackArgumentsText();
+
         
         methodBody += '''
 self.whichEnv = COMMITTED_CONTEXT;
@@ -288,37 +343,16 @@ class MsgSendFunction(MsgFunction):
         
         funcBodyNode = self.astNode.children[2];
 
-
-        methodBodyTop = r"""
+        methodBodyTop = self.handleRollbackArgumentsText();
+        methodBodyTop += r"""
 # means that we are already processing a trace stream.
 # schedule this for another time
 if (self.amInTrace) or (len(self.msgSendQueue) != 0):
 """;
-
         ifBody = """
-queueElementName = '%s';
-queueElementArgs = []; # no args beyond self were passed into the send function.
-""" % self.pythonizeName();
-
-
-        # save each argument for later
-        declArgsList = self.astNode.children[self.declArgListIndex];
-        for s in declArgsList.children:
-            #each s is a declArg
-            if (len(s.children) == 0):
-                continue;
-
-            argName = s.children[1].value;
-            ifBody += 'queueElementArgs.append(' + argName + ');\n';
-        
-        
-
-        ifBody += """
-queueElement = _MessageSendQueueElement(queueElementName,queueElementArgs);
-
-self.msgSendQueue.append(queueElement);
+self.msgSendQueue.append(%s);
 return;
-""" ;
+""" % ROLLBACK_POINT_VAR_NAME;
 
         methodBodyTop += emitHelper.indentString(ifBody,1);
 
@@ -329,31 +363,19 @@ self.amInTrace = True;
 self.intermediate = self.committed.copy();
 
 #stores intermediate send function
-queueArgs = [];
-"""
-
-        # save each argument for later
-        declArgsList = self.astNode.children[self.declArgListIndex];
-        for s in declArgsList.children:
-            #each s is a declArg
-            if (len(s.children) == 0):
-                continue;
-
-            argName = s.children[1].value;
-            methodBodyTop += 'queueArgs.append(' + argName + ');\n';
+""";
         
-
         methodBodyTop += """
-self.outstandingSend = _MessageSendQueueElement('%s',queueArgs);
+self.outstandingSend = %s;
+""" % ROLLBACK_POINT_VAR_NAME;
 
+        
+        methodBodyTop += """
 #sets environment for further calls
 self.whichEnv = INTERMEDIATE_CONTEXT;
 
-
 # actually write the user-specified "guts" of the function.
-""" % self.pythonizeName();
-
-        
+""";
 
         methodBodyBottom = emitHelper.runFunctionBodyInternalEmit(funcBodyNode,self.protObj,self.endpoint,emitHelper.INTERMEDIATE_PREFIX);
 

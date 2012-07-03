@@ -12,6 +12,10 @@ INTERMEDIATE_PREFIX = 'self.intermediate.';
 COMMITTED_PREFIX = 'self.committed.';
 SELF_PREFIX = 'self.'
 
+ROLLBACK_POINT_VAR_NAME = '_rollbackPointVar';
+DEFAULT_ROLLBACK_VAR_VALUE = 'None';
+
+
 OutputErrsTo = sys.stderr;
 
 def indentString(string,indentAmount):
@@ -399,7 +403,6 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0,re
         funcNameStr = funcNameNode.value;
         
         if (pythonFuncName == None):
-
             # means that we're calling a user-defined function.
             if ((endpoint == None) and (prefix == SELF_PREFIX)):
                 # means that we are handling the shared section and we
@@ -418,25 +421,28 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0,re
                 funcCallPrefix = 'self._endpoint.';
             funcNameStr = funcCallPrefix + pythonFuncName;
 
-        
         funcArgListNode = astNode.children[1];
         funcArgStr = runFunctionBodyInternalEmit(
             funcArgListNode,protObj,endpoint,prefix,0,requiresUnlock);
+        funcArgStr = '( ' + funcArgStr;
+        if pythonFuncName:
+            # internal methods should have additional rollback parameter passed.
+            funcArgStr +=  ROLLBACK_POINT_VAR_NAME;
+
+        funcArgStr +=  ') '; 
         returnString = indentString(funcNameStr + funcArgStr,indentLevel);
 
     elif (astNode.label == AST_FUNCTION_ARGLIST):
-        returnString = '(';
+        returnString = '';
 
         counter = 0;
         for s in astNode.children:
             returnString += runFunctionBodyInternalEmit(
                 s,protObj,endpoint,prefix,0,requiresUnlock);
             counter +=1;
-            
-            if (counter != len(astNode.children)):
-                returnString += ',';
+            #python allows dangling comma at end of function call
+            returnString += ',';
         
-        returnString += ')';
         returnString = indentString(returnString,indentLevel);
 
     elif(astNode.label == AST_MESSAGE_LITERAL):
