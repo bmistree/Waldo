@@ -33,7 +33,7 @@ def isFunctionType(typeLabel):
     if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
         (typeLabel != TYPE_STRING) and (typeLabel != TYPE_INCOMING_MESSAGE) and
         (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING) and
-        (typeLabel != EMPTY_LIST_SENTINEL)):
+        (typeLabel != EMPTY_LIST_SENTINEL) and (typeLabel != EMPTY_MAP_SENTINEL)):
 
         jsonType = json.loads(typeLabel);
         
@@ -54,19 +54,25 @@ def isListType(typeLabel):
     Automatically handles case of EMPTY_LIST_SENTINEL
     '''
     if not isTemplatedType(typeLabel):
-        # can only be a list type if not templated if it's an empty
-        # list.
-        return (typeLabel == EMPTY_LIST_SENTINEL);
+        return False;
 
+
+    # can only be a list type if not templated if it's an empty
+    # list.
+    if typeLabel == EMPTY_LIST_SENTINEL:
+        return True;
+    elif typeLabel == EMPTY_MAP_SENTINEL:
+        return False;
+    
     jsonType = json.loads(typeLabel);
         
-    if (jsonType.get(JSON_TYPE_FIELD,None) == None):
+    if jsonType.get(JSON_TYPE_FIELD,None) == None:
         errMsg = '\nBehram error.  got a json object that did not have ';
         errMsg += 'a type field.\n';
         print(errMsg);
         assert (False);
             
-    if (jsonType[JSON_TYPE_FIELD] == TYPE_LIST):
+    if jsonType[JSON_TYPE_FIELD] == TYPE_LIST:
         return True;
 
     # either a map or a function.
@@ -77,19 +83,24 @@ def isMapType(typeLabel):
     Automatically handles case of EMPTY_MAP_SENTINEL
     '''
     if not isTemplatedType(typeLabel):
-        # can only be a list map if not templated if it's an empty
-        # list.
-        return (typeLabel == EMPTY_MAP_SENTINEL);
+        return false;
+
+    # can only be a map if not templated if it's an empty
+    # map
+    if typeLabel == EMPTY_MAP_SENTINEL:
+        return True;
+    elif typeLabel == EMPTY_LIST_SENTINEL:
+        return False;
 
     jsonType = json.loads(typeLabel);
         
-    if (jsonType.get(JSON_TYPE_FIELD,None) == None):
+    if jsonType.get(JSON_TYPE_FIELD,None) == None:
         errMsg = '\nBehram error.  got a json object that did not have ';
         errMsg += 'a type field.\n';
         print(errMsg);
         assert (False);
             
-    if (jsonType[JSON_TYPE_FIELD] == TYPE_MAP):
+    if jsonType[JSON_TYPE_FIELD] == TYPE_MAP:
         return True;
 
     # either a list or a function.
