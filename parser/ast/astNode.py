@@ -612,12 +612,11 @@ class AstNode():
                                 
 
         elif (self.label == AST_LIST):
-            elementNodes = self.children[0];
             self.type = EMPTY_LIST_SENTINEL;
             allTypes = [];
             
             # get all types from element nodes
-            for element in elementNodes.children:
+            for element in self.children:
                 element.typeCheck(progText,typeStack);
                 allTypes.append(element.type);
 

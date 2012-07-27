@@ -279,11 +279,8 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0,re
     elif (astNode.label == AST_LIST):
         # emitting list literal
         returnString += '[';
-
-        # repurposed funcarglist for this
-        elementHolder = astNode.children[0];
         
-        for listElement in elementHolder.children:
+        for listElement in astNode.children:
             returnString += runFunctionBodyInternalEmit(
                 listElement,protObj,endpoint,prefix,0,requiresUnlock);
             returnString += ',';

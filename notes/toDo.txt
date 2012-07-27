@@ -15,10 +15,12 @@ Ignoring connection setup.
 
 Symmetric.
 
-Right now, if you do
-if (True){}, it will be read as
-if (True) Map
-which is correct, but has overhead of creating a map.  Fix in
+Right now, have an extra shift/reduce conflict caused by the following
+error:
+ If (True)
+  {};
+throws a syntax error.  Ie, can't have single line map declaration.
+This is not horrible, but it's kind of ugly.  Fix in
 singlelineormultilinecurlyblock in astBuilderCommon.py.
 
 Ignoring checks to make sure that the connection is set up before

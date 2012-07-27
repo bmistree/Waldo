@@ -272,17 +272,45 @@ def p_Bool(p):
     
 def p_List(p):
     '''
-    List : LEFT_BRACKET FunctionArgList RIGHT_BRACKET
+    List : LEFT_BRACKET ListLiteralItemList RIGHT_BRACKET
     '''
     p[0] = AstNode(AST_LIST,p.lineno(1),p.lexpos(1));
-    p[0].addChild(p[2]);
+    newKids = p[2].getChildren();
+    newKids.reverse();
+    p[0].addChildren(newKids);
 
+def p_ListLiteralItemList(p):
+    '''ListLiteralItemList : ReturnableExpression 
+                           | ReturnableExpression COMMA ListLiteralItemList 
+                           | Empty'''
+
+    # this will produce a reversed list.  ensure to re-reverse when
+    # use in list.
+    p[0] = AstNode(AST_LIST_INTERMEDIATE,p[1].lineNo,p[1].linePos);
+    if (len(p) == 4):
+        # second line
+        p[0].addChildren(p[3].getChildren());
+        p[0].addChild(p[1]);
+    elif(len(p) == 2):
+        if (not isEmptyNode(p[1])):
+            # first line
+            p[0].addChild(p[1]);
+    else:
+        errPrint('\nError in ListLiteralItemList.  Unexpected length to match\n');
+        assert(False);
+
+    
 def p_Map(p):
     '''
     Map : CURLY_LEFT MapLiteralItemList CURLY_RIGHT
     '''
     p[0] = AstNode(AST_MAP,p.lineno(1),p.lexpos(1));
-    p[0].addChildren(p[2].getChildren());
+    # ensures that map literal will be parsed in left-to-right order.
+    # doubt that this will be defined behavior, but for the time being,
+    # keep it that way.
+    newKids = p[2].getChildren();
+    newKids.reverse();
+    p[0].addChildren(newKids);
 
 
 def p_MapLiteralItemList(p):
@@ -505,7 +533,8 @@ def p_ElseStatement(p):
 def p_SingleLineOrMultilineCurliedBlock(p):
     '''SingleLineOrMultilineCurliedBlock :  FunctionBodyStatement
                                          |  CURLY_LEFT FunctionBody CURLY_RIGHT
-    '''; # we allow if (){}, it's just that we'll read it as a map...probably a lot of overhead.
+                                         |  CURLY_LEFT CURLY_RIGHT
+    '''; 
     
 
     if (len(p) == 2):
