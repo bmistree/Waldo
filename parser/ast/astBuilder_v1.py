@@ -65,7 +65,7 @@ def p_NonOperatableOn(p):
     p[0] = p[1];
     
     
-    
+
 def p_MessageLiteral(p):
     '''
     MessageLiteral : CURLY_LEFT InternalMessageLiteral CURLY_RIGHT
@@ -86,7 +86,7 @@ def p_InternalMessageLiteral(p):
                               | InternalMessageLiteral COMMA MessageLiteralElement
                               '''
     
-    p[0]= AstNode(AST_MESSAGE_LITERAL,p[1].lineNo,p[1].linePos);
+    p[0] = AstNode(AST_MESSAGE_LITERAL,p[1].lineNo,p[1].linePos);
 
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());

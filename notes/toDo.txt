@@ -15,6 +15,12 @@ Ignoring connection setup.
 
 Symmetric.
 
+Right now, if you do
+if (True){}, it will be read as
+if (True) Map
+which is correct, but has overhead of creating a map.  Fix in
+singlelineormultilinecurlyblock in astBuilderCommon.py.
+
 Ignoring checks to make sure that the connection is set up before
 continuing.  Maybe block until the connection is set up?
 

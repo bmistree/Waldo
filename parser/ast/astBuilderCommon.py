@@ -202,6 +202,7 @@ def p_OperatableOn(p):
                     | String
                     | Bool
                     | List
+                    | Map
                     | FunctionCall
                     | ToTextCall
                     ''';
@@ -276,8 +277,42 @@ def p_List(p):
     p[0] = AstNode(AST_LIST,p.lineno(1),p.lexpos(1));
     p[0].addChild(p[2]);
 
+def p_Map(p):
+    '''
+    Map : CURLY_LEFT MapLiteralItemList CURLY_RIGHT
+    '''
+    p[0] = AstNode(AST_MAP,p.lineno(1),p.lexpos(1));
+    p[0].addChildren(p[2].getChildren());
+
+
+def p_MapLiteralItemList(p):
+    '''
+    MapLiteralItemList : MapLiteralItem
+                       | MapLiteralItem COMMA MapLiteralItemList
+                       | Empty
+    '''
+    p[0] = AstNode(AST_MAP_INTERMEDIATE,p[1].lineNo,p[1].linePos);
+    if (len(p) == 2) and (p[1].label == AST_MAP_ITEM):
+        # first line
+        p[0].addChild(p[1]);
+    elif len(p) == 4:
+        # second line
+        p[0] = p[3];
+        p[0].addChild(p[1]);
+    else:
+        # last line: it's just empty
+        pass;
+
+
     
-    
+def p_MapLiteralItem(p):
+    '''
+    MapLiteralItem : ReturnableExpression COLON ReturnableExpression
+    '''
+    p[0] = AstNode(AST_MAP_ITEM,p.lineno(1),p.lexpos(1));
+    p[0].addChildren([p[1],p[3]]);    
+ 
+        
 def p_Identifier(p):
     'Identifier : IDENTIFIER';
     p[0] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
@@ -470,8 +505,7 @@ def p_ElseStatement(p):
 def p_SingleLineOrMultilineCurliedBlock(p):
     '''SingleLineOrMultilineCurliedBlock :  FunctionBodyStatement
                                          |  CURLY_LEFT FunctionBody CURLY_RIGHT
-                                         |  CURLY_LEFT CURLY_RIGHT
-    ''';
+    '''; # we allow if (){}, it's just that we'll read it as a map...probably a lot of overhead.
     
 
     if (len(p) == 2):
