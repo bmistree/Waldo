@@ -100,13 +100,14 @@ TYPE_INCOMING_MESSAGE = 'IncomingMessage';
 TYPE_MESSAGE_LITERAL = 'MessageLiteral';
 TYPE_FUNCTION = 'Function';
 TYPE_LIST = 'List';
+TYPE_MAP = 'Map';
 
 TYPE_MSG_SEND_FUNCTION = 'MsgSendFunc';
 TYPE_MSG_RECEIVE_FUNCTION = 'MsgRecvFunc';
 
 
 EMPTY_LIST_SENTINEL = 'empty_list';
-
+EMPTY_MAP_SENTINEL = 'empty_map';
 
 # VERSION 2 labels....all of these get dropped when converted to version 1.
 AST_MESSAGE_SEQUENCE_SECTION = 'MessageSequenceSection';

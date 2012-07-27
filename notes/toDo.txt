@@ -8,11 +8,12 @@ json gobbledy gook.
 
 Deep copy returns from public statements.
     
-In examples:
-may want to make Ready a keyword so that do not have conflicts with
-sending messages.
+In examples: may want to make Ready a keyword so that do not have
+conflicts with sending messages.
 
 Ignoring connection setup.
+
+Symmetric.
 
 Ignoring checks to make sure that the connection is set up before
 continuing.  Maybe block until the connection is set up?
@@ -45,17 +46,12 @@ send statement?
 
     
 To Do:
-
- * Not handling escaping strings for string literals correctly when
-   emitting in runFunctionBodyInternalEmit of astEmit.py.
    
  * Throw okay error if do not name endpoint at top endpoint section
    correctly (eg., name both the same thing).
  
  * For incorrectly declared variables, maybe present some "you may
    have meant XXXXX" error message.
-   
- * Test that do not write to any variable that do not control.
    
  * Determine syntax for generics Map and List; determine if want
    syntax for doing things by value
@@ -64,15 +60,10 @@ To Do:
    if use "Equals" instead of "==", parse for "==" and report error.
    +=, ++ as well.  Cannot begin a variable name with _
    
-   
  * Warn unused functions.  Error on unused functions?
-
-x * Ensure that nothing makes a function call to a msgReceive function.
  
  * Is it possible to specify shared functions?  What about shared
    msgSend and msgReceive functions?
-
-   
 
    
 Major to dos:
@@ -84,15 +75,6 @@ Major to dos:
 
   
 Questions:
-
-Should decide whether should have basic initializers for variables or
-allow for more complex statements (returnable expressions).
-
-Annotation for shared data seems off.  Right now, just have one
-general CONTROLS annotation.  Can have more nuanced rules, where a
-piece of state can only be modified directly in a message response
-chain instead of at the outset of response.  Similarly, may want to
-make state only writable.  We'll see.
 
 Should ElseIf use camel-case or underscore?  Mechanical Turk it.
 

@@ -41,6 +41,8 @@ tokens = (
 
     "LIST",
     "ELEMENT",
+    "MAP",
+    "FROM",
     
     #boolean logic
     "IF",
@@ -291,6 +293,15 @@ def t_FUNCTION(t):
 def t_LIST(t):
     'List';
     return mStateMachine.addToken(t);
+
+def t_MAP(t):
+    'Map';
+    return mStateMachine.addToken(t);
+
+def t_FROM(t):
+    'From';
+    return mStateMachine.addToken(t);
+
 
 def t_ELEMENT(t):
     'Element';

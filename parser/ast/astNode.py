@@ -20,6 +20,9 @@ from parserUtil import JSON_TYPE_FIELD;
 from parserUtil import JSON_FUNC_RETURNS_FIELD;
 from parserUtil import JSON_FUNC_IN_FIELD;
 from parserUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
+from parserUtil import JSON_MAP_FROM_TYPE_FIELD;
+from parserUtil import JSON_MAP_TO_TYPE_FIELD;
+
 
 import json;
 
@@ -578,13 +581,26 @@ class AstNode():
 
             elif self.value == TYPE_LIST:
                 # more complicated types for lists
-                # create a dictionary for the list type
+                # create a dictionary for the list type:
                 # List (Element: Number)
                 # becomes
                 # { Type: 'List',
-                #   Element: { Type: "Number" }}
+                #   ElementType: { Type: "Number" }}
                 #
                 typeSignature = buildListTypeSignature(self,progText,typeStack);
+                self.type = json.dumps(typeSignature);
+                self.value = self.type;
+
+            elif self.value == TYPE_MAP:
+                # more complicated types for maps
+                # create a dictionary for the map type:
+                # Map (From: Number, To: Text)
+                # becomes
+                # { Type: 'Map',
+                #   From: { Type: 'Number'},
+                #   To: {Type: 'Text'}
+                #  }
+                typeSignature = buildMapTypeSignature(self,progText,typeStack);
                 self.type = json.dumps(typeSignature);
                 self.value = self.type;
 
@@ -596,8 +612,6 @@ class AstNode():
                                 
 
         elif (self.label == AST_LIST):
-
-
             elementNodes = self.children[0];
             self.type = EMPTY_LIST_SENTINEL;
             allTypes = [];
@@ -1755,7 +1769,6 @@ def moreSpecificListType(typeA,typeB):
     if (typeB == EMPTY_LIST_SENTINEL):
         return typeA;
 
-    
     dictA = json.loads(typeA);
     dictB = json.loads(typeB);
 
@@ -1804,7 +1817,8 @@ def moreSpecificListType(typeA,typeB):
 def buildListTypeSignatureFromTypeName(typeName):
     
     if (isTemplatedType(typeName)):
-        if (typeName != EMPTY_LIST_SENTINEL):
+        if ((typeName != EMPTY_LIST_SENTINEL) and
+            (typeName != EMPTY_MAP_SENTINEL)):
             typeName = json.loads(typeName);
 
     return {
@@ -1821,6 +1835,45 @@ def buildListTypeSignature(node, progText,typeStack):
         elementType = json.loads(elementType);
 
     return buildListTypeSignatureFromTypeName(elementType);
+
+
+
+def buildMapTypeSignatureFromTypeNames(fromTypeName,toTypeName):
+    
+    if isTemplatedType(fromTypeName):
+        if ((fromTypeName != EMPTY_LIST_SENTINEL) and
+            (fromTypeName != EMPTY_MAP_SENTINEL)):
+            fromTypeName = json.loads(fromTypeName);
+
+    if isTemplatedType(toTypeName):
+        if ((toTypeName != EMPTY_LIST_SENTINEL) and
+            (toTypeName != EMPTY_MAP_SENTINEL)):
+            toTypeName = json.loads(toTypeName);
+        
+
+    return {
+        JSON_TYPE_FIELD: TYPE_MAP,
+        JSON_MAP_FROM_TYPE_FIELD: fromTypeName,
+        JSON_MAP_TO_TYPE_FIELD: toTypeName
+        };
+
+
+
+def buildMapTypeSignature(node,progText,typeStack):
+    fromTypeNode = node.children[0];
+    fromTypeNode.typeCheck(progText,typeStack);
+    toTypeNode = node.children[1];
+    toTypeNode.typeCheck(progText,typeStack);
+
+    fromType = fromTypeNode.type;
+    if isTemplatedType(fromTypeNode.type):
+        fromType = json.loads(fromType);
+
+    toType = toTypeNode.type;
+    if isTemplatedType(toTypeNode.type):
+        toType = json.loads(toType);
+
+    return buildMapTypeSignatureFromTypeNames(fromType,toType);
 
 
 class WaldoTypeCheckException(Exception):

@@ -122,7 +122,8 @@ def p_Type(p):
          | RECEIVES
          | FunctionType
          | ListType
-            '''
+         | MapType
+         '''
 
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1));    
     if (isinstance(p[1],basestring)):
@@ -132,7 +133,15 @@ def p_Type(p):
         p[0] = p[1];
 
 
+def p_MapType(p):
+    '''
+    MapType : MAP LEFT_PAREN FROM COLON Type COMMA TO_OPERATOR COLON Type RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_MAP);
+    # children are key and value of map, respectively
+    p[0].addChildren([p[5],p[9]]);
 
+    
 def p_ListType(p):
     '''
     ListType : LIST LEFT_PAREN ELEMENT COLON Type RIGHT_PAREN

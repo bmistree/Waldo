@@ -71,14 +71,17 @@ def getDefaultValForType(astTypedNode):
         
     else:
 
-        listType  = False;
+        validTemplateType  = False;
         try:
             jsonType = json.loads(typeName);
             if jsonType['Type'] == TYPE_LIST:
                 decString = '[]';
-                listType = True;
+                validTemplateType = True;
+            elif jsonType['Type'] == TYPE_MAP:
+                decString = '{}';
+                validTemplateType = True;
         finally:
-            if not listType:
+            if not validTemplateType:
                 errMsg = '\nBehram error.  Unknown declaration type when ';
                 errMsg += 'emitting from runFunctionBodyInternalEmit.\n';
                 errPrint(errMsg);
@@ -152,7 +155,7 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0,re
                 astNode.children[2],protObj,endpoint,prefix,0,requiresUnlock);
             decString += rhsInitializer;
         else:
-            decString = getDefaultValForType(astNode);
+            decString += getDefaultValForType(astNode);
 
         
         returnString += indentString(decString,indentLevel);

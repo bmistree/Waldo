@@ -12,6 +12,9 @@ JSON_FUNC_IN_FIELD = 'In';
 
 JSON_LIST_ELEMENT_TYPE_FIELD = 'ElementType';
 
+JSON_MAP_FROM_TYPE_FIELD = 'From';
+JSON_MAP_TO_TYPE_FIELD = 'To';
+
 
 def isFunctionType(typeLabel):
     '''
@@ -50,7 +53,49 @@ def isListType(typeLabel):
     '''
     Automatically handles case of EMPTY_LIST_SENTINEL
     '''
-    return isTemplatedType(typeLabel) and (not isFunctionType(typeLabel));
+    if not isTemplatedType(typeLabel):
+        # can only be a list type if not templated if it's an empty
+        # list.
+        return (typeLabel == EMPTY_LIST_SENTINEL);
+
+    jsonType = json.loads(typeLabel);
+        
+    if (jsonType.get(JSON_TYPE_FIELD,None) == None):
+        errMsg = '\nBehram error.  got a json object that did not have ';
+        errMsg += 'a type field.\n';
+        print(errMsg);
+        assert (False);
+            
+    if (jsonType[JSON_TYPE_FIELD] == TYPE_LIST):
+        return True;
+
+    # either a map or a function.
+    return False;
+
+def isMapType(typeLabel):
+    '''
+    Automatically handles case of EMPTY_MAP_SENTINEL
+    '''
+    if not isTemplatedType(typeLabel):
+        # can only be a list map if not templated if it's an empty
+        # list.
+        return (typeLabel == EMPTY_MAP_SENTINEL);
+
+    jsonType = json.loads(typeLabel);
+        
+    if (jsonType.get(JSON_TYPE_FIELD,None) == None):
+        errMsg = '\nBehram error.  got a json object that did not have ';
+        errMsg += 'a type field.\n';
+        print(errMsg);
+        assert (False);
+            
+    if (jsonType[JSON_TYPE_FIELD] == TYPE_MAP):
+        return True;
+
+    # either a list or a function.
+    return False;
+
+
 
 def isTemplatedType(typeLabel):
     '''
