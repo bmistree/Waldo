@@ -16,6 +16,12 @@ JSON_MAP_FROM_TYPE_FIELD = 'From';
 JSON_MAP_TO_TYPE_FIELD = 'To';
 
 
+def isValueType(typeLabel):
+    '''
+    Text, TrueFalse, and Number are all value types.  Everything else is not
+    '''
+    return (typeLabel == TYPE_BOOL) or (typeLabel == TYPE_NUMBER) or (typeLabel == TYPE_STRING);
+
 def isFunctionType(typeLabel):
     '''
     Nodes can have many different type labels.  Some are specified by
@@ -83,7 +89,7 @@ def isMapType(typeLabel):
     Automatically handles case of EMPTY_MAP_SENTINEL
     '''
     if not isTemplatedType(typeLabel):
-        return false;
+        return False;
 
     # can only be a map if not templated if it's an empty
     # map

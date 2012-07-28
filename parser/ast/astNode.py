@@ -16,6 +16,8 @@ from parserUtil import errPrint;
 from parserUtil import isFunctionType;
 from parserUtil import isTemplatedType;
 from parserUtil import isListType;
+from parserUtil import isMapType;
+from parserUtil import isValueType;
 from parserUtil import JSON_TYPE_FIELD;
 from parserUtil import JSON_FUNC_RETURNS_FIELD;
 from parserUtil import JSON_FUNC_IN_FIELD;
@@ -600,7 +602,14 @@ class AstNode():
                 #   From: { Type: 'Number'},
                 #   To: {Type: 'Text'}
                 #  }
-                typeSignature = buildMapTypeSignature(self,progText,typeStack);
+                typeSignature,errMsg,errNodes = buildMapTypeSignature(self,progText,typeStack);
+
+                if errMsg != None:
+                    # list comprehension!
+                    errLineNos = [ x.lineNo for x in errNodes];
+                    errorFunction(errMsg,errNodes, errLineNos, progText);
+
+                
                 self.type = json.dumps(typeSignature);
                 self.value = self.type;
 
@@ -635,10 +644,10 @@ class AstNode():
 
                 potentialType = json.dumps(potentialType);
                 
-                self.type = moreSpecificListType(self.type,potentialType);
+                self.type = moreSpecificListMapType(self.type,potentialType);
                 
-                for subTypeCheckingIndex in range(typeCheckingIndex,len(allTypes)):
-
+                for subTypeCheckingIndex in range(typeCheckingIndex+1,len(allTypes)):
+                    # now check that this type agrees with all subsequent types.
                     firstType = allTypes[typeCheckingIndex];
                     secondType = allTypes[subTypeCheckingIndex];
                     
@@ -649,6 +658,61 @@ class AstNode():
                         errMsg += str(subTypeCheckingIndex + 1) + 'th has type [' + secondType + '].\n';
                         errorFunction(errMsg,[self], [self.lineNo], progText);
 
+
+        elif self.label == AST_MAP:
+            # type check all children
+            self.type = EMPTY_MAP_SENTINEL;
+            allIndexTypes = [];
+            allValueTypes = [];
+
+            
+            for counterIndex in range(0,len(self.children)):
+                item = self.children[counterIndex];
+                index = item.children[0];
+                value = item.children[1];
+                
+                index.typeCheck(progText,typeStack);
+                value.typeCheck(progText,typeStack);
+
+                if not isValueType(index.type):
+                    errMsg = '\nError in Map.  You can only index a map using ';
+                    errMsg += 'Number, Text, or TrueFalse.  However, the ' + str(counterIndex + 1);
+                    errMsg += 'th element in the map has type [' + index.type + '].';
+                    errorFunction(errMsg,[self,index],[self.lineNo,index.lineNo],progText);
+                 
+                allIndexTypes.append(index.type);
+                allValueTypes.append(value.type);
+
+            for typeCheckingIndex in range(0,len(allIndexTypes)):
+                indexType = allIndexTypes[typeCheckingIndex];
+                valueType = allValueTypes[typeCheckingIndex];
+                potentialType = buildMapTypeSignatureFromTypeNames(
+                    indexType,valueType);
+                potentialType = json.dumps(potentialType);
+
+
+                self.type = moreSpecificListMapType(self.type,potentialType);
+                for subTypeCheckingIndex in range(typeCheckingIndex+1,len(allIndexTypes)):
+                    firstIndexType = allIndexTypes[typeCheckingIndex];
+                    secondIndexType = allIndexTypes[subTypeCheckingIndex];
+
+                    firstValueType = allValueTypes[typeCheckingIndex];
+                    secondValueType = allValueTypes[subTypeCheckingIndex];
+                    if checkTypeMismatch(index,firstIndexType,secondIndexType,typeStack,progText):
+                        errMsg = '\nError in Map.  Different elements in the map ';
+                        errMsg += 'have different types.  The ' + str(typeCheckingIndex + 1);
+                        errMsg += 'th item in the map has an index of [' + firstIndexType + '].  ';
+                        errMsg += 'However, the ' + str(subTypeCheckingIndex +1) + 'th has type [';
+                        errMsg += secondIndexType + '].\n';
+                        errorFunction(errMsg,[self],[self.lineNo],progText);
+
+                    if checkTypeMismatch(value,firstValueType,secondValueType,typeStack,progText):
+                        errMsg = '\nError in Map.  Different elements in the map ';
+                        errMsg += 'have different types.  The ' + str(typeCheckingIndex + 1);
+                        errMsg += 'th item in the map has a value of [' + firstValueType + '].  ';
+                        errMsg += 'However, the ' + str(subTypeCheckingIndex +1) + 'th has type [';
+                        errMsg += secondValueType + '].\n';
+                        errorFunction(errMsg,[self],[self.lineNo],progText);
                         
                     
         elif (self.label == AST_CONDITION_STATEMENT):
@@ -1462,7 +1526,7 @@ class AstNode():
 
 
 
-        
+
 def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
     '''
     @returns {Bool} True if should throw type mismatch error.  False
@@ -1511,7 +1575,10 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
 
             # determine if lists are involved
             if (isListType(lhsType) and isListType(rhsType)):
-                errorTrue = listTypeMismatch(lhsType,rhsType);
+                errorTrue = listTypeMismatch(lhsType,rhsType,typeStack,progText);
+
+            elif isMapType(lhsType) and isMapType(rhsType):
+                errorTrue = mapTypeMismatch(lhsType,rhsType,typeStack,progText);
             else:
                 # both sides were not lists and there types did not
                 # match.  will throw an error.
@@ -1520,7 +1587,64 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
     return errorTrue;
 
 
-def listTypeMismatch(listTypeA, listTypeB):
+def mapTypeMismatch(mapTypeA, mapTypeB,typeStack,progText):
+    '''
+    @see listTypeMismatch
+    '''
+    if (mapTypeA == EMPTY_MAP_SENTINEL) or (mapTypeB == EMPTY_MAP_SENTINEL):
+        # any time one side or the other side is an empty map, we
+        # know we're okay because both sides have to be maps.
+        return False;
+
+    
+    dictA = json.loads(mapTypeA);
+    dictB = json.loads(mapTypeB);
+
+
+    indexTypeA = dictA[JSON_MAP_FROM_TYPE_FIELD];
+    indexTypeB = dictB[JSON_MAP_FROM_TYPE_FIELD];
+
+    valueTypeA = dictA[JSON_MAP_TO_TYPE_FIELD];
+    valueTypeB = dictB[JSON_MAP_TO_TYPE_FIELD];
+
+
+    # these are the indices for 
+    indTypeA = indexTypeA;
+    if (not isinstance(indexTypeA,basestring)):
+        indTypeA = json.dumps(indexTypeA);
+
+    indTypeB = indexTypeB;
+    if (not isinstance(indexTypeB,basestring)):
+        indTypeB = json.dumps(indexTypeB);
+
+    valTypeA = valueTypeA;
+    if (not isinstance(valueTypeA,basestring)):
+        valTypeA = json.dumps(valueTypeA);
+
+    valTypeB = valueTypeB;
+    if (not isinstance(valueTypeB,basestring)):
+        valTypeB = json.dumps(valueTypeB);
+
+    if checkTypeMismatch(None,indTypeA,indTypeB,typeStack,progText):
+        # there's an error because the indices have to match.
+        return True;
+
+    if (not isMapType(valTypeA)) or (not isMapType(valTypeB)):
+        # handles all cases where one or both values are not maps
+        return checkTypeMismatch(None,valTypeA,valTypeB,typeStack,progText);
+
+    # both values are maps.  know that we can quit with no error if
+    # one or other is sentinel.
+    if (valTypeA == EMPTY_MAP_SENTINEL) or (valTypeB == EMPTY_MAP_SENTINEL):
+        return False;
+    
+    # recurse on map types
+    return mapTypeMismatch(elTypeA,elTypeB,typeStack,progText);
+
+    
+
+
+def listTypeMismatch(listTypeA, listTypeB,typeStack,progText):
     '''
     @param{String} listTypeA, listTypeB: both are known to be list
     types.
@@ -1566,16 +1690,14 @@ def listTypeMismatch(listTypeA, listTypeB):
     
     if (not isListType(elTypeA)) or (not isListType(elTypeB)):
         # handles all cases where one or both are not lists
-        return (elTypeA != elTypeB);
+        return checkTypeMismatch(None,elTypeA,elTypeB,typeStack,progText);
 
     # both elements are list types.  know that we can quit if one or other is a sentinel.
     if (elTypeA == EMPTY_LIST_SENTINEL) or (elTypeB == EMPTY_LIST_SENTINEL):
         return False;
     
-    # turn them back into strings and recurse
-    stringElA = json.dumps(elementTypeA);
-    stringElB = json.dumps(elementTypeB);
-    return listTypeMismatch(stringElA,stringElB);
+    # recurse on list types
+    return listTypeMismatch(elTypeA,elTypeB,typeStack,progText);
 
 
 
@@ -1804,13 +1926,134 @@ def moreSpecificListType(typeA,typeB):
     
     # each element itself is a list.  
     recursionResult = moreSpecificListType(
-        json.dumps(elementTypeA),json.dumps(elementTypeB), 1);
+        json.dumps(elementTypeA),json.dumps(elementTypeB));
 
     # must rebuild surrounding list type signature to match typeA or
     # typeB.
     jsonToReturn = buildListTypeSignatureFromTypeName(recursionResult);
     return json.dumps(jsonToReturn);
+
+
+def bothLists(a,b):
+    if (not isinstance(a,basestring)):
+        a = json.dumps(a);
+    if (not isinstance(b,basestring)):
+        b = json.dumps(b);        
+    return isListType(a) and isListType(b);
+
+def bothMaps(a,b):
+    if (not isinstance(a,basestring)):
+        a = json.dumps(a);
+    if (not isinstance(b,basestring)):
+        b = json.dumps(b);        
+    return isMapType(a) and isMapType(b);
+
+def moreSpecificListMapType(typeA,typeB):
+    '''
+    @param {String} typeA --- string-ified version of json list/map type.
+    @param {String} typeB --- string-ified version of json list/map type.
+
+    @returns{String} typeA or typeB, depending on which is more
+    specific.
+
+    In particular, if
+       typeA = []
+       and
+       typeB = [Number]
+    will return typeB
+    Similarly, if
+       typeA = [ [] ]
+       and
+       typeB = [ [TrueFalse] ]
+    will return typeB
+
+    If both typeA and typeB are equally specific but conflict, returns
+    either.  For example, if 
+       typeA = [ Number ]
+       and
+       typeB = [ TrueFalse ]
+    could return either typeA or typeB.
+    '''
+
+    if (typeA == EMPTY_LIST_SENTINEL) or (typeA == EMPTY_MAP_SENTINEL):
+        return typeB;
+
+    if (typeB == EMPTY_LIST_SENTINEL) or (typeB == EMPTY_MAP_SENTINEL):
+        return typeA;
+
+    dictA = json.loads(typeA);
+    dictB = json.loads(typeB);
+
+
+    twoMaps = False;
+    if bothLists(typeA,typeB):
+        # grab the types of elements for each list.
+        valueTypeA = dictA[JSON_LIST_ELEMENT_TYPE_FIELD];
+        valueTypeB = dictB[JSON_LIST_ELEMENT_TYPE_FIELD];
+
+        # can just set these to any non-sentinel value
+        indexTypeA = '';
+        indexTypeB = '';
+        
+    elif bothMaps(typeA,typeB):
+        twoMaps = True;
+        valueTypeA = dictA[JSON_MAP_TO_TYPE_FIELD];
+        valueTypeB = dictB[JSON_MAP_TO_TYPE_FIELD];
+
+        indexTypeA = dictA[JSON_MAP_FROM_TYPE_FIELD];
+        indexTypeB = dictB[JSON_MAP_FROM_TYPE_FIELD];
+    else:
+        # otherwise, type mismatch: return one or the other.
+        return typeA;
+        
+    if (valueTypeA == EMPTY_LIST_SENTINEL) or (valueTypeA == EMPTY_MAP_SENTINEL):
+        # means that typeB is at least as specific
+        return typeB;
+
+    if (valueTypeB == EMPTY_LIST_SENTINEL) or (valueTypeB == EMPTY_MAP_SENTINEL):
+        # means that typeA is at least as specific        
+        return typeA;
+
+    if indexTypeA != indexTypeB:
+        # mismatch, return either
+        return typeA;
+
+    elTypeA = valueTypeA;
+    if (not isinstance(valueTypeA,basestring)):
+        elTypeA = json.dumps(valueTypeA);
+        
+    elTypeB = valueTypeB;
+    if (not isinstance(valueTypeB,basestring)):
+        elTypeB = json.dumps(valueTypeB);
+
+        
+    if ( ((not isListType(elTypeA) ) and
+          (not isMapType(elTypeA) ))
+         
+          or
+         
+        ((not isListType(elTypeB) ) and
+          (not isMapType(elTypeB) ))):
+        # if one or both are not lists or maps, that means that we've reached
+        # the maximum comparison depth and we cannot get more
+        # specific, so just return one or the other.
+        return typeA;
+
     
+    # each element itself is a list or a map
+    recursionResult = moreSpecificListMapType(
+        json.dumps(valueTypeA),json.dumps(valueTypeB));
+
+
+    # must rebuild surrounding list type signature to match typeA or
+    # typeB.
+    if twoMaps:
+        jsonToReturn = buildMapTypeSignatureFromTypeName(indexTypeA,recursionResult);
+    else:
+        jsonToReturn = buildListTypeSignatureFromTypeName(recursionResult);
+        
+    return json.dumps(jsonToReturn);
+
 
 
 def buildListTypeSignatureFromTypeName(typeName):
@@ -1828,11 +2071,7 @@ def buildListTypeSignatureFromTypeName(typeName):
 def buildListTypeSignature(node, progText,typeStack):
     elementTypeNode = node.children[0];
     elementTypeNode.typeCheck(progText,typeStack);
-
     elementType = elementTypeNode.type;
-    if isTemplatedType(elementTypeNode.type):
-        elementType = json.loads(elementType);
-
     return buildListTypeSignatureFromTypeName(elementType);
 
 
@@ -1859,20 +2098,42 @@ def buildMapTypeSignatureFromTypeNames(fromTypeName,toTypeName):
 
 
 def buildMapTypeSignature(node,progText,typeStack):
+    '''
+    @returns 3-tuple: (a,b,c)
+
+    a: {json object} --- The actual type constructed
+    
+    b: {String or None} --- None if no error.  If there is an error,
+       this text gives the error message.
+    
+    b: {list of ast nodes or None} --- None if no error.  Otherwise,
+       returns the list of ast nodes that caused the error.
+    '''
     fromTypeNode = node.children[0];
     fromTypeNode.typeCheck(progText,typeStack);
     toTypeNode = node.children[1];
     toTypeNode.typeCheck(progText,typeStack);
 
     fromType = fromTypeNode.type;
-    if isTemplatedType(fromTypeNode.type):
-        fromType = json.loads(fromType);
 
-    toType = toTypeNode.type;
-    if isTemplatedType(toTypeNode.type):
-        toType = json.loads(toType);
+    errMsg = None;
+    errNodeList = None;
+    if not isValueType(fromType):
+        # you can only map from Text,TrueFale,or Number to another value.
+        errMsg = '\nError declaring function.  A map must map from a TrueFalse, ';
+        errMsg += 'Text, or Number to any other type.  You are mapping from ';
+        errMsg += 'a non-value type: ' + fromType + '.\n';
+        errNodeList = [node,fromTypeNode];
 
-    return buildMapTypeSignatureFromTypeNames(fromType,toType);
+        
+    # if isTemplatedType(fromTypeNode.type):
+    #     fromType = json.loads(fromType);
+        
+    # toType = toTypeNode.type;
+    # if isTemplatedType(toTypeNode.type):
+    #     toType = json.loads(toType);
+
+    return buildMapTypeSignatureFromTypeNames(fromType,toType), errMsg,errNodeList;
 
 
 class WaldoTypeCheckException(Exception):
