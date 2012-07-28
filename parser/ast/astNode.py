@@ -2125,14 +2125,7 @@ def buildMapTypeSignature(node,progText,typeStack):
         errMsg += 'a non-value type: ' + fromType + '.\n';
         errNodeList = [node,fromTypeNode];
 
-        
-    # if isTemplatedType(fromTypeNode.type):
-    #     fromType = json.loads(fromType);
-        
-    # toType = toTypeNode.type;
-    # if isTemplatedType(toTypeNode.type):
-    #     toType = json.loads(toType);
-
+    toType = toTypeNode.type;
     return buildMapTypeSignatureFromTypeNames(fromType,toType), errMsg,errNodeList;
 
 
