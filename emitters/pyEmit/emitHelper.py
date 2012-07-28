@@ -513,7 +513,31 @@ def runFunctionBodyInternalEmit(astNode,protObj,endpoint,prefix,indentLevel=0,re
         for s in astNode.children:
             returnString += runFunctionBodyInternalEmit(
                 s,protObj,endpoint,prefix,indentLevel,requiresUnlock);
+
+    elif astNode.label == AST_MAP:
+        # map literal
+
+        returnString += '{';
         
+        for mapElement in astNode.children:
+            mapIndexNode = mapElement.children[0];
+            mapValueNode = mapElement.children[1];
+
+            # for index value
+            returnString += runFunctionBodyInternalEmit(
+                mapIndexNode,protObj,endpoint,prefix,0,requiresUnlock);
+            
+            returnString += ' : ';
+            
+            # for value value
+            returnString += runFunctionBodyInternalEmit(
+                mapIndexNode,protObj,endpoint,prefix,0,requiresUnlock);
+            
+            returnString += ',';
+
+        returnString += ' }';
+        returnString = indentString(returnString,indentLevel);
+            
     else:
         errMsg = '\nBehram error: in runFunctionBodyInternalEmit ';
         errMsg += 'do not know how to handle label ' + astNode.label + '\n';
