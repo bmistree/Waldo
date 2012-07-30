@@ -26,6 +26,7 @@ from parserUtil import JSON_MAP_FROM_TYPE_FIELD;
 from parserUtil import JSON_MAP_TO_TYPE_FIELD;
 from parserUtil import getMapIndexType;
 from parserUtil import getMapValueType;
+from parserUtil import getListValueType;
 
 import json;
 
@@ -211,6 +212,10 @@ class AstNode():
             elif isMapType(toReadFrom.type):
                 
                 typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckMapBracket(
+                    toReadFrom,index,typeStack,progText);
+                
+            elif isListType(toReadFrom.type):
+                typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckListBracket(
                     toReadFrom,index,typeStack,progText);
                 
             else:
@@ -1226,7 +1231,6 @@ class AstNode():
                 errMsg += 'to a variable.  (Left hand side must be a variable)\n';
                 errorFunction(errMsg,[self],[self.lineNo],progText);
                 return;
-
             
             rhs = self.children[1];
 
@@ -2132,6 +2136,25 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
     statementType = getMapValueType(toReadFrom);
     return False,statementType,None,None;
 
+def typeCheckListBracket(toReadFrom,index,typeStack,progText):
+    '''
+    @see typeCheckMapBracket
+    '''
+    if toReadFrom.type == EMPTY_LIST_SENTINEL:
+        errMsg = '\nError indexing into empty list.\n';
+        astErrorNodes = [ toReadFrom ];
+        return True, None, errMsg, astErrorNodes;
+
+    if index.type != TYPE_NUMBER:
+        errMsg = '\nError.  Can only index into a list using a number.  ';
+        errMsg += 'Instead, you used a type [ ' + index.type + ' ].\n';
+        astErrorNodes = [ index ];
+        return True, None, errMsg, astErrorNodes;
+
+    # no type error that we can catch.  Return that the statement will
+    # have value of whatever is being accessed.
+    listValType = getListValueType(toReadFrom.type);
+    return False,listValType,None,None;
 
 def typeCheckMessageBracket(toReadFrom,index,typeStack,progText):
     '''

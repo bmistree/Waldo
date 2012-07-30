@@ -84,15 +84,55 @@ def isListType(typeLabel):
     # either a map or a function.
     return False;
 
+def getListValueType(typeLabel):
+    '''
+    @param {String} typeLabel -- an ast node's .type field.
+    
+    Note: presupposes that this is a list.  otherwise asserts out.
+    similarly, user must ensure that typeLabel is not
+    EMPTY_LIST_SENTINEL.
+    '''
+    if not isListType(typeLabel):
+        errMsg = '\nBehram error.  Asking for list value type ';
+        errMsg += 'of non-list.\n';
+        print(errMsg);
+        assert(False);
+
+    if typeLabel == EMPTY_LIST_SENTINEL:
+        errMsg = '\nBehram error.  Cannot call getListValueType on ';
+        errMsg += 'an empty map.  Should have checked this condition ';
+        errMsg += 'before calling into function.\n';
+        print(errMsg);
+        assert(False);
+
+    elemType = json.loads(typeLabel)[JSON_LIST_ELEMENT_TYPE_FIELD];
+    if (not isinstance(elemType,basestring)):
+        # list of lists for instance or list of maps or list of
+        # functions.
+        elemType = json.dumps(elemType);
+    return elemType;
+
+
 def getMapIndexType(typeLabel):
     '''
     @param {String} typeLabel --- an ast node's .type field.
+    
+    Note: should not put in EMPTY_MAP_SENTINEL for typeLabel.  User
+    should pre-check for this.
     '''
     if not isMapType(typeLabel):
         print('\n\n');
         print('Behram error, requested to get index type from non-map\n');
         print('\n\n');
         assert(False);
+
+    if typeLabel == EMPTY_MAP_SENTINEL:
+        errMsg = '\nBehram error.  Cannot call getMapIndexType on ';
+        errMsg += 'an empty map.  Should have checked this condition ';
+        errMsg += 'before calling into function.\n';
+        print(errMsg);
+        assert(False);
+        
     dictLabel = json.loads(typeLabel);
     indType = dictLabel[JSON_MAP_FROM_TYPE_FIELD];
     if (not isinstance(indType,basestring)):
@@ -107,6 +147,14 @@ def getMapValueType(node):
         print('Behram error, requested to get value type from non-map\n');
         print('\n\n');
         assert(False);
+        
+    if typeLabel == EMPTY_MAP_SENTINEL:
+        errMsg = '\nBehram error.  Cannot call getMapValueType on ';
+        errMsg += 'an empty map.  Should have checked this condition ';
+        errMsg += 'before calling into function.\n';
+        print(errMsg);
+        assert(False);
+        
     dictLabel = json.loads(typeLabel);
     valType = dictLabel[JSON_MAP_TO_TYPE_FIELD];
     if (not isinstance(valType,basestring)):
