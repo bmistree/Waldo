@@ -2120,7 +2120,7 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
     # ensure that the type of the index we are reading from in
     # readingFrom matches the type of the index actually doing the
     # reading.
-    toReadFromIndexType = toReadFrom.type;
+    toReadFromIndexType = getMapIndexType(toReadFrom.type);
     indexType = index.type;
     if checkTypeMismatch(index,toReadFromIndexType,indexType,typeStack,progText):
         errMsg = '\nError reading from map.  You were supposed to index into the ';

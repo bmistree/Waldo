@@ -195,18 +195,31 @@ def p_TerminalReturnable(p):
 
                       
     
-def p_OperatableOn(p):
-    '''OperatableOn : Number
-                    | BracketStatement    
-                    | Identifier
-                    | String
-                    | Bool
-                    | List
-                    | Map
-                    | FunctionCall
-                    | ToTextCall
-                    ''';
+def p_NonBracketOperatableOn(p):
+    '''NonBracketOperatableOn : Number
+                              | Identifier
+                              | String
+                              | Bool
+                              | List
+                              | Map
+                              | FunctionCall
+                              | ToTextCall
+                              ''';
     p[0] = p[1];
+
+def p_OperatableOn(p):
+    '''
+    OperatableOn : NonBracketOperatableOn
+                 | OperatableOn LEFT_BRACKET ReturnableExpression RIGHT_BRACKET
+    '''
+    if len(p) == 2:
+        p[0] = p[1];
+    else:
+        # add in bracket statement.  left child is what indexing into; right child is index.
+        p[0] = AstNode(AST_BRACKET_STATEMENT,p[1].lineNo,p[1].linePos);
+        p[0].addChildren([p[1],p[3]]);
+
+
 
     
     
@@ -228,19 +241,9 @@ def p_ToTextCall(p):
     p[0] = AstNode(AST_TOTEXT_FUNCTION,p.lineno(1),p.lexpos(1));
     p[0].addChild(p[3]);
 
-
-def p_BracketStatement(p):
-    '''
-    BracketStatement : Identifier LEFT_BRACKET ReturnableExpression RIGHT_BRACKET
-    '''
-    p[0] = AstNode(AST_BRACKET_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[3]]);
-
-
 def p_Number(p):
     '''Number : NUMBER
               | MINUS NUMBER'''
-
     if (len(p) == 2):
         p[0] = AstNode(AST_NUMBER,p.lineno(1),p.lexpos(1),p[1]);
     elif(len(p) == 3):
@@ -250,7 +253,6 @@ def p_Number(p):
         errMsg += 'num statements when matching.\n';
         errPrint(errMsg);
         assert(False);
-
         
     p[0].type = TYPE_NUMBER;
     
@@ -586,8 +588,8 @@ def p_BooleanOperator(p):
 
 
 def p_AssignmentStatement(p):
-    '''AssignmentStatement : Identifier EQUALS ReturnableExpression
-                           | BracketStatement EQUALS ReturnableExpression
+    '''
+    AssignmentStatement : OperatableOn EQUALS ReturnableExpression
     '''
     p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
@@ -704,7 +706,7 @@ def p_MultDivOperator(p):
     else:
         errPrint('\nIncorrect number of matches in MultDivOperator\n');
         assert(False);
-    
+
     
 def p_FunctionDeclArgList(p):
     '''FunctionDeclArgList : FunctionDeclArg 

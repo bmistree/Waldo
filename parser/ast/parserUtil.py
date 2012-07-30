@@ -85,6 +85,9 @@ def isListType(typeLabel):
     return False;
 
 def getMapIndexType(typeLabel):
+    '''
+    @param {String} typeLabel --- an ast node's .type field.
+    '''
     if not isMapType(typeLabel):
         print('\n\n');
         print('Behram error, requested to get index type from non-map\n');
