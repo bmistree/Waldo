@@ -84,6 +84,33 @@ def isListType(typeLabel):
     # either a map or a function.
     return False;
 
+def getMapIndexType(typeLabel):
+    if not isMapType(typeLabel):
+        print('\n\n');
+        print('Behram error, requested to get index type from non-map\n');
+        print('\n\n');
+        assert(False);
+    dictLabel = json.loads(typeLabel);
+    indType = dictLabel[JSON_MAP_FROM_TYPE_FIELD];
+    if (not isinstance(indType,basestring)):
+        indType = json.dumps(indType);
+    return indType;
+
+
+def getMapValueType(node):
+    typeLabel = node.type;
+    if not isMapType(typeLabel):
+        print('\n\n');
+        print('Behram error, requested to get value type from non-map\n');
+        print('\n\n');
+        assert(False);
+    dictLabel = json.loads(typeLabel);
+    valType = dictLabel[JSON_MAP_TO_TYPE_FIELD];
+    if (not isinstance(valType,basestring)):
+        valType = json.dumps(valType);
+    return valType;
+
+
 def isMapType(typeLabel):
     '''
     Automatically handles case of EMPTY_MAP_SENTINEL

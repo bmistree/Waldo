@@ -228,16 +228,13 @@ def p_ToTextCall(p):
     p[0] = AstNode(AST_TOTEXT_FUNCTION,p.lineno(1),p.lexpos(1));
     p[0].addChild(p[3]);
 
-    
+
 def p_BracketStatement(p):
     '''
     BracketStatement : Identifier LEFT_BRACKET ReturnableExpression RIGHT_BRACKET
     '''
-    
     p[0] = AstNode(AST_BRACKET_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
-
-
 
 
 def p_Number(p):

@@ -24,7 +24,8 @@ from parserUtil import JSON_FUNC_IN_FIELD;
 from parserUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
 from parserUtil import JSON_MAP_FROM_TYPE_FIELD;
 from parserUtil import JSON_MAP_TO_TYPE_FIELD;
-
+from parserUtil import getMapIndexType;
+from parserUtil import getMapValueType;
 
 import json;
 
@@ -62,7 +63,6 @@ class AstNode():
         
     def addChild(self, childToAdd):
         self.children.append(childToAdd);
-
 
     def prependChild(self,childToPrepend):
         self.children.insert(0,childToPrepend);
@@ -193,10 +193,7 @@ class AstNode():
             for s in self.children:
                 s.typeCheck(progText,typeStack);
 
-
-        elif(self.label == AST_BRACKET_STATEMENT):
-            #left node must be a message
-            #right node must be a string if it's a message
+        elif self.label == AST_BRACKET_STATEMENT:
             toReadFrom = self.children[0];
             index = self.children[1];
             toReadFrom.typeCheck(progText,typeStack);
@@ -205,73 +202,32 @@ class AstNode():
             self.lineNo = index.lineNo;
 
 
-            if (index.type != TYPE_STRING):
-                errMsg = '\nTo index into a message, you must use ';
-                errMsg += 'the name of the field you are looking for.  ';
-                errMsg += 'This name must be a String.  However, you ';
-                errMsg += 'provided a ' + index.type + '\n';
-                astErrorNodes = [self];
-                astLineNos = [self.lineNo];
-                errorFunction(errMsg,astErrorNodes,astLineNos,progText);
-
-            indexStr = index.value;
+            if ((toReadFrom.type == TYPE_INCOMING_MESSAGE) or
+                (toReadFrom.type == TYPE_OUTGOING_MESSAGE)):
                 
-            if (toReadFrom.type == TYPE_INCOMING_MESSAGE):
-
-                # checking if the referenced field exists in the
-                # incoming message.  inserting a dummy type to ensure
-                # that we will get back what the real type of the
-                # field should be if the field name exists.
-                result,expectedType = typeStack.fieldAgreesWithCurrentIncoming(indexStr,TYPE_NOTHING);
-                checkResult = True;
-                potentialErrNode = typeStack.currentIncoming;
-                potentialErrMsg = 'incoming';
-                
-            elif(toReadFrom.type == TYPE_OUTGOING_MESSAGE):
-                result,expectedType = typeStack.fieldAgreesWithCurrentOutgoing(indexStr,TYPE_NOTHING);
-                checkResult = True;
-                potentialErrNode = typeStack.currentOutgoing;
-                potentialErrMsg = 'outgoing';
-            else:
-                checkResult = False;
-                errMsg = '\nError when using "[" and "]".  Can only ';
-                errMsg += 'look up an element from a Message.  The type ';
-                errMsg += 'of ' + toReadFrom.value + ' is ' + toReadFrom.type;
-                errMsg += '\n';
-                astErrorNodes = [self];
-                astLineNos = [self.lineNo];
-                errorFunction(errMsg,astErrorNodes,astLineNos,progText);                                    
-
-
-            if (checkResult):
-                #means that it was an incoming or outgoing message
-                #that we were indexing into.  actually check the
-                #result of the indexing.
-                if (result == MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST):
-                    # means that this field does not exist in incoming
-                    # message field, throw an error.
-                    errMsg = '\nAccessing a field "' + indexStr + '" of an ';
-                    errMsg += potentialErrMsg;
-                    errMsg += ' message that does not exist.  Compare ';
-                    errMsg += 'to the actual type of the incoming message before ';
-                    errMsg += 'proceeding.\n';
-                    astErrorNodes = [self,potentialErrNode];
-                    astLineNos = [self.lineNo,potentialErrNode.lineNo];
-                    errorFunction(errMsg,astErrorNodes,astLineNos,progText);
-
-                    # assign to nothing type so can continue with type checking.
-                    self.type = TYPE_NOTHING;
+                typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckMessageBracket(
+                    toReadFrom,index,typeStack,progText);
                     
-                elif (result == MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH):
-                    # expected because we used
-                    # TYPE_NOTHING. expectedType now contains what the
-                    # type of this statement should be.
-                    self.type = expectedType;
-                else:
-                    errMsg = '\nBehram error.  Should have no data in a message that ';
-                    errMsg += 'matches type nothing\n';
-                    assert(False);
+            elif isMapType(toReadFrom.type):
+                
+                typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckMapBracket(
+                    toReadFrom,index,typeStack,progText);
+                
+            else:
+                typeError = True;
+                typeErrorMsg = 'You can only index into a map type or outgoing/incoming ';
+                typeErrorMsg += 'message.  Instead, you are trying to index into a [ ';
+                typeErrorMsg += toReadFrom.type + ' ].\n';
+                typeErrorNodes = [toReadFrom];
 
+            if typeError:
+                self.type = TYPE_NOTHING;
+                for node in typeErrorNodes:
+                    astLineNos = [node.lineNo];
+                    errorFunction(typeErrorMsg,typeErrorNodes,astLineNos,progText);
+            else:
+                # apply type 
+                self.type = statementType;
                 
         elif(self.label == AST_TRACE_LINE):
             #first, checking that each trace item has an endpoint
@@ -664,7 +620,6 @@ class AstNode():
             self.type = EMPTY_MAP_SENTINEL;
             allIndexTypes = [];
             allValueTypes = [];
-
             
             for counterIndex in range(0,len(self.children)):
                 item = self.children[counterIndex];
@@ -2127,6 +2082,106 @@ def buildMapTypeSignature(node,progText,typeStack):
 
     toType = toTypeNode.type;
     return buildMapTypeSignatureFromTypeNames(fromType,toType), errMsg,errNodeList;
+
+
+
+def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
+    '''
+    @param {astNode with label map} toReadFrom --- map ... already
+    type checked before entering this function.
+    
+    @param {astNode} index ... already type checked before entering
+    this function.
+
+    @return (a,b,c,d)
+      a {Bool} --- True if there is an error.  False otherwise.
+
+      b {String or None} --- Type to apply to parent node or None if
+        error.
+      
+      c {String or None} --- String with error message or none if no
+        error.  
+      
+      d {Array of ast nodes or None} --- None if no error.  Otherwise,
+        a list of nodes that caused the errors.
+      '''
+    if not isValueType(index.type):
+        errMsg = '\nYou can only index into a map using Text, Numer, ';
+        errMsg += 'or Number.  Instead, your index has type [ ' + index.type + ' ].\n';
+        astErrorNodes = [ index ];
+        return True,None,errMsg,astErrorNodes;
+
+    if toReadFrom.type == EMPTY_MAP_SENTINEL:
+        # reading from a value that is empty
+        errMsg = '\nYou cannot read from an empty map.\n';
+        astErrorNodes = [ toReadFrom ];
+        return True, None, errMsg, astErrorNodes;
+
+    # ensure that the type of the index we are reading from in
+    # readingFrom matches the type of the index actually doing the
+    # reading.
+    toReadFromIndexType = toReadFrom.type;
+    indexType = index.type;
+    if checkTypeMismatch(index,toReadFromIndexType,indexType,typeStack,progText):
+        errMsg = '\nError reading from map.  You were supposed to index into the ';
+        errMsg += 'map with an indexer of type [ ' + toReadFromIndexType + ' ].  ';
+        errMsg += 'Instead, you indexed in with type [ ' + indexType + ' ].\n';
+        astErrorNodes = [ toReadFrom, index ];
+        return True, None, errMsg, astErrorNodes;
+    
+    statementType = getMapValueType(toReadFrom);
+    return False,statementType,None,None;
+
+
+def typeCheckMessageBracket(toReadFrom,index,typeStack,progText):
+    '''
+    @see typeCheckMapBracket
+    '''
+    indexStr = index.value;
+    if (toReadFrom.type == TYPE_INCOMING_MESSAGE):
+
+        # checking if the referenced field exists in the
+        # incoming message.  inserting a dummy type to ensure
+        # that we will get back what the real type of the
+        # field should be if the field name exists.
+        result,expectedType = typeStack.fieldAgreesWithCurrentIncoming(indexStr,TYPE_NOTHING);
+        potentialErrNode = typeStack.currentIncoming;
+        potentialErrMsg = 'incoming';
+                
+    elif(toReadFrom.type == TYPE_OUTGOING_MESSAGE):
+        result,expectedType = typeStack.fieldAgreesWithCurrentOutgoing(indexStr,TYPE_NOTHING);
+        potentialErrNode = typeStack.currentOutgoing;
+        potentialErrMsg = 'outgoing';
+    else:
+        errMsg = '\nBehram error: should only have incoming and ';
+        errMsg += 'outgoing messages when typechecking messages.\n';
+        print(errMsg);
+        assert(False);
+
+    #check the result of the indexing.
+    if result == MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST:
+        # means that this field does not exist in incoming
+        # message field, throw an error.
+        errMsg = '\nAccessing a field "' + indexStr + '" of an ';
+        errMsg += potentialErrMsg;
+        errMsg += ' message that does not exist.  Compare ';
+        errMsg += 'to the actual type of the incoming message before ';
+        errMsg += 'proceeding.\n';
+        astErrorNodes = [self,potentialErrNode];
+
+        return True,None,errMsg,astErrorNodes;
+    elif result == MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH:
+        # expected because we used
+        # TYPE_NOTHING. expectedType now contains what the
+        # type of this statement should be.
+        pass;
+    else:
+        errMsg = '\nBehram error.  Should have no data in a message that ';
+        errMsg += 'matches type nothing\n';
+        assert(False);
+
+    # no error, return that.
+    return False,expectedType,None,None;
 
 
 class WaldoTypeCheckException(Exception):
