@@ -453,7 +453,8 @@ def typeCheck(node,progText,typeStack=None):
                 errPrint(errMsg);
                 assert(False);
 
-
+    elif node.label == AST_FUNCTION_TYPE_LIST:
+        lkjs;
 
     elif (node.label == AST_TYPE):
 

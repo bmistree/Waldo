@@ -159,7 +159,7 @@ def p_ListType(p):
         
 def p_FunctionType(p):
     '''
-    FunctionType : FUNCTION LEFT_PAREN IN COLON TypeList SEMI_COLON RETURNS COLON Type RIGHT_PAREN
+    FunctionType : FUNCTION LEFT_PAREN IN COLON FunctionTypeList SEMI_COLON RETURNS COLON Type RIGHT_PAREN
     FunctionType : FUNCTION LEFT_PAREN RETURNS COLON Type RIGHT_PAREN
     '''
     p[0] = AstNode(AST_TYPE, p.lineno(1),p.lexpos(1),TYPE_FUNCTION);
@@ -172,14 +172,15 @@ def p_FunctionType(p):
         
     p[0].addChildren([inToAdd, returnsToAdd]);
 
+    
 
-def p_TypeList(p):
+def p_FunctionTypeList(p):
     '''
-    TypeList : Type
-             | TypeList COMMA Type
+    FunctionTypeList : Type
+                     | FunctionTypeList COMMA Type
     '''
 
-    p[0] = AstNode(AST_TYPE_LIST,p[1].lineNo,p[1].linePos);
+    p[0] = AstNode(AST_FUNCTION_TYPE_LIST,p[1].lineNo,p[1].linePos);
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());
         p[0].addChild(p[3]);
