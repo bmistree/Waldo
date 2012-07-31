@@ -11,9 +11,17 @@ from waldoLex import ONCREATE_TOKEN;
 from waldoLex import constructLexer;
 from astLabels import *;
 from astNode import AstNode;
-from astNode import setErrorEncountered;
-from astNode import getErrorEncountered as astGetErrorEncountered;
-from astNode import resetErrorEncountered as astResetErrorEncountered;
+
+typeCheckErrorUtilPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                      'typeCheck');
+sys.path.append(typeCheckErrorUtilPath);
+
+from typeCheckUtil import getErrorEncountered as astGetErrorEncountered;
+from typeCheckUtil import resetErrorEncountered as astResetErrorEncountered;
+from typeCheckUtil import setErrorEncountered;
+
+# from astNode import getErrorEncountered as astGetErrorEncountered;
+# from astNode import resetErrorEncountered as astResetErrorEncountered;
 import ply.yacc as yacc;
 from parserUtil import errPrint;
 from parserUtil import setOutputErrorsTo;

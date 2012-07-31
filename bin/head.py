@@ -33,14 +33,16 @@ def resetErrorEncountered(versionNum):
 
 
 import re;
-from astNode import WaldoTypeCheckException;
-
+typeCheckUtilPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast','typeCheck');
+sys.path.insert(0, astParserPath);
+from typeCheckUtil import WaldoTypeCheckException;
 
 import json;
 astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','emitters','pyEmit');
 sys.path.insert(0, astEmitPath);
 import astEmit;
 from astBuilderCommon import WaldoParseException;
+
 
 lexPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','lexer');
 from waldoLex import WaldoLexException;

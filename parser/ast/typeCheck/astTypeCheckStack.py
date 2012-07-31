@@ -16,13 +16,25 @@ from astLabels import AST_PRIVATE_FUNCTION;
 from astLabels import AST_ONCREATE_FUNCTION;
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
-from parserUtil import errPrint;
-from parserUtil import isTemplatedType;
 
-from parserUtil import JSON_TYPE_FIELD;
-from parserUtil import JSON_FUNC_RETURNS_FIELD;
-from parserUtil import JSON_FUNC_IN_FIELD;
-from parserUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
+
+from parserUtil import errPrint;
+from templateUtil import isTemplatedType;
+
+from templateUtil import JSON_TYPE_FIELD;
+from templateUtil import JSON_FUNC_RETURNS_FIELD;
+from templateUtil import JSON_FUNC_IN_FIELD;
+from templateUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
+
+
+# from parserUtil import errPrint;
+# from parserUtil import isTemplatedType;
+
+# from parserUtil import JSON_TYPE_FIELD;
+# from parserUtil import JSON_FUNC_RETURNS_FIELD;
+# from parserUtil import JSON_FUNC_IN_FIELD;
+# from parserUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
+
 
 import json;
 

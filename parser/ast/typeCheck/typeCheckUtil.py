@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+
+import os;
+import sys;
+curDir = os.path.join(os.path.abspath(__file__), '..');
+from parserUtil import *;
+
+
+TYPE_ERROR_ENCOUNTERED = False;
+
+ERROR_NUM_LINES_EITHER_SIDE = 4;
+
+def setErrorEncountered():
+    global TYPE_ERROR_ENCOUNTERED;
+    TYPE_ERROR_ENCOUNTERED = True;
+
+def getErrorEncountered():
+    global TYPE_ERROR_ENCOUNTERED;
+    return TYPE_ERROR_ENCOUNTERED;
+
+def resetErrorEncountered():
+    global TYPE_ERROR_ENCOUNTERED;
+    TYPE_ERROR_ENCOUNTERED = False;
+
+
+
+def errorFunction(errorString,astNodes,lineNumbers,progText):
+    setErrorEncountered();
+    '''
+    @param {String} errorString -- Text associated with error.
+    @param {Array < AstNode>} astNodes -- Contains all ast nodes associated with the error.
+    @param {Array < Int> } lineNumbers -- Contains all line numbers associated with error.
+    @param {String} progText -- The source text of the program.
+    '''
+    
+    # errPrint('\n\n');
+    errPrint('*************************');
+    # errPrint('Error in type checking:');
+
+    # reformat errorString so that doesn't print off side
+    errPrint(splitString(errorString,80));
+
+    # errPrint('-------\nAST node labels:');
+    # for s in astNodes:
+    #     errPrint(s.label)
+        
+    errPrint('-------\nLine numbers:');
+    for s in lineNumbers:
+        errPrint(s);
+
+
+    programTextArray = progText.split('\n');
+    errPrint('-------\nProgram text:');
+    for errorLine in lineNumbers:
+        errPrint('\n\n');
+        lowerLineNum = max(0,errorLine - ERROR_NUM_LINES_EITHER_SIDE);
+        upperLineNum = min(len(programTextArray),errorLine + ERROR_NUM_LINES_EITHER_SIDE);
+
+        for s in range(lowerLineNum, upperLineNum):
+            errorText = '';
+            errorText += str(s+1);
+
+            if (s == errorLine -1):
+                errorText += '*   ';
+            else:
+                errorText += '    ';
+                    
+            errorText += programTextArray[s];
+            errPrint(errorText);
+
+        
+    errPrint('*************************');
+    errPrint('\n\n');
+
+    raise WaldoTypeCheckException('');
+
+
+def splitString(string,maxLineLen):
+    '''
+    Inserts newlines into string to ensure that
+    no line is longer than maxLineLen
+
+    Warning: Performs poorly for case where words are much longer than maxLineLen
+    '''
+
+    strArray = string.split(' ');
+
+    toReturn = '';
+    lineCounter = 0;
+
+    for index in range(0,len(strArray)):
+
+        strToAdd = strArray[index] + ' ';
+
+        if (len(strToAdd) + lineCounter > maxLineLen):
+            toReturn += '\n';
+            lineCounter = 0;
+
+        toReturn += strToAdd;
+        lineCounter += len(strToAdd);
+
+
+    return toReturn;
+
+
+class WaldoTypeCheckException(Exception):
+
+   def __init__(self, errMsg):
+       self.value = errMsg;
+
+   def __str__(node):
+       return repr(self.value)
+    
+    
+

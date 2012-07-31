@@ -4,7 +4,7 @@
 # checking and emitting.
 
 from astNode import *;
-
+from astLabels import *;
 INCOMING_MESSAGE_NAME = 'Number'; # overloading incoming message with
                                   # something that we know will never
                                   # be used because it's a reserved
@@ -15,7 +15,8 @@ OUTGOING_MESSAGE_NAME = 'Text';   # overloading outgoing message with
                                   # be used because it's a reserved
                                   # word.
 
-  
+
+
 def v2ToV1Ast(astNode,progText):
     '''
     @param {AstNode} astNode --- Root of the version 2 ast.

@@ -1,8 +1,15 @@
 #!/usr/bin/python
 
+import os;
+import sys;
+
 from astLabels import *;
 from astNode import AstNode;
-from astNode import setErrorEncountered;
+
+typeCheckErrorUtilPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                      'typeCheck');
+sys.path.append(typeCheckErrorUtilPath);
+from typeCheckUtil import setErrorEncountered;
 from waldoLex import ONCREATE_TOKEN;
 from parserUtil import errPrint;
 
@@ -35,7 +42,6 @@ def p_TraceSection(p):
     TraceSection : TRACES CURLY_LEFT TraceBodySection CURLY_RIGHT
                  | TRACES CURLY_LEFT CURLY_RIGHT
                  ''';
-
     
     #note: this is an intermediate production, and will get skipped.
     p[0] = AstNode(AST_TRACE_SECTION,p.lineno(1),p.lexpos(1));
