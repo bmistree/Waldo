@@ -27,15 +27,6 @@ from templateUtil import JSON_FUNC_IN_FIELD;
 from templateUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
 
 
-# from parserUtil import errPrint;
-# from parserUtil import isTemplatedType;
-
-# from parserUtil import JSON_TYPE_FIELD;
-# from parserUtil import JSON_FUNC_RETURNS_FIELD;
-# from parserUtil import JSON_FUNC_IN_FIELD;
-# from parserUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
-
-
 import json;
 
 
@@ -57,20 +48,24 @@ MESSAGE_TYPE_CHECK_SUCCEED = 2;
 
 
 
-class TypeCheckContextStack():
+class TypeCheckContextStack(object):
     def __init__ (self):
         self.stack     = []; #last element in array is always top of stack.
         self.funcStack = [];
-        
+
+        self.rootNode = None;
         #also contains additional data
         self.protObjName = None;
+        # textual names of each endpoint
         self.endpoint1 = None;
         self.endpoint2 = None;
+        # the line number that the names appear on
         self.endpoint1LineNo = None;
         self.endpoint2LineNo = None;
+        # the ast nodes associated with each endpoint
         self.endpoint1Ast = None;
         self.endpoint2Ast = None;
-
+        
         #handles keeping track of msgSend and msgReceive functions
         #(both their specification in the trace section as well as
         #their definitions in endpoint sections.
@@ -99,7 +94,31 @@ class TypeCheckContextStack():
         # still false, then throw an error.  Otherwise, reset and proceed.
         self.containedSend = False;
 
-        
+
+    def setRootNode(self,root):
+        if self.rootNode != None:
+            errMsg = '\nBehram error: should not set root node after it has ';
+            errMsg += 'already been set.\n';
+            print(errMsg);
+            assert(False);
+        self.rootNode = root;
+
+    def getCurrentEndpoint(self):
+        if self.currentEndpointName == None:
+            errMsg = '\nBehram error: should be type checking an endpoint ';
+            errMsg += 'to call getCurrentEndpoint in typestack.\n';
+            print(errMsg);
+            assert(False);
+
+        if self.currentEndpointName == self.endpoint1:
+            return self.endpoint1Ast;
+        elif self.currentEndpointName == self.endpoint2:
+            return self.endpoint2Ast;
+
+        errMsg = '\nBehram error: no matching endpoint for currentEndpointName.  ';
+        errMsg += 'Cannot return current endpoint.\n';
+        print(errMsg);
+        assert(False);
         
     def getOtherEndpointName(self):
         if (self.currentEndpointName == None) or (self.endpoint1 == None) or (self.endpoint2 == None):
@@ -542,16 +561,18 @@ class TypeCheckContextStack():
     def setCurrentEndpointName(self,endpointName):
         '''
         When begin type checking the body of an endpoint function,
-        call this with the endpoint's name.  
+        call this with the endpoint's name. 
         '''
         self.currentEndpointName = endpointName;
-
+            
+            
     def unsetCurrentEndpointName(self):
         '''
         After finished type checking the body of an endpoint function,
         call this function to unset currentEndpointname.
         '''
         self.currentEndpointName = None;
+
 
     def setAstTraceSectionNode(self,traceSectionAstNode):
         '''
@@ -948,6 +969,9 @@ class Context():
         
     def addIdentifier(self,identifierName,identifierType,controlledBy,astNode,lineNum):
         '''
+        @param {String} identifierName
+        @param {String} identifierType
+        
         If identifier already exists in this context, throw an error.
         Cannot have re-definition of existing type.
         '''

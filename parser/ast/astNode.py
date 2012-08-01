@@ -50,7 +50,7 @@ class AstNode():
         else:
             print(self.toJSON());
             
-    def typeCheck(self,progText,typeStack=None):
+    def typeCheck(self,progText,typeStack=None,avoidFunctionObjects=False):
         return typeChecker.typeCheck(self,progText,typeStack);
 
     def toJSON(self,indentLevel=0,drawHigh=False):

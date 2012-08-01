@@ -20,25 +20,27 @@ def preprocess(astNode,progText):
 
     All changes to astNode happen through reference.
     '''
-    sequencesSection = astNode.children[6];
-    endPt1Section = astNode.children[4];
-    endPt2Section = astNode.children[5];
-    sharedSection = astNode.children[3];
-    tracesSection = astNode.children[2];
+    # no op for now.
+    pass;
+#     sequencesSection = astNode.children[6];
+#     endPt1Section = astNode.children[4];
+#     endPt2Section = astNode.children[5];
+#     sharedSection = astNode.children[3];
+#     tracesSection = astNode.children[2];
 
-    for sequence in sequencesSection.children:
-        copyPassedInToSeqShared(sequence);
+#     for sequence in sequencesSection.children:
+#         copyPassedInToSeqShared(sequence);
 
 
-def copyPassedInToSeqShared(seqNode):
-    seqGlobs = seqNode.children[1];
+# def copyPassedInToSeqShared(seqNode):
+#     seqGlobs = seqNode.children[1];
     
-    seqFunctions = seqNode.children[2];
-    msgSendFunction = seqFunctions.children[1];
-    msgSendArgs = msgSendFunction.children[2];
-    for funcDeclArg in msgSendArgs.children:
-        newGlob = AstNode(AST_DECLARATION,funcDeclArg.lineNo,funcDeclArg.linePos);
-        newGlob.addChildren(funcDeclArg.getChildren());
-        seqGlobs.addChild(newGlob);
+#     seqFunctions = seqNode.children[2];
+#     msgSendFunction = seqFunctions.children[1];
+#     msgSendArgs = msgSendFunction.children[2];
+#     for funcDeclArg in msgSendArgs.children:
+#         newGlob = AstNode(AST_DECLARATION,funcDeclArg.lineNo,funcDeclArg.linePos);
+#         newGlob.addChildren(funcDeclArg.getChildren());
+#         seqGlobs.addChild(newGlob);
 
         

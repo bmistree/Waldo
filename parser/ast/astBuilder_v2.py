@@ -76,9 +76,6 @@ def p_MessageSequence(p):
 
     p[0].addChildren([p[2],globs,sequenceFunctions]);
             
-    
-
-
 def p_MessageSequenceGlobalSection(p):
     '''MessageSequenceGlobalSection : Declaration SEMI_COLON MessageSequenceGlobalSection
                                     | Declaration SEMI_COLON '''
@@ -86,7 +83,6 @@ def p_MessageSequenceGlobalSection(p):
     p[0].addChild(p[1]);
     if (len(p) == 4):
         p[0].addChildren(p[3].getChildren());
-
 
 def p_MessageSequenceFunctions(p):
     '''MessageSequenceFunctions : MessageSendSequenceFunction MessageReceiveSequenceFunctions

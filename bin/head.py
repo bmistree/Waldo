@@ -72,11 +72,9 @@ def stripWindowsLineEndings(textToStripFrom):
 def runTests():
     print('Still to fill in');
 
-
 def genAstFromFile(inputFilename,outputErrsTo,versionNum):
     fileText = getFileText(inputFilenameArg);
     return genAst(fileText,outputErrsTo,versionNum);
-
 
 def astProduceTextOutput(astNode,textOutFilename):
     astNode.printAst(textOutFilename);
@@ -93,7 +91,6 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
     astNode.drawPretty(graphOutArg.outFile,graphOutArg.d3,graphOutArg.width,graphOutArg.height);
     return astNode;
 
-
 def genAst(progText,outputErrsTo,versionNum):
     progText = stripWindowsLineEndings(progText);
     parser = getParser(progText,outputErrsTo,versionNum);
@@ -102,7 +99,7 @@ def genAst(progText,outputErrsTo,versionNum):
         pass;
     elif(versionNum == 2):
         if (not getErrorEncountered(versionNum)):
-            canonicalize.v2ToV1Ast(astNode,progText);
+            canonicalize.preprocess(astNode,progText);
     else:
         print('\nError, no version information provided\n');
         assert(False);

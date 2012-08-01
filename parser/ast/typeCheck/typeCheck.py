@@ -24,16 +24,23 @@ def isEmptyAstNode(node):
     return (node.type == "EMPTY");
 
 
-def typeCheck(node,progText,typeStack=None):
+def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
+    '''
+    avoidFunctionObjects {Bool} --- True if should add function
+    objects to typestack context, false otherwise.
+    '''
     #based on types of children, check my type.  Also, pass up
     #line numbers.
-        
+
+
+    ####### basic checks and creating new context #########
     if ((node.label != AST_ROOT) and (typeStack == None)):
         errPrint('\nBehram error.  Must have typeStack unless root node\n');
         assert(False);
     elif(node.label == AST_ROOT):
         typeStack = TypeCheckContextStack();
             
+
 
     if ((node.label == AST_ROOT) or
         (node.label == AST_SHARED_SECTION) or
@@ -46,25 +53,29 @@ def typeCheck(node,progText,typeStack=None):
         #that we can catch arguments passed into the function.
         typeStack.pushContext();
 
+
+    ###### MASSIVE SWITCH STATEMENT TO TYPECHECK BASED ON NODE #######
+
     if(node.label == AST_ROOT):
         #top of program
 
+        typeStack.setRootNode(node);
         #getting protocol object name
         typeStack.protObjName = node.children[0].value;
 
         #handling alias section
         aliasSection = node.children[1];
 
-        #endpoint 1
+        #endpoint 1 from alias section
         typeStack.endpoint1 = aliasSection.children[0].value; 
         typeStack.endpoint1LineNo = aliasSection.children[0].lineNo;
         typeStack.endpoint1Ast = aliasSection.children[0];
 
-        #endpoint 2
+        #endpoint 2 from alias section
         typeStack.endpoint2 = aliasSection.children[1].value; 
         typeStack.endpoint2LineNo = aliasSection.children[1].lineNo;
         typeStack.endpoint2Ast = aliasSection.children[1];             
-
+        
         if (typeStack.endpoint1 == typeStack.endpoint2):
             errorFunction('Cannot use same names for endpoints',
                           [typeStack.endpoint1,typeStack.endpoint2],
@@ -72,35 +83,46 @@ def typeCheck(node,progText,typeStack=None):
                           progText);
 
 
-        #Do first level of type chcecking trace items.  see notes
-        #in corresponding elif.
-        node.children[2].typeCheck(progText,typeStack);
+        # #Do first level of type chcecking trace items.  see notes
+        # #in corresponding elif.
+        # node.children[2].typeCheck(progText,typeStack);
+        print('\nBehram should do first level of type checking in message sequence section: names do not interfere, everything is defined, etc.\n');
 
+        sharedSectionNode = node.children[3];
+        endpoint1Node = node.children[4];
+        endpoint2Node = node.children[5];
+            
         #get into shared section
-        #note: shared section should leave its context on the stack.
-        node.children[3].typeCheck(progText,typeStack);
+        #note: shared section should leave its context on the stack so
+        #that can access all variables directly from it.
+        sharedSectionNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         #check one endpoint
-        node.children[4].typeCheck(progText,typeStack);
+        endpoint1Node.typeCheck(progText,typeStack,avoidFunctionObjects);
+        #check other endpoint
+        endpoint2Node.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        #check one endpoint
-        node.children[5].typeCheck(progText,typeStack);
+        # # check message sequences
+        # node.children[6].typeCheck(progText,typeStack);
 
-        #Checks if there were msgSends or msgReceives assumed in a
-        #trace line that weren't actually defined in an endpoint
-        #section.
-        traceError = typeStack.checkUndefinedTraceItems();
-        if (traceError != None):
-            errorFunction(traceError.errMsg,traceError.nodes,
-                          traceError.lineNos,progText);
+        print('\nBehram note: skipping type checking of traces section.\n');
+        
+        
+        # #Checks if there were msgSends or msgReceives assumed in a
+        # #trace line that weren't actually defined in an endpoint
+        # #section.
+        # traceError = typeStack.checkUndefinedTraceItems();
+        # if (traceError != None):
+        #     errorFunction(traceError.errMsg,traceError.nodes,
+        #                   traceError.lineNos,progText);
 
-        # check that output of one trace line matched input of
-        # another
-        traceError =  typeStack.checkTraceItemInputOutput();
-        if (traceError != None):
-            errorFunction(traceError.errMsg,traceError.nodes,
-                          traceError.lineNos,progText);
-
+        # # check that output of one trace line matched input of
+        # # another
+        # traceError =  typeStack.checkTraceItemInputOutput();
+        # if (traceError != None):
+        #     errorFunction(traceError.errMsg,traceError.nodes,
+        #                   traceError.lineNos,progText);
+            
 
     elif(node.label == AST_TRACE_SECTION):
         '''
@@ -132,13 +154,13 @@ def typeCheck(node,progText,typeStack=None):
 
         # skip the first child, which is a name for the 
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif node.label == AST_BRACKET_STATEMENT:
         toReadFrom = node.children[0];
         index = node.children[1];
-        toReadFrom.typeCheck(progText,typeStack);
-        index.typeCheck(progText,typeStack);
+        toReadFrom.typeCheck(progText,typeStack,avoidFunctionObjects);
+        index.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         node.lineNo = index.lineNo;
 
@@ -247,7 +269,7 @@ def typeCheck(node,progText,typeStack=None):
 
     elif (node.label == AST_SEND_STATEMENT):
         sendMsgNode = node.children[0];
-        sendMsgNode.typeCheck(progText,typeStack);
+        sendMsgNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         if (sendMsgNode.type != TYPE_OUTGOING_MESSAGE):
             errMsg = '\nError in send statement.  You can only ';
@@ -271,14 +293,14 @@ def typeCheck(node,progText,typeStack=None):
         # they are labeled with types.
         for literalLine in node.children:
             literalValueNode = literalLine.children[1];
-            literalValueNode.typeCheck(progText,typeStack);
+            literalValueNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         node.type = TYPE_MESSAGE_LITERAL;
 
     elif (node.label == AST_PRINT):
         #check to ensure that it's passed a string
         argument = node.children[0];
-        argument.typeCheck(progText,typeStack);
+        argument.typeCheck(progText,typeStack,avoidFunctionObjects);
         if ((argument.type != TYPE_STRING) and (argument.type != TYPE_NUMBER) and
             (argument.type != TYPE_BOOL)):
             errorString = 'Print requires a Text, TrueFalse, or a Number ';
@@ -294,7 +316,7 @@ def typeCheck(node,progText,typeStack=None):
         # Number.  If it is passed anything else, indicate that
         # can't handle it.
         argumentNode = node.children[0];
-        argumentNode.typeCheck(progText,typeStack);
+        argumentNode.typeCheck(progText,typeStack,avoidFunctionObjects);
         if ((argumentNode.type != TYPE_STRING) and (argumentNode.type != TYPE_NUMBER) and
             (argumentNode.type != TYPE_BOOL)):
             errorString = 'ToText requires a Text, TrueFalse, or a Number ';
@@ -307,7 +329,7 @@ def typeCheck(node,progText,typeStack=None):
     elif(node.label == AST_SHARED_SECTION):
         #each child will be an annotated declaration.
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif(node.label == AST_ANNOTATED_DECLARATION):
         # the type of this identifier
@@ -316,7 +338,7 @@ def typeCheck(node,progText,typeStack=None):
         currentLineNo = node.children[1].lineNo;
         if (len(node.children) == 4):
             #have an initializer too.
-            node.children[3].typeCheck(progText,typeStack);
+            node.children[3].typeCheck(progText,typeStack,avoidFunctionObjects);
             assignType = node.children[3].type;
             if (assignType != node.type):
                 if (assignType == None):
@@ -413,7 +435,7 @@ def typeCheck(node,progText,typeStack=None):
         funcArgList = node.children[1].children;
         allArgTypes = [];
         for s in funcArgList:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
             allArgTypes.append(s.type);
 
 
@@ -454,7 +476,8 @@ def typeCheck(node,progText,typeStack=None):
                 assert(False);
 
     elif node.label == AST_FUNCTION_TYPE_LIST:
-        lkjs;
+        print('\nBehram error: should never have gotten to type list\n');
+        assert(False);
 
     elif (node.label == AST_TYPE):
 
@@ -521,7 +544,7 @@ def typeCheck(node,progText,typeStack=None):
 
         # get all types from element nodes
         for element in node.children:
-            element.typeCheck(progText,typeStack);
+            element.typeCheck(progText,typeStack,avoidFunctionObjects);
             allTypes.append(element.type);
 
 
@@ -565,8 +588,8 @@ def typeCheck(node,progText,typeStack=None):
             index = item.children[0];
             value = item.children[1];
 
-            index.typeCheck(progText,typeStack);
-            value.typeCheck(progText,typeStack);
+            index.typeCheck(progText,typeStack,avoidFunctionObjects);
+            value.typeCheck(progText,typeStack,avoidFunctionObjects);
 
             if not isValueType(index.type):
                 errMsg = '\nError in Map.  You can only index a map using ';
@@ -612,14 +635,14 @@ def typeCheck(node,progText,typeStack=None):
         #type check all children.  (type checks if, elseif, and
         #else statements).
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif ((node.label == AST_IF_STATEMENT) or
           (node.label == AST_ELSE_IF_STATEMENT)):
         boolCond = node.children[0];
         condBody = node.children[1];
 
-        boolCond.typeCheck(progText,typeStack);
+        boolCond.typeCheck(progText,typeStack,avoidFunctionObjects);
         if (boolCond.type != TYPE_BOOL):
             errMsg = '\nError in If or ElseIf statement.  The condition ';
             errMsg += 'must evaluate to a TrueFalse type.  Instead, ';
@@ -633,14 +656,14 @@ def typeCheck(node,progText,typeStack=None):
             errorFunction(errMsg,[boolCond],[boolCond.lineNo],progText);            
 
         if (condBody.label != AST_EMPTY):
-            condBody.typeCheck(progText,typeStack);
+            condBody.typeCheck(progText,typeStack,avoidFunctionObjects);
 
 
     elif(node.label == AST_BOOL_EQUALS) or (node.label == AST_BOOL_NOT_EQUALS):
         lhs = node.children[0];
         rhs = node.children[1];
-        lhs.typeCheck(progText,typeStack);
-        rhs.typeCheck(progText,typeStack);
+        lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
+        rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         node.type = TYPE_BOOL;
         node.lineNo = lhs.lineNo;
         if (lhs.type == None):
@@ -673,8 +696,8 @@ def typeCheck(node,progText,typeStack=None):
 
         lhs = node.children[0];
         rhs = node.children[1];
-        lhs.typeCheck(progText,typeStack);
-        rhs.typeCheck(progText,typeStack);
+        lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
+        rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         node.type = TYPE_BOOL;
         node.lineNo = lhs.lineNo;
         if (lhs.type == None):
@@ -704,7 +727,7 @@ def typeCheck(node,progText,typeStack=None):
         #type check else statement
         for s in node.children:
             if (s.label != AST_EMPTY):
-                s.typeCheck(progText,typeStack);
+                s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif(node.label == AST_PLUS):
         #perform plus separately from other math operations to
@@ -713,8 +736,8 @@ def typeCheck(node,progText,typeStack=None):
         rhs = node.children[1];
         node.lineNo = lhs.lineNo;
 
-        lhs.typeCheck(progText,typeStack);
-        rhs.typeCheck(progText,typeStack);
+        lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
+        rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         errSoFar = False;
         if ((lhs.type != TYPE_NUMBER) and (lhs.type != TYPE_STRING)):
@@ -785,8 +808,8 @@ def typeCheck(node,progText,typeStack=None):
         rhs = node.children[1];
         node.lineNo = lhs.lineNo;
 
-        lhs.typeCheck(progText,typeStack);
-        rhs.typeCheck(progText,typeStack);
+        lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
+        rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         if (lhs.type != TYPE_NUMBER):
             errMsg = '\nError with ' + expressionType + ' expression.  ';
@@ -811,7 +834,7 @@ def typeCheck(node,progText,typeStack=None):
 
     elif(node.label == AST_BOOLEAN_CONDITION):
         node.lineNo = node.children[0].lineNo;
-        node.children[0].typeCheck(progText,typeStack);
+        node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
 
         if (node.children[0].type != TYPE_BOOL):
             errMsg = '\nError in predicate of condition statement.  Should have ';
@@ -827,9 +850,12 @@ def typeCheck(node,progText,typeStack=None):
 
     elif(node.label == AST_ELSE_IF_STATEMENTS):
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif(node.label == AST_ENDPOINT):
+        # this will only check the body of endpoint functions. not the
+        # global variables.
+
         #check if endpoint name matches previous endpoint name
         endName = node.children[0].value;
 
@@ -846,18 +872,18 @@ def typeCheck(node,progText,typeStack=None):
 
         #check endpoint body section
         if (len(node.children) >= 2):
-            node.children[1].typeCheck(progText,typeStack);
+            endpointBodySection = node.children[1];
+            endpointBodySection.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         #matches above set call.
         typeStack.unsetCurrentEndpointName();
 
-
     elif(node.label == AST_ENDPOINT_BODY_SECTION):            
 
         #typecheck global section
-        node.children[0].typeCheck(progText,typeStack);
+        node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
         #check function section.
-        node.children[1].typeCheck(progText,typeStack);
+        node.children[1].typeCheck(progText,typeStack,avoidFunctionObjects);
 
         #note: perform extra pop for stack that endpoint global
         #section put on.
@@ -865,13 +891,13 @@ def typeCheck(node,progText,typeStack=None):
 
     elif(node.label == AST_ENDPOINT_GLOBAL_SECTION):
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif(node.label == AST_DECLARATION):
 
         # type check the declared type statement (necessary
         # because of function statements).
-        node.children[0].typeCheck(progText,typeStack);
+        node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
 
         declaredType = node.children[0].value;
         node.lineNo = node.children[0].lineNo;
@@ -887,7 +913,7 @@ def typeCheck(node,progText,typeStack=None):
         currentLineNo = node.children[0].lineNo;
         if (len(node.children) == 3):
             rhs = node.children[2];
-            rhs.typeCheck(progText,typeStack);
+            rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
             rhsType = rhs.type;
 
             if (checkTypeMismatch(rhs,declaredType,rhsType,typeStack,progText)):
@@ -933,7 +959,7 @@ def typeCheck(node,progText,typeStack=None):
         node.type = declaredType;
 
     elif(node.label == AST_RETURN_STATEMENT):
-        node.children[0].typeCheck(progText,typeStack);
+        node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
 
         typeCheckError = typeStack.checkReturnStatement(node);
         if (typeCheckError != None):
@@ -962,13 +988,35 @@ def typeCheck(node,progText,typeStack=None):
         # this just type checks the headers of each function.
         # Have to insert the header of each function
         for s in node.children:
-            functionDeclarationTypeCheck(s,progText,typeStack);
+            functionDeclarationTypeCheck(s,progText,typeStack,avoidFunctionObjects);
+
+
+        # want to incorporate each messasge sequence function's
+        # declaration into context as well.
+        msgSeqSection = getMsgSeqSection(typeStack.rootNode);
+        for msgSeq in msgSeqSection.children:
+            # each msgSeq has label MessageSequence
+            msgSeqFunctions = msgSeq.children[2];
+            for msgSeqFunc in msgSeqFunctions.children:
+                if isEndpointSequenceFunction(
+                    msgSeqFunc,typeStack.currentEndpointName):
+                    # ensure that this function's name gets mapped
+                    # into endpoint's function context.
+                    functionDeclarationTypeCheck(msgSeqFunc,progText,typeStack,avoidFunctionObjects);
+                    
             
         # now we type check the bodies of each function
+        print('\nAbout to type check children\n');
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
+
+        # now we type check the bodies of the message sequence
+        # functions to ensure that they also are okay from type
+        # checking.
+        typeCheckMessageSequencesEndpoint(msgSeqSection,progText,typeStack);
 
 
+            
     elif ((node.label == AST_PUBLIC_FUNCTION) or
           (node.label == AST_PRIVATE_FUNCTION) or
           (node.label == AST_MSG_SEND_FUNCTION) or
@@ -1032,7 +1080,7 @@ def typeCheck(node,progText,typeStack=None):
         if (funcDeclArgListIndex != None):
             #add all arguments passed in in function declaration to
             #current context.
-            node.children[funcDeclArgListIndex].typeCheck(progText,typeStack);
+            node.children[funcDeclArgListIndex].typeCheck(progText,typeStack,avoidFunctionObjects);
 
         if (node.label == AST_MSG_RECEIVE_FUNCTION):
             # we are in the message receive function, and must
@@ -1076,7 +1124,7 @@ def typeCheck(node,progText,typeStack=None):
 
 
         # type check the actual function body
-        node.children[funcBodyIndex].typeCheck(progText,typeStack);
+        node.children[funcBodyIndex].typeCheck(progText,typeStack,avoidFunctionObjects);
 
         ## remove the created type context
         typeStack.popContext();
@@ -1100,12 +1148,12 @@ def typeCheck(node,progText,typeStack=None):
 
     elif(node.label == AST_FUNCTION_BODY):
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif (node.label == AST_FUNCTION_DECL_ARGLIST):
         #iterate through each individual declared argument
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
 
     elif (node.label == AST_FUNCTION_DECL_ARG):
@@ -1132,12 +1180,15 @@ def typeCheck(node,progText,typeStack=None):
 
             errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
         else:
-            typeStack.addIdentifier(argName,argType,None,node,node.lineNo);
+            if (isFunctionType(argType) or (argType == TYPE_FUNCTION)) and avoidFunctionObjects:
+                pass;
+            else:
+                typeStack.addIdentifier(argName,argType,None,node,node.lineNo);
 
 
     elif (node.label == AST_FUNCTION_BODY_STATEMENT):
         for s in node.children:
-            s.typeCheck(progText,typeStack);
+            s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif (node.label == AST_STRING):
         node.type = TYPE_STRING;
@@ -1162,7 +1213,7 @@ def typeCheck(node,progText,typeStack=None):
             lhsType,controlledBy = typeStack.getIdentifierType(lhs.value);
             lhs.type  = lhsType;
         else:
-            lhs.typeCheck(progText,typeStack);
+            lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
             lhsType = lhs.type;
             controlledBy = None;
 
@@ -1191,7 +1242,7 @@ def typeCheck(node,progText,typeStack=None):
                 errorFunction(errMsg,[node],[node.lineNo],progText);
 
 
-        rhs.typeCheck(progText,typeStack);
+        rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhsType = rhs.type;
 
         if (rhsType == None):
@@ -1210,7 +1261,10 @@ def typeCheck(node,progText,typeStack=None):
             errMsg += ').\n';
             errorFunction(errMsg,[node],[node.lineNo],progText);
 
-
+        # makes type checking declarations easier in sequence globals
+        # section.
+        node.type = lhs.type;
+            
     else:
         errPrint('\nLabels that still need type checking: ');
         errPrint('\t' + node.label);
@@ -1220,26 +1274,28 @@ def typeCheck(node,progText,typeStack=None):
 
     #remove the new context that we had created.  Note: shared
     #section is intentionally missing.  Want to maintain that 
-    #context while type-checking the endpoint sections.
+    #context while type-checking the endpoint sections 
     #skip global section too.
     if ((node.label == AST_ROOT) or
         (node.label == AST_ENDPOINT_FUNCTION_SECTION)):
-
+        
         typeStack.popContext();
+        
 
-
-
-def functionDeclarationTypeCheck(node, progText,typeStack):
+def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
     '''
-    Takes a node of type public function, ast function, message
+    Takes a node of type public function, private function,
+    AST_MESSAGE_SEND_SEQUENCE_FUNCTION,
+    AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION, ONCREATE_FUNCTION
+
     send function, or message receive function.  Does not set any
     types itself, but rather loads functions into the typeStack
     itself.
     '''
     if ((node.label != AST_PUBLIC_FUNCTION) and
         (node.label != AST_PRIVATE_FUNCTION) and
-        (node.label != AST_MSG_SEND_FUNCTION) and
-        (node.label != AST_MSG_RECEIVE_FUNCTION) and
+        (node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION) and
+        (node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION) and
         (node.label != AST_ONCREATE_FUNCTION)):
         errPrint('\n\n');
         errPrint(node.label);
@@ -1248,31 +1304,30 @@ def functionDeclarationTypeCheck(node, progText,typeStack):
         assert(False);
 
 
-    funcName = node.children[0].value;            
-    node.lineNo = node.children[0].lineNo;
-
     if ((node.label == AST_PUBLIC_FUNCTION) or (node.label == AST_PRIVATE_FUNCTION)):
         #get declared return type (only applicable for functions and public functions)
-        node.children[1].typeCheck(progText,typeStack);
+        node.children[1].typeCheck(progText,typeStack,avoidFunctionObjects);
         returnType = node.children[1].type;
         argDeclIndex = 2;
-    elif(node.label == AST_MSG_SEND_FUNCTION):
-        #msg send and msg receive functions do not have declared
-        #return types (for now).  use the return type for each
-
-        returnType = TYPE_MSG_SEND_FUNCTION;
-        argDeclIndex = 1;
-    elif(node.label == AST_MSG_RECEIVE_FUNCTION):
-        #msg send and msg receive functions do not have declared
-        #return types (for now).  use the return type for each
-
-        returnType = TYPE_MSG_RECEIVE_FUNCTION;
-        argDeclIndex = None;
-
+        funcNameIndex = 0;
     elif(node.label == AST_ONCREATE_FUNCTION):
         returnType = TYPE_NOTHING;
         argDeclIndex = 1;
+        funcNameIndex = 0;
+    elif node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        argDeclIndex = 2;
+        returnType = TYPE_NOTHING;
+        funcNameIndex = 1;
+    elif node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        # does not take any arguments
+        argDeclIndex = None;
+        funcNameIndex = 1;
+        returnType = TYPE_NOTHING;
 
+
+    funcName = node.children[funcNameIndex].value;            
+    node.lineNo = node.children[funcNameIndex].lineNo;
+        
 
     #get types of function arguments
 
@@ -1281,9 +1336,13 @@ def functionDeclarationTypeCheck(node, progText,typeStack):
     #type check of arg text.
     typeStack.pushContext();
     if (argDeclIndex != None):
-        node.children[argDeclIndex].typeCheck(progText,typeStack);
+        # fill in type information of all the arguments.
+        node.children[argDeclIndex].typeCheck(
+            progText,typeStack,avoidFunctionObjects);
+
     typeStack.popContext();
 
+    # build the input argument type list for arguments.
     argTypeList = [];
     if (argDeclIndex != None):
         args = node.children[argDeclIndex].children;
@@ -1296,7 +1355,7 @@ def functionDeclarationTypeCheck(node, progText,typeStack):
                 continue;
 
             #set the type of t to the type identifier of the argument.
-            t.children[0].typeCheck(progText,typeStack);
+            t.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
 
             t.type = t.children[0].value;
 
@@ -1325,9 +1384,6 @@ def functionDeclarationTypeCheck(node, progText,typeStack):
         traceError = typeStack.addFuncIdentifier(funcName,returnType,argTypeList,node,node.lineNo);
         if (traceError != None):
             errorFunction(traceError.errMsg,traceError.nodes,traceError.lineNos,progText);
-
-        
-
             
 
 
@@ -1621,3 +1677,124 @@ def typeCheckMessageBracket(toReadFrom,index,typeStack,progText):
     return False,expectedType,None,None;
 
 
+
+def typeCheckMessageSequencesEndpoint(msgSeqSectionNode,progText,typeStack):
+    '''
+    Type checks the bodies of all message sequences for the current
+    endpoint.  For each sequence, create a typestack context, loading
+    all shared variables into it (including those passed into message
+    send function).
+
+    Then, type check all functions for the current enpdoint name.
+
+    When type checking, be careful to throw an error if a function
+    object is tried to be used as shared.  Similarly, do not load
+    function object into shared section of other endpoint.
+    '''
+
+    if msgSeqSectionNode.label != AST_MESSAGE_SEQUENCE_SECTION:
+        errMsg = '\nBehram error: should pass message sequence ';
+        errMsg += 'section node as first argument to ';
+        errMsg += 'typeCheckMessageSequencesEndpoint.  Instead, got: "';
+        errMsg += msgSeqSectionNode.label + '"\n';
+        print(errMsg);
+        assert(False);
+
+    currentEndpointName = typeStack.currentEndpointName;
+
+    # perform the type checking of function bodies
+    for msgSeqNode in msgSeqSectionNode.children:
+        addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName);
+        typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName);
+        removeSequenceGlobals(typeStack);
+
+
+def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName):
+    '''
+    For each message function in the message sequence that belongs to
+    currentEndpointName, type check it.
+    '''
+    msgSeqFunctionsNode = msgSeqNode.children[2];
+    for msgSeqFuncNode in msgSeqFunctionsNode.children:
+        if isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
+            msgBodyNode = msgSeqFuncNode.children[2];
+            typeStack.pushContext();
+            msgBodyNode.typeCheck(progText,typeStack,False);            
+            typeStack.popContext();
+
+    
+def removeSequenceGlobals(typeStack):
+    '''
+    Complements addSequenceGlobals.  Discards extra context that
+    addSequenceGlobals creates.
+    '''
+    typeStack.popContext();
+
+
+    
+def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
+    '''
+    @param {AstNode} msgSeqNode --- Should have label
+    AST_MESSAGE_SEQUENCE.
+
+    @param {AstTypeStack} typeStack
+
+    @param {String} currentEndpointName
+
+    Runs through variables whose lifetimes are only for the scope of
+    the message sequence and adds them to context.  (Note: this
+    includes any variables that are passed in through the initial
+    message send function, however, the proscription against function
+    objects does not apply if the function object is used by the same
+    endpoint as uses it later.)
+
+    Remember to call removeSequenceGlobals after calling this
+    function, or you'll end up with a garbage context on the
+    typeStack.
+    '''
+    print('\nAdding sequence globals\n');
+    
+    typeStack.pushContext();
+
+    if msgSeqNode.label != AST_MESSAGE_SEQUENCE:
+        errMsg = '\nBehram error: should only add globals to a sequence.\n';
+        print(errMsg);
+        assert(False);
+
+    # add variables from variables explicitly shared at top of sequence.
+    globalsSectionNode = msgSeqNode.children[1];
+    for declNode in globalsSectionNode.children:
+        warnMsg = '\nBehram error: need to ensure that the sequence global ';
+        warnMsg += 'nodes are not initialized using inaccessible parameters.\n';
+        print(warnMsg);
+
+
+        # should add the node to the newly-pushed context.
+        declNode.typeCheck(progText,typeStack,False);
+
+        
+        if (declNode.type == TYPE_FUNCTION) or isFunctionType(declNode.type):
+            errMsg = 'Error with sequence shared variables.  You cannot share ';
+            errMsg += 'a function object across multiple nodes.';
+            errNodes = [declNode];
+            astLineNos = [declNode.lineNo];
+            errorFunction(errMsg,errNodes,astLineNos,progText);
+
+
+    # add variables from variables that are shared by being arguments
+    # to send message.
+    msgSequenceFunctionsNode = msgSeqNode.children[2];
+    msgSendNode = msgSequenceFunctionsNode.children[0];
+    msgSendNodeEndpointName = msgSendNode.children[0];
+    msgSendEndpointName = msgSendNodeEndpointName.value;
+    argList = msgSendNode.children[3];
+    
+    # include each of the arguments to the message send function as
+    # sequence-global variables.
+    if msgSendEndpointName == currentEndpointName:
+        # do not add function objects to context when type check them
+        argList.typeCheck(progText,typeStack,False);
+    else:
+        # add function objects to context when type check them
+        argList.typeCheck(progText,typeStack,True);
+    
