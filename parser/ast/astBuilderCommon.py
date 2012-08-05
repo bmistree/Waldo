@@ -360,6 +360,15 @@ def p_EndpointSection(p):
     p[0].addChild(p[1]);
     if (len(p) == 5):
         p[0].addChild(p[3]);
+    elif len(p) == 4:
+        # means that we had nothing defined in the endpoint create
+        # empty versions so that type checking gets what it expects.
+        bodySecChild = AstNode(AST_ENDPOINT_BODY_SECTION,p[1].lineNo,p[1].linePos);
+        bodyGlobSec = AstNode(AST_ENDPOINT_GLOBAL_SECTION,p[1].lineNo,p[1].linePos);
+        funcGlobSec = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos);
+        bodySecChild.addChildren([bodyGlobSec,funcGlobSec]);
+        p[0].addChild(bodySecChild);
+
 
 def p_EndpointBodySection(p):
     '''EndpointBodySection : EndpointGlobalSection EndpointFunctionSection

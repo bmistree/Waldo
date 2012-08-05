@@ -166,5 +166,8 @@ def isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
         print(errMsg);
         assert(False);
 
-    return (msgSeqFuncNode.children[0].value == currentEndpointName);
+
+    funcName = msgSeqFuncNode.children[1].value;
+    endName =  msgSeqFuncNode.children[0].value;
+    return (endName == currentEndpointName);
 

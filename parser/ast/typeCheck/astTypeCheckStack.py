@@ -5,11 +5,12 @@ from astLabels import TYPE_STRING;
 from astLabels import TYPE_NUMBER;
 from astLabels import TYPE_NOTHING;
 from astLabels import TYPE_FUNCTION;
-from astLabels import TYPE_INCOMING_MESSAGE;
-from astLabels import TYPE_OUTGOING_MESSAGE;
-from astLabels import TYPE_MSG_SEND_FUNCTION;
-from astLabels import TYPE_MSG_RECEIVE_FUNCTION;
 from astLabels import AST_TYPED_SENDS_STATEMENT;
+
+from astLabels import AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
+from astLabels import AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION;
+
+
 from astLabels import AST_RETURN_STATEMENT;
 from astLabels import AST_PUBLIC_FUNCTION;
 from astLabels import AST_PRIVATE_FUNCTION;
@@ -514,7 +515,7 @@ class TypeCheckContextStack(object):
     def addFuncIdentifier(self,functionName,functionType,functionArgTypes,astNode,lineNum=None):
         '''
         @param {string} functionName: name of function
-        @param {string} functionType:
+        @param {string} functionType: effectively the return type of the function.
         @param {list} functionArgTypes: ordered (from left to right)
         list of types for function arguments.
         @param {int} lineNum: line number that function was declared on.
@@ -523,7 +524,7 @@ class TypeCheckContextStack(object):
         with trace, TypeCheckError otherwise.
         
         '''
-        if(len(self.funcStack) <= 1):
+        if len(self.funcStack) <= 1:
             errMsg = '\nBehram Error.  Cannot insert into type ';
             errMsg += 'check stack because stack is empty.\n';
             errPrint(errMsg);
@@ -542,9 +543,11 @@ class TypeCheckContextStack(object):
 
         traceError = None;
 
-        if (functionType == TYPE_MSG_SEND_FUNCTION):
-            traceError = self.traceManager.addMsgSendFunction(astNode, currentEndpointName);
-        elif (functionType == TYPE_MSG_RECEIVE_FUNCTION):
+        
+
+        if astNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+            traceError = self.traceManager.addMsgSendFunction(astNode,currentEndpointName);
+        elif astNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
             traceError = self.traceManager.addMsgRecvFunction(astNode, currentEndpointName);
 
         if (traceError != None):

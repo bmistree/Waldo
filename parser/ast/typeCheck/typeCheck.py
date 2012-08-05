@@ -76,7 +76,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         typeStack.endpoint2LineNo = aliasSection.children[1].lineNo;
         typeStack.endpoint2Ast = aliasSection.children[1];             
         
-        if (typeStack.endpoint1 == typeStack.endpoint2):
+        if typeStack.endpoint1 == typeStack.endpoint2:
             errorFunction('Cannot use same names for endpoints',
                           [typeStack.endpoint1,typeStack.endpoint2],
                           [typeStack.endpoint1LineNo,typeStack.endpoint2LineNo],
@@ -86,8 +86,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # #Do first level of type chcecking trace items.  see notes
         # #in corresponding elif.
         # node.children[2].typeCheck(progText,typeStack);
+        sequencesSectionNode = node.children[2];
+        sequencesSectionNode.typeCheck(progText,typeStack,avoidFunctionObjects);
         print('\nBehram should do first level of type checking in message sequence section: names do not interfere, everything is defined, etc.\n');
 
+        
         sharedSectionNode = node.children[3];
         endpoint1Node = node.children[4];
         endpoint2Node = node.children[5];
@@ -102,11 +105,16 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #check other endpoint
         endpoint2Node.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        # # check message sequences
-        # node.children[6].typeCheck(progText,typeStack);
 
-        print('\nBehram note: skipping type checking of traces section.\n');
+        # check if there were elements of the message sequences that
+        # weren't actually defined in a sequences section.
+        traceError = typeStack.checkUndefinedTraceItems();
+        if (traceError != None):
+            errorFunction(traceError.errMsg,traceError.nodes,
+                          traceError.lineNos,progText);
+
         
+        print('\nBehram note: skipping type checking of traces section.\n');
         
         # #Checks if there were msgSends or msgReceives assumed in a
         # #trace line that weren't actually defined in an endpoint
@@ -149,7 +157,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
          After type checking rest of body, then return check #2 by
          calling typeStack.checkUndefinedTraceItems in type check of astRoot.
         '''
-
         typeStack.setAstTraceSectionNode(node);
 
         # skip the first child, which is a name for the 
@@ -235,9 +242,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             #check that are using declared endpoints.
             if (not typeStack.isEndpoint(endpointName)):
-
-                errMsg = '\nError in trace declaration.  Each element ';
-                errMsg += 'in the trace line should have the form ';
+                errMsg = '\nError in sequence declaration.  Each element ';
+                errMsg += 'in the message sequence should have the form ';
                 errMsg += '<Endpoint Name>.<Function name>.  For <Endpoint Name>, ';
                 errMsg += 'you entered "' + endpointName + '".  You should have entered ';
                 errMsg += 'either "' + endpoint1Name + '" or "' + endpoint2Name;
@@ -252,9 +258,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if (lastEndpoint != None):
                 if (lastEndpoint == endpointName):
                     #means that we had a repeat between the endpoints
-                    errMsg = '\nError in trace declaration for item ';
+                    errMsg = '\nError in sequence declaration for item ';
                     errMsg += '"' + endpointName + '.' + funcName  +  '".  ';
-                    errMsg += 'Messages in a trace should alternate which side ';
+                    errMsg += 'Messages in a sequence should alternate which side ';
                     errMsg += 'receives them.  Instead of having "' + endpointName + '" ';
                     errMsg += 'receive two messages in a row, you should have "';
                     if (endpointName == endpoint1Name):
@@ -879,7 +885,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         typeStack.unsetCurrentEndpointName();
 
     elif(node.label == AST_ENDPOINT_BODY_SECTION):            
-
         #typecheck global section
         node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
         #check function section.
@@ -988,8 +993,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # this just type checks the headers of each function.
         # Have to insert the header of each function
         for s in node.children:
-            functionDeclarationTypeCheck(s,progText,typeStack,avoidFunctionObjects);
-
+            functionDeclarationTypeCheck(
+                s,progText,typeStack,avoidFunctionObjects);
 
         # want to incorporate each messasge sequence function's
         # declaration into context as well.
@@ -1001,12 +1006,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 if isEndpointSequenceFunction(
                     msgSeqFunc,typeStack.currentEndpointName):
                     # ensure that this function's name gets mapped
-                    # into endpoint's function context.
-                    functionDeclarationTypeCheck(msgSeqFunc,progText,typeStack,avoidFunctionObjects);
-                    
-            
+                    # into current endpoint's function context.
+                    functionDeclarationTypeCheck(
+                        msgSeqFunc,progText,typeStack,avoidFunctionObjects);
+
         # now we type check the bodies of each function
-        print('\nAbout to type check children\n');
         for s in node.children:
             s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
@@ -1327,7 +1331,6 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
 
     funcName = node.children[funcNameIndex].value;            
     node.lineNo = node.children[funcNameIndex].lineNo;
-        
 
     #get types of function arguments
 
@@ -1356,7 +1359,6 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
 
             #set the type of t to the type identifier of the argument.
             t.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
-
             t.type = t.children[0].value;
 
             #add the argument type to the typeStack representation for this function.
@@ -1371,18 +1373,17 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         argTypeList.append(TYPE_NOTHING);
 
     collisionObj = typeStack.checkCollision(funcName,node);
-    if (collisionObj != None):
+    if collisionObj != None:
         #FIXME: for this error message, may want to
         #re-phrase with something about scope, so do not
         #take the wrong error message away.
         errMsg = 'Error trying to name a function "' + funcName;
         errMsg += '".  Already have a function or variable with ';
         errMsg += 'the same name.'
-
         errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
     else:
         traceError = typeStack.addFuncIdentifier(funcName,returnType,argTypeList,node,node.lineNo);
-        if (traceError != None):
+        if traceError != None:
             errorFunction(traceError.errMsg,traceError.nodes,traceError.lineNos,progText);
             
 
@@ -1752,8 +1753,6 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
     function, or you'll end up with a garbage context on the
     typeStack.
     '''
-    print('\nAdding sequence globals\n');
-    
     typeStack.pushContext();
 
     if msgSeqNode.label != AST_MESSAGE_SEQUENCE:
@@ -1772,14 +1771,12 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
         # should add the node to the newly-pushed context.
         declNode.typeCheck(progText,typeStack,False);
 
-        
         if (declNode.type == TYPE_FUNCTION) or isFunctionType(declNode.type):
             errMsg = 'Error with sequence shared variables.  You cannot share ';
             errMsg += 'a function object across multiple nodes.';
             errNodes = [declNode];
             astLineNos = [declNode.lineNo];
             errorFunction(errMsg,errNodes,astLineNos,progText);
-
 
     # add variables from variables that are shared by being arguments
     # to send message.

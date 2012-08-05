@@ -2,6 +2,13 @@
 
 from parserUtil import errPrint;
 
+import sys;
+import os;
+curDir = os.path.dirname(__file__);
+sys.path.append(os.path.join('..',curDir));
+
+from astLabels import AST_MESSAGE_SEND_SEQUENCE_FUNCTION, AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION;
+
 
 def endpointFuncNameToString(endpointName, funcName):
     return endpointName + '.' + funcName;
@@ -111,9 +118,14 @@ class TraceLineManager():
 
         return None;
 
-        
+# lkjs;        
     def addMsgSendFunction(self,msgSendFuncAstNode, endpointName):
         '''
+        @param{AstNode} msgSendFuncAstNode --- Type label should be 
+        AST_MESSAGE_SEND_SEQUENCE_FUNCTION
+
+        @param{String} endpointName
+
         Returns a TypeCheckError object if the function is not used in
         a trace.  (ie, no entry in self.traceLines corresponding to
         the string-ified function.)
@@ -131,31 +143,51 @@ class TraceLineManager():
         function.  Returns None to indicate no error.
         
         '''
-        funcName = msgSendFuncAstNode.children[0].value;
-        index = endpointFuncNameToString(endpointName,funcName);
-        if (self.traceLines.get(index,None) == None):
+        if msgSendFuncAstNode.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+            errMsg = '\nBehram error.  Should only receive an ast_message_send sequence ';
+            errMsg += ' in addMsgSendFunction of traceLine.py.\n';
+            print(errMsg);
+            assert(False);
+        
+        expectedEndpointName = msgSendFuncAstNode.children[0].value;
+        if expectedEndpointName != endpointName:
             errMsg = '\nError: declaring a msg send function named "';
-            errMsg += funcName + '" in ' + endpointName;
-            errMsg += ' that is not used in any trace line.\n';
+            errMsg += funcName + '."  Using an incorrect endpoint name ';
+            errMsg += 'of "' + expectedEndpointName + '."\n';
             nodes = [msgSendFuncAstNode,self.traceSectionAstNode];
             return TypeCheckError(nodes,errMsg);
 
-        
+
+        funcName = msgSendFuncAstNode.children[1].value;
+        index = endpointFuncNameToString(endpointName,funcName);
+
+        if (self.traceLines.get(index,None) == None):
+            errMsg = '\nError: declaring a msg send function named "';
+            errMsg += funcName + '" in ' + endpointName;
+            errMsg += ' that is not specified in any message sequence.\n';
+            nodes = [msgSendFuncAstNode,self.traceSectionAstNode];
+            return TypeCheckError(nodes,errMsg);
+
+
         for s in self.traceLines.keys():
             '''
             run through all trace lines to see if they are using this
             msgSend function in some way that they shouldn't.
             '''
-            traceError = self.traceLines[s].checkMsgSendFunction(msgSendFuncAstNode,endpointName);
+            traceError = self.traceLines[s].checkMsgSendFunction(
+                msgSendFuncAstNode,endpointName);
             if (traceError != None):
                 return traceError;
 
         return None;
 
-
-
+    
     def addMsgRecvFunction(self,msgRecvFuncAstNode,endpointName):
         '''
+        @param {AstNode} msgRecvFuncAstNode --- AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION
+
+        @param {String} endpointName
+        
         @returns {None or TypeCheckError} --
 
         TypeCheckError if msg receive function is not being used by
@@ -165,9 +197,24 @@ class TraceLineManager():
         Otherwise, returns None.
         
         '''
-        funcName = msgRecvFuncAstNode.children[0].value;
-        index = endpointFuncNameToString(endpointName,funcName);
 
+        if msgRecvFuncAstNode.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+            errMsg = '\nBehram error.  Should only receive an ast_message_receive sequence ';
+            errMsg += ' in addMsgRecvFunction of traceLine.py.\n';
+            print(errMsg);
+            assert(False);
+
+        expectedEndpointName = msgRecvFuncAstNode.children[0].value;
+        if expectedEndpointName != endpointName:
+            errMsg = '\nError: declaring a msg receive function named "';
+            errMsg += funcName + '."  Using an incorrect endpoint name ';
+            errMsg += 'of "' + expectedEndpointName + '."\n';
+            nodes = [msgRecvFuncAstNode,self.traceSectionAstNode];
+            return TypeCheckError(nodes,errMsg);
+
+
+        funcName = msgRecvFuncAstNode.children[1].value;
+        index = endpointFuncNameToString(endpointName,funcName);
 
         tLine = self.traceLines.get(index,None);
         if (tLine != None):
@@ -197,10 +244,10 @@ class TraceLineManager():
             #means that we never used this msgRecv function.
             errMsg = '\nError: message receive function named "';
             errMsg += funcName + '" in endpoint named "' + endpointName + '" ';
-            errMsg += 'was not used in any trace line.\n';
+            errMsg += 'was not used in any message sequence.\n';
             nodes = [msgRecvFuncAstNode,self.traceSectionAstNode];
             return TypeCheckError(nodes,errMsg);
-
+        
         return None;
             
     def checkUndefinedMsgSendOrReceive(self):
@@ -424,8 +471,6 @@ class TraceLine ():
                 return TypeCheckError(nodes,errMsg);
 
         return None;
-                
-
         
     def checkMsgSendFunction(self,msgSendFuncAstNode,endpointName):
         '''
@@ -433,8 +478,7 @@ class TraceLine ():
         any non-first part of the trace line uses the msgSend
         function.  Returns None to indicate no error.
         '''
-        funcName = msgSendFuncAstNode.children[0].value;
-
+        funcName = msgSendFuncAstNode.children[1].value;
 
         if (len(self.stringifiedTraceItems) == 0):
             errMsg = '\nBehram error: you should never have a case where ';
@@ -474,13 +518,11 @@ class TraceLine ():
         Returns true if the msgRecv function is used in this trace,
         false otherwise.
         '''
-        funcName = msgRecvFuncAstNode.children[0].value;
+        funcName = msgRecvFuncAstNode.children[1].value;
 
         stringifiedFuncName = endpointFuncNameToString(endpointName,funcName);
-
         
         returner = False;
-        
         for s in range(1,len(self.stringifiedTraceItems)):
             if (self.stringifiedTraceItems[s] == stringifiedFuncName):
                 self.definedUndefinedList[s] += 1;
@@ -511,7 +553,7 @@ class TraceLine ():
             if (self.definedUndefinedList[s] == 0):
                 errMsg = '\nError: using a function named ';
                 errMsg += '"' + self.stringifiedTraceItems[s] + '" in ';
-                errMsg += 'trace, but never actually defined it.\n';
+                errMsg += 'message sequences, but never actually defined it.\n';
                 return TypeCheckError([self.traceLineAst],errMsg);
 
         # nothing was undefined: there is no error.
