@@ -49,8 +49,7 @@ def isFunctionType(typeLabel):
     '''
     
     if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
-        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_INCOMING_MESSAGE) and
-        (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING) and
+        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_NOTHING) and
         (typeLabel != EMPTY_LIST_SENTINEL) and (typeLabel != EMPTY_MAP_SENTINEL)):
 
         jsonType = json.loads(typeLabel);
@@ -209,8 +208,7 @@ def isTemplatedType(typeLabel):
     @returns{bool} True if it's a function or list type, false otherwise.
     '''
     if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
-        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_INCOMING_MESSAGE) and
-        (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING)):
+        (typeLabel != TYPE_STRING) and  (typeLabel != TYPE_NOTHING)):
         return True;
 
     return False;

@@ -172,13 +172,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         node.lineNo = index.lineNo;
 
-        if ((toReadFrom.type == TYPE_INCOMING_MESSAGE) or
-            (toReadFrom.type == TYPE_OUTGOING_MESSAGE)):
-
-            typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckMessageBracket(
-                toReadFrom,index,typeStack,progText);
-
-        elif isMapType(toReadFrom.type):
+        if isMapType(toReadFrom.type):
 
             typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckMapBracket(
                 toReadFrom,index,typeStack,progText);
@@ -189,8 +183,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         else:
             typeError = True;
-            typeErrorMsg = 'You can only index into a map type or outgoing/incoming ';
-            typeErrorMsg += 'message.  Instead, you are trying to index into a [ ';
+            typeErrorMsg = 'You can only index into a map type or list type.  ';
+            typeErrorMsg += 'Instead, you are trying to index into a [ ';
             typeErrorMsg += toReadFrom.type + ' ].\n';
             typeErrorNodes = [toReadFrom];
 
@@ -288,21 +282,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         typeStack.containedSend = True;
 
         node.type = TYPE_NOTHING;
-
-    elif (node.label == AST_MESSAGE_LITERAL):
-        # because a message literal can be either an incoming or
-        # outgoing message, do not perform type check against
-        # declared incoming/outgoing types.  We must wait until
-        # assignment to perform these checks.
-
-        # ensure that all the values in the literal do not have
-        # type errors (eg, adding a bool to a string) and that
-        # they are labeled with types.
-        for literalLine in node.children:
-            literalValueNode = literalLine.children[1];
-            literalValueNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-
-        node.type = TYPE_MESSAGE_LITERAL;
 
     elif (node.label == AST_PRINT):
         #check to ensure that it's passed a string
@@ -1104,11 +1083,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += argName + '" in your function.  ';
                 errMsg += 'You already have a function or variable ';
                 errMsg += 'with the same name.';
-
                 errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
-            else:
-                typeStack.addIdentifier(argName,TYPE_INCOMING_MESSAGE,None,node,node.lineNo);
 
+                
             # re-define type for IncomingMessage
             incomingTypeNode = node.children[2];
             typeStack.addIncoming(incomingTypeNode);
@@ -1410,40 +1387,20 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
         # to have an OutgoingMessage or IncomingMessage type.
         # Here is where we check that.
 
-        if (rhsType==TYPE_MESSAGE_LITERAL):
+        # Must use special checks to type check lists.  For
+        # instance, if one side presents empty_list and other is
+        # [Number], should not produce typecheck error.
 
-            if (lhsType == TYPE_OUTGOING_MESSAGE):
-                # check that the message literal has all the
-                # expected fields of the outgoing message
-                typeCheckError = typeStack.literalAgreesWithOutgoingMessage(rhs);
-                errorTrue = False;
-                if (typeCheckError != None):
-                    errorTrue = True;
-                    errorFunction(typeCheckError.errMsg,typeCheckError.nodes,typeCheckError.lineNos,progText);
+        # determine if lists are involved
+        if (isListType(lhsType) and isListType(rhsType)):
+            errorTrue = listTypeMismatch(lhsType,rhsType,typeStack,progText);
 
-            elif(lhsType == TYPE_INCOMING_MESSAGE):
-                typeCheckError = typeStack.literalAgreesWithIncomingMessage(rhs);
-                errorTrue = False;
-                if (typeCheckError != None):
-                    errorTrue = True;
-                    errorFunction(typeCheckError.errMsg,typeCheckError.nodes,typeCheckError.lineNos,progText);
-
-
+        elif isMapType(lhsType) and isMapType(rhsType):
+            errorTrue = mapTypeMismatch(lhsType,rhsType,typeStack,progText);
         else:
-            # Must use special checks to type check lists.  For
-            # instance, if one side presents empty_list and other is
-            # [Number], should not produce typecheck error.
-
-            # determine if lists are involved
-            if (isListType(lhsType) and isListType(rhsType)):
-                errorTrue = listTypeMismatch(lhsType,rhsType,typeStack,progText);
-
-            elif isMapType(lhsType) and isMapType(rhsType):
-                errorTrue = mapTypeMismatch(lhsType,rhsType,typeStack,progText);
-            else:
-                # both sides were not lists and there types did not
-                # match.  will throw an error.
-                errorTrue = True;
+            # both sides were not lists and there types did not
+            # match.  will throw an error.
+            errorTrue = True;
              
     return errorTrue;
 
@@ -1626,56 +1583,6 @@ def typeCheckListBracket(toReadFrom,index,typeStack,progText):
     # have value of whatever is being accessed.
     listValType = getListValueType(toReadFrom.type);
     return False,listValType,None,None;
-
-def typeCheckMessageBracket(toReadFrom,index,typeStack,progText):
-    '''
-    @see typeCheckMapBracket
-    '''
-    indexStr = index.value;
-    if (toReadFrom.type == TYPE_INCOMING_MESSAGE):
-
-        # checking if the referenced field exists in the
-        # incoming message.  inserting a dummy type to ensure
-        # that we will get back what the real type of the
-        # field should be if the field name exists.
-        result,expectedType = typeStack.fieldAgreesWithCurrentIncoming(indexStr,TYPE_NOTHING);
-        potentialErrNode = typeStack.currentIncoming;
-        potentialErrMsg = 'incoming';
-                
-    elif(toReadFrom.type == TYPE_OUTGOING_MESSAGE):
-        result,expectedType = typeStack.fieldAgreesWithCurrentOutgoing(indexStr,TYPE_NOTHING);
-        potentialErrNode = typeStack.currentOutgoing;
-        potentialErrMsg = 'outgoing';
-    else:
-        errMsg = '\nBehram error: should only have incoming and ';
-        errMsg += 'outgoing messages when typechecking messages.\n';
-        print(errMsg);
-        assert(False);
-
-    #check the result of the indexing.
-    if result == MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST:
-        # means that this field does not exist in incoming
-        # message field, throw an error.
-        errMsg = '\nAccessing a field "' + indexStr + '" of an ';
-        errMsg += potentialErrMsg;
-        errMsg += ' message that does not exist.  Compare ';
-        errMsg += 'to the actual type of the incoming message before ';
-        errMsg += 'proceeding.\n';
-        astErrorNodes = [node,potentialErrNode];
-
-        return True,None,errMsg,astErrorNodes;
-    elif result == MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH:
-        # expected because we used
-        # TYPE_NOTHING. expectedType now contains what the
-        # type of this statement should be.
-        pass;
-    else:
-        errMsg = '\nBehram error.  Should have no data in a message that ';
-        errMsg += 'matches type nothing\n';
-        assert(False);
-
-    # no error, return that.
-    return False,expectedType,None,None;
 
 
 
