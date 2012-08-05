@@ -924,7 +924,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg += 'the same name.'
             errorFunction(errMsg,nodes,lineNos,progText);
 
-
         typeStack.addIdentifier(name,declaredType,None,node,currentLineNo);
         node.type = declaredType;
 
@@ -935,7 +934,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (typeCheckError != None):
             errorFunction(typeCheckError.errMsg,typeCheckError.nodes,typeCheckError.lineNos,progText);
         node.type = TYPE_NOTHING;
-
 
     elif(node.label == AST_IDENTIFIER):
         name = node.value;
@@ -996,7 +994,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         pushes arguments into context and then calls recursive
         type check on function body itself.
         '''
-
         ## create a new type context to insert intermediate data
         ## in.  context is popped at the end of the elif statement.
         typeStack.pushContext();
@@ -1022,22 +1019,24 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #by the return type here.
         typeStack.setShouldReturn(stackFunc.getReturnType());
 
-
         #insert passed in arguments into context;
-
         if ((node.label == AST_PUBLIC_FUNCTION) or (node.label == AST_PRIVATE_FUNCTION)):
             funcDeclArgListIndex = 2;
             funcBodyIndex = 3;
+            funcNameIndex = 0;
         elif (node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION):
             funcDeclArgListIndex = 1;
             funcBodyIndex = 2;
+            funcNameIndex = 1;
         elif(node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION):
             # 1 should contain name of the IncomingMessage;
             funcBodyIndex = 4;
             funcDeclArgListIndex = None;
+            funcNameIndex = 1;
         elif(node.label == AST_ONCREATE_FUNCTION):
             funcBodyIndex = 2;
             funcDeclArgListIndex = 1;
+            funcNameIndex = 0;
         else:
             errMsg = '\nBehram error: invalid function ';
             errMsg += 'type when type checking functions\n';
@@ -1047,7 +1046,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (funcDeclArgListIndex != None):
             #add all arguments passed in in function declaration to
             #current context.
-            node.children[funcDeclArgListIndex].typeCheck(progText,typeStack,avoidFunctionObjects);
+            node.children[funcDeclArgListIndex].typeCheck(
+                progText,typeStack,avoidFunctionObjects);
 
         if (node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION):
             # we are in the message receive function, and must
@@ -1068,16 +1068,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += 'with the same name.';
                 errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
 
-        elif(node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION):
-            # re-define type for OutgoingMessage
-            outgoingTypeNode = node.children[3];
-            typeStack.addOutgoing(outgoingTypeNode);
-        else:
-            # both public and internal functions place their
-            # return types in the second child slot.
-            typeStack.addCurrentPublicInternalNode(node);
-
-
+        # when type check body, 
+        typeStack.addCurrentFunctionNode(node);
 
         # type check the actual function body
         node.children[funcBodyIndex].typeCheck(progText,typeStack,avoidFunctionObjects);
@@ -1093,7 +1085,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #iterate through each individual declared argument
         for s in node.children:
             s.typeCheck(progText,typeStack,avoidFunctionObjects);
-
 
     elif (node.label == AST_FUNCTION_DECL_ARG):
         '''
@@ -1139,7 +1130,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     elif (node.label == AST_ASSIGNMENT_STATEMENT):
         lhs = node.children[0];
         node.lineNo = lhs.lineNo;
-
+        
         if (lhs.label != AST_IDENTIFIER) and (lhs.label != AST_BRACKET_STATEMENT):
             errMsg = '\nError in assignment statement.  Can only assign ';
             errMsg += 'to a variable.  (Left hand side must be a variable)\n';
@@ -1178,7 +1169,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += 'do not write to it in ' + typeStack.currentEndpointName;
                 errMsg += '.\n';
                 errorFunction(errMsg,[node],[node.lineNo],progText);
-# lkjs;
 
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhsType = rhs.type;
@@ -1567,27 +1557,29 @@ def typeCheckMessageSequencesEndpoint(msgSeqSectionNode,progText,typeStack):
 
     currentEndpointName = typeStack.currentEndpointName;
 
-    # perform the type checking of function bodies
+    # perform the type checking of function bodies for sequences
     for msgSeqNode in msgSeqSectionNode.children:
         addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName);
         typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName);
         removeSequenceGlobals(typeStack);
 
 
-# lkjs;
+
 def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName):
     '''
     For each message function in the message sequence that belongs to
-    currentEndpointName, type check it.
+    currentEndpointName, type check its body.
     '''
-
     msgSeqFunctionsNode = msgSeqNode.children[2];
     for msgSeqFuncNode in msgSeqFunctionsNode.children:
         if isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
             name = msgSeqFuncNode.children[1].value;
+
             msgBodyNode = msgSeqFuncNode.children[2];
+            if msgSeqFuncNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+                msgBodyNode = msgSeqFuncNode.children[3];
             typeStack.pushContext();
-            msgBodyNode.typeCheck(progText,typeStack,False);            
+            msgBodyNode.typeCheck(progText,typeStack,False);
             typeStack.popContext();
 
     

@@ -197,7 +197,6 @@ class TraceLineManager():
         Otherwise, returns None.
         
         '''
-
         if msgRecvFuncAstNode.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
             errMsg = '\nBehram error.  Should only receive an ast_message_receive sequence ';
             errMsg += ' in addMsgRecvFunction of traceLine.py.\n';

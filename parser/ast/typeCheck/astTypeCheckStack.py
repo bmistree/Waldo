@@ -81,7 +81,9 @@ class TypeCheckContextStack(object):
 
         # used to type check return statements to ensure that a
         # function actually returns the type that it says it will.
-        self.currentPublicInternalNode = None;
+        #      msg_send_seq_func, msg_recv_seq_func, public_func,
+        #      on_create, private_func
+        self.currentFunctionNode = None;
 
 
     def setRootNode(self,root):
@@ -121,17 +123,24 @@ class TypeCheckContextStack(object):
             return self.endpoint1;
         return self.endpoint2;
 
-        
-    def addCurrentPublicInternalNode(self,node):
+        lkjs;
+    def addCurrentFunctionNode(self,node):
+        '''
+        Sets the current function we're in so that can check return
+        types when we get to them.
+        '''
         if ((node.label != AST_PUBLIC_FUNCTION) and (node.label != AST_PRIVATE_FUNCTION) and
-            (node.label != AST_ONCREATE_FUNCTION)):
+            (node.label != AST_ONCREATE_FUNCTION) and
+            (node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION ) and
+            (node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
+            
             errMsg = '\nBehram error: adding internal or public node with incorrect ';
             errMsg += 'type.\n';
             errPrint(errMsg);
             assert(False);
 
-        self.currentPublicInternalNode = node;
-
+        self.currentFunctionNode = node;
+        
     def checkReturnStatement(self,returnNode):
         if (returnNode.label != AST_RETURN_STATEMENT):
             errMsg = '\nBehram error: trying to check a ';
@@ -140,20 +149,20 @@ class TypeCheckContextStack(object):
             assert(False);
 
 
-        if (self.currentPublicInternalNode == None):
+        if (self.currentFunctionNode == None):
             errMsg = '\nReturn error.  You are only allowed to put Return ';
             errMsg += 'statements in the body of a Public or Internal ';
             errMsg += 'function.\n';
             return TypeCheckError([returnNode],errMsg);
 
 
-        returnsTypeNode = self.currentPublicInternalNode.children[1];
+        returnsTypeNode = self.currentFunctionNode.children[1];
         declaredType = returnsTypeNode.value;
         returnStatementType = returnNode.children[0].type;
 
 
         if (declaredType != returnStatementType):
-            funcName = self.currentPublicInternalNode.children[0].value;
+            funcName = self.currentFunctionNode.children[0].value;
             errMsg = '\nReturn error.  You have declared that the function ';
             errMsg += 'named "' + funcName + '" ';
             errMsg += 'should return type "' + declaredType + '", ';
@@ -185,7 +194,7 @@ class TypeCheckContextStack(object):
             assert(False);
         self.stack.pop();
         self.funcStack.pop();
-        self.currentPublicInternalNode = None;
+        self.currentFunctionNode = None;
 
         
     def getIdentifierType(self,identifierName):
