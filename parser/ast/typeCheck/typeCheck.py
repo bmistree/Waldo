@@ -268,21 +268,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             lastEndpoint = endpointName;
 
-    elif (node.label == AST_SEND_STATEMENT):
-        sendMsgNode = node.children[0];
-        sendMsgNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-
-        if (sendMsgNode.type != TYPE_OUTGOING_MESSAGE):
-            errMsg = '\nError in send statement.  You can only ';
-            errMsg += 'send an outgoing message.  You are trying ';
-            errMsg += 'to send something with type ' + sendMsgNode.type;
-            errMsg += '.\n';
-            errorFunction(errMsg,[node],[node.lineNo],progText);        
-
-        typeStack.containedSend = True;
-
-        node.type = TYPE_NOTHING;
-
     elif (node.label == AST_PRINT):
         #check to ensure that it's passed a string
         argument = node.children[0];
@@ -1003,8 +988,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             
     elif ((node.label == AST_PUBLIC_FUNCTION) or
           (node.label == AST_PRIVATE_FUNCTION) or
-          (node.label == AST_MSG_SEND_FUNCTION) or
-          (node.label == AST_MSG_RECEIVE_FUNCTION) or
+          (node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION) or
+          (node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION) or
           (node.label == AST_ONCREATE_FUNCTION)):
         '''
         begins type check for body of the function, this code
@@ -1043,15 +1028,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if ((node.label == AST_PUBLIC_FUNCTION) or (node.label == AST_PRIVATE_FUNCTION)):
             funcDeclArgListIndex = 2;
             funcBodyIndex = 3;
-        elif (node.label == AST_MSG_SEND_FUNCTION):
+        elif (node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION):
             funcDeclArgListIndex = 1;
             funcBodyIndex = 2;
-            typeStack.containedSend = False;
-        elif(node.label == AST_MSG_RECEIVE_FUNCTION):
+        elif(node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION):
             # 1 should contain name of the IncomingMessage;
             funcBodyIndex = 4;
             funcDeclArgListIndex = None;
-            typeStack.containedSend = False;
         elif(node.label == AST_ONCREATE_FUNCTION):
             funcBodyIndex = 2;
             funcDeclArgListIndex = 1;
@@ -1066,7 +1049,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #current context.
             node.children[funcDeclArgListIndex].typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        if (node.label == AST_MSG_RECEIVE_FUNCTION):
+        if (node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION):
             # we are in the message receive function, and must
             # add the input argument name to current context
             incomingMessageNameNode = node.children[1];
@@ -1085,16 +1068,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += 'with the same name.';
                 errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
 
-                
-            # re-define type for IncomingMessage
-            incomingTypeNode = node.children[2];
-            typeStack.addIncoming(incomingTypeNode);
-
-            # re-define type for OutgoingMessage
-            outgoingTypeNode = node.children[3];
-            typeStack.addOutgoing(outgoingTypeNode);
-
-        elif(node.label == AST_MSG_SEND_FUNCTION):
+        elif(node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION):
             # re-define type for OutgoingMessage
             outgoingTypeNode = node.children[3];
             typeStack.addOutgoing(outgoingTypeNode);
@@ -1110,23 +1084,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         ## remove the created type context
         typeStack.popContext();
-
-        # check to ensure that if it was a message send or message
-        # receive that we actually encountered a send statement.
-        if node.label == AST_MSG_SEND_FUNCTION:
-            if not typeStack.containedSend:
-                errMsg = '\nType error: All MessageSend functions should ';
-                errMsg += 'contain a Send statement.\n';
-                errorFunction(errMsg,[node],[node.lineNo],progText);
-
-        elif node.label == AST_MSG_RECEIVE_FUNCTION:
-            if not typeStack.containedSend:
-                errMsg = '\nType error: All MessageReceive functions (even ';
-                errMsg += 'the last one) should contain a Send statement.\n';
-                errorFunction(errMsg,[node],[node.lineNo],progText);
-
-        # reset the containedSend error.
-        typeStack.containedSend = False;
 
     elif(node.label == AST_FUNCTION_BODY):
         for s in node.children:

@@ -5,7 +5,6 @@ from astLabels import TYPE_STRING;
 from astLabels import TYPE_NUMBER;
 from astLabels import TYPE_NOTHING;
 from astLabels import TYPE_FUNCTION;
-from astLabels import AST_TYPED_SENDS_STATEMENT;
 
 from astLabels import AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
 from astLabels import AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION;
@@ -79,21 +78,10 @@ class TypeCheckContextStack(object):
         #self.traceManager).
         self.currentEndpointName = None;
 
-        self.currentOutgoing = None;
-        self.currentIncoming = None;
 
         # used to type check return statements to ensure that a
         # function actually returns the type that it says it will.
         self.currentPublicInternalNode = None;
-
-        # want to type check to ensure that all message send and
-        # message receive functions have a send function inside of
-        # them.  Whenever start type checking a message send or a
-        # message receive, set this to false.  Whenever encounter a
-        # sends statement, set this flag to true.  After type checking
-        # a message send's or receive's body, check this flag.  If it's
-        # still false, then throw an error.  Otherwise, reset and proceed.
-        self.containedSend = False;
 
 
     def setRootNode(self,root):
@@ -175,39 +163,6 @@ class TypeCheckContextStack(object):
             return TypeCheckError(nodes,errMsg);
 
         return None;
-        
-        
-    def addOutgoing(self,node):
-        '''
-        @param {astNode} of type TypedSendsStatement
-
-        Used whenever accessing a member from an OutgoingMessage to
-        ensure that it has the field (and the type of the field is
-        correct).
-        '''
-        if (node.label != AST_TYPED_SENDS_STATEMENT):
-            errMsg = '\nBehram error: adding incoming node with incorrect ';
-            errMsg += 'type.\n';
-            errPrint(errMsg);
-            assert(False);
-            
-        self.currentOutgoing = node;
-        
-    def addIncoming(self,node):
-        '''
-        @param {astNode} of type TypedSendsStatement
-
-        Used whenever accessing a member from an IncomingMessage to
-        ensure that it has the field (and the type of the field is
-        correct).
-        '''
-        if (node.label != AST_TYPED_SENDS_STATEMENT):
-            errMsg = '\nBehram error: adding incoming node with incorrect ';
-            errMsg += 'type.\n';
-            errPrint(errMsg);
-            assert(False);
-        
-        self.currentIncoming = node;
 
     def checkTraceItemInputOutput(self):
         '''
@@ -220,147 +175,6 @@ class TypeCheckContextStack(object):
         return self.traceManager.checkTraceItemInputOutput();
 
         
-    def literalAgreesWithOutgoingMessage(self,literal):
-        return self._literalAgreesWithMessage(self.currentOutgoing,literal,'outgoing');
-    
-    def literalAgreesWithIncomingMessage(self,literal):
-        return self._literalAgreesWithMessage(self.currentIncoming,literal,'incoming');
-
-
-
-    def _literalAgreesWithMessage(self,declaredTypedSendsNode,literal,toCompareToName):
-        '''
-        @param{AstNode} declaredTypedSendsNode -- ast node with label
-        == AST_TYPED_SENDS_NODE
-
-        @param{AstNode} literal -- ast node with label ==
-        AST_MESSAGE_LITERAL
-
-        @param{String} toCompareToName -- Used for error reporting.
-        
-        @returns {None or TypeCheckError}.  TypeCheckError object if
-        several fields existed in the literal that did not exist in
-        the declared type or their types did not match or several
-        fields existed in the declared type that did not exist in the
-        literal.
-
-        None if no errors.
-        '''
-
-        # lkjs;
-        if (declaredTypedSendsNode == None):
-            errMsg = '\nBehram error: should have an incoming or outgoing node ';
-            errMsg += 'if trying to check agreement.\n';
-            errPrint(errMsg);
-            assert(False);
-        
-        # first checks that everything that is in
-        # declaredTypedSendsNode is in literal and types agree.
-        for sendLine in declaredTypedSendsNode.children:
-            lineType = sendLine.children[0].value;
-            lineName = sendLine.children[1].value;
-
-            found = False;
-            # check that these appear in the literal
-            for literalLine in literal.children:
-                llineType = literalLine.children[1].type;
-                llineName = literalLine.children[0].value;
-                if (lineName == llineName):
-
-                    if (lineType == llineType):
-                        found = True;
-                        break;
-                    else:
-                        errMsg = '\nType mismatch error: Both the message object that ';
-                        errMsg += 'you are creating and the ' + toCompareToName + ' message ';
-                        errMsg += 'type have a field named "' + llineName + '".  But the ';
-                        errMsg += 'message object you are declaring has type "' + llineType + '", ';
-                        errMsg += 'whereas it should have type "' + lineType + '" to agree ';
-                        errMsg += 'with ' + toCompareToName + ' message type.\n';
-                        nodes = [literal,declaredTypedSendsNode];
-                        return TypeCheckError(nodes,errMsg);
-
-            if (not found):
-                errMsg = '\nMissing field error: When you are creating a new ';
-                errMsg += toCompareToName + ' message, it must include all fields ';
-                errMsg += 'specified in the ' + toCompareToName + ' declaration.  ';
-                errMsg += 'The message that you are trying to ';
-                errMsg += 'create should have a field named "' + lineName + '" to ';
-                errMsg += 'agree with the ' + toCompareToName + ' message type that ';
-                errMsg += 'you declared.\n';
-                nodes = [literal,declaredTypedSendsNode];
-                return TypeCheckError(nodes,errMsg);
-                
-                
-        # now checks that there aren't any fields in literal that do
-        # not appear in declaredTypeSendsNode.
-        for literalLine in literal.children:
-            llineType = literalLine.children[1].type;
-            llineName = literalLine.children[0].value;
-            exists,additional = self._fieldAgreesWithMessage(declaredTypedSendsNode,llineName,llineType);
-            if (exists == MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST):
-                errMsg = '\nAdditional field error: The message that you are trying to ';
-                errMsg += 'create has a field named "' + llineName + '" that does not ';
-                errMsg += 'exist with the ' + toCompareToName + ' message type that ';
-                errMsg += 'you declared.\n';
-                nodes = [literal,declaredTypedSendsNode];
-                return TypeCheckError(nodes,errMsg);
-                
-
-        return None;
-                
-                    
-                
-        
-    def fieldAgreesWithCurrentIncoming(self,fieldName,fieldType):
-        '''
-        @param{String} fieldName - 
-        @param{String} fieldType - "Bool", "String", etc.
-
-        We want to check in self.currentIncomingNode to see if the
-        typedSendsStatement had a field in it named fieldName with
-        type fieldType.
-
-        @returns MESSAGE_TYPE_CHECK_SUCCEED, None if it does
-        
-                 MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH, type (String)
-                 if the field existed, but had a different type.
-
-                 MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST, None if
-                 the field did not exist.
-        '''
-        return self._fieldAgreesWithMessage(self.currentIncoming,fieldName,fieldType);
-    
-    def fieldAgreesWithCurrentOutgoing(self,fieldName,fieldType):
-        '''
-        @see fieldAgreesWithCurrentIncoming
-        '''
-        return self._fieldAgreesWithMessage(self.currentOutgoing,fieldName,fieldType);
-        
-    def _fieldAgreesWithMessage(self,currentNode,fieldName,fieldType):
-        if (currentNode == None):
-            errMsg = '\nBehram error: incoming message is not defined ';
-            errMsg += 'by the time that you want to check that a field ';
-            errMsg += 'exists.\n';
-            errPrint(errMsg);
-            assert(False);
-
-        for sendLine in currentNode.children:
-            lineType = sendLine.children[0].value;
-            lineName = sendLine.children[1].value;
-            if (fieldName == lineName):
-                
-                if (fieldType != lineType):
-                    # user error: using a name for a different type of
-                    # value.
-                    return MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH, lineType;
-                else:
-                    return MESSAGE_TYPE_CHECK_SUCCEED, None;
-
-        return MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST, None;
-                
-
-        
     def pushContext(self):
         self.stack.append(Context());
         self.funcStack.append(FuncContext());
@@ -371,8 +185,6 @@ class TypeCheckContextStack(object):
             assert(False);
         self.stack.pop();
         self.funcStack.pop();
-        self.currentOutgoing = None;
-        self.currentIncoming = None;
         self.currentPublicInternalNode = None;
 
         
