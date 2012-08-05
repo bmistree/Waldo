@@ -1230,7 +1230,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (controlledBy != None) and (controlledBy != TYPE_NOTHING):
             # check if the variable that we are assigning to is
             # controlled by this endpoint or another endpoint.
-
+            
             if (typeStack.currentEndpointName != controlledBy):
                 errMsg = '\nError: you are trying to write to a ';
                 errMsg += 'variable named "' + lhs.value + '" in ';
@@ -1241,7 +1241,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += typeStack.getOtherEndpointName() + ' can assign ';
                 errMsg += 'it values.  Either change who controls ';
                 errMsg += lhs.value + ' in the Shared section, or ';
-                errMsg += 'do not write to it in ' + typeStack.getOtherEndpointName();
+                errMsg += 'do not write to it in ' + typeStack.currentEndpointName;
                 errMsg += '.\n';
                 errorFunction(errMsg,[node],[node.lineNo],progText);
 
