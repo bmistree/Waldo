@@ -53,9 +53,6 @@ def isFunctionType(typeLabel):
         (typeLabel != TYPE_OUTGOING_MESSAGE) and (typeLabel != TYPE_NOTHING) and
         (typeLabel != EMPTY_LIST_SENTINEL) and (typeLabel != EMPTY_MAP_SENTINEL)):
 
-        print('\n\n');
-        print(typeLabel);
-        print('\n\n');
         jsonType = json.loads(typeLabel);
         
         if (jsonType.get(JSON_TYPE_FIELD,None) == None):

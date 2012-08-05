@@ -105,7 +105,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #check other endpoint
         endpoint2Node.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-
+        print('\nFinished type checking both sides\n');
+        
         # check if there were elements of the message sequences that
         # weren't actually defined in a sequences section.
         traceError = typeStack.checkUndefinedTraceItems();
@@ -880,7 +881,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (len(node.children) >= 2):
             endpointBodySection = node.children[1];
             endpointBodySection.typeCheck(progText,typeStack,avoidFunctionObjects);
-
+            
         #matches above set call.
         typeStack.unsetCurrentEndpointName();
 
@@ -1230,7 +1231,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (controlledBy != None) and (controlledBy != TYPE_NOTHING):
             # check if the variable that we are assigning to is
             # controlled by this endpoint or another endpoint.
-            
             if (typeStack.currentEndpointName != controlledBy):
                 errMsg = '\nError: you are trying to write to a ';
                 errMsg += 'variable named "' + lhs.value + '" in ';
@@ -1244,7 +1244,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += 'do not write to it in ' + typeStack.currentEndpointName;
                 errMsg += '.\n';
                 errorFunction(errMsg,[node],[node.lineNo],progText);
-
+# lkjs;
 
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhsType = rhs.type;
@@ -1710,14 +1710,17 @@ def typeCheckMessageSequencesEndpoint(msgSeqSectionNode,progText,typeStack):
         removeSequenceGlobals(typeStack);
 
 
+# lkjs;
 def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName):
     '''
     For each message function in the message sequence that belongs to
     currentEndpointName, type check it.
     '''
+
     msgSeqFunctionsNode = msgSeqNode.children[2];
     for msgSeqFuncNode in msgSeqFunctionsNode.children:
         if isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
+            name = msgSeqFuncNode.children[1].value;
             msgBodyNode = msgSeqFuncNode.children[2];
             typeStack.pushContext();
             msgBodyNode.typeCheck(progText,typeStack,False);            
@@ -1784,8 +1787,8 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
     msgSendNode = msgSequenceFunctionsNode.children[0];
     msgSendNodeEndpointName = msgSendNode.children[0];
     msgSendEndpointName = msgSendNodeEndpointName.value;
-    argList = msgSendNode.children[3];
-    
+    argList = msgSendNode.children[2];
+
     # include each of the arguments to the message send function as
     # sequence-global variables.
     if msgSendEndpointName == currentEndpointName:
@@ -1794,4 +1797,4 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
     else:
         # add function objects to context when type check them
         argList.typeCheck(progText,typeStack,True);
-    
+
