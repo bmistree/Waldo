@@ -2,7 +2,7 @@
 
 from ply import lex
 
-ONCREATE_TOKEN =  "OnCreate";
+ONCREATE_TOKEN =  "onCreate";
 IDENTIFIER_TOKEN = "IDENTIFIER";
 reserved = {
     'Endpoint' : 'ENDPOINT',
@@ -11,31 +11,31 @@ reserved = {
     'Function': 'FUNCTION',
     'List': 'LIST',
     'Map': 'MAP',
-    'From': 'FROM',
-    'Element': 'ELEMENT',
+    'from': 'FROM',
+    'element': 'ELEMENT',
     'Public': 'PUBLIC',
     'Private': 'PRIVATE',
     'MessageSequence': 'SEQUENCE',
-    'Returns': 'RETURNS',
-    'In': 'IN',
-    'ToText': 'TOTEXT',
+    'returns': 'RETURNS',
+    'in': 'IN',
+    'toText': 'TOTEXT',
     ONCREATE_TOKEN: 'ONCREATE',
-    'Return': 'RETURN_OPERATOR',
-    'To': 'TO_OPERATOR',
-    'Print': 'PRINT',
-    'If': 'IF',
-    'ElseIf': 'ELSE_IF',
-    'Else': 'ELSE',
+    'return': 'RETURN_OPERATOR',
+    'to': 'TO_OPERATOR',
+    'print': 'PRINT',
+    'if': 'IF',
+    'elseIf': 'ELSE_IF',
+    'else': 'ELSE',
     'Nothing': 'NOTHING_TYPE',
-    'Not': 'NOT',
+    'not': 'NOT',
     'TrueFalse': 'BOOL_TYPE',
     'True': 'TRUE',
     'False': 'FALSE',
     'Number': 'NUMBER_TYPE',
     'Text': 'STRING_TYPE',
-    'Controls': 'CONTROLS',
-    'And': 'AND',
-    'Or': 'OR'
+    'controls': 'CONTROLS',
+    'and': 'AND',
+    'or': 'OR'
     };
 
 
