@@ -1,0 +1,50 @@
+/** 
+  * It should be okay to declare an endpoint with globals but no
+  * functions and with functions, but no globals.
+  *  
+  */
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+    PingPongSequence : Ping.one -> Pong.two;
+}
+
+Shared
+{
+    Pong controls Number pongCounter = 0;
+}
+
+
+MessageSequence PingPongSequence
+{
+    Ping.one(Number someVal)
+    {
+    }
+    Pong.two
+    {
+    }
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+    Number globVal1;
+    Text globVal2;
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+   Public Function test() returns Text
+   {
+      return 'a';
+   }
+}

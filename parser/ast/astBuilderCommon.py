@@ -371,14 +371,23 @@ def p_EndpointSection(p):
 def p_EndpointBodySection(p):
     '''EndpointBodySection : EndpointGlobalSection EndpointFunctionSection
                            | EndpointFunctionSection
+                           | EndpointGlobalSection
                            '''
 
     p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p[1].lineNo,p[1].linePos);
     if (len(p) == 3):
         p[0].addChildren([p[1],p[2]]);
-    elif ((len(p) == 2) and (not isEmptyNode(p[1]))):
-        p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linePos));
-        p[0].addChild(p[1]);
+    elif len(p) == 2:
+        # check that had no globals, but had a function:
+        if p[1].label == AST_ENDPOINT_FUNCTION_SECTION:
+            # means that we had no globals.  add them
+            p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linePos));
+            p[0].addChild(p[1]);
+        else:
+            # menas that there were globals, but no functions.  add
+            # empty functions.
+            p[0].addChild(p[1]);
+            p[0].addChild(AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos));
     else:
         errPrint('\nError in endpoint body section.  Got an unusual number of arguments.\n');
         assert(False);
