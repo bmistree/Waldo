@@ -13,8 +13,6 @@ tokens = (
 
     #functions
     "FUNCTION",
-    "MSG_SEND",
-    "MSG_RECEIVE",
     "PUBLIC",
     "PRIVATE",
     "RETURNS",
@@ -279,7 +277,7 @@ def t_ENDPOINT(t):
 
 
 def t_TRACES(t):
-    'Traces';
+    'Sequences';
     return mStateMachine.addToken(t);
 
 def t_SHARED(t):
@@ -307,14 +305,6 @@ def t_ELEMENT(t):
     'Element';
     return mStateMachine.addToken(t);
 
-def t_MSG_SEND(t):
-    'MessageSend';
-    return mStateMachine.addToken(t);
-
-def t_MSG_RECEIVE(t):
-    'MessageReceive';
-    return mStateMachine.addToken(t);
-
 def t_PUBLIC(t):
     'Public';
     return mStateMachine.addToken(t);
@@ -330,14 +320,6 @@ def t_SEQUENCE(t):
 
 def t_RETURNS(t):
     "Returns";
-    return mStateMachine.addToken(t);
-
-def t_SENDS(t):
-    "OutgoingMessage";
-    return mStateMachine.addToken(t);
-
-def t_RECEIVES(t):
-    "IncomingMessage";
     return mStateMachine.addToken(t);
 
 def t_IN(t):
