@@ -123,7 +123,7 @@ class TypeCheckContextStack(object):
             return self.endpoint1;
         return self.endpoint2;
 
-        lkjs;
+
     def addCurrentFunctionNode(self,node):
         '''
         Sets the current function we're in so that can check return
@@ -148,21 +148,29 @@ class TypeCheckContextStack(object):
             errPrint(errMsg);
             assert(False);
 
+        if self.currentFunctionNode == None:
+            errMsg = '\nBehram error: any return statement should have a ';
+            errMsg += 'currentFunctionNode to compare to.\n';
+            print(errMsg);
+            assert(False);
 
-        if (self.currentFunctionNode == None):
-            errMsg = '\nReturn error.  You are only allowed to put Return ';
-            errMsg += 'statements in the body of a Public or Internal ';
-            errMsg += 'function.\n';
-            return TypeCheckError([returnNode],errMsg);
 
-
-        returnsTypeNode = self.currentFunctionNode.children[1];
-        declaredType = returnsTypeNode.value;
         returnStatementType = returnNode.children[0].type;
-
+        if ((self.currentFunctionNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION) or
+            (self.currentFunctionNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
+            declaredType = TYPE_NOTHING;
+            funcName = self.currentFunctionNode.children[1].value;
+            # Sets the node that specifies the return type to the
+            # msg_send_seq_func or msg_recv_seq_func for error message
+            # printing.
+            returnsTypeNode = self.currentFunctionNode;
+            
+        else:
+            returnsTypeNode = self.currentFunctionNode.children[1];
+            declaredType = returnsTypeNode.value;
+            funcName = self.currentFunctionNode.children[0].value;            
 
         if (declaredType != returnStatementType):
-            funcName = self.currentFunctionNode.children[0].value;
             errMsg = '\nReturn error.  You have declared that the function ';
             errMsg += 'named "' + funcName + '" ';
             errMsg += 'should return type "' + declaredType + '", ';

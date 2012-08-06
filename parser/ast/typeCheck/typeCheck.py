@@ -982,12 +982,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # checking.
         typeCheckMessageSequencesEndpoint(msgSeqSection,progText,typeStack);
 
-
             
     elif ((node.label == AST_PUBLIC_FUNCTION) or
           (node.label == AST_PRIVATE_FUNCTION) or
-          (node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION) or
-          (node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION) or
           (node.label == AST_ONCREATE_FUNCTION)):
         '''
         begins type check for body of the function, this code
@@ -1024,15 +1021,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             funcDeclArgListIndex = 2;
             funcBodyIndex = 3;
             funcNameIndex = 0;
-        elif (node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION):
-            funcDeclArgListIndex = 1;
-            funcBodyIndex = 2;
-            funcNameIndex = 1;
-        elif(node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION):
-            # 1 should contain name of the IncomingMessage;
-            funcBodyIndex = 4;
-            funcDeclArgListIndex = None;
-            funcNameIndex = 1;
         elif(node.label == AST_ONCREATE_FUNCTION):
             funcBodyIndex = 2;
             funcDeclArgListIndex = 1;
@@ -1049,24 +1037,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             node.children[funcDeclArgListIndex].typeCheck(
                 progText,typeStack,avoidFunctionObjects);
 
-        if (node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION):
-            # we are in the message receive function, and must
-            # add the input argument name to current context
-            incomingMessageNameNode = node.children[1];
-            argName = incomingMessageNameNode.value;
-
-            collisionObj = typeStack.checkCollision(argName,node);
-
-            if (collisionObj != None):
-                #FIXME: for this error message, may want to
-                #re-phrase with something about scope, so do not
-                #take the wrong error message away.
-
-                errMsg = 'Error trying to name an argument "';
-                errMsg += argName + '" in your function.  ';
-                errMsg += 'You already have a function or variable ';
-                errMsg += 'with the same name.';
-                errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
 
         # when type check body, 
         typeStack.addCurrentFunctionNode(node);
@@ -1556,13 +1526,12 @@ def typeCheckMessageSequencesEndpoint(msgSeqSectionNode,progText,typeStack):
         assert(False);
 
     currentEndpointName = typeStack.currentEndpointName;
-
+    
     # perform the type checking of function bodies for sequences
     for msgSeqNode in msgSeqSectionNode.children:
         addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName);
         typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName);
         removeSequenceGlobals(typeStack);
-
 
 
 def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName):
@@ -1572,6 +1541,8 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
     '''
     msgSeqFunctionsNode = msgSeqNode.children[2];
     for msgSeqFuncNode in msgSeqFunctionsNode.children:
+        # keeps line numbers straight
+        msgSeqFuncNode.lineNo = msgSeqFuncNode.children[0].lineNo;
         if isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
             name = msgSeqFuncNode.children[1].value;
 
@@ -1579,10 +1550,14 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
             if msgSeqFuncNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
                 msgBodyNode = msgSeqFuncNode.children[3];
             typeStack.pushContext();
+            
+            # when type check body, need to keep track of current
+            # function so can ensure return type is valid.
+            typeStack.addCurrentFunctionNode(msgSeqFuncNode);
             msgBodyNode.typeCheck(progText,typeStack,False);
             typeStack.popContext();
 
-    
+            
 def removeSequenceGlobals(typeStack):
     '''
     Complements addSequenceGlobals.  Discards extra context that
