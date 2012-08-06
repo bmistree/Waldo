@@ -16,6 +16,9 @@ def lexFile(filename):
     filer.flush();
     filer.close();
 
+    return lexText(text);
+
+def lexText(text):
     lexer = waldoLex.constructLexer();
     lexer.input(text);
     returner = '';
@@ -30,10 +33,7 @@ def lexFileAndPrint(filename):
     print(lexFile(filename));
 
 def lexStringAndPrint(stringToLex):
-    lexer = waldoLex.constructLexer();
-    lexer.input(stringToLex)
-    for tok in iter(lexer.token, None):
-        print (str(tok.type) + '   ' +  str(tok.value));
+    print(lexText(stringToLex));
 
 
     
