@@ -3,6 +3,7 @@
 import sys;
 import os;
 TEST_FOLDER_NAME = 'examples';
+DETAILS_FILE = 'details.txt';
 
 curPath = os.path.dirname(__file__);
 lexPath = os.path.join(curPath,'..','..','lexer');
@@ -26,4 +27,11 @@ if __name__ == '__main__':
     if len(sys.argv) != 1:
         printUsage();
     else:
-        testCommon.runTests(basicLexTest.lexText,TEST_FOLDER_NAME);
+        detailsStream = testCommon.StreamLike();
+        testCommon.runTests(basicLexTest.lexText,TEST_FOLDER_NAME,detailsStream);
+
+        # write out the details
+        filer = open(DETAILS_FILE,'w');
+        filer.write(detailsStream.flush());
+        filer.flush();
+        filer.close();

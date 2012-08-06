@@ -113,8 +113,8 @@ def compileText(progText,outputErrStream,versionNum):
     @param {String} progText -- The source text that we are trying to
     compile.
 
-    @param{File-like object} outputErrStream -- The stream that we should use to output
-    error messages to.
+    @param{File-like object} outputErrStream -- The stream that we
+    should use to output error messages to.
 
     @param {Int} versionNum 1 or 2.
     

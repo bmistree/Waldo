@@ -3,6 +3,8 @@
 import sys;
 import os;
 TEST_FOLDER_NAME = 'examples';
+DETAILS_FILE = 'details.txt';
+
 
 curPath = os.path.dirname(__file__);
 
@@ -24,19 +26,9 @@ def printUsage():
     print(usageMsg);
 
 
-class FileLike(object):
-    def __init__(self):
-        self.msg = '';
-    def write(self,msg):
-        self.msg += msg;
-    def flush(self):
-        returner = self.msg;
-        self.msg = '';
-        return returner;
-        
     
 def parseTestToRun(progText):
-    outputStream = FileLike();
+    outputStream = testCommon.StreamLike();
     head.lexAndParse(progText, outputStream, 2);
     return outputStream.flush();
     
@@ -45,5 +37,12 @@ if __name__ == '__main__':
     if len(sys.argv) != 1:
         printUsage();
     else:
-        testCommon.runTests(parseTestToRun,TEST_FOLDER_NAME);
+        detailsStream = testCommon.StreamLike();
+        testCommon.runTests(parseTestToRun,TEST_FOLDER_NAME,detailsStream);
+
+        # write out the details
+        filer = open(DETAILS_FILE,'w');
+        filer.write(detailsStream.flush());
+        filer.flush();
+        filer.close();
         
