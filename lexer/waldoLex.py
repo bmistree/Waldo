@@ -3,22 +3,43 @@
 from ply import lex
 
 ONCREATE_TOKEN =  "OnCreate";
+IDENTIFIER_TOKEN = "IDENTIFIER";
+reserved = {
+    'Endpoint' : 'ENDPOINT',
+    'Sequences': 'TRACES',
+    'Shared': 'SHARED',
+    'Function': 'FUNCTION',
+    'List': 'LIST',
+    'Map': 'MAP',
+    'From': 'FROM',
+    'Element': 'ELEMENT',
+    'Public': 'PUBLIC',
+    'Private': 'PRIVATE',
+    'MessageSequence': 'SEQUENCE',
+    'Returns': 'RETURNS',
+    'In': 'IN',
+    'ToText': 'TOTEXT',
+    ONCREATE_TOKEN: 'ONCREATE',
+    'Return': 'RETURN_OPERATOR',
+    'To': 'TO_OPERATOR',
+    'Print': 'PRINT',
+    'If': 'IF',
+    'ElseIf': 'ELSE_IF',
+    'Else': 'ELSE',
+    'Nothing': 'NOTHING_TYPE',
+    'Not': 'NOT',
+    'TrueFalse': 'BOOL_TYPE',
+    'True': 'TRUE',
+    'False': 'FALSE',
+    'Number': 'NUMBER_TYPE',
+    'Text': 'STRING_TYPE',
+    'Controls': 'CONTROLS',
+    'And': 'AND',
+    'Or': 'OR'
+    };
 
 
-tokens = (
-    #high-level structure
-    "ENDPOINT",
-    "TRACES",
-    "SHARED",
-
-    #functions
-    "FUNCTION",
-    "PUBLIC",
-    "PRIVATE",
-    "RETURNS",
-    "SENDS",
-    "RECEIVES",
-    
+tokens = [
     #messsage notation
     "SEND_ARROW",
     
@@ -27,46 +48,14 @@ tokens = (
     "MULTI_LINE_COMMENT_BEGIN",
     "MULTI_LINE_COMMENT_END",
 
-    "SEQUENCE",
-    
-    "SEND_OPERATOR",
-    "RETURN_OPERATOR",
-    "TO_OPERATOR",
     "EQUALS",
-
-    "TOTEXT",
-    "ONCREATE",
-
-    "LIST",
-    "ELEMENT",
-    "MAP",
-    "FROM",
-    
-    #boolean logic
-    "IF",
-    "ELSE_IF",
-    "ELSE",
     "BOOL_EQUALS",
     "BOOL_NOT_EQUALS",
-    "NOT",
     
     "GREATER_THAN_EQ",
     "GREATER_THAN",
     "LESS_THAN_EQ",
     "LESS_THAN",
-
-    
-    "BOOL_TYPE",
-    
-    "TRUE",
-    "FALSE",
-    
-    #data types
-    "NUMBER_TYPE",
-    "STRING_TYPE",
-    "NOTHING_TYPE",
-
-    "IN",
     
     #whitespace
     "SPACE",
@@ -74,23 +63,15 @@ tokens = (
     "NEWLINE",
     
     #other
-    "CONTROLS",
     "SEMI_COLON",    
     "COMMA",
     "COLON",
-    
-
-    #boolean operators
-    "AND",
-    "OR",
 
     #math operators
     "PLUS",
     "MINUS",
     "DIVIDE",
     "MULTIPLY",
-
-    "PRINT",
     
     #brackets/braces
     "LEFT_PAREN",
@@ -103,14 +84,20 @@ tokens = (
     "DOT",
     
     "NUMBER",
-    "IDENTIFIER",
+    IDENTIFIER_TOKEN,
     
     #Strings and quotes
     "MULTI_LINE_STRING",
     "SINGLE_LINE_STRING",
     
     "ALL_ELSE",
-    )
+    ] + list(reserved.values());
+
+
+
+
+
+
 '''
 Still to add:
   begin verbatim
@@ -271,68 +258,6 @@ Rule definitions
 '''
 
 #high-level structure
-def t_ENDPOINT(t):
-    'Endpoint';
-    return mStateMachine.addToken(t);
-
-
-def t_TRACES(t):
-    'Sequences';
-    return mStateMachine.addToken(t);
-
-def t_SHARED(t):
-    'Shared';
-    return mStateMachine.addToken(t);
-
-def t_FUNCTION(t):
-    'Function';
-    return mStateMachine.addToken(t);
-
-def t_LIST(t):
-    'List';
-    return mStateMachine.addToken(t);
-
-def t_MAP(t):
-    'Map';
-    return mStateMachine.addToken(t);
-
-def t_FROM(t):
-    'From';
-    return mStateMachine.addToken(t);
-
-
-def t_ELEMENT(t):
-    'Element';
-    return mStateMachine.addToken(t);
-
-def t_PUBLIC(t):
-    'Public';
-    return mStateMachine.addToken(t);
-
-def t_PRIVATE(t):
-    'Private';
-    return mStateMachine.addToken(t);
-
-
-def t_SEQUENCE(t):
-    "MessageSequence";
-    return mStateMachine.addToken(t);
-
-def t_RETURNS(t):
-    "Returns";
-    return mStateMachine.addToken(t);
-
-def t_IN(t):
-    "In";
-    return mStateMachine.addToken(t);
-
-def t_TOTEXT(t):
-    "ToText";
-    return mStateMachine.addToken(t);
-
-def t_ONCREATE(t):
-    "OnCreate";
-    return mStateMachine.addToken(t);
 
 def t_SEND_ARROW(t):
     '-\>'
@@ -382,69 +307,6 @@ def t_EQUALS(t):
     '\='
     return mStateMachine.addToken(t);
 
-def t_SEND_OPERATOR(t):
-    'Send'
-    return mStateMachine.addToken(t);
-
-def t_RETURN_OPERATOR(t):
-    'Return'
-    return mStateMachine.addToken(t);
-
-
-def t_TO_OPERATOR(t):
-    'To'
-    return mStateMachine.addToken(t);
-
-def t_PRINT(t):
-    'Print'
-    return mStateMachine.addToken(t);
-
-def t_IF(t):
-    'If'
-    return mStateMachine.addToken(t);
-
-def t_ELSE_IF(t):
-    r'ElseIf'
-    return mStateMachine.addToken(t);
-
-
-def t_ELSE(t):
-    'Else'
-    return mStateMachine.addToken(t);
-
-def t_NOTHING_TYPE(t):
-    "Nothing"
-    return mStateMachine.addToken(t);
-
-
-def t_NOT(t):
-    'Not'
-    return mStateMachine.addToken(t);
-
-
-def t_BOOL_TYPE(t):
-    #re-name to something more friendly than boolean.
-    'TrueFalse'
-    return mStateMachine.addToken(t);
-
-
-def t_TRUE(t):
-    'True'
-    return mStateMachine.addToken(t);
-
-def t_FALSE(t):
-    'False'
-    return mStateMachine.addToken(t);
-
-
-def t_NUMBER_TYPE(t):
-    'Number'
-    return mStateMachine.addToken(t);
-
-def t_STRING_TYPE(t):
-    'Text'
-    return mStateMachine.addToken(t);
-
 
 
 def t_SPACE(t):
@@ -457,11 +319,6 @@ def t_NEWLINE(t):
     t.value = r"\n";
     return mStateMachine.addToken(t);
 
-#ensure that all keywords are capitalized.
-
-def t_CONTROLS(t):
-    'Controls'
-    return mStateMachine.addToken(t);
 
 def t_LEFT_PAREN(t):
     '\('
@@ -501,15 +358,6 @@ def t_CURLY_RIGHT(t):
     '\}';
     return mStateMachine.addToken(t);
 
-def t_AND(t):
-    'And';
-    return mStateMachine.addToken(t);
-
-def t_OR(t):
-    'Or';
-    return mStateMachine.addToken(t);
-
-
 def t_DIVIDE(t):
     '\/';
     return mStateMachine.addToken(t);
@@ -538,7 +386,8 @@ def t_NUMBER(t):
     return mStateMachine.addToken(t);
 
 def t_IDENTIFIER(t):
-    r'[a-zA-Z][a-zA-Z_0-9_]*'
+    r'[a-zA-Z][a-zA-Z_0-9_]*';
+    t.type = reserved.get(t.value,IDENTIFIER_TOKEN);    # Check for reserved words
     return mStateMachine.addToken(t);
 
 def t_MULTI_LINE_STRING(t):

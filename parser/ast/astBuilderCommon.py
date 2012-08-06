@@ -124,7 +124,6 @@ def p_Type(p):
          | STRING_TYPE
          | BOOL_TYPE
          | NOTHING_TYPE
-         | RECEIVES
          | FunctionType
          | ListType
          | MapType
