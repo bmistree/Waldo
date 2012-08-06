@@ -1,0 +1,3 @@
+
+Behram needs to fix type check: should not be able to initialize
+sequence global variables from endpoint globals.

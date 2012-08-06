@@ -1,0 +1,3 @@
+Behram test to fix: should throw a more reasonable error.  Essentially was 
+trying to look for message receive function, but that wasn't defined.
+Pretty terrible error message as is.

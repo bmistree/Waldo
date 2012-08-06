@@ -1,0 +1,50 @@
+/** 
+  * Makes a function call without the correct arguments to function
+  *  
+  */
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+    PingPongSequence : Ping.one -> Pong.two;
+}
+
+Shared
+{
+    Pong controls Number pongCounter = 0;
+}
+
+
+MessageSequence PingPongSequence
+{
+    Ping.one(Number someVal)
+    {
+    }
+    Pong.two
+    {
+    }
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+   Public Function someFunc(Number a)
+   {
+        someOtherFunc(a);
+   }
+
+   Public Function someOtherFunc(Text a)
+   {}
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}

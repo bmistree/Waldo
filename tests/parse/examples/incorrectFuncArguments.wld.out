@@ -1,0 +1,37 @@
+*************************
+
+Error calling function "someOtherFunc".  
+	Argument number 1 was expected to 
+be of type Text, but is inferrred to have type Number 
+-------
+Line numbers:
+39
+42
+-------
+Program text:
+
+
+
+36    {
+37       Public Function someFunc(Number a)
+38       {
+39*           someOtherFunc(a);
+40       }
+41    
+42       Public Function someOtherFunc(Text a)
+43       {}
+
+
+
+39            someOtherFunc(a);
+40       }
+41    
+42*      Public Function someOtherFunc(Text a)
+43       {}
+44    }
+45    
+46    
+*************************
+
+
+

@@ -1,0 +1,44 @@
+/** 
+  * Cannot declare a function without an initializer.
+  *  
+  */
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+    PingPongSequence : Ping.one -> Pong.two;
+}
+
+Shared
+{
+    Pong controls Number pongCounter = 0;
+}
+
+
+MessageSequence PingPongSequence
+{
+    Function(in: Number; returns: Text) someFunc;
+    Ping.one(Number someVal)
+    {
+    }
+    Pong.two
+    {
+    }
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}

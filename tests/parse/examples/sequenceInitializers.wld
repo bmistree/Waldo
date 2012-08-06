@@ -1,0 +1,50 @@
+/** 
+  * Cannot initialize a sequence global (someNum) from an endpoint global.
+  *  
+  */
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+    PingPongSequence : Ping.one -> Pong.two;
+}
+
+Shared
+{
+    Pong controls Number pongCounter = 0;
+}
+
+
+MessageSequence PingPongSequence
+{
+    Number someNum = badInit;
+    Ping.one(Number someVal)
+    {
+    }
+    Pong.two
+    {
+    }
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+   Number badInit;
+   onCreate()
+   {}
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+   Number badInit;
+   onCreate()
+   {}
+}

@@ -1,0 +1,44 @@
+/** 
+  * Ping tries to use a variable that it doesn't control.
+  *  
+  */
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+    PingPongSequence : Ping.one -> Pong.two;
+}
+
+Shared
+{
+    Pong controls Number pongCounter = 0;
+}
+
+
+MessageSequence PingPongSequence
+{
+    Ping.one(Number someVal)
+    {
+        pongCounter =2;
+    }
+    Pong.two
+    {
+    }
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}

@@ -1,0 +1,53 @@
+/** 
+  * Trying to assign to a variable from a call to a function.
+  * But return type of function does not match with variable.
+  *  
+  */
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+    PingPongSequence : Ping.one -> Pong.two;
+}
+
+Shared
+{
+    Pong controls Number pongCounter = 0;
+}
+
+
+MessageSequence PingPongSequence
+{
+    Number someNum = badInit;
+    Ping.one(Number someVal)
+    {
+    }
+    Pong.two
+    {
+    }
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+     Public Function test () returns Nothing
+     {
+        Number num = internalFunc();
+     }  
+     Private Function internalFunc () returns TrueFalse
+     {
+        return True;
+     }
+}

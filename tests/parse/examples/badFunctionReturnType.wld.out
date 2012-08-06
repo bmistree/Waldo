@@ -1,0 +1,19 @@
+*************************
+Cannot infer type of badInit.  Are you sure it is valid? 
+-------
+Line numbers:
+26
+-------
+Program text:
+
+
+
+23    
+24    MessageSequence PingPongSequence
+25    {
+26*       Number someNum = badInit;
+27        Ping.one(Number someVal)
+28        {
+29        }
+30        Pong.two
+*************************

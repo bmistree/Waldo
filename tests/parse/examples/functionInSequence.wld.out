@@ -1,0 +1,22 @@
+*************************
+Error when declaring a user-defined function named "someFunc".  Every 
+user-defined function requires that it should be initialized.  That means that 
+you have to set someFunc to a valid function when you declare it. 
+-------
+Line numbers:
+25
+-------
+Program text:
+
+
+
+22    
+23    MessageSequence PingPongSequence
+24    {
+25*       Function(in: Number; returns: Text) someFunc;
+26        Ping.one(Number someVal)
+27        {
+28        }
+29        Pong.two
+*************************
+

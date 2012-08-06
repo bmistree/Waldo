@@ -901,7 +901,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if (isFunctionType(declaredType)):
                 errMsg = 'Error when declaring a user-defined function ';
                 errMsg += 'named "' + name + '".  Every user-defined ';
-                errMsg += 'requires that it should be initialized.  ';
+                errMsg += 'function requires that it should be initialized.  ';
                 errMsg += 'That means that you have to set ' + name + ' ';
                 errMsg += 'to a valid function when you declare it.';
                 errorFunction(errMsg,[node],[currentLineNo],progText);

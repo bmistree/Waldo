@@ -1,0 +1,27 @@
+*************************
+
+Error: you are trying to write to a variable named "pongCounter" in endpoint 
+"Ping".  However, this variable is controlled by "Pong," which means that only 
+functions in Pong can assign it values.  Either change who controls pongCounter 
+in the Shared section, or do not write to it in Ping.
+ 
+-------
+Line numbers:
+27
+-------
+Program text:
+
+
+
+24    {
+25        Ping.one(Number someVal)
+26        {
+27*           pongCounter =2;
+28        }
+29        Pong.two
+30        {
+31        }
+*************************
+
+
+

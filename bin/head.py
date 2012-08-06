@@ -122,8 +122,21 @@ def compileText(progText,outputErrStream,versionNum):
     returns the compiled source of the file.  If compile errors were
     encountered, then returns None.
     '''
+    astRootNode = lexAndParse(progText,outputErrStream,versionNum);
+    if astRootNode == None:
+        return None;
+    
+    resetErrorEncountered(versionNum);
+    emitText = astEmit.runEmitter(astRootNode,None,outputErrStream);
+    return emitText; # will be none if encountered an error during
+                     # emit.  otherwise, file text.
 
 
+def lexAndParse(progText,outputErrStream,versionNum):
+    '''
+    Returns None if there was an error (either in lexing, parsing, or
+    type checking).  Returns astRootNode if there was not an error.
+    '''
     try:
         astRootNode, other = genAst(progText,outputErrStream,versionNum);
     except WaldoLexException as excep:
@@ -151,15 +164,11 @@ def compileText(progText,outputErrStream,versionNum):
     
     if (getErrorEncountered(versionNum)):
         resetErrorEncountered(versionNum);
-
-        
         # means there was a type error.  should not continue.
         return None;
 
-    resetErrorEncountered(versionNum);
-    emitText = astEmit.runEmitter(astRootNode,None,outputErrStream);
-    return emitText; # will be none if encountered an error during
-                     # emit.  otherwise, file text.
+    # no error
+    return astRootNode;
 
 
         
