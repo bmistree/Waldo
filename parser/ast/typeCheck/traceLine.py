@@ -32,9 +32,8 @@ class TypeCheckError():
             self.lineNos.append(s.lineNo);
             
         self.errMsg = errMsg;
-            
-        
 
+        
 class TraceLineManager():
     '''
     Stores data for each trace line.  Does some basic error checking
@@ -61,11 +60,11 @@ class TraceLineManager():
 
         index = self.traceLines.get(msgStarter, None);
         if (index != None):
-            tLineAst = self.traceLines[msgStrarter];
+            tLineAst = self.traceLines[msgStarter].traceLineAst;
             errMsg = '\nError: already have a trace line ';
             errMsg += 'that starts with "' + msgStarter + '" function.\n';
             return TypeCheckError([traceLineAst, tLineAst],errMsg);
-
+        
         # check to ensure that within trace line, have not repeated
         # the same function
         # skip first index because that's the name of the trace.
@@ -101,7 +100,31 @@ class TraceLineManager():
         
         self.traceLines[msgStarter] = TraceLine(traceLineAst);
         return None;
-        
+
+
+    def checkRepeatedSequenceLine(self):
+        '''
+        @returns TraceError or None
+           TraceError if any of the sequences share the same names
+           None if none of the trace lines shares the same name.
+        '''
+        existsDict = {};
+        for tLineKey in self.traceLines.keys():
+            tLine = self.traceLines[tLineKey];
+            tLineAst = tLine.traceLineAst;
+            seqName = tLineAst.children[0].value;
+            if existsDict.get(seqName,None) != None:
+                errMsg = 'You named two message sequences the same thing: "';
+                errMsg += seqName + '."  You must have unique names for ';
+                errMsg += 'message sequences.';
+                nodes = [tLineAst,existsDict[seqName]];
+                return TypeCheckError(nodes,errMsg);
+            
+            existsDict[seqName] = tLineAst;
+            
+        return None;
+
+    
     def checkTraceItemInputOutput(self):
         '''
         run through all trace lines to see if the message outputs
@@ -118,7 +141,7 @@ class TraceLineManager():
 
         return None;
 
-# lkjs;        
+
     def addMsgSendFunction(self,msgSendFuncAstNode, endpointName):
         '''
         @param{AstNode} msgSendFuncAstNode --- Type label should be 
@@ -248,7 +271,8 @@ class TraceLineManager():
             return TypeCheckError(nodes,errMsg);
         
         return None;
-            
+
+
     def checkUndefinedMsgSendOrReceive(self):
         '''
         @return{None or TypeCheckError} -- None if no error,
@@ -281,7 +305,6 @@ class TraceLine ():
     
     def __init__(self,traceLineAst):
         self.traceLineAst = traceLineAst;
-
         
         #elements of stringifiedTraceItems are strings produced from
         #calling traceItemToString on each traceItem from the trace

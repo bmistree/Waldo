@@ -40,8 +40,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     elif(node.label == AST_ROOT):
         typeStack = TypeCheckContextStack();
             
-
-
     if ((node.label == AST_ROOT) or
         (node.label == AST_SHARED_SECTION) or
         (node.label == AST_ENDPOINT_GLOBAL_SECTION) or
@@ -88,8 +86,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # node.children[2].typeCheck(progText,typeStack);
         sequencesSectionNode = node.children[2];
         sequencesSectionNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-        print('\nBehram should do first level of type checking in message sequence section: names do not interfere, everything is defined, etc.\n');
-
         
         sharedSectionNode = node.children[3];
         endpoint1Node = node.children[4];
@@ -105,7 +101,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #check other endpoint
         endpoint2Node.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        print('\nFinished type checking both sides\n');
         
         # check if there were elements of the message sequences that
         # weren't actually defined in a sequences section.
@@ -114,6 +109,12 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(traceError.errMsg,traceError.nodes,
                           traceError.lineNos,progText);
 
+        # now check if have more than one sequence line with the same
+        # name
+        traceError = typeStack.checkRepeatedSequenceLine();
+        if traceError != None:
+            errorFunction(traceError.errMsg,traceError.nodes,
+                          traceError.lineNos,progText);
         
         print('\nBehram note: skipping type checking of traces section.\n');
         
@@ -1011,11 +1012,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errPrint('\n\n');
             assert(False);
 
-        #when we are checking function body, any return statement
-        #that we hit should return something of the type specfied
-        #by the return type here.
-        typeStack.setShouldReturn(stackFunc.getReturnType());
-
         #insert passed in arguments into context;
         if ((node.label == AST_PUBLIC_FUNCTION) or (node.label == AST_PRIVATE_FUNCTION)):
             funcDeclArgListIndex = 2;
@@ -1598,9 +1594,9 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
     globalsSectionNode = msgSeqNode.children[1];
     for declNode in globalsSectionNode.children:
         warnMsg = '\nBehram error: need to ensure that the sequence global ';
-        warnMsg += 'nodes are not initialized using inaccessible parameters.\n';
+        warnMsg += 'nodes are not initialized using inaccessible parameters.  ';
+        warnMsg += 'Such as endpoint global variables.\n';
         print(warnMsg);
-
 
         # should add the node to the newly-pushed context.
         declNode.typeCheck(progText,typeStack,False);

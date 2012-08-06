@@ -9,7 +9,6 @@ from astLabels import TYPE_FUNCTION;
 from astLabels import AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
 from astLabels import AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION;
 
-
 from astLabels import AST_RETURN_STATEMENT;
 from astLabels import AST_PUBLIC_FUNCTION;
 from astLabels import AST_PRIVATE_FUNCTION;
@@ -85,7 +84,6 @@ class TypeCheckContextStack(object):
         #      on_create, private_func
         self.currentFunctionNode = None;
 
-
     def setRootNode(self,root):
         if self.rootNode != None:
             errMsg = '\nBehram error: should not set root node after it has ';
@@ -93,6 +91,15 @@ class TypeCheckContextStack(object):
             print(errMsg);
             assert(False);
         self.rootNode = root;
+
+        
+    def checkRepeatedSequenceLine(self):
+        '''
+        @return{None or TypeCheckError} -- None if no error,
+        TypeCheckError if more than one trace line have the same name.
+        '''
+        return self.traceManager.checkRepeatedSequenceLine();
+    
 
     def getCurrentEndpoint(self):
         if self.currentEndpointName == None:
@@ -228,7 +235,7 @@ class TypeCheckContextStack(object):
         Runs through all elements in trace line to ensure that if a
         msgSend or msgReceive is declared in the trace section, it was
         actually defined in an endpoint section.
-        
+
         @return{None or TypeCheckError} -- None if no error,
         TypeCheckError otherwise.
         '''
@@ -284,31 +291,6 @@ class TypeCheckContextStack(object):
             if (lookupType != None):
                 return lookupType;
         return None;
-
-
-    def setShouldReturn(self,typeToReturn):
-        '''
-        @param {string} typeToReturn
-        
-        Any return statements that are made within the current context
-        should have the type typeToReturn.
-        '''
-        if (len(self.stack) <= 0):
-            errMsg = '\nBehram Error.  Empty type context stack.  ';
-            errMsg += 'Cannot set value should be returning\n';
-            errPrint(errMsg);
-            assert(False);
-
-        self.stack[-1].setShouldReturn(typeToReturn);
-
-    def getShouldReturn(self):
-        if (len(self.stack) <= 0):
-            errMsg = '\nBehram Error.  Empty type context stack.  ';
-            errMsg += 'Cannot set value should be returning\n';
-            errPrint(errMsg);
-            assert(False);
-        
-        return self.stack[-1].getShouldReturn();
 
     
     def getFuncIdentifierType(self,identifierName):
@@ -762,16 +744,6 @@ class FuncCallArgMatchError():
 class Context():
     def __init__(self):
         self.dict = {};
-        self.typeToReturn = None;
-
-
-    def setShouldReturn(self,typeToReturn):
-        self.typeToReturn = typeToReturn;
-
-        
-    def getShouldReturn(self):
-        return self.typeToReturn;
-
         
     def getIdentifierElement(self,identifierName):
         '''
@@ -779,7 +751,6 @@ class Context():
         '''
         val = self.dict.get(identifierName,None);
         return val;
-
 
     def getIdentifierType(self,identifierName):
         '''
