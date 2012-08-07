@@ -186,8 +186,6 @@ def p_NonOperatableOn(p):
     p[0] = p[1];
     
     
-                      
-
 def p_EndpointFunctionSection(p):
     '''EndpointFunctionSection :  PublicFunction EndpointFunctionSection
                                |  PublicFunction
