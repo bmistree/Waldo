@@ -27,13 +27,16 @@ class TypeStack(object):
             return False;
         return True;
 
+    def getLabelAs(self):
+        topStack = self.checkStackLen('changeLabelAs');
+        return topStack.labelAs;
+    
     def changeLabelAs(self,newLabelAs):
         topStack = self.checkStackLen('changeLabelAs');
         topStack.labelAs = newLabelAs;
         
     def pushContext(self,labelAs,currentFunctionDep):
         self.stack.append(Context(labelAs,currentFunctionDep));
-
 
     def popContext(self):
         self.checkStackLen('popContext');
@@ -185,16 +188,10 @@ class Context(object):
     def addRead(self,ntt):
         self.reads.append(ntt);
 
-        if self.curFuncDep != None:
+        if self.currentFunctionDep != None:
             # happened inside a function instead of happening
             # inside of an endpoint global section.
-            curFuncDep.addFuncReads([ntt]);
-
-
-        
-    def addWrite(self,ntt):
-        self.writes.append(ntt);
-
+            self.currentFunctionDep.addFuncReads([ntt]);
 
     def getReadIndex(self):
         '''
@@ -223,11 +220,6 @@ class Context(object):
         @see getReadIndex
         '''        
         return self.writes[afterPoint:];
-        
-    def addRead(self,ntt):
-        self.reads.append(ntt);
-    def addWrite(self,ntt):
-        self.writes.append(ntt);
         
     def getIdentifier(self,identifierName):
         '''
