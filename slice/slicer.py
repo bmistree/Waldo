@@ -118,25 +118,12 @@ def slicer(node,functionDeps=None,typeStack=None):
         typeNode = node.children[1];
         typeStack.addIdentifier(idName,isMutable(typeNode));
 
-        
-    elif node.label == AST_PUBLIC_FUNCTION:
-        funcName = node.children[0].value;
-        funcBodyNode = node.children[2];
-
-        fDep = FunctionDeps(funcName);
-        functionDeps.append(fDep);
-
-        print('\nBehram errror.  Should populate arguments to functions here.\n');
-
-        typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_LOCAL,fDep);
-        for child in funcBodyNode.children:
-            slicer(child,functionDeps,typeStack);
-
-        typeStack.popContext();
 
     elif node.label == AST_ASSIGNMENT_STATEMENT:
         warnMsg = '\nBehram error: ignoring the case of an assignment ';
-        warnMsg += 'to a bracket statement.\n'
+        warnMsg += 'to a bracket statement that comes from a function call.  '
+        warnMsg += 'Ie, call()[3] = 1;.  To be fair, it seems like this should ';
+        warnMsg += 'actually be discouraged.  May make it illegal in fact.\n';
         print(warnMsg);
 
         # left-hand side can only be a bracket statement or an
@@ -206,7 +193,10 @@ def slicer(node,functionDeps=None,typeStack=None):
         for child in node.children:
             slicer(child,functionDeps,typeStack);
 
-    elif node.label == AST_PRINT:
+    elif ((node.label == AST_PRINT) or (node.label == AST_CONDITION_STATEMENT) or
+          (node.label == AST_IF_STATEMENT) or (node.label == AST_ELSE_IF_STATEMENTS) or
+          (node.label == AST_ELSE_IF_STATEMENT) or (node.label == AST_ELSE_STATEMENT) or
+          (node.label == AST_NOT_EXPRESSION) or (node.label == AST_BOOLEAN_CONDITION)):
         # nothing to do on unary operators
         for child in node.children:
             slicer(child,functionDeps,typeStack);
@@ -221,9 +211,23 @@ def slicer(node,functionDeps=None,typeStack=None):
         for child in node.children:
             slicer(child,functionDeps,typeStack);
 
-            
+
+    elif node.label == AST_FUNCTION_DECL_ARGLIST:
+        # actually add each argument to current type stack.
+        argumentNumber = 0;
+        for child in node.children:
+            # each child is a function decl arg
+            typeNode = child.children[0];
+            nameNode = child.children[1];
+            typeStack.addIdentifier(nameNode.value,
+                                    isMutable(typeNode),
+                                    TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT,
+                                    argumentNumber);
+            argumentNumber +=1;
+
     elif node.label == AST_IDENTIFIER:
         identifierName = node.value;
+
         if not typeStack.isEndpointName(identifierName):
             ntt = typeStack.getIdentifier(identifierName);
             typeStack.addRead(ntt);

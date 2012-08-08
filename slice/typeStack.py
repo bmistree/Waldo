@@ -42,12 +42,15 @@ class TypeStack(object):
         self.checkStackLen('popContext');
         self.stack.pop();
 
-    def addIdentifier(self,identifierName,isMutable,identifierType=None):
+    def addIdentifier(
+        self,identifierName,isMutable,identifierType=None,
+        argPosition=None):
         '''
         @see Context.addIdentifier
         '''
         topStack = self.checkStackLen('addIdentifier');        
-        return topStack.addIdentifier(identifierName,isMutable,identifierType);
+        return topStack.addIdentifier(
+            identifierName,isMutable,identifierType,argPosition);
 
 
     def getIdentifier(self,identifierName):
@@ -229,31 +232,50 @@ class Context(object):
         val = self.dict.get(identifierName,None);
         return val;
         
-    def addIdentifier(self,identifierName,isMutable,identifierType):
+    def addIdentifier(
+        self,identifierName,isMutable,identifierType,argPosition):
         '''
         @param {String} identifierName
         
         @param {Int} One of TypeStack.IDENTIFIER_TYPE*-s Indicates
         what type of variable this is in the local context.  None if
         just supposed to use the label that is being saved in labelAs.
+
+        @param {Int or None} argPosition --- If identifierType is
+        TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT, then also save
+        the argument's position in the name type tuple.  Otherwise,
+        save None
         '''
         if identifierType == None:
             identifierType = self.labelAs;
-        ntt = NameTypeTuple(identifierName,identifierType,isMutable);
+        ntt = NameTypeTuple(identifierName,identifierType,isMutable,argPosition);
         self.dict[identifierName] = ntt;
         return ntt;
-        
 
-
+    
 class NameTypeTuple(object):
-    def __init__(self,varName,varType,isMutable):
+    def __init__(self,varName,varType,isMutable,argPosition):
         '''
         @param {String} varName
         @param {Int} varType --- TypeStack.IDENTIFIER_TYPE_*;
         
-        @param {Bool} True if variable is a list or map, false
-        otherwise.
+        @param {Bool} isMutable --- True if variable is a list or map,
+        false otherwise.
+
+        @param {Int or None} argPosition --- If (and only if) this is
+        a IDENTIFIER_TYPE_FUNCTION_ARGUMENT, then this will be an
+        integer representing the zero-indexed position of the argument
+        passed to the function.  Otherwise, it must be None.
         '''
         self.varName = varName;
         self.varType = varType;
         self.mutable = isMutable;
+
+        if ((argPosition != None) and
+            (varType != TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
+            errMsg = '\nBehram error: should not receive an arg position ';
+            errMsg += 'with a variable that is not a function argument.\n';
+            print(errMsg);
+            assert(False);
+
+        self.argPosition = argPosition;
