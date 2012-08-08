@@ -34,12 +34,12 @@ class FunctionDeps(object):
     def _debugPrint(self):
         print('\n\n\n');
         print(self.funcName);
-        print('\nread set:\n')
+        print('\n*****read set:*****\n')
         for item in self.mReadSet.keys():
             print(item);
-        print('\nread set keys:\n');
+        print('\n****read set keys:****\n');
         for item in self.varReadSet.keys():
-            self.varReadSet[item]._debugPrint();
+            self.varReadSet[item]._debugPrint('\t');
         # for item in self.mWriteSet.keys():
         #     print(item);
 
@@ -61,9 +61,16 @@ class VarReadSet(object):
         for write in writes:
             self.mWrites[write.varName] = write;
 
-    def _debugPrint(self):
+    def _debugPrint(self,prepend=''):
+        '''
+        @param {String} prepend --- prepend gets put in front of each
+        new line that we are going to print.  Makes more readable: for
+        instance if want to indent everything that we're printing.
+        '''
         toPrint = self.ntt.varName + ': \n';
         for element in self.mReads.keys():
             toPrint += '\t' + element;
         toPrint += '\n';
+
+        toPrint = prepend + toPrint.replace('\n','\n' + prepend);
         print(toPrint);
