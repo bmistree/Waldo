@@ -6,9 +6,11 @@ import os;
 curDir = os.path.dirname(__file__);
 sys.path.append(os.path.join(curDir,'..','parser','ast'));
 
+
 from astLabels import *;
 from typeStack import TypeStack;
 from functionDeps import FunctionDeps;
+
 
 def slicer(node,functionDeps=None,typeStack=None):
     '''
@@ -264,7 +266,6 @@ def printWarning():
     global HavePrinted;
     if not HavePrinted:
         print('\nBehram error: check out FIXME: alpha.\n');
-        print('\nBehram error, still need to define isMutable in slicer.py\n');
         warnMsg = '\nBehram error: need to write something ';
         warnMsg += 'intelligent for slicing function call.\n';
         print(warnMsg);
@@ -277,4 +278,8 @@ def isMutable(nodeTypeNode):
     @returns{Bool} True if typeNode indicates this is a map or a list.
     False otherwise.
     '''
-    return True;
+    if ((nodeTypeNode.label == TYPE_LIST) or
+        (nodeTypeNode.label == TYPE_MAP)):
+        return True;
+
+    return False;
