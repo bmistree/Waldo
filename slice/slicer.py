@@ -60,6 +60,43 @@ def slicer(node,functionDeps=None,typeStack=None):
 
         print('\nMore to do here\n');
 
+    elif ((node.label == AST_ONCREATE_FUNCTION) or (node.label == AST_PUBLIC_FUNCTION) or
+          (node.label == AST_PRIVATE_FUNCTION)):
+
+        funcName = node.children[0].value;
+        if node.label == AST_ONCREATE_FUNCTION:
+            funcDeclArgsIndex = 1;
+            funcBodyIndex = 2;
+        elif (node.label == AST_PRIVATE_FUNCTION) or (node.label == AST_PUBLIC_FUNCTION):
+            funcDeclArgsIndex = 2;
+            funcBodyIndex = 3;
+        else:
+            errMsg = '\n\nBehram error.  Should only handle oncreate,private,public ';
+            errMsg += 'functions in this branch of slicer.py.\n';
+            print(errMsg);
+            assert(False);
+
+        # create a new function dependency on the stack.
+        fDep = FunctionDeps(funcName);
+        functionDeps.append(fDep);
+
+        # set up new context so that identifiers that are added will
+        # be added as function arguments.
+        typeStack.pushContext(
+            TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT,fDep);
+        declArgsNode = node.children[funcDeclArgsIndex];
+        slicer(declArgsNode,functionDeps,typeStack);
+
+        # when go through function body, need to change label as of
+        # type stack to be local so that subsequent identifiers that
+        # are added are added as local.
+        typeStack.changeLabelAs(TypeStack.IDENTIFIER_TYPE_LOCAL);
+        funcBodyNode = node.children[funcBodyIndex];
+        slicer(funcBodyNode,functionDeps,typeStack);
+        
+        
+        typeStack.popContext();
+        
     elif node.label == AST_ENDPOINT_GLOBAL_SECTION:
         # note: do not pop the context, because want globals to always
         # be available.
@@ -167,32 +204,48 @@ def slicer(node,functionDeps=None,typeStack=None):
         for child in node.children:
             slicer(child,functionDeps,typeStack);
 
+
+    elif ((node.label == AST_FUNCTION_BODY_STATEMENT) or
+          (node.label == AST_ENDPOINT) or
+          (node.label == AST_ENDPOINT_BODY_SECTION) or
+          (node.label == AST_ENDPOINT_BODY_SECTION) or
+          (node.label == AST_ENDPOINT_FUNCTION_SECTION) or
+          (node.label == AST_FUNCTION_BODY)):
+        # nothing to do on these structural node labels.
+        for child in node.children:
+            slicer(child,functionDeps,typeStack);
+
+            
     elif node.label == AST_IDENTIFIER:
         identifierName = node.value;
         if not typeStack.isEndpointName(identifierName):
             ntt = typeStack.getIdentifier(identifierName);
             typeStack.addRead(ntt);
 
-        
+    elif node.label == AST_FUNCTION_CALL:
+        # warnMsg = '\nBehram error: need to write something ';
+        # warnMsg += 'intelligent for slicing function call.\n';
+        # print(warnMsg);
+        pass;
+            
     elif node.label == AST_DECLARATION:
         nodeTypeNode = node.children[0];
         nodeName = node.children[1].value;
         ntt = typeStack.addIdentifier(nodeName,isMutable(nodeTypeNode));
         if len(node.children) == 3:
             # means that we are initializing the declaration too.
-
+            initializationNode = node.children[2];
+            
             readIndex = typeStack.getReadIndex();
-            writeIndex = typeStack.getWriteIndex();
-            slicer(node.children[2],functionDeps,typeStack);
+            slicer(initializationNode,functionDeps,typeStack);
 
             initializationReads = typeStack.getReadsAfter(readIndex);
 
-
             # tell current function that this node exists.
             typeStack.addToVarReadSet(nodeName,ntt);
+            
             # tell current function that this node has the read and
             # write sets below.
-
             typeStack.addReadsToVarReadSet(
                 nodeName,initializationReads);
 
@@ -212,6 +265,11 @@ def printWarning():
     if not HavePrinted:
         print('\nBehram error: check out FIXME: alpha.\n');
         print('\nBehram error, still need to define isMutable in slicer.py\n');
+        warnMsg = '\nBehram error: need to write something ';
+        warnMsg += 'intelligent for slicing function call.\n';
+        print(warnMsg);
+            
+        
         HavePrinted = True;
     
 def isMutable(nodeTypeNode):
@@ -219,5 +277,4 @@ def isMutable(nodeTypeNode):
     @returns{Bool} True if typeNode indicates this is a map or a list.
     False otherwise.
     '''
-
     return True;

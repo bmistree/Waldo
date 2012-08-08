@@ -12,10 +12,6 @@ class FunctionDeps(object):
         # the variables that this function reads from. dict from var
         # name to NameTypeTuple.
         self.mReadSet = {}; 
-
-        # # the variables that this function writes to
-        # self.mWriteSet = {};
-
         self.funcName = funcName;
         
     def addToVarReadSet(self,nodeName,nameTypeTuple):
@@ -35,14 +31,15 @@ class FunctionDeps(object):
         for read in reads:
             self.mReadSet[read.varName] = read;
 
-        # for write in writes:
-        #     self.mWriteSet[write.varName] = write;
-
     def _debugPrint(self):
-        print('\n');
+        print('\n\n\n');
         print(self.funcName);
+        print('\nread set:\n')
         for item in self.mReadSet.keys():
             print(item);
+        print('\nread set keys:\n');
+        for item in self.varReadSet.keys():
+            self.varReadSet[item]._debugPrint();
         # for item in self.mWriteSet.keys():
         #     print(item);
 
@@ -63,3 +60,10 @@ class VarReadSet(object):
     def addWrites(self,writes):
         for write in writes:
             self.mWrites[write.varName] = write;
+
+    def _debugPrint(self):
+        toPrint = self.ntt.varName + ': \n';
+        for element in self.mReads.keys():
+            toPrint += '\t' + element;
+        toPrint += '\n';
+        print(toPrint);

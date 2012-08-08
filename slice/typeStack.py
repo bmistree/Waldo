@@ -27,6 +27,9 @@ class TypeStack(object):
             return False;
         return True;
 
+    def changeLabelAs(self,newLabelAs):
+        topStack = self.checkStackLen('changeLabelAs');
+        topStack.labelAs = newLabelAs;
         
     def pushContext(self,labelAs,currentFunctionDep):
         self.stack.append(Context(labelAs,currentFunctionDep));
@@ -76,8 +79,6 @@ class TypeStack(object):
             # inside of an endpoint global section.
             curFuncDep.addToVarReadSet(nodeName,ntt);
 
-            
-
     def addReadsToVarReadSet(self,nodeName,reads):
         '''
         If we are inside of a function, then tell the function that
@@ -91,7 +92,16 @@ class TypeStack(object):
             # inside of an endpoint global section.
             curFuncDep.addReadsToVarReadSet(nodeName,reads);
 
-
+    def addRead(self,ntt):
+        '''
+        If we are inside of a function, then tell the function that
+        the function relies on the attached ntt.
+        '''
+        topStack = self.checkStackLen('addReadsWritesToVarReadSet');
+        topStack.addRead(ntt);
+            
+        
+        
     def getReadIndex(self):
         '''
         @see getReadIndex of Context
@@ -174,13 +184,16 @@ class Context(object):
         
     def addRead(self,ntt):
         self.reads.append(ntt);
+
+        if self.curFuncDep != None:
+            # happened inside a function instead of happening
+            # inside of an endpoint global section.
+            curFuncDep.addFuncReads([ntt]);
+
+
+        
     def addWrite(self,ntt):
         self.writes.append(ntt);
-        
-        self.reads = [];
-        self.writes = [];
-        self.labelAs = labelAs;
-        self.currentFunctionDep = currentFunctionDep;
 
 
     def getReadIndex(self):
