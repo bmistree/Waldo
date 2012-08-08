@@ -10,10 +10,22 @@ class TypeStack(object):
     
     def __init__(self,prevStack=None):
         self.stack  = []; #last element in array is always top of stack.
-
+        self.endNames = {};
+        
         if prevStack != None:
             for ctx in prevStack.stack:
                 self.stack.append(ctx);
+
+            self.endNames = prevStack.endNames;
+            
+    def addEndpointName(self,endName):
+        self.endNames[endName] = True;
+        
+    def isEndpointName (self,toTest):
+        val = self.endNames.get(toTest,None);
+        if val == None:
+            return False;
+        return True;
 
         
     def pushContext(self,labelAs,currentFunctionDep):
@@ -32,6 +44,23 @@ class TypeStack(object):
         return topStack.addIdentifier(identifierName,isMutable,identifierType);
 
 
+    def getIdentifier(self,identifierName):
+        topStack = self.checkStackLen('getIdentifier');
+
+        backwardsRange = range(0,len(self.stack));
+        backwardsRange.reverse();
+        for contextIndex in backwardsRange:
+            context = self.stack[contextIndex];
+            exists  = context.getIdentifier(identifierName);
+            if exists != None:
+                return exists;
+
+        errMsg = '\nBehram error: all identifiers should be defined by now.  ';
+        errMsg += 'But "' + identifierName + '" was not.\n';
+        print(errMsg);
+        assert(False);
+
+
     def addToVarReadSet(self,nodeName,ntt):
         '''
         If we are inside a function, ensure that that function is
@@ -48,7 +77,8 @@ class TypeStack(object):
             curFuncDep.addToVarReadSet(nodeName,ntt);
 
             
-    def addReadsWritesToVarReadSet(self,nodeName,reads,writes):
+
+    def addReadsToVarReadSet(self,nodeName,reads):
         '''
         If we are inside of a function, then tell the function that
         variable with name nodeName relies on reads and writes from
@@ -59,7 +89,7 @@ class TypeStack(object):
         if curFuncDep != None:
             # happened inside a function instead of happening
             # inside of an endpoint global section.
-            curFuncDep.addReadsWritesToVarReadSet(nodeName,reads,writes);
+            curFuncDep.addReadsToVarReadSet(nodeName,reads);
 
 
     def getReadIndex(self):
@@ -105,7 +135,8 @@ class Context(object):
         '''
         currentFunctionDep can be None if getting shared or globals.
         '''
-        # dict from identifier name to NameTypeTuple-s, 
+        # dict from identifier name to NameTypeTuple-s, these contain
+        # only local variables and arguments passed into function
         self.dict = {};
         self.reads = [];
         self.writes = [];
@@ -146,7 +177,46 @@ class Context(object):
     def addWrite(self,ntt):
         self.writes.append(ntt);
         
-    def identifierExists(self,identifierName):
+        self.reads = [];
+        self.writes = [];
+        self.labelAs = labelAs;
+        self.currentFunctionDep = currentFunctionDep;
+
+
+    def getReadIndex(self):
+        '''
+        want to support the semantics: 'get all reads after some
+        point'.  This let's us name that starting point.  Then, can
+        call getReadsAfter to get all reads that happened between now
+        and when getReadIndex was called.
+        '''
+        return len(self.reads);
+
+    def getReadsAfter(self,afterPoint):
+        '''
+        @see getReadIndex
+        '''
+        return self.reads[afterPoint:];
+
+    
+    def getWriteIndex(self):
+        '''
+        @see getReadIndex
+        '''
+        return len(self.writes);
+
+    def getWritesAfter(self,afterPoint):
+        '''
+        @see getReadIndex
+        '''        
+        return self.writes[afterPoint:];
+        
+    def addRead(self,ntt):
+        self.reads.append(ntt);
+    def addWrite(self,ntt):
+        self.writes.append(ntt);
+        
+    def getIdentifier(self,identifierName):
         '''
         @returns None if identifierName does not exist in this context
                  NameTypeTuple otherwise
