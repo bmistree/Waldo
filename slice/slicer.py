@@ -196,7 +196,8 @@ def slicer(node,functionDeps=None,typeStack=None):
     elif ((node.label == AST_PRINT) or (node.label == AST_CONDITION_STATEMENT) or
           (node.label == AST_IF_STATEMENT) or (node.label == AST_ELSE_IF_STATEMENTS) or
           (node.label == AST_ELSE_IF_STATEMENT) or (node.label == AST_ELSE_STATEMENT) or
-          (node.label == AST_NOT_EXPRESSION) or (node.label == AST_BOOLEAN_CONDITION)):
+          (node.label == AST_NOT_EXPRESSION) or (node.label == AST_BOOLEAN_CONDITION) or
+          (node.label == AST_LIST)  or (node.label == AST_MAP)):
         # nothing to do on unary operators
         for child in node.children:
             slicer(child,functionDeps,typeStack);
