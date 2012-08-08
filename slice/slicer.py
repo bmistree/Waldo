@@ -112,7 +112,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         for sharedDeclNode in node.children:
             slicer(sharedDeclNode,functionDeps,typeStack);
 
-
+            
     elif node.label == AST_ANNOTATED_DECLARATION:
         idName = node.children[2].value;
         typeNode = node.children[1];
@@ -206,7 +206,11 @@ def slicer(node,functionDeps=None,typeStack=None):
         for child in node.children:
             slicer(child,functionDeps,typeStack);
 
-
+    elif node.label == AST_PRINT:
+        # nothing to do on unary operators
+        for child in node.children:
+            slicer(child,functionDeps,typeStack);
+            
     elif ((node.label == AST_FUNCTION_BODY_STATEMENT) or
           (node.label == AST_ENDPOINT) or
           (node.label == AST_ENDPOINT_BODY_SECTION) or
