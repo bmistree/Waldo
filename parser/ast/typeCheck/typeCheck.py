@@ -1097,12 +1097,30 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         lhs = node.children[0];
         node.lineNo = lhs.lineNo;
         
-        if (lhs.label != AST_IDENTIFIER) and (lhs.label != AST_BRACKET_STATEMENT):
-            errMsg = '\nError in assignment statement.  Can only assign ';
-            errMsg += 'to a variable.  (Left hand side must be a variable)\n';
-            errorFunction(errMsg,[node],[node.lineNo],progText);
-            return;
+        if lhs.label != AST_IDENTIFIER:
+            errMsg = None;
+            if lhs.label != AST_BRACKET_STATEMENT:
+                errMsg = '\nError in assignment statement.  Can only assign ';
+                errMsg += 'to a variable.  (Left hand side must be a variable)\n';
+            else:
+                # means that it's a bracket statement.
+                indexIntoBracketNode = lhs.children[0];
+                if indexIntoBracketNode.label != AST_IDENTIFIER:
+                    # bracket statement's from function calls may not
+                    # be assigned to.  eg. Public Function getter() returns Map;
+                    #    getter()[0] = 'a';
+                    # is disallowed.  That's mostly because it's
+                    # gross.  If decide to re-allow it, ensure that
+                    # fix slicing so that it handles such a case.
+                    # Right now, I do not think that it does.
+                    errMsg = '\nError in assignment statement.  You can only ';
+                    errMsg += 'into a variable identifier.  eg. someVar = 3; or ';
+                    errMsg += 'someMap[1] = 2;.  You cannot assign by directly ';
+                    errMsg += 'indexing into the returned value of a function.\n';
+            if errMsg != None:
+                errorFunction(errMsg,[node],[node.lineNo],progText);                    
 
+        
         rhs = node.children[1];
 
         if (lhs.label == AST_IDENTIFIER):

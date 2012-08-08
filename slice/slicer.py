@@ -120,12 +120,6 @@ def slicer(node,functionDeps=None,typeStack=None):
 
 
     elif node.label == AST_ASSIGNMENT_STATEMENT:
-        warnMsg = '\nBehram error: ignoring the case of an assignment ';
-        warnMsg += 'to a bracket statement that comes from a function call.  '
-        warnMsg += 'Ie, call()[3] = 1;.  To be fair, it seems like this should ';
-        warnMsg += 'actually be discouraged.  May make it illegal in fact.\n';
-        print(warnMsg);
-
         # left-hand side can only be a bracket statement or an
         # identifier according to type checking.
         lhsNode = node.children[0];
@@ -163,9 +157,15 @@ def slicer(node,functionDeps=None,typeStack=None):
                 slicer(lhsNode,functionDeps,typeStack);
                 indexNode = lhsNode.children[1];
             else:
-                # FIXME alpha: lkjs; Need to handle case where assigning to
-                # a function call's bracket index.
-                errMsg = '\nBehram error: Need to handle case where assigning to ';
+                # NOTE: Based on current type checking rules in
+                # typeCheck.py's switch statement for the assignment
+                # statement, it is impossible to assign into an
+                # element that is directly returned by a function
+                # call.  (Eg.  funcCall()[1] = 2;) Therefore should
+                # not go down this path.  If change rule in
+                # typeCheck.py, then change this as well.
+                errMsg = '\nBehram error: Type checking should have prevented ';
+                errMsg += 'case where assigning to ';
                 errMsg += "a function call's bracket index.\n";
                 print(errMsg);
                 assert(False);
@@ -259,7 +259,6 @@ def slicer(node,functionDeps=None,typeStack=None):
             typeStack.addReadsToVarReadSet(
                 nodeName,initializationReads);
 
-
     else:
         print('\nBehram error: still need to process label for ' + node.label + '\n');
         for child in node.children:
@@ -273,12 +272,9 @@ HavePrinted = False;
 def printWarning():
     global HavePrinted;
     if not HavePrinted:
-        print('\nBehram error: check out FIXME: alpha.\n');
         warnMsg = '\nBehram error: need to write something ';
         warnMsg += 'intelligent for slicing function call.\n';
         print(warnMsg);
-            
-        
         HavePrinted = True;
     
 def isMutable(nodeTypeNode):
