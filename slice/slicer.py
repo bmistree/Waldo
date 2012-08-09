@@ -5,12 +5,12 @@ import os;
 
 curDir = os.path.dirname(__file__);
 sys.path.append(os.path.join(curDir,'..','parser','ast'));
-
+sys.path.append(os.path.join(curDir,'..','parser','ast','typeCheck'));
 
 from astLabels import *;
 from typeStack import TypeStack;
 from functionDeps import FunctionDeps;
-
+import templateUtil;
 
 def slicer(node,functionDeps=None,typeStack=None):
     '''
@@ -117,8 +117,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         idName = node.children[2].value;
         typeNode = node.children[1];
         typeStack.addIdentifier(idName,isMutable(typeNode));
-
-
+        
     elif node.label == AST_ASSIGNMENT_STATEMENT:
         # left-hand side can only be a bracket statement or an
         # identifier according to type checking.
@@ -138,7 +137,7 @@ def slicer(node,functionDeps=None,typeStack=None):
             typeStack.addToVarReadSet(nodeName, typeStack.getIdentifier(nodeName));
             typeStack.addReadsToVarReadSet(nodeName,readsMadeByRhs);
 
-        elif lhsNode.label == AST_BRACKET:
+        elif lhsNode.label == AST_BRACKET_STATEMENT:
             toReadFromNode = lhsNode.children[0];
             # toReadFromNode can either be an identifier or a function call
             if toReadFromNode.label == AST_IDENTIFIER:
@@ -197,7 +196,8 @@ def slicer(node,functionDeps=None,typeStack=None):
           (node.label == AST_IF_STATEMENT) or (node.label == AST_ELSE_IF_STATEMENTS) or
           (node.label == AST_ELSE_IF_STATEMENT) or (node.label == AST_ELSE_STATEMENT) or
           (node.label == AST_NOT_EXPRESSION) or (node.label == AST_BOOLEAN_CONDITION) or
-          (node.label == AST_LIST)  or (node.label == AST_MAP)):
+          (node.label == AST_LIST)  or (node.label == AST_MAP) or
+          (node.label == AST_BRACKET_STATEMENT)):
         # nothing to do on unary operators
         for child in node.children:
             slicer(child,functionDeps,typeStack);
@@ -242,7 +242,8 @@ def slicer(node,functionDeps=None,typeStack=None):
     elif node.label == AST_DECLARATION:
         nodeTypeNode = node.children[0];
         nodeName = node.children[1].value;
-        ntt = typeStack.addIdentifier(nodeName,isMutable(nodeTypeNode));
+        isMute = isMutable(nodeTypeNode);
+        ntt = typeStack.addIdentifier(nodeName,isMute);
         if len(node.children) == 3:
             # means that we are initializing the declaration too.
             initializationNode = node.children[2];
@@ -283,8 +284,10 @@ def isMutable(nodeTypeNode):
     @returns{Bool} True if typeNode indicates this is a map or a list.
     False otherwise.
     '''
-    if ((nodeTypeNode.label == TYPE_LIST) or
-        (nodeTypeNode.label == TYPE_MAP)):
-        return True;
+    if nodeTypeNode.label == AST_TYPE:
+        if templateUtil.isListType(nodeTypeNode.value):
+            return True;
+        if templateUtil.isMapType(nodeTypeNode.value):
+            return True;
 
     return False;

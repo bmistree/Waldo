@@ -270,7 +270,8 @@ class NameTypeTuple(object):
         self.varName = varName;
         self.varType = varType;
         self.mutable = isMutable;
-
+        self._mark = False;
+        
         if ((argPosition != None) and
             (varType != TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
             errMsg = '\nBehram error: should not receive an arg position ';
@@ -279,3 +280,10 @@ class NameTypeTuple(object):
             assert(False);
 
         self.argPosition = argPosition;
+
+    def mark(self):
+        self._mark = True;
+    def unmark(self):
+        self._mark = False;
+    def isMarked(self):
+        return self._mark;
