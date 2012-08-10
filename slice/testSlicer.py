@@ -35,8 +35,13 @@ def run (filename):
 
     fDeps = slicer(rootNode);
 
+    print('\n\n');
     for dep in fDeps:
-        dep._debugPrint();
+        print(dep.jsonize());
+        print('\n');
+        # dep._debugPrint();
+    print('\n\n');
+        
         
 if __name__ == '__main__':
     run(sys.argv[1]);

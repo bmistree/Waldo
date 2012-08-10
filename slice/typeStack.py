@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json;
 
 class TypeStack(object):
     IDENTIFIER_TYPE_SHARED = 0;
@@ -281,6 +282,16 @@ class NameTypeTuple(object):
 
         self.argPosition = argPosition;
 
+    def jsonize(self):
+        returner = {};
+        returner['varName'] = self.varName;
+        returner['varType'] = self.varType;
+        returner['mutable'] = 1 if self.mutable else 0;
+        returner['argPosition'] = -1 if self.argPosition == None else self.argPosition;
+        
+        return json.dumps(returner);
+
+        
     def mark(self):
         self._mark = True;
     def unmark(self):

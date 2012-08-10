@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from typeStack import TypeStack;
-
+import json;
 
 class FunctionDeps(object):
 
@@ -33,6 +33,36 @@ class FunctionDeps(object):
         for read in reads:
             self.mReadSet[read.varName] = read;
 
+    def jsonize(self):
+        returner = {};
+        returner['funcName'] = self.funcName;
+        returner['readSet'] = sorted(self.mReadSet.keys());
+
+        # write read set list
+        varReadSetList = [];
+        for itemKey in sorted(self.varReadSet.keys()):
+            varReadSetItem = self.varReadSet[itemKey];
+            jsonString = varReadSetItem.jsonize();
+            varReadSetList.append(json.loads(jsonString));
+
+        # definite global/shared reads
+        globSharedReads = [];
+        for ntt in self.definiteSharedGlobalReads():
+            jsoned = ntt.jsonize();
+            globSharedReads.append(json.loads(jsoned));
+        returner['definiteGlobalSharedReads'] = globSharedReads;
+
+        #definite global/shared writes
+        globSharedWrites = [];
+        for ntt in self.definiteSharedGlobalWrites():
+            jsoned = ntt.jsonize();
+            globSharedWrites.append(json.loads(jsoned));
+        returner['definiteGlobalSharedWrites'] = globSharedWrites;
+
+        # return the json
+        return json.dumps(returner);
+
+        
     def _debugPrint(self):
         print('\n\n\n');
         print(self.funcName);
@@ -260,6 +290,20 @@ class VarReadSet(object):
         for write in writes:
             self.mWrites[write.varName] = write;
 
+    def jsonize(self):
+        returner = {};
+        returner['readSetNtt'] = json.loads(self.ntt.jsonize());
+
+        readArray = [];
+        for readKey in sorted(self.mReads.keys()):
+            readItem = self.mReads[readKey];
+            jsoned = readItem.jsonize();
+            readArray.append(json.loads(jsoned));
+
+        returner['reads'] = readArray;
+        return json.dumps(returner);
+
+            
     def _debugPrint(self,prepend=''):
         '''
         @param {String} prepend --- prepend gets put in front of each
