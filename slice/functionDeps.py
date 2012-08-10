@@ -65,6 +65,25 @@ class FunctionDeps(object):
 
         returner['definiteGlobalSharedWrites'] = globSharedWrites;
 
+        # conditional global/shared reads
+        conditionalGlobSharedReads = [];
+        for ntt in self.conditionalSharedGlobalReads():
+            jsoned = ntt.jsonize();
+            conditionalGlobSharedReads.append(
+                util.fromJsonPretty(jsoned));
+
+        returner['conditionalGlobalSharedReads'] = conditionalGlobSharedReads;
+
+        # conditional global shared writes
+        conditionalGlobSharedWrites = [];
+        for ntt in self.conditionalSharedGlobalWrites():
+            jsoned = ntt.jsonize();
+            conditionalGlobSharedWrites.append(
+                util.fromJsonPretty(jsoned));
+
+        returner['conditionalGlobalSharedWrites'] = conditionalGlobSharedWrites;
+
+        
         # return the json
         return util.toJsonPretty(returner);
 
@@ -240,42 +259,64 @@ class FunctionDeps(object):
                 
         return returner;
         
+
+    def conditionalSharedGlobalReads(self):
+        '''
+        Can read a global that wasn't returned by
+        definiteSharedGlobalReads.  This is because maps and lists are
+        reference types.  That means that if one global map could
+        point at another global map.  We can only know whether this
+        happens or not at runtime (sort of).  So this function lists
+        all read references that should be checked in a function for
+        being tainted by another global/shared piece of data.
+
+        This function returns an array of all variables passed in that
+        we should check for taints with other global/shared variables.
+
+        Essentially, if any global or shared mutable is read, we
+        should check whether that global/shared has additional taints.
         
-    # def conditionalSharedGlobalReads(self):
-    #     '''
-    #     Note: the below may all be hocum.
-    #     The pseudocode for doing this is as follows:
+        Similarly, for all mutable arguments that are passed in, we
+        should check whether these have taints at run time.
+
+        '''
+        defSGR = self.definiteSharedGlobalReads();
+        returner = self._getConditionalGlobalShareds(defSGR);
+        return returner;
+            
+
+    def _getConditionalGlobalShareds(self, arrayToCheck):
+        '''
+        @see conditionalSharedGlobalReads
+        '''
+        dynamicCheckDict = {};
+        for writeNtt in arrayToCheck:
+            if writeNtt.mutable:
+                if ((writeNtt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
+                    (writeNtt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL) or
+                    (writeNtt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
+
+                    dynamicCheckDict[writeNtt.varName] = writeNtt;
+                
+
+        # actually return the array of items to check taint for.
+        returner = [];
+        # using sorted keys to make it easier to debug compiler
+        # through test cases: everything always returns in same order
+        # -> we can write test cases and compare to previous outputs.
+        for nttKey in sorted(dynamicCheckDict.keys()):
+            returner.append(dynamicCheckDict[nttKey]);
+                    
+        return returner;
+
         
-    #        1: annotate all writtenTo ntts in self.varReadSet with a 1
-    #           marker if they are global/shared.  Otherwise, annotate
-    #           them with a 0.
+    def conditionalSharedGlobalWrites(self):
+        '''
+        @see conditionalSharedGlobalReads
+        '''
+        return self._getConditionalGlobalShareds(
+            self.definiteSharedGlobalWrites());
 
-    #        2: For each dependency, annotate it with a 1 marker if it
-    #           is global/shared and it is mutable.  Otherwise, annotate
-    #           it with a 0 marker.
-
-    #        3: Set a dirty bit to false
-           
-    #        4: For each element in self.varReadSet, if writtenTo's
-    #           marker is zero and it is mutable and one of its
-    #           dependency's markers are 1, update its marker to 1 and
-    #           set dirty bit to True.
-
-    #        5: If the dirty bit is True, goto 3.
-
-    #        6: Run through all elements in self.varReadSet.  If the
-    #           writtenTo is marked with a 1 and it is global/shared
-    #           append it to returner.  If the writtenTo is marked with
-    #           a 1 and
-
-    #        7: Remove all markers
-    #     '''
-    #     lkjs;
-    #     pass;
-        
-    # def conditionalSharedGlobalWrites(self):
-    #     lkjs;
-    #     pass;
 
             
 

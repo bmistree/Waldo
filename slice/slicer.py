@@ -60,8 +60,6 @@ def slicer(node,functionDeps=None,typeStack=None):
         endpoint2Node = node.children[5];
         slicer(endpoint2Node,functionDeps,typeStack2);
 
-        print('\nMore to do here\n');
-
     elif ((node.label == AST_ONCREATE_FUNCTION) or (node.label == AST_PUBLIC_FUNCTION) or
           (node.label == AST_PRIVATE_FUNCTION)):
 
@@ -276,6 +274,9 @@ def printWarning():
     if not HavePrinted:
         warnMsg = '\nBehram error: need to write something ';
         warnMsg += 'intelligent for slicing function call.\n';
+        print(warnMsg);
+        warnMsg = '\nBehram error: still need to write something ';
+        warnMsg += 'intelligent for message sequences.\n';
         print(warnMsg);
         HavePrinted = True;
     
