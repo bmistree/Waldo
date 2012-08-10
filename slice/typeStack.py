@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-
-import json;
+import util;
 
 class TypeStack(object):
     IDENTIFIER_TYPE_SHARED = 0;
@@ -289,7 +288,7 @@ class NameTypeTuple(object):
         returner['mutable'] = 1 if self.mutable else 0;
         returner['argPosition'] = -1 if self.argPosition == None else self.argPosition;
         
-        return json.dumps(returner);
+        return util.toJsonPretty(returner);
 
         
     def mark(self):

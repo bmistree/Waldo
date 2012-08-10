@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from typeStack import TypeStack;
-import json;
+import util;
 
 class FunctionDeps(object):
 
@@ -43,24 +43,30 @@ class FunctionDeps(object):
         for itemKey in sorted(self.varReadSet.keys()):
             varReadSetItem = self.varReadSet[itemKey];
             jsonString = varReadSetItem.jsonize();
-            varReadSetList.append(json.loads(jsonString));
+            varReadSetList.append(
+                util.fromJsonPretty(jsonString));
+
 
         # definite global/shared reads
         globSharedReads = [];
         for ntt in self.definiteSharedGlobalReads():
             jsoned = ntt.jsonize();
-            globSharedReads.append(json.loads(jsoned));
+            globSharedReads.append(
+                util.fromJsonPretty(jsoned));
+
         returner['definiteGlobalSharedReads'] = globSharedReads;
 
         #definite global/shared writes
         globSharedWrites = [];
         for ntt in self.definiteSharedGlobalWrites():
             jsoned = ntt.jsonize();
-            globSharedWrites.append(json.loads(jsoned));
+            globSharedWrites.append(
+                util.fromJsonPretty(jsoned));
+
         returner['definiteGlobalSharedWrites'] = globSharedWrites;
 
         # return the json
-        return json.dumps(returner);
+        return util.toJsonPretty(returner);
 
         
     def _debugPrint(self):
@@ -292,16 +298,18 @@ class VarReadSet(object):
 
     def jsonize(self):
         returner = {};
-        returner['readSetNtt'] = json.loads(self.ntt.jsonize());
+        jsoned = self.ntt.jsonize();
+        returner['readSetNtt'] = util.fromJsonPretty(jsoned);
 
         readArray = [];
         for readKey in sorted(self.mReads.keys()):
             readItem = self.mReads[readKey];
             jsoned = readItem.jsonize();
-            readArray.append(json.loads(jsoned));
+            readArray.append(
+                util.fromJsonPretty(jsoned));
 
         returner['reads'] = readArray;
-        return json.dumps(returner);
+        return util.toJsonPretty(returner);
 
             
     def _debugPrint(self,prepend=''):
