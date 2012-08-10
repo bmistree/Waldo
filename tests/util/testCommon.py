@@ -28,7 +28,8 @@ def runTests(testToRun,folderName,detailsStream):
         for filename in filenames:
             if isWaldoFile(filename):
                 runWaldoFile(root,filename,testToRun,detailsStream);
-
+    print('\n\n');
+                
 def runWaldoFile(folderName,filename,testToRun,detailsStream):
     '''
     @param {String} folderName ---

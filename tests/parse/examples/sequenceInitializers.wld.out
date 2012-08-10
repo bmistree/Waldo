@@ -1,3 +1,22 @@
+*************************
+Cannot infer type of badInit.  Are you sure it is valid? 
+-------
+Line numbers:
+25
+-------
+Program text:
 
-Behram needs to fix type check: should not be able to initialize
-sequence global variables from endpoint globals.
+
+
+22    
+23    MessageSequence PingPongSequence
+24    {
+25*       Number someNum = badInit;
+26        Ping.one(Number someVal)
+27        {
+28        }
+29        Pong.two
+*************************
+
+
+

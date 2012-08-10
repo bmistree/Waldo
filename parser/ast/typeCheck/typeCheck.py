@@ -81,21 +81,36 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                           progText);
 
 
-        # #Do first level of type chcecking trace items.  see notes
-        # #in corresponding elif.
-        # node.children[2].typeCheck(progText,typeStack);
+        # #Do first level of type chcecking trace items.  see notes in
+        # #corresponding elif of AST_TRACE_SECTION
+        # corresponds to
+        # the node with label AST_TRACE_SECTION: this is the node
+        # with the high-level specification for all message sequences.
         sequencesSectionNode = node.children[2];
         sequencesSectionNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-        
+
         sharedSectionNode = node.children[3];
         endpoint1Node = node.children[4];
         endpoint2Node = node.children[5];
-            
+
+        # msgSequencesNode has label
+        # AST_MESSAGE_SEQUENCE_SECTION... ie, it's the node that
+        # contains all of the program text for each message sequence.
+        # (sequencesSectionNode above in contrast contains just the
+        # high-level specification of which parts of a sequence
+        # connect to which other parts.)
+        msgSequencesNode = node.children[6];
+        
         #get into shared section
         #note: shared section should leave its context on the stack so
         #that can access all variables directly from it.
         sharedSectionNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
+        # checking the globals of all message sequences to ensure that
+        # they do not rely on any information besides just the
+        # globally shared variables.
+        typeCheckMessageSequencesGlobals(msgSequencesNode,progText,typeStack);
+        
         #check one endpoint
         endpoint1Node.typeCheck(progText,typeStack,avoidFunctionObjects);
         #check other endpoint
@@ -116,23 +131,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(traceError.errMsg,traceError.nodes,
                           traceError.lineNos,progText);
         
-        print('\nBehram note: skipping type checking of traces section.\n');
-        
-        # #Checks if there were msgSends or msgReceives assumed in a
-        # #trace line that weren't actually defined in an endpoint
-        # #section.
-        # traceError = typeStack.checkUndefinedTraceItems();
-        # if (traceError != None):
-        #     errorFunction(traceError.errMsg,traceError.nodes,
-        #                   traceError.lineNos,progText);
-
-        # # check that output of one trace line matched input of
-        # # another
-        # traceError =  typeStack.checkTraceItemInputOutput();
-        # if (traceError != None):
-        #     errorFunction(traceError.errMsg,traceError.nodes,
-        #                   traceError.lineNos,progText);
-            
 
     elif(node.label == AST_TRACE_SECTION):
         '''
@@ -1515,7 +1513,25 @@ def typeCheckListBracket(toReadFrom,index,typeStack,progText):
     listValType = getListValueType(toReadFrom.type);
     return False,listValType,None,None;
 
+def typeCheckMessageSequencesGlobals(msgSeqSectionNode,progText,typeStack):
+    '''
+    Need to ensure that all of the globals defined do not rely on
+    variables that aren't in the type stack.  (Ie, initializers for
+    message sequence globals can only be from shared global
+    variables.)  Just relying on type checking by the time we get to
+    type checking endpoint functions does not work because by then
+    endpoint globals are already on the type stack.  Therefore, call
+    this function first (and early).
 
+    @see comment in addSequenceGlobals for a further discussion.
+    '''
+    for msgSeqNode in msgSeqSectionNode.children:
+        msgSeqGlobalsNode = msgSeqNode.children[1];
+        typeStack.pushContext();
+        for declNode in msgSeqGlobalsNode.children:
+            declNode.typeCheck(progText,typeStack,True);
+        typeStack.popContext();
+        
 
 def typeCheckMessageSequencesEndpoint(msgSeqSectionNode,progText,typeStack):
     '''
@@ -1611,10 +1627,15 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
     # add variables from variables explicitly shared at top of sequence.
     globalsSectionNode = msgSeqNode.children[1];
     for declNode in globalsSectionNode.children:
-        warnMsg = '\nBehram error: need to ensure that the sequence global ';
-        warnMsg += 'nodes are not initialized using inaccessible parameters.  ';
-        warnMsg += 'Such as endpoint global variables.\n';
-        print(warnMsg);
+        # note: we know that all of these sequence globals rely on
+        # valid data (ie, shared variable data and constants) because
+        # of call to typeCheckMessageSequencesGlobals that we
+        # performed before actually type checking either endpoint.  if
+        # had not performed this call because the type stack we are
+        # working with now contains all of an endpoint's global
+        # variables, we may have gotten into trouble if our sequence
+        # global variable relied on an endpoint global variable that
+        # just happened to be in type stack.
 
         # should add the node to the newly-pushed context.
         declNode.typeCheck(progText,typeStack,False);

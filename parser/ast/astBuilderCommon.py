@@ -36,7 +36,6 @@ def p_EndpointAliasSection(p):
     p[0].addChildren([p[2], p[5]]);
 
 
-
 def p_TraceSection(p):
     '''
     TraceSection : TRACES CURLY_LEFT TraceBodySection CURLY_RIGHT

@@ -2,6 +2,10 @@ Command to run from parser/ast/
     ./head.py -f testBasic.wld -go '{"file":"astOut.html", "h": 3000, "w": 5000}' -e emitted.py
 
 
+Could provide a much nicer error message when try to initialize a
+message sequence global with an endpoint global.  (See test case in
+tests/parse/examples/sequenceInitializers.wld .)
+    
 Need to improve error messages from type mismatches when assigning
 functions to function variables.  Right now, just spits out a bunch of
 json gobbledy gook.
