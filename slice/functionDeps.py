@@ -281,7 +281,9 @@ class FunctionDeps(object):
 
         '''
         defSGR = self.definiteSharedGlobalReads();
-        returner = self._getConditionalGlobalShareds(defSGR);
+        # need to keep track of function argument reads as well
+        # because may get taint through them.
+        returner = self._getConditionalGlobalShareds(defSGR + self.funcArgReads());
         return returner;
             
 
@@ -290,13 +292,13 @@ class FunctionDeps(object):
         @see conditionalSharedGlobalReads
         '''
         dynamicCheckDict = {};
-        for writeNtt in arrayToCheck:
-            if writeNtt.mutable:
-                if ((writeNtt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
-                    (writeNtt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL) or
-                    (writeNtt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
+        for ntt in arrayToCheck:
+            if ntt.mutable:
+                if ((ntt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
+                    (ntt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL) or
+                    (ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
 
-                    dynamicCheckDict[writeNtt.varName] = writeNtt;
+                    dynamicCheckDict[ntt.varName] = ntt;
                 
 
         # actually return the array of items to check taint for.
@@ -315,10 +317,72 @@ class FunctionDeps(object):
         @see conditionalSharedGlobalReads
         '''
         return self._getConditionalGlobalShareds(
-            self.definiteSharedGlobalWrites());
+            self.definiteSharedGlobalWrites() + self.mutableFuncArgWrites());
 
-
+    def funcArgReads(self):
+        '''
+        Just run through mReadSet and return any reads made to passed
+        in arguments, returning the ntts of those arguments in an
+        array, guaranteeing there will only be one ntt per item in the
+        array.
+        '''
+        returnDict = {};
+        for nttKey in sorted(self.mReadSet.keys()):
+            ntt = self.mReadSet[nttKey];
+            returnDict[ntt.varName] = ntt;
             
+
+        # collapse returnDict...note sorting for easier debugging.
+        returner = [];
+        for nttKey in returnDict:
+            nttItem = returnDict[nttKey];
+            returner.append(nttItem);
+        return returner;
+    
+    def mutableFuncArgWrites(self):
+        '''
+        Returns an array of ntt-s of mutable function arguments that
+        may get written to throughout the course of this function.
+        This is useful because it means that the calling function may
+        need to examine the taint on arguments that it passes in to
+        know whether any globals or shareds may change.
+
+        1) any mutable function argument that gets directly written to
+        is added to a list.
+
+        2) for any mutable that is written to that depends on a
+        mutable function argument, then that dependent mutable func
+        argument is added.
+        
+        '''
+        returnDict = {};
+
+        for vrsKey in sorted(self.varReadSet.keys()):
+            # any item in self.varReadSet may get written to in this
+            # function.
+
+            vrsItem = self.varReadSet[vrsKey];
+            if vrsItem.ntt.mutable:
+                
+                # doing #1
+                if vrsItem.ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT:
+                    returnDict[vrsItem.ntt.varName] = vrsItem.ntt;
+                else:
+                    # doing #2
+                    for nttReadKeys in sorted(vrsItem.mReads.keys()):
+                        nttReadItem = vrsItem.mReads[nttReadKeys];
+                        if nttReadItem.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARUGMENT:
+                            returnDict[nttReadItem.ntt.varName] = nttReadItem;
+                            
+
+        # collapse the dictionary into a sorted list and return it.
+        returner = [];
+        for returnKey in sorted(returnDict.keys()):
+            nttToReturn = returnDict[returnKey];
+            returner.append(nttToReturn);
+            
+        return returner;
+
 
 class VarReadSet(object):
     def __init__(self,ntt):
