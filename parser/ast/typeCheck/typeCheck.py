@@ -1074,7 +1074,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
         else:
-            if (isFunctionType(argType) or (argType == TYPE_FUNCTION)) and avoidFunctionObjects:
+            if (argType == TYPE_FUNCTION) and avoidFunctionObjects:
                 pass;
             else:
                 typeStack.addIdentifier(argName,argType,None,node,node.lineNo);

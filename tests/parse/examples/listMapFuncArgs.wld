@@ -1,0 +1,49 @@
+/** VERSION 2
+  *
+  * Tests code for receiving list and map type function arguments.  
+*/
+
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+    // specifies order of handlers that will be called
+    PingPongSequence : Ping.one -> Pong.two;
+}
+
+
+/**** Data shared between both ends */
+Shared
+{
+}
+
+
+/***** MessageSequence section: Any sequence declared in Traces is defined here */
+MessageSequence PingPongSequence
+{
+    Ping.one()
+    {}
+    Pong.two
+    {}
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+    Public Function otherFunc(List (element: Number) someList,
+                              Map (from: Number, to: Text) someMap)
+    {
+    }
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}
