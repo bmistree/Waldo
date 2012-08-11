@@ -1,10 +1,16 @@
+Huge testing challenge.  Part of testing challenge may be exercising
+relatively small part of system.  This abstraction provides that.  Can
+easily separate code (and test it in convenient language).
+
+Another abstraction win from Waldo is that we can generate
+documentation more easily for it.
+
 Permit commas in numbers.  There's an old paper on novices learning
 PASCAL (I think?) that says this could be a big deal.
 
 Maybe have types for different types of time.  1s versus 1 minute,
 etc.  Addition and subtraction operators would be defined on them
 easily.
-
 
 Rename types.  Strings and Bools really should not be Strings and
 Bools.  May be way to perform intermediate study on Mechanical Turk.

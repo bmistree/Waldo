@@ -115,6 +115,25 @@ def slicer(node,functionDeps=None,typeStack=None):
         idName = node.children[2].value;
         typeNode = node.children[1];
         typeStack.addIdentifier(idName,isMutable(typeNode));
+
+    elif node.label == AST_FUNCTION_CALL:
+        funcCallName = node.children[0].value;
+        funcArgListNode = node.children[1];
+        
+        # an aray of arrays....each element array contains the reads
+        # performed on the corresponding positional argument that gets
+        # passed into the function.
+        funcArgReads = [];
+        for funcArgNode in funcArgListNode.children:
+
+            readIndex = typeStack.getReadIndex();
+            slicer(funcArgNode,functionDeps,typeStack);
+            argumentReads = typeStack.getReadsAfter(readIndex);
+            
+            funcArgReads.append(argumentReads);
+        
+        typeStack.addFuncCall(funcCallName,funcArgReads);
+
         
     elif node.label == AST_ASSIGNMENT_STATEMENT:
         # left-hand side can only be a bracket statement or an
@@ -132,8 +151,9 @@ def slicer(node,functionDeps=None,typeStack=None):
 
             # tell typeStack that this variable may get written to and
             # its written to value depends on the values that the rhs reads made.
-            typeStack.addToVarReadSet(nodeName, typeStack.getIdentifier(nodeName));
-            typeStack.addReadsToVarReadSet(nodeName,readsMadeByRhs);
+            ntt = typeStack.getIdentifier(nodeName);
+            typeStack.addToVarReadSet(ntt);
+            typeStack.addReadsToVarReadSet(ntt,readsMadeByRhs);
 
         elif lhsNode.label == AST_BRACKET_STATEMENT:
             toReadFromNode = lhsNode.children[0];
@@ -145,8 +165,9 @@ def slicer(node,functionDeps=None,typeStack=None):
                 slicer(rhsNode,functionDeps,typeStack);
                 
                 readsMadeByRhs = typeStack.getReadsAfter(readIndex);
-                typeStack.addToVarReadSet(nodeName,typeStack.getIdentifier(nodeName));
-                typeStack.addReadsToVarReadSet(nodeName,readsMadeByRhs);
+                ntt = typeStack.getIdentifier(nodeName);
+                typeStack.addToVarReadSet(ntt);
+                typeStack.addReadsToVarReadSet(ntt,readsMadeByRhs);
 
                 # add all identifiers to function that results from
                 # accessing map identifier.
@@ -252,12 +273,13 @@ def slicer(node,functionDeps=None,typeStack=None):
             initializationReads = typeStack.getReadsAfter(readIndex);
 
             # tell current function that this node exists.
-            typeStack.addToVarReadSet(nodeName,ntt);
+            typeStack.addToVarReadSet(ntt);
             
             # tell current function that this node has the read and
             # write sets below.
+            ntt = typeStack.getIdentifier(nodeName);
             typeStack.addReadsToVarReadSet(
-                nodeName,initializationReads);
+                ntt,initializationReads);
 
     else:
         print('\nBehram error: still need to process label for ' + node.label + '\n');

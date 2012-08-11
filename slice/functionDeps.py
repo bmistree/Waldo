@@ -9,34 +9,76 @@ class FunctionDeps(object):
         # name to an array of NameTypeTuple-s each variable in here
         # may change and depends on reading other variables in the
         # list NameTypeTuple-s
+        # dict is indexed by int ntt id
         self.varReadSet = {}; 
 
         # the variables that this function reads from. dict from var
         # name to NameTypeTuple.
-        self.mReadSet = {}; 
+        # dict is indexed by int ntt id
+        self.mReadSet = {};
+
+        # a dictionary of ntt-s with varType
+        # TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL.  Will have to run
+        # through this dictionary to further check read/write status
+        # of these functions.
+        # dictionary is indexed by ntt id.
+        self.funcCalls = {};
+
+        # string: name of function
         self.funcName = funcName;
-        
-    def addToVarReadSet(self,nodeName,nameTypeTuple):
-        if self.varReadSet.get(nodeName,None) == None:
-            self.varReadSet[nodeName] = VarReadSet(nameTypeTuple);
+
+
+    def addFuncCall(self,ntt):
+        '''
+        @param {NameTypeTuple} ntt --- of type
+        TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL.
+        '''
+        if ntt.varType != TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL:
+            errMsg = '\nBehram error: in addFuncCall in functionDeps.py.  ';
+            errMsg += 'Should have received a varType of INDENTIFIER_TYPE_FUNCTION_CALL, ';
+            errMsg += 'but did not.\n';
+            print(errMsg);
+            assert(False);
+
+        self.funcCalls[ntt.id] = ntt;
+
+                    
+    def addToVarReadSet(self,nameTypeTuple):
+        if self.varReadSet.get(nameTypeTuple.id,None) == None:
+            self.varReadSet[nameTypeTuple.id] = VarReadSet(nameTypeTuple);
             
-    def addReadsToVarReadSet(self,nodeName,reads):
-        if self.varReadSet.get(nodeName,None) == None:
+    def addReadsToVarReadSet(self,ntt,reads):
+        '''
+        variable with NameTypeTuple of ntt is being written to.  Its
+        write is dependent on all the ntt-s stored in the array reads.
+        '''
+        if self.varReadSet.get(ntt.id,None) == None:
             print('\nBehram error.  Should not permit redeclaration.\n');
             assert(False);
         else:
-            self.varReadSet[nodeName].addReads(reads);
-            
+            self.varReadSet[ntt.id].addReads(reads);
+
+        # ensures that all reads that affect the written to value of
+        # the function get stored as well.
         self.addFuncReads(reads);
-            
+
+        
     def addFuncReads(self,reads):
         for read in reads:
-            self.mReadSet[read.varName] = read;
+            self.mReadSet[read.id] = read;
 
-    def jsonize(self):
+            
+    def jsonize(self,otherFuncDepsDict):
+        '''
+        @param {dictionary} otherFuncDepsDict --- a dictionary from
+        name of each functionDep to FunctionDep object.
+        '''
         returner = {};
         returner['funcName'] = self.funcName;
-        returner['readSet'] = sorted(self.mReadSet.keys());
+        
+        returner['readSet'] =[];
+        for ider in sorted(self.mReadSet.keys()):
+            returner['readSet'].append(self.mReadSet[ider].varName);
 
         # write read set list
         varReadSetList = [];
@@ -46,10 +88,9 @@ class FunctionDeps(object):
             varReadSetList.append(
                 util.fromJsonPretty(jsonString));
 
-
         # definite global/shared reads
         globSharedReads = [];
-        for ntt in self.definiteSharedGlobalReads():
+        for ntt in self.definiteSharedGlobalReads(otherFuncDepsDict):
             jsoned = ntt.jsonize();
             globSharedReads.append(
                 util.fromJsonPretty(jsoned));
@@ -58,7 +99,7 @@ class FunctionDeps(object):
 
         #definite global/shared writes
         globSharedWrites = [];
-        for ntt in self.definiteSharedGlobalWrites():
+        for ntt in self.definiteSharedGlobalWrites(otherFuncDepsDict):
             jsoned = ntt.jsonize();
             globSharedWrites.append(
                 util.fromJsonPretty(jsoned));
@@ -67,7 +108,7 @@ class FunctionDeps(object):
 
         # conditional global/shared reads
         conditionalGlobSharedReads = [];
-        for ntt in self.conditionalSharedGlobalReads():
+        for ntt in self.conditionalSharedGlobalReads(otherFuncDepsDict):
             jsoned = ntt.jsonize();
             conditionalGlobSharedReads.append(
                 util.fromJsonPretty(jsoned));
@@ -76,7 +117,7 @@ class FunctionDeps(object):
 
         # conditional global shared writes
         conditionalGlobSharedWrites = [];
-        for ntt in self.conditionalSharedGlobalWrites():
+        for ntt in self.conditionalSharedGlobalWrites(otherFuncDepsDict):
             jsoned = ntt.jsonize();
             conditionalGlobSharedWrites.append(
                 util.fromJsonPretty(jsoned));
@@ -87,34 +128,33 @@ class FunctionDeps(object):
         # return the json
         return util.toJsonPretty(returner);
 
-        
-    def _debugPrint(self):
-        print('\n\n\n');
-        print(self.funcName);
-        print('\n*****read set:*****\n')
-        for item in self.mReadSet.keys():
-            print(item);
+    # def _debugPrint(self):
+    #     print('\n\n\n');
+    #     print(self.funcName);
+    #     print('\n*****read set:*****\n')
+    #     for item in self.mReadSet.keys():
+    #         print(item);
 
             
-        print('\n****read set keys:****\n');
-        for item in self.varReadSet.keys():
-            self.varReadSet[item]._debugPrint('\t');
+    #     print('\n****read set keys:****\n');
+    #     for item in self.varReadSet.keys():
+    #         self.varReadSet[item]._debugPrint('\t');
 
-        print('\n***definite shared global reads:****\n');
-        print '\t',
-        for ntt in self.definiteSharedGlobalReads():
-            print ntt.varName + '\t',
-        print('\n');
+    #     print('\n***definite shared global reads:****\n');
+    #     print '\t',
+    #     for ntt in self.definiteSharedGlobalReads():
+    #         print ntt.varName + '\t',
+    #     print('\n');
 
-        print('\n***definite shared global writes:****\n');
-        print '\t',
-        for ntt in self.definiteSharedGlobalWrites():
-            print ntt.varName + '\t',
-        print('\n\n');
+    #     print('\n***definite shared global writes:****\n');
+    #     print '\t',
+    #     for ntt in self.definiteSharedGlobalWrites():
+    #         print ntt.varName + '\t',
+    #     print('\n\n');
 
         
             
-    def definiteSharedGlobalReads(self):
+    def definiteSharedGlobalReads(self,funcDepsDict,alreadyCheckedDict=None):
         '''
         Runs through all variables that are read and returns a list of
         all shared or global variable ntt-s that this function may
@@ -130,17 +170,74 @@ class FunctionDeps(object):
         conditions (eg, what's passed in etc.).  This is because maps
         and lists are reference types: one shared map may also be a
         shared global etc.
+
+        @param {dict} funcDepsDict --- (String:FunctionDeps object).
+
+        @param{dict} alreadyCheckedDict --- (String:FunctionDeps
+        object) if it's None, then that means that this is the root
+        call that we're going into.  Keeps track of the function
+        dependencies that this function has that we've already
+        checked.  If we've already checked a function, then we do not
+        need to check it again.
         '''
-        returner = [];
+        returnerDict = {};
+                
+        if alreadyCheckedDict == None:
+            alreadyCheckedDict = {};
+            
+        # add ourselves onto the list of functions that we have
+        # already checked.
+        alreadyCheckedDict[self.funcName] = True;
+            
+        for funcCallKey in sorted(self.funcCalls.keys()):
+            funcCallNtt = self.funcCalls[funcCallKey];
+            funcCallName = funcCallNtt.varName;
+            if alreadyCheckedDict.get(funcCallName,None) == None:
+                # means that we haven't already checked the function
+                # that we called here for definite global reads.
+
+                # we shouldn't really need this call, because each
+                # function should add itself, but this makes me more
+                # comfortable.
+                alreadyCheckedDict[funcCallName] = True;
+
+                funcDep = funcDepsDict.get(funcCallName,None);
+                if funcDep == None:
+                    errMsg = '\nBehram error: Made function call to a function ';
+                    errMsg += 'that we do not have a functionDep object for.\n';
+                    print(errMsg);
+                    assert(False);
+
+                funcDep_defSharedGlobReads = funcDep.definiteSharedGlobalReads(
+                    funcDepsDict,alreadyCheckedDict);
+
+                # now remove redundancies with existing dependencies
+                for singleDep in funcDep_defSharedGlobReads:
+                    # each item should be a global or shared ntt.
+                    if returnerDict.get(singleDep.id,None) == None:
+                        returnerDict[singleDep.id] = singleDep;
+
+        # now add my own definite dependencies to the dictionary
         for key in sorted(self.mReadSet.keys()):
             item = self.mReadSet[key];
             if ((item.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
                 (item.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL)):
-                returner.append(item);
+
+                
+                if returnerDict.get(item.id,None) == None:
+                    # we did not already have this global.  add it.
+                    returnerDict[item.id] = item;
+
+                    
+        # flatten the returner dictionary and return it.
+        returner = [];
+        for key in sorted(returnerDict.keys()):
+            returner.append(returnerDict[key]);
+
         return returner;
 
         
-    def definiteSharedGlobalWrites(self):
+    def definiteSharedGlobalWrites(self,otherFuncDepsDict):
         '''
         @see definitieSharedGlobalReads, except for writes.
 
@@ -210,7 +307,7 @@ class FunctionDeps(object):
             potentialNtt = item.ntt;
             if ((potentialNtt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
                 (potentialNtt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL)):
-                toReturn[potentialNtt.varName] = potentialNtt;
+                toReturn[potentialNtt.id] = potentialNtt;
                 
         # step 2
         for readSetItem in self.varReadSet.values():
@@ -239,7 +336,7 @@ class FunctionDeps(object):
                             # step 4 c
                             if ((dependencyNtt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
                                 (dependencyNtt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL)):
-                                toReturn[dependencyNtt.varName] = dependencyNtt;
+                                toReturn[dependencyNtt.id] = dependencyNtt;
 
 
         # step 6
@@ -260,7 +357,7 @@ class FunctionDeps(object):
         return returner;
         
 
-    def conditionalSharedGlobalReads(self):
+    def conditionalSharedGlobalReads(self,otherFuncDepsDict):
         '''
         Can read a global that wasn't returned by
         definiteSharedGlobalReads.  This is because maps and lists are
@@ -280,12 +377,11 @@ class FunctionDeps(object):
         should check whether these have taints at run time.
 
         '''
-        defSGR = self.definiteSharedGlobalReads();
+        defSGR = self.definiteSharedGlobalReads(otherFuncDepsDict);
         # need to keep track of function argument reads as well
         # because may get taint through them.
         returner = self._getConditionalGlobalShareds(defSGR + self.funcArgReads());
         return returner;
-            
 
     def _getConditionalGlobalShareds(self, arrayToCheck):
         '''
@@ -298,7 +394,7 @@ class FunctionDeps(object):
                     (ntt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL) or
                     (ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
 
-                    dynamicCheckDict[ntt.varName] = ntt;
+                    dynamicCheckDict[ntt.id] = ntt;
                 
 
         # actually return the array of items to check taint for.
@@ -312,12 +408,12 @@ class FunctionDeps(object):
         return returner;
 
         
-    def conditionalSharedGlobalWrites(self):
+    def conditionalSharedGlobalWrites(self,otherFuncDepsDict):
         '''
         @see conditionalSharedGlobalReads
         '''
         return self._getConditionalGlobalShareds(
-            self.definiteSharedGlobalWrites() + self.mutableFuncArgWrites());
+            self.definiteSharedGlobalWrites(otherFuncDepsDict) + self.mutableFuncArgWrites());
 
     def funcArgReads(self):
         '''
@@ -329,7 +425,7 @@ class FunctionDeps(object):
         returnDict = {};
         for nttKey in sorted(self.mReadSet.keys()):
             ntt = self.mReadSet[nttKey];
-            returnDict[ntt.varName] = ntt;
+            returnDict[ntt.id] = ntt;
             
 
         # collapse returnDict...note sorting for easier debugging.
@@ -366,13 +462,13 @@ class FunctionDeps(object):
                 
                 # doing #1
                 if vrsItem.ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT:
-                    returnDict[vrsItem.ntt.varName] = vrsItem.ntt;
+                    returnDict[vrsItem.ntt.id] = vrsItem.ntt;
                 else:
                     # doing #2
                     for nttReadKeys in sorted(vrsItem.mReads.keys()):
                         nttReadItem = vrsItem.mReads[nttReadKeys];
                         if nttReadItem.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARUGMENT:
-                            returnDict[nttReadItem.ntt.varName] = nttReadItem;
+                            returnDict[nttReadItem.ntt.id] = nttReadItem;
                             
 
         # collapse the dictionary into a sorted list and return it.
@@ -394,12 +490,15 @@ class VarReadSet(object):
         self.mWrites = {};
         
     def addReads(self,reads):
+        '''
+        @param {array of ntt-s} reads.
+        '''
         for read in reads:
-            self.mReads[read.varName] = read;
+            self.mReads[read.id] = read;
 
     def addWrites(self,writes):
         for write in writes:
-            self.mWrites[write.varName] = write;
+            self.mWrites[write.id] = write;
 
     def jsonize(self):
         returner = {};

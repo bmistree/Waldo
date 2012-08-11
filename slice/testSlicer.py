@@ -35,11 +35,20 @@ def run (filename):
 
     fDeps = slicer(rootNode);
 
+    # turn fDeps into a dictionary
+    warnMsg = '\nBehram warn.  Need to add endpoint information ';
+    warnMsg += 'to each function name in fDeps to ensure that when ';
+    warnMsg += 'turn into a dictionary, do not overwrite the function ';
+    warnMsg += 'of one endpoint with that of another.\n';
+    print(warnMsg);
+    allDepsDict = {};
+    for dep in fDeps:
+        allDepsDict[dep.funcName] = dep;
+    
     print('\n\n');
     for dep in fDeps:
-        print(dep.jsonize());
+        print(dep.jsonize(allDepsDict));
         print('\n');
-        # dep._debugPrint();
     print('\n\n');
         
         
