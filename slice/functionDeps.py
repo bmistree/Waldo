@@ -237,7 +237,7 @@ class FunctionDeps(object):
         return returner;
 
         
-    def definiteSharedGlobalWrites(self,otherFuncDepsDict):
+    def definiteSharedGlobalWrites(self,otherFuncDepsDict,alreadyCheckedDict=None):
         '''
         @see definitieSharedGlobalReads, except for writes.
 
@@ -296,7 +296,14 @@ class FunctionDeps(object):
 
            6: Unmark all.  (ie, repeat 2)
 
-           7: Convert toReturn to a list and return it.
+           7: Run through all function calls in function.  For each
+              that we haven't already processed, call
+              definiteGlobSharedWrites on it.  Try to append the
+              called function's global/shared writes to our existing
+              shared/global writes (ie, append if we didn't already
+              have it).
+           
+           9: Convert toReturn to a list and return it.
         '''
 
         # step 0
@@ -346,7 +353,39 @@ class FunctionDeps(object):
                 innerNtt.unmark();
 
 
-        # step 7
+        if alreadyCheckedDict == None:
+            alreadyCheckedDict = {};
+
+        alreadyCheckedDict[self.funcName] = True;
+        # now check all function calls that this function makes to see
+        # if there are any definite writes to globals in any of the
+        # functions that this function calls.
+
+        for funcCallKey in sorted(self.funcCalls.keys()):
+            funcCallNtt = self.funcCalls[funcCallKey];
+            funcCallName = funcCallNtt.varName;
+            
+            if alreadyCheckedDict.get(funcCallName,None) == None:
+                # we haven't already checked this subfunction
+                # go ahead and do so.
+                alreadyCheckedDict[funcCallName] = True;
+
+                fDep = otherFuncDepsDict.get(funcCallName,None);
+                if fDep == None:
+                    errMsg = '\nBehram error: making a call to a function ';
+                    errMsg += 'that does not have associated function dep ';
+                    errMsg += 'object.\n';
+                    print(errMsg);
+                    assert(False);
+
+                fDep_defGlobSharedWrites = fDep.definiteSharedGlobalWrites(
+                    otherFuncDepsDict,alreadyCheckedDict);
+                # check whether we already knew that there might be write conflicts.
+                for defGlobSharedWrite in fDep_defGlobSharedWrites:
+                    if toReturn.get(defGlobSharedWrite.id,None) == None:
+                        toReturn[defGlobSharedWrite.id] = defGlobSharedWrite;
+                        
+        # step 9
 
         # for debugging, always want to return this list in the same
         # order, that's why not just returning list(toReturn.values);
@@ -383,7 +422,7 @@ class FunctionDeps(object):
         returner = self._getConditionalGlobalShareds(defSGR + self.funcArgReads());
         return returner;
 
-    def _getConditionalGlobalShareds(self, arrayToCheck):
+    def _getConditionalGlobalShareds(self,arrayToCheck):
         '''
         @see conditionalSharedGlobalReads
         '''
