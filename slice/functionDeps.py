@@ -223,12 +223,10 @@ class FunctionDeps(object):
             if ((item.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
                 (item.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL)):
 
-                
                 if returnerDict.get(item.id,None) == None:
                     # we did not already have this global.  add it.
                     returnerDict[item.id] = item;
 
-                    
         # flatten the returner dictionary and return it.
         returner = [];
         for key in sorted(returnerDict.keys()):
@@ -415,7 +413,12 @@ class FunctionDeps(object):
         Similarly, for all mutable arguments that are passed in, we
         should check whether these have taints at run time.
 
+        Do not need to check through function calls.  This is because
+        the only way that conditional reads will occur is if one of
+        the arguments to the function is mutable and global/shared.
+        But the caller already knows if the argument is global/shared.  
         '''
+        
         defSGR = self.definiteSharedGlobalReads(otherFuncDepsDict);
         # need to keep track of function argument reads as well
         # because may get taint through them.
@@ -454,6 +457,13 @@ class FunctionDeps(object):
         return self._getConditionalGlobalShareds(
             self.definiteSharedGlobalWrites(otherFuncDepsDict) + self.mutableFuncArgWrites());
 
+# lkjs;
+# do not need to type check through function calls because a calling function will already have sorted out the read.
+
+# need to handle returned global that was a read, but then got written to in the local area.  (only for mutables).
+# lkjs;
+
+    
     def funcArgReads(self):
         '''
         Just run through mReadSet and return any reads made to passed
