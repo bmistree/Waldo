@@ -303,3 +303,27 @@ class FuncCallNtt(NameTypeTuple):
             self,nameOfFunc,TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL,False,None);
         
         self.funcArgReads = funcArgReads;
+
+    def hashSignature(self):
+        '''
+        @returns {String} --- generates a signature of this function
+        call.  Only function calls to the same functions whose
+        arguments have the read set should have the same signature.
+        If two have the same signature, that means that the
+        global/shared write and read sets of one will be the same as
+        the global/shared write and read sets of the other.
+        '''
+        returner = str(self.varName) + '|_*_| ';
+        for positionArgReads in self.funcArgReads:
+
+            for readNtt in positionArgReads:
+                if readNtt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL:
+                    returner += readNtt.hashSignature();
+                else:
+                    returner += str(readNtt.id);
+                returner += '-^-';
+
+            
+            returner += '&%&';
+        
+        return returner;

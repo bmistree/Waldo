@@ -300,6 +300,16 @@ def printWarning():
         warnMsg = '\nBehram error: still need to write something ';
         warnMsg += 'intelligent for message sequences.\n';
         print(warnMsg);
+
+        warnMsg = '\nBehram error: still need to handle returns\' ';
+        warnMsg += 'subsequently being written to in mega-'
+        warnMsg += 'constructor in functionDeps.py.\n';
+        print(warnMsg);
+
+        warnMsg = '\nBehram error: handle post-it problem on ';
+        warnMsg += 'second monitor.\n';
+        print(warnMsg);
+        
         HavePrinted = True;
     
 def isMutable(nodeTypeNode):
