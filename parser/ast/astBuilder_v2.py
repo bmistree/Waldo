@@ -51,14 +51,23 @@ def p_RootExpression(p):
 def p_MessageSequenceSection(p):
     '''MessageSequenceSection : MessageSequence MessageSequenceSection
                               | MessageSequence
+                              | Empty
     '''
-    
     p[0] = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[1].lineNo,p[1].linePos);
-    p[0].addChild(p[1]);
+    
+    if not isEmptyNode(p[1]):
+        p[0].addChild(p[1]);
     
     if (len(p) == 3):
         #flattens all message sequences into siblings
-        p[0].addChildren(p[2].getChildren());
+        kids = p[2].getChildren();
+        for kid in kids:
+            if isEmptyNode(kid):
+                continue;
+            p[0].addChild(kid);
+            
+        # p[0].addChildren(p[2].getChildren());
+
 
                    
 def p_MessageSequence(p):

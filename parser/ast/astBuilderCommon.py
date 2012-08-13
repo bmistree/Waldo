@@ -45,16 +45,17 @@ def p_TraceSection(p):
     #note: this is an intermediate production, and will get skipped.
     p[0] = AstNode(AST_TRACE_SECTION,p.lineno(1),p.lexpos(1));
 
-    if (len(p) == 4):
-        # throw error if no code in traces body section.
-        p[0].value = p[1]; # WaldoParseException requires a value field.
-        errMsg = '\nERROR: you must enter code into the "' + p[1] + '" ';
-        errMsg += 'section before you can compile.\n';
-        raise WaldoParseException(p[0],errMsg);
+    if len(p) == 4:
+        pass;
+        # # throw error if no code in traces body section.
+        # p[0].value = p[1]; # WaldoParseException requires a value field.
+        # errMsg = '\nERROR: you must enter code into the "' + p[1] + '" ';
+        # errMsg += 'section before you can compile.\n';
+        # raise WaldoParseException(p[0],errMsg);
 
-    
-    #getting TraceBodySection's children removes it as an intermediate node.
-    p[0].addChildren(p[3].getChildren());
+    else:
+        # getting TraceBodySection's children removes it as an intermediate node.
+        p[0].addChildren(p[3].getChildren());
 
 
 
