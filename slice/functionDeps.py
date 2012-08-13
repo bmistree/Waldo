@@ -449,14 +449,336 @@ class FunctionDeps(object):
                     
         return returner;
 
-        
+    # def nonFuncCallConditionalSharedGlobalWrites(self,otherFuncDepsDict):
+    #     '''
+    #     @see conditionalSharedGlobalReads, but does not go through
+    #     function calls as well.
+    #     '''
+    #     return self._getConditionalGlobalShareds(
+    #         self.definiteSharedGlobalWrites(otherFuncDepsDict) + self.mutableFuncArgWrites());
+
     def conditionalSharedGlobalWrites(self,otherFuncDepsDict):
         '''
         @see conditionalSharedGlobalReads
-        '''
-        return self._getConditionalGlobalShareds(
-            self.definiteSharedGlobalWrites(otherFuncDepsDict) + self.mutableFuncArgWrites());
 
+        Returns an array of ntt-s.  If any ntt in this array is
+        tainted by a global or shared variable that is mutable, then
+        that global or shared variable may be written to when this
+        function is executed.
+        '''
+
+        # other than explicit global/shared writes that happen in the
+        # body of the function (taken care of through call to
+        # self.definiteSharedGlobalWrites below), the only other thing
+        # that we need to check is that a mutable argument passed into
+        # this function.  If that mutable
+        # 
+        #     * gets written to during as a result of this function
+        #       invocation
+        # 
+        # then need to check that the mutable doesn't have
+        # shared/global taint.  The first part of this function focuses
+        # on determining the starred point above.
+        mMutableArguments = self._getMutableArguments();
+
+        mutablePotentialWrites = [];
+        for mutableArg in mMutableArguments:
+            positionIndex = mutableArg.argPosition;
+            if self.referenceWritten(positionIndex,otherFuncDepsDict):
+                mutablePotentialWrites.append(mutableArg);
+
+        return self._getConditionalGlobalShareds(
+            self.definiteSharedGlobalWrites(otherFuncDepsDict) + mutablePotentialWrites);
+
+    
+    def _getMutableArguments(self):
+        '''
+        Returns all arguments to this function that are mutable and at
+        least read as an array of ntt-s.
+        '''
+        returnerDict = {};
+        for readKey in self.mReadSet.keys():
+            readNtt = self.mReadSet[readKey];
+            if (readNtt.mutable and
+                (readNtt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
+                returnerDict[readNtt.id] = readNtt;
+
+        # flatten dictionary into an array
+        returner = [];
+        for itemKey in returnerDict.keys():
+            item = returnerDict[itemKey];
+            returner.append(item);
+
+        return returner;
+
+
+    def referenceWritten(
+        self,argPosition,otherFuncDepsDict,alreadyChecked=None):
+        '''
+        @param{Int} argPosition
+        
+        @param{dictionary<funcName:FunctionDep object>}
+        
+        @param{dictionary<hashedFunctionName:bool>} --- Tells me
+        previous function-position arguments we've tried when trying
+        to answer this query.  (Note for hashedFunctionName, @see
+        _hashCalledArgPos.
+        
+        @see conditionalSharedGlobalReads
+
+        Recursively answers whether a shared or global variable in
+        position argPosition could be written to by calling this
+        function.
+
+        First checks whether argument is mutable...if it's not, then
+        any writes to it cannot affect a global/shared variable.
+
+        Then, checks whether any non-function call code in the
+        function writes to it....if it does, return True.
+
+        Then goes through all function calls that this code executes.
+        If any of these functions potentially write to the argument
+        specified by posArg, then return True.  Otherwise, return
+        False.
+        '''
+        if alreadyChecked == None:
+            alreadyChecked = {};
+            
+        # Making a copy of dictionary because only want to update
+        # checks made by sub-queries rooted in this query.  Do not
+        # want to affect sibling queries.
+        alreadyCheckedCopy = self._copyDict(alreadyChecked);
+        mHash = self._hashCalledArgPos(
+            self.funcName,argPosition);
+        alreadyCheckedCopy[mHash] = True;
+
+        
+        # check if the argument is even mutable: return false if it's not.
+        requireAdditionalChecking = False;
+        for mutableArg in self._getMutableArguments():
+            if mutableArg.argPosition == argPosition:
+                nttArgToCheck = mutableArg;
+                requireAdditionalChecking = True;
+                break;
+            
+        if not requireAdditionalChecking:
+            # means that the arugment was not mutable.  return right away.
+            return False;
+
+
+        ### now check if the function that we were in potentially
+        ### wrote to this argument in this function (excluding
+        ### function calls).
+        
+        # ignores potential function calls made.
+        inFunctionMutableFuncArgWritesArray = self.mutableFuncArgWrites();
+        for potentialWrite in inFunctionMutableFuncArgWritesArray:
+            if potentialWrite.argPosition == argPosition:
+                return True;
+        
+        ### now check if the argument got written to by any function
+        ### calls.
+        for fcKey in sorted(self.funcCall.keys()):
+            funcCallNtt = self.funcCall[fcKey];
+            funcCallName = funcCallNtt.varName;
+
+            fDep = otherFuncDepsDict.get(funcCallName,None);
+            if fDep == None:
+                errMsg = '\nBehram error: in functionDeps.py, should ';
+                errMsg += 'have had an associated function dependency ';
+                errMsg += 'for name, but did not.\n';
+                print(errMsg);
+                assert(False);
+
+            
+            # posReadSet is an array of positions.  We need to check
+            # if the nttArgToCheck (the argument that external
+            # function wanted to know about) is passed in as an
+            # argument to a further function call.  if it is, then
+            # posReadSet returns the position of each argument that
+            # the argument will be passed in as.  Need to recursively call
+            # referenceWritten on this function call plus argument.
+            posReadSet = self._checkArgInReadSetOfFuncCall (
+                nttArgToCheck,funcCallNtt);
+
+            additionalToCheck = [];
+            for posArgument in posReadSet:
+                # means that the mutable argument that we are trying to check
+                # is actually one of the arguments that are passed
+                hashedPosArguments = self._hashCalledArgPos(
+                    funcCallName,posArg);
+
+                # we already checked this one and know that it does not 
+                if alreadyCheckedCopy.get(hashedPosArguments,None) != None:
+                    continue;
+
+                alreadyCheckedCopy[hashedPosArguments] = True;
+
+                if fDep.referenceWritten(posArgument,otherFuncDepsDict,copyDict):
+                    return True;
+
+        # if got all the way through, then there's no way that this
+        # variable will be reference-written.  return false.
+        return False;
+
+    def _copyDict(self,toCopyDict):
+        
+        returner = {};
+        for key in toCopyDict.keys():
+            returner[key] = toCopyDict[key];
+        
+        return returner;
+        
+    
+    def _checkArgInReadSetOfFuncCall (self,nttArgToCheck,funcCallNtt):
+        '''
+        @param {NameTypeTuple} nttArgToCheck --- Should have varType
+        of TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT.  
+
+        @param {FuncCallNtt} funcCallNtt --- Should have varType of
+        TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL
+
+        @return {Array<int>} --- All the positional arguments that
+        nttArgToCheck gets passed
+        
+        Want to when nttArgToCheck may be read when constructing
+        arguments to funcCallNtt.  Returns the positions (as numbers
+        in an array) of each argument that requires a read to
+        nttArgToCheck.  If none, then return empty array.
+        '''
+
+        returner = [];
+
+
+        for positionIndex in range(0,len(funcCallNtt.funcArgReads)):
+            readArray = funcCallNtt.funcArgReads[positionIndex];
+            for read in readArray:
+                if self._inMutableEffectChain(nttArgToCheck,read):
+                    returner.append(positionIndex);
+                    break;
+                
+        return returner;
+        
+
+
+    def _unmarkAll(self):
+        for vReadSetKey in self.varReadSet.keys():
+            vReadSet = self.varReadSet[vReadSetKey];
+            vReadSet.ntt.unmark();
+            for readNttKey in vReadSet.mReads.keys():
+                readNtt = vReadSet.mReads[readNttKey];
+                readNtt.unmark();
+
+    
+    def _inMutableEffectChain(self,root,toCheck):
+        '''
+        @param {NameTypeTuple} root
+        @param {NameTypeTuple} toCheck
+
+        @returns {bool}
+        
+        Returns True if toCheck potentially writes to root (minus
+        function calls) and root and toCheck are both mutable...ie
+        returns true if a change to root might affect a change in
+        toCheck and vice versa. False otherwise.
+
+        Algorithm:
+
+        -2: If root is not mutable or toCheck is not mutable, return
+            False: write to one won't be able to indirectly affect the
+            other.
+
+        -1: If root and toCheck are the same, return true
+            
+        0: Run through all writes and write dependencies unmarking all.
+
+        1: Add root to workDict
+
+        2: Remove an element from workDict, named toWorkOn
+
+        3: If toWorkOn gets written to, then run through all of its
+           dependencies.
+
+             a) If the dependency is toCheck, then return True.  Otherwise:
+
+             b) If the dependency is mutable and unmarked, then add it
+                to workDict and mark it.
+
+
+        4: If workDict is empty, run the same algorithm replacing
+           toCheck with root and vice versa.  If still do not return
+           True, then return False.
+        '''
+        # step -2
+        if (not root.mutable) or (not toCheck.mutable):
+            return False;
+
+        # step -1
+        if root.id == toCheck.id:
+            return True;
+
+        
+        def _helper(fDep,root,toCheck):
+            '''
+            Implements steps 0-4
+            '''
+            # step 0
+            fDep._unmarkAll();
+            
+            workDict = {};
+            root.mark();
+            workDict[root.id] = root;
+
+            while len(workDict) != 0:
+                # step 2
+                toWorkOn = list(workDict.values())[0];
+                del workDict[toWorkOn.id];
+
+                for vReadSetKey in fDep.varReadSet.keys():
+                    if toWorkOn.id == vReadSetKey:
+                        # step 3
+                        varReadSet = fDep.varReadSet[vReadSetKey];
+                        for depKey in varReadSet.mReads.keys():
+                            dependency = varReadSet.mReads[depKey];
+                            # step 3 a
+                            if dependency.id == toCheck.id:
+                                fDep._unmarkAll();
+                                return True;
+                            # step 3 b
+                            if dependency.mutable and (not dependency.isMarked()):
+                                workDict[dependency.id] = dependency;
+                                dependency.mark();
+
+            # did not find it.
+            fDep._unmarkAll();
+            return False;
+
+        # see comment at step 4.
+        return _helper(self,root,toCheck) or _helper(self,toCheck,root);
+
+
+    
+    def _hashCalledArgPos(self,funcCallName,posArg):
+        '''
+        @param{String} funcCallName --- The name of the function that
+        we're calling
+        
+        @param{Int} posArg --- The positional argument that we're checking.
+        '''
+        return funcCallName + ':*:' + str(posArg);
+                                
+            
+        
+
+
+    # def conditionalSharedGlobalWrites(self,otherFuncDepsDict):
+    #     '''
+    #     @see conditionalSharedGlobalReads
+    #     '''
+    #     return self._getConditionalGlobalShareds(
+    #         self.definiteSharedGlobalWrites(otherFuncDepsDict) + self.mutableFuncArgWrites());
+
+    
 # lkjs;
 # do not need to type check through function calls because a calling function will already have sorted out the read.
 
