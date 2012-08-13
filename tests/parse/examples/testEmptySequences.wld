@@ -1,0 +1,32 @@
+/** VERSION 2
+ * Checks whether can tolerate an essentially empty file.
+*/
+
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+}
+
+
+/**** Data shared between both ends */
+Shared
+{
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}
