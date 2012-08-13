@@ -8,7 +8,7 @@ sys.path.append(os.path.join(curDir,'..','bin'));
 
 import head;
 from slicer import slicer;
-
+from slicer import reset;
 
 class StreamObj(object):
     def __init__(self):
@@ -20,10 +20,9 @@ class StreamObj(object):
         self.msg = '';
         return msg;
 
-def run (filename):
-    filer = open(filename,'r');
-    progText = filer.read();
-    filer.close();
+def runText(progText):
+    # ensures that we reset the name type tuple id between runs.
+    reset();
     
     outputErrStream = StreamObj();
     rootNode = head.lexAndParse(progText,outputErrStream,2);
@@ -36,20 +35,24 @@ def run (filename):
     fDeps = slicer(rootNode);
 
     # turn fDeps into a dictionary
-    warnMsg = '\nBehram warn.  Need to add endpoint information ';
-    warnMsg += 'to each function name in fDeps to ensure that when ';
-    warnMsg += 'turn into a dictionary, do not overwrite the function ';
-    warnMsg += 'of one endpoint with that of another.\n';
-    print(warnMsg);
     allDepsDict = {};
     for dep in fDeps:
         allDepsDict[dep.funcName] = dep;
-    
-    print('\n\n');
+
+    toPrint = '\n\n';
     for dep in fDeps:
-        print(dep.jsonize(allDepsDict));
-        print('\n');
-    print('\n\n');
+        toPrint += dep.jsonize(allDepsDict);
+        toPrint += '\n\n';
+
+    toPrint += '\n\n\n';
+    return toPrint;
+    
+    
+def run (filename):
+    filer = open(filename,'r');
+    progText = filer.read();
+    filer.close();
+    print(runText(progText));
         
         
 if __name__ == '__main__':

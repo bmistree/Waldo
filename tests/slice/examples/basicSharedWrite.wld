@@ -1,0 +1,41 @@
+/**
+  * Checking to ensure that pingCounter appears in definite shared
+  * reads and writes of otherFunc.
+*/
+
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+}
+
+
+Shared
+{
+    Ping controls Number pingCounter = 0;
+    Pong controls Number pongCounter = 0;
+}
+
+
+
+
+/**** Ping endpoint *********/
+Ping
+{
+
+    Public Function otherFunc()
+    {
+        pingCounter = 3;
+    }
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}

@@ -1,0 +1,76 @@
+
+
+{
+    "conditionalGlobalSharedReads": [
+        {
+            "argPosition": -1, 
+            "id": 0, 
+            "mutable": 1, 
+            "varName": "numList", 
+            "varType": 1
+        }
+    ], 
+    "conditionalGlobalSharedWrites": [
+        {
+            "argPosition": -1, 
+            "id": 0, 
+            "mutable": 1, 
+            "varName": "numList", 
+            "varType": 1
+        }
+    ], 
+    "definiteGlobalSharedReads": [
+        {
+            "argPosition": -1, 
+            "id": 0, 
+            "mutable": 1, 
+            "varName": "numList", 
+            "varType": 1
+        }
+    ], 
+    "definiteGlobalSharedWrites": [
+        {
+            "argPosition": -1, 
+            "id": 0, 
+            "mutable": 1, 
+            "varName": "numList", 
+            "varType": 1
+        }
+    ], 
+    "funcName": "onCreate", 
+    "readSet": [
+        "numList"
+    ]
+}
+
+{
+    "conditionalGlobalSharedReads": [
+        {
+            "argPosition": 0, 
+            "id": 2, 
+            "mutable": 1, 
+            "varName": "someList", 
+            "varType": 3
+        }
+    ], 
+    "conditionalGlobalSharedWrites": [
+        {
+            "argPosition": 0, 
+            "id": 2, 
+            "mutable": 1, 
+            "varName": "someList", 
+            "varType": 3
+        }
+    ], 
+    "definiteGlobalSharedReads": [], 
+    "definiteGlobalSharedWrites": [], 
+    "funcName": "otherFunc", 
+    "readSet": [
+        "someList"
+    ]
+}
+
+
+
+
+

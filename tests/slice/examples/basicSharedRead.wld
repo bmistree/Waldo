@@ -1,0 +1,42 @@
+/**
+  * Just checking to ensure that pingCounter appears in the definite
+  * read set of something
+*/
+
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+}
+
+
+/**** Data shared between both ends */
+Shared
+{
+    // both of these are rarely used in this program.
+    Ping controls Number pingCounter = 0;
+    Pong controls Number pongCounter = 0;
+}
+
+
+
+
+/**** Ping endpoint *********/
+Ping
+{
+    Public Function something()
+    {
+        pingCounter;
+    }
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}

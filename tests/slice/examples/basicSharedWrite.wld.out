@@ -1,0 +1,23 @@
+
+
+{
+    "conditionalGlobalSharedReads": [], 
+    "conditionalGlobalSharedWrites": [], 
+    "definiteGlobalSharedReads": [], 
+    "definiteGlobalSharedWrites": [
+        {
+            "argPosition": -1, 
+            "id": 0, 
+            "mutable": 0, 
+            "varName": "pingCounter", 
+            "varType": 0
+        }
+    ], 
+    "funcName": "otherFunc", 
+    "readSet": []
+}
+
+
+
+
+

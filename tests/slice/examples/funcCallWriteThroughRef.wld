@@ -1,0 +1,46 @@
+/** 
+  * Note that because numList is passed from onCreate to otherFunc, it
+  * gets written to through reference.  Ensures that numList shows up
+  * in definite and conditional global/shared reads and writes for
+  * onCreate.  Similarly, nothing definite should show up in otherFunc.
+  * 
+*/
+
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+}
+
+
+
+Shared
+{
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+    List (element: Number) numList = [1,3,4,];  
+    onCreate ()
+    {
+        otherFunc(numList);
+    }
+
+    Public Function otherFunc(List (element: Number) someList)
+    {
+        someList[1] = 1;
+    }
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}

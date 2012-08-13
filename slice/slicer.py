@@ -9,6 +9,7 @@ sys.path.append(os.path.join(curDir,'..','parser','ast','typeCheck'));
 
 from astLabels import *;
 from typeStack import TypeStack;
+from typeStack import NameTypeTuple;
 from functionDeps import FunctionDeps;
 import templateUtil;
 
@@ -290,7 +291,7 @@ def slicer(node,functionDeps=None,typeStack=None):
     return functionDeps;
 
 
-HavePrinted = False;
+HavePrinted = True;
 def printWarning():
     global HavePrinted;
     if not HavePrinted:
@@ -309,6 +310,12 @@ def printWarning():
         warnMsg = '\nBehram error: handle post-it problem on ';
         warnMsg += 'second monitor.\n';
         print(warnMsg);
+
+        warnMsg = '\nBehram warn.  Need to add endpoint information ';
+        warnMsg += 'to each function name in fDeps to ensure that when ';
+        warnMsg += 'turn into a dictionary, do not overwrite the function ';
+        warnMsg += 'of one endpoint with that of another.\n';
+        print(warnMsg);
         
         HavePrinted = True;
     
@@ -324,3 +331,11 @@ def isMutable(nodeTypeNode):
             return True;
 
     return False;
+
+
+def reset():
+    '''
+    Ensures that all static variables are reset to their original values.
+    '''
+    NameTypeTuple.staticId = 0;
+

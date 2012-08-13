@@ -69,10 +69,10 @@ def runWaldoFile(folderName,filename,testToRun,detailsStream):
         # only the detailed stream will output the reason for failure
         detailsStream.write(toPrintStr);
         detailsStream.write(
-            indentString('\nEXPECTED\n',1) + indentString(expectedOutputText,2));
+            indentString('\nEXPECTED\n|',1) + indentString(expectedOutputText,2));
 
         detailsStream.write(
-            indentString('ACTUAL\n',1) + indentString(output,2));
+            indentString('|ACTUAL\n',1) + indentString(output,2));
     else:
         toPrintStr += 'PASSED';
         detailsStream.write(toPrintStr);
