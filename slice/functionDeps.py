@@ -300,7 +300,39 @@ class FunctionDeps(object):
               called function's global/shared writes to our existing
               shared/global writes (ie, append if we didn't already
               have it).
-           
+
+           8: Run through all function calls that this function makes.
+
+                 a: For each one, look through the expressions that
+                    compose the arguments that we pass in.
+
+                    i: If any of these expressions is composed of a
+                       global/shared variable (or tainted by one) and
+                       is mutable, then  proceed.  Otherwise, go to next element in a.
+
+                    ii: through a call to referenceWritten, determine
+                        whether the associated positional argument
+                        could be written to.
+
+                    iii: If it can, then add the associated tainted
+                         global variable to toReturn.
+                    
+
+                 look through the arguments that
+                    compose
+                 
+lkjs;                 
+                 b: If one of its conditional writes is an argument to
+                    the function, then look at the expression that
+                    composed that argument when we made the function
+                    call.
+
+                 c: If any of the reads for that expression were made
+                    from a global/shared tainted variable that was
+                    mutable, then that global/shared tainted variable
+                    gets added to toReturn.
+                    
+
            9: Convert toReturn to a list and return it.
         '''
 
@@ -382,7 +414,34 @@ class FunctionDeps(object):
                 for defGlobSharedWrite in fDep_defGlobSharedWrites:
                     if toReturn.get(defGlobSharedWrite.id,None) == None:
                         toReturn[defGlobSharedWrite.id] = defGlobSharedWrite;
-                        
+
+
+        # step 8
+        for funcCallKey in sorted(self.funcCalls.keys()):
+            funcCallNtt = self.funcCalls[funcCallKey];
+            funcCallName = funcCallNtt.varName;
+            fDep = otherFuncDepsDict.get(funcCallName,None);
+            
+            
+            # step 8a
+            for argPosition in range(0,len(funcCallNtt.funcArgReads)):
+                
+                # argPosition reads is an array of reads that this
+                # function makes
+                argPositionReads = funcCallNtt.funcArgReads[argPosition];
+
+                for readNtt in argPositionReads:
+                    # 8ai
+                    allTaintedWith = self._getAllMutableTaintedWith(readNtt);
+                    if len(allTaintedWith) != 0:
+
+                        # 8aii
+                        if fDep.referenceWritten(argPosition,otherFuncDepsDict):
+                            
+                            # 8aiii
+                            for taintedWith in allTaintedWith:
+                                toReturn[taintedWith.id] = taintedWith;
+            
         # step 9
 
         # for debugging, always want to return this list in the same
@@ -392,7 +451,27 @@ class FunctionDeps(object):
             returner.append(toReturn[nttKey]);
                 
         return returner;
+
+
+    def _getAllMutableTaintedWith(self,ntt):
+        '''
+        @param {NameTypeTuple} ntt
+
+        @return{Array of NameTypeTuples}
+
+        Returns an array of all mutable global variables that may be
+        written to if you write to ntt.  Eg
+
+        List someLocal = someShared;
+        someLocal[1] = 3;
+
+        _getAllMutableTaintedWith(someLocal) returns [someShared].
         
+        
+        '''
+        # lkjs;
+        return [];
+
 
     def conditionalSharedGlobalReads(self,otherFuncDepsDict):
         '''
@@ -767,10 +846,6 @@ class FunctionDeps(object):
         '''
         return funcCallName + ':*:' + str(posArg);
                                 
-            
-        
-
-
     # def conditionalSharedGlobalWrites(self,otherFuncDepsDict):
     #     '''
     #     @see conditionalSharedGlobalReads
