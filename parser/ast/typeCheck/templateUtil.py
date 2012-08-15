@@ -376,6 +376,20 @@ def buildMapTypeSignatureFromTypeNames(fromTypeName,toTypeName):
         JSON_MAP_TO_TYPE_FIELD: toTypeName
         };
 
+def getMapIndexType(typeLabel):
+    '''
+    If typeLabel is not for a map or for an empty map, assert out.
+    '''
+    if (not isMapType(typeLabel)) or (typeLabel == EMPTY_MAP_SENTINEL):
+        errMsg = '\nBehram error: trying to get the index for a non-map type.\n';
+        print(errMsg);
+        assert(False);
+
+    jsoned = json.loads(typeLabel);    
+    toReturn = jsoned[JSON_MAP_FROM_TYPE_FIELD];
+    if (not isinstance(toReturn,basestring)):
+        toReturn = json.dumps(toReturn);
+    return toReturn;
 
 
 def buildMapTypeSignature(node,progText,typeStack):

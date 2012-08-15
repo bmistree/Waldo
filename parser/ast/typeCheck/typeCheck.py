@@ -267,7 +267,62 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             lastEndpoint = endpointName;
 
-    elif (node.label == AST_PRINT):
+    elif node.label == AST_LEN:
+        argumentNode = node.children[0];
+        argumentNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+        if ((argumentNode.type != TYPE_STRING) and (not isListType(argumentNode.type)) and
+            (not isMapType(argumentNode.type))):
+            errorString = 'Error in calling len.  Can only call len on a ';
+            errorString += 'list, map, or Text.  Instead, you passed in a ';
+            errorString += argument.type + '.';
+            errorFunction(errorString,[node],[node.lineNo],progText);
+
+        node.type = TYPE_NUMBER;
+
+    elif node.label == AST_KEYS:
+        argumentNode = node.children[0];
+        argumentNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+
+        # should take on the type of whatever the type of the map/list
+        # was supposed to be.  for a list it should always be a list
+        # of numbers.  for a map, take on list of map's element types.
+        # if map was empty, then just return an empty list.
+        if isListType(argumentNode.type):
+            nodeType = buildListTypeSignatureFromTypeName(TYPE_NUMBER);
+            node.type = json.dumps(nodeType);
+        elif isMapType(argumentNode.type):
+            if argumentNode.type == EMPTY_MAP_SENTINEL:
+                node.type = EMPTY_LIST_SENTINEL;
+            else:
+                mapIndexType = getMapIndexType(argumentNode.type)
+                nodeType = buildListTypeSignatureFromTypeName(
+                    mapIndexType);
+                node.type = json.dumps(nodeType);
+        else:
+            errorString = 'Error in calling keys.  Can only call keys on a ';
+            errorString += 'list or map.  Instead, you passed in a ';
+            errorString += argument.type + '.';
+            errorFunction(errorString,[node],[node.lineNo],progText);
+
+    elif node.label == AST_RANGE:
+        # all children should be numbers
+        argNumber = 0;
+        for childNode in node.children:
+            argNumber += 1;
+            childNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+            if childNode.type != TYPE_NUMBER:
+                errorString = 'Error in calling range.  Range requires all ';
+                errorString += 'of its arguments to be numbers.  Instead, the #';
+                errorString += str(argNumber) + ' argument you passed in to ';
+                errorString += 'range was of type ' + childNode.type + '.';
+                errorFunction(
+                    errorString,[node,childNode],[node.lineNo,childNode.lineNo],progText);
+
+        # type that assign should be list to numbers
+        nodeType = buildListTypeSignatureFromTypeName(TYPE_NUMBER);
+        node.type = json.dumps(nodeType);
+            
+    elif node.label == AST_PRINT:
         #check to ensure that it's passed a string
         argument = node.children[0];
         argument.typeCheck(progText,typeStack,avoidFunctionObjects);

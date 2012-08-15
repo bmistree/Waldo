@@ -35,7 +35,11 @@ reserved = {
     'Text': 'STRING_TYPE',
     'controls': 'CONTROLS',
     'and': 'AND',
-    'or': 'OR'
+    'or': 'OR',
+    'for': 'FOR',
+    'range': 'RANGE',
+    'keys': 'KEYS',
+    'len': 'LEN'
     };
 
 

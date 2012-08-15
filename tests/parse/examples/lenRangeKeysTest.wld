@@ -1,0 +1,46 @@
+/** VERSION 2
+ * Checks that can compose len, range, and keys
+*/
+
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+}
+
+Shared
+{
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+
+    
+    Public Function initiateSend()
+    {
+        List (element: Number) mList = keys(range(0,10,-1));
+        Number someNum = len (mList);
+        someNum = len(range(0,10,-1));
+
+        someNum = len('hi');
+
+        mList = keys(range(len([1,2,3]),2));
+
+        List(element:Text) som = keys({});
+
+        //shoud cause error.
+        List(element:Text) som2 = keys({1:2});
+    }
+}
+
+
+Pong
+{
+}

@@ -59,9 +59,14 @@ AST_OR  = 'OR';
 AST_BOOL_EQUALS = '==';
 AST_BOOL_NOT_EQUALS = '!=';
 AST_GREATER_THAN = '>';
-AST_GREATER_THAN_EQ = '>='
+AST_GREATER_THAN_EQ = '>=';
 AST_LESS_THAN = '<';
-AST_LESS_THAN_EQ = '<='
+AST_LESS_THAN_EQ = '<=';
+
+AST_LEN = 'LEN';
+AST_RANGE = 'RANGE';
+AST_KEYS = 'KEYS';
+AST_FOR = 'FOR';
 
 ##arithmetic
 AST_PLUS = '+';

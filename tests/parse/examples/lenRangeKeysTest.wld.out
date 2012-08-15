@@ -1,0 +1,24 @@
+*************************
+Type mismatch for variable named "som2".  Declared with type [{"ElementType": 
+"Text", "Type": "List"}], but assigned to type [{"ElementType": "Number", 
+"Type": "List"}]. 
+-------
+Line numbers:
+39
+-------
+Program text:
+
+
+
+36            List(element:Text) som = keys({});
+37    
+38            //shoud cause error.
+39*           List(element:Text) som2 = keys({1:2});
+40        }
+41    }
+42    
+43    
+*************************
+
+
+

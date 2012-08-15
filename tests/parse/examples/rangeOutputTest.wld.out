@@ -1,0 +1,24 @@
+*************************
+Type mismatch for variable named "somTest".  Declared with type 
+[{"ElementType": "Text", "Type": "List"}], but assigned to type 
+[{"ElementType": "Number", "Type": "List"}]. 
+-------
+Line numbers:
+30
+-------
+Program text:
+
+
+
+27        {
+28            List (element: Number) mList = range(0,10,1);
+29            mList = range(0,10);
+30*           List(element: Text) somTest = range(0,10,1);
+31        }
+32    }
+33    
+34    
+*************************
+
+
+

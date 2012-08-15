@@ -1,0 +1,35 @@
+*************************
+Error in calling range.  Range requires all of its arguments to be numbers.  
+Instead, the #2 argument you passed in to range was of type Text. 
+-------
+Line numbers:
+30
+30
+-------
+Program text:
+
+
+
+27        {
+28            List (element: Number) mList = range(0,10,-1);
+29            range(3+3,20-4,1);
+30*           range(0,'a',1);
+31        }
+32    }
+33    
+34    
+
+
+
+27        {
+28            List (element: Number) mList = range(0,10,-1);
+29            range(3+3,20-4,1);
+30*           range(0,'a',1);
+31        }
+32    }
+33    
+34    
+*************************
+
+
+

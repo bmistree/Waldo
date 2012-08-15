@@ -197,8 +197,37 @@ def p_TerminalReturnable(p):
     '''
     p[0] = p[1];
 
+def p_LenStatement(p):
+    '''
+    LenStatement : LEN LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_LEN,p.lineno(1),p.lexpos(1));
+    p[0].addChild(p[3]);
 
-                      
+def p_RangeStatement(p):
+    '''
+    RangeStatement : RANGE LEFT_PAREN ReturnableExpression COMMA ReturnableExpression RIGHT_PAREN
+                   | RANGE LEFT_PAREN ReturnableExpression COMMA ReturnableExpression COMMA ReturnableExpression RIGHT_PAREN
+    '''
+
+    p[0] = AstNode(AST_RANGE,p.lineno(1),p.lexpos(1));
+    p[0].addChildren([p[3],p[5]]);
+    if len(p) == 7:
+        # first line: choose to increment by 1:
+        toAdd = AstNode(AST_NUMBER,p.lineno(6),p.lexpos(6),'1');
+    else:
+        # second line: increment by specified amount
+        toAdd = p[7];
+    p[0].addChild(toAdd);
+
+def p_KeysStatement(p):
+    '''
+    KeysStatement : KEYS LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_KEYS,p.lineno(1),p.lexpos(1));
+    p[0].addChild(p[3]);
+
+    
     
 def p_NonBracketOperatableOn(p):
     '''NonBracketOperatableOn : Number
@@ -209,6 +238,9 @@ def p_NonBracketOperatableOn(p):
                               | Map
                               | FunctionCall
                               | ToTextCall
+                              | KeysStatement
+                              | LenStatement
+                              | RangeStatement
                               ''';
     p[0] = p[1];
 

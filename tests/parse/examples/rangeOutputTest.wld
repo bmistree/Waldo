@@ -1,0 +1,37 @@
+/** VERSION 2
+ * checks that result of range has correct type.
+*/
+
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+}
+
+Shared
+{
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+
+    
+    Public Function initiateSend()
+    {
+        List (element: Number) mList = range(0,10,1);
+        mList = range(0,10);
+        List(element: Text) somTest = range(0,10,1);
+    }
+}
+
+
+Pong
+{
+}
