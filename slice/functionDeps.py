@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from typeStack import TypeStack;
+from typeStack import NameTypeTuple;
 import util;
 
 class FunctionDeps(object):
@@ -128,6 +129,86 @@ class FunctionDeps(object):
         # return the json
         return util.toJsonPretty(returner);
 
+
+    def _changeArgIds(self):
+        '''
+        @see _constructMegaFunction
+        
+        current approach for "inline-ing" arguments and dependencies in
+        _constructMegaFunction
+        has a problem if re-use function argument ids between
+        inlines.  In particular, we have two function calls,
+           func(a1,b) and func(a2,b)
+        and a1 and a2 are mutable.  The expression that constructs
+        a1 includes a shared/global variable.  The expression that
+        constructs a2 does not.
+        The above should produce the dependency:
+        
+           a1 <- glob
+           a2 <- notGlob
+        
+        However, if we re-use identifiers between a1 and a2, we'll
+        actually get:
+        
+           a <- glob, notGlob
+        
+        This means that if notGlob later gets written to, we will
+        insert glob into the shared write set, even if glob
+        otherwise would have been in the read set.  To get around
+        this problem, whenever we enter a FunctionDeps object when
+        constructing a mega-function, we change all of its arguments
+        identifiers so they will show up separately in the function.
+        Do this in this function.
+        '''
+
+        # maps ids of ntt-s to replace with ntt-s of replacers.
+        foundArgsDict = {};
+
+        # adjust all ntts in read set
+        for readNttKey in list(self.mReadSet.keys()):
+            readNtt = self.mReadSet[readNttKey];
+
+            if readNtt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT:
+                # new name type tuple will automatically have a globally unique id.
+                replacement = NameTypeTuple(
+                    readNtt.varName,readNtt.varType,readNtt.mutable,readNtt.argPosition);
+
+                # insert replacement into read set
+                self.mReadSet[replacement.id] = replacement;
+
+                # insert into foundArgsDict
+                foundArgsDict[readNttKey] = replacement;
+                
+                # remove previous read from read set
+                del self.mReadSet[readNttKey];
+
+        for readNttKey in list(self.mReadSet.keys()):
+            # in case the ntt is a function call that needs to
+            # replace some of its reads as well.
+            readNtt.replaceFuncArguments(foundArgsDict);
+                
+
+        # adjust all ntts in write set
+        for vrsKey in list(self.varReadSet.keys()):
+            vrs = self.varReadSet[vrsKey];
+
+            # exchanges any reads made with replacement read in
+            # foundArgsDict.  (also replaces ntt if necessary.)
+            vrs.replaceFuncArguments(foundArgsDict);
+            
+            # cannot have a function argument that was in varReadSet,
+            # but not read set.
+            if vrsKey in foundArgsDict:
+                # means that the written to variable was a function
+                # argument.  We need to move the VarReadSet object
+                # represented by vrs to a new position
+                del self.varReadSet[vrsKey];
+
+                newId = vrs.ntt.id;
+                self.varReadSet[newId] = vrs;
+
+        
+        
     def _constructMegaFunction(self,funcDepsDict,alreadyAdded,argumentArray=None,newFDep=None):
         '''
         Take all reads and writes of current function and add them to
@@ -176,6 +257,10 @@ class FunctionDeps(object):
         if newFDep == None:
             newFDep = FunctionDeps('megaTmp');
 
+            
+        # @see discussion at top of _changeArgIds.
+        self._changeArgIds();
+        
             
         # add all of my current reads and var reads to newFDep
         for readKey in self.mReadSet.keys():
@@ -575,10 +660,37 @@ class VarReadSet(object):
     def __init__(self,ntt):
         self.ntt = ntt;
         self.mReads = {};
-        # note: this should never really be populated because there
-        # are not ways to return and modify....except through func call
-        # actually.
-        self.mWrites = {};
+
+        
+    def replaceFuncArguments(self,foundArgsDict):
+        '''
+        @param {dict} foundArgsDict --- integer:ntt.  Each integer is
+        the id of an ntt (with var type
+        IDENTIFIER_TYPE_FUNCTION_ARGUMENT) that should get replaced by
+        the value ntt.
+        
+        @see _changeArgIds of functionDeps
+        '''
+
+        if self.ntt.id in foundArgsDict:
+            self.ntt = foundArgsDict.get(self.ntt.id);
+        else:
+            self.ntt.replaceFuncArguments(foundArgsDict);
+            
+        for readNttKey in list(self.mReads.keys()):
+            replacement = foundArgsDict.get(readNttKey,None);
+            if replacement != None:
+                # means that we need to replace the key
+
+                # first insert new one with replacement id
+                self.mReads[replacement.id] = replacement;
+
+                # then remove old one
+                del self.mReads[replacement];
+            else:
+                self.mReads[readNttKey].replaceFuncArguments(foundArgsDict);
+        
+
         
     def addReads(self,reads):
         '''
@@ -587,9 +699,6 @@ class VarReadSet(object):
         for read in reads:
             self.mReads[read.id] = read;
 
-    def addWrites(self,writes):
-        for write in writes:
-            self.mWrites[write.id] = write;
 
     def jsonize(self):
         returner = {};

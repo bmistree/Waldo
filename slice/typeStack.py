@@ -284,6 +284,12 @@ class NameTypeTuple(object):
     def isMarked(self):
         return self._mark;
 
+    def replaceFuncArguments(self,foundArgsDict):
+        '''
+        @see _changeArgIds in FunctionDeps
+        '''
+        return;
+    
 
 class FuncCallNtt(NameTypeTuple):
 
@@ -327,3 +333,22 @@ class FuncCallNtt(NameTypeTuple):
             returner += '&%&';
         
         return returner;
+
+
+    def replaceFuncArguments(self,foundArgsDict):
+        '''
+        @see _changeArgIds in FunctionDeps
+
+        Needs to go through its entire read set and replace any
+        function arguments with those in foundArgsDict.
+        '''
+        for argArray in self.funcArgReads:
+
+            for readIndex in range(0,len(argArray)):
+                readNtt = argArray[readIndex];
+
+                if readNtt.id in foundArgsDict:
+                    argArray[readIndex] = foundArgsDict[readNtt.id];
+                    
+
+    
