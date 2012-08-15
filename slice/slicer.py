@@ -117,6 +117,17 @@ def slicer(node,functionDeps=None,typeStack=None):
         typeNode = node.children[1];
         typeStack.addIdentifier(idName,isMutable(typeNode));
 
+    elif node.label == AST_RETURN_STATEMENT:
+        # should keep track of all identifiers that could be touched
+        # by returning.
+        readIndex = typeStack.getReadIndex();
+        for childNode in node.children:
+            slicer(childNode,functionDeps,typeStack);
+            
+        returnStatementReads = typeStack.getReadsAfter(readIndex);
+        typeStack.addReturnStatement(returnStatementReads);
+
+        
     elif node.label == AST_FUNCTION_CALL:
         funcCallName = node.children[0].value;
         funcArgListNode = node.children[1];

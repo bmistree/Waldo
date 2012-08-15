@@ -8,7 +8,8 @@ class TypeStack(object):
     IDENTIFIER_TYPE_FUNCTION_ARGUMENT = 3;
     IDENTIFIER_TYPE_LOCAL = 4;
     IDENTIFIER_TYPE_FUNCTION_CALL = 5;
-    
+    IDENTIFIER_TYPE_RETURN_STATEMENT = 6;
+
     def __init__(self,prevStack=None):
         self.stack  = []; #last element in array is always top of stack.
         self.endNames = {};
@@ -113,13 +114,23 @@ class TypeStack(object):
             
     def addFuncCall(self,nameOfFunc,funcArgReads):
         '''
-        @see FuncCallNTT for description of arguments.
+        @see FuncCallNtt for description of arguments.
 
         Called whenever code in Waldo function calls another function.
         '''
         topStack = self.checkStackLen('addFuncCall');
         return topStack.addFuncCall(nameOfFunc,funcArgReads);
+
+    def addReturnStatement(self,returnReads):
+        '''
+        @see ReturnStatementNtt
         
+        Called whenever code in source has a return statement.
+        '''
+        topStack = self.checkStackLen('addReturnStatement');
+        return topStack.addReturnStatement(returnReads);
+        
+    
     def getReadIndex(self):
         '''
         @see getReadIndex of Context
@@ -162,12 +173,12 @@ class Context(object):
 
     def addFuncCall(self,nameOfFunc,funcArgReads):
         '''
-        @see FuncCallNTT for description of arguments.
+        @see FuncCallNtt for description of arguments.
         
         Currently, treat ntt associated with func call the same way we
         treat an ntt associated with a read.
                 
-        @returns {FuncCallNtt} ---
+        @returns {FuncCallNtt} 
         '''
         ntt = FuncCallNtt(nameOfFunc,funcArgReads);
         self.reads.append(ntt);
@@ -177,6 +188,22 @@ class Context(object):
             # inside of an endpoint global section.
             self.currentFunctionDep.addFuncCall(ntt);
 
+    def addReturnStatement(self,returnReads):
+        '''
+        @see ReturnStatement ntt for description of arguments.
+
+        @returns {ReturnStatementNtt}
+        '''
+        ntt = ReturnStatementNtt(returnReads);
+        self.reads.append(ntt);
+        if self.currentFunctionDep != None:
+            self.currentFunctionDep.addReturnStatement(ntt);
+        else:
+            errMsg = '\nBehram error.  Should never get return ';
+            errMsg += 'statement outside of a function definition.\n';
+            print(errMsg);
+            assert(False);
+            
         
     def getReadIndex(self):
         '''
@@ -291,6 +318,40 @@ class NameTypeTuple(object):
         return;
     
 
+
+
+    
+class ReturnStatementNtt(NameTypeTuple):
+    def __init__(self,returnStatementReads):
+        '''
+        @param {Array} returnStatementReads --- each element is a
+        NameTypeTuple.
+
+        Corresponds to a return statement that 
+        '''
+        NamTypeTuple.__init__(
+            self,'return statement',
+            TypeStack.IDENTIFIER_TYPE_RETURN_STATEMENT,False,None);
+
+        self.returnStatementReads = returnStatementReads;
+
+    def replaceFuncArguments(self,foundArgsDict):
+        '''
+        @see _changeArgIds in FunctionDeps
+
+        Needs to go through its entire read set and replace any
+        function arguments with those in foundArgsDict.
+        '''
+        for readNttIndex in range(0,len(self.returnStatementReads)):
+            readNtt = self.returnStatementReads[readNttIndex];
+            
+            if readNtt.id in foundArgsDict:
+                self.returnStatementReads[readNttIndex] = foundArgsDict[readNtt.id];
+            else:
+                readNtt.replaceFuncArguments(foundArgsDict);
+
+        
+
 class FuncCallNtt(NameTypeTuple):
 
     def __init__(self,nameOfFunc,funcArgReads):
@@ -349,6 +410,6 @@ class FuncCallNtt(NameTypeTuple):
 
                 if readNtt.id in foundArgsDict:
                     argArray[readIndex] = foundArgsDict[readNtt.id];
-                    
-
+                else:
+                    readNtt.replaceFuncArguments(foundArgsDict);
     
