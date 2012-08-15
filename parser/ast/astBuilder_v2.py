@@ -42,17 +42,27 @@ from astBuilderCommon import *
 
 
 def p_RootExpression(p):
-    'RootExpression : NameSection EndpointAliasSection TraceSection SharedSection MessageSequenceSection EndpointSection EndpointSection';
+    '''
+    RootExpression : NameSection EndpointAliasSection TraceSection SharedSection MessageSequenceSection EndpointSection EndpointSection
+                   | NameSection EndpointAliasSection TraceSection SharedSection EndpointSection EndpointSection
+    ''';
     
     p[0] = AstNode(AST_ROOT,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[2],p[3],p[4],p[6],p[7], p[5]]);  # message section gets added to end
+
+    p[0].addChildren([p[1],p[2],p[3],p[4]]);
+    if len(p) == 8:
+        msgSeqSectionToAdd = p[5];
+        p[0].addChildren([p[6],p[7], msgSeqSectionToAdd]);  # message section gets added to end
+    else:
+        msgSeqSectionToAdd = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[4].lineNo,p[4].linePos);
+        p[0].addChildren([p[5],p[6], msgSeqSectionToAdd]);  # message section gets added to end
 
 
 def p_MessageSequenceSection(p):
     '''MessageSequenceSection : MessageSequence MessageSequenceSection
                               | MessageSequence
-                              | Empty
     '''
+    
     p[0] = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[1].lineNo,p[1].linePos);
     
     if not isEmptyNode(p[1]):
