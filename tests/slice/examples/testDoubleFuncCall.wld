@@ -1,0 +1,50 @@
+/** 
+  * Want to ensure that can handle multiple function calls to the same
+  * function within the same function.  Also, testing edge case
+  * described by commit #0e6ce731
+  *
+*/
+
+
+PingPong
+
+Endpoint Ping;
+Endpoint Pong;
+
+
+Sequences
+{
+}
+
+
+
+Shared
+{
+}
+
+
+/**** Ping endpoint *********/
+Ping
+{
+    List (element: Number) numList = [1,3,4,];  
+    onCreate ()
+    {
+        List(element: Number) mList;
+        otherFunc(mList);
+        
+        otherFunc(numList);
+
+        otherFunc(mList);
+        mList[1] = 1;
+    }
+
+    Public Function otherFunc(List (element: Number) someList)
+    {
+    }
+}
+
+
+/**** Pong endpoint *********/
+Pong
+{
+}
