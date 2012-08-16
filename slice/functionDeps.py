@@ -6,6 +6,12 @@ import util;
 
 class FunctionDeps(object):
 
+    '''
+    Vastly over-simplifying because cannot gain any real traction by
+    not simplifying.  For now, any global/shared mutable that is in a
+    read set automatically gets added to the write set.
+    '''
+    
     def __init__(self,funcName):
         # name to an array of NameTypeTuple-s each variable in here
         # may change and depends on reading other variables in the
@@ -143,309 +149,10 @@ class FunctionDeps(object):
         # return the json
         return util.toJsonPretty(returner);
 
-
-    def _changeArgIds(self):
-        '''
-        @see _constructMegaFunction
-        
-        current approach for "inline-ing" arguments and dependencies in
-        _constructMegaFunction
-        has a problem if re-use function argument ids between
-        inlines.  In particular, we have two function calls,
-           func(a1,b) and func(a2,b)
-        and a1 and a2 are mutable.  The expression that constructs
-        a1 includes a shared/global variable.  The expression that
-        constructs a2 does not.
-        The above should produce the dependency:
-        
-           a1 <- glob
-           a2 <- notGlob
-        
-        However, if we re-use identifiers between a1 and a2, we'll
-        actually get:
-        
-           a <- glob, notGlob
-        
-        This means that if notGlob later gets written to, we will
-        insert glob into the shared write set, even if glob
-        otherwise would have been in the read set.  To get around
-        this problem, whenever we enter a FunctionDeps object when
-        constructing a mega-function, we change all of its arguments
-        identifiers so they will show up separately in the function.
-        Do this in this function.
-        '''
-
-        # maps ids of ntt-s to replace with ntt-s of replacers.
-        foundArgsDict = {};
-
-        # adjust all ntts in read set
-        for readNttKey in list(self.mReadSet.keys()):
-            readNtt = self.mReadSet[readNttKey];
-
-            if readNtt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT:
-                # new name type tuple will automatically have a globally unique id.
-                replacement = NameTypeTuple(
-                    readNtt.varName,readNtt.varType,readNtt.mutable,readNtt.argPosition);
-
-                # insert replacement into read set
-                self.mReadSet[replacement.id] = replacement;
-
-                # insert into foundArgsDict
-                foundArgsDict[readNttKey] = replacement;
-                
-                # remove previous read from read set
-                del self.mReadSet[readNttKey];
-
-        for readNttKey in list(self.mReadSet.keys()):
-            # in case the ntt is a function call that needs to
-            # replace some of its reads as well.
-            readNtt.replaceFuncArguments(foundArgsDict);
-                
-
-        # adjust all ntts in write set
-        for vrsKey in list(self.varReadSet.keys()):
-            vrs = self.varReadSet[vrsKey];
-
-            # exchanges any reads made with replacement read in
-            # foundArgsDict.  (also replaces ntt if necessary.)
-            vrs.replaceFuncArguments(foundArgsDict);
-            
-            # cannot have a function argument that was in varReadSet,
-            # but not read set.
-            if vrsKey in foundArgsDict:
-                # means that the written to variable was a function
-                # argument.  We need to move the VarReadSet object
-                # represented by vrs to a new position
-                del self.varReadSet[vrsKey];
-
-                newId = vrs.ntt.id;
-                self.varReadSet[newId] = vrs;
-
-        # adjust all ntts in function call read set
-        for funcCallKey in self.funcCalls.keys():
-            funcCallNtt = self.funcCalls[funcCallKey];
-            funcCallNtt.replaceFuncArguments(foundArgsDict);
-
-                
-        # finally, adjust all ntts in return set.
-        for retStatementKey in list(self.returnStatements.keys()):
-            retStatementNtt = self.returnStatements[retStatementKey];
-            retStatementNtt.replaceFuncArguments(foundArgsDict);
-
-        
-        
-    def _constructMegaFunction(
-        self,funcDepsDict,alreadyAdded,argumentArray=None,newFDep=None,
-        alreadyAddedObject=None):
-        '''
-        Take all reads and writes of current function and add them to
-        newFDep (if it isn't None).  For each function call that I
-        make, tell the associated FunctionDeps object to take all the
-        reads and writes that it makes, and add them to newFDep.
-        Finally, return newFDep.
-
-        In a lot of ways, all this does is it inlines the read/write
-        dependencies of a function call at the point that it's called.
-
-        To ensure that we don't get into an infinite loop, eg in the following case:
-
-        Function oneFunc (Number a)
-        {
-           twoFunc();
-        }
-
-        Function twoFunc()
-        {
-           oneFunc(1);
-        }
-
-        every time that we encounter a function call ntt, we hash it.
-        If its hash exists in the dictionary alreadyAdded, then we do
-        not inline the function.  If it does not, we add it and inline
-        the function's read/writes.  @see hashSignature of
-        FuncCallNtt, which guarantees that for two matching type
-        signatures, they will only be the same if they definitely have
-        the same shared/global read and write set.
-
-        @param {dict <String:AlreadyAddedFuncObject>} alreadyAdded ---
-        where string is generated by calling hashSignature on a
-        FuncCallNtt object.
-        
-        @param {Array of array of ntt-s} argumentArray --- Each
-        element of argumentArray contains a list of ntt-s.  Each ntt
-        is an item that gets read to construct the function's
-        positional argument.  Ensure that adding read dependencies for
-        each argument's write.
-        
-        @param{FunctionDeps} --- A dummy function that should write
-        all dependencies to (see above).
-
-        @param{AlreadyAddedFuncObject} alreadyAddedObject --- The way
-        this function works is that when it discovers a function
-        signature it has not yet tested, it calls _constructMega on
-        that function, adding its signature to alreadyAdded before
-        doing so.  alreadyAddedObject should contain all the ntt-s of
-        variables that are in this function's return set.  can only
-        add these after the call to _changeArgIds.  So once get into
-        the function and call changeArgs, immediately add return dict
-        to alreadyAddedObject.
-
-        @param{Array} fixupList --- 
-        
-        ------------------
-        
-        Need to be careful with return statements.  If a mutable has a
-        function statement ntt in its var read dependencies, then take
-        the function call's associated fdep and 
-        
-lkjs;        
-        '''
-        if argumentArray == None:
-            argumentArray = [];
-        if newFDep == None:
-            newFDep = FunctionDeps('megaTmp');
-
-            
-        # @see discussion at top of _changeArgIds.
-        self._changeArgIds();
-
-        # see the documentation for alreadyAddedObject at the top of
-        # the function.
-        if alreadyAddedObject != None:
-            print('\nBehram warn.  What if the return statement has a return statement?\n');
-            alreadyAddedObject.setReturnArray(self.returnStatements);
-
-        #####################################################
-            
-        # handling argument array: for each argument in argument
-        # array, assign one of our positional arguments to it (unless
-        # the positional argument isn't read.  then can ignore it.)
-        # needs to happen before function calls because function calls
-        # may change argument ids further from their initial values
-        for argIndex in range(0,len(argumentArray)):
-            argumentsAtPositionArgIndex = argumentArray[argIndex];
-
-            # find corresponding argument ntt
-            argNtt = self._getArgNtt(argIndex);
-            if argNtt != None:
-                newFDep.addToVarReadSet(argNtt);
-                newFDep.addReadsToVarReadSet(argNtt,argumentsAtPositionArgIndex);
-
-
-        #####################################################
-            
-        # add all of my current reads and var reads to newFDep
-        for readKey in self.mReadSet.keys():
-            readNtt = self.mReadSet[readKey];
-            if ((readNtt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
-                (readNtt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL)):
-                newFDep.addFuncReads([readNtt]);
-
-                
-        #####################################################
-
-                
-        # add all of my current writes and their dependencies to newFDep.
-        for varReadSetKey in self.varReadSet.keys():
-            vrs = self.varReadSet[varReadSetKey];
-            setNtt = vrs.ntt;
-            readNttArray = list(vrs.mReads.values());
-            # using false here for redeclaration check because we
-            # aren't really redeclaring this write variable when we're
-            # composing this mega function.
-            newFDep.addToVarReadSet(setNtt);
-
-            newFDepReadArray = [];
-            for readNtt in readNttArray:
-                if readNtt.varType != TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL:
-                    # nothing special to do here.
-                    newFDepReadArray.append(readNtt);
-                else:
-                    # need to replace the actual read of the function with the
-                    # return statements that the function might produce.
-                    hashedFuncCall = readNtt.hashSignature();
-
-                    
-                    alreadyCheckedFunc = alreadyChecked.get(hashedFuncCall,None);
-                    if alreadyCheckedFunc == None:
-                        errMsg = '\nBehram error: should have already checked all ';
-                        errMsg += 'functions before going through readNttArray.\n'
-                        print(errMsg);
-                        assert(False);
-
-                    newFDepReadArray = newFDepReadArray + alreadyCheckedFunc.getReturnArray();
-
-            # actually add the newFDepReadArray
-            newFDep.addReadsToVarReadSet(setNtt,newFDepReadArray);
-
-        
-
-        #####################################################
-        
-        # go through all functions that this function calls.
-        # include function calls if we have not already included this
-        # specific function call.  important to do this step before
-        # read set step: read set step assumes that all functions that
-        # they call exist in alreadyAdded.  That way, they can use the
-        # return keys that this would generate.
-        for funcCallKey in self.funcCalls.keys():
-            funcCallNtt = self.funcCalls[funcCallKey];
-            funcCallName = funcCallNtt.varName;
-            hashedFuncCallSignature = funcCallNtt.hashSignature();
-
-            # only need to add a function once.
-            if alreadyAdded.get(hashedFuncCallSignature,None) == None:
-
-                # note that cannot set the return set for this function until
-                # actually call _constructMegaFunction on it.
-                alreadyAdded[hashedFuncCallSignature] = AlreadyAddedFunctionObject(hashedFuncCallSignature);
-                
-                fDep = funcDepsDict.get(funcCallName,None);
-                if fDep == None:
-                    errMsg = '\nBehram error: trying to call unknown function in ';
-                    errMsg += '_constructMegaFunction with key ' + str(funcCallKey) + ' ';
-                    errMsg += 'and name ' + funcCallName + '\n';
-                    print(errMsg);
-                    assert(False);
-
-                print('\nconstructing mega\n');
-                # using funcCallNtt.funcArgReads as argument array so
-                # because those are the arguments that the function
-                # will be called with.
-                fDep._constructMegaFunction(
-                    funcDepsDict,alreadyAdded,funcCallNtt.funcArgReads,newFDep,
-                    alreadyAdded[hashedFuncCallSignature]);
-
-
-
-        ###########################################################
-
-
-        print('\n\nprinting funcs added.\n');
-        print(alreadyAdded.keys());
-        print('\n\n');
-
-        return newFDep;
-
-
-    def _getArgNtt(self,argIndex):
-        '''
-        Returns the ntt of the argument in this function with arg
-        position argIndex.  Returns None if does not exist (could
-        happen if an argument isn't actually used in the body of a
-        function).
-        '''
-        for readKey in self.mReadSet.keys():
-            readNtt = self.mReadSet[readKey];
-            if readNtt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT:
-                if readNtt.argPosition == argIndex:
-                    return readNtt;
-
-        return None;
     
     def definiteSharedGlobalReads(self,funcDepsDict):
-        newFDep = self._constructMegaFunction(funcDepsDict,{});
-        return newFDep._definiteSharedGlobalReads(funcDepsDict);
+        # newFDep = self._constructMegaFunction(funcDepsDict,{});
+        return self._definiteSharedGlobalReads(funcDepsDict);
     
     def _definiteSharedGlobalReads(self,funcDepsDict):
         '''
@@ -485,14 +192,17 @@ lkjs;
 
         return returner;
 
-    def definiteSharedGlobalWrites(self,funcDepsDict):
-        newFDep = self._constructMegaFunction(funcDepsDict,{});
-        return newFDep._definiteSharedGlobalWrites(funcDepsDict);
+    def definiteSharedGlobalWrites(self,funcDepsDict,alreadyChecked=None):
+        # newFDep = self._constructMegaFunction(funcDepsDict,{});
+        if alreadyChecked == None:
+            alreadyChecked = {};
+        return self._definiteSharedGlobalWrites(funcDepsDict,alreadyChecked);
 
     
-    def _definiteSharedGlobalWrites(self,otherFuncDepsDict):
+    def _definiteSharedGlobalWrites(self,otherFuncDepsDict,alreadyChecked):
         '''
-        WILL NOT CHASE FUNCTION CALLS.
+        Be really conservative about chasing function calls.  See note
+        at top of function.
         
         @see definitieSharedGlobalReads, except for writes.
 
@@ -553,7 +263,7 @@ lkjs;
 
            9: Convert toReturn to a list and return it.
         '''
-
+        
         # step 0
         toReturn = {};
 
@@ -566,12 +276,6 @@ lkjs;
                 
         # step 2
         self._unmarkAll();
-        
-        # for readSetItem in self.varReadSet.values():
-        #     readSetItem.ntt.unmark();
-        #     for innerNtt in readSetItem.mReads.values():
-        #         innerNtt.unmark();
-                
 
         # step 3-5
         dirtyBit = True;
@@ -598,13 +302,36 @@ lkjs;
 
         # step 6
         self._unmarkAll();
-        
-        # for readSetItem in self.varReadSet.values():
-        #     readSetItem.ntt.unmark();
-        #     for innerNtt in readSetItem.mReads.values():
-        #         innerNtt.unmark();
+
+        # step 7
+        for funcCallNtt in self.funcCalls.values():
+            funcCallName = funcCallNtt.varName;
+            if alreadyChecked.get(funcCallName,None) == None:
+                alreadyChecked[funcCallName] = True;
+                fdep = otherFuncDepsDict.get(funcCallName,None);
+                if fdep == None:
+                    errMsg = '\nBehram error: Looking up function that ';
+                    errMsg += 'was not defined.\n';
+                    print(errMsg);
+                    assert(False);
+
+                
+                subDeps = fdep.definiteSharedGlobalWrites(
+                    otherFuncDepsDict,alreadyChecked);
+                for defWriteNtt in subDeps:
+                    # doesn't reall matter if overwriting
+                    toReturn[defWriteNtt.id] = defWriteNtt;
 
 
+        # step 8: very ugly.  should eventually get fixed.  For now,
+        # treating all reads to mutable global/shared as writes.
+        # FIXME: lkjs;
+        allReads = self.definiteSharedGlobalReads(otherFuncDepsDict);
+        for readNtt in allReads:
+            if ((readNtt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
+                (readNtt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL)):
+                    toReturn[readNtt.id] = readNtt;
+                        
         # step 9
 
         # for debugging, always want to return this list in the same
@@ -689,13 +416,6 @@ lkjs;
                 readNtt = vReadSet.mReads[readNttKey];
                 readNtt.unmark();
 
-
-    
-# lkjs;
-# do not need to type check through function calls because a calling function will already have sorted out the read.
-
-# need to handle returned global that was a read, but then got written to in the local area.  (only for mutables).
-# lkjs;
 
     
     def funcArgReads(self):
@@ -836,32 +556,4 @@ class VarReadSet(object):
 
         toPrint = prepend + toPrint.replace('\n','\n' + prepend);
         print(toPrint);
-
-
-class AlreadyAddedFunctionObject(object):
-
-    def __init__(self,hashedSignature):
-        self.hashedSignature = hashedSignature;
-        self.returnArray = None;
-        
-    def setReturnArray(self,returnDict):
-        self.returnArray = list(returnDict.values());
-
-    def getReturnArray(self):
-        if self.returnArray == None:
-            errMsg = '\nBehram error: attempting to get a returnArray ';
-            errMsg +='that had not previously been set.\n';
-            print(errMsg);
-            assert(False);
-        return self.returnArray;
-
-class ReturnToFixup(object):
-    def __init__(self,alreadyAddedFuncObj,varReadSet):
-        self.alreadyAddedFuncObj = alreadyAddedFuncObj;
-        self.varReadSet = varReadSet;
-
-    def fixup(self):
-        self.varReadSet.addReads(
-            self.alreadyAddedFuncObj.getReturnArray());
-
 
