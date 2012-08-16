@@ -10,6 +10,11 @@ class TypeStack(object):
     IDENTIFIER_TYPE_FUNCTION_CALL = 5;
     IDENTIFIER_TYPE_RETURN_STATEMENT = 6;
 
+    # note that arguments to message sequence nodes are also globals
+    # for the message sequence.
+    IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT = 7;
+
+    
     def __init__(self,prevStack=None):
         self.stack  = []; #last element in array is always top of stack.
         self.endNames = {};
@@ -112,6 +117,22 @@ class TypeStack(object):
             # inside of an endpoint global section.
             curFuncDep.addToVarReadSet(ntt);
 
+    def addFuncArg(self,ntt):
+        '''
+        add the ntt to latest function dependency as a function argument.
+        '''
+        topStack = self.checkStackLen('addFuncArg');
+        curFuncDep = topStack.currentFunctionDep;
+        if curFuncDep != None:
+                curFuncDep.addFuncArg(ntt);
+        else:
+            errMsg = '\nBehram error.  Require having a current function ';
+            errMsg += 'dependency in order to process function arguments.\n';
+            print(errMsg);
+            assert(False);
+
+        
+            
     def addReadsToVarReadSet(self,ntt,reads):
         '''
         ntt is the node that we are adding the reads for.  Ie, ntt is
@@ -286,8 +307,10 @@ class Context(object):
         return ntt;
 
     def addIdentifierAsNtt(self,ntt):
-        self.dict[identifierName] = ntt;
+        self.dict[ntt.varName] = ntt;
         return ntt;
+
+    
     
     
 class NameTypeTuple(object):
@@ -312,9 +335,10 @@ class NameTypeTuple(object):
 
         self.id = NameTypeTuple.staticId;
         NameTypeTuple.staticId += 1;
-        
+
         if ((argPosition != None) and
-            (varType != TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
+            (varType != TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT) and
+            (varType != TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
             errMsg = '\nBehram error: should not receive an arg position ';
             errMsg += 'with a variable that is not a function argument.\n';
             print(errMsg);
@@ -340,12 +364,6 @@ class NameTypeTuple(object):
     def isMarked(self):
         return self._mark;
 
-    def replaceFuncArguments(self,foundArgsDict):
-        '''
-        @see _changeArgIds in FunctionDeps
-        '''
-        return;
-    
 
 
 
@@ -363,21 +381,6 @@ class ReturnStatementNtt(NameTypeTuple):
             TypeStack.IDENTIFIER_TYPE_RETURN_STATEMENT,False,None);
 
         self.returnStatementReads = returnStatementReads;
-
-    def replaceFuncArguments(self,foundArgsDict):
-        '''
-        @see _changeArgIds in FunctionDeps
-
-        Needs to go through its entire read set and replace any
-        function arguments with those in foundArgsDict.
-        '''
-        for readNttIndex in range(0,len(self.returnStatementReads)):
-            readNtt = self.returnStatementReads[readNttIndex];
-            
-            if readNtt.id in foundArgsDict:
-                self.returnStatementReads[readNttIndex] = foundArgsDict[readNtt.id];
-            else:
-                readNtt.replaceFuncArguments(foundArgsDict);
 
         
 
@@ -423,22 +426,4 @@ class FuncCallNtt(NameTypeTuple):
             returner += '&%&';
         
         return returner;
-
-
-    def replaceFuncArguments(self,foundArgsDict):
-        '''
-        @see _changeArgIds in FunctionDeps
-
-        Needs to go through its entire read set and replace any
-        function arguments with those in foundArgsDict.
-        '''
-        for argArray in self.funcArgReads:
-
-            for readIndex in range(0,len(argArray)):
-                readNtt = argArray[readIndex];
-
-                if readNtt.id in foundArgsDict:
-                    argArray[readIndex] = foundArgsDict[readNtt.id];
-                else:
-                    readNtt.replaceFuncArguments(foundArgsDict);
     

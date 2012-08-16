@@ -242,7 +242,6 @@ def slicer(node,functionDeps=None,typeStack=None):
         for child in node.children:
             slicer(child,functionDeps,typeStack);
 
-
     elif node.label == AST_FUNCTION_DECL_ARGLIST:
         # actually add each argument to current type stack.
         argumentNumber = 0;
@@ -250,11 +249,17 @@ def slicer(node,functionDeps=None,typeStack=None):
             # each child is a function decl arg
             typeNode = child.children[0];
             nameNode = child.children[1];
-            typeStack.addIdentifier(nameNode.value,
-                                    isMutable(typeNode),
-                                    TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT,
-                                    argumentNumber);
+            ntt = typeStack.addIdentifier(nameNode.value,
+                                          isMutable(typeNode),
+                                          TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT,
+                                          argumentNumber);
+
+
+            typeStack.addFuncArg(ntt);
+            
             argumentNumber +=1;
+
+            
 
     elif node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
         # sliceMsgSeqSecNode already handles adding a function dep and
@@ -314,16 +319,10 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
     '''
     @param {AstNode} msgSeqSecNode --- with label msgSequenceSection...
 
-    Create a new context on each stack.
-
-    Push all shareds onto context.
-
-    alternate slicing with each function (each time, pushing on an
-    additional context and popping off an additional context)
+    Runs through all message sequence nodes and adds their functions
+    to functionDeps as well as their reads and writes to globals,
+    locals, and shareds.
     '''
-
-    
-    
     for msgSeqNode in msgSeqSecNode.children:
 
         # pop context before exiting for loop.
@@ -346,11 +345,27 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
 
             typeStack2.addIdentifierAsNtt(newNtt);
 
+        # now grab any arguments to first function and insert them as
+        # sequence globals.
+        firstFuncNode = msgSeqFunctionsNode.children[0];
+        firstFuncDeclArgsNode = firstFuncNode.children[2];
+        functionArgs = [];
+        for funcDeclArgNode in firstFuncDeclArgsNode.children:
+            typeNode = funcDeclArgNode.children[0];
+            isMute = isMutable(typeNode);
+            identifierNode = funcDeclArgNode.children[1];
+            identifierName = identifierNode.value;
+            newNtt = typeStack1.addIdentifier(
+                identifierName,isMute,TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT);
+            
+            typeStack2.addIdentifierAsNtt(newNtt);
+            functionArgs.append(newNtt);
+
         
         # want to ensure that the first function has all the
         # read/write dependencies.  Need to know which type stack to
         # use for it.
-        firstFuncEndpointName = msgSeqFunctionsNode.children[0].children[0].value;
+        firstFuncEndpointName = firstFuncNode.children[0].value;
         if firstFuncEndpointName == typeStack1.mEndpointName:
             firstFuncEndpointTypeStack = typeStack1;
             secondFuncEndpointTypeStack = typeStack2;
@@ -367,7 +382,8 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
 
         # now, run through each function.  Importantly, ensure that
         # all initializations of msg seq globals happens in first
-        # function.
+        # function.  note: do not need to specially add arguments
+        # because they're already in the context.
         for funcIndex in range(0,len(msgSeqFunctionsNode.children)):
             # for each function, go through
 
@@ -390,6 +406,12 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
                 for declGlobNode in msgSeqGlobalsNode.children:
                     slicer(declGlobNode,functionDeps,typeStack);
 
+                # also, ensure that first function gets loaded with
+                # its proper arguments.
+                for funcArgNtt in functionArgs:
+                    typeStack.addFuncArg(funcArgNtt);
+                    
+            # handle rest of function and body in slicer.
             slicer(funcNode,functionDeps,typeStack);
 
             # if there is a message receive function coming, then make
@@ -417,10 +439,10 @@ HavePrinted = False;
 def printWarning():
     global HavePrinted;
     if not HavePrinted:
-
-        warnMsg = '\nBehram error: still need to handle message sequence ';
-        warnMsg += 'globals gotten through arguments to message send function.\n';
-        print(warnMsg);
+        # all of these concern less conservative slicing algorithm.
+        # when/if decide to switch back to that, then need to
+        # re-consider all these problems.
+        
         # warnMsg = '\nBehram error: need to write something ';
         # warnMsg += 'intelligent for slicing function call.\n';
         # print(warnMsg);

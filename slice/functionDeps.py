@@ -34,10 +34,27 @@ class FunctionDeps(object):
         # string: name of function
         self.funcName = funcName;
 
+        # ntt id to ntt-s with varType
+        # TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT or 
+        # TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT
+        # should contain all arguments passed to this function.
+        self.funcArgs = {};
+
         # id to return statement ntt
         self.returnStatements = {};
         
 
+    def addFuncArg(self,ntt):
+        if ((ntt.varType != TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT) and
+            (ntt.varType != TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
+            errMsg = '\nBehram error: should not be adding a funcArg in functionsDeps ';
+            errMsg += 'unless it is a function argument.\n';
+            print(errMsg);
+            assert(False);
+
+        self.funcArgs[ntt.id] = ntt;
+
+        
     def addFuncCall(self,ntt):
         '''
         @param {NameTypeTuple} ntt --- of type
@@ -89,9 +106,9 @@ class FunctionDeps(object):
         for read in reads:
             self.mReadSet[read.id] = read;
             
-    def jsonize(self,otherFuncDepsDict):
+    def jsonize(self,funcDepsDict):
         '''
-        @param {dictionary} otherFuncDepsDict --- a dictionary from
+        @param {dictionary} funcDepsDict --- a dictionary from
         name of each functionDep to FunctionDep object.
         '''
         returner = {};
@@ -111,7 +128,7 @@ class FunctionDeps(object):
 
         # definite global/shared reads
         globSharedReads = [];
-        for ntt in self.definiteSharedGlobalReads(otherFuncDepsDict):
+        for ntt in self.definiteSharedGlobalReads(funcDepsDict):
             jsoned = ntt.jsonize();
             globSharedReads.append(
                 util.fromJsonPretty(jsoned));
@@ -120,7 +137,7 @@ class FunctionDeps(object):
 
         #definite global/shared writes
         globSharedWrites = [];
-        for ntt in self.definiteSharedGlobalWrites(otherFuncDepsDict):
+        for ntt in self.definiteSharedGlobalWrites(funcDepsDict):
             jsoned = ntt.jsonize();
             globSharedWrites.append(
                 util.fromJsonPretty(jsoned));
@@ -129,7 +146,7 @@ class FunctionDeps(object):
 
         # conditional global/shared reads
         conditionalGlobSharedReads = [];
-        for ntt in self.conditionalSharedGlobalReads(otherFuncDepsDict):
+        for ntt in self.conditionalSharedGlobalReads(funcDepsDict):
             jsoned = ntt.jsonize();
             conditionalGlobSharedReads.append(
                 util.fromJsonPretty(jsoned));
@@ -138,7 +155,7 @@ class FunctionDeps(object):
 
         # conditional global shared writes
         conditionalGlobSharedWrites = [];
-        for ntt in self.conditionalSharedGlobalWrites(otherFuncDepsDict):
+        for ntt in self.conditionalSharedGlobalWrites(funcDepsDict):
             jsoned = ntt.jsonize();
             conditionalGlobSharedWrites.append(
                 util.fromJsonPretty(jsoned));
@@ -199,7 +216,7 @@ class FunctionDeps(object):
         return self._definiteSharedGlobalWrites(funcDepsDict,alreadyChecked);
 
     
-    def _definiteSharedGlobalWrites(self,otherFuncDepsDict,alreadyChecked):
+    def _definiteSharedGlobalWrites(self,funcDepsDict,alreadyChecked):
         '''
         Be really conservative about chasing function calls.  See note
         at top of function.
@@ -308,7 +325,7 @@ class FunctionDeps(object):
             funcCallName = funcCallNtt.varName;
             if alreadyChecked.get(funcCallName,None) == None:
                 alreadyChecked[funcCallName] = True;
-                fdep = otherFuncDepsDict.get(funcCallName,None);
+                fdep = funcDepsDict.get(funcCallName,None);
                 if fdep == None:
                     errMsg = '\nBehram error: Looking up function that ';
                     errMsg += 'was not defined.\n';
@@ -317,7 +334,7 @@ class FunctionDeps(object):
 
                 
                 subDeps = fdep.definiteSharedGlobalWrites(
-                    otherFuncDepsDict,alreadyChecked);
+                    funcDepsDict,alreadyChecked);
                 for defWriteNtt in subDeps:
                     # doesn't reall matter if overwriting
                     toReturn[defWriteNtt.id] = defWriteNtt;
@@ -326,7 +343,7 @@ class FunctionDeps(object):
         # step 8: very ugly.  should eventually get fixed.  For now,
         # treating all reads to mutable global/shared as writes.
         # FIXME: lkjs;
-        allReads = self.definiteSharedGlobalReads(otherFuncDepsDict);
+        allReads = self.definiteSharedGlobalReads(funcDepsDict);
         for readNtt in allReads:
             if ((readNtt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
                 (readNtt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL)):
@@ -343,7 +360,7 @@ class FunctionDeps(object):
         return returner;
 
 
-    def conditionalSharedGlobalReads(self,otherFuncDepsDict):
+    def conditionalSharedGlobalReads(self,funcDepsDict,alreadyChecked=None):
         '''
         Can read a global that wasn't returned by
         definiteSharedGlobalReads.  This is because maps and lists are
@@ -365,13 +382,16 @@ class FunctionDeps(object):
         Do not need to check through function calls.  This is because
         the only way that conditional reads will occur is if one of
         the arguments to the function is mutable and global/shared.
-        But the caller already knows if the argument is global/shared.  
-        '''
+        But the caller already knows if the argument is global/shared.
+
+
         
-        defSGR = self.definiteSharedGlobalReads(otherFuncDepsDict);
+        '''
+        defSGR = self.definiteSharedGlobalReads(funcDepsDict);
         # need to keep track of function argument reads as well
         # because may get taint through them.
-        returner = self._getConditionalGlobalShareds(defSGR + self.funcArgReads());
+        returner = self._getConditionalGlobalShareds(
+            defSGR + self.funcArgReads(funcDepsDict));
         return returner;
 
     def _getConditionalGlobalShareds(self,arrayToCheck):
@@ -383,10 +403,10 @@ class FunctionDeps(object):
             if ntt.mutable:
                 if ((ntt.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
                     (ntt.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL) or
-                    (ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
-
+                    (ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT) or
+                    (ntt.varType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
                     dynamicCheckDict[ntt.id] = ntt;
-                
+
 
         # actually return the array of items to check taint for.
         returner = [];
@@ -398,13 +418,14 @@ class FunctionDeps(object):
                     
         return returner;
 
-    def conditionalSharedGlobalWrites(self,otherFuncDepsDict):
+    def conditionalSharedGlobalWrites(self,funcDepsDict):
         '''
         @see conditionalSharedGlobalReads, but does not go through
         function calls as well.
         '''
         return self._getConditionalGlobalShareds(
-            self.definiteSharedGlobalWrites(otherFuncDepsDict) + self.mutableFuncArgWrites());
+            self.definiteSharedGlobalWrites(funcDepsDict) +
+            self.mutableFuncArgWrites(funcDepsDict));
     
 
 
@@ -418,8 +439,26 @@ class FunctionDeps(object):
 
 
     
-    def funcArgReads(self):
+    def funcArgReads(self,funcDepsDict):
         '''
+        This should return all function arguments that were passed in
+        and later read as an array of ntt-s.
+
+        Importantly, if the function arguments that we use are
+        TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT,
+        then this means that another function may actually read that
+        argument as a global in a message sequence, even if this
+        function does not.
+
+        To deal with this edge case, first check if a function has
+        above type.  If it does, then check if it's in my read set.
+        If it is not, then check run through all other function deps
+        and check their read sets.  If it's in any of theirs then add
+        it.  Otherwise, do not add.
+
+        For all other arguments, just run through read set, adding
+        function arguments to it.
+        
         Just run through mReadSet and return any reads made to passed
         in arguments, returning the ntts of those arguments in an
         array, guaranteeing there will only be one ntt per item in the
@@ -428,8 +467,40 @@ class FunctionDeps(object):
         returnDict = {};
         for nttKey in sorted(self.mReadSet.keys()):
             ntt = self.mReadSet[nttKey];
-            returnDict[ntt.id] = ntt;
-            
+            if ((ntt.varType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT) or
+                (ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
+                returnDict[ntt.id] = ntt;
+
+
+        for nttKey in sorted(self.funcArgs.keys()):
+            ntt = self.funcArgs[nttKey];
+
+            # First line: already have it; don't worry about it
+            # second check: don't already have it, but no one else can either
+            if ((ntt.id in returnDict) or
+                (ntt.varType != TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
+                continue;
+
+            # do not already have argument in read set, and know that
+            # other functions might be able to access it becuase it's
+            # a message sequence global.  run through all other
+            # function dependencies to see if they use it in their
+            # read set.  If they do, then add it to returner.
+            # Otherwise, do not.
+            goToNext = False;
+            for fdepKey in sorted(funcDepsDict.keys()):
+                if goToNext:
+                    break;
+
+                fdep = funcDepsDict[fdepKey];
+                
+                for fdep_nttKey in sorted(fdep.mReadSet.keys()):
+                    fdep_ntt = fdep.mReadSet[fdep_nttKey];
+
+                    if fdep_ntt.id == ntt.id:
+                        returnDict[ntt.id] = ntt;
+                        goToNext = True;
+                        break;
 
         # collapse returnDict...note sorting for easier debugging.
         returner = [];
@@ -438,7 +509,7 @@ class FunctionDeps(object):
             returner.append(nttItem);
         return returner;
     
-    def mutableFuncArgWrites(self):
+    def mutableFuncArgWrites(self,funcDepsDict):
         '''
         Returns an array of ntt-s of mutable function arguments that
         may get written to throughout the course of this function.
@@ -452,6 +523,11 @@ class FunctionDeps(object):
         2) for any mutable that is written to that depends on a
         mutable function argument, then that dependent mutable func
         argument is added.
+
+        3) for any mutable argument that is a shared global and is not
+        written to in the body of the first function, check if it is
+        written to in any other function.  If it is, then add it to
+        this list.
         
         '''
         returnDict = {};
@@ -464,15 +540,51 @@ class FunctionDeps(object):
             if vrsItem.ntt.mutable:
                 
                 # doing #1
-                if vrsItem.ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT:
+                if ((vrsItem.ntt.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT) or
+                    (vrsItem.ntt.varType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
+                    
                     returnDict[vrsItem.ntt.id] = vrsItem.ntt;
                 else:
                     # doing #2
                     for nttReadKeys in sorted(vrsItem.mReads.keys()):
                         nttReadItem = vrsItem.mReads[nttReadKeys];
-                        if nttReadItem.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARUGMENT:
+                        if ((nttReadItem.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT) or
+                            (nttReadItem.varType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
                             returnDict[nttReadItem.ntt.id] = nttReadItem;
-                            
+
+
+
+        # doing #3
+        for funcArgKey in sorted(self.funcArgs.keys()):
+            funcArgNtt = self.funcArgs[funcArgKey]
+
+            # First line: already have it; don't worry about it
+            # second check: don't already have it, but no one else can either
+            if ((funcArgNtt.id in returnDict) or
+                (funcArgNtt.varType != TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
+                continue;
+
+            # do not already have argument in read set, and know that
+            # other functions might be able to access it becuase it's
+            # a message sequence global.  run through all other
+            # function dependencies to see if they use it in their
+            # read set.  If they do, then add it to returner.
+            # Otherwise, do not.
+            goToNext = False;
+            for fdepKey in sorted(funcDepsDict.keys()):
+                if goToNext:
+                    break;
+
+                fdep = funcDepsDict[fdepKey];
+                
+                for fdep_nttKey in sorted(fdep.varReadSet.keys()):
+                    fdep_ntt = fdep.varReadSet[fdep_nttKey].ntt;
+
+                    if fdep_ntt.id == funcArgNtt.id:
+                        returnDict[funcArgNtt.id] = funcArgNtt;
+                        goToNext = True;
+                        break;
+
 
         # collapse the dictionary into a sorted list and return it.
         returner = [];
@@ -488,37 +600,6 @@ class VarReadSet(object):
         self.ntt = ntt;
         self.mReads = {};
 
-        
-    def replaceFuncArguments(self,foundArgsDict):
-        '''
-        @param {dict} foundArgsDict --- integer:ntt.  Each integer is
-        the id of an ntt (with var type
-        IDENTIFIER_TYPE_FUNCTION_ARGUMENT) that should get replaced by
-        the value ntt.
-        
-        @see _changeArgIds of functionDeps
-        '''
-
-        if self.ntt.id in foundArgsDict:
-            self.ntt = foundArgsDict.get(self.ntt.id);
-        else:
-            self.ntt.replaceFuncArguments(foundArgsDict);
-            
-        for readNttKey in list(self.mReads.keys()):
-            replacement = foundArgsDict.get(readNttKey,None);
-            if replacement != None:
-                # means that we need to replace the key
-
-                # first insert new one with replacement id
-                self.mReads[replacement.id] = replacement;
-
-                # then remove old one
-                del self.mReads[replacement];
-            else:
-                self.mReads[readNttKey].replaceFuncArguments(foundArgsDict);
-        
-
-        
     def addReads(self,reads):
         '''
         @param {array of ntt-s} reads.
