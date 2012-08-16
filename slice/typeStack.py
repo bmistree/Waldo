@@ -74,6 +74,11 @@ class TypeStack(object):
         return topStack.addIdentifier(
             identifierName,isMutable,identifierType,argPosition);
 
+    def addIdentifierAsNtt(self,ntt):
+        topStack = self.checkStackLen('addIdentifierAsNtt');
+        return topStack.addIdentifierAsNtt(ntt);
+
+    
 
     def getIdentifier(self,identifierName):
         topStack = self.checkStackLen('getIdentifier');
@@ -280,6 +285,10 @@ class Context(object):
         self.dict[identifierName] = ntt;
         return ntt;
 
+    def addIdentifierAsNtt(self,ntt):
+        self.dict[identifierName] = ntt;
+        return ntt;
+    
     
 class NameTypeTuple(object):
     staticId = 0;

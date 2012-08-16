@@ -59,6 +59,9 @@ def slicer(node,functionDeps=None,typeStack=None):
         slicer(endpoint1Node,functionDeps,typeStack1);
         slicer(endpoint2Node,functionDeps,typeStack2);
 
+        msgSeqSecNode = node.children[6];
+        sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2);
+        
     elif ((node.label == AST_ONCREATE_FUNCTION) or (node.label == AST_PUBLIC_FUNCTION) or
           (node.label == AST_PRIVATE_FUNCTION)):
 
@@ -253,18 +256,26 @@ def slicer(node,functionDeps=None,typeStack=None):
                                     argumentNumber);
             argumentNumber +=1;
 
+    elif node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        # sliceMsgSeqSecNode already handles adding a function dep and
+        # context.  so do not need to do that here.
+        msgBodyNode = node.children[3];
+        for childNode in msgBodyNode.children:
+            slicer(childNode,functionDeps,typeStack);
+
+    elif node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        # sliceMsgSeqSecNode already handles adding a function dep and
+        # context.  so do not need to do that here.
+        msgBodyNode = node.children[2];
+        for childNode in msgBodyNode.children:
+            slicer(childNode,functionDeps,typeStack);
+            
     elif node.label == AST_IDENTIFIER:
         identifierName = node.value;
 
         if not typeStack.isEndpointName(identifierName):
             ntt = typeStack.getIdentifier(identifierName);
             typeStack.addRead(ntt);
-
-    elif node.label == AST_FUNCTION_CALL:
-        # warnMsg = '\nBehram error: need to write something ';
-        # warnMsg += 'intelligent for slicing function call.\n';
-        # print(warnMsg);
-        pass;
             
     elif node.label == AST_DECLARATION:
         nodeTypeNode = node.children[0];
@@ -298,31 +309,133 @@ def slicer(node,functionDeps=None,typeStack=None):
     return functionDeps;
 
 
-HavePrinted = True;
+
+def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
+    '''
+    @param {AstNode} msgSeqSecNode --- with label msgSequenceSection...
+
+    Create a new context on each stack.
+
+    Push all shareds onto context.
+
+    alternate slicing with each function (each time, pushing on an
+    additional context and popping off an additional context)
+    '''
+
+    
+    
+    for msgSeqNode in msgSeqSecNode.children:
+
+        # pop context before exiting for loop.
+        typeStack1.pushContext(TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL,None);
+        typeStack2.pushContext(TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL,None);
+
+        msgSeqFunctionsNode = msgSeqNode.children[2];
+
+        # add the identifiers of sequence global variables
+        # directly to each type stack.
+        msgSeqGlobalsNode = msgSeqNode.children[1];
+        for declGlobNode in msgSeqGlobalsNode.children:
+            identifierNode = declGlobNode.children[1];
+            identifierName = identifierNode.value;
+            identifierTypeNode = declGlobNode.children[0];
+            isMute = isMutable(nodeTypeNode);
+
+            newNtt = typeStack1.addIdentifier(
+                identifierName,isMute,TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL);
+
+            typeStack2.addIdentifierAsNtt(newNtt);
+
+        
+        # want to ensure that the first function has all the
+        # read/write dependencies.  Need to know which type stack to
+        # use for it.
+        firstFuncEndpointName = msgSeqFunctionsNode.children[0].children[0].value;
+        if firstFuncEndpointName == typeStack1.mEndpointName:
+            firstFuncEndpointTypeStack = typeStack1;
+            secondFuncEndpointTypeStack = typeStack2;
+        elif firstFuncEndpointName == typeStack2.mEndpointName:
+            firstFuncEndpointTypeStack = typeStack2;
+            secondFuncEndpointTypeStack = typeStack1;
+        else:
+            errMsg = '\nBehram error.  could not match enpdoint specified ';
+            errMsg += 'by function as "' + firstFuncEndpointName + '" to ';
+            errMsg += 'existing type stack.\n';
+            print(errMsg);
+            assert(False);
+
+
+        # now, run through each function.  Importantly, ensure that
+        # all initializations of msg seq globals happens in first
+        # function.
+        for funcIndex in range(0,len(msgSeqFunctionsNode.children)):
+            # for each function, go through
+
+            typeStack = firstFuncEndpointTypeStack;
+            otherTypeStack = secondFuncEndpointTypeStack;
+            if funcIndex % 2 != 0:
+                typeStack = secondFuncEndpointTypeStack;
+                otherTypeStack = firstFuncEndpointTypeStack;
+
+            funcNode = msgSeqFunctionsNode.children[funcIndex];
+            funcName = funcNode.children[1].value;
+            
+            fDep = FunctionDeps(typeStack.hashFuncName(funcName));
+            functionDeps.append(fDep);
+            typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_LOCAL,fDep);
+            
+            if funcIndex == 0:
+                # special case the first function so that it contains
+                # all the initializations of sequence globals
+                for declGlobNode in msgSeqGlobalsNode.children:
+                    slicer(declGlobNode,functionDeps,typeStack);
+
+            slicer(funcNode,functionDeps,typeStack);
+
+            # if there is a message receive function coming, then make
+            # a function call to it explicitly.
+            if funcIndex != (len(msgSeqFunctionsNode.children) -1):
+                nextMsgFuncNode = msgSeqFunctionsNode.children[funcIndex+1];
+                nextMsgName = nextMsgFuncNode.children[1].value;
+                
+                typeStack.addFuncCall(
+                    otherTypeStack.hashFuncName(nextMsgName),
+                    []);  # note, message sequence functions do not
+                          # take any arguments, so can just pass blank
+                          # array.
+
+            # remove the context added for latest function.
+            typeStack.popContext();
+            
+        # pop the pushed contexts
+        typeStack1.popContext();
+        typeStack2.popContext();
+
+
+
+HavePrinted = False;
 def printWarning():
     global HavePrinted;
     if not HavePrinted:
-        warnMsg = '\nBehram error: need to write something ';
-        warnMsg += 'intelligent for slicing function call.\n';
-        print(warnMsg);
-        warnMsg = '\nBehram error: still need to write something ';
-        warnMsg += 'intelligent for message sequences.\n';
-        print(warnMsg);
 
-        warnMsg = '\nBehram error: still need to handle returns\' ';
-        warnMsg += 'subsequently being written to in mega-'
-        warnMsg += 'constructor in functionDeps.py.\n';
+        warnMsg = '\nBehram error: still need to handle message sequence ';
+        warnMsg += 'globals gotten through arguments to message send function.\n';
         print(warnMsg);
+        # warnMsg = '\nBehram error: need to write something ';
+        # warnMsg += 'intelligent for slicing function call.\n';
+        # print(warnMsg);
+        # warnMsg = '\nBehram error: still need to write something ';
+        # warnMsg += 'intelligent for message sequences.\n';
+        # print(warnMsg);
 
-        warnMsg = '\nBehram error: handle post-it problem on ';
-        warnMsg += 'second monitor.\n';
-        print(warnMsg);
+        # warnMsg = '\nBehram error: still need to handle returns\' ';
+        # warnMsg += 'subsequently being written to in mega-'
+        # warnMsg += 'constructor in functionDeps.py.\n';
+        # print(warnMsg);
 
-        warnMsg = '\nBehram warn.  Need to add endpoint information ';
-        warnMsg += 'to each function name in fDeps to ensure that when ';
-        warnMsg += 'turn into a dictionary, do not overwrite the function ';
-        warnMsg += 'of one endpoint with that of another.\n';
-        print(warnMsg);
+        # warnMsg = '\nBehram error: handle post-it problem on ';
+        # warnMsg += 'second monitor.\n';
+        # print(warnMsg);
         
         HavePrinted = True;
     
