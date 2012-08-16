@@ -37,28 +37,26 @@ def slicer(node,functionDeps=None,typeStack=None):
         # create two separate type stacks for each endpoint
         sharedSecNode = node.children[3];
 
-        aliasSecNode = node.children[1];
-        end1Name = aliasSecNode.children[0].value;
-        end2Name = aliasSecNode.children[1].value;
+        endpoint1Node = node.children[4];
+        endpoint2Node = node.children[5];
+        
+        end1Name = endpoint1Node.children[0].value;
+        end2Name = endpoint2Node.children[0].value;
         
         typeStack1 = TypeStack(typeStack);
-        typeStack1.addEndpointName(end1Name);
-        typeStack1.addEndpointName(end2Name);
-        
+        typeStack1.addMyEndpointName(end1Name);
+        typeStack1.addOtherEndpointName(end2Name);
+
         typeStack2 = TypeStack(typeStack);
-        typeStack2.addEndpointName(end1Name);
-        typeStack2.addEndpointName(end2Name);
-        
+        typeStack2.addMyEndpointName(end2Name);
+        typeStack2.addOtherEndpointName(end1Name);
 
         # both typestacks should hold shared variables...so load each
         slicer(sharedSecNode,functionDeps,typeStack1);
         slicer(sharedSecNode,functionDeps,typeStack2);
 
         # now go through each endpoint node
-        endpoint1Node = node.children[4];
         slicer(endpoint1Node,functionDeps,typeStack1);
-        
-        endpoint2Node = node.children[5];
         slicer(endpoint2Node,functionDeps,typeStack2);
 
     elif ((node.label == AST_ONCREATE_FUNCTION) or (node.label == AST_PUBLIC_FUNCTION) or
@@ -78,7 +76,7 @@ def slicer(node,functionDeps=None,typeStack=None):
             assert(False);
 
         # create a new function dependency on the stack.
-        fDep = FunctionDeps(funcName);
+        fDep = FunctionDeps(typeStack.hashFuncName(funcName));
         functionDeps.append(fDep);
 
         # set up new context so that identifiers that are added will
@@ -94,8 +92,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         typeStack.changeLabelAs(TypeStack.IDENTIFIER_TYPE_LOCAL);
         funcBodyNode = node.children[funcBodyIndex];
         slicer(funcBodyNode,functionDeps,typeStack);
-        
-        
+                
         typeStack.popContext();
         
     elif node.label == AST_ENDPOINT_GLOBAL_SECTION:
@@ -126,7 +123,6 @@ def slicer(node,functionDeps=None,typeStack=None):
             
         returnStatementReads = typeStack.getReadsAfter(readIndex);
         typeStack.addReturnStatement(returnStatementReads);
-
         
     elif node.label == AST_FUNCTION_CALL:
         funcCallName = node.children[0].value;
@@ -144,8 +140,8 @@ def slicer(node,functionDeps=None,typeStack=None):
             
             funcArgReads.append(argumentReads);
         
-        typeStack.addFuncCall(funcCallName,funcArgReads);
-
+        typeStack.addFuncCall(
+            typeStack.hashFuncName(funcCallName),funcArgReads);
         
     elif node.label == AST_ASSIGNMENT_STATEMENT:
         # left-hand side can only be a bracket statement or an

@@ -13,14 +13,22 @@ class TypeStack(object):
     def __init__(self,prevStack=None):
         self.stack  = []; #last element in array is always top of stack.
         self.endNames = {};
+        self.mEndpointName = None;
         
         if prevStack != None:
             for ctx in prevStack.stack:
                 self.stack.append(ctx);
 
             self.endNames = prevStack.endNames;
-            
-    def addEndpointName(self,endName):
+
+    def addMyEndpointName(self,endName):
+        self.mEndpointName = endName;
+        self._addEndpointName(endName);
+
+    def addOtherEndpointName(self,endName):
+        self._addEndpointName(endName);
+    
+    def _addEndpointName(self,endName):
         self.endNames[endName] = True;
         
     def isEndpointName (self,toTest):
@@ -29,6 +37,18 @@ class TypeStack(object):
             return False;
         return True;
 
+    def hashFuncName(self,funcName):
+        '''
+        @param {String} funcName
+        '''
+        if self.mEndpointName == None:
+            errMsg = '\nBehram error: cannot hash function name ';
+            errMsg += 'without and endpoint name.\n';
+            print(errMsg);
+            assert(False);
+        return self.mEndpointName + '_-_-_' + funcName;
+
+    
     def getLabelAs(self):
         topStack = self.checkStackLen('changeLabelAs');
         return topStack.labelAs;
