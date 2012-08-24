@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 '''
 Most of the code in this module is directly adapted from
@@ -156,6 +156,58 @@ function exec (json) {
                return '--';
             });
 
+  //draws slice annotation name
+  node.append("text")
+      .attr("dx", function(d) {
+       if (d.children)
+          -8;
+       else
+       {
+          if(d.drawHigh)
+            return 2;
+       }
+       return -8;
+       })
+      .attr("dy", function(d)
+                  {
+                      if (d.drawHigh)
+                          return -8 + 3*VERTICAL_SPACING;
+                      return 12 + 3*VERTICAL_SPACING;
+                  })
+      .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .text(function(d)
+            {
+               if(d.sliceAnnotationName)
+                 return d.sliceAnnotationName;
+               return '--';
+            });
+
+
+  //draws slice annotation type name
+  node.append("text")
+      .attr("dx", function(d) {
+       if (d.children)
+          -8;
+       else
+       {
+          if(d.drawHigh)
+            return 2;
+       }
+       return -8;
+       })
+      .attr("dy", function(d)
+                  {
+                      if (d.drawHigh)
+                          return -8 + 4*VERTICAL_SPACING;
+                      return 12 + 4*VERTICAL_SPACING;
+                  })
+      .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .text(function(d)
+            {
+               if(d.sliceAnnotationType)
+                 return d.sliceAnnotationType;
+               return '--';
+            });
 
 }
 

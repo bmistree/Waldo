@@ -117,6 +117,10 @@ def slicer(node,functionDeps=None,typeStack=None):
         typeNode = node.children[1];
         typeStack.addIdentifier(idName,isMutable(typeNode));
 
+        # gets passed to emitter
+        typeStack.annotateNode(node.children[2],idName);
+
+        
     elif node.label == AST_RETURN_STATEMENT:
         # should keep track of all identifiers that could be touched
         # by returning.
@@ -150,11 +154,15 @@ def slicer(node,functionDeps=None,typeStack=None):
         # left-hand side can only be a bracket statement or an
         # identifier according to type checking.
         lhsNode = node.children[0];
+        
         rhsNode = node.children[1];
         if lhsNode.label == AST_IDENTIFIER:
             nodeName = lhsNode.value;
             readIndex = typeStack.getReadIndex();
             slicer(rhsNode,functionDeps,typeStack);
+
+            # gets passed to emitter
+            typeStack.annotateNode(lhsNode,nodeName);
             
             # contains all reads that may have been made from
             # executing rhs of code.
@@ -172,6 +180,9 @@ def slicer(node,functionDeps=None,typeStack=None):
             if toReadFromNode.label == AST_IDENTIFIER:
                 nodeName = toReadFromNode.value;
                 readIndex = typeStack.getReadIndex();
+
+                # gets passed to emitter
+                typeStack.annotateNode(toReadFromNode,nodeName);
                 
                 slicer(rhsNode,functionDeps,typeStack);
                 
@@ -185,6 +196,7 @@ def slicer(node,functionDeps=None,typeStack=None):
                 # FIXME: lkjs; may add to read set.
                 slicer(lhsNode,functionDeps,typeStack);
                 indexNode = lhsNode.children[1];
+                
             else:
                 # NOTE: Based on current type checking rules in
                 # typeCheck.py's switch statement for the assignment
@@ -249,12 +261,15 @@ def slicer(node,functionDeps=None,typeStack=None):
             # each child is a function decl arg
             typeNode = child.children[0];
             nameNode = child.children[1];
-            ntt = typeStack.addIdentifier(nameNode.value,
+            argName = nameNode.value;
+            ntt = typeStack.addIdentifier(argName,
                                           isMutable(typeNode),
                                           TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT,
                                           argumentNumber);
 
-
+            # gets passed to emitter
+            typeStack.annotateNode(nameNode,argName);
+            
             typeStack.addFuncArg(ntt);
             
             argumentNumber +=1;
@@ -281,10 +296,15 @@ def slicer(node,functionDeps=None,typeStack=None):
         if not typeStack.isEndpointName(identifierName):
             ntt = typeStack.getIdentifier(identifierName);
             typeStack.addRead(ntt);
+
+        # gets passed to emitter
+        typeStack.annotateNode(node,identifierName);
+
             
     elif node.label == AST_DECLARATION:
         nodeTypeNode = node.children[0];
-        nodeName = node.children[1].value;
+        nameNode = node.children[1];
+        nodeName = nameNode.value;
         isMute = isMutable(nodeTypeNode);
         ntt = typeStack.addIdentifier(nodeName,isMute);
         if len(node.children) == 3:
@@ -304,6 +324,10 @@ def slicer(node,functionDeps=None,typeStack=None):
             ntt = typeStack.getIdentifier(nodeName);
             typeStack.addReadsToVarReadSet(
                 ntt,initializationReads);
+            
+        # gets passed to emitter
+        typeStack.annotateNode(nameNode,nodeName);
+
 
     else:
         print('\nBehram error: still need to process label for ' + node.label + '\n');
@@ -312,7 +336,6 @@ def slicer(node,functionDeps=None,typeStack=None):
 
     printWarning();
     return functionDeps;
-
 
 
 def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
@@ -342,8 +365,12 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
 
             newNtt = typeStack1.addIdentifier(
                 identifierName,isMute,TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL);
-
+            
             typeStack2.addIdentifierAsNtt(newNtt);
+            
+            # does not matter which type stack annotates the node
+            tyepStack1.annotateNode(identifierNode,identifierName);
+
 
         # now grab any arguments to first function and insert them as
         # sequence globals.
@@ -361,6 +388,10 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             typeStack2.addIdentifierAsNtt(newNtt);
             functionArgs.append(newNtt);
 
+            # does not matter which type stack annotates the node
+            typeStack2.annotateNode(identifierNode,identifierName);
+
+            
         
         # want to ensure that the first function has all the
         # read/write dependencies.  Need to know which type stack to
@@ -398,6 +429,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             
             fDep = FunctionDeps(typeStack.hashFuncName(funcName));
             functionDeps.append(fDep);
+
             typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_LOCAL,fDep);
             
             if funcIndex == 0:

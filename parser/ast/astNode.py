@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys;
 import os;
@@ -24,6 +24,43 @@ class AstNode():
         self.note     = None;
         self.children = [];
 
+        # All identifiers get a slice annotation (note that other
+        # nodes, such as literals, do not).  The slice annotation
+        # provides a name for an identifier.  So if you use the same
+        # identifier multiple times in a function, each of those
+        # identifier's nodes will have the same slice annotation name.
+        # (Of course, if you use the same identifier name to name
+        # different pieces of data [eg. each endpoint has a global
+        # variable with the same name], then the astnodes for each
+        # will have different sliceAnnotationName-s.
+        self.sliceAnnotationName = None;
+        # @see TypeStack.IDENTIFIER_TYPE_*.  The slice annotation type
+        # tells us whether this node is a shared/endpoint
+        # global/function argument/ etc.
+        self.sliceAnnotationType = None;
+        # The TypeStack.IDENTIFIER_TYPE_*-s are all integers, which
+        # makes it harder for a human to reason about when debugging.
+        # This is the human-readable string that corresponds to each
+        # slice annotation, and must match sliceAnnotationType.  For
+        # instance, if self.sliceAnnotationType is
+        # TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT, then the
+        # self.sliceAnnotationTypeHumanReadable should be "function
+        # argument"
+        self.sliceAnnotationTypeHumanReadable = None; 
+
+    def setSliceAnnotation(
+        self,annotateName,annotateType,annotateTypeHumanReadable):
+        '''
+        @see documentation for self.sliceAnnotationName and
+        sliceAnnotationType above.
+
+        Should only be called from slicer code.
+        '''
+        self.sliceAnnotationName = annotateName;
+        self.sliceAnnotationType = annotateType;
+        self.sliceAnnotationTypeHumanReadable = annotateTypeHumanReadable;
+
+        
     def setNote(self,note):
         self.note = note;
         
@@ -60,7 +97,9 @@ class AstNode():
             "name": "<self.label>",
             "type": "<self.type>",
             "value": <self.value>,
-            "drawHigh": drawHigh
+            "sliceAnnotationName": "<self.sliceAnnotationName>",
+            "sliceAnnotationType": "<self.sliceAnnotationTypeHumanReadable>",
+            "drawHigh": drawHigh,
             "children": [
                    //recurse
               ]
@@ -73,20 +112,33 @@ class AstNode():
         returner += '"';
 
 
-        if (self.value != None):
+        if self.value != None:
             returner += ',\n';
             returner += indentText('"value": "',indentLevel+1);
-            returner += self.value;
-            returner += '"'
+            if isinstance (self.value,basestring):
+                returner += escapeQuotes(self.value);
+            else:
+                returner += self.value;
+            returner += '"';
 
-        
-        if (self.type != None):
+        if self.type != None:
             returner += ',\n';
             returner += indentText('"type": "',indentLevel+1);
-            returner += self.type;
-            returner += '"'
+            returner += escapeQuotes(self.type);
+            returner += '"';
 
+        if self.sliceAnnotationName != None:
+            returner += ',\n';
+            returner += indentText('"sliceAnnotationName": "',indentLevel+1);
+            returner += self.sliceAnnotationName;
+            returner += '"';
 
+        if self.sliceAnnotationTypeHumanReadable != None:
+            returner += ',\n';
+            returner += indentText('"sliceAnnotationType": "',indentLevel+1);
+            returner += self.sliceAnnotationTypeHumanReadable;
+            returner += '"';
+        
         #print drawHigh
         returner += ',\n';
         returner += indentText('"drawHigh": ',indentLevel+1);
@@ -137,3 +189,5 @@ def indentText(text,numIndents):
     return returner;
 
 
+def escapeQuotes(text):
+    return text.replace('"','\\"');

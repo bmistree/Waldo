@@ -13,7 +13,7 @@ class TypeStack(object):
     # note that arguments to message sequence nodes are also globals
     # for the message sequence.
     IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT = 7;
-
+    IDENTIFIER_TYPE_ENDPOINT_NAME = 8;
     
     def __init__(self,prevStack=None):
         self.stack  = []; #last element in array is always top of stack.
@@ -42,6 +42,69 @@ class TypeStack(object):
             return False;
         return True;
 
+    def annotateNode(self,node,identifierName):
+        '''
+        For emitting stage, need to know whether to access an
+        identifier from shared/global/sequenc global context, etc.
+
+        Also, for emitting, need a naming scheme that prevents
+        collisions (@see description in /example/v3).  This will write
+        an annotation onto an astNode providing both of these.
+        
+        @param {AstNode} node
+        @param {String} identifierName
+        '''
+
+        if self.isEndpointName(identifierName):
+            annotateType = TypeStack.IDENTIFIER_TYPE_ENDPOINT_NAME;
+            node.setSliceAnnotation(
+                NameTypeTuple.uniqueNameForEndpoints(),
+                annotateType,
+                self._translateIdentifierTypeToHumanReadable(annotateType));
+            return;
+        
+        ntt = self.getIdentifier(identifierName);
+        if ntt == None:
+            errMsg = '\nBehram error in annotateNode.  type stack ';
+            errMsg += 'must contain identifier name.\n';
+            print(errMsg);
+            assert(False);
+
+        node.setSliceAnnotation(
+            ntt.getUniqueName(),
+            ntt.varType,
+            self._translateIdentifierTypeToHumanReadable(ntt.varType));
+
+    def _translateIdentifierTypeToHumanReadable(self,annotateTypeHumanReadable):
+        '''
+        Convert an annotation type from an integer to a prose string.
+        '''
+        if annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_SHARED:
+            return '_shared_';
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL:
+            return '_end_global_';
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL:
+            return '_msg_seq_glbal_';
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT:
+            return '_fun_arg_';
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_LOCAL:
+            return '_local_';            
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL:
+            return '_fun_call_';            
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_RETURN_STATEMENT:
+            return '_return_';
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT:
+            return '_msg_seq_global_and_func_arg';
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_ENDPOINT_NAME:
+            return '_endpoint_';
+        
+            
+        errMsg = '\nBehram error in _translateIdentifierTypeToHumanReadable.  ';
+        errMsg += 'Received an unknown type to translate.\n';
+        print(errMsg);
+        assert(False);
+
+        
     def hashFuncName(self,funcName):
         '''
         @param {String} funcName
@@ -314,7 +377,11 @@ class Context(object):
     
     
 class NameTypeTuple(object):
+
+    # @see uniqueNameForEndpoints before changing initial value.
+    # uniqueNameForEndpoints assumes that staticId can never be -1.
     staticId = 0;
+    
     def __init__(self,varName,varType,isMutable,argPosition):
         '''
         @param {String} varName
@@ -346,6 +413,18 @@ class NameTypeTuple(object):
 
         self.argPosition = argPosition;
 
+    @staticmethod
+    def uniqueNameForEndpoints():
+        '''
+        Endpoint identifiers need unique names too.  (@see
+        typeStack.annotateNode for a discussion of what a unique name
+        does.)  What gets returned is guaranteed to not conflict with
+        the unique name for any identifier that is not an endpoint
+        name.
+        '''
+        return '-1__endpoint';
+        
+        
     def jsonize(self):
         returner = {};
         returner['id'] = self.id;
@@ -356,6 +435,8 @@ class NameTypeTuple(object):
         
         return util.toJsonPretty(returner);
 
+    def getUniqueName(self):
+        return str(self.id) + '__' + self.varName;
         
     def mark(self):
         self._mark = True;

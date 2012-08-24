@@ -45,15 +45,36 @@ def runText(progText):
         toPrint += '\n\n';
 
     toPrint += '\n\n\n';
-    return toPrint;
+    return toPrint,rootNode;
     
     
-def run (filename):
+def run (filename,graphicalOutputFilename):
+    '''
+    @param {String} filename
+    
+    @param {string} graphicalOutputFilename --- None if we are not
+    supposed to output an html file with ast tree (including slice
+    labels).  If we are, it's a string with information on where to
+    output to.
+    '''
     filer = open(filename,'r');
     progText = filer.read();
     filer.close();
-    print(runText(progText));
+    textToPrint,astRoot = runText(progText);
+    print(textToPrint);
+
+    if graphicalOutputFilename != None:
+        astRoot.drawPretty(graphicalOutputFilename,
+                           '../parser/ast/d3/',   # FIXME: hard coded path to d3 from here
+                           3000,
+                           2000);
         
         
 if __name__ == '__main__':
-    run(sys.argv[1]);
+
+    filename = sys.argv[1];
+    graphical = None;
+    if len(sys.argv) == 3:
+        graphical = sys.argv[2];
+        
+    run(filename,graphical);
