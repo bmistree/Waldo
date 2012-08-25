@@ -445,9 +445,6 @@ class NameTypeTuple(object):
     def isMarked(self):
         return self._mark;
 
-
-
-
     
 class ReturnStatementNtt(NameTypeTuple):
     def __init__(self,returnStatementReads):
@@ -457,7 +454,7 @@ class ReturnStatementNtt(NameTypeTuple):
 
         Corresponds to a return statement that 
         '''
-        NamTypeTuple.__init__(
+        NameTypeTuple.__init__(
             self,'return statement',
             TypeStack.IDENTIFIER_TYPE_RETURN_STATEMENT,False,None);
 

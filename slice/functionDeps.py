@@ -42,7 +42,10 @@ class FunctionDeps(object):
 
         # id to return statement ntt
         self.returnStatements = {};
-        
+
+
+    def addReturnStatement(self,ntt):
+        self.returnStatements[ntt.id] = ntt;
 
     def addFuncArg(self,ntt):
         if ((ntt.varType != TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT) and
@@ -161,10 +164,21 @@ class FunctionDeps(object):
                 util.fromJsonPretty(jsoned));
 
         returner['conditionalGlobalSharedWrites'] = conditionalGlobSharedWrites;
-
         
         # return the json
         return util.toJsonPretty(returner);
+
+
+    def seqGlobals(self,funcDepsDict):
+        '''
+        @returns {Array} --- Returns an array of ntt-s.  Each ntt
+        corresponds to a separate sequence global that I might hit by
+        calling this function.
+        '''
+        errMsg = '\nBehram error: require a way of identifiying ';
+        errMsg += 'sequence globals from function dep.\n';
+        print(errMsg);
+        return [];
 
     
     def definiteSharedGlobalReads(self,funcDepsDict):
@@ -383,9 +397,6 @@ class FunctionDeps(object):
         the only way that conditional reads will occur is if one of
         the arguments to the function is mutable and global/shared.
         But the caller already knows if the argument is global/shared.
-
-
-        
         '''
         defSGR = self.definiteSharedGlobalReads(funcDepsDict);
         # need to keep track of function argument reads as well

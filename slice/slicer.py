@@ -361,7 +361,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             identifierNode = declGlobNode.children[1];
             identifierName = identifierNode.value;
             identifierTypeNode = declGlobNode.children[0];
-            isMute = isMutable(nodeTypeNode);
+            isMute = isMutable(identifierTypeNode);
 
             newNtt = typeStack1.addIdentifier(
                 identifierName,isMute,TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL);
@@ -369,7 +369,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             typeStack2.addIdentifierAsNtt(newNtt);
             
             # does not matter which type stack annotates the node
-            tyepStack1.annotateNode(identifierNode,identifierName);
+            typeStack1.annotateNode(identifierNode,identifierName);
 
 
         # now grab any arguments to first function and insert them as
