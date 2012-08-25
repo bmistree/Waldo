@@ -63,7 +63,6 @@ def _emitIndividualEvent(eventName,fdep,fdepDict,amountToIndent):
     # write the sequence globals
     # FIXME: currently do not have a way of accessing sequence globals
     # of functions.
-    print('\nBehram error: do not know how to get sequence globals from function dep.\n');
     seqGlobs = fdep.seqGlobals(fdepDict);
     internal += _dictIzeGlobShareds(seqGlobs);
     internal += ', # seq globals \n';

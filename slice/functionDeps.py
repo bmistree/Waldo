@@ -175,14 +175,55 @@ class FunctionDeps(object):
         corresponds to a separate sequence global that I might hit by
         calling this function.
         '''
-        errMsg = '\nBehram error: require a way of identifiying ';
-        errMsg += 'sequence globals from function dep.\n';
-        print(errMsg);
-        return [];
+        seqGlobalDict = {};
+        self._seqGlobals(seqGlobalDict,funcDepsDict,{});
 
+        # flatten seqGlobalDict into an array.
+        returner = [];
+        for seqGlobKey in sorted(seqGlobalDict.keys()):
+            seqGlobalNtt = seqGlobalDict[seqGlobKey];
+            returner.append(seqGlobalNtt);
+        
+        return returner;
+
+
+    def _seqGlobals(self,allFound,funcDepsDict,alreadyCheckedFuncDict):
+        '''
+        @returns Nothing ---- Use the parameter allFound for storing results.
+
+        @param {dict} allFound --- Keys are ids of sequence global
+        ntt-s.  Values are actual sequence global ntt-s.  Each
+        function inserts all the sequence globals that it accesses to
+        this dictionary.
+
+        @param{dict} alreadyCheckedFuncDict --- funcName to boolean.
+        Just ensures that we do not infinitely loop through two
+        functions that call each other.
+        '''
+
+        # add all the sequence globals that *I* directly touch here.
+        for readNttKey in sorted(self.mReadSet.keys()):
+            readNtt = self.mReadSet[readNttKey];
+            if ((readNtt.varType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL) or
+                (readNtt.varType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
+                allFound[readNtt.id] = readNtt;
+                
+
+        # now run through all function calls to see if they touch any
+        # additional sequence globals.
+        for funcCallNttKey in sorted(self.funcCalls.keys()):
+            funcCallNtt = self.funcCalls[funcCallNttKey];
+            funcCallName = funcCallNtt.varName;
+            
+            if funcCallName in alreadyCheckedFuncDict:
+                continue;
+
+            alreadyCheckedFuncDict[funcCallName] = True;
+            fdep = funcDepsDict[funcCallName];
+            fdep._seqGlobals(allFound,funcDepsDict,alreadyCheckedFuncDict);
+            
     
     def definiteSharedGlobalReads(self,funcDepsDict):
-        # newFDep = self._constructMegaFunction(funcDepsDict,{});
         return self._definiteSharedGlobalReads(funcDepsDict);
     
     def _definiteSharedGlobalReads(self,funcDepsDict):
