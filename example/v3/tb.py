@@ -151,7 +151,6 @@ class _Context(object):
     # Guarantee that no context can have this id.
     INVALID_CONTEXT_ID = -1;
 
-    
     def __init__(self):
         # actively executing events that start message sequences block
         # until those message sequences are complete before
@@ -161,6 +160,18 @@ class _Context(object):
         # safe queue.  
         self.msgReceivedQueue = Queue.Queue();
 
+        # oncreate initializes shared, endglobals, and seqglobals
+        # dicts for each endpoint's committed contexts
+        # for contexts created from message receptions, these fields
+        # are populated by _ActiveEvent's knowledge of what to select
+        # from each endpoint's committed context.
+        self.shareds = {};
+        self.endGlobals = {};
+        self.seqGlobals = None;
+        
+        self.id = None;
+
+        
     def mergeContextIntoMe(self,otherContext):
         '''
         Take all the shared/globals from the other context and put it
@@ -185,7 +196,7 @@ class _Context(object):
         the active event object all the data that activeEvent is known
         to read from/write to.
         '''
-        returner = self.constructor(True);
+        returner = _Context();
         for readKey in activeEvent.activeGlobReads.keys():
             if readKey in self.shareds:
                 returner.shareds[readKey] = self.shareds[readKey];
@@ -961,10 +972,11 @@ class _Endpoint(object):
         # is name of function on endpoint to call.
         self._execFromToInternalFuncDict = execFromToInternalFuncDict;
 
-
         # FIXME: unclear what the actual interface should be between
         # connection object and endpoint.
         self._connectionObj.addEndpoint(self);
+
+
         
     ##### helper functions #####
     def _postponeActiveEvent(self,activeEventId):
@@ -1404,95 +1416,6 @@ _PROTOTYPE_EVENTS_DICT = {
         {}, # seq globals
         None),
     };
-        
-        
-class _PingContext(_Context):
-    
-    def __init__(self,isBlank=False):
-        '''
-        @param{bool} blank --- If true, means that we should not fill
-        any of the context's data in/initialize any of the variables
-        because all the data will later be filled in by the function
-        copyForActiveEvent, which generates the context.  If false,
-        then it means that we need to generate and initialize all data
-        for the context.
-        '''
-        self.shareds = {};
-        self.endGlobals = {};
-        self.seqGlobals = None;
-        
-        # populates message queue
-        _Context.__init__(self);
-        
-        # context-specific
-        self.constructor = _PingContext;
-
-        if isBlank:
-            # means that we are generating an empty context that will
-            # later be filled by the copyForActiveEvent constructor.
-            # the copyForActiveEvent should copy the id from the
-            # context it is copying.  
-            return;
-        
-        # means that we are generating the committed context for an
-        # endpoint.
-        self.shareds = {
-            '0__pingNum': 0,  # format is <id>__<varName>
-            '5__nothingShared': 1
-            };
-        
-        self.endGlobals = {
-            '1__otherPingNum': 0
-            };
-
-        self.seqGlobals = None;
-
-        # note: blank contexts get their ids set in the
-        # copyForActiveEvent constructor.  master committed contexts
-        # do not need this number.
-        self.id = None;
-
-        
-class _PongContext(_Context):
-    def __init__(self,isBlank=False):
-        '''
-        @see _PingContext.__init__
-        '''
-        self.shareds = {};
-        self.endGlobals = {};
-        self.seqGlobals = None;
-
-        # populates message queue
-        _Context.__init__(self);
-        
-        # context-specific
-        self.constructor = _PongContext;
-
-        if isBlank:
-            # means that we are generating an empty context that will
-            # later be filled by the copyForActiveEvent constructor.
-            # the copyForActiveEvent should copy the id from the
-            # context it is copying.
-            return;
-        
-        
-        # means that we are generating the committed context for an
-        # endpoint.
-        self.shareds = {
-            '0__pingNum': 0,  # format is <id>__<varName>
-            '5__nothingShared': 1
-            };
-        
-        self.endGlobals = {
-            };
-
-        self.seqGlobals = None;
-
-        # note: blank contexts get their ids set in the
-        # copyForActiveEvent constructor.  master committed contexts
-        # do not need this number.
-        self.id = None;
-        
 
     
 class Ping(_Endpoint):
@@ -1519,8 +1442,9 @@ class Ping(_Endpoint):
         myPriority = 1;
         theirPriority = 0;
 
-        committedContext = _PingContext();
+        committedContext = _Context();
 
+        
         # every event needs to be able to map its name to the internal
         # function that should be called to initiate it.
         # string(<id>__<iniating function name>) : string ... string
@@ -1546,6 +1470,25 @@ class Ping(_Endpoint):
             lastIdAssigned,myPriority,theirPriority,committedContext,
             execFromToInternalFuncDict,prototypeEventsDict);
 
+
+        ##### ON CREATE FUNCTION #####
+
+        # initialization of shared and global variables.
+        self._committedContext.shareds = {
+            '0__pingNum': 0,  # format is <id>__<varName>
+            '5__nothingShared': 1
+            };
+        
+        self._committedContext.endGlobals = {
+            '1__otherPingNum': 0
+            };
+
+        self._committedContext.seqGlobals = None;
+
+        # meat of on create function
+
+
+        
 
     ###### USER DEFINED FUNCTIONS #######
 
@@ -2226,7 +2169,7 @@ class Pong(_Endpoint):
         myPriority = 0;
         theirPriority = 1;
 
-        committedContext = _PongContext();
+        committedContext = _Context();
 
         # make copy from base prototype events dict, setting myself as
         # endpoint for each copied event.
@@ -2249,6 +2192,23 @@ class Pong(_Endpoint):
             execFromToInternalFuncDict,prototypeEventsDict);
 
 
+        ##### ON CREATE FUNCTION #####
+
+        # initialization of shared and global variables.
+        self._committedContext.shareds = {
+            '0__pingNum': 0,  # format is <id>__<varName>
+            '5__nothingShared': 1
+            };
+        
+        self._committedContext.endGlobals = {
+            };
+
+        self._committedContext.seqGlobals = None;
+
+
+        # meat of on create function
+
+        
     ###### USER DEFINED FUNCTIONS #######
 
 

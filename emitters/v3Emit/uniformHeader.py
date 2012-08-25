@@ -164,7 +164,6 @@ class _Context(object):
     # Guarantee that no context can have this id.
     INVALID_CONTEXT_ID = -1;
 
-    
     def __init__(self):
         # actively executing events that start message sequences block
         # until those message sequences are complete before
@@ -174,6 +173,18 @@ class _Context(object):
         # safe queue.  
         self.msgReceivedQueue = Queue.Queue();
 
+        # oncreate initializes shared, endglobals, and seqglobals
+        # dicts for each endpoint's committed contexts
+        # for contexts created from message receptions, these fields
+        # are populated by _ActiveEvent's knowledge of what to select
+        # from each endpoint's committed context.
+        self.shareds = {};
+        self.endGlobals = {};
+        self.seqGlobals = None;
+        
+        self.id = None;
+
+        
     def mergeContextIntoMe(self,otherContext):
         '''
         Take all the shared/globals from the other context and put it
@@ -198,7 +209,7 @@ class _Context(object):
         the active event object all the data that activeEvent is known
         to read from/write to.
         '''
-        returner = self.constructor(True);
+        returner = _Context();
         for readKey in activeEvent.activeGlobReads.keys():
             if readKey in self.shareds:
                 returner.shareds[readKey] = self.shareds[readKey];

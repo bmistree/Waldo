@@ -24,7 +24,7 @@ _PROTOTYPE_EVENTS_DICT = {
 
     # closes the literal that is being assigned to
     # _PROTOTYPE_EVENTS_DICT
-    returner += emitUtils.indentString('\n};\n\n',1);
+    returner += emitUtils.indentString('};\n\n',1);
     return returner;
 
 
