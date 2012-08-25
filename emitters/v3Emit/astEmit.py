@@ -16,7 +16,7 @@ from typeStack import TypeStack;
 
 from uniformHeader import uniformHeader;
 from eventDependencies import specifyDependencies;
-
+from contextObjects import writeContextObjects;
 
 def astEmit(astRootNode):
     '''
@@ -46,6 +46,8 @@ def astEmit(astRootNode):
     # the slicer created
     returner += specifyDependencies(fdepDict);
 
+    # create each endpoint's context object
+    returner += writeContextObjects(astRootNode);
         
     # # now actually emit each endpoint object (including user-defined
     # # functions specified in program source text).

@@ -60,6 +60,14 @@ class AstNode():
         self.sliceAnnotationType = annotateType;
         self.sliceAnnotationTypeHumanReadable = annotateTypeHumanReadable;
 
+    def _debugErrorIfHaveNoAnnotation(self,calledFrom):
+        if self.sliceAnnotationName == None:
+            errMsg = '\nBehram error: requesting the annotation of ';
+            errMsg += 'an astNode that does not have one.  The ';
+            errMsg += 'requester is ' + calledFrom + '.\n';
+            print(errMsg);
+            assert(False);
+
         
     def setNote(self,note):
         self.note = note;
