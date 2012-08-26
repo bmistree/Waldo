@@ -41,13 +41,25 @@ def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
     assigns event ids that are even and one assigns event ids that are
     odd.  This bit allows me to distinguish which endpoint I am emitting.
     '''
+    returner = 'class ' + endpointName + '(_Endpoint):\n';
+    returner += emitUtils.indentString(
+        _createInit(endpointName,astRootNode,fdepDict,whichEndpoint),
+        1);
 
+    return returner;
+
+
+def _createInit(endpointName,astRootNode,fdepDict,whichEndpoint):
+    '''
+    For params, @see _emitEndpoint
+
+    @returns {String} --- a non-indented raw text of init function for
+    a single endpoint.
+    '''
+    
     sharedVariableNames = _getSharedIdentifiers(astRootNode);
     endpointVariableNames = _getEndpointVariableIdentifiersFromEndpointName(endpointName,astRootNode);
-
-
-    returner = 'class ' + endpointName + '(_Endpoint):\n';
-
+    
     initMethod = 'def __init__(self,connectionObj):\n\n';
     initMethodBody = '';
     
@@ -121,6 +133,8 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 
     # now emit the base _Endpoint class initializer
     initMethodBody += '''
+
+# invoke base class initializer
 _Endpoint.__init__(
     self,connectionObj,globSharedReadVars,globSharedWriteVars,
     lastIdAssigned,myPriority,theirPriority,committedContext,
@@ -134,17 +148,16 @@ _Endpoint.__init__(
 
 
     initMethodBody += '###### ON CREATE FUNCTION BODY ######\n';
-    
-    
+
     errMsg = '\nBehram error: still need to emit ';
     errMsg += ' on create and user-defined functions.\n';
     print(errMsg);
     
     initMethod += emitUtils.indentString(initMethodBody,1);
-    returner += emitUtils.indentString(initMethod,1);
-    return returner;
+    return initMethod;
 
 
+    
 def _getSharedIdentifiers(astRoot):
     '''
     @returns {Array} --- returns an array of identifiers (annotated by
