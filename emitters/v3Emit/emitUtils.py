@@ -27,3 +27,39 @@ def indentString(string,indentAmount):
 
     return returnString;
 
+
+def createDictLiteralAssignment(assignToStatement,dictToCreate):
+    '''
+    @param{String} assignToStatement --- Left-hand side of assignment
+
+    @param{dict} dictToCreate --- Indexes are strings that should
+    appear as indices in the returned string, values are those values
+    
+    @returns {String} ---
+    
+    "globSharedReadVars = {
+            '0__pingNum' : 0,
+            '1__otherPingNum' : 0,
+            '5__nothingShared' : 0
+            };"
+
+    would be returned if we passed in:
+    createDictLiteralAssignment(
+        'globSharedReadVars',
+        {
+            "'0__pingNum'" : '0',
+            "'1__otherPingNum'" : '0',
+            ....
+        });
+    '''
+    returner = assignToStatement + ' = {\n';
+    dictBody ='';
+    for dictKey in sorted(dictToCreate.keys()):
+        dictVal = dictToCreate[dictKey];
+        dictBody += dictKey  + ': '  + dictVal + ',\n';
+    returner += indentString(dictBody,1);
+    returner += '};';
+    return returner;
+    
+
+

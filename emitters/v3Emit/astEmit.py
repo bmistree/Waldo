@@ -16,6 +16,7 @@ from typeStack import TypeStack;
 
 from uniformHeader import uniformHeader;
 from eventDependencies import specifyDependencies;
+from emitEndpoints import emitEndpoints;
 
 
 def astEmit(astRootNode):
@@ -45,7 +46,8 @@ def astEmit(astRootNode):
     # create the _PROTOTYPE_EVENTS_DICT based on the dependencies that
     # the slicer created
     returner += specifyDependencies(fdepDict);
-        
+
+    returner += emitEndpoints(astRootNode,fdepDict);
     # # now actually emit each endpoint object (including user-defined
     # # functions specified in program source text).
     # returner += _astEmit(astRootNode,fdepDict);

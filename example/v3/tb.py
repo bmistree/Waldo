@@ -1443,7 +1443,13 @@ class Ping(_Endpoint):
         theirPriority = 0;
 
         committedContext = _Context();
-
+        
+        # make copy from base prototype events dict, setting myself as
+        # endpoint for each copied event.
+        prototypeEventsDict = {};
+        for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
+            pEvt = _PROTOTYPE_EVENTS_DICT[pEvtKey];
+            prototypeEventsDict[pEvtKey] = pEvt.copy(self);
         
         # every event needs to be able to map its name to the internal
         # function that should be called to initiate it.
@@ -1456,13 +1462,6 @@ class Ping(_Endpoint):
             '11__three':'_three',
             '9__msgSeq':'_msgSeq',
             };
-
-        # make copy from base prototype events dict, setting myself as
-        # endpoint for each copied event.
-        prototypeEventsDict = {};
-        for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
-            pEvt = _PROTOTYPE_EVENTS_DICT[pEvtKey];
-            prototypeEventsDict[pEvtKey] = pEvt.copy(self);
             
 
         _Endpoint.__init__(
