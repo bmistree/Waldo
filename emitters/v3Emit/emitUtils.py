@@ -1,5 +1,17 @@
 #!/usr/bin/env python
+import sys;
+import os;
+import emitUtils;
 
+curDir = os.path.dirname(__file__);
+
+# so can get ast labels
+sys.path.append(os.path.join(curDir,'..','..','parser','ast'));
+from astLabels import *;
+
+# so can get type checking helper functions to determine types
+sys.path.append(os.path.join(curDir,'..','..','parser','ast','typeCheck'));
+import templateUtil;
 
 def indentString(string,indentAmount):
     '''
@@ -62,4 +74,40 @@ def createDictLiteralAssignment(assignToStatement,dictToCreate):
     return returner;
     
 
+def getDefaultValueFromTypeNode(astTypeNode):
+    '''
+    @param {AstNode} astTypeNode --- The node specifying the type of
+    the identifier in the identifier's declaration (or listing as a
+    function argument).  For instance,
+    Number someNum = 0;
+    astTypeNode would be the node for Number.
+    
+    @returns {String} --- The default value that a node of this type
+    should have.  For instance, the default value for a number type is
+    0 (returns "0"), the default value for a string is '' (returns
+    "''"), etc.
+    '''
+    # typeLabel = astTypeNode.label;
+    typeLabel = astTypeNode.value;
+    
+    if typeLabel == TYPE_BOOL:
+        returner = 'False';
+    elif typeLabel == TYPE_NUMBER:
+        returner = '0';
+    elif typeLabel == TYPE_STRING:
+        returner = "''";
+    elif typeLabel == TYPE_NOTHING:
+        returner = 'None';
+    elif templateUtil.isListType(typeLabel):
+        returner = '[]';
+    elif templateUtil.isFunctionType (typeLabel):
+        returner = '_defaultFunction';
+    elif templateUtil.isMapType(typeLabel):
+        returner = '{}';
+    else:
+        errMsg = '\nBehram error: unrecognized type name when writing ';
+        errMsg += 'default value for node.\n';
+        print(errMsg);
+        assert(False);
 
+    return returner;

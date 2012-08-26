@@ -152,6 +152,11 @@ class _PostponeException(Exception):
     '''
     pass;
 
+def _defaultFunction(*args,**kwargs):
+    '''
+    Used as an initializer for Waldo function objects.
+    '''
+    return;
 
 class _Context(object):
     SHARED_DICT_NAME_FIELD = 'shareds';
