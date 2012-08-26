@@ -12,7 +12,21 @@ class FunctionDeps(object):
     read set automatically gets added to the write set.
     '''
     
-    def __init__(self,funcName):
+    def __init__(self,funcName,srcFuncName,endpointName):
+        '''
+        @param {String} funcName --- a name for this function that is
+        guaranteed not to conflict with any other function.
+        Additionally, used by funcCalls to match FunctionDeps objects
+        to function calls.
+
+        @param {String} srcFuncName --- The name of this function as
+        it appears in the program source.
+
+        @param {String} endpointName --- The name of the endpoint on
+        which this function is defined.
+        
+        '''
+        
         # name to an array of NameTypeTuple-s each variable in here
         # may change and depends on reading other variables in the
         # list NameTypeTuple-s
@@ -34,6 +48,9 @@ class FunctionDeps(object):
         # string: name of function
         self.funcName = funcName;
 
+        self.srcFuncName = srcFuncName;
+        self.endpointName = endpointName;
+        
         # ntt id to ntt-s with varType
         # TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT or 
         # TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT
@@ -42,7 +59,6 @@ class FunctionDeps(object):
 
         # id to return statement ntt
         self.returnStatements = {};
-
 
     def addReturnStatement(self,ntt):
         self.returnStatements[ntt.id] = ntt;

@@ -79,9 +79,11 @@ def slicer(node,functionDeps=None,typeStack=None):
             assert(False);
 
         # create a new function dependency on the stack.
-        fDep = FunctionDeps(typeStack.hashFuncName(funcName));
+        fDep = FunctionDeps(typeStack.hashFuncName(funcName),
+                            funcName,typeStack.mEndpointName);
         functionDeps.append(fDep);
 
+        
         # set up new context so that identifiers that are added will
         # be added as function arguments.
         typeStack.pushContext(
@@ -427,7 +429,8 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             funcNode = msgSeqFunctionsNode.children[funcIndex];
             funcName = funcNode.children[1].value;
             
-            fDep = FunctionDeps(typeStack.hashFuncName(funcName));
+            fDep = FunctionDeps(typeStack.hashFuncName(funcName),
+                                funcName,typeStack.mEndpointName);
             functionDeps.append(fDep);
 
             typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_LOCAL,fDep);

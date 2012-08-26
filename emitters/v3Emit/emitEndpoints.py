@@ -44,7 +44,6 @@ def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
 
     sharedVariableNames = _getSharedIdentifiers(astRootNode);
     endpointVariableNames = _getEndpointVariableIdentifiersFromEndpointName(endpointName,astRootNode);
-    # endpointFunctionNames = _getEndpointFunctionNames(endpointName,astRootNode);
 
 
     returner = 'class ' + endpointName + '(_Endpoint):\n';
@@ -103,8 +102,42 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 ''';
 
 
-    errMsg = '\nBehram error: still need to emit map of functions to ';
-    errMsg += 'internal function names,endpoint init, and on create.\n';
+
+    # create execFromInternalFuncDict, which maps event names to the
+    # internal functions to call for them.
+
+    initMethodBody += '''
+# every event needs to be able to map its name to the internal
+# function that should be called to initiate it.
+# string(<id>__<iniating function name>) : string ... string
+# is name of function on endpoint to call.
+''';
+    endpointFunctionNamesEventDict = _getEndpointFunctionNamesFromEndpointName(
+        endpointName,astRootNode,fdepDict);
+    
+    initMethodBody += emitUtils.createDictLiteralAssignment(
+        'execFromToInternalFuncDict',endpointFunctionNamesEventDict);
+
+
+    # now emit the base _Endpoint class initializer
+    initMethodBody += '''
+_Endpoint.__init__(
+    self,connectionObj,globSharedReadVars,globSharedWriteVars,
+    lastIdAssigned,myPriority,theirPriority,committedContext,
+    execFromToInternalFuncDict,prototypeEventsDict);
+''';
+
+    initMethodBody += '\n\n';
+
+    # emit initialization of shared and endpoint global variables.
+    initMethodBody += '# initialization of shared and global variables\n';
+
+
+    initMethodBody += '###### ON CREATE FUNCTION BODY ######\n';
+    
+    
+    errMsg = '\nBehram error: still need to emit ';
+    errMsg += ' on create and user-defined functions.\n';
     print(errMsg);
     
     initMethod += emitUtils.indentString(initMethodBody,1);
@@ -129,13 +162,12 @@ def _getSharedIdentifiers(astRoot):
     return returner;
 
 
-def _getEndpointVariableIdentifiersFromEndpointName(endpointName,astRootNode):
+def _getEndpointNodeFromEndpointName(endpointName,astRootNode):
     endpoint1Node = astRootNode.children[4];
     endpoint1Name = endpoint1Node.children[0].value;
     
     endpoint2Node = astRootNode.children[5];
     endpoint2Name = endpoint2Node.children[0].value;
-    
     
     toCheckEndpointNode = None;
     if endpointName == endpoint1Name:
@@ -145,19 +177,19 @@ def _getEndpointVariableIdentifiersFromEndpointName(endpointName,astRootNode):
     else:
         errMsg = '\nBehram error: have no endpoint that ';
         errMsg += 'matches name "' + endpointName + '" to ';
-        errMsg += 'gather shared variables from.\n';
+        errMsg += 'get endpoint node from.\n';
         print(errMsg);
         assert(False);
         
-    return _getEndpointVariableIdentifiersFromEndpointNode(toCheckEndpointNode);
+    return toCheckEndpointNode;
     
-def _getEndpointVariableIdentifiersFromEndpointNode(endpointNode):
-    '''
-    @param {AstNode} endpointNode --- AstNode with label AST_ENDPOINT
 
+def _getEndpointVariableIdentifiersFromEndpointName(endpointName,astRootNode):
+    '''
     @returns {array} --- Returns an array of annotated identifiers for
     each of the endpoint's variables.
     '''
+    endpointNode = _getEndpointNodeFromEndpointName(endpointName,astRootNode);
 
     returner = [];
     if endpointNode.label != AST_ENDPOINT:
@@ -175,7 +207,6 @@ def _getEndpointVariableIdentifiersFromEndpointNode(endpointNode):
         returner.append(identifierNode.sliceAnnotationName);
 
     return returner;
-    
 
 def _getEndpointNames(astRoot):
     returner = [];
@@ -184,4 +215,46 @@ def _getEndpointNames(astRoot):
     returner.append(aliasSection.children[1].value);
     return returner;
     
+
+def _getEndpointFunctionNamesFromEndpointName(endpointName,astRootNode,functionDepsDict):
+    '''
+    @param {String} endpointName
+    @param {AstNode} astRootNode
+
+    @return {dict} --- keys of dict are the identifiers that should
+    use for each function and the values are the internal names that
+    the function takes in the endpoint class
+
+    # creates something like
+    #   {
+    #      "'Ping_-_-_incPing'" : "'_incPing'",
+    #       ...
+    #   }
     
+    '''
+    # endpointNode = _getEndpointNodeFromEndpointName(endpointName,astRootNode);
+
+    returner = {};
+    for fdepKey in sorted(functionDepsDict.keys()):
+        fdep = functionDepsDict[fdepKey];
+
+        if fdep.endpointName != endpointName:
+            continue;
+
+        # means that this function occurrs within this endpoint.  list it.
+        returner["'" + fdep.funcName + "'"] = "'" + _convertSrcFuncNameToInternal(fdep.srcFuncName) + "'";
+        
+    return returner;
+
+
+def _convertSrcFuncNameToInternal(fname):
+    '''
+    @param {String} fname
+
+    @returns {String} --- Takes a function name and returns the name
+    that an endpoint class uses for its internal call.  For now, this
+    means just pre-pending the input argument with an underscore, ie:
+    "_<fname>"
+    '''
+    return '_' + fname;
+
