@@ -443,8 +443,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
                                 funcNode);
             functionDeps.append(fDep);
 
-            typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_LOCAL,fDep);
-            
+            typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL,fDep);
             if funcIndex == 0:
                 # special case the first function so that it contains
                 # all the initializations of sequence globals
@@ -455,7 +454,8 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
                 # its proper arguments.
                 for funcArgNtt in functionArgs:
                     typeStack.addFuncArg(funcArgNtt);
-                    
+
+            typeStack.changeLabelAs(TypeStack.IDENTIFIER_TYPE_LOCAL);
             # handle rest of function and body in slicer.
             slicer(funcNode,functionDeps,typeStack);
 

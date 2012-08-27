@@ -727,11 +727,12 @@ if _context == None:
 
             nameString = nameNode.value;
             annotationName = nameNode.sliceAnnotationName;
-            sendBody += "_context.seqGlobals['%s'] = %s;\n " % (annotationName,nameString);
+            sendBody += "_context.seqGlobals['%s'] = %s;\n\n" % (annotationName,nameString);
             # gives something like _context.seqGlobals['8__someArg'] = someArg;
 
-            
+
         # actually emit the body of the function
+        sendBody += '# emitting body of send function.\n';
         for statementNode in functionBodyNode.children:
             sendBody += mainEmit.emit(endpointName,statementNode,fdepDict);
             sendBody += '\n';

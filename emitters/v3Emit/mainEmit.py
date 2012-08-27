@@ -38,7 +38,6 @@ def emit(endpointName,astNode,fdepDict):
         idAnnotationName = astNode.sliceAnnotationName;
         idAnnotationType = astNode.sliceAnnotationType;
 
-        
         if ((idAnnotationType == TypeStack.IDENTIFIER_TYPE_LOCAL) or
             (idAnnotationType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
             returner += astNode.value + ' ';

@@ -182,7 +182,7 @@ class TypeStack(object):
         topStack = self.checkStackLen('addFuncArg');
         curFuncDep = topStack.currentFunctionDep;
         if curFuncDep != None:
-                curFuncDep.addFuncArg(ntt);
+            curFuncDep.addFuncArg(ntt);
         else:
             errMsg = '\nBehram error.  Require having a current function ';
             errMsg += 'dependency in order to process function arguments.\n';
@@ -248,8 +248,8 @@ class TypeStack(object):
         '''
         stackTop = self.checkStackLen('getReadsAfter');
         return stackTop.getReadsAfter(afterPoint);
-    
 
+   
     def checkStackLen(self,operatioName):
         if len(self.stack) <= 0:
             errMsg = '\nBehram error.  Stack underflow when trying ';
