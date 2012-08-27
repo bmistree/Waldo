@@ -99,6 +99,26 @@ def emit(astNode,fdepDict):
         valText = emit(valNode,fdepDict);
         returner += keyText + ': ' + valText;
 
+    elif astNode.label == AST_RETURN_STATEMENT:
+        retStatementNode = astNode.children[0];
+
+        if isEmptyNode(retStatementNode):
+            toReturnStatementText = 'None';
+        else:
+            toReturnStatementText = emit(retStatementNode,fdepDict);
+
+        # need to special-case return statement so that can notify
+        # waiting blocking statement through return queue.
+        returner +='''
+# special-cased return statement
+if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_RESUME_POSTPONE:
+    # note that also commit outstanding changes to context here.
+    _actEvent.setCompleted(%s,_context);
+    return;
+elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+    return %s;
+''' % (toReturnStatementText,toReturnStatementText);
+        
     elif _isBinaryOperatorLabel(astNode.label):
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
@@ -108,6 +128,25 @@ def emit(astNode,fdepDict):
         operatorText = _getBinaryOperatorFromLabel(astNode.label);
 
         returner += lhsText + operatorText + rhsText;
+
+    elif astNode.label == AST_LEN:
+        lenArgNode = astNode.children[0];
+        returner += 'len( ';
+        returner += emit(lenArgNode,fdepDict);
+        returner += ')';
+
+    elif astNode.label == AST_RANGE:
+        bottomRangeNode = astNode.children[0];
+        upperRangeNode = astNode.children[1];
+        incrementRangeNode = astNode.children[2];
+
+        returner += 'range( ';
+        returner += emit(bottomRangeNode,fdepDict);
+        returner += ',';
+        returner += emit(upperRangeNode,fdepDict);
+        returner += ',';
+        returner += emit(incrementRangeNode,fdepDict);
+        returner += ')';
         
     else:
         errMsg = '\nBehram error: emitting for unknown label: ';

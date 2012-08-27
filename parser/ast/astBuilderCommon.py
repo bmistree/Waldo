@@ -6,9 +6,11 @@ import sys;
 from astLabels import *;
 from astNode import AstNode;
 
-typeCheckErrorUtilPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                      'typeCheck');
+typeCheckErrorUtilPath = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)),
+    'typeCheck');
 sys.path.append(typeCheckErrorUtilPath);
+
 from typeCheckUtil import setErrorEncountered;
 from waldoLex import ONCREATE_TOKEN;
 from parserUtil import errPrint;
