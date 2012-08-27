@@ -74,13 +74,15 @@ def createDictLiteralAssignment(assignToStatement,dictToCreate):
     return returner;
     
 
-def getDefaultValueFromTypeNode(astTypeNode):
+def getDefaultValueFromDeclNode(astDeclNode):
     '''
-    @param {AstNode} astTypeNode --- The node specifying the type of
-    the identifier in the identifier's declaration (or listing as a
-    function argument).  For instance,
+    @param {AstNode} astDeclNode --- The node specifying the
+    declaration of an identifier.  The type of the node specifies the
+    default value to use.  
+
+    For instance,
     Number someNum = 0;
-    astTypeNode would be the node for Number.
+    astDeclNode would be the node formed from the entire statement.
     
     @returns {String} --- The default value that a node of this type
     should have.  For instance, the default value for a number type is
@@ -88,7 +90,7 @@ def getDefaultValueFromTypeNode(astTypeNode):
     "''"), etc.
     '''
     # typeLabel = astTypeNode.label;
-    typeLabel = astTypeNode.value;
+    typeLabel = astDeclNode.type;
     
     if typeLabel == TYPE_BOOL:
         returner = 'False';

@@ -3,6 +3,7 @@
 import sys;
 import os;
 import emitUtils;
+import mainEmit;
 
 curDir = os.path.dirname(__file__);
 
@@ -56,15 +57,16 @@ def _createInit(endpointName,astRootNode,fdepDict,whichEndpoint):
     @returns {String} --- a non-indented raw text of init function for
     a single endpoint.
     '''
-    sharedIdentifiersToTypesDict = _getSharedIdentifierToTypeDict(astRootNode);
-    globalIdentifiersToTypesDict = _getEndpointVariableIdentifierToTypeDict(
+    sharedIdentifiersToDeclNodesDict = _getSharedIdsToDeclNodesDict(
+        astRootNode);
+    globalIdentifiersToDeclNodesDict = _getEndpointIdsToDeclNodesDict(
         endpointName,astRootNode);
     
     sharedVariableNames = sorted(
-        sharedIdentifiersToTypesDict.keys());
+        sharedIdentifiersToDeclNodesDict.keys());
     
     endpointVariableNames = sorted(
-        globalIdentifiersToTypesDict.keys());
+        globalIdentifiersToDeclNodesDict.keys());
 
     initMethod = 'def __init__(self,connectionObj):\n\n';
     initMethodBody = '';
@@ -145,11 +147,11 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 
     # shareds
     sharedDict = {};
-    for sharedId in sorted(sharedIdentifiersToTypesDict.keys()):
-        typeNode = sharedIdentifiersToTypesDict[sharedId];
-        defaultVal = emitUtils.getDefaultValueFromTypeNode(typeNode);
+    for sharedId in sorted(sharedIdentifiersToDeclNodesDict.keys()):
+        declNode = sharedIdentifiersToDeclNodesDict[sharedId];
+        defaultVal = emitUtils.getDefaultValueFromDeclNode(declNode);
         sharedDict[ "'" + sharedId + "'"] = defaultVal;
-
+        
     initMethodBody += '# emitting local copies of shared variables\n';
     initMethodBody += '# with default args.  later section of code \n';
     initMethodBody += '# initializes these variables.\n';
@@ -159,9 +161,9 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 
     # globals
     globalsDict = {};
-    for globalId in sorted(globalIdentifiersToTypesDict.keys()):
-        typeNode = globalIdentifiersToTypesDict[globalId];
-        defaultVal = emitUtils.getDefaultValueFromTypeNode(typeNode);
+    for globalId in sorted(globalIdentifiersToDeclNodesDict.keys()):
+        declNode = globalIdentifiersToDeclNodesDict[globalId];
+        defaultVal = emitUtils.getDefaultValueFromDeclNode(declNode);
         sharedDict[ "'" + globalId + "'"] = defaultVal;
 
     initMethodBody += '# emitting local copies of endpoint global variables\n';
@@ -175,8 +177,6 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
     initMethodBody += '# committed context never has sequence globals in it.\n'
     initMethodBody += 'self._committedContext.seqGlobals = None;\n'
     
-    
-
     # now emit the base _Endpoint class initializer
     initMethodBody += '''
 
@@ -192,7 +192,14 @@ _Endpoint.__init__(
     # emit initialization of shared and endpoint global variables.
     initMethodBody += '# initialization of shared and global variables\n';
 
+    # handles shared
+    initMethodBody += _emitInitSharedGlobalVariables(
+        sharedIdentifiersToDeclNodesDict,astRootNode,fdepDict);
+    # handles endpoint global
+    initMethodBody += _emitInitSharedGlobalVariables(
+        globalIdentifiersToDeclNodesDict,astRootNode,fdepDict);
 
+    
     initMethodBody += '###### ON CREATE FUNCTION BODY ######\n';
 
     errMsg = '\nBehram error: still need to emit ';
@@ -203,12 +210,24 @@ _Endpoint.__init__(
     return initMethod;
 
 
+def _emitInitSharedGlobalVariables(
+    idsToDeclNodesDict,astRootNode,fdepDict):
+    '''
+    Inside of init function of each endpoint class, need to initialize
+    shared variables and endpoint global variables with their initial
+    values.
+    '''
+    returner = '';
+    for _id in idsToDeclNodesDict:
+        declNode = idsToDeclNodesDict[_id];
+        returner += mainEmit.emit(declNode,fdepDict);
+        returner += '\n';
+    return returner;
     
-def _getSharedIdentifierToTypeDict(astRoot):
+def _getSharedIdsToDeclNodesDict(astRoot):
     '''
     @returns {dict} --- keys are identifiers (annotated by slicer
-    code) for shared variables and values are ast type nodes for each
-    identifier.
+    code) for shared variables and values are the declaration nodes.
     '''
     returner = {};
     
@@ -216,9 +235,8 @@ def _getSharedIdentifierToTypeDict(astRoot):
     for annotatedDeclarationNode in sharedSectionNode.children:
         # have an annotatedDeclarationNode for each shared variable.
         identifierNode = annotatedDeclarationNode.children[2];
-        typeNode = annotatedDeclarationNode.children[1];
         identifierNode._debugErrorIfHaveNoAnnotation('_getSharedIdentifiersToTypeDict');
-        returner[identifierNode.sliceAnnotationName] = typeNode;
+        returner[identifierNode.sliceAnnotationName] = annotatedDeclarationNode;
 
     return returner;
 
@@ -243,11 +261,12 @@ def _getEndpointNodeFromEndpointName(endpointName,astRootNode):
         assert(False);
         
     return toCheckEndpointNode;
-    
-def _getEndpointVariableIdentifierToTypeDict(endpointName,astRootNode):
+
+
+def _getEndpointIdsToDeclNodesDict(endpointName,astRootNode):
     '''
-    @returns {dict} --- Keys are identifiers for each of the
-    endpoint's variables values are type nodes.
+    @returns {dict} --- Keys are identifiers for each of the values,
+    which are endpoint global declaration nodes.
     '''
     endpointNode = _getEndpointNodeFromEndpointName(endpointName,astRootNode);
 
@@ -262,13 +281,13 @@ def _getEndpointVariableIdentifierToTypeDict(endpointName,astRootNode):
     endpointGlobalsSectionNode = endpointBodyNode.children[0];
 
     for declNode in endpointGlobalsSectionNode.children:
-        typeNode = declNode.children[0];
         identifierNode = declNode.children[1];
         identifierNode._debugErrorIfHaveNoAnnotation(
             '_getEndpointVariableIdentifiersFromEndpointNode');
-        returner[identifierNode.sliceAnnotationName] = typeNode;
-
+        returner[identifierNode.sliceAnnotationName] = declNode;
+        
     return returner;
+
 
 def _getEndpointNames(astRoot):
     returner = [];
@@ -278,7 +297,8 @@ def _getEndpointNames(astRoot):
     return returner;
     
 
-def _getEndpointFunctionNamesFromEndpointName(endpointName,astRootNode,functionDepsDict):
+def _getEndpointFunctionNamesFromEndpointName(
+    endpointName,astRootNode,functionDepsDict):
     '''
     @param {String} endpointName
     @param {AstNode} astRootNode
@@ -294,7 +314,6 @@ def _getEndpointFunctionNamesFromEndpointName(endpointName,astRootNode,functionD
     #   }
     
     '''
-    # endpointNode = _getEndpointNodeFromEndpointName(endpointName,astRootNode);
 
     returner = {};
     for fdepKey in sorted(functionDepsDict.keys()):
