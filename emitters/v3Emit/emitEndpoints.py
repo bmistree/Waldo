@@ -379,7 +379,7 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint):
 # there is a conflict.  (Currently though, these are unused.)
 '''
     initMethodBody += '_myPriority = ' + str(evenOddEventId) + ';\n';
-    initMethodBody += '_otherPriority = ' + str(otherEvenOdd) + ';\n\n';
+    initMethodBody += '_theirPriority = ' + str(otherEvenOdd) + ';\n\n';
 
     # handle context
     initMethodBody += '_context = _Context();\n';
@@ -391,9 +391,9 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint):
 # make copy from base prototype events dict, setting myself as
 # endpoint for each copied event.
 _prototypeEventsDict = {};
-for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
+for _pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
     _pEvt = _PROTOTYPE_EVENTS_DICT[_pEvtKey];
-    _prototypeEventsDict[pEvtKey] = _pEvt.copy(self);
+    _prototypeEventsDict[_pEvtKey] = _pEvt.copy(self);
 ''';
 
 
@@ -481,16 +481,27 @@ _Endpoint.__init__(
     # on create function (if it exists)
     if onCreateNode != None:
         initMethodBody += '# call oncreate function for remaining initialization \n';
-        initMethodBody += 'self.%s(' % _convertSrcFuncNameToInternal(ONCREATE_TOKEN);
+        funcCallHead = 'self.%s(' % _convertSrcFuncNameToInternal(ONCREATE_TOKEN);
+        indentStr = '';
+        for counter in range(0,len(funcCallHead)):
+            indentStr += ' ';
+        
+        initMethodBody += funcCallHead;
+        first = True;
         for argName in onCreateArgumentNames:
-            initMethodBody += argName + ',';
-
+            if not first:
+                initMethodBody += indentStr;
+            else:
+                first = False;
+            initMethodBody += argName + ', # user-defined argument \n';
 
             
         # now emit function control commands for oncreate
-        initMethodBody += '_Endpoint.FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,';
-        initMethodBody += 'None,';
-        initMethodBody += 'self._committtedContext);\n'
+        if not first:
+            initMethodBody += indentStr;
+        initMethodBody += '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n';
+        initMethodBody += indentStr + '1, # note that this is just a dummy variable.  act event should not be used within function. \n';
+        initMethodBody += indentStr + 'self._committedContext);\n'
     else:
         initMethodBody += '# no oncreate function to call.\n';
     
