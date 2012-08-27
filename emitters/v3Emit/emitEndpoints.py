@@ -46,6 +46,7 @@ def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
     returner += emitUtils.indentString(
         _createInit(endpointName,astRootNode,fdepDict,whichEndpoint),
         1);
+    returner += '\n\n';
 
     return returner;
 
@@ -68,7 +69,14 @@ def _createInit(endpointName,astRootNode,fdepDict,whichEndpoint):
     endpointVariableNames = sorted(
         globalIdentifiersToDeclNodesDict.keys());
 
-    initMethod = 'def __init__(self,connectionObj):\n\n';
+
+    onCreateNode = _getOnCreateNode(endpointName,astRootNode);
+    onCreateArgumentNames = [];
+    if onCreateNode != None:
+        onCreateArgumentNames = _getArgumentNamesFromFuncNode(onCreateNode);
+
+        
+    initMethod = 'def __init__(self,_connectionObj):\n\n';
     initMethodBody = '';
     
     # create glob shared read vars dict: keeps track of number of
@@ -83,13 +91,13 @@ def _createInit(endpointName,astRootNode,fdepDict,whichEndpoint):
         globSharedVarsDict [ "'" + endpointVarName + "'"] = '0';
 
     initMethodBody += emitUtils.createDictLiteralAssignment(
-        'globSharedReadVars',globSharedVarsDict);
+        '_globSharedReadVars',globSharedVarsDict);
     initMethodBody += '\n';
 
     # create glob shared write vars dict.  @see comment above for glob
     # shared read vars dict, except of writes.
     initMethodBody += emitUtils.createDictLiteralAssignment(
-        'globSharedWriteVars',globSharedVarsDict);
+        '_globSharedWriteVars',globSharedVarsDict);
     initMethodBody += '\n\n';    
 
 
@@ -98,16 +106,16 @@ def _createInit(endpointName,astRootNode,fdepDict,whichEndpoint):
     evenOddEventId = whichEndpoint;
     otherEvenOdd = (evenOddEventId +1) % 2;
     initMethodBody += '# the other endpoint will have ' + str(otherEvenOdd) + '\n';
-    initMethodBody += 'lastIdAssigned = ' + str(evenOddEventId) + ';\n\n';
+    initMethodBody += '_lastIdAssigned = ' + str(evenOddEventId) + ';\n\n';
     initMethodBody += '''# one side must be greater than the other
 # used to resolve which side will back out its changes when
 # there is a conflict.  (Currently though, these are unused.)
 '''
-    initMethodBody += 'myPriority = ' + str(evenOddEventId) + ';\n';
-    initMethodBody += 'otherPriority = ' + str(otherEvenOdd) + ';\n\n';
+    initMethodBody += '_myPriority = ' + str(evenOddEventId) + ';\n';
+    initMethodBody += '_otherPriority = ' + str(otherEvenOdd) + ';\n\n';
 
     # handle context
-    initMethodBody += 'committedContext = _Context();\n';
+    initMethodBody += '_committedContext = _Context();\n';
 
 
     # create a prototype events dict for this endpoint to copy active
@@ -115,10 +123,10 @@ def _createInit(endpointName,astRootNode,fdepDict,whichEndpoint):
     initMethodBody += '''
 # make copy from base prototype events dict, setting myself as
 # endpoint for each copied event.
-prototypeEventsDict = {};
+_prototypeEventsDict = {};
 for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
-    pEvt = _PROTOTYPE_EVENTS_DICT[pEvtKey];
-    prototypeEventsDict[pEvtKey] = pEvt.copy(self);
+    _pEvt = _PROTOTYPE_EVENTS_DICT[_pEvtKey];
+    _prototypeEventsDict[pEvtKey] = _pEvt.copy(self);
 ''';
 
 
@@ -136,14 +144,27 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
         endpointName,astRootNode,fdepDict);
     
     initMethodBody += emitUtils.createDictLiteralAssignment(
-        'execFromToInternalFuncDict',endpointFunctionNamesEventDict);
+        '_execFromToInternalFuncDict',endpointFunctionNamesEventDict);
 
     initMethodBody += '\n\n';
+
+
+    # now emit the base _Endpoint class initializer
+    initMethodBody += '''
+
+# invoke base class initializer
+_Endpoint.__init__(
+    self,_connectionObj,_globSharedReadVars,_globSharedWriteVars,
+    _lastIdAssigned,_myPriority,_theirPriority,_committedContext,
+    _execFromToInternalFuncDict,_prototypeEventsDict);
+''';
+
+    initMethodBody += '\n\n';
+
     
     # now emit global and shared variable dictionaries.  each contains
-    # their default values.  Later in the __init__ function will
-    # actually initialize their values according to user-coded
-    # initialization statements.
+    # their default values.  After this, actually initialize their
+    # values according to user-coded initialization statements.
 
     # shareds
     sharedDict = {};
@@ -177,20 +198,9 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
     initMethodBody += '# committed context never has sequence globals in it.\n'
     initMethodBody += 'self._committedContext.seqGlobals = None;\n'
     
-    # now emit the base _Endpoint class initializer
-    initMethodBody += '''
-
-# invoke base class initializer
-_Endpoint.__init__(
-    self,connectionObj,globSharedReadVars,globSharedWriteVars,
-    lastIdAssigned,myPriority,theirPriority,committedContext,
-    execFromToInternalFuncDict,prototypeEventsDict);
-''';
-
-    initMethodBody += '\n\n';
 
     # emit initialization of shared and endpoint global variables.
-    initMethodBody += '# initialization of shared and global variables\n';
+    initMethodBody += '\n# initialization of shared and global variables\n';
 
     # handles shared
     initMethodBody += _emitInitSharedGlobalVariables(
@@ -198,18 +208,91 @@ _Endpoint.__init__(
     # handles endpoint global
     initMethodBody += _emitInitSharedGlobalVariables(
         globalIdentifiersToDeclNodesDict,astRootNode,fdepDict);
+    initMethodBody += '\n\n';
 
     
-    initMethodBody += '###### ON CREATE FUNCTION BODY ######\n';
-
+    # on create function (if it exists)
+    if onCreateNode != None:
+        initMethodBody += '# call oncreate function for remaining initialization \n';
+        initMethodBody += 'self._oncreate(';
+        for argName in onCreateArgumentNames:
+            initMethodBody += argName + ',';
+        
+        # now emit function control commands for oncreate
+        initMethodBody += '_Endpoint.FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,';
+        initMethodBody += 'None,';
+        initMethodBody += 'self._committtedContext);\n'
+    else:
+        initMethodBody += '# no oncreate function to call.\n';
+    
     errMsg = '\nBehram error: still need to emit ';
-    errMsg += ' on create, initializations of shared and global vars, and user-defined functions.\n';
+    errMsg += ' functions.';
     print(errMsg);
     
     initMethod += emitUtils.indentString(initMethodBody,1);
     return initMethod;
 
 
+def _getOnCreateNode(endpointName,astRootNode):
+    '''
+    @return {None or AstNode} --- None if endpoint named endpointName
+    does not have a node, AstNode if it does.
+    '''
+    functionSectionNode = _getFunctionSectionNode(
+        endpointName,astRootNode);
+
+    # find the oncreate function
+    for funcNode in functionSectionNode.children:
+        if funcNode.label == AST_ONCREATE_FUNCTION:
+            # actually emit all function text for node.
+            return funcNode;
+
+    return None;
+
+def _getArgumentNamesFromFuncNode(funcNode):
+    '''
+    @param {AstNode} funcNode --- for private, public, oncreate
+    functions.
+
+    @returns {Array} --- Each element is a string representing the
+    name of the argument that the user passed in.
+    '''
+    argNodeIndex = None;
+    if funcNode.label == AST_PUBLIC_FUNCTION:
+        argNodeIndex = 2;
+    elif funcNode.label == AST_PRIVATE_FUNCTION:
+        argNodeIndex = 2;
+    elif funcNode.label == AST_ONCREATE_FUNCTION:
+        argNodeIndex = 1;
+    elif funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        argNodeIndex = 2;
+    elif funcNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        return [];
+    else:
+        errMsg = '\nBehram error: cannot call argumentnamesfromfuncnode on ';
+        errMsg += 'nodes that are not function nodes.\n';
+        print(errMsg);
+        assert(False);
+
+    returner = [];
+    funcDeclArgListNode = funcNode.children[argNodeIndex];
+    for funcDeclArgNode in funcDeclArgListNode.children:
+        nameNode = funcDeclArgNode.children[1];
+        name = nameNode.value;
+        returner.append(name);
+        
+    return returner;
+
+
+def _getFunctionSectionNode(endpointName,astRootNode):
+    endpointNode = _getEndpointNodeFromEndpointName(
+        endpointName,astRootNode);
+
+    bodySectionNode = endpointNode.children[1];
+    functionSectionNode = bodySectionNode.children[1];
+    return functionSectionNode;
+    
+    
 def _emitInitSharedGlobalVariables(
     idsToDeclNodesDict,astRootNode,fdepDict):
     '''
@@ -314,7 +397,6 @@ def _getEndpointFunctionNamesFromEndpointName(
     #   }
     
     '''
-
     returner = {};
     for fdepKey in sorted(functionDepsDict.keys()):
         fdep = functionDepsDict[fdepKey];
