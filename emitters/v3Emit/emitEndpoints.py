@@ -154,8 +154,7 @@ return _returner;
 
     returner += '_callType,_actEvent=None,_context=None):\n'
 
-    funcBody = r"""
-'''
+    funcBody = r"""'''
 @param{String} _callType ---
 
    _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED :
@@ -576,10 +575,75 @@ class _MessageFuncNodeShared(object):
         
         @returns {String}
         '''
+        if self.msgFuncNode.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+            assert(False);
+
+        funcNameNode = self.msgFuncNode.children[1];
+        funcName = funcNameNode.value;
+        # do not expect any function arguments for message receive
+        # function; funcArguments should just be [].
+        funcArguments = _getArgumentNamesFromFuncNode(self.msgFuncNode);
+        functionBodyNode = _getFuncBodyNodeFromFuncNode(self.msgFuncNode);    
+
         returner = '';
-        errMsg = '\nBehram error: still must emit receive functions.\n';
-        print(errMsg);
-        return '';
+        returner += 'def %s (self, ' % _convertSrcFuncNameToInternal(funcName);
+        for argName in funcArguments:
+            returner += argName + ', ';
+        returner +=  '_callType,_actEvent=None,_context=None):\n'
+
+        # header will be the same for all message sends
+        receiveBody = r"""'''
+@param{String} _callType ---
+
+   _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED :
+   means that anything that we return will not be set in
+   return statement of context, but rather will just be
+   returned.
+
+   Cannot have _callType equal to FIRST_FROM_EXTERNAL call
+   (because no external callers), nor can have _callType equal
+   to resume from postpone because by the time have a message
+   receive, have made guarantee that will run to completion.
+
+@param{_ActiveEvent object} _actEvent --- Must be non-None,
+but other than that, does nothing.
+
+@param{_Context object} _context --- Each function can operate
+on endpoint global, sequence global, and shared variables.
+These are all stored in this _context object.  Must be
+non-None for message receive.
+'''
+#### DEBUG
+if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+    errMsg = '\nBehram error.  A message receive function was ';
+    errMsg += 'called without an internally_called _callType.\n';
+    print(errMsg);
+    assert(False);
+
+if _actEvent == None:
+    errMsg = '\nBehram error.  A message receive function was ';
+    errMsg += 'called without an active event.\n';
+    print(errMsg);
+    assert(False);
+
+if _context == None:
+    errMsg = '\nBehram error.  A message receive function was called ';
+    errMsg += 'without a context.\n';
+    print(errMsg);
+    assert(False);
+#### END DEBUG
+
+# actual meat of the function.
+""";
+
+        # actually emit the body of the function
+        for statementNode in functionBodyNode.children:
+            receiveBody += mainEmit.emit(statementNode,fdepDict);
+            receiveBody += '\n';
+
+        receiveBody += self._msgSendSuffix(fdepDict);
+        returner += emitUtils.indentString(receiveBody,1);
+        return returner;
 
 
     
@@ -606,8 +670,7 @@ class _MessageFuncNodeShared(object):
         returner +=  '_callType,_actEvent=None,_context=None):\n'
 
         # header will be the same for all message sends
-        sendBody = r"""
-'''
+        sendBody = r"""'''
 @param{String} _callType ---
    _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED :
    means that anything that we return will not be set in
