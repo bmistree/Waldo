@@ -54,19 +54,46 @@ def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
         1);
     returner += '\n\n';
 
-    # now handle each user-defined function
+    # handle each user-defined oncreate, public, and private function.
+    returner += emitUtils.indentString('###### USER DEFINED FUNCTIONS #######\n\n',1);
     functionSectionNode = _getFunctionSectionNode(
         endpointName,astRootNode);
     for funcNode in functionSectionNode.children:
         returner += emitUtils.indentString(
-            _emitFunctionDefinition(funcNode,endpointName,astRootNode,fdepDict),
+            _emitPublicPrivateOnCreateFunctionDefinition(
+                funcNode,endpointName,astRootNode,fdepDict),
             1);
         returner += '\n\n';
+
+
+        
+    # handle message sequence functions
+    returner += emitUtils.indentString('###### User-defined message sequence functions #######\n',1);
+    returner += emitUtils.indentString(
+        '''
+# FIXME: For now, making message send functions private.  This
+# means that an internal function must call the message send and
+# that _callTypes are restricted to only being from internal.
+
+# message receive functions are treated as internal and cannot
+# have a first_from_external call type and both its _actEvent
+# and _context must be defined.
+
+''',1);
     
+    allMessageFunctionNodes = _getMessageFunctionNodes(endpointName,astRootNode);
+    for msgFuncNodeSharedObj in allMessageFunctionNodes:
+        returner += emitUtils.indentString(
+            msgFuncNodeSharedObj.emitMessageFunctionDefinition(
+                endpointName,astRootNode,fdepDict),
+            1);
+        returner += '\n\n';
+        
     return returner;
 
 
-def _emitFunctionDefinition(funcNode,endpointName,astRootNode,fdepDict):
+def _emitPublicPrivateOnCreateFunctionDefinition(
+            funcNode,endpointName,astRootNode,fdepDict):
     '''
     @param {AstNode} funcNode --- Should be the root node of the
     function we're trying to emit.  only valid labels are oncreate,
@@ -77,28 +104,6 @@ def _emitFunctionDefinition(funcNode,endpointName,astRootNode,fdepDict):
     
     @param {AstNode} astRootNode --- The root ast node of the entire
     program.
-    '''
-
-    if ((funcNode.label == AST_PUBLIC_FUNCTION) or
-        (funcNode.label == AST_PRIVATE_FUNCTION) or
-        (funcNode.label == AST_ONCREATE_FUNCTION)):
-        return _emitPublicPrivateOnCreateFunctionDefinition(
-            funcNode,endpointName,astRootNode,fdepDict);
-    elif funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
-        print('\nBehram error: need to handle message send function.\n');
-    elif funcNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
-        print('\nBehram error: need to handle message receive function.\n');
-    else:
-        errMsg = '\nBehram error: trying to emit a func def ';
-        errMsg += 'for a non-function.\n';
-        print(errMsg);
-        assert(False);
-        
-
-def _emitPublicPrivateOnCreateFunctionDefinition(
-            funcNode,endpointName,astRootNode,fdepDict):
-    '''
-    @see _emitFunctionDefinition for argument documentation.
     '''
 
     funcNameNode = funcNode.children[0];
@@ -122,14 +127,14 @@ def _emitPublicPrivateOnCreateFunctionDefinition(
 # ... that way know that the function call happened from
 # external caller and don't have to generate new function
 # calls for it.
-_returner = self._%s(
+_returner = self.%s(
     _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,
     None,None);
 
 # should check if there are other active events
 self._tryNextEvent();
 return _returner;
-''' % funcName;
+''' % _convertSrcFuncNameToInternal(funcName);
 
         returner += emitUtils.indentString(publicMethodBody,1);
         returner += '\n';
@@ -143,7 +148,7 @@ return _returner;
     functionEventKey = _getFuncEventKey(funcName,endpointName,fdepDict);
     
     # actually emit the function    
-    returner += 'def _%s(self,' % funcName;
+    returner += 'def %s(self,' % _convertSrcFuncNameToInternal(funcName);
     for argName in funcArguments:
         returner += argName + ',';
 
@@ -478,10 +483,12 @@ _Endpoint.__init__(
     # on create function (if it exists)
     if onCreateNode != None:
         initMethodBody += '# call oncreate function for remaining initialization \n';
-        initMethodBody += 'self._%s(' % ONCREATE_TOKEN;
+        initMethodBody += 'self.%s(' % _convertSrcFuncNameToInternal(ONCREATE_TOKEN);
         for argName in onCreateArgumentNames:
             initMethodBody += argName + ',';
-        
+
+
+            
         # now emit function control commands for oncreate
         initMethodBody += '_Endpoint.FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,';
         initMethodBody += 'None,';
@@ -496,6 +503,227 @@ _Endpoint.__init__(
     initMethod += emitUtils.indentString(initMethodBody,1);
     return initMethod;
 
+
+def _getMessageFunctionNodes(endpointName,astRootNode):
+    '''
+    @returns{Array} --- return an array of MessageFuncNodeShared
+    objects, containing all of the message receive and message send
+    sequence functions for the endpoint named endpointName.  
+    '''
+    returner = [];
+    msgSeqSectionNode = astRootNode.children[6];
+
+    for msgSeqNode in msgSeqSectionNode.children:
+        seqGlobalsNode = msgSeqNode.children[1];
+        seqFuncsNode = msgSeqNode.children[2];
+
+        counter = 0;
+        for msgFuncNode in seqFuncsNode.children:
+            endpointIdNode = msgFuncNode.children[0];
+
+            counter +=1;
+            
+            # means that this function is one of this endpoint's
+            # functions
+            if endpointIdNode.value == endpointName:
+                nextToGetCalledNode = None;
+                if counter < len(seqFuncsNode.children):
+                    nextToGetCalledNode = seqFuncsNode.children[counter];
+                    
+                toAppend = _MessageFuncNodeShared(
+                    seqGlobalsNode,msgFuncNode,nextToGetCalledNode);
+                returner.append(toAppend);
+          
+    return returner;
+        
+
+class _MessageFuncNodeShared(object):
+    '''
+    Used as a return value from message function nodes.  Essentially,
+    for all message sequence send nodes, we want to also keep track of
+    the sequence global node too so can initialize these variables at
+    top of function.
+    '''
+    def __init__(self,seqGlobalNode,msgFuncNode,nextToCallNode):
+        self.seqGlobalNode = seqGlobalNode;
+        self.msgFuncNode = msgFuncNode;
+        
+        # the node for the message sequence function that will succeed
+        # msgFuncNode's call (or None) if last message in sequence.
+        self.nextToCallNode = nextToCallNode;
+
+    def emitMessageFunctionDefinition(
+        self,endpointName,astRootNode,fdepDict):
+        '''
+        Emits the definition of the message receieve or message send
+        function node that this wraps
+        '''
+
+        if self.msgFuncNode.label== AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+            return self._emitSend(endpointName,astRootNode,fdepDict);
+        elif self.msgFuncNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+            return self._emitReceive(endpointName,astRootNode,fdepDict);
+        else:
+            errMsg = '\nBehram error: trying to emit a message function ';
+            errMsg += 'that is not actually a message function.\n';
+            print(errMsg);
+            assert(False);
+
+    def _emitReceive(self,endpointName,astRootNode,fdepDict):
+        '''
+        Should only be called when seqGlobalNode is
+        AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION
+        
+        @returns {String}
+        '''
+        returner = '';
+        errMsg = '\nBehram error: still must emit receive functions.\n';
+        print(errMsg);
+        return '';
+
+
+    
+    def _emitSend(self,endpointName,astRootNode,fdepDict):
+        '''
+        Should only be called when seqGlobalNode is a message send
+        sequence function.
+
+        @returns {String}
+        '''
+        if self.msgFuncNode.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+            assert(False);
+
+        funcNameNode = self.msgFuncNode.children[1];
+        funcName = funcNameNode.value;
+        funcArguments = _getArgumentNamesFromFuncNode(self.msgFuncNode);
+        functionBodyNode = _getFuncBodyNodeFromFuncNode(self.msgFuncNode);    
+
+        returner = '';
+
+        returner += 'def %s (self, ' % _convertSrcFuncNameToInternal(funcName);
+        for argName in funcArguments:
+            returner += argName + ', ';
+        returner +=  '_callType,_actEvent=None,_context=None):\n'
+
+        # header will be the same for all message sends
+        sendBody = r"""
+'''
+@param{String} _callType ---
+   _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED :
+   means that anything that we return will not be set in
+   return statement of context, but rather will just be
+   returned.
+
+@param{_ActiveEvent object} _actEvent --- Must be non-None,
+but other than that, does nothing.
+
+@param{_Context object} _context --- Each function can operate
+on endpoint global, sequence global, and shared variables.
+These are all stored in this _context object.  Must be
+non-None for message receive.
+'''
+#### DEBUG
+if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+    errMsg = '\nBehram error.  A message send function for now must be ';
+    errMsg += 'called with an internally_called _callType.\n';
+    print(errMsg);
+    assert(False);
+
+if _actEvent == None:
+    errMsg = '\nBehram error.  A message send function was ';
+    errMsg += 'called without an active event.\n';
+    print(errMsg);
+    assert(False);
+
+if _context == None:
+    errMsg = '\nBehram error.  A message send function was called ';
+    errMsg += 'without a context.\n';
+    print(errMsg);
+    assert(False);
+#### END DEBUG
+
+
+# FIXME: if allow jumps backwards and forwards, may need to be
+# careful not to re-initialize sequence global variables.
+
+# FIXME: if allow jumps backwards and forwards, may need to be
+# careful about a message sequence function's taking
+# arguments.
+
+# initialization of sequence global variables: specific to
+# message send functions.
+""";
+
+
+        # need to perform initializations of sequence global data
+        for declNode in self.seqGlobalNode.children:
+            sendBody += mainEmit.emit(declNode,fdepDict);
+            sendBody += '\n';
+
+        # need to put arguments into seqGlobals
+        funcDeclArgListNode = self.msgFuncNode.children[2];
+        for funcDeclArgNode in funcDeclArgListNode.children:
+            nameNode = funcDeclArgNode.children[1];
+            nameNode._debugErrorIfHaveNoAnnotation(
+                '_emitSend');
+
+            nameString = nameNode.value;
+            annotationName = nameNode.sliceAnnotationName;
+            sendBody += "_context.seqGlobals['%s'] = %s;\n " % (annotationName,nameString);
+            # gives something like _context.seqGlobals['8__someArg'] = someArg;
+
+            
+        # actually emit the body of the function
+        for statementNode in functionBodyNode.children:
+            sendBody += mainEmit.emit(statementNode,fdepDict);
+            sendBody += '\n';
+        
+        sendBody += self._msgSendSuffix(fdepDict);
+        returner += emitUtils.indentString(sendBody,1);
+        return returner;
+
+    def _msgSendSuffix(self,fdepDict):
+        returner = '';
+
+        # check whether this is the last message in the
+        # sequence...have different semantics if it is: notify other
+        # side that sequence is done, and send sequence complete
+        # signal to waiting function node.
+        if self.nextToCallNode == None:
+            returner += """
+#### Unique to last sequence
+# tell other side that the sequence is finished and tell our
+# event that it should no longer wait on the message sequence
+# to complete.  Note that should not have to do two of these.
+# Should only have to do one.  But does not hurt to do both.
+self._writeMsg(_Message._endpointMsg(_context,_actEvent,
+                                     _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH));
+
+_context.signalMessageSequenceComplete(_context.id);
+
+return; # if this was because of a jump, abort, etc., having
+        # return here ensures that the function does not
+        # execute further.
+""";
+        else:
+            # what to send as control messsage for function so that it
+            # calls next function in message sequence on its side.
+            nextToCallEndpointIdentifierNode = self.nextToCallNode.children[0];
+            nextToCallEndpointName = nextToCallEndpointIdentifierNode.value;
+            nextToCallFuncNameNode = self.nextToCallNode.children[1];
+            nextToCallFuncName = nextToCallFuncNameNode.value;
+
+            nextFuncEventName = _getFuncEventKey(
+                nextToCallFuncName,nextToCallEndpointName,fdepDict);
+            
+            returner += """
+# request the other side to perform next action.
+self._writeMsg(_Message._endpointMsg(_context,_actEvent,'%s'));
+""" % nextFuncEventName;
+            
+
+        return returner;
+            
 
 def _getOnCreateNode(endpointName,astRootNode):
     '''
@@ -744,4 +972,5 @@ def _convertSrcFuncNameToInternal(fname):
     "_<fname>"
     '''
     return '_' + fname;
+
 

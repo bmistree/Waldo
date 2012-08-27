@@ -38,7 +38,7 @@ def emit(astNode,fdepDict):
         idAnnotationType = astNode.sliceAnnotationType;
 
         if idAnnotationType == TypeStack.IDENTIFIER_TYPE_LOCAL:
-            returner += identifierNode.value + ' ';
+            returner += astNode.value + ' ';
         elif idAnnotationType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL:
             returner += "self._committedContext.endGlobals['";
             returner += idAnnotationName + "'] ";
