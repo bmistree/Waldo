@@ -56,9 +56,12 @@ def emit(astNode,fdepDict):
             errMsg += 'declared variable in emit of mainEmit.\n';
             print(errMsg);
             print(idAnnotationType);
-            
             assert(False);        
 
+    elif astNode.label == AST_FUNCTION_CALL:
+        returner += _emitFunctionCall(astNode,fdepDict);
+
+            
     elif astNode.label == AST_ASSIGNMENT_STATEMENT:
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
@@ -234,4 +237,50 @@ def _getBinaryOperatorLabelDict():
 
 
 
+def _emitFunctionCall(funcCallNode,fdepDict):
+    '''
+    @param{AstNode} funcCallNode --- Should have label
+    AST_FUNCTION_CALL
 
+    @returns{String}
+    '''
+    if funcCallNode.label != AST_FUNCTION_CALL:
+        assert(False);
+
+    returner = '';
+        
+    funcName = funcCallNode.children[0].value;
+    funcArgListNode = funcCallNode.children[1];
+
+    errMsg = '\nBehram error: right now, not handling ';
+    errMsg += 'function calls from function objects.\n';
+    print(errMsg);
+    
+    returner += 'self.%s' % emitUtils._convertSrcFuncNameToInternal(funcName);
+    returner += '(';
+
+    amtToIndent = len(returner);
+    indentStr = '';
+    for counter in range(0,amtToIndent):
+        indentStr += ' ';
+
+    first = True;
+    for argNode in funcArgListNode.children:
+        if not first:
+            returner += indentStr;
+        else:
+            first = False;
+
+        returner += emit(argNode,fdepDict);
+        returner += ',\n';
+
+    returner += indentStr + '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n'
+    returner += indentStr + '_actEvent,\n';
+    returner += indentStr + '_context)';
+
+    errMsg = '\nBehram error: still need to handle case of calling a message ';
+    errMsg += 'function...wait for it to say that it has returned.\n';
+    print(errMsg);
+    return returner;
+    
+# _emitFunctionCall(astNode,fdepDict);

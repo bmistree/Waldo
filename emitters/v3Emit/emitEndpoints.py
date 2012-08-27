@@ -15,7 +15,7 @@ from astLabels import *;
 sys.path.append(os.path.join(curDir,'..','..','lexer'));
 from waldoLex import ONCREATE_TOKEN;
 
-
+from emitUtils import _convertSrcFuncNameToInternal;
 
 def emitEndpoints(astRootNode,fdepDict):
     '''
@@ -122,8 +122,7 @@ def _emitPublicPrivateOnCreateFunctionDefinition(
             returner += argName + ',';
         returner += '):\n';
 
-        publicMethodBody = '''
-# passing in FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL
+        publicMethodBody = '''# passing in FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL
 # ... that way know that the function call happened from
 # external caller and don't have to generate new function
 # calls for it.
@@ -416,7 +415,6 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 
     initMethodBody += '\n\n';
 
-
     # now emit the base _Endpoint class initializer
     initMethodBody += '''
 
@@ -429,7 +427,6 @@ _Endpoint.__init__(
 
     initMethodBody += '\n\n';
 
-    
     # now emit global and shared variable dictionaries.  each contains
     # their default values.  After this, actually initialize their
     # values according to user-coded initialization statements.
@@ -1021,17 +1018,5 @@ def _getEndpointFunctionNamesFromEndpointName(
         returner["'" + fdep.funcName + "'"] = "'" + _convertSrcFuncNameToInternal(fdep.srcFuncName) + "'";
         
     return returner;
-
-
-def _convertSrcFuncNameToInternal(fname):
-    '''
-    @param {String} fname
-
-    @returns {String} --- Takes a function name and returns the name
-    that an endpoint class uses for its internal call.  For now, this
-    means just pre-pending the input argument with an underscore, ie:
-    "_<fname>"
-    '''
-    return '_' + fname;
 
 

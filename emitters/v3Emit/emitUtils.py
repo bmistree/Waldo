@@ -113,3 +113,17 @@ def getDefaultValueFromDeclNode(astDeclNode):
         assert(False);
 
     return returner;
+
+
+
+def _convertSrcFuncNameToInternal(fname):
+    '''
+    @param {String} fname
+
+    @returns {String} --- Takes a function name and returns the name
+    that an endpoint class uses for its internal call.  For now, this
+    means just pre-pending the input argument with an underscore, ie:
+    "_<fname>"
+    '''
+    return '_' + fname;
+
