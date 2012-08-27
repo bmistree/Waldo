@@ -80,7 +80,8 @@ def slicer(node,functionDeps=None,typeStack=None):
 
         # create a new function dependency on the stack.
         fDep = FunctionDeps(typeStack.hashFuncName(funcName),
-                            funcName,typeStack.mEndpointName);
+                            funcName,typeStack.mEndpointName,
+                            node);
         functionDeps.append(fDep);
 
         
@@ -134,7 +135,8 @@ def slicer(node,functionDeps=None,typeStack=None):
         typeStack.addReturnStatement(returnStatementReads);
         
     elif node.label == AST_FUNCTION_CALL:
-        funcCallName = node.children[0].value;
+        funcCallNameNode = node.children[0];
+        funcCallName = funcCallNameNode.value;
         funcArgListNode = node.children[1];
         
         # an aray of arrays....each element array contains the reads
@@ -148,9 +150,17 @@ def slicer(node,functionDeps=None,typeStack=None):
             argumentReads = typeStack.getReadsAfter(readIndex);
             
             funcArgReads.append(argumentReads);
-        
-        typeStack.addFuncCall(
-            typeStack.hashFuncName(funcCallName),funcArgReads);
+
+        idExists = typeStack.getIdentifier(funcCallName);
+        if idExists == None:
+            # means that we are making a function call to an existing
+            # function, not to a function object.
+            typeStack.addFuncCall(
+                typeStack.hashFuncName(funcCallName),funcArgReads);
+        else:
+            # means that this is a function call being made on a
+            # function object.  annotate the func call node
+            typeStack.annotateNode(funcCallNameNode,funcCallName);
         
     elif node.label == AST_ASSIGNMENT_STATEMENT:
         # left-hand side can only be a bracket statement or an
@@ -419,7 +429,6 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
         # because they're already in the context.
         for funcIndex in range(0,len(msgSeqFunctionsNode.children)):
             # for each function, go through
-
             typeStack = firstFuncEndpointTypeStack;
             otherTypeStack = secondFuncEndpointTypeStack;
             if funcIndex % 2 != 0:
@@ -430,7 +439,8 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             funcName = funcNode.children[1].value;
             
             fDep = FunctionDeps(typeStack.hashFuncName(funcName),
-                                funcName,typeStack.mEndpointName);
+                                funcName,typeStack.mEndpointName,
+                                funcNode);
             functionDeps.append(fDep);
 
             typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_LOCAL,fDep);

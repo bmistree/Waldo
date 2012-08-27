@@ -158,12 +158,7 @@ class TypeStack(object):
             exists  = context.getIdentifier(identifierName);
             if exists != None:
                 return exists;
-
-        errMsg = '\nBehram error: all identifiers should be defined by now.  ';
-        errMsg += 'But "' + identifierName + '" was not.\n';
-        print(errMsg);
-        assert(False);
-
+        return None;
 
     def addToVarReadSet(self,ntt):
         '''

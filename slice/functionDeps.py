@@ -12,7 +12,7 @@ class FunctionDeps(object):
     read set automatically gets added to the write set.
     '''
     
-    def __init__(self,funcName,srcFuncName,endpointName):
+    def __init__(self,funcName,srcFuncName,endpointName,funcNode):
         '''
         @param {String} funcName --- a name for this function that is
         guaranteed not to conflict with any other function.
@@ -24,7 +24,8 @@ class FunctionDeps(object):
 
         @param {String} endpointName --- The name of the endpoint on
         which this function is defined.
-        
+
+        @param {AstNode} funcNode
         '''
         
         # name to an array of NameTypeTuple-s each variable in here
@@ -50,6 +51,8 @@ class FunctionDeps(object):
 
         self.srcFuncName = srcFuncName;
         self.endpointName = endpointName;
+
+        self.funcNode = funcNode;
         
         # ntt id to ntt-s with varType
         # TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT or 

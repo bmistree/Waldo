@@ -292,7 +292,7 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
 
     # start emitting actual body of the function.
     for statementNode in functionBodyNode.children:
-        funcBody += mainEmit.emit(statementNode,fdepDict);
+        funcBody += mainEmit.emit(endpointName,statementNode,fdepDict);
         funcBody += '\n';
 
     # force a return at end of function if did not encounter one
@@ -471,10 +471,10 @@ _Endpoint.__init__(
 
     # handles shared
     initMethodBody += _emitInitSharedGlobalVariables(
-        sharedIdentifiersToDeclNodesDict,astRootNode,fdepDict);
+        endpointName,sharedIdentifiersToDeclNodesDict,astRootNode,fdepDict);
     # handles endpoint global
     initMethodBody += _emitInitSharedGlobalVariables(
-        globalIdentifiersToDeclNodesDict,astRootNode,fdepDict);
+        endpointName,globalIdentifiersToDeclNodesDict,astRootNode,fdepDict);
     initMethodBody += '\n\n';
 
     
@@ -633,7 +633,7 @@ if _context == None:
 
         # actually emit the body of the function
         for statementNode in functionBodyNode.children:
-            receiveBody += mainEmit.emit(statementNode,fdepDict);
+            receiveBody += mainEmit.emit(endpointName,statementNode,fdepDict);
             receiveBody += '\n';
 
         receiveBody += self._msgSendSuffix(fdepDict);
@@ -715,7 +715,7 @@ if _context == None:
 
         # need to perform initializations of sequence global data
         for declNode in self.seqGlobalNode.children:
-            sendBody += mainEmit.emit(declNode,fdepDict);
+            sendBody += mainEmit.emit(endpointName,declNode,fdepDict);
             sendBody += '\n';
 
         # need to put arguments into seqGlobals
@@ -733,7 +733,7 @@ if _context == None:
             
         # actually emit the body of the function
         for statementNode in functionBodyNode.children:
-            sendBody += mainEmit.emit(statementNode,fdepDict);
+            sendBody += mainEmit.emit(endpointName,statementNode,fdepDict);
             sendBody += '\n';
         
         sendBody += self._msgSendSuffix(fdepDict);
@@ -902,9 +902,9 @@ def _getFunctionSectionNode(endpointName,astRootNode):
     functionSectionNode = bodySectionNode.children[1];
     return functionSectionNode;
     
-    
+
 def _emitInitSharedGlobalVariables(
-    idsToDeclNodesDict,astRootNode,fdepDict):
+    endpointName,idsToDeclNodesDict,astRootNode,fdepDict):
     '''
     Inside of init function of each endpoint class, need to initialize
     shared variables and endpoint global variables with their initial
@@ -913,7 +913,7 @@ def _emitInitSharedGlobalVariables(
     returner = '';
     for _id in idsToDeclNodesDict:
         declNode = idsToDeclNodesDict[_id];
-        returner += mainEmit.emit(declNode,fdepDict);
+        returner += mainEmit.emit(endpointName,declNode,fdepDict);
         returner += '\n';
     return returner;
     
