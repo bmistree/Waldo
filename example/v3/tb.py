@@ -1825,18 +1825,6 @@ class Ping(_Endpoint):
             return _context.endGlobals['1__otherPingNum'];
 
 
-        # passing in FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL
-        # ... that way know that the function call happened from
-        # external caller and don't have to generate new function
-        # calls for it.
-        _returner = self._incOtherPing(
-            _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,
-            None,None);
-
-        # should check if there are other active events
-        self._tryNextEvent();
-        return _returner;
-
     def msgSeq(self):
         # passing in FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL
         # ... that way know that the function call happened from
