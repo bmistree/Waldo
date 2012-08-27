@@ -9,6 +9,7 @@ curDir = os.path.dirname(__file__);
 # so can get ast labels
 sys.path.append(os.path.join(curDir,'..','..','parser','ast'));
 from astLabels import *;
+from astBuilderCommon import isEmptyNode;
 
 sys.path.append(os.path.join(curDir,'..','..','slice','typeStack'));
 from typeStack import TypeStack;
@@ -37,23 +38,41 @@ def emit(astNode,fdepDict):
         idAnnotationName = astNode.sliceAnnotationName;
         idAnnotationType = astNode.sliceAnnotationType;
 
-        if idAnnotationType == TypeStack.IDENTIFIER_TYPE_LOCAL:
+        if ((idAnnotationType == TypeStack.IDENTIFIER_TYPE_LOCAL) or
+            (idAnnotationType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
             returner += astNode.value + ' ';
         elif idAnnotationType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL:
-            returner += "self._committedContext.endGlobals['";
+            returner += "_context.endGlobals['";
             returner += idAnnotationName + "'] ";
-        elif idAnnotationType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL:
-            returner += "self._committedContext.seqGlobals['";
+        elif ((idAnnotationType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL) or
+              (idAnnotationType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
+            returner += "_context.seqGlobals['";
             returner += idAnnotationName + "'] ";
         elif idAnnotationType == TypeStack.IDENTIFIER_TYPE_SHARED:
-            returner += "self._committedContext.shareds['";
-            returner += idAnnotationName + "'] ";            
+            returner += "_context.shareds['";
+            returner += idAnnotationName + "'] ";
         else:
             errMsg = '\nBehram error: incorrect annotation type for ';
             errMsg += 'declared variable in emit of mainEmit.\n';
             print(errMsg);
+            print(idAnnotationType);
+            
             assert(False);        
 
+    elif astNode.label == AST_ASSIGNMENT_STATEMENT:
+        lhsNode = astNode.children[0];
+        rhsNode = astNode.children[1];
+        returner += emit(lhsNode,fdepDict);
+        returner += ' = ';
+        returner += emit(rhsNode,fdepDict);
+
+    elif astNode.label == AST_PRINT:
+        toPrintNode = astNode.children[0];
+        returner += 'print( ';
+        returner += emit(toPrintNode,fdepDict);
+        returner += ')';
+        
+        
     elif astNode.label == AST_DECLARATION:
         # could either be a shared or local variable.  use annotation
         # to determine.
@@ -89,6 +108,10 @@ def emit(astNode,fdepDict):
             returner += emit(mapLiteralItem,fdepDict);
             returner += ', ';
         returner += '} ';
+
+    elif astNode.label == AST_FUNCTION_BODY_STATEMENT:
+        for child in astNode.children:
+            returner += emit(child,fdepDict);
         
     elif astNode.label == AST_MAP_ITEM:
         # individual entry of map literal

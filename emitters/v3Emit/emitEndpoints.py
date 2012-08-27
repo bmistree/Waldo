@@ -383,7 +383,7 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint):
     initMethodBody += '_otherPriority = ' + str(otherEvenOdd) + ';\n\n';
 
     # handle context
-    initMethodBody += '_committedContext = _Context();\n';
+    initMethodBody += '_context = _Context();\n';
 
 
     # create a prototype events dict for this endpoint to copy active
@@ -423,7 +423,7 @@ for pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 # invoke base class initializer
 _Endpoint.__init__(
     self,_connectionObj,_globSharedReadVars,_globSharedWriteVars,
-    _lastIdAssigned,_myPriority,_theirPriority,_committedContext,
+    _lastIdAssigned,_myPriority,_theirPriority,_context,
     _execFromToInternalFuncDict,_prototypeEventsDict);
 ''';
 
@@ -469,6 +469,8 @@ _Endpoint.__init__(
 
     # emit initialization of shared and endpoint global variables.
     initMethodBody += '\n# initialization of shared and global variables\n';
+    initMethodBody += '# note that writing to _context implicitly writes to\n'
+    initMethodBody += '# self._committedContext.\n';
 
     # handles shared
     initMethodBody += _emitInitSharedGlobalVariables(
@@ -494,10 +496,6 @@ _Endpoint.__init__(
         initMethodBody += 'self._committtedContext);\n'
     else:
         initMethodBody += '# no oncreate function to call.\n';
-    
-    errMsg = '\nBehram error: still need to emit ';
-    errMsg += ' functions.';
-    print(errMsg);
     
     initMethod += emitUtils.indentString(initMethodBody,1);
     return initMethod;

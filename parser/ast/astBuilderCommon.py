@@ -3,14 +3,19 @@
 import os;
 import sys;
 
-from astLabels import *;
-from astNode import AstNode;
 
 typeCheckErrorUtilPath = os.path.join(
     os.path.abspath(os.path.dirname(__file__)),
     'typeCheck');
+lexPath = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)),
+    '..','..','lexer');
 sys.path.append(typeCheckErrorUtilPath);
+sys.path.append(lexPath);
 
+
+from astLabels import *;
+from astNode import AstNode;
 from typeCheckUtil import setErrorEncountered;
 from waldoLex import ONCREATE_TOKEN;
 from parserUtil import errPrint;
