@@ -369,10 +369,10 @@ class _Event(object):
         get written to/read from.        
         '''
 
-        warnMsg = '\nWarning: not actually keeping track of conditional ';
-        warnMsg += 'taints when generating an active event in _Event class.\n';
-        # see fixme below.
-        print(warnMsg);
+        # warnMsg = '\nWarning: not actually keeping track of conditional ';
+        # warnMsg += 'taints when generating an active event in _Event class.\n';
+        # # see fixme below.
+        # print(warnMsg);
 
         # FIXME: For now, just using definite global reads and writes
         # and not thinking about conditional.
@@ -1137,8 +1137,9 @@ class _Endpoint(object):
         
         @param {int} eventId
         
-        @param {_Context object} contextData --- The context object
-        associated with the received message.
+        @param {dict} contextData --- The contents of the received
+        message's context field.  @see generateEnvironmentData of
+        _Context for the format of this dictionary.
 
         # Case 1:
         #
@@ -1166,13 +1167,16 @@ class _Endpoint(object):
         # concurrent reads/writes on a dict.
         self._lock();
 
-        actEventDictObj = self._activeEventDict(eventId,None);
-        if actEventEventDictObj == None:
+        actEventDictObj = self._activeEventDict.get(eventId,None);
+
+        #### DEBUG
+        if actEventDictObj == None:
             errMsg = '\nBehram error: should not have received a ';
             errMsg += 'MESSAGE_SEQUENCE_SENTINEL_FINISHED control ';
             errMsg += 'message for an event that got postponed.\n';
             print(errMsg);
             assert(False);
+        #### END DEBUG
 
         self._unlock();
 
@@ -1189,7 +1193,7 @@ class _Endpoint(object):
         # could just straight up replace context, but want to leave
         # possibility for doing something more intelligent, vis-a-vis
         # not sending full frames.
-        actEventContext.mergeContextIntoMe(context);
+        actEventContext.updateEnvironmentData(contextData,self);
         
         # notify active event that had been waiting that it can resume
         # its execution.
