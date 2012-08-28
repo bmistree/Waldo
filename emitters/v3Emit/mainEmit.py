@@ -260,7 +260,7 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     if funcNameNode.sliceAnnotationName != None:
         # means that this is a function object that we are making call
         # on....use its reference either as a shared, arg, global, etc.
-        returner += emit(endpointName,funcNameNode,fdepDict,emitContext);
+        funcCallText = emit(endpointName,funcNameNode,fdepDict,emitContext);
     else:
         # means that we are making a call to a statically, and
         # textually described function.
@@ -276,12 +276,13 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             returner += '\n#### END DEBUG';
             returner += '\n_time.sleep(_COLLISION_TIMEOUT_VAL);\n\n';
 
-        
-        returner += 'self.%s' % emitUtils._convertSrcFuncNameToInternal(funcName);
-        
-    returner += '(';
+        funcCallText = 'self.%s' % emitUtils._convertSrcFuncNameToInternal(funcName);
 
-    amtToIndent = len(returner);
+    funcCallText += '('
+    returner += funcCallText;
+
+
+    amtToIndent = len(funcCallText);
     indentStr = '';
     for counter in range(0,amtToIndent):
         indentStr += ' ';
@@ -300,7 +301,9 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
         # handling calling a function object differently from calling function from source
         returner += indentStr + ')';
     else:
-        returner += indentStr + '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n'
+        if not first:
+            returner += indentStr;
+        returner +=  '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n'
         returner += indentStr + '_actEvent,\n';
         returner += indentStr + '_context)';
 
