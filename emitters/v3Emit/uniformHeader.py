@@ -699,8 +699,13 @@ class _ActiveEvent(object):
         event.  This function does that backing out.  It inserts the
         event back into the endpoint's queue of inactive events and
         gets rid of the event context that we had generated.
+
+        NOTE that by calling cancel inside of this function, we take
+        care of removing from active events dictionary as well as
+        releasing our locks on shared/endpoint variables.
         '''
         self.eventContext = None;
+        self.cancelActiveEvent();
         self.active = False;
 
         # ensures that when the currently-executing context completes,
@@ -716,7 +721,6 @@ class _ActiveEvent(object):
         # raise a _PostponeException that whoever requested the
         # execution of the active event would catch.
         context.postpone();
-
 
         
     def addEventToEndpointIfCan(self):
@@ -1043,7 +1047,12 @@ class _Endpoint(object):
         actEventDictObj = self._activeEventDict[activeEventId];
         actEvent = actEventDictObj.actEvent;
         actEventContext = actEventDictObj.eventContext;
+
+        # note that this function will take care of removing the
+        # active event from active event dict as well as releasing
+        # locks on read/write variables.
         actEvent.postpone(actEventContext);
+
 
     def _cancelActiveEvent(self,activeEventId):
         '''
@@ -1110,7 +1119,6 @@ class _Endpoint(object):
             executeEventThread = _ExecuteActiveEventThread(execEvent,execContext,callType);
             executeEventThread.start();
 
-
     def _checkNextEvent(self):
         '''
         Checks if there are any inactive events waiting to be
@@ -1122,7 +1130,6 @@ class _Endpoint(object):
         another event is writing and that we do not write a variable
         the other side is reading.
         '''
-
         # must lock access for the _inactiveEvents array
         self._lock();
 
@@ -1130,8 +1137,8 @@ class _Endpoint(object):
         
         # do not need to worry about invalidation of iterator here
         # because python handles for me.
+        counter = 0;
         for inactiveEvent in self._inactiveEvents:
-
             # note that we need this condition here because we unlock
             # to actually execute the event below.  this means that
             # another thread that interceded after we unlocked may
@@ -1139,7 +1146,7 @@ class _Endpoint(object):
             # ignore this event and continue.
             if inactiveEvent.active:
                 continue;
-            
+
             eventAdded, context = inactiveEvent.addEventToEndpointIfCan();
             if eventAdded:
                 self._unlock();
@@ -1148,8 +1155,13 @@ class _Endpoint(object):
                     context,
                     # so that the other side knows that this is from a resume.
                     _Endpoint._FUNCTION_ARGUMENT_CONTROL_RESUME_POSTPONE);
-                self._lock();
 
+                # remove item from inactive
+                del self._inactiveEvents[counter];
+                self._lock();
+            else:
+                counter += 1;
+                
         self._unlock();
 
     def _getNextActiveEventIdToAssign(self):
