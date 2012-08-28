@@ -51,9 +51,26 @@ def slicer(node,functionDeps=None,typeStack=None):
         typeStack2.addMyEndpointName(end2Name);
         typeStack2.addOtherEndpointName(end1Name);
 
-        # both typestacks should hold shared variables...so load each
+        # both typestacks should hold shared variables...load shared
+        # variables into typestack1 and then copy the ntt-s over to
+        # typeStack2.
+
+        # first push a context for shared variables onto each.
+        typeStack1.pushContext(TypeStack.IDENTIFIER_TYPE_SHARED,None);
+        typeStack2.pushContext(TypeStack.IDENTIFIER_TYPE_SHARED,None);
+
+        # keep track of ntt-s created on typestack1 in shared.
         slicer(sharedSecNode,functionDeps,typeStack1);
-        slicer(sharedSecNode,functionDeps,typeStack2);
+        sharedReadsDict = typeStack1.getTopStackIdentifierDict();
+        
+        ##### copy over the shared variables from typeStack1 to
+        ##### typeStack2
+        
+        # this context should never get removed because want shared
+        # section variables to always be accessible.
+        for sharedNttKey in sharedReadsDict.keys():
+            sharedNtt = sharedReadsDict[sharedNttKey];
+            typeStack2.addIdentifierAsNtt(sharedNtt);
 
         # now go through each endpoint node
         slicer(endpoint1Node,functionDeps,typeStack1);
@@ -109,8 +126,7 @@ def slicer(node,functionDeps=None,typeStack=None):
             slicer(child,functionDeps,typeStack);
         
     elif node.label == AST_SHARED_SECTION:
-        # add a context that never gets removed.
-        typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_SHARED,None);
+        # context for shared section should have already been added
         for sharedDeclNode in node.children:
             slicer(sharedDeclNode,functionDeps,typeStack);
 
@@ -374,7 +390,6 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             identifierName = identifierNode.value;
             identifierTypeNode = declGlobNode.children[0];
             isMute = isMutable(identifierTypeNode);
-
             newNtt = typeStack1.addIdentifier(
                 identifierName,isMute,TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL);
             

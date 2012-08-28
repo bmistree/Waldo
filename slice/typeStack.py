@@ -104,6 +104,12 @@ class TypeStack(object):
         print(errMsg);
         assert(False);
 
+    def getTopStackIdentifierDict(self):
+        '''
+        Should only be used to copy shared section labels.
+        '''
+        topStack = self.checkStackLen('getTopStackIdentifierDict');
+        return topStack.dict;
         
     def hashFuncName(self,funcName):
         '''
