@@ -282,7 +282,7 @@ class _Context(object):
             };
         
         return returner;
-        
+
     def updateEnvironmentData(self,contextMsgDict,endpoint):
         '''
         The other side sends us a dictionary like produced from @see
@@ -290,19 +290,19 @@ class _Context(object):
         update our local self.shareds, self.endglobals, and
         self.seqGlobals.
 
-        Importantly, the other side inserts DNE_SENTINEL values for messages that do not exist
+        Importantly, the other side inserts DNE_SENTINEL values for
+        messages that do not exist
 
         @see generateEnvironmentData
         '''
-
         dneDict = contextMsgDict[self.DNE_DICT_NAME_FIELD];
         
         # FIXME: right now, just doing a "deep" copy of the data (that
         # doesn't do anything).  In actuality, will need to handle
         # references etc.
-        _deepCopy(self.shareds,contextMsgDict[self.SHARED_DICT_NAME_FIELD]);
-        _deepCopy(self.endGlobals,contextMsgDict[self.END_GLOBALS_DICT_NAME_FIELD],dneDict);
-        _deepCopy(self.seqGlobals,contextMsgDict[self.SEQ_GLOBALS_DICT_NAME_FIELD]);
+        _deepCopy(contextMsgDict[self.SHARED_DICT_NAME_FIELD],self.shareds);
+        _deepCopy(contextMsgDict[self.END_GLOBALS_DICT_NAME_FIELD],self.endGlobals,dneDict);
+        _deepCopy(contextMsgDict[self.SEQ_GLOBALS_DICT_NAME_FIELD],self.seqGlobals);
 
 
     def postpone(self):
