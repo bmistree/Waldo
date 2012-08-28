@@ -722,10 +722,57 @@ class _ActiveEvent(object):
         # execution of the active event would catch.
         context.postpone();
 
+
+    def _conflicts(self,otherActiveEvent):
+        '''
+        @param {_ActiveEvent object} --- 
         
-    def addEventToEndpointIfCan(self):
+        @returns{Bool} --- True if otherActiveEvent and this event
+        cannot run simultaneously.  (Eg it is writing to variables
+        that I read/write to or I am writing to variables that it is
+        reading/writing to.
+        '''
+        for writeVarKey in self.activeGlobWrites:
+
+            if writeVarKey in otherActiveEvent.activeGlobWrites:
+                return True;
+            if writeVarKey in otherActiveEvent.activeGlobReads:
+                return True;
+
+        for writeVarKey in otherActiveEvent.activeGlobWrites:
+            if writeVarKey in self.activeGlobWrites:
+                return True;
+            if writeVarKey in self.activeGlobReads:
+                return True;
+
+        return False;
+        
+    def _postponeConflictingEvents(self):
+        '''
+        Runs through all active events and postpones those that
+        conflict with this active event.
+        '''
+        actEventDict = self.endpoint._activeEventDict;
+
+        for actEventKey in actEventDict.keys():
+            actEvent = actEventDict[actEventKey].actEvent;
+
+            if self._conflicts(actEvent):
+                # automatically removes from endpoint's active event
+                # dict
+                self.endpoint._postponeActiveEvent(actEventKey);
+
+
+    def addEventToEndpointIfCan(self,force=False,newId=False):
         '''
         CALLED WITHIN ENDPOINT's LOCK.
+
+        @param{bool} force --- If true, this means that we should
+        postpone all other active events that demand the same
+        variables.
+
+        @param{bool} newId --- If true, then assign a new (globally
+        unique) id to this active event before trying to add it.
         
         @returns {bool,_Context} --- False,None if cannot add event.
         True,context to use if can add event.
@@ -737,26 +784,39 @@ class _ActiveEvent(object):
             assert(False);
         #### END DEBUG
 
+        if newId:
+            self.id = self.endpoint._getNextActiveEventIdToAssign();
+
+            
         endpointGlobSharedReadVars = self.endpoint._globSharedReadVars;
         endpointGlobSharedWriteVars = self.endpoint._globSharedWriteVars;
 
-        for actReadKey in self.activeGlobReads.keys():
-            
-            if ((actReadKey in endpointGlobSharedWriteVars) and
-                (endpointGlobSharedWriteVars[actReadKey] > 0)):
+        if force:
+            # by calling this, we guarantee that there will be no
+            # conflicts if we add this event.
+            self._postponeConflictingEvents();
+        else:
+            # we are not forcing adding this event, and must check if
+            # the event would pose any conflicts.  if it does, then do
+            # not proceed with adding the active event.
+            for actReadKey in self.activeGlobReads.keys():
+
+                if ((actReadKey in endpointGlobSharedWriteVars) and
+                    (endpointGlobSharedWriteVars[actReadKey] > 0)):
+
+                    return False,None;
+
+            for actWriteKey in self.activeGlobWrites.keys():
+
+                if (((actWriteKey in endpointGlobSharedWriteVars) and
+                     (endpointGlobSharedWriteVars[actWriteKey] > 0)) or
+
+                    ((actWriteKey in endpointGlobSharedReadVars) and
+                     (endpointGlobSharedReadVars[actWriteKey] > 0))):
+
+                    return False,None;
+
                 
-                return False,None;
-
-        for actWriteKey in self.activeGlobWrites.keys():
-            
-            if (((actWriteKey in endpointGlobSharedWriteVars) and
-                 (endpointGlobSharedWriteVars[actWriteKey] > 0)) or
-
-                ((actWriteKey in endpointGlobSharedReadVars) and
-                 (endpointGlobSharedReadVars[actWriteKey] > 0))):
-
-                return False,None;
-
         # no conflict, can add event.
         for actReadKey in self.activeGlobReads.keys():
             # have to do additional check because there is a chance
@@ -798,6 +858,7 @@ class _ActiveEvent(object):
         
         self.active = True;
         return True,eventContext;
+
         
     def cancelActiveEvent(self):
         '''
@@ -1040,9 +1101,16 @@ class _Endpoint(object):
         
         @returns Nothing
         '''
-        #### DEBUG
-        self._checkHasActiveEvent(activeEventId,'_postponeActiveEvent');
-        #### END DEBUG
+        # note we are not guaranteed to have the event in our event
+        # dictionary.  this can occur if two endpoints try to initiate
+        # an event that uses colliding reads/writes at the same time.
+        # in this case, we will receive a not accepted message that
+        # triggers _postponeActiveEvent.  However, this side may have
+        # already postponed the event when it received the message
+        # from the other side initiating its event.
+
+        if (not (activeEventId in self._activeEventDict)):
+            return;
 
         actEventDictObj = self._activeEventDict[activeEventId];
         actEvent = actEventDictObj.actEvent;
@@ -1147,7 +1215,7 @@ class _Endpoint(object):
             if inactiveEvent.active:
                 continue;
 
-            eventAdded, context = inactiveEvent.addEventToEndpointIfCan();
+            eventAdded, context = inactiveEvent.addEventToEndpointIfCan(False,True);
             if eventAdded:
                 self._unlock();
                 self._executeActive(
@@ -1401,7 +1469,17 @@ class _Endpoint(object):
             # a new context and then update it rather than passing
             # in the context that we were given (in its dictionary
             # form).
-            eventAdded,eventContext = actEvent.addEventToEndpointIfCan();
+
+            # To avoid livelock where both sides keep trying to
+            # initiate an event, and both sides keep backing it out
+            # and retrying, the endpoint with the higher priority can
+            # force its event to be processed at the expense of the
+            # endpoint with lower priority.  In this case,
+            # forceAddition is True, and all events that conflicted
+            # are postponed.
+            forceAddition = self._myPriority < self._theirPriority;
+            eventAdded,eventContext = actEvent.addEventToEndpointIfCan(
+                forceAddition);
 
             self._unlock();
 
