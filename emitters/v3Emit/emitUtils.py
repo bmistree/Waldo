@@ -127,3 +127,22 @@ def _convertSrcFuncNameToInternal(fname):
     '''
     return '_' + fname;
 
+
+
+class EmitContext(object):
+    '''
+    Gets passed around in actual emitting code.  The flags that it
+    wraps are used to change behavior of emitter.  (For instance, if
+    we see a collision flag, then we insert time.sleeps into the code
+    after message sends to try to increase likelihood that two
+    transactions will collide and one will have to be backed out.)
+    '''
+
+    def __init__(self,collisionFlag):
+        '''
+        @param {bool} collisionFlag --- If true, then insert
+        time.sleeps into the code after message sends to try to
+        increase likelihood that two transactions will collide and one
+        will have to be backed out.
+        '''
+        self.collisionFlag = collisionFlag;
