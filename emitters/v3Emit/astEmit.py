@@ -19,11 +19,14 @@ from eventDependencies import specifyDependencies;
 from emitEndpoints import emitEndpoints;
 
 
-def astEmit(astRootNode):
+def astEmit(astRootNode,emitContext):
     '''
     @pararm {AstNode} astRootNode --- The root node of the ast that
     was generated from the source text after it has been type checked,
     but before it has been sliced.
+
+    @param {EmitContext object} emitContext --- @see class EmitContext
+    in emitUtils.py
     
     @returns {String or None} ---- String if succeeded, none if
     failed.
@@ -47,10 +50,9 @@ def astEmit(astRootNode):
     # the slicer created
     returner += specifyDependencies(fdepDict);
 
-    returner += emitEndpoints(astRootNode,fdepDict);
-    # # now actually emit each endpoint object (including user-defined
-    # # functions specified in program source text).
-    # returner += _astEmit(astRootNode,fdepDict);
+    # now actually emit each endpoint object (including user-defined
+    # functions specified in program source text).
+    returner += emitEndpoints(astRootNode,fdepDict,emitContext);
     
     return returner;
 

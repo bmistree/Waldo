@@ -15,7 +15,7 @@ sys.path.append(os.path.join(curDir,'..','..','slice','typeStack'));
 from typeStack import TypeStack;
 
 
-def emit(endpointName,astNode,fdepDict):
+def emit(endpointName,astNode,fdepDict,emitContext):
     returner = '';
 
 
@@ -24,12 +24,12 @@ def emit(endpointName,astNode,fdepDict):
         #   shared{ Nothing controls someNum = 0;}
         #   self._committedContext.shareds['1__someNum'];
         identifierNode = astNode.children[2];
-        returner += emit(endpointName,identifierNode,fdepDict);
+        returner += emit(endpointName,identifierNode,fdepDict,emitContext);
         
         if len(astNode.children) == 4:
             # means have initialization information
             returner += ' = ';
-            returner += emit(endpointName,astNode.children[3],fdepDict);
+            returner += emit(endpointName,astNode.children[3],fdepDict,emitContext);
 
     elif astNode.label == AST_IDENTIFIER:
         astNode._debugErrorIfHaveNoAnnotation(
@@ -59,20 +59,20 @@ def emit(endpointName,astNode,fdepDict):
             assert(False);        
 
     elif astNode.label == AST_FUNCTION_CALL:
-        returner += _emitFunctionCall(endpointName,astNode,fdepDict);
+        returner += _emitFunctionCall(endpointName,astNode,fdepDict,emitContext);
 
             
     elif astNode.label == AST_ASSIGNMENT_STATEMENT:
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
-        returner += emit(endpointName,lhsNode,fdepDict);
+        returner += emit(endpointName,lhsNode,fdepDict,emitContext);
         returner += ' = ';
-        returner += emit(endpointName,rhsNode,fdepDict);
+        returner += emit(endpointName,rhsNode,fdepDict,emitContext);
 
     elif astNode.label == AST_PRINT:
         toPrintNode = astNode.children[0];
         returner += 'print( ';
-        returner += emit(endpointName,toPrintNode,fdepDict);
+        returner += emit(endpointName,toPrintNode,fdepDict,emitContext);
         returner += ')';
         
         
@@ -80,12 +80,12 @@ def emit(endpointName,astNode,fdepDict):
         # could either be a shared or local variable.  use annotation
         # to determine.
         identifierNode = astNode.children[1];
-        returner += emit(endpointName,identifierNode,fdepDict);
+        returner += emit(endpointName,identifierNode,fdepDict,emitContext);
         if len(astNode.children) == 3:
             # includes initialization information
             initializationNode = astNode.children[2];
             returner += ' = ';
-            returner += emit(endpointName,initializationNode,fdepDict);
+            returner += emit(endpointName,initializationNode,fdepDict,emitContext);
 
     elif astNode.label == AST_BOOL:
         returner +=  astNode.value + ' ';
@@ -100,7 +100,7 @@ def emit(endpointName,astNode,fdepDict):
         # handle list literal
         returner += '[ ';
         for child in astNode.children:
-            returner += emit(endpointName,child,fdepDict);
+            returner += emit(endpointName,child,fdepDict,emitContext);
             returner += ', ';
         returner += '] ';
 
@@ -108,21 +108,21 @@ def emit(endpointName,astNode,fdepDict):
         # handle map literal
         returner += '{ ';
         for mapLiteralItem in astNode.children:
-            returner += emit(endpointName,mapLiteralItem,fdepDict);
+            returner += emit(endpointName,mapLiteralItem,fdepDict,emitContext);
             returner += ', ';
         returner += '} ';
 
     elif astNode.label == AST_FUNCTION_BODY_STATEMENT:
         for child in astNode.children:
-            returner += emit(endpointName,child,fdepDict);
+            returner += emit(endpointName,child,fdepDict,emitContext);
         
     elif astNode.label == AST_MAP_ITEM:
         # individual entry of map literal
         keyNode = astNode.children[0];
         valNode = astNode.children[1];
         
-        keyText = emit(endpointName,keyNode,fdepDict);
-        valText = emit(endpointName,valNode,fdepDict);
+        keyText = emit(endpointName,keyNode,fdepDict,emitContext);
+        valText = emit(endpointName,valNode,fdepDict,emitContext);
         returner += keyText + ': ' + valText;
 
     elif astNode.label == AST_RETURN_STATEMENT:
@@ -131,7 +131,7 @@ def emit(endpointName,astNode,fdepDict):
         if isEmptyNode(retStatementNode):
             toReturnStatementText = 'None';
         else:
-            toReturnStatementText = emit(endpointName,retStatementNode,fdepDict);
+            toReturnStatementText = emit(endpointName,retStatementNode,fdepDict,emitContext);
 
         # need to special-case return statement so that can notify
         # waiting blocking statement through return queue.
@@ -149,8 +149,8 @@ elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
 
-        lhsText = emit(endpointName,lhsNode,fdepDict);
-        rhsText = emit(endpointName,rhsNode,fdepDict);
+        lhsText = emit(endpointName,lhsNode,fdepDict,emitContext);
+        rhsText = emit(endpointName,rhsNode,fdepDict,emitContext);
         operatorText = _getBinaryOperatorFromLabel(astNode.label);
 
         returner += lhsText + operatorText + rhsText;
@@ -158,7 +158,7 @@ elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
     elif astNode.label == AST_LEN:
         lenArgNode = astNode.children[0];
         returner += 'len( ';
-        returner += emit(endpointName,lenArgNode,fdepDict);
+        returner += emit(endpointName,lenArgNode,fdepDict,emitContext);
         returner += ')';
 
     elif astNode.label == AST_RANGE:
@@ -167,11 +167,11 @@ elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
         incrementRangeNode = astNode.children[2];
 
         returner += 'range( ';
-        returner += emit(endpointName,bottomRangeNode,fdepDict);
+        returner += emit(endpointName,bottomRangeNode,fdepDict,emitContext);
         returner += ',';
-        returner += emit(endpointName,upperRangeNode,fdepDict);
+        returner += emit(endpointName,upperRangeNode,fdepDict,emitContext);
         returner += ',';
-        returner += emit(endpointName,incrementRangeNode,fdepDict);
+        returner += emit(endpointName,incrementRangeNode,fdepDict,emitContext);
         returner += ')';
         
     else:
@@ -237,10 +237,13 @@ def _getBinaryOperatorLabelDict():
 
 
 
-def _emitFunctionCall(endpointName,funcCallNode,fdepDict):
+def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     '''
     @param{AstNode} funcCallNode --- Should have label
     AST_FUNCTION_CALL
+
+    @param{EmitContext object} emitContext --- @see class EmitContext
+    in emitUtils.py
 
     @returns{String}
     '''
@@ -257,10 +260,23 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict):
     if funcNameNode.sliceAnnotationName != None:
         # means that this is a function object that we are making call
         # on....use its reference either as a shared, arg, global, etc.
-        returner += emit(endpointName,funcNameNode,fdepDict);
+        returner += emit(endpointName,funcNameNode,fdepDict,emitContext);
     else:
         # means that we are making a call to a statically, and
         # textually described function.
+
+        # first check if we are trying to induce a collision for
+        # debugging purposes.
+        if (emitContext.collisionFlag and
+            _isMessageSend(funcName,endpointName,fdepDict)):
+            returner += '\n#### DEBUG';
+            returner += '\n# compiled with collision flag.  inserting ';
+            returner += '\n# a _time.sleep call to try to get transactions ';
+            returner += '\n# to collide for debugging.';
+            returner += '\n#### END DEBUG';
+            returner += '\n_time.sleep(_COLLISION_TIMEOUT_VAL);\n\n';
+
+        
         returner += 'self.%s' % emitUtils._convertSrcFuncNameToInternal(funcName);
         
     returner += '(';
@@ -277,7 +293,7 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict):
         else:
             first = False;
 
-        returner += emit(endpointName,argNode,fdepDict);
+        returner += emit(endpointName,argNode,fdepDict,emitContext);
         returner += ',\n';
 
     if funcNameNode.sliceAnnotationName != None:
@@ -301,7 +317,8 @@ _msgReceivedContextId = _context.msgReceivedQueue.get();
 if _msgReceivedContextId != _context.id:
     raise _PostponeException(); # event postponed
 
-"""
+""";
+            
     return returner;
     
 

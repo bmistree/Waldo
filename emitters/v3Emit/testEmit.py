@@ -28,7 +28,7 @@ class StreamObj(object):
         return msg;
 
     
-def runText(progText):
+def runText(progText,emitContext):
     outputErrStream = StreamObj();
     rootNode = head.lexAndParse(progText,outputErrStream,2);
 
@@ -37,14 +37,14 @@ def runText(progText):
         print (outputErrStream.flush());
         return;
 
-    return astEmit.astEmit(rootNode);
+    return astEmit.astEmit(rootNode,emitContext);
 
 def run(srcFilename,compiledFilename,emitContext):
     filer = open(srcFilename,'r');
     progText = filer.read();
     filer.close();
 
-    compiled = runText(progText);
+    compiled = runText(progText,emitContext);
     if compiled == None:
         print('\nERROR COMPILING\n');
     else:

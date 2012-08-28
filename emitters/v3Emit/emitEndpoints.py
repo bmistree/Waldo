@@ -17,7 +17,7 @@ from waldoLex import ONCREATE_TOKEN;
 
 from emitUtils import _convertSrcFuncNameToInternal;
 
-def emitEndpoints(astRootNode,fdepDict):
+def emitEndpoints(astRootNode,fdepDict,emitContext):
     '''
     @returns {String}
     '''
@@ -26,14 +26,26 @@ def emitEndpoints(astRootNode,fdepDict):
     # get endpoint names to process
     endpointNames = _getEndpointNames(astRootNode);
 
+
+    # may require some additional setup depending on emit context
+    if emitContext.collisionFlag:
+        returner += '\n#### DEBUG';
+        returner += '\n# before the send of every message sequence, time.sleep this ';
+        returner += '\n# long to try to introduce collisions in transactions.';
+        returner += '\n_COLLISION_TIMEOUT_VAL = .4;';
+        returner += '\n#### END DEBUG\n\n';
     
-    returner += _emitEndpoint(endpointNames[0],astRootNode,fdepDict,0);
-    returner += _emitEndpoint(endpointNames[1],astRootNode,fdepDict,1);
+    returner += _emitEndpoint(
+        endpointNames[0],astRootNode,fdepDict,0,emitContext);
+    
+    returner += _emitEndpoint(
+        endpointNames[1],astRootNode,fdepDict,1,emitContext);
 
     return returner;
 
 
-def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
+def _emitEndpoint(
+    endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     '''
     Emits the endpoint class associated with the endpoint named
     endpointName
@@ -46,11 +58,14 @@ def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
     assymetries in endpoint construction.  For example, one enpdoint
     assigns event ids that are even and one assigns event ids that are
     odd.  This bit allows me to distinguish which endpoint I am emitting.
+
+    @param {EmitContext object} emitContext --- @see class EmitContext
+    in emitUtils.py
     '''
     returner = 'class ' + endpointName + '(_Endpoint):\n';
     # handle init
     returner += emitUtils.indentString(
-        _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint),
+        _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext),
         1);
     returner += '\n\n';
 
@@ -61,7 +76,7 @@ def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
     for funcNode in functionSectionNode.children:
         returner += emitUtils.indentString(
             _emitPublicPrivateOnCreateFunctionDefinition(
-                funcNode,endpointName,astRootNode,fdepDict),
+                funcNode,endpointName,astRootNode,fdepDict,emitContext),
             1);
         returner += '\n\n';
 
@@ -85,7 +100,7 @@ def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
     for msgFuncNodeSharedObj in allMessageFunctionNodes:
         returner += emitUtils.indentString(
             msgFuncNodeSharedObj.emitMessageFunctionDefinition(
-                endpointName,astRootNode,fdepDict),
+                endpointName,astRootNode,fdepDict,emitContext),
             1);
         returner += '\n\n';
         
@@ -93,7 +108,7 @@ def _emitEndpoint(endpointName,astRootNode,fdepDict,whichEndpoint):
 
 
 def _emitPublicPrivateOnCreateFunctionDefinition(
-            funcNode,endpointName,astRootNode,fdepDict):
+    funcNode,endpointName,astRootNode,fdepDict,emitContext):
     '''
     @param {AstNode} funcNode --- Should be the root node of the
     function we're trying to emit.  only valid labels are oncreate,
@@ -292,7 +307,7 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
 
     # start emitting actual body of the function.
     for statementNode in functionBodyNode.children:
-        funcBody += mainEmit.emit(endpointName,statementNode,fdepDict);
+        funcBody += mainEmit.emit(endpointName,statementNode,fdepDict,emitContext);
         funcBody += '\n';
 
     # force a return at end of function if did not encounter one
@@ -315,7 +330,7 @@ elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
 
     
 
-def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint):
+def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     '''
     For params, @see _emitEndpoint
 
@@ -471,10 +486,12 @@ _Endpoint.__init__(
 
     # handles shared
     initMethodBody += _emitInitSharedGlobalVariables(
-        endpointName,sharedIdentifiersToDeclNodesDict,astRootNode,fdepDict);
+        endpointName,sharedIdentifiersToDeclNodesDict,
+        astRootNode,fdepDict,emitContext);
     # handles endpoint global
     initMethodBody += _emitInitSharedGlobalVariables(
-        endpointName,globalIdentifiersToDeclNodesDict,astRootNode,fdepDict);
+        endpointName,globalIdentifiersToDeclNodesDict,
+        astRootNode,fdepDict,emitContext);
     initMethodBody += '\n\n';
 
     
@@ -558,23 +575,23 @@ class _MessageFuncNodeShared(object):
         self.nextToCallNode = nextToCallNode;
 
     def emitMessageFunctionDefinition(
-        self,endpointName,astRootNode,fdepDict):
+        self,endpointName,astRootNode,fdepDict,emitContext):
         '''
         Emits the definition of the message receieve or message send
         function node that this wraps
         '''
 
         if self.msgFuncNode.label== AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
-            return self._emitSend(endpointName,astRootNode,fdepDict);
+            return self._emitSend(endpointName,astRootNode,fdepDict,emitContext);
         elif self.msgFuncNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
-            return self._emitReceive(endpointName,astRootNode,fdepDict);
+            return self._emitReceive(endpointName,astRootNode,fdepDict,emitContext);
         else:
             errMsg = '\nBehram error: trying to emit a message function ';
             errMsg += 'that is not actually a message function.\n';
             print(errMsg);
             assert(False);
 
-    def _emitReceive(self,endpointName,astRootNode,fdepDict):
+    def _emitReceive(self,endpointName,astRootNode,fdepDict,emitContext):
         '''
         Should only be called when seqGlobalNode is
         AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION
@@ -644,7 +661,8 @@ if _context == None:
 
         # actually emit the body of the function
         for statementNode in functionBodyNode.children:
-            receiveBody += mainEmit.emit(endpointName,statementNode,fdepDict);
+            receiveBody += mainEmit.emit(
+                endpointName,statementNode,fdepDict,emitContext);
             receiveBody += '\n';
 
         receiveBody += self._msgSendSuffix(fdepDict);
@@ -653,7 +671,7 @@ if _context == None:
 
 
     
-    def _emitSend(self,endpointName,astRootNode,fdepDict):
+    def _emitSend(self,endpointName,astRootNode,fdepDict,emitContext):
         '''
         Should only be called when seqGlobalNode is a message send
         sequence function.
@@ -726,7 +744,7 @@ if _context == None:
 
         # need to perform initializations of sequence global data
         for declNode in self.seqGlobalNode.children:
-            sendBody += mainEmit.emit(endpointName,declNode,fdepDict);
+            sendBody += mainEmit.emit(endpointName,declNode,fdepDict,emitContext);
             sendBody += '\n';
 
         # need to put arguments into seqGlobals
@@ -745,7 +763,7 @@ if _context == None:
         # actually emit the body of the function
         sendBody += '# emitting body of send function.\n';
         for statementNode in functionBodyNode.children:
-            sendBody += mainEmit.emit(endpointName,statementNode,fdepDict);
+            sendBody += mainEmit.emit(endpointName,statementNode,fdepDict,emitContext);
             sendBody += '\n';
         
         sendBody += self._msgSendSuffix(fdepDict);
@@ -916,7 +934,7 @@ def _getFunctionSectionNode(endpointName,astRootNode):
     
 
 def _emitInitSharedGlobalVariables(
-    endpointName,idsToDeclNodesDict,astRootNode,fdepDict):
+    endpointName,idsToDeclNodesDict,astRootNode,fdepDict,emitContext):
     '''
     Inside of init function of each endpoint class, need to initialize
     shared variables and endpoint global variables with their initial
@@ -925,7 +943,7 @@ def _emitInitSharedGlobalVariables(
     returner = '';
     for _id in idsToDeclNodesDict:
         declNode = idsToDeclNodesDict[_id];
-        returner += mainEmit.emit(endpointName,declNode,fdepDict);
+        returner += mainEmit.emit(endpointName,declNode,fdepDict,emitContext);
         returner += '\n';
     return returner;
     
