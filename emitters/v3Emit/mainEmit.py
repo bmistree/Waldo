@@ -265,16 +265,25 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
         # means that we are making a call to a statically, and
         # textually described function.
 
-        # first check if we are trying to induce a collision for
-        # debugging purposes.
-        if (emitContext.collisionFlag and
-            _isMessageSend(funcName,endpointName,fdepDict)):
-            returner += '\n#### DEBUG';
-            returner += '\n# compiled with collision flag.  inserting ';
-            returner += '\n# a _time.sleep call to try to get transactions ';
-            returner += '\n# to collide for debugging.';
-            returner += '\n#### END DEBUG';
-            returner += '\n_time.sleep(_COLLISION_TIMEOUT_VAL);\n\n';
+
+        if _isMessageSend(funcName,endpointName,fdepDict):
+            # set the context messageSent field to True.
+            returner += "\n# set context's messageSent field to True.  ";
+            returner += "\n# that way ensures that after event completes, ";
+            returner += "\n# may notify other side to release the read/write ";
+            returner += "\n# locks it is holding for event's variables, and also ";
+            returner += "\n# to commit final context.\n";
+            returner += '_context.messageSent = True;\n';
+            
+            if emitContext.collisionFlag:
+                # we are trying to induce a collision for debugging
+                # purposes.
+                returner += '\n#### DEBUG';
+                returner += '\n# compiled with collision flag.  inserting ';
+                returner += '\n# a _time.sleep call to try to get transactions ';
+                returner += '\n# to collide for debugging.';
+                returner += '\n#### END DEBUG';
+                returner += '\n_time.sleep(_COLLISION_TIMEOUT_VAL);\n\n';
 
         funcCallText = 'self.%s' % emitUtils._convertSrcFuncNameToInternal(funcName);
 

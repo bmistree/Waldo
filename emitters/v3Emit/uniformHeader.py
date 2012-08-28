@@ -189,6 +189,18 @@ class _Context(object):
         
         self.id = None;
 
+        # for active events, we need to know whether to send a release
+        # event sentinel to the other side.
+        # The conditions under which we do this are:
+        #    1: At some point across the event, we sent the other side
+        #       a message
+        #    2: Our event has run to completion.
+        #
+        # The messageSent flag handles the first of these conditions.
+        # It gets set to true any time we send a message to the other
+        # side.
+        self.messageSent = False;
+
         
     def mergeContextIntoMe(self,otherContext):
         '''
@@ -491,6 +503,17 @@ class _Message(object):
         return returner;
 
     @staticmethod
+    def eventReleaseMsg(context,activeEvent):
+        '''
+        Constructs a message dictionary that can be sent to the other
+        endpoint telling it that the event that it is actively
+        processing has completed.
+        '''
+        return _Message._endpointMsg(
+            context,activeEvent,_Message.RELEASE_EVENT_SENTINEL);
+
+
+    @staticmethod
     def _endpointMsg(context,activeEvent,controlMsg):
         '''
         Constructs a message dictionary that can be sent to the other
@@ -633,6 +656,17 @@ class _ActiveEvent(object):
         # now actually commit the context
         self.endpoint._commitActiveEvent(self,context);
         self.endpoint._unlock();
+
+        # now send a release message to the other side if this event
+        # sent a message as it was processing the active event.
+        # this ensures that the other side will:
+        #   1: release the read/write locks on the variables that it
+        #      had been holding
+        #   2: update itself with the most recent context.
+        if context.messageSent:
+            self.endpoint._writeMsg (
+                _Message.eventReleaseMsg(context,self)  );
+
         return True;
 
 
@@ -1036,10 +1070,10 @@ class _Endpoint(object):
 
     def _commitActiveEvent(self,activeEvent,contextToCommit):
         '''
+        SHOULD ONLY BE CALLED FROM WITHIN LOCKED CODE
+
         Takes all outstanding data in the active event's context and
         translates it into committed context.
-
-        SHOULD ONLY BE CALLED FROM WITHIN LOCKED CODE
         '''
         #### DEBUG
         self._checkHasActiveEvent(activeEvent.id,'_commitActiveEvent');
@@ -1128,9 +1162,46 @@ class _Endpoint(object):
         return self._lastIdAssigned;
 
 
+    def _processReleaseEventSentinel(self,eventId,contextData):
+        '''
+        SHOULD BE CALLED FROM OUTSIDE LOCK
+        
+        The other side is telling us that we can remove the read/write
+        locks for event with id eventId and commit all data in the
+        context contextData.
+        '''
+        #### DEBUG
+        self._checkHasActiveEvent(eventId,'_processReleaseEventSentinel');
+        #### END DEBUG
+            
+        self._lock();
+
+        #### DEBUG
+        if (not (eventId in self._activeEventDict)):
+            errMsg = '\nBehram error: Should only be asked ';
+            errMsg += 'to process a release event for an event ';
+            errMsg += 'we already have.\n';
+            print(errMsg);
+            assert(False);
+        #### END DEBUG
+
+        # get active element from dict
+        actEventElement = self._activeEventDict[eventId];
+        actEvent = actEventElement.actEvent;
+        
+        # update the committed context
+        context = actEventElement.eventContext;
+        context.updateEnvironmentData(contextData,self);
+
+        # commit the context data, release read/write locks, and
+        # remove the active event from the dict.
+        self._commitActiveEvent(actEvent,context);
+        self._unlock();
+
+
     def _processSequenceSentinelFinished(self,eventId,contextData):
         '''
-        SHOULD BE CALLED FROM WITHIN LOCK
+        SHOULD BE CALLED FROM OUTSIDE OF LOCK
         
         Gets called whenever we receive a message with its control
         field set to MESAGE_SEQUENCE_SENTINEL_FINISHED.
@@ -1254,13 +1325,11 @@ class _Endpoint(object):
         contextData = msg[_Message.CONTEXT_FIELD];
         eventName = msg[_Message.EVENT_NAME_FIELD];
 
-
         if ctrlMsg == _Message.RELEASE_EVENT_SENTINEL:
-            # means that we should commit the specified
-            # outstanding event.
-            self._lock();
-            self._sequenceFinished(eventId,contextData);
-            self._unlock();
+            # means that we should commit the specified outstanding
+            # event and release read/write locks that the event was
+            # holding.
+            self._processReleaseEventSentinel(eventId,contextData);
             self._tryNextEvent();
             return;
 
