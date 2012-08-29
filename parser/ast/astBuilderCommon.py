@@ -653,7 +653,7 @@ def p_AssignmentStatement(p):
     p[0].addChildren([p[1],p[3]]);
 
     
-    
+
 def p_ReturnableExpression(p):
     '''ReturnableExpression : LEFT_PAREN ReturnableExpression RIGHT_PAREN BinaryOperator ReturnableExpression
                             | ParenthesizedExpression
@@ -680,9 +680,10 @@ def p_BinaryOperator(p):
     p[0] = p[1];
 
 def p_ParenthesizedExpression(p):
-    '''ParenthesizedExpression : NOT ParenthesizedExpression
+    '''ParenthesizedExpression : NOT ReturnableExpression
                                | InternalReturnableExpression
     '''
+    
     if (len(p) == 3):
         p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(1),p.lexpos(1));
         p[0].addChild(p[2]);
@@ -692,7 +693,7 @@ def p_ParenthesizedExpression(p):
         errPrint('\nIncorrect matching in ReturnableExpression\n');
         assert(False);
 
-        
+
 
 def p_InternalReturnableExpression(p):    
     '''InternalReturnableExpression : NonBooleanStatement BooleanOperator InternalReturnableExpression
