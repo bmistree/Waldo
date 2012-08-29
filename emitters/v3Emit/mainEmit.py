@@ -18,7 +18,6 @@ from typeStack import TypeStack;
 def emit(endpointName,astNode,fdepDict,emitContext):
     returner = '';
 
-
     if astNode.label == AST_ANNOTATED_DECLARATION:
         # it's a shared variable
         #   shared{ Nothing controls someNum = 0;}
@@ -61,7 +60,14 @@ def emit(endpointName,astNode,fdepDict,emitContext):
     elif astNode.label == AST_FUNCTION_CALL:
         returner += _emitFunctionCall(endpointName,astNode,fdepDict,emitContext);
 
-
+    elif astNode.label == AST_BRACKET_STATEMENT:
+        indexedIntoNode = astNode.children[0];
+        indexNode = astNode.children[1];
+        returner += emit(endpointName,indexedIntoNode,fdepDict,emitContext);
+        returner += '[';
+        returner += emit(endpointName,indexNode,fdepDict,emitContext);
+        returner += ']';
+        
     elif astNode.label == AST_TOTEXT_FUNCTION:
         toTextArgNode = astNode.children[0];
         

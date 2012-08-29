@@ -266,8 +266,8 @@ def slicer(node,functionDeps=None,typeStack=None):
           (node.label == AST_IF_STATEMENT) or (node.label == AST_ELSE_IF_STATEMENTS) or
           (node.label == AST_ELSE_IF_STATEMENT) or (node.label == AST_ELSE_STATEMENT) or
           (node.label == AST_NOT_EXPRESSION) or (node.label == AST_BOOLEAN_CONDITION) or
-          (node.label == AST_LIST)  or (node.label == AST_MAP) or
-          (node.label == AST_BRACKET_STATEMENT)):
+          (node.label == AST_LIST)  or (node.label == AST_MAP) or (node.label == AST_LEN) or
+          (node.label == AST_BRACKET_STATEMENT) or (node.label == AST_RANGE)):
         # nothing to do on unary operators
         for child in node.children:
             slicer(child,functionDeps,typeStack);

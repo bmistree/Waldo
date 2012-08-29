@@ -141,14 +141,19 @@ def _emitPublicPrivateOnCreateFunctionDefinition(
 # ... that way know that the function call happened from
 # external caller and don't have to generate new function
 # calls for it.
-_returner = self.%s(
-    _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,
+_returner = self.%s('''% _convertSrcFuncNameToInternal(funcName);
+
+        # insert in function arguments
+        for argName in funcArguments:
+            publicMethodBody += argName + ',';
+
+        publicMethodBody += '''_Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,
     None,None);
 
 # should check if there are other active events
 self._tryNextEvent();
 return _returner;
-''' % _convertSrcFuncNameToInternal(funcName);
+''';
 
         returner += emitUtils.indentString(publicMethodBody,1);
         returner += '\n';
