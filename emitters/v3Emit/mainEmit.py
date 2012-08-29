@@ -61,7 +61,92 @@ def emit(endpointName,astNode,fdepDict,emitContext):
     elif astNode.label == AST_FUNCTION_CALL:
         returner += _emitFunctionCall(endpointName,astNode,fdepDict,emitContext);
 
+
+    elif astNode.label == AST_CONDITION_STATEMENT:
+        for child in astNode.children:
+            returner += emit(endpointName,child,fdepDict,emitContext);
+
+    elif ((astNode.label == AST_IF_STATEMENT) or
+          (astNode.label == AST_ELSE_IF_STATEMENT)):
+
+        if (astNode.label == AST_IF_STATEMENT):
+            condHead = 'if ';
+        elif(astNode.label == AST_ELSE_IF_STATEMENT):
+            condHead = 'elif ';
+        else:
+            errMsg = '\nBehram error: got an unknown condition label ';
+            errMsg += 'in runFunctionBodyInternalEmit.\n';
+            errPrint(errMsg);
+            assert(False);
             
+        booleanConditionNode = astNode.children[0];
+        condBodyNode = astNode.children[1];
+
+        # handle putting togther the if/elif predicate
+        boolCondStr = emit(
+            endpointName,booleanConditionNode,fdepDict,emitContext);
+        returner += condHead + boolCondStr + ':';
+
+        # handle putting together the if/else if statement body
+        condBodyStr = '';
+        if not isEmptyNode(condBodyNode):
+            # occasionally, have empty bodies for if/else if
+            # statements.
+            condBodyStr = emit(endpointName,condBodyNode,fdepDict,emitContext);
+        if condBodyStr == '':
+            condBodyStr = 'pass;';
+
+        returner += '\n';
+        returner += emitUtils.indentString(condBodyStr,1);
+
+    elif astNode.label == AST_ELSE_STATEMENT:
+        if (len(astNode.children) == 0):
+            return '';
+        
+        elseHeadStr = 'else: \n';
+        elseBodyNode = astNode.children[0];
+
+        # handles empty body for else statement
+        elseBodyStr = '';
+        if not isEmptyNode(elseBodyNode):
+            elseBodyStr = emit(endpointName,elseBodyNode,fdepDict,emitContext);
+        if elseBodyStr == '':
+            elseBodyStr = 'pass;';
+
+        returner += elseHeadStr;
+        returner += emitUtils.indentString(elseBodyStr,1);
+
+    elif astNode.label == AST_ELSE_IF_STATEMENTS:
+        for childNode in astNode.children:
+            returner += emit(endpointName,childNode,fdepDict,emitContext);
+            returner += '\n';
+
+
+    elif astNode.label == AST_BOOLEAN_CONDITION:
+        childNode = astNode.children[0];
+        returner += emit(
+            endpointName,childNode,fdepDict,emitContext);
+
+
+    elif astNode.label == AST_FUNCTION_BODY_STATEMENT:
+        for childNode in astNode.children:
+            returner += emit(endpointName,childNode,fdepDict,emitContext);
+
+    elif astNode.label == AST_FUNCTION_BODY:
+
+        fromBodyString = '';
+        for childNode in astNode.children:
+            
+            funcStatementString = emit(endpointName,childNode,fdepDict,emitContext);
+            if (len(funcStatementString) != 0):
+                fromBodyString += funcStatementString;
+                fromBodyString += '\n';
+                
+        if len(fromBodyString) == 0:
+            returner += 'pass;'; # takes care of blank function bodies.
+        else:
+            returner += fromBodyString;
+
     elif astNode.label == AST_ASSIGNMENT_STATEMENT:
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
