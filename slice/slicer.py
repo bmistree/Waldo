@@ -98,7 +98,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         # create a new function dependency on the stack.
         fDep = FunctionDeps(typeStack.hashFuncName(funcName),
                             funcName,typeStack.mEndpointName,
-                            node);
+                            node,False);
         functionDeps.append(fDep);
 
         
@@ -322,6 +322,12 @@ def slicer(node,functionDeps=None,typeStack=None):
         msgBodyNode = node.children[2];
         for childNode in msgBodyNode.children:
             slicer(childNode,functionDeps,typeStack);
+
+    elif node.label == AST_ONCOMPLETE_FUNCTION:
+        onCompleteBodyNode = node.children[2];
+        for childNode in onCompleteBodyNode.children:
+            slicer(childNode,functionDeps,typeStack);
+
             
     elif node.label == AST_IDENTIFIER:
         identifierName = node.value;
@@ -422,7 +428,8 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             identifierNode = funcDeclArgNode.children[1];
             identifierName = identifierNode.value;
             newNtt = typeStack1.addIdentifier(
-                identifierName,isMute,TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT);
+                identifierName,isMute,
+                TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT);
             
             typeStack2.addIdentifierAsNtt(newNtt);
             functionArgs.append(newNtt);
@@ -430,8 +437,6 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             # does not matter which type stack annotates the node
             typeStack2.annotateNode(identifierNode,identifierName);
 
-            
-        
         # want to ensure that the first function has all the
         # read/write dependencies.  Need to know which type stack to
         # use for it.
@@ -455,19 +460,34 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
         # function.  note: do not need to specially add arguments
         # because they're already in the context.
         for funcIndex in range(0,len(msgSeqFunctionsNode.children)):
-            # for each function, go through
-            typeStack = firstFuncEndpointTypeStack;
-            otherTypeStack = secondFuncEndpointTypeStack;
-            if funcIndex % 2 != 0:
-                typeStack = secondFuncEndpointTypeStack;
-                otherTypeStack = firstFuncEndpointTypeStack;
-
             funcNode = msgSeqFunctionsNode.children[funcIndex];
             funcName = funcNode.children[1].value;
             
-            fDep = FunctionDeps(typeStack.hashFuncName(funcName),
-                                funcName,typeStack.mEndpointName,
-                                funcNode);
+            endpointName = funcNode.children[0].value;
+            typeStack = secondFuncEndpointTypeStack;
+            otherTypeStack = firstFuncEndpointTypeStack;
+            if endpointName == firstFuncEndpointName:
+                typeStack = firstFuncEndpointTypeStack;
+                otherTypeStack = secondFuncEndpointTypeStack;
+
+
+            hashedFuncName = typeStack.hashFuncName(funcName);
+            isOnComplete = False;
+            if funcNode.label == AST_ONCOMPLETE_FUNCTION:
+                # need to give oncomplete functions special names so
+                # they do not collide.
+                isOnComplete = True;
+                msgSeqIdentifierNode = msgSeqNode.children[0];
+                hashedFuncName = typeStack.onCompleteHashFuncName(
+                    funcName,msgSeqIdentifierNode);
+
+                # annotate onComplete functions
+                typeStack.annotateOnComplete(funcNode,hashedFuncName);
+
+            fDep = FunctionDeps(hashedFuncName,funcName,
+                                typeStack.mEndpointName,
+                                funcNode,isOnComplete);
+            
             functionDeps.append(fDep);
 
             typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL,fDep);
@@ -492,11 +512,36 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
                 nextMsgFuncNode = msgSeqFunctionsNode.children[funcIndex+1];
                 nextMsgName = nextMsgFuncNode.children[1].value;
                 
+                hashedFuncNameNextCall = otherTypeStack.hashFuncName(
+                    nextMsgName);
+                
+                if nextMsgFuncNode.label == AST_ONCOMPLETE_FUNCTION:
+                    # use special function hashes for oncomplete
+                    # functions...can't just use the name
+                    # "oncomplete," because might conflict with
+                    # another sequence's onComplete
+                    msgSeqIdentifierNode = msgSeqNode.children[0];
+
+                    # need to ask the type stack associated with the
+                    # oncomplete function's endpoint to do the
+                    # hashing.  because oncomplete functions may
+                    # appear in arbitrary order, can't just assume
+                    # that otherTypeStack is the next onComplete
+                    # function's type stack.
+                    onCompleteEndpointIdentifierNode = nextMsgFuncNode.children[0];
+                    onCompleteEndpointName = onCompleteEndpointIdentifierNode.value;
+                    onCompleteOtherTypeStack = otherTypeStack;
+                    if otherTypeStack.mEndpointName != onCompleteEndpointName:
+                        onCompleteOtherTypeStack = typeStack;
+                    
+                    hashedFuncNameNextCall = onCompleteOtherTypeStack.onCompleteHashFuncName(
+                        nextMsgName,msgSeqIdentifierNode);
+
                 typeStack.addFuncCall(
-                    otherTypeStack.hashFuncName(nextMsgName),
-                    []);  # note, message sequence functions do not
-                          # take any arguments, so can just pass blank
-                          # array.
+                    hashedFuncNameNextCall,
+                    # note, message sequence functions do not take any
+                    # arguments, so can just pass blank array.
+                    []);  
 
             # remove the context added for latest function.
             typeStack.popContext();

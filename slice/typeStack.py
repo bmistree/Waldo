@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 import util;
+import os;
+import sys;
+
+curDir = os.path.dirname(__file__);
+sys.path.append(os.path.join(curDir,'..','parser','ast'));
+from astLabels import *;
 
 class TypeStack(object):
     IDENTIFIER_TYPE_SHARED = 0;
@@ -14,6 +20,8 @@ class TypeStack(object):
     # for the message sequence.
     IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT = 7;
     IDENTIFIER_TYPE_ENDPOINT_NAME = 8;
+
+    IDENTIFIER_TYPE_ONCOMPLETE_NODE = 9;
     
     def __init__(self,prevStack=None):
         self.stack  = []; #last element in array is always top of stack.
@@ -75,6 +83,25 @@ class TypeStack(object):
             ntt.varType,
             self._translateIdentifierTypeToHumanReadable(ntt.varType));
 
+
+    def annotateOnComplete(self,node,srcName):
+        '''
+        Each on complete node is annotated with the name of the
+        corresponding function to call in the emitted code to get it
+        to execute.
+        '''
+        if node.label != AST_ONCOMPLETE_FUNCTION:
+            errMsg = '\nBehram error: Require oncomplete node for annotation.\n';
+            print(errMsg);
+            assert(False);
+
+        annotationType = TypeStack.IDENTIFIER_TYPE_ONCOMPLETE_NODE;
+        node.setSliceAnnotation(
+            srcName,
+            annotationType,
+            self._translateIdentifierTypeToHumanReadable(annotationType));
+            
+
     def _translateIdentifierTypeToHumanReadable(self,annotateTypeHumanReadable):
         '''
         Convert an annotation type from an integer to a prose string.
@@ -97,6 +124,8 @@ class TypeStack(object):
             return '_msg_seq_global_and_func_arg';
         elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_ENDPOINT_NAME:
             return '_endpoint_';
+        elif annotateTypeHumanReadable == TypeStack.IDENTIFIER_TYPE_ONCOMPLETE_NODE:
+            return '_on_complete_';        
         
             
         errMsg = '\nBehram error in _translateIdentifierTypeToHumanReadable.  ';
@@ -121,6 +150,26 @@ class TypeStack(object):
             print(errMsg);
             assert(False);
         return self.mEndpointName + '_-_-_' + funcName;
+
+    def onCompleteHashFuncName(
+        self,nextMsgName,msgSeqIdentifierNode):
+        '''
+        @param {String} nextMsgName
+        @param {AstNode} identifier
+
+        Challenge with oncomplete functions is that we need to ensure
+        that when they are being emitted they have unique names.
+        Unlike other functions, onCompletes are named "onComplete,"
+        and therefore, we must do additional work to distinguish them.  
+
+        We can uniquely name an onComplete function using the
+        three-tuple onComplete_<enpdoint name>_<message sequence
+        name>, and that is what we return.
+        '''
+        msgSeqName = msgSeqIdentifierNode.value;
+        return '_onComplete_' + self.mEndpointName + '_' + msgSeqName;
+        
+        
 
     
     def getLabelAs(self):

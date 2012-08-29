@@ -12,7 +12,7 @@ class FunctionDeps(object):
     read set automatically gets added to the write set.
     '''
     
-    def __init__(self,funcName,srcFuncName,endpointName,funcNode):
+    def __init__(self,funcName,srcFuncName,endpointName,funcNode,isOnComplete):
         '''
         @param {String} funcName --- a name for this function that is
         guaranteed not to conflict with any other function.
@@ -20,12 +20,15 @@ class FunctionDeps(object):
         to function calls.
 
         @param {String} srcFuncName --- The name of this function as
-        it appears in the program source.
+        it appears in the program source.  
 
         @param {String} endpointName --- The name of the endpoint on
         which this function is defined.
 
-        @param {AstNode} funcNode
+        @param {AstNode} funcNode --- 
+
+        @param{Bool} isOnComplete --- True if this is an onCompleteFunction
+        
         '''
         
         # name to an array of NameTypeTuple-s each variable in here
@@ -63,6 +66,9 @@ class FunctionDeps(object):
         # id to return statement ntt
         self.returnStatements = {};
 
+        self.isOnComplete = isOnComplete;
+
+        
     def addReturnStatement(self,ntt):
         self.returnStatements[ntt.id] = ntt;
 
@@ -401,7 +407,8 @@ class FunctionDeps(object):
                 alreadyChecked[funcCallName] = True;
                 fdep = funcDepsDict.get(funcCallName,None);
                 if fdep == None:
-                    errMsg = '\nBehram error: Looking up function that ';
+                    errMsg = '\nBehram error: Looking up function named "';
+                    errMsg += funcCallName + '" that ';
                     errMsg += 'was not defined.\n';
                     print(errMsg);
                     assert(False);
