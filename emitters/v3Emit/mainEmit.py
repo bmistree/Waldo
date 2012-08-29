@@ -62,6 +62,14 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         returner += _emitFunctionCall(endpointName,astNode,fdepDict,emitContext);
 
 
+    elif astNode.label == AST_TOTEXT_FUNCTION:
+        toTextArgNode = astNode.children[0];
+        
+        returner += 'str(';
+        returner += emit(endpointName,toTextArgNode,fdepDict,emitContext);
+        returner += ')'; # closes str opening
+
+        
     elif astNode.label == AST_CONDITION_STATEMENT:
         for child in astNode.children:
             returner += emit(endpointName,child,fdepDict,emitContext);

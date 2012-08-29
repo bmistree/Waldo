@@ -356,9 +356,16 @@ def slicer(node,functionDeps=None,typeStack=None):
         # gets passed to emitter
         typeStack.annotateNode(nameNode,nodeName);
 
+    elif node.label == AST_NOT_EXPRESSION:
+        for child in node.children:
+            slicer(child,functionDeps,typeStack);
 
+    elif node.label == AST_TOTEXT_FUNCTION:
+        for child in node.children:
+            slicer(child,functionDeps,typeStack);
+            
     else:
-        print('\nBehram error: still need to process label for ' + node.label + '\n');
+        print('\nBehram error: in slicer, still need to process label for ' + node.label + '\n');
         for child in node.children:
             slicer(child,functionDeps,typeStack);
 
