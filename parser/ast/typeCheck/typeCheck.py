@@ -132,6 +132,20 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                           traceError.lineNos,progText);
         
 
+    elif node.label == AST_NOT_EXPRESSION:
+        childNode = node.children[0];
+        childNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+
+        node.lineNo = childNode.lineNo;
+        if childNode.type != TYPE_BOOL:
+            typeErrorMsg = 'Error in not expession.  You can only ';
+            typeErrorMsg += 'apply not to a TrueFalse.';
+            astLineNos = [node.lineNo];
+            errorFunction(typeErrorMsg,[childNode],astLineNos,progText);
+
+        node.type = TYPE_BOOL;
+
+            
     elif(node.label == AST_TRACE_SECTION):
         '''
         All the type rules of an ast trace section are:
