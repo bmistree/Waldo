@@ -268,12 +268,17 @@ def p_PrintCall(p):
     '''
     PrintCall : PRINT LEFT_PAREN ReturnableExpression RIGHT_PAREN
     '''
-
-    
     p[0] = AstNode(AST_PRINT,p.lineno(1),p.lexpos(1));
     p[0].addChild(p[3]);
 
 
+def p_RefreshCall(p):
+    '''
+    RefreshCall : REFRESH LEFT_PAREN RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_REFRESH,p.lineno(1),p.lexpos(1));
+
+    
 def p_ToTextCall(p):
     '''
     ToTextCall : TOTEXT LEFT_PAREN ReturnableExpression RIGHT_PAREN

@@ -15,7 +15,32 @@ _PROTOTYPE_EVENTS_DICT = {
 
 """;
 
+    # emit special-cased events for refresh keyword
+    refreshKeywordStr = """
+# load refresh events into dictionary
+# refresh by itself does not touch any data
+_REFRESH_KEY:_Event(
+    _REFRESH_KEY,
+    {}, 
+    {}, 
+    {}, 
+    {}, 
+    {}, 
+    None), 
 
+_REFRESH_RECEIVE_KEY: _Event(
+    _REFRESH_RECEIVE_KEY,
+    {}, 
+    {}, 
+    {}, 
+    {}, 
+    {}, 
+    None),
+
+""";
+    returner += emitUtils.indentString(refreshKeywordStr,1);
+
+    # now emit all user-defined events
     for eventName in fdepDict.keys():
         fdep = fdepDict[eventName];
         returner += _emitIndividualEvent(eventName,fdep,fdepDict,1);

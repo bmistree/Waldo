@@ -429,6 +429,16 @@ for _pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 ''';
     endpointFunctionNamesEventDict = _getEndpointFunctionNamesFromEndpointName(
         endpointName,astRootNode,fdepDict);
+
+    # add refresh functions to the execFromToInternalFuncDict
+    endpointFunctionNamesEventDict[
+        "'"+emitUtils._REFRESH_KEY+"'"] = (
+        "'" + emitUtils._REFRESH_SEND_FUNCTION_NAME + "'");
+        
+    endpointFunctionNamesEventDict[
+        "'" + emitUtils._REFRESH_RECEIVE_KEY + "'"] = (
+        "'" + emitUtils._REFRESH_RECEIVE_FUNCTION_NAME + "'");
+
     
     initMethodBody += emitUtils.createDictLiteralAssignment(
         '_execFromToInternalFuncDict',endpointFunctionNamesEventDict);

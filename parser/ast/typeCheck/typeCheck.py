@@ -145,7 +145,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         node.type = TYPE_BOOL;
 
-            
+        
     elif(node.label == AST_TRACE_SECTION):
         '''
         All the type rules of an ast trace section are:
@@ -350,6 +350,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         node.type = TYPE_NOTHING;
 
+    elif node.label == AST_REFRESH:
+        node.type = TYPE_NOTHING;
+        
     elif(node.label == AST_TOTEXT_FUNCTION):
         # check to ensure that it's passed a Text, TrueFalse, or a
         # Number.  If it is passed anything else, indicate that

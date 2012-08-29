@@ -13,6 +13,13 @@ from astLabels import *;
 sys.path.append(os.path.join(curDir,'..','..','parser','ast','typeCheck'));
 import templateUtil;
 
+
+_REFRESH_KEY = '______REFRESH_REQUEST_____';
+_REFRESH_RECEIVE_KEY = '______REFRESH_RECEIVE_REQUEST_____';
+_REFRESH_SEND_FUNCTION_NAME = '_refresh';
+_REFRESH_RECEIVE_FUNCTION_NAME = '_Text';
+
+
 def indentString(string,indentAmount):
     '''
     @param {String} string -- Each line in this string we will insert

@@ -117,6 +117,11 @@ def slicer(node,functionDeps=None,typeStack=None):
         slicer(funcBodyNode,functionDeps,typeStack);
                 
         typeStack.popContext();
+
+    elif node.label == AST_REFRESH:
+        # don't need to do anything for refresh statement.
+        # it doesn't touch any additional data
+        pass;
         
     elif node.label == AST_ENDPOINT_GLOBAL_SECTION:
         # note: do not pop the context, because want globals to always

@@ -180,6 +180,18 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         returner += emit(endpointName,toPrintNode,fdepDict,emitContext);
         returner += ')';
         
+    elif astNode.label == AST_REFRESH:
+        returner += '\n';
+        returner += '_context.messageSent = True;\n';
+        returner += 'self.%s' % emitUtils._REFRESH_SEND_FUNCTION_NAME;
+        returner += '''(_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,
+                _actEvent,
+                _context)
+''';
+        
+        # need to wait until sync has completed
+        returner += '\n';
+        returner +=  _messageSendBlockingCode();
         
     elif astNode.label == AST_DECLARATION:
         # could either be a shared or local variable.  use annotation
@@ -427,17 +439,26 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             # if this is a call to a message function, need to block
             # until completes.
             returner += '\n';
-            returner += """
+            returner += _messageSendBlockingCode();
+
+            
+    return returner;
+
+def _messageSendBlockingCode():
+    '''
+    Whenever we call a message send function (either user-defined or
+    from a refresh call), the function that calls it needs to wait
+    until the message sequence has finished.  This code handles the
+    wait.
+    '''
+    return """
 # wait on message reception notification from other side
 # and check if we had to postpone the event
 _msgReceivedContextId = _context.msgReceivedQueue.get();
 if _msgReceivedContextId != _context.id:
     raise _PostponeException(); # event postponed
 
-""";
-            
-    return returner;
-    
+""";    
 
 
 def _isMessageSend(funcName,endpointName,fdepDict):

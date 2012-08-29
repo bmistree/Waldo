@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import emitUtils;
 
 def uniformHeader():
     '''    
@@ -13,8 +14,6 @@ def uniformHeader():
     
     @returns {String} --- The beginning of a Waldo file common to all
     Waldo files regardless of source text.
-
-    
     '''
     
     return r"""#!/usr/bin/env python
@@ -87,7 +86,16 @@ during the course of its execution completes.
 This strategy can be particularly problematic if a lot of work was
 backloaded to the end of the function because we lock a lot of data
 that we do not really need.
-'''
+'''""" + """
+
+# special-casing keys for the refresh keyword
+_REFRESH_KEY = '%s';
+_REFRESH_RECEIVE_KEY = '%s';
+_REFRESH_SEND_FUNCTION_NAME = '%s';
+_REFRESH_RECEIVE_FUNCTION_NAME = '%s';
+""" % (emitUtils._REFRESH_KEY,emitUtils._REFRESH_RECEIVE_KEY,
+       emitUtils._REFRESH_SEND_FUNCTION_NAME,
+       emitUtils._REFRESH_RECEIVE_FUNCTION_NAME) + r"""
 
 def _deepCopy(srcDict,dstDict,fieldNamesToSkipCopy=None):
     '''
@@ -1557,6 +1565,74 @@ class _Endpoint(object):
             print(errMsg);
             assert(False);
     #### END DEBUG
+
+    #### Special-cased refresh operations.
+    def _refresh(self,_callType,_actEvent=None,_context=None):
+        '''
+        Each endpoint comes prepopulated with the ability to send
+        empty messages from one side to the other in order to refresh
+        shared and global variables.
+
+        This is the msg send function for the refresh statment
+        '''
+        #### DEBUG
+        if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+            errMsg = '\nBehram error.  A message send function for now must be ';
+            errMsg += 'called with an internally_called _callType.\n';
+            print(errMsg);
+            assert(False);
+
+        if _actEvent == None:
+            errMsg = '\nBehram error.  A message send function was ';
+            errMsg += 'called without an active event.\n';
+            print(errMsg);
+            assert(False);
+
+        if _context == None:
+            errMsg = '\nBehram error.  A message send function was called ';
+            errMsg += 'without a context.\n';
+            print(errMsg);
+            assert(False);
+        #### END DEBUG
+
+        # request the other side to receive refresh
+        self._writeMsg(_Message._endpointMsg(_context,_actEvent,_REFRESH_RECEIVE_KEY));
+
+    def _Text(self,_callType,_actEvent=None,_context=None):
+        '''
+        The refresh receive method.  using the name _Text to ensure no
+        collision with user-defined functions
+        '''
+        #### DEBUG
+        if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+            errMsg = '\nBehram error.  A message receive function was ';
+            errMsg += 'called without an internally_called _callType.\n';
+            print(errMsg);
+            assert(False);
+
+        if _actEvent == None:
+            errMsg = '\nBehram error.  A message receive function was ';
+            errMsg += 'called without an active event.\n';
+            print(errMsg);
+            assert(False);
+
+        if _context == None:
+            errMsg = '\nBehram error.  A message receive function was called ';
+            errMsg += 'without a context.\n';
+            print(errMsg);
+            assert(False);
+        #### END DEBUG
+
+        #### Unique to last sequence
+        # tell other side that the sequence is finished and tell our
+        # event that it should no longer wait on the message sequence
+        # to complete.  Note that should not have to do two of these.
+        # Should only have to do one.  But does not hurt to do both.
+        self._writeMsg(_Message._endpointMsg(_context,_actEvent,
+                                             _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH));
+
+        _context.signalMessageSequenceComplete(_context.id);
+
 
 """;
 

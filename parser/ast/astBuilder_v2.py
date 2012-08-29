@@ -195,6 +195,7 @@ def p_FunctionBodyStatement(p):
 def p_NonOperatableOn(p):
     '''
     NonOperatableOn : PrintCall
+                    | RefreshCall
     '''
     #cannot use operators between PrintCall and message literal (they
     #are not operatable on).  Everything in OperatableOn we can put
