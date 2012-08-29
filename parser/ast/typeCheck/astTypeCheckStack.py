@@ -9,6 +9,7 @@ from astLabels import TYPE_FUNCTION;
 from astLabels import AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
 from astLabels import AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION;
 
+from astLabels import AST_ONCOMPLETE_FUNCTION;
 from astLabels import AST_RETURN_STATEMENT;
 from astLabels import AST_PUBLIC_FUNCTION;
 from astLabels import AST_PRIVATE_FUNCTION;
@@ -139,7 +140,8 @@ class TypeCheckContextStack(object):
         if ((node.label != AST_PUBLIC_FUNCTION) and (node.label != AST_PRIVATE_FUNCTION) and
             (node.label != AST_ONCREATE_FUNCTION) and
             (node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION ) and
-            (node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
+            (node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION) and
+            (node.label != AST_ONCOMPLETE_FUNCTION)):
             
             errMsg = '\nBehram error: adding internal or public node with incorrect ';
             errMsg += 'type.\n';

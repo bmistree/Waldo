@@ -1,0 +1,35 @@
+*************************
+Error: You must specify your onComplete function after your other message 
+sequence functions. 
+-------
+Line numbers:
+23
+24
+-------
+Program text:
+
+
+
+20        HighPriority.a() {}
+21    
+22        LowPriority.b    {}
+23*       HighPriority.onComplete {}          
+24        HighPriority.b   {}
+25    
+26    }
+27    
+
+
+
+21    
+22        LowPriority.b    {}
+23        HighPriority.onComplete {}          
+24*       HighPriority.b   {}
+25    
+26    }
+27    
+28    
+*************************
+
+
+

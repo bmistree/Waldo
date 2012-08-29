@@ -103,13 +103,17 @@ def p_MessageSequenceGlobalSection(p):
     if (len(p) == 4):
         p[0].addChildren(p[3].getChildren());
 
+        
 def p_MessageSequenceFunctions(p):
-    '''MessageSequenceFunctions : MessageSendSequenceFunction MessageReceiveSequenceFunctions
     '''
+    MessageSequenceFunctions : MessageSendSequenceFunction MessageReceiveSequenceFunctions
+    '''
+    
     p[0] = AstNode(AST_MESSAGE_SEQUENCE_FUNCTIONS,p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);
     p[0].addChildren(p[2].getChildren());
 
+    
 def p_MessageSendSequenceFunction(p):
     '''
     MessageSendSequenceFunction : Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
@@ -146,8 +150,15 @@ def p_MessageReceiveSequenceFunction(p):
 
                                    | Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
                                    | Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                                   | OnCompleteFunction
                                    
     '''
+
+    if len(p) == 2:
+        # means it was an on complete function.  just use that directly
+        p[0] = p[1];
+        return;
+    
     p[0] = AstNode(AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION,p[1].lineNo,p[1].linePos);
 
     # specifically parsing for error of putting parens at end of message receive statement

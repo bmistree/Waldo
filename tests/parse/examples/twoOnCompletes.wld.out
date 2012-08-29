@@ -1,0 +1,35 @@
+*************************
+Error: you cannot specify two onComplete functions for the same endpoint in a 
+single message sequence.   
+-------
+Line numbers:
+25
+26
+-------
+Program text:
+
+
+
+22        LowPriority.b    {}
+23    
+24        HighPriority.b   {}
+25*       HighPriority.onComplete {}              
+26       HighPriority.onComplete {}              
+27    }
+28    
+29    
+
+
+
+23    
+24        HighPriority.b   {}
+25        HighPriority.onComplete {}              
+26*      HighPriority.onComplete {}              
+27    }
+28    
+29    
+30    HighPriority
+*************************
+
+
+

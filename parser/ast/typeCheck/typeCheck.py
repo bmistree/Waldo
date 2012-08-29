@@ -1648,23 +1648,30 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
     For each message function in the message sequence that belongs to
     currentEndpointName, type check its body.
     '''
-
     otherEndpointName = typeStack.endpoint1;
     if typeStack.endpoint1 == currentEndpointName:
         otherEndpointName = typeStack.endpoint2;
 
-    
+    onCompleteSeenNode = None;
     msgSeqFunctionsNode = msgSeqNode.children[2];
     for msgSeqFuncNode in msgSeqFunctionsNode.children:
         # keeps line numbers straight
         msgSeqFuncNode.lineNo = msgSeqFuncNode.children[0].lineNo;
 
-        onCompleteSeenNode = None;
-        
         # checks that each 
         if isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
             name = msgSeqFuncNode.children[1].value;
 
+            if ((msgSeqFuncNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION) or
+                (msgSeqFuncNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
+                # checking that onComplete node does not appear after 
+                if onCompleteSeenNode != None:
+                    errMsg = 'Error: You must specify your onComplete function ';
+                    errMsg += 'after your other message sequence functions.';
+                    errNodes = [onCompleteSeenNode,msgSeqFuncNode];
+                    errLineNos = [ x.lineNo for x in errNodes ];
+                    errorFunction(errMsg,errNodes,errLineNos,progText);
+            
             if msgSeqFuncNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
                 msgBodyNode = msgSeqFuncNode.children[3];
             elif msgSeqFuncNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
