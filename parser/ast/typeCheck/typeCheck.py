@@ -210,7 +210,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             # apply type 
             node.type = statementType;
 
-    elif(node.label == AST_TRACE_LINE):
+    elif node.label == AST_TRACE_LINE:
         #first, checking that each trace item has an endpoint
         #prefix, and second that the prefixes alternate so that
         #messages are being sent between different endpoints.
@@ -373,7 +373,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     elif(node.label == AST_ANNOTATED_DECLARATION):
         # the type of this identifier
         #reset my type to it.
-        node.type = node.children[1].value;
+        typeNode = node.children[1];
+        typeNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+        node.type = typeNode.value;
+
         currentLineNo = node.children[1].lineNo;
         if (len(node.children) == 4):
             #have an initializer too.
