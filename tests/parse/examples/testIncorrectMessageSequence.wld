@@ -1,0 +1,48 @@
+Backout
+
+/**
+  * Tests to ensure that throws error when user defines a function
+  * without correct endpoint name.
+  */
+
+Endpoint HighPriority;
+Endpoint LowPriority;
+
+
+Sequences
+{
+    RefreshA: HighPriority.a -> LowPriority.b -> HighPriority.b;
+}
+
+Shared
+{
+    Nothing controls Number sharedValue = 2;
+}
+
+MessageSequence RefreshA
+{
+    HighPriority.a() {}
+    LowPriority.b    {}
+    HighPriority.b   {}
+
+    /** This should cause an error*/
+    HigPriority.c {}
+}
+
+
+HighPriority
+{
+    Public Function getValue() returns Number
+    {
+        return sharedValue;
+    }
+}
+
+LowPriority
+{
+    Public Function getValue() returns Number
+    {
+        return sharedValue;
+    }    
+}
+

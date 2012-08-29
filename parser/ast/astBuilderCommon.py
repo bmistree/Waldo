@@ -546,6 +546,22 @@ def p_OnCreateFunction(p):
         #function body node.
         p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
+        
+def p_OnCompleteFunction(p):
+    '''
+    OnCompleteFunction : Identifier DOT ONCOMPLETE CURLY_LEFT FunctionBody CURLY_RIGHT
+                       | Identifier DOT ONCOMPLETE CURLY_LEFT CURLY_RIGHT
+    '''
+    p[0] = AstNode(AST_ONCOMPLETE_FUNCTION,p.lineno(2),p.lexpos(2));
+    onCompleteName = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[3]);
+    p[0].addChildren([p[1], onCompleteName]); # contains the endpoint that of this function
+
+    functionBodyToAdd = p[5];
+    if len(p) == 6:
+        # means that have empty function body, should add dummy instead
+        functionBodyToAdd = AstNode(AST_FUNCTION_BODY,p.lineno(2),p.lexpos(2));
+    p[0].addChild(functionBodyToAdd);
+
     
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''

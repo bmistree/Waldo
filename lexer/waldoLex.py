@@ -3,6 +3,7 @@
 from ply import lex
 
 ONCREATE_TOKEN =  "onCreate";
+ONCOMPLETE_TOKEN = 'onComplete';
 IDENTIFIER_TOKEN = "IDENTIFIER";
 reserved = {
     'Endpoint' : 'ENDPOINT',
@@ -20,6 +21,7 @@ reserved = {
     'in': 'IN',
     'toText': 'TOTEXT',
     ONCREATE_TOKEN: 'ONCREATE',
+    ONCOMPLETE_TOKEN: 'ONCOMPLETE',
     'return': 'RETURN_OPERATOR',
     'to': 'TO_OPERATOR',
     'print': 'PRINT',

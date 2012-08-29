@@ -54,7 +54,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
     ###### MASSIVE SWITCH STATEMENT TO TYPECHECK BASED ON NODE #######
 
-    if(node.label == AST_ROOT):
+    if node.label == AST_ROOT:
         #top of program
 
         typeStack.setRootNode(node);
@@ -144,9 +144,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(typeErrorMsg,[childNode],astLineNos,progText);
 
         node.type = TYPE_BOOL;
-
         
-    elif(node.label == AST_TRACE_SECTION):
+    elif node.label == AST_TRACE_SECTION:
         '''
         All the type rules of an ast trace section are:
           Check:
@@ -1271,17 +1270,17 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
     '''
     Takes a node of type public function, private function,
     AST_MESSAGE_SEND_SEQUENCE_FUNCTION,
-    AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION, ONCREATE_FUNCTION
+    AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION, ONCREATE_FUNCTION, ONCOMPLETE_FUNCTION
 
-    send function, or message receive function.  Does not set any
-    types itself, but rather loads functions into the typeStack
-    itself.
+    Does not set any types itself, but rather loads functions into the
+    typeStack itself.
     '''
     if ((node.label != AST_PUBLIC_FUNCTION) and
         (node.label != AST_PRIVATE_FUNCTION) and
         (node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION) and
         (node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION) and
-        (node.label != AST_ONCREATE_FUNCTION)):
+        (node.label != AST_ONCREATE_FUNCTION) and
+        (node.label != AST_ONCOMPLETE_FUNCTION)):
         errPrint('\n\n');
         errPrint(node.label);
         errPrint('\n\n');
@@ -1308,11 +1307,16 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         argDeclIndex = None;
         funcNameIndex = 1;
         returnType = TYPE_NOTHING;
+    elif node.label == AST_ONCOMPLETE_FUNCTION:
+        # should never load an oncomplete function into stack because
+        # it will never get called.
+        return;
 
-
-    funcName = node.children[funcNameIndex].value;            
+    
+    funcName = node.children[funcNameIndex].value;
     node.lineNo = node.children[funcNameIndex].lineNo;
 
+    
     #get types of function arguments
 
     #add a context to type stack for arg declarations and pop it
@@ -1346,11 +1350,11 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
             argTypeList.append(t.type);
 
     else:
-        # means that we are a message receive fucntion.  we do not
-        # actually need to be careful here, because you cannot
-        # directly call a message receive function (the system
-        # calls it for you when you receive a message).  So just
-        # insert gibberish for argument.
+        # means that we are a message receive fucntion or oncomplete
+        # function.  we do not actually need to be careful here,
+        # because you cannot directly call a message receive function
+        # (the system calls it for you when you receive a message).
+        # So just insert gibberish for argument.
         argTypeList.append(TYPE_NOTHING);
 
     collisionObj = typeStack.checkCollision(funcName,node);
@@ -1638,22 +1642,49 @@ def typeCheckMessageSequencesEndpoint(msgSeqSectionNode,progText,typeStack):
         typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName);
         removeSequenceGlobals(typeStack);
 
-
+        
 def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName):
     '''
     For each message function in the message sequence that belongs to
     currentEndpointName, type check its body.
     '''
+
+    otherEndpointName = typeStack.endpoint1;
+    if typeStack.endpoint1 == currentEndpointName:
+        otherEndpointName = typeStack.endpoint2;
+
+    
     msgSeqFunctionsNode = msgSeqNode.children[2];
     for msgSeqFuncNode in msgSeqFunctionsNode.children:
         # keeps line numbers straight
         msgSeqFuncNode.lineNo = msgSeqFuncNode.children[0].lineNo;
+
+        onCompleteSeenNode = None;
+        
+        # checks that each 
         if isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
             name = msgSeqFuncNode.children[1].value;
 
-            msgBodyNode = msgSeqFuncNode.children[2];
             if msgSeqFuncNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
                 msgBodyNode = msgSeqFuncNode.children[3];
+            elif msgSeqFuncNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+                msgBodyNode = msgSeqFuncNode.children[2];
+            elif msgSeqFuncNode.label == AST_ONCOMPLETE_FUNCTION:
+                msgBodyNode = msgSeqFuncNode.children[2];
+
+                if onCompleteSeenNode != None:
+                    errMsg = 'Error: you cannot specify two onComplete functions ';
+                    errMsg += 'for the same endpoint in a single message sequence.  ';
+                    errNodes = [onCompleteSeenNode,msgSeqFuncNode];
+                    errLineNos = [onCompleteSeenNode.lineNo,msgSeqFuncNode.lineNo];
+                    errorFunction(errMsg,errNodes,errLineNos,progText);
+                onCompleteSeenNode = msgSeqFuncNode;
+            else:
+                errMsg = '\nBehram error: Unknown label when expecting ';
+                errMsg += 'message function in typeCheckMessageFunctions.\n';
+                print(errMsg);
+                assert(False);
+
             typeStack.pushContext();
             
             # when type check body, need to keep track of current
@@ -1661,6 +1692,16 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
             typeStack.addCurrentFunctionNode(msgSeqFuncNode);
             msgBodyNode.typeCheck(progText,typeStack,False);
             typeStack.popContext();
+
+        elif isEndpointSequenceFunction(msgSeqFuncNode,otherEndpointName):
+            pass;
+        else:
+            # means that this function's name declaration had an
+            # incorrect endpoint name.  Throw an error.
+            errMsg = 'Error.  Must precede message functions with ';
+            errMsg += 'a valid endpoint name (either "' + otherEndpointName;
+            errMsg += '" or "' + currentEndpointName + '").';
+            errorFunction(errMsg,[msgSeqFuncNode],[msgSeqFuncNode.lineNo],progText);
 
             
 def removeSequenceGlobals(typeStack):

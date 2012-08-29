@@ -1,0 +1,26 @@
+
+Errors encountered
+
+*************************
+Error.  Must precede message functions with a valid endpoint name (either 
+"LowPriority" or "HighPriority"). 
+-------
+Line numbers:
+29
+-------
+Program text:
+
+
+
+26        HighPriority.b   {}
+27    
+28        /** This should cause an error*/
+29*       HigPriority.c {}
+30    }
+31    
+32    
+33    HighPriority
+*************************
+
+
+

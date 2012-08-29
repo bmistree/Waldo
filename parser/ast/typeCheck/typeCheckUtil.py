@@ -138,8 +138,8 @@ def getMsgSeqSection(rootNode):
 def isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
     '''
     @param {AstNode} msgSeqFuncNode --- labeled either
-    Message_send_sequence_function or
-    message_receive_sequence_function.
+    Message_send_sequence_function,
+    message_receive_sequence_function, or onComplete
 
     @param {String} currentEndpointName --- The name of the endpoint
     we are currently type checking.
@@ -158,14 +158,14 @@ def isEndpointSequenceFunction(msgSeqFuncNode,currentEndpointName):
     '''
 
     if ((msgSeqFuncNode.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION) and
-        (msgSeqFuncNode.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
+        (msgSeqFuncNode.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION) and
+        (msgSeqFuncNode.label != AST_ONCOMPLETE_FUNCTION)):
         errMsg = '\nBehram error when calling isEndpointSequenceFunction.  ';
-        errMsg += 'Should have received a message send/receive sequence ';
+        errMsg += 'Should have received a message send/receive/oncomplete sequence ';
         errMsg += 'function as first argument.  Instead got ';
         errMsg += msgSeqFuncNode.label + '.\n';
         print(errMsg);
         assert(False);
-
 
     funcName = msgSeqFuncNode.children[1].value;
     endName =  msgSeqFuncNode.children[0].value;
