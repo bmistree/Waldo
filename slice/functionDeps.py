@@ -621,7 +621,7 @@ class FunctionDeps(object):
                         nttReadItem = vrsItem.mReads[nttReadKeys];
                         if ((nttReadItem.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT) or
                             (nttReadItem.varType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
-                            returnDict[nttReadItem.ntt.id] = nttReadItem;
+                            returnDict[nttReadItem.id] = nttReadItem;
 
 
 
