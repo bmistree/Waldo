@@ -1507,7 +1507,7 @@ class _Endpoint(object):
             self._tryNextEvent();
             return;
 
-
+            
         # only guaranteed to get these data if it is not a message
         # not accepted message.
         contextData = msg[_Message.CONTEXT_FIELD];
@@ -1571,6 +1571,18 @@ class _Endpoint(object):
             # Note that for both cases, we know the requested
             # resources based on the event name.
 
+            #### DEBUG
+            if self._iInitiated(eventId):
+                errMsg = '\nBehram error: eventId says that I initiated this ';
+                errMsg += 'event, but I do not have a copy of it in my active ';
+                errMsg += 'event dictionary.  That means that I must have postponed ';
+                errMsg += 'it.  But then, the other side should not have accepted the ';
+                errMsg += 'message.\n';
+                assert(False);
+            #### END DEBUG
+
+
+            
             self._lock();
 
             actEvent = self._prototypeEventsDict[eventName].generateActiveEvent();
@@ -1698,6 +1710,13 @@ class _Endpoint(object):
             assert(False);
         #### END DEBUG
 
+        # note that we may have postponed this event before we got to
+        # writing the message.  This check ensures that we do not use
+        # the network extra when we do not have to.
+        if _actEvent.contextId != _context.id:
+            return;
+
+        
         # request the other side to receive refresh
         self._writeMsg(
             _Message._endpointMsg(

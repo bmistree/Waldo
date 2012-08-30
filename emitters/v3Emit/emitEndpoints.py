@@ -937,6 +937,13 @@ return; # if this was because of a jump, abort, etc., having
                 nextToCallFuncName,nextToCallEndpointName,fdepDict);
             
             returner += """
+# note that we may have postponed this event before we got to
+# writing the message.  This check ensures that we do not use
+# the network extra when we do not have to.
+if _actEvent.contextId != _context.id:
+    return;
+
+
 # request the other side to perform next action.
 self._writeMsg(_Message._endpointMsg(_context,_actEvent,'%s','%s'));
 """ % (nextFuncEventName,self.sequenceName);
