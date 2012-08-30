@@ -134,6 +134,13 @@ def _convertSrcFuncNameToInternal(fname):
     '''
     return '_' + fname;
 
+def getEndpointNames(astRoot):
+    returner = [];
+    aliasSection = astRoot.children[1];
+    returner.append(aliasSection.children[0].value);
+    returner.append(aliasSection.children[1].value);
+    return returner;
+    
 
 
 class EmitContext(object):

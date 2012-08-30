@@ -17,7 +17,7 @@ from typeStack import TypeStack;
 from uniformHeader import uniformHeader;
 from eventDependencies import specifyDependencies;
 from emitEndpoints import emitEndpoints;
-
+from onCompleteDict import specifyOnCompleteDict;
 
 def astEmit(astRootNode,emitContext):
     '''
@@ -53,6 +53,9 @@ def astEmit(astRootNode,emitContext):
     # now actually emit each endpoint object (including user-defined
     # functions specified in program source text).
     returner += emitEndpoints(astRootNode,fdepDict,emitContext);
+
+    # now emit the oncomplete dict
+    returner += specifyOnCompleteDict(astRootNode);
     
     return returner;
 

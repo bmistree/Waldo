@@ -121,17 +121,21 @@ def _deepCopy(srcDict,dstDict,fieldNamesToSkipCopy=None):
 
 
 class _OnComplete(threading.Thread):
-    def __init__(self,context):
-        self.context = context;
+    def __init__(self,function,onCompleteFuncKey):
+        self.function = function;
+        self.onCompleteFuncKey = onCompleteFuncKey; # for debugging
+        # self.context = context;
 
         threading.Thread.__init__(self);
         
     def run(self):
-        print('\n\nDEBUG: Firing on complete handler\n');
+        print('\n\nDEBUG: Firing on complete handler for ');
+        print(self.onCompleteFuncKey);
+        print('\n');
 
     def fire(self):
         self.start();
-
+        
         
 class _NextEventLoader(threading.Thread):
     '''
@@ -363,14 +367,16 @@ class _Context(object):
         self.msgReceivedQueue.put(contextId);
 
 
-    def addOnComplete(self,funcToExec):
+    def addOnComplete(self,funcToExec,onCompleteFuncKey):
         '''
         CAN BE CALLED WITHIN OR OUTSIDE LOCK
+
         @param {Function object} funcToExec --- One of the non-None
         values in the _OnCompleteDict.
+
+        @param {String} onCompleteFuncKey --- Used for debugging.
         '''
-        self.onCompletesToFire.append(_OnComplete(self));
-        
+        self.onCompletesToFire.append(_OnComplete(self,onCompleteFuncKey));        
         
     def fireOnCompletes(self):
         '''
@@ -1173,7 +1179,7 @@ class _Endpoint(object):
         
         @param {String} sequenceName --- 
         '''
-        return '_' + self._endpointName + '   ' + sequenceName;
+        return _onCompleteKeyGenerator(self._endpointName,sequenceName);
 
     
     def _postponeActiveEvent(self,activeEventId):
@@ -1413,7 +1419,8 @@ class _Endpoint(object):
                 actEventDictObj = self._activeEventDict.get(eventId,None);
                 self._unlock();
                 context = actEventDictObj.eventContext;
-                context.addOnComplete(onCompleteFunctionToAppendToContext);
+                context.addOnComplete(
+                    onCompleteFunctionToAppendToContext,onCompleteKey);                
             return;
 
             
@@ -1456,7 +1463,9 @@ class _Endpoint(object):
 
         # add oncomplete function if exists
         if onCompleteFunctionToAppendToContext != None:
-            actEventContext.addOnComplete(onCompleteFunctionToAppendToContext);
+            actEventContext.addOnComplete(
+                onCompleteFunctionToAppendToContext,
+                onCompleteKey);        
         
                 
     def _writeMsg(self,msgDictionary):

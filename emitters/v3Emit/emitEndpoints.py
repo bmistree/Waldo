@@ -24,7 +24,7 @@ def emitEndpoints(astRootNode,fdepDict,emitContext):
     returner = '';
 
     # get endpoint names to process
-    endpointNames = _getEndpointNames(astRootNode);
+    endpointNames = emitUtils.getEndpointNames(astRootNode);
 
 
     # may require some additional setup depending on emit context
@@ -41,6 +41,7 @@ def emitEndpoints(astRootNode,fdepDict,emitContext):
     returner += _emitEndpoint(
         endpointNames[1],astRootNode,fdepDict,1,emitContext);
 
+    
     return returner;
 
 
@@ -118,7 +119,7 @@ def _emitEndpoint(
                 endpointName,astRootNode,fdepDict,emitContext);
 
             returner += '\n\n';
-    
+
     return returner;
 
 
@@ -650,6 +651,8 @@ class _MessageFuncNodeShared(object):
 
         returner = '';
 
+        # note, if change oncomplete function name, must also change
+        # it in specifyOnCompleteDict of onCompleteDict.py
         returner += ('def %s(_callType,_actEvent=None,_context=None):' %
                      self.msgFuncNode.sliceAnnotationName);
         returner += '\n';
@@ -699,7 +702,7 @@ if _context == None:
 """;
 
         for statementNode in functionBodyNode.children:
-            methodBodyBody += mainEmit.emit(
+            methodBody += mainEmit.emit(
                 endpointName,statementNode,fdepDict,emitContext);
             methodBody += '\n';
         if methodBody == '':
@@ -896,7 +899,8 @@ if _context == None:
         # sequence...have different semantics if it is: notify other
         # side that sequence is done, and send sequence complete
         # signal to waiting function node.
-        if self.nextToCallNode == None:
+        if ((self.nextToCallNode == None) or
+            (self.nextToCallNode.label == AST_ONCOMPLETE_FUNCTION)):
             returner += """
 #### Unique to last sequence
 # tell other side that the sequence is finished and tell our
@@ -909,7 +913,7 @@ self._writeMsg(
         _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH,
         '%s'));
 
-if self._iInitiated(_actEvent.id):
+if not self._iInitiated(_actEvent.id):
    # means that I need to check if I should add an oncomplete
    # to context
    _onCompleteNameToLookup = self._generateOnCompleteNameToLookup(
@@ -917,7 +921,8 @@ if self._iInitiated(_actEvent.id):
        '%s');
    _onCompleteFunction = _OnCompleteDict.get(_onCompleteNameToLookup,None);
    if _onCompleteFunction != None:
-       _context.addOnComplete(_onCompleteFunction);
+       _context.addOnComplete(
+           _onCompleteFunction,_onCompleteNameToLookup);
 
 _context.signalMessageSequenceComplete(_context.id);
 
@@ -1153,13 +1158,6 @@ def _getEndpointIdsToDeclNodesDict(endpointName,astRootNode):
     return returner;
 
 
-def _getEndpointNames(astRoot):
-    returner = [];
-    aliasSection = astRoot.children[1];
-    returner.append(aliasSection.children[0].value);
-    returner.append(aliasSection.children[1].value);
-    return returner;
-    
 
 def _getEndpointFunctionNamesFromEndpointName(
     endpointName,astRootNode,functionDepsDict):
