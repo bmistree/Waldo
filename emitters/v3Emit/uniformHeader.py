@@ -88,6 +88,10 @@ backloaded to the end of the function because we lock a lot of data
 that we do not really need.
 '''""" + """
 
+# emitting empty oncomplete dict for now, will need to specially
+# populate it with oncomplete functions in future commits.
+_OnCompleteDict = { };
+
 # special-casing keys for the refresh keyword
 _REFRESH_KEY = '%s';
 _REFRESH_RECEIVE_KEY = '%s';
@@ -116,6 +120,19 @@ def _deepCopy(srcDict,dstDict,fieldNamesToSkipCopy=None):
         dstDict[srcKey] = srcDict[srcKey];
 
 
+class _OnComplete(threading.Thread):
+    def __init__(self,context):
+        self.context = context;
+
+        threading.Thread.__init__(self);
+        
+    def run(self):
+        print('\n\nDEBUG: Firing on complete handler\n');
+
+    def fire(self):
+        self.start();
+
+        
 class _NextEventLoader(threading.Thread):
     '''
     Separate thread kicks the endpoint to see if there is another
@@ -209,6 +226,12 @@ class _Context(object):
         # side.
         self.messageSent = False;
 
+        # Whenever we finish a message sequence, append the
+        # information about its onComplete handler to this context's
+        # array.  when we commit this context object, we can fire all
+        # the handlers.  Each element is an _OnComplete object.
+        self.onCompletesToFire = [];
+        
         
     def mergeContextIntoMe(self,otherContext):
         '''
@@ -340,6 +363,26 @@ class _Context(object):
         self.msgReceivedQueue.put(contextId);
 
 
+    def addOnComplete(self,funcToExec):
+        '''
+        CAN BE CALLED WITHIN OR OUTSIDE LOCK
+        @param {Function object} funcToExec --- One of the non-None
+        values in the _OnCompleteDict.
+        '''
+        self.onCompletesToFire.append(_OnComplete(self));
+        
+        
+    def fireOnCompletes(self):
+        '''
+        SHOULD BE CALLED OUTSIDE OF LOCK
+        
+        Runs through array of oncomplete functions to fire and does so.
+        '''
+        for onCompleteToFire in self.onCompletesToFire:
+            onCompleteToFire.fire();
+
+
+        
 class _Event(object):
     '''
     Every public-facing function requires an associated event.  The
@@ -489,6 +532,10 @@ class _Message(object):
     # that is running is provided in this field.
     EVENT_NAME_FIELD = 'eventName';
 
+    # each message should contain the name of the sequence that is
+    # executing.  Use this name to add onComplete functions to a
+    # context's onCompletesToFire array.
+    SEQUENCE_NAME_FIELD = 'sequenceName';    
     
     @staticmethod
     def eventNotAcceptedMsg(eventId):
@@ -511,18 +558,25 @@ class _Message(object):
         return returner;
 
     @staticmethod
-    def eventReleaseMsg(context,activeEvent):
+    def eventReleaseMsg(context,activeEvent,sequenceName=None):
         '''
         Constructs a message dictionary that can be sent to the other
         endpoint telling it that the event that it is actively
         processing has completed.
         '''
+
+        if sequenceName == None:
+            # sentinel known to not be a valid key in the 
+            # oncomplete dict
+            sequenceName = '@#@#@#';
+        
         return _Message._endpointMsg(
-            context,activeEvent,_Message.RELEASE_EVENT_SENTINEL);
+            context,activeEvent,_Message.RELEASE_EVENT_SENTINEL,
+            sequenceName);
 
 
     @staticmethod
-    def _endpointMsg(context,activeEvent,controlMsg):
+    def _endpointMsg(context,activeEvent,controlMsg,sequenceName):
         '''
         Constructs a message dictionary that can be sent to the other
         endpoint via a call to _Endpoint.writeMsg function.
@@ -539,10 +593,10 @@ class _Message(object):
             _Message.CONTROL_FIELD: controlMsg,
             _Message.EVENT_ID_FIELD: activeEvent.id,
             _Message.EVENT_NAME_FIELD: activeEvent.eventName,
+            _Message.SEQUENCE_NAME_FIELD: sequenceName
             };
         return returner;
         
-    
         
 class _ActiveEvent(object):
     def __init__ (
@@ -675,6 +729,11 @@ class _ActiveEvent(object):
             self.endpoint._writeMsg (
                 _Message.eventReleaseMsg(context,self)  );
 
+        # after committing a context, check whether it had any
+        # oncomplete functions that we should call
+        context.fireOnCompletes();
+
+                
         return True;
 
 
@@ -1050,7 +1109,7 @@ class _Endpoint(object):
     
     def __init__ (self,connectionObj,globSharedReadVars,globSharedWriteVars,
                   lastIdAssigned,myPriority,theirPriority,context,
-                  execFromToInternalFuncDict, prototypeEventsDict):
+                  execFromToInternalFuncDict, prototypeEventsDict,endpointName):
 
         # <_ActiveEvent.id:_ActiveEventDictElement (which contains
         # _ActiveElement and context)>
@@ -1090,6 +1149,8 @@ class _Endpoint(object):
         self._theirPriority = theirPriority;
 
         self._committedContext = context;
+
+        self._endpointName = endpointName;
         
         # every event needs to be able to map its name to the internal
         # function that should be called to initiate it.
@@ -1103,6 +1164,18 @@ class _Endpoint(object):
         self._connectionObj.addEndpoint(self);
         
     ##### helper functions #####
+
+    def _generateOnCompleteNameToLookup(self,sequenceName):
+        '''
+        For each sequence, we want to be able to lookup its oncomplete
+        handler in _OnCompleteDict.  This is indexed by "_EndpointName
+        sequenceName".  This function generates that key.
+        
+        @param {String} sequenceName --- 
+        '''
+        return '_' + self._endpointName + '   ' + sequenceName;
+
+    
     def _postponeActiveEvent(self,activeEventId):
         '''
         SHOULD BE CALLED FROM WITHIN LOCK
@@ -1286,8 +1359,14 @@ class _Endpoint(object):
         self._commitActiveEvent(actEvent,context);
         self._unlock();
 
+        # after committing a context, check whether it had any
+        # oncomplete functions that we should call
+        context.fireOnCompletes();
 
-    def _processSequenceSentinelFinished(self,eventId,contextData):
+        
+
+    def _processSequenceSentinelFinished(
+        self,eventId,contextData,sequenceName):    
         '''
         SHOULD BE CALLED FROM OUTSIDE OF LOCK
         
@@ -1300,6 +1379,9 @@ class _Endpoint(object):
         message's context field.  @see generateEnvironmentData of
         _Context for the format of this dictionary.
 
+        @param{String} sequenceName --- The name of the sequence that
+        just completed
+        
         # Case 1:
         #
         #   I was the one that initiated the message sequence,
@@ -1317,10 +1399,24 @@ class _Endpoint(object):
         #   include new contexts.
         '''
 
+        # add to context's oncomplete if necessary
+        onCompleteKey = self._generateOnCompleteNameToLookup(sequenceName);
+        onCompleteFunctionToAppendToContext = _OnCompleteDict.get(onCompleteKey,None);
+        
+        
         # case 2
         if not self._iInitiated(eventId):
+            
+            if onCompleteFunctionToAppendToContext != None:
+                # we must add the context
+                self._lock();
+                actEventDictObj = self._activeEventDict.get(eventId,None);
+                self._unlock();
+                context = actEventDictObj.eventContext;
+                context.addOnComplete(onCompleteFunctionToAppendToContext);
             return;
 
+            
         # FIXME: I don't think that I really need these locks.  I'm a
         # little unclear though on Python's guarantees about
         # concurrent reads/writes on a dict.
@@ -1358,6 +1454,10 @@ class _Endpoint(object):
         # its execution.
         actEventContext.signalMessageSequenceComplete(actEventContext.id);
 
+        # add oncomplete function if exists
+        if onCompleteFunctionToAppendToContext != None:
+            actEventContext.addOnComplete(onCompleteFunctionToAppendToContext);
+        
                 
     def _writeMsg(self,msgDictionary):
         '''
@@ -1412,7 +1512,8 @@ class _Endpoint(object):
         # not accepted message.
         contextData = msg[_Message.CONTEXT_FIELD];
         eventName = msg[_Message.EVENT_NAME_FIELD];
-
+        sequenceName = msg[_Message.SEQUENCE_NAME_FIELD];
+        
         if ctrlMsg == _Message.RELEASE_EVENT_SENTINEL:
             # means that we should commit the specified outstanding
             # event and release read/write locks that the event was
@@ -1424,7 +1525,9 @@ class _Endpoint(object):
         if ctrlMsg == _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH:
             # means that the message sequence that was called is
             # finished.
-            self._processSequenceSentinelFinished(eventId,contextData);
+            self._processSequenceSentinelFinished(
+                eventId,contextData,sequenceName);
+
             # reception of this message cannot have changed what
             # read/write locks were happening, so do not need to tryNext.
             return;
@@ -1596,7 +1699,13 @@ class _Endpoint(object):
         #### END DEBUG
 
         # request the other side to receive refresh
-        self._writeMsg(_Message._endpointMsg(_context,_actEvent,_REFRESH_RECEIVE_KEY));
+        self._writeMsg(
+            _Message._endpointMsg(
+                _context,_actEvent,_REFRESH_RECEIVE_KEY,
+                # using a dummy name that we know no sequence can be
+                # named so that know not to execute any oncomplete
+                _REFRESH_SEND_FUNCTION_NAME));
+
 
     def _Text(self,_callType,_actEvent=None,_context=None):
         '''
@@ -1628,11 +1737,18 @@ class _Endpoint(object):
         # event that it should no longer wait on the message sequence
         # to complete.  Note that should not have to do two of these.
         # Should only have to do one.  But does not hurt to do both.
-        self._writeMsg(_Message._endpointMsg(_context,_actEvent,
-                                             _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH));
+        self._writeMsg(
+            _Message._endpointMsg(
+                _context,_actEvent,
+                _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH,
+                # dummy key into oncomplete dict so that guaranteed
+                # not to add an oncomplete when this finishes
+                _REFRESH_SEND_FUNCTION_NAME));
 
         _context.signalMessageSequenceComplete(_context.id);
 
-
+        # note because know that no oncomplete function for refresh,
+        # do not need to check oncomplete dict.
+        
 """;
 

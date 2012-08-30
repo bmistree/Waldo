@@ -467,8 +467,8 @@ for _pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 _Endpoint.__init__(
     self,_connectionObj,_globSharedReadVars,_globSharedWriteVars,
     _lastIdAssigned,_myPriority,_theirPriority,_context,
-    _execFromToInternalFuncDict,_prototypeEventsDict);
-''';
+    _execFromToInternalFuncDict,_prototypeEventsDict, '%s');
+''' % endpointName;
 
     initMethodBody += '\n\n';
 
@@ -566,6 +566,10 @@ def _getMessageFunctionNodes(endpointName,astRootNode):
     msgSeqSectionNode = astRootNode.children[6];
 
     for msgSeqNode in msgSeqSectionNode.children:
+
+        msgSeqNameNode = msgSeqNode.children[0];
+        msgSeqName = msgSeqNameNode.value;
+        
         seqGlobalsNode = msgSeqNode.children[1];
         seqFuncsNode = msgSeqNode.children[2];
 
@@ -583,11 +587,12 @@ def _getMessageFunctionNodes(endpointName,astRootNode):
                     nextToGetCalledNode = seqFuncsNode.children[counter];
                     
                 toAppend = _MessageFuncNodeShared(
-                    seqGlobalsNode,msgFuncNode,nextToGetCalledNode);
+                    seqGlobalsNode,msgFuncNode,
+                    nextToGetCalledNode,msgSeqName);
+                
                 returner.append(toAppend);
           
     return returner;
-        
 
 class _MessageFuncNodeShared(object):
     '''
@@ -596,7 +601,7 @@ class _MessageFuncNodeShared(object):
     the sequence global node too so can initialize these variables at
     top of function.
     '''
-    def __init__(self,seqGlobalNode,msgFuncNode,nextToCallNode):
+    def __init__(self,seqGlobalNode,msgFuncNode,nextToCallNode,sequenceName):
         self.seqGlobalNode = seqGlobalNode;
         self.msgFuncNode = msgFuncNode;
         
@@ -604,6 +609,8 @@ class _MessageFuncNodeShared(object):
         # msgFuncNode's call (or None) if last message in sequence.
         self.nextToCallNode = nextToCallNode;
 
+        self.sequenceName = sequenceName;
+        
     def emitMessageFunctionDefinition(
         self,endpointName,astRootNode,fdepDict,emitContext):
         '''
@@ -896,15 +903,28 @@ if _context == None:
 # event that it should no longer wait on the message sequence
 # to complete.  Note that should not have to do two of these.
 # Should only have to do one.  But does not hurt to do both.
-self._writeMsg(_Message._endpointMsg(_context,_actEvent,
-                                     _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH));
+self._writeMsg(
+    _Message._endpointMsg(
+        _context,_actEvent,
+        _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH,
+        '%s'));
+
+if self._iInitiated(_actEvent.id):
+   # means that I need to check if I should add an oncomplete
+   # to context
+   _onCompleteNameToLookup = self._generateOnCompleteNameToLookup(
+       # hard-coded sequence name
+       '%s');
+   _onCompleteFunction = _OnCompleteDict.get(_onCompleteNameToLookup,None);
+   if _onCompleteFunction != None:
+       _context.addOnComplete(_onCompleteFunction);
 
 _context.signalMessageSequenceComplete(_context.id);
 
 return; # if this was because of a jump, abort, etc., having
         # return here ensures that the function does not
         # execute further.
-""";
+""" % (self.sequenceName,self.sequenceName);
         else:
             # what to send as control messsage for function so that it
             # calls next function in message sequence on its side.
@@ -918,8 +938,8 @@ return; # if this was because of a jump, abort, etc., having
             
             returner += """
 # request the other side to perform next action.
-self._writeMsg(_Message._endpointMsg(_context,_actEvent,'%s'));
-""" % nextFuncEventName;
+self._writeMsg(_Message._endpointMsg(_context,_actEvent,'%s','%s'));
+""" % (nextFuncEventName,self.sequenceName);
             
 
         return returner;
