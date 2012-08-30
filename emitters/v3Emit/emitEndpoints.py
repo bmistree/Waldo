@@ -98,12 +98,27 @@ def _emitEndpoint(
     
     allMessageFunctionNodes = _getMessageFunctionNodes(endpointName,astRootNode);
     for msgFuncNodeSharedObj in allMessageFunctionNodes:
-        returner += emitUtils.indentString(
-            msgFuncNodeSharedObj.emitMessageFunctionDefinition(
-                endpointName,astRootNode,fdepDict,emitContext),
-            1);
-        returner += '\n\n';
-        
+
+        if not msgFuncNodeSharedObj.isOnComplete():
+            # non oncomplete nodes should be indented because they are
+            # a part of the class.
+            returner += emitUtils.indentString(
+                msgFuncNodeSharedObj.emitMessageFunctionDefinition(
+                    endpointName,astRootNode,fdepDict,emitContext),
+                1);
+            returner += '\n\n';
+
+    returner += ('\n##### Emitting all on complete functions for endpoint "%s"\n' %
+                 endpointName);
+    for msgFuncNodeSharedObj in allMessageFunctionNodes:
+        if msgFuncNodeSharedObj.isOnComplete():
+            # oncomplete nodes should not be indented because they are
+            # not part of the class
+            returner += msgFuncNodeSharedObj.emitMessageFunctionDefinition(
+                endpointName,astRootNode,fdepDict,emitContext);
+
+            returner += '\n\n';
+    
     return returner;
 
 
@@ -600,12 +615,94 @@ class _MessageFuncNodeShared(object):
             return self._emitSend(endpointName,astRootNode,fdepDict,emitContext);
         elif self.msgFuncNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
             return self._emitReceive(endpointName,astRootNode,fdepDict,emitContext);
+        elif self.msgFuncNode.label == AST_ONCOMPLETE_FUNCTION:
+            return self._emitOnComplete(endpointName,astRootNode,fdepDict,emitContext);
         else:
             errMsg = '\nBehram error: trying to emit a message function ';
             errMsg += 'that is not actually a message function.\n';
             print(errMsg);
             assert(False);
 
+    def isOnComplete(self):
+        return self.msgFuncNode.label == AST_ONCOMPLETE_FUNCTION;
+
+    def _emitOnComplete(self,endpointName,astRootNode,fdepDict,emitContext):
+        '''
+        Should only be called whenseqGlobalNode is AST_ONCOMPLETE_FUNCTION.
+
+        @returns {String}
+        '''
+        if self.msgFuncNode.label != AST_ONCOMPLETE_FUNCTION:
+            assert(False);
+
+        functionBodyNode = _getFuncBodyNodeFromFuncNode(self.msgFuncNode);    
+        
+        # oncomplete nodes should be labeled such that their
+        # sliceAnnotationNames can be used as their method definitions.
+        self.msgFuncNode._debugErrorIfHaveNoAnnotation('_emitOnComplete');
+
+        returner = '';
+
+        returner += ('def %s(_callType,_actEvent=None,_context=None):' %
+                     self.msgFuncNode.sliceAnnotationName);
+        returner += '\n';
+
+        methodBody = r"""'''
+@param{String} _callType ---
+
+   _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED :
+   means that anything that we return will not be set in
+   return statement of context, but rather will just be
+   returned.
+
+   Cannot have _callType equal to FIRST_FROM_EXTERNAL call
+   (because no external callers), nor can have _callType equal
+   to resume from postpone because by the time we reach onComplete,
+   we have made guarantee that will run to completion.
+
+@param{_ActiveEvent object} _actEvent --- Must be non-None,
+but other than that, does nothing.
+
+@param{_Context object} _context --- Each function can operate
+on endpoint global, sequence global, and shared variables.
+These are all stored in this _context object.  Must be
+non-None for message receive.
+'''
+#### DEBUG
+if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+    errMsg = '\nBehram error.  An oncomplete function was ';
+    errMsg += 'called without an internally_called _callType.\n';
+    print(errMsg);
+    assert(False);
+
+if _actEvent == None:
+    errMsg = '\nBehram error.  An oncomplete function was ';
+    errMsg += 'called without an active event.\n';
+    print(errMsg);
+    assert(False);
+
+if _context == None:
+    errMsg = '\nBehram error.  An oncomplete function was called ';
+    errMsg += 'without a context.\n';
+    print(errMsg);
+    assert(False);
+#### END DEBUG
+
+# meat of oncomplete
+""";
+
+        for statementNode in functionBodyNode.children:
+            methodBodyBody += mainEmit.emit(
+                endpointName,statementNode,fdepDict,emitContext);
+            methodBody += '\n';
+        if methodBody == '':
+            methodBody += 'pass;\n';
+
+        returner += emitUtils.indentString(methodBody,1);
+        return returner;
+        
+
+            
     def _emitReceive(self,endpointName,astRootNode,fdepDict,emitContext):
         '''
         Should only be called when seqGlobalNode is
@@ -928,6 +1025,8 @@ def _getFuncBodyNodeFromFuncNode(funcNode):
     elif funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
         bodyNodeIndex = 3;
     elif funcNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        bodyNodeIndex = 2;
+    elif funcNode.label == AST_ONCOMPLETE_FUNCTION:
         bodyNodeIndex = 2;
     else:
         errMsg = '\nBehram error: cannot get funcbodynode from ';
