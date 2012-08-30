@@ -182,16 +182,25 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         
     elif astNode.label == AST_REFRESH:
         returner += '\n';
-        returner += '_context.messageSent = True;\n';
-        returner += 'self.%s' % emitUtils._REFRESH_SEND_FUNCTION_NAME;
-        returner += '''(_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,
-                _actEvent,
-                _context)
+        returner += '# do not need to honor refresh statement if \n';
+        returner += '# have already sent a message during the course \n';
+        returner += '# of this function, because final event release \n';
+        returner += '# will ensure that shared/global data are consistent\n';
+        returner += 'if not _context.messageSent:\n'
+        ifBody = '_context.messageSent = True;\n';
+        ifBody += 'self.%s' % emitUtils._REFRESH_SEND_FUNCTION_NAME;
+        ifBody += '''(_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,
+              _actEvent,
+              _context)
 ''';
-        
+
         # need to wait until sync has completed
-        returner += '\n';
-        returner +=  _messageSendBlockingCode();
+        ifBody += '\n';
+        ifBody +=  _messageSendBlockingCode();
+
+        returner += emitUtils.indentString(ifBody,1);
+        
+        
         
     elif astNode.label == AST_DECLARATION:
         # could either be a shared or local variable.  use annotation
