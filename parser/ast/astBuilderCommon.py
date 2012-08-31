@@ -84,6 +84,18 @@ def p_TraceLine(p):
         p[0].addChildren(p[3].getChildren());
 
 
+def p_Jump(p):
+    '''
+    Jump : JUMP Identifier DOT Identifier
+         | JUMP ONCOMPLETE
+    '''
+
+    if len(p) == 3:
+        p[0] = AstNode(AST_JUMP_COMPLETE,p[1].lineNo,p[1].linePos);
+    else:
+        p[0] = AstNode(AST_JUMP,p[1].lineNo,p[1].linePos);
+        p[0].addChildren([p[2],p[3]]);
+        
 
 def p_SharedSection(p):
     '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT

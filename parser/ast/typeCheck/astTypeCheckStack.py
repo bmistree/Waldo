@@ -78,7 +78,12 @@ class TypeCheckContextStack(object):
         #self.traceManager).
         self.currentEndpointName = None;
 
-
+        self.inOnComplete = False;
+        self.inSequencesSection = False;
+        # array of tuples: first element is string endpoint name,
+        # second element is string function name.
+        self.sequenceSectionNameTuples = [];
+        
         # used to type check return statements to ensure that a
         # function actually returns the type that it says it will.
         #      msg_send_seq_func, msg_recv_seq_func, public_func,

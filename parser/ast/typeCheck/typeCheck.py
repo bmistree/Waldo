@@ -130,7 +130,48 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if traceError != None:
             errorFunction(traceError.errMsg,traceError.nodes,
                           traceError.lineNos,progText);
+
+    elif (node.label == AST_JUMP_COMPLETE) or (node.label == AST_JUMP):
+
+        node.type = TYPE_NOTHING;
+        if ((not typeStack.inSequencesSection) or
+            typeStack.inOnComplete):
+            errMsg = 'Error.  You can only issue a jump statement ';
+            errMsg += 'directly from a message sequence (and you cannot ';
+            errMsg += 'jump from within an oncomplete statement).'
+            errorFunction(errMsg,[node],[node.lineNo],progText);
+
         
+        if node.label == AST_JUMP:
+            # additionally checking that jumping to a valid point for
+            # jumps.
+            endpointNameNode = node.children[0];
+            endpointName = endpointNameNode.value;
+            traceLineNode = node.children[1];
+            traceFunctionName = traceLineNode.value;
+
+            if ((endpointName != typeStack.endpoint1) and
+                (endpointName != typeStack.endpoint2)):
+                errMsg = "Error.  You are not jumping to a valid endpoint ";
+                errMsg += 'sequence function.  Did you misspell the endpoint name?';
+                errorFunction(errMsg,[endpointNameNode],[endpointNameNode.lineNo],progText);
+                
+            # ensure that jumps to a valid position
+            found = False;
+            for nameTuple in typeStack.sequenceSectionNameTuples:
+                seqEndpointName = nameTuple[0];
+                seqFunctionName = nameTuple[1];
+
+                if ((seqEnpdointName == endpointName) and
+                    (traceFunctionName == seqFunctionName)):
+                    found = True;
+            if not found:
+                errMsg = 'Error.  You requested jumping to an invalid ';
+                errMsg += 'function name.  You asked to jump to function ';
+                errMsg += 'with endpoint "' + endpointName + '" and function ';
+                errMsg += 'name "' + functionName + '."  But there is no such ';
+                errMsg += 'function in this sequence.\n';
+                errorFunction(errMsg,[node],[node.lineNo],progText);
 
     elif node.label == AST_NOT_EXPRESSION:
         childNode = node.children[0];
@@ -449,7 +490,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (funcMatchObj == None):
             # the function has not been defined in the source file.
             # check if this is an identifier that points at a function.
-            # ie. maybe the usef passed in an argument that was a function.
+            # ie. maybe the user passed in an argument that was a function.
             idElement = typeStack.getIdentifierElement(funcName);
             if (idElement != None):
                 funcType = idElement.identifierType;
@@ -464,6 +505,14 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += 'That function is not defined anywhere.\n';
                 errorFunction(errMsg,[node],[node.lineNo],progText);            
 
+
+            # rule that can only call passed-in functions in
+            # oncomplete section.
+            if not typeStack.inOnComplete:
+                errMsg = '\nError trying to call function object.  ';
+                errMsg += 'Can only call function object in onComplete ';
+                errMsg += 'section.\n';
+                errorFunction(errMsg,[node],[node.lineNo],progText);
 
         if (funcMatchObj.element.astNode.label == AST_ONCREATE_FUNCTION):
             errMsg = '\nError trying to call OnCreate function.  ';
@@ -1654,6 +1703,16 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
 
     onCompleteSeenNode = None;
     msgSeqFunctionsNode = msgSeqNode.children[2];
+    
+    sequenceNameTuples = [];
+    for msgSeqFuncNode in msgSeqFunctionsNode.children:
+        endpointName = msgSeqFuncNode.children[0].value;
+        funcName = msgSeqFuncNode.children[1].value;
+        sequenceNameTuples.append( (endpointName,funcName) );
+
+
+    typeStack.sequenceSectionNameTuples= sequenceNameTuples;
+    typeStack.inSequencesSection = True;
     for msgSeqFuncNode in msgSeqFunctionsNode.children:
         # keeps line numbers straight
         msgSeqFuncNode.lineNo = msgSeqFuncNode.children[0].lineNo;
@@ -1679,6 +1738,8 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
             elif msgSeqFuncNode.label == AST_ONCOMPLETE_FUNCTION:
                 msgBodyNode = msgSeqFuncNode.children[2];
 
+                typeStack.inOnComplete = True;
+                
                 if onCompleteSeenNode != None:
                     errMsg = 'Error: you cannot specify two onComplete functions ';
                     errMsg += 'for the same endpoint in a single message sequence.  ';
@@ -1700,6 +1761,10 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
             msgBodyNode.typeCheck(progText,typeStack,False);
             typeStack.popContext();
 
+            if msgSeqFuncNode.label == AST_ONCOMPLETE_FUNCTION:
+                typeStack.inOnComplete = False;
+                
+            
         elif isEndpointSequenceFunction(msgSeqFuncNode,otherEndpointName):
             pass;
         else:
@@ -1710,6 +1775,9 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
             errMsg += '" or "' + currentEndpointName + '").';
             errorFunction(errMsg,[msgSeqFuncNode],[msgSeqFuncNode.lineNo],progText);
 
+    typeStack.inSequencesSection = False;
+    typeStack.sequenceSectionNameTuples = [];
+    
             
 def removeSequenceGlobals(typeStack):
     '''
@@ -1717,7 +1785,6 @@ def removeSequenceGlobals(typeStack):
     addSequenceGlobals creates.
     '''
     typeStack.popContext();
-
 
     
 def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
