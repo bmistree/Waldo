@@ -55,11 +55,11 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             errMsg += 'declared variable in emit of mainEmit.\n';
             print(errMsg);
             print(idAnnotationType);
-            assert(False);        
-
+            assert(False);
+            
     elif astNode.label == AST_FUNCTION_CALL:
         returner += _emitFunctionCall(endpointName,astNode,fdepDict,emitContext);
-
+        
     elif astNode.label == AST_BRACKET_STATEMENT:
         indexedIntoNode = astNode.children[0];
         indexNode = astNode.children[1];
@@ -389,10 +389,9 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
         funcCallText = emit(endpointName,funcNameNode,fdepDict,emitContext);
     else:
         # means that we are making a call to a statically, and
-        # textually described function.
+        # textually described function.  note: if we are in 
 
-
-        if _isMessageSend(funcName,endpointName,fdepDict):
+        if _isMessageSend(funcName,endpointName,fdepDict) and (not emitContext.insideOnComplete):
             # set the context messageSent field to True.
             returner += "\n# set context's messageSent field to True.  ";
             returner += "\n# that way ensures that after event completes, ";
@@ -411,11 +410,16 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
                 returner += '\n#### END DEBUG';
                 returner += '\n_time.sleep(_COLLISION_TIMEOUT_VAL);\n\n';
 
+
+        
         funcCallText = 'self.%s' % emitUtils._convertSrcFuncNameToInternal(funcName);
+        if emitContext.insideOnComplete:
+            funcCallText = 'self.%s' % funcName;
+        
+        
 
     funcCallText += '('
     returner += funcCallText;
-
 
     amtToIndent = len(funcCallText);
     indentStr = '';
@@ -438,13 +442,19 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     else:
         if not first:
             returner += indentStr;
-        returner +=  '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n'
-        returner += indentStr + '_actEvent,\n';
-        returner += indentStr + '_context)';
+
+        if not emitContext.insideOnComplete:
+            returner +=  '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n'
+            returner += indentStr + '_actEvent,\n';
+            returner += indentStr + '_context)';
+        else:
+            returner += ')';
+            # returner +=  '_Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,\n'
+            # returner += indentStr + 'None,\n';
+            # returner += indentStr + 'None)';
 
 
-
-        if _isMessageSend(funcName,endpointName,fdepDict):
+        if _isMessageSend(funcName,endpointName,fdepDict) and (not emitContext.insideOnComplete):
             # if this is a call to a message function, need to block
             # until completes.
             returner += '\n';

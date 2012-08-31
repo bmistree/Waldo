@@ -160,3 +160,10 @@ class EmitContext(object):
         will have to be backed out.
         '''
         self.collisionFlag = collisionFlag;
+        self.insideOnComplete = False;
+
+    def outOfOnComplete(self):
+        self.insideOnComplete = False;
+
+    def inOnComplete(self):
+        self.insideOnComplete = True;

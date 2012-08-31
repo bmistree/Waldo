@@ -119,22 +119,25 @@ def _deepCopy(srcDict,dstDict,fieldNamesToSkipCopy=None):
             continue;
         dstDict[srcKey] = srcDict[srcKey];
 
-
 class _OnComplete(threading.Thread):
-    def __init__(self,function,onCompleteFuncKey):
+    def __init__(self,function,onCompleteFuncKey,endpoint,context):
         self.function = function;
         self.onCompleteFuncKey = onCompleteFuncKey; # for debugging
-        # self.context = context;
+        self.endpoint = endpoint;
+        self.context = context;
 
         threading.Thread.__init__(self);
         
     def run(self):
-        print('\n\nDEBUG: Firing on complete handler for ');
-        print(self.onCompleteFuncKey);
-        print('\n');
 
+        self.function(self.endpoint,
+                      _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,
+                      None,
+                      self.context);
+       
     def fire(self):
         self.start();
+
         
         
 class _NextEventLoader(threading.Thread):
@@ -367,7 +370,7 @@ class _Context(object):
         self.msgReceivedQueue.put(contextId);
 
 
-    def addOnComplete(self,funcToExec,onCompleteFuncKey):
+    def addOnComplete(self,funcToExec,onCompleteFuncKey,endpoint):
         '''
         CAN BE CALLED WITHIN OR OUTSIDE LOCK
 
@@ -376,8 +379,17 @@ class _Context(object):
 
         @param {String} onCompleteFuncKey --- Used for debugging.
         '''
-        self.onCompletesToFire.append(_OnComplete(self,onCompleteFuncKey));        
+
+        # FIXME: Should deep copy all of context's memory here so that
+        # operations on mutables in onComplete do not affect internal
+        # state.  And so that will not have over-written sequence
+        # globals if have multiple message sequences with onCompletes
+
         
+        self.onCompletesToFire.append(
+            _OnComplete(funcToExec,onCompleteFuncKey,endpoint,self));        
+
+            
     def fireOnCompletes(self):
         '''
         SHOULD BE CALLED OUTSIDE OF LOCK
@@ -1420,7 +1432,7 @@ class _Endpoint(object):
                 self._unlock();
                 context = actEventDictObj.eventContext;
                 context.addOnComplete(
-                    onCompleteFunctionToAppendToContext,onCompleteKey);                
+                    onCompleteFunctionToAppendToContext,onCompleteKey,self);                
             return;
 
             
@@ -1465,7 +1477,7 @@ class _Endpoint(object):
         if onCompleteFunctionToAppendToContext != None:
             actEventContext.addOnComplete(
                 onCompleteFunctionToAppendToContext,
-                onCompleteKey);        
+                onCompleteKey,self);        
         
                 
     def _writeMsg(self,msgDictionary):

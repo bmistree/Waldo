@@ -640,6 +640,8 @@ class _MessageFuncNodeShared(object):
 
         @returns {String}
         '''
+        emitContext.inOnComplete();
+        
         if self.msgFuncNode.label != AST_ONCOMPLETE_FUNCTION:
             assert(False);
 
@@ -653,11 +655,18 @@ class _MessageFuncNodeShared(object):
 
         # note, if change oncomplete function name, must also change
         # it in specifyOnCompleteDict of onCompleteDict.py
-        returner += ('def %s(_callType,_actEvent=None,_context=None):' %
+        returner += ('def %s(self,_callType,_actEvent=None,_context=None):' %
                      self.msgFuncNode.sliceAnnotationName);
         returner += '\n';
 
         methodBody = r"""'''
+
+@param{_Endpoint} self --- Unusual use of self: want to maintain the
+emitting code for function bodies, which assumes that called from
+within an _Enpdoint class, rather than called from external class.
+Way that I am getting around this is to explicitly pass endpoint in as
+first argument and naming that argument self.
+
 @param{String} _callType ---
 
    _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED :
@@ -685,12 +694,6 @@ if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
     print(errMsg);
     assert(False);
 
-if _actEvent == None:
-    errMsg = '\nBehram error.  An oncomplete function was ';
-    errMsg += 'called without an active event.\n';
-    print(errMsg);
-    assert(False);
-
 if _context == None:
     errMsg = '\nBehram error.  An oncomplete function was called ';
     errMsg += 'without a context.\n';
@@ -709,6 +712,7 @@ if _context == None:
             methodBody += 'pass;\n';
 
         returner += emitUtils.indentString(methodBody,1);
+        emitContext.outOfOnComplete();
         return returner;
         
 
@@ -922,7 +926,7 @@ if not self._iInitiated(_actEvent.id):
    _onCompleteFunction = _OnCompleteDict.get(_onCompleteNameToLookup,None);
    if _onCompleteFunction != None:
        _context.addOnComplete(
-           _onCompleteFunction,_onCompleteNameToLookup);
+           _onCompleteFunction,_onCompleteNameToLookup,self);
 
 _context.signalMessageSequenceComplete(_context.id);
 
