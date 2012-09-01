@@ -131,6 +131,108 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(traceError.errMsg,traceError.nodes,
                           traceError.lineNos,progText);
 
+    elif node.label == AST_FOR_STATEMENT:
+
+        currentLineNo = node.children[0].lineNo;
+        
+        if len(node.children) == 3:
+            identifierNodeIndex = 0;
+            toIterateNodeIndex = 1;
+            forBodyNodeIndex = 2;
+        
+        elif len(node.children) == 4:
+            identifierTypeNodeIndex = 0;
+            identifierNodeIndex = 1;
+            toIterateNodeIndex = 2;
+            forBodyNodeIndex = 3;
+
+            typeNode = node.children[identifierTypeNodeIndex];
+            typeNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+            declaredIdType = typeNode.value;
+            node.type = TYPE_NOTHING;
+
+            identifierNode = node.children[identifierNodeIndex];
+            identifierName = identifierNode.value;
+            existsAlready = typeStack.getIdentifierElement(identifierName);
+            if (existsAlready != None):
+                errorFunction('Already have an identifier named ' + identifierName,
+                              [node],[currentLineNo, existsAlready.lineNo],progText);
+
+            else:
+                idType = typeStack.getFuncIdentifierType(identifierName);
+                if (idType):
+                    errText = 'Already have a function named ' + identifierName;
+                    errText += '.  Therefore, cannot name an identifier with this name.';
+                    errorFunction(errText,
+                                  [node,existsAlready.astNode],
+                                  [currentLineNo,existsAlready.lineNo],
+                                  progText);
+
+            # actually add the variable to type stack
+            typeStack.addIdentifier(identifierName,
+                                    declaredIdType,
+                                    None,identifierNode,currentLineNo);
+            
+
+        else:
+            errMsg = '\nBehram error: incorrect number of ast tokens ';
+            errMsg += 'when type checking for statement.\n';
+            print(errMsg);
+            assert(False);
+
+        identifierNode = node.children[identifierNodeIndex];
+        identifierName = identifierNode.value;
+        identifierNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+        toIterateNode = node.children[toIterateNodeIndex];
+        toIterateNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+
+        if isMapType(toIterateNode.type):
+            if toIterateNode.type == EMPTY_MAP_SENTINEL:
+                pass;
+            else:
+                indexType = getMapIndexType(toIterateNode.type);
+                
+                if checkTypeMismatch(identifierNode,identifierNode.type,indexType,typeStack,progText):
+                    errMsg = 'Error assigning identifier in for loop.  ';
+                    errMsg += identifierName + ' has type ' + identifierNode.type;
+                    errMsg += ', but map has keys with type ' +  indexType + '.';
+                    errorFunction(errMsg,[identifierNode],[identifierNode.lineNo],progText);
+        elif isListType(toIterateNode.type):
+            if toIterateNode.type == EMPTY_LIST_SENTINEL:
+                pass;
+            else:
+                elementValueType = getListValueType(toIterateNode.type);
+                
+                if checkTypeMismatch(
+                    identifierNode,identifierNode.type,elementValueType,
+                    typeStack,progText):
+                    errMsg = 'Error assigning identifier in for loop.  ';
+                    errMsg += identifierName + ' has type ' + identifierNode.type;
+                    errMsg += ', but list has elements with type ' +  elementValueType + '.';
+                    errorFunction(errMsg,[identifierNode],[identifierNode.lineNo],progText);
+
+        elif toIterateNode.type == AST_STRING:
+            if toIterateNode.type == AST_STRING:
+                pass;
+            else:
+                errMsg = 'Error assigning identifier in for loop.  ';
+                errMsg += identiferName + ' has type ' + identifierNode.type;
+                errMsg += ', but you are trying to iterate over Text, so it should ';
+                errMsg += 'have type text.';
+                errorFunction(errMsg,[identifierNode],[identifierNode.lineNo],progText);
+        else:
+            errMsg = 'Error in for loop in statement.  Right hand side of in statement ';
+            errMsg += 'must be a map, list, or Text.  You provided a ' + toIterateNode.type;
+            errMsg += '.';
+            errorFunction(errMsg,[toIterateNode],[toIterateNode.lineNo],progText);
+                    
+        # no type error in for condition statement
+        # now check the body of the for loop
+        forBodyNode = node.children[forBodyNodeIndex];
+        forBodyNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+
+        
+            
     elif (node.label == AST_JUMP_COMPLETE) or (node.label == AST_JUMP):
 
         node.type = TYPE_NOTHING;
@@ -1065,7 +1167,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             # function.
             funcType = typeStack.getFuncIdentifierType(name);
             if (funcType == None):
-                errMsg = 'Cannot infer type of ' + name + '.  Are you sure it is valid?';
+                errMsg = 'Cannot infer type of ' + name + '.  Are you sure it is valid?  ';
+                errMsg += 'Are you sure that you declared it first?';
                 errorFunction(errMsg,[node],[node.lineNo],progText);
                 node.type = 'Undefined';
             else:

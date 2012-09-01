@@ -574,7 +574,27 @@ def p_OnCompleteFunction(p):
         functionBodyToAdd = AstNode(AST_FUNCTION_BODY,p.lineno(2),p.lexpos(2));
     p[0].addChild(functionBodyToAdd);
 
+
+def p_ForStatement (p):
+    '''
+    ForStatement : FOR LEFT_PAREN Identifier IN ReturnableExpression RIGHT_PAREN SingleLineOrMultilineCurliedBlock
+                 | FOR LEFT_PAREN Type Identifier IN ReturnableExpression RIGHT_PAREN SingleLineOrMultilineCurliedBlock    
+    '''
     
+    p[0] = AstNode(AST_FOR_STATEMENT,p.lineno(1),p.lexpos(1));
+    if len(p) == 8:
+        # means that not defining a new variable
+        p[0].addChildren([ p[3], p[5], p[7] ] );
+    elif len(p) == 9:
+        # defining a new variable
+        p[0].addChildren([ p[3], p[4], p[6], p[8] ]);
+    else:
+        errMsg = '\nBehram error: incorrect number of tokens when ';
+        errMsg += 'parsing for statement.\n';
+        print(errMsg);
+        assert(False);
+
+        
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
     

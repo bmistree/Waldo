@@ -194,6 +194,7 @@ def p_FunctionBodyStatement(p):
     '''FunctionBodyStatement : Declaration SEMI_COLON
                              | AssignmentStatement SEMI_COLON
                              | ConditionStatement
+                             | ForStatement
                              | ReturnableExpression SEMI_COLON
                              | ReturnStatement SEMI_COLON
     '''
