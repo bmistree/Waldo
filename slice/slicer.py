@@ -118,6 +118,32 @@ def slicer(node,functionDeps=None,typeStack=None):
                 
         typeStack.popContext();
 
+    elif node.label == AST_FOR_STATEMENT:
+        if len(node.children) == 3:
+            identifierNodeIndex = 0;
+            toIterateNodeIndex = 1;
+            forBodyNodeIndex = 2;
+        
+        elif len(node.children) == 4:
+            identifierTypeNodeIndex = 0;
+            identifierNodeIndex = 1;
+            toIterateNodeIndex = 2;
+            forBodyNodeIndex = 3;
+
+            typeNode = node.children[identifierTypeNodeIndex];
+            identifierNameNode = node.children[identifierNodeIndex];
+            identifierName = identifierNameNode.value;
+            isMute = isMutable(typeNode);
+
+            ntt = typeStack.addIdentifier(identifierName,isMute);
+
+        identifierNode = node.children[identifierNodeIndex];
+        toIterateNode = node.children[toIterateNodeIndex];
+        forBodyNode = node.children[forBodyNodeIndex];
+        slicer (identifierNode,functionDeps,typeStack);
+        slicer (toIterateNode,functionDeps,typeStack);
+        slicer (forBodyNode,functionDeps,typeStack);
+        
     elif node.label == AST_REFRESH:
         # don't need to do anything for refresh statement.
         # it doesn't touch any additional data

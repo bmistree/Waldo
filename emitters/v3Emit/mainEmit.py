@@ -57,6 +57,37 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             print(idAnnotationType);
             assert(False);
 
+    elif astNode.label == AST_FOR_STATEMENT:
+        returner += '\n';
+        if len(astNode.children) == 3:
+            identifierNodeIndex = 0;
+            toIterateNodeIndex = 1;
+            forBodyNodeIndex = 2;
+        
+        elif len(astNode.children) == 4:
+            identifierTypeNodeIndex = 0;
+            identifierNodeIndex = 1;
+            toIterateNodeIndex = 2;
+            forBodyNodeIndex = 3;
+
+            identifierNode = astNode.children[identifierNodeIndex];
+            returner += emit(endpointName,identifierNode,fdepDict,emitContext);
+            returner += ' = ';
+            returner += emitUtils.getDefaultValueFromDeclNode(identifierNode);
+            returner += '\n';
+
+        forBodyNode = astNode.children[forBodyNodeIndex];
+        toIterateNode = astNode.children[toIterateNodeIndex];
+        identifierName = astNode.children[identifierNodeIndex].value;
+        
+        returner += 'for ' + identifierName + ' in ';
+        returner += emit(endpointName,toIterateNode,fdepDict,emitContext);
+        returner += ':\n';
+        forBody = emit(endpointName,forBodyNode,fdepDict,emitContext);
+        returner += emitUtils.indentString(forBody,1);
+        returner += '\n';
+        
+            
     elif astNode.label == AST_JUMP_COMPLETE:
 
         if emitContext.msgSequenceNode == None:
@@ -256,6 +287,11 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             initializationNode = astNode.children[2];
             returner += ' = ';
             returner += emit(endpointName,initializationNode,fdepDict,emitContext);
+        else:
+            returner += ' = ';
+            returner += emitUtils.getDefaultValueFromDeclNode(astNode);
+
+        returner += '\n';
 
     elif astNode.label == AST_BOOL:
         returner +=  astNode.value + ' ';
