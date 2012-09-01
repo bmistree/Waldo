@@ -162,17 +162,17 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 seqEndpointName = nameTuple[0];
                 seqFunctionName = nameTuple[1];
 
-                if ((seqEnpdointName == endpointName) and
+                if ((seqEndpointName == endpointName) and
                     (traceFunctionName == seqFunctionName)):
                     found = True;
             if not found:
                 errMsg = 'Error.  You requested jumping to an invalid ';
                 errMsg += 'function name.  You asked to jump to function ';
                 errMsg += 'with endpoint "' + endpointName + '" and function ';
-                errMsg += 'name "' + functionName + '."  But there is no such ';
+                errMsg += 'name "' + traceFunctionName + '."  But there is no such ';
                 errMsg += 'function in this sequence.\n';
                 errorFunction(errMsg,[node],[node.lineNo],progText);
-
+                
     elif node.label == AST_NOT_EXPRESSION:
         childNode = node.children[0];
         childNode.typeCheck(progText,typeStack,avoidFunctionObjects);

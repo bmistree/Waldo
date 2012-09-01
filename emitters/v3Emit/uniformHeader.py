@@ -1124,6 +1124,12 @@ class _Endpoint(object):
     # *not* create a new active event or context.    
     _FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL = 3;
 
+    # if the execution of this function was the result of a message
+    # (eg. jump or fall through) rather than called from internal
+    # code.  message send functions, use this argument so
+    # knows not to re-initialize sequence shared data.
+    _FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE = 4;
+    
     
     def __init__ (self,connectionObj,globSharedReadVars,globSharedWriteVars,
                   lastIdAssigned,myPriority,theirPriority,context,
@@ -1664,7 +1670,7 @@ class _Endpoint(object):
             eventContext,
             # specified so that internal message function does not
             # use return message queue, etc.
-            _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED);
+            _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSSAGE);
         
     def _iInitiated(self,actEventId):
         '''

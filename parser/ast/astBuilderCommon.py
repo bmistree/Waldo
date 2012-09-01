@@ -91,10 +91,10 @@ def p_Jump(p):
     '''
 
     if len(p) == 3:
-        p[0] = AstNode(AST_JUMP_COMPLETE,p[1].lineNo,p[1].linePos);
+        p[0] = AstNode(AST_JUMP_COMPLETE,p.lineno(1),p.lexpos(1));
     else:
-        p[0] = AstNode(AST_JUMP,p[1].lineNo,p[1].linePos);
-        p[0].addChildren([p[2],p[3]]);
+        p[0] = AstNode(AST_JUMP,p.lineno(1),p.lexpos(1));
+        p[0].addChildren([p[2],p[4]]);
         
 
 def p_SharedSection(p):

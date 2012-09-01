@@ -180,7 +180,7 @@ return _returner;
     # every function should have a special key associated in the event
     # dict.  this is used so that we know where to re-start execution
     # after an event completes.  
-    functionEventKey = _getFuncEventKey(funcName,endpointName,fdepDict);
+    functionEventKey = emitUtils.getFuncEventKey(funcName,endpointName,fdepDict);
     
     # actually emit the function    
     returner += 'def %s(self,' % _convertSrcFuncNameToInternal(funcName);
@@ -589,7 +589,8 @@ def _getMessageFunctionNodes(endpointName,astRootNode):
                     
                 toAppend = _MessageFuncNodeShared(
                     seqGlobalsNode,msgFuncNode,
-                    nextToGetCalledNode,msgSeqName);
+                    nextToGetCalledNode,msgSeqName,
+                    msgSeqNode);
                 
                 returner.append(toAppend);
           
@@ -602,9 +603,12 @@ class _MessageFuncNodeShared(object):
     the sequence global node too so can initialize these variables at
     top of function.
     '''
-    def __init__(self,seqGlobalNode,msgFuncNode,nextToCallNode,sequenceName):
+    def __init__(self,seqGlobalNode,msgFuncNode,
+                 nextToCallNode,sequenceName,msgSeqNode):
+        
         self.seqGlobalNode = seqGlobalNode;
         self.msgFuncNode = msgFuncNode;
+        self.msgSeqNode = msgSeqNode;
         
         # the node for the message sequence function that will succeed
         # msgFuncNode's call (or None) if last message in sequence.
@@ -618,7 +622,12 @@ class _MessageFuncNodeShared(object):
         Emits the definition of the message receieve or message send
         function node that this wraps
         '''
-
+        # keep track of message sequence node so that when encounter
+        # jump statements, can use the message sequence node to
+        # determine where to jump to.
+        emitContext.msgSequenceNode = self.msgSeqNode;
+        emitContext.msgSeqFuncNode = self.msgFuncNode;
+        
         if self.msgFuncNode.label== AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
             return self._emitSend(endpointName,astRootNode,fdepDict,emitContext);
         elif self.msgFuncNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
@@ -631,6 +640,9 @@ class _MessageFuncNodeShared(object):
             print(errMsg);
             assert(False);
 
+        emitContext.msgSequenceNode = None;
+        emitContext.msgSeqFuncNode = None;
+        
     def isOnComplete(self):
         return self.msgFuncNode.label == AST_ONCOMPLETE_FUNCTION;
 
@@ -744,15 +756,13 @@ if _context == None:
         receiveBody = r"""'''
 @param{String} _callType ---
 
-   _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED :
-   means that anything that we return will not be set in
-   return statement of context, but rather will just be
-   returned.
+   _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE :
 
-   Cannot have _callType equal to FIRST_FROM_EXTERNAL call
-   (because no external callers), nor can have _callType equal
-   to resume from postpone because by the time have a message
-   receive, have made guarantee that will run to completion.
+   Cannot have _callType equal to FIRST_FROM_EXTERNAL or
+   internal call (because no external callers), nor can have
+   _callType equal to resume from postpone because by the time
+   have a message receive, have made guarantee that will run
+   to completion.
 
 @param{_ActiveEvent object} _actEvent --- Must be non-None,
 but other than that, does nothing.
@@ -763,9 +773,9 @@ These are all stored in this _context object.  Must be
 non-None for message receive.
 '''
 #### DEBUG
-if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE:
     errMsg = '\nBehram error.  A message receive function was ';
-    errMsg += 'called without an internally_called _callType.\n';
+    errMsg += 'called without from message _callType.\n';
     print(errMsg);
     assert(False);
 
@@ -827,6 +837,13 @@ if _context == None:
    return statement of context, but rather will just be
    returned.
 
+   or
+
+   _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE : means that we
+   jumped back to this function and that we should therefore
+   not re-initialize all sequence variables
+
+
 @param{_ActiveEvent object} _actEvent --- Must be non-None,
 but other than that, does nothing.
 
@@ -836,9 +853,10 @@ These are all stored in this _context object.  Must be
 non-None for message receive.
 '''
 #### DEBUG
-if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
-    errMsg = '\nBehram error.  A message send function for now must be ';
-    errMsg += 'called with an internally_called _callType.\n';
+if ((_callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED) and
+    (_callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE)):
+    errMsg = '\nBehram error.  A message send function must be ';
+    errMsg += 'called with an internally_called or message _callType.\n';
     print(errMsg);
     assert(False);
 
@@ -856,22 +874,17 @@ if _context == None:
 #### END DEBUG
 
 
-# FIXME: if allow jumps backwards and forwards, may need to be
-# careful not to re-initialize sequence global variables.
+if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+    # initialization of sequence global variables: specific to
+    # message send functions.
+"""
 
-# FIXME: if allow jumps backwards and forwards, may need to be
-# careful about a message sequence function's taking
-# arguments.
-
-# initialization of sequence global variables: specific to
-# message send functions.
-""";
-
+        initializationBody = '';
 
         # need to perform initializations of sequence global data
         for declNode in self.seqGlobalNode.children:
-            sendBody += mainEmit.emit(endpointName,declNode,fdepDict,emitContext);
-            sendBody += '\n';
+            initializationBody += mainEmit.emit(endpointName,declNode,fdepDict,emitContext);
+            initializationBody += '\n';
 
         # need to put arguments into seqGlobals
         funcDeclArgListNode = self.msgFuncNode.children[2];
@@ -882,12 +895,16 @@ if _context == None:
 
             nameString = nameNode.value;
             annotationName = nameNode.sliceAnnotationName;
-            sendBody += "_context.seqGlobals['%s'] = %s;\n\n" % (annotationName,nameString);
+            initializationBody += "_context.seqGlobals['%s'] = %s;\n\n" % (annotationName,nameString);
             # gives something like _context.seqGlobals['8__someArg'] = someArg;
 
-
+        if initializationBody == '':
+            initializationBody += 'pass;\n';
+        sendBody += emitUtils.indentString(initializationBody,1);
+        
+        
         # actually emit the body of the function
-        sendBody += '# emitting body of send function.\n';
+        sendBody += '\n# emitting body of send function.\n';
         for statementNode in functionBodyNode.children:
             sendBody += mainEmit.emit(endpointName,statementNode,fdepDict,emitContext);
             sendBody += '\n';
@@ -895,7 +912,7 @@ if _context == None:
         sendBody += self._msgSendSuffix(fdepDict);
         returner += emitUtils.indentString(sendBody,1);
         return returner;
-
+    
     def _msgSendSuffix(self,fdepDict):
         returner = '';
 
@@ -905,35 +922,7 @@ if _context == None:
         # signal to waiting function node.
         if ((self.nextToCallNode == None) or
             (self.nextToCallNode.label == AST_ONCOMPLETE_FUNCTION)):
-            returner += """
-#### Unique to last sequence
-# tell other side that the sequence is finished and tell our
-# event that it should no longer wait on the message sequence
-# to complete.  Note that should not have to do two of these.
-# Should only have to do one.  But does not hurt to do both.
-self._writeMsg(
-    _Message._endpointMsg(
-        _context,_actEvent,
-        _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH,
-        '%s'));
-
-if not self._iInitiated(_actEvent.id):
-   # means that I need to check if I should add an oncomplete
-   # to context
-   _onCompleteNameToLookup = self._generateOnCompleteNameToLookup(
-       # hard-coded sequence name
-       '%s');
-   _onCompleteFunction = _OnCompleteDict.get(_onCompleteNameToLookup,None);
-   if _onCompleteFunction != None:
-       _context.addOnComplete(
-           _onCompleteFunction,_onCompleteNameToLookup,self);
-
-_context.signalMessageSequenceComplete(_context.id);
-
-return; # if this was because of a jump, abort, etc., having
-        # return here ensures that the function does not
-        # execute further.
-""" % (self.sequenceName,self.sequenceName);
+            returner += emitUtils.lastMessageSuffix(self.sequenceName);
         else:
             # what to send as control messsage for function so that it
             # calls next function in message sequence on its side.
@@ -942,21 +931,11 @@ return; # if this was because of a jump, abort, etc., having
             nextToCallFuncNameNode = self.nextToCallNode.children[1];
             nextToCallFuncName = nextToCallFuncNameNode.value;
 
-            nextFuncEventName = _getFuncEventKey(
+            nextFuncEventName = emitUtils.getFuncEventKey(
                 nextToCallFuncName,nextToCallEndpointName,fdepDict);
             
-            returner += """
-# note that we may have postponed this event before we got to
-# writing the message.  This check ensures that we do not use
-# the network extra when we do not have to.
-if _actEvent.contextId != _context.id:
-    return;
-
-
-# request the other side to perform next action.
-self._writeMsg(_Message._endpointMsg(_context,_actEvent,'%s','%s'));
-""" % (nextFuncEventName,self.sequenceName);
-            
+            returner += emitUtils.nextMessageSuffix(
+                nextFuncEventName,self.sequenceName);
 
         return returner;
             
@@ -977,35 +956,6 @@ def _getOnCreateNode(endpointName,astRootNode):
 
     return None;
 
-def _getFuncEventKey(funcName,endpointName,fdepDict):
-    '''
-    @param{String} funcName
-    @param{String} endpointName
-
-    @param{dict} fdepDict
-
-    @returns{String}
-    
-    every function should have a special key associated in the event
-    dict.  this is used so that we know where to re-start execution
-    after an event completes.  This key should be the funcName of the
-    functionDep object associated with the function.  In this
-    function, we scan through the entire fdepDict for the function
-    that matches the <endpointName,funcName> tuple.  Then we return
-    that functionDep object's name as its key.
-    '''
-    
-    for fdepKey in fdepDict.keys():
-        fdep = fdepDict[fdepKey];
-
-        if (funcName == fdep.srcFuncName) and (endpointName == fdep.endpointName):
-            return fdep.funcName;
-        
-    # means that we didn't find a match.  this should cause an error.
-    errMsg = '\nBehram error in _getFuncEventKey.  Could not find ';
-    errMsg += 'a function with correct function name.\n';
-    print(errMsg);
-    assert(False);
     
     
 

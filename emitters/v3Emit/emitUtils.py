@@ -142,6 +142,93 @@ def getEndpointNames(astRoot):
     return returner;
     
 
+def lastMessageSuffix(sequenceName):
+    '''
+    Provides the code to conclude the message sequence and call
+    onComplete.
+
+    @param {String} sequenceName --- the name of the sequence that
+    is completing
+
+    @returns {String} --- code to execute
+    '''
+    return """
+#### 
+# tell other side that the sequence is finished and tell our
+# event that it should no longer wait on the message sequence
+# to complete.  Note that should not have to do two of these.
+# Should only have to do one.  But does not hurt to do both.
+self._writeMsg(
+    _Message._endpointMsg(
+        _context,_actEvent,
+        _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH,
+        '%s'));
+
+if not self._iInitiated(_actEvent.id):
+   # means that I need to check if I should add an oncomplete
+   # to context
+   _onCompleteNameToLookup = self._generateOnCompleteNameToLookup(
+       # hard-coded sequence name
+       '%s');
+   _onCompleteFunction = _OnCompleteDict.get(_onCompleteNameToLookup,None);
+   if _onCompleteFunction != None:
+       _context.addOnComplete(
+           _onCompleteFunction,_onCompleteNameToLookup,self);
+
+_context.signalMessageSequenceComplete(_context.id);
+
+return; # if this was because of a jump, abort, etc., having
+        # return here ensures that the function does not
+        # execute further.
+""" % (sequenceName,sequenceName);
+
+
+def nextMessageSuffix(nextFuncEventName,sequenceName):
+    return """
+# note that we may have postponed this event before we got to
+# writing the message.  This check ensures that we do not use
+# the network extra when we do not have to.
+if _actEvent.contextId != _context.id:
+    return;
+
+
+# request the other side to perform next action.
+self._writeMsg(_Message._endpointMsg(_context,_actEvent,'%s','%s'));
+""" % (nextFuncEventName,sequenceName);
+            
+
+
+def getFuncEventKey(funcName,endpointName,fdepDict):
+    '''
+    @param{String} funcName
+    @param{String} endpointName
+
+    @param{dict} fdepDict
+
+    @returns{String}
+    
+    every function should have a special key associated in the event
+    dict.  this is used so that we know where to re-start execution
+    after an event completes.  This key should be the funcName of the
+    functionDep object associated with the function.  In this
+    function, we scan through the entire fdepDict for the function
+    that matches the <endpointName,funcName> tuple.  Then we return
+    that functionDep object's name as its key.
+    '''
+    
+    for fdepKey in fdepDict.keys():
+        fdep = fdepDict[fdepKey];
+
+        if (funcName == fdep.srcFuncName) and (endpointName == fdep.endpointName):
+            return fdep.funcName;
+        
+    # means that we didn't find a match.  this should cause an error.
+    errMsg = '\nBehram error in _getFuncEventKey.  Could not find ';
+    errMsg += 'a function with correct function name.\n';
+    print(errMsg);
+    assert(False);
+
+
 
 class EmitContext(object):
     '''
@@ -162,6 +249,11 @@ class EmitContext(object):
         self.collisionFlag = collisionFlag;
         self.insideOnComplete = False;
 
+        # if emitting for inside of message sequence, this node is
+        # non-none.  important for jump statements.
+        self.msgSequenceNode = None;
+        self.msgSeqFuncNode = None;
+        
     def outOfOnComplete(self):
         self.insideOnComplete = False;
 

@@ -144,6 +144,12 @@ def slicer(node,functionDeps=None,typeStack=None):
         # gets passed to emitter
         typeStack.annotateNode(node.children[2],idName);
 
+    elif ((node.label == AST_JUMP) or
+          (node.label == AST_JUMP_COMPLETE)):
+        # any control flow reached through a jump statement would have
+        # been reached anyways.
+        pass;
+        
         
     elif node.label == AST_RETURN_STATEMENT:
         # should keep track of all identifiers that could be touched

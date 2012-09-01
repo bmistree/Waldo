@@ -39,8 +39,6 @@ from astBuilderCommon import *
 # EndpointSection ... not necessary if have symmetric names....
 
 
-
-
 def p_RootExpression(p):
     '''
     RootExpression : NameSection EndpointAliasSection TraceSection SharedSection MessageSequenceSection EndpointSection EndpointSection
@@ -207,6 +205,7 @@ def p_NonOperatableOn(p):
     '''
     NonOperatableOn : PrintCall
                     | RefreshCall
+                    | Jump
     '''
     #cannot use operators between PrintCall and message literal (they
     #are not operatable on).  Everything in OperatableOn we can put

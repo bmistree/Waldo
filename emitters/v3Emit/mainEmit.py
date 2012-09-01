@@ -56,6 +56,50 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             print(errMsg);
             print(idAnnotationType);
             assert(False);
+
+    elif astNode.label == AST_JUMP_COMPLETE:
+
+        if emitContext.msgSequenceNode == None:
+            errMsg = '\nBehram error: require a message sequence node ';
+            errMsg += 'when emitting a jump complete label.\n';
+            print(errMsg);
+            assert(False);
+
+        # tell side to signal sequence complete and schedule oncompletes
+        msgSeqNameNode = emitContext.msgSequenceNode.children[0];
+        msgSeqName = msgSeqNameNode.value;
+        returner += '\n# handling jump oncomplete \n'        
+        returner += emitUtils.lastMessageSuffix(msgSeqName);
+        returner += '\n';
+
+    elif astNode.label == AST_JUMP:
+        if ((emitContext.msgSequenceNode == None) or
+            (emitContext.msgSeqFuncNode == None)):
+            errMsg = '\nBehram error: require a message sequence and message ';
+            errMsg += 'sequence function node when emitting a jump label.\n';
+            print(errMsg);
+            assert(False);
+
+        currentEndpointName = emitContext.msgSeqFuncNode.children[0].value;
+
+
+        msgSeqNameNode = emitContext.msgSequenceNode.children[0];
+        msgSeqName = msgSeqNameNode.value;
+        jumpToEndpointName = astNode.children[0].value;
+        jumpToFuncName = astNode.children[1].value;        
+
+        if currentEndpointName != jumpToEndpointName:
+            nextFuncEventName = emitUtils.getFuncEventKey(
+                jumpToFuncName,jumpToEndpointName,fdepDict);
+
+            returner += '\n# handling jump statement \n'
+            returner += emitUtils.nextMessageSuffix(nextFuncEventName,msgSeqName);
+        else:
+            #lkjs;
+            print('\nBehram error: still need to permit jumps to self.\n');
+            
+        returner += '\n';
+            
             
     elif astNode.label == AST_FUNCTION_CALL:
         returner += _emitFunctionCall(endpointName,astNode,fdepDict,emitContext);
