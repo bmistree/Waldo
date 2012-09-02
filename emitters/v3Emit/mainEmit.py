@@ -134,7 +134,15 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             
     elif astNode.label == AST_FUNCTION_CALL:
         returner += _emitFunctionCall(endpointName,astNode,fdepDict,emitContext);
-        
+
+    elif astNode.label == AST_IN_STATEMENT:
+        lhsNode = astNode.children[0];
+        rhsNode = astNode.children[1];
+
+        returner += emit(endpointName,lhsNode,fdepDict,emitContext);
+        returner += ' in ';
+        returner += emit(endpointName,rhsNode,fdepDict,emitContext);
+
     elif astNode.label == AST_BRACKET_STATEMENT:
         indexedIntoNode = astNode.children[0];
         indexNode = astNode.children[1];

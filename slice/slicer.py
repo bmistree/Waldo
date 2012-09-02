@@ -143,6 +143,18 @@ def slicer(node,functionDeps=None,typeStack=None):
         slicer (identifierNode,functionDeps,typeStack);
         slicer (toIterateNode,functionDeps,typeStack);
         slicer (forBodyNode,functionDeps,typeStack);
+
+    elif node.label == AST_IN_STATEMENT:
+        lhsNode = node.children[0];
+        rhsNode = node.children[1];
+        slicer(lhsNode,functionDeps,typeStack);
+        slicer(rhsNode,functionDeps,typeStack);
+
+    elif node.label == AST_MAP_ITEM:
+        lhsNode = node.children[0];
+        rhsNode = node.children[1];
+        slicer(lhsNode,functionDeps,typeStack);
+        slicer(rhsNode,functionDeps,typeStack);
         
     elif node.label == AST_REFRESH:
         # don't need to do anything for refresh statement.
