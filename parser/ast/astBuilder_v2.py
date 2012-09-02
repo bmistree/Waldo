@@ -195,13 +195,17 @@ def p_FunctionBodyStatement(p):
                              | AssignmentStatement SEMI_COLON
                              | ConditionStatement
                              | ForStatement
+                             | PlusEqual SEMI_COLON
+                             | MinusEqual SEMI_COLON
+                             | DivideEqual SEMI_COLON
+                             | MultiplyEqual SEMI_COLON                             
                              | ReturnableExpression SEMI_COLON
                              | ReturnStatement SEMI_COLON
     '''
     p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);
 
-        
+    
 def p_NonOperatableOn(p):
     '''
     NonOperatableOn : PrintCall

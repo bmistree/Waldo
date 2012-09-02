@@ -75,6 +75,12 @@ tokens = [
     "COMMA",
     "COLON",
 
+    # operator=
+    "PLUS_EQUAL",
+    "MINUS_EQUAL",
+    "DIVIDE_EQUAL",
+    "MULTIPLY_EQUAL",
+    
     #math operators
     "PLUS",
     "MINUS",
@@ -364,6 +370,22 @@ def t_CURLY_LEFT(t):
 
 def t_CURLY_RIGHT(t):
     '\}';
+    return mStateMachine.addToken(t);
+
+def t_DIVIDE_EQUAL(t):
+    '\/='
+    return mStateMachine.addToken(t);
+
+def t_MINUS_EQUAL(t):
+    '-='
+    return mStateMachine.addToken(t);
+
+def t_PLUS_EQUAL(t):
+    '\+='
+    return mStateMachine.addToken(t);
+
+def t_MULTIPLY_EQUAL(t):
+    '\*='
     return mStateMachine.addToken(t);
 
 def t_DIVIDE(t):

@@ -231,7 +231,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         forBodyNode = node.children[forBodyNodeIndex];
         forBodyNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-
+    
+        
     elif node.label == AST_IN_STATEMENT:
         node.type = TYPE_BOOL;
         lhsNode = node.children[0];

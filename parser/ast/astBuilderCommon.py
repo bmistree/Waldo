@@ -264,6 +264,49 @@ def p_NonBracketOperatableOn(p):
                               ''';
     p[0] = p[1];
 
+
+
+def p_PlusEqual(p):
+    '''
+    PlusEqual : OperatableOn PLUS_EQUAL ReturnableExpression
+    '''
+    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    plusNode = AstNode(AST_PLUS,p[1].lineNo,p[1].linePos);
+    plusNode.addChildren([p[1],p[3]]);
+    p[0].addChild(plusNode);
+    
+def p_MinusEqual(p):
+    '''
+    MinusEqual : OperatableOn MINUS_EQUAL ReturnableExpression
+    '''
+    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    minusNode = AstNode(AST_MINUS,p[1].lineNo,p[1].linePos);
+    minusNode.addChildren([p[1],p[3]]);
+    p[0].addChild(minusNode);
+    
+def p_MultiplyEqual(p):
+    '''
+    MultiplyEqual : OperatableOn MULTIPLY_EQUAL ReturnableExpression
+    '''
+    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    multiplyNode = AstNode(AST_MULTIPLY,p[1].lineNo,p[1].linePos);
+    multiplyNode.addChildren([p[1],p[3]]);
+    p[0].addChild(multiplyNode);
+    
+def p_DivideEqual(p):
+    '''
+    DivideEqual : OperatableOn DIVIDE_EQUAL ReturnableExpression
+    '''
+    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    divideNode = AstNode(AST_DIVIDE,p[1].lineNo,p[1].linePos);
+    divideNode.addChildren([p[1],p[3]]);
+    p[0].addChild(divideNode);
+
+    
 def p_OperatableOn(p):
     '''
     OperatableOn : NonBracketOperatableOn
