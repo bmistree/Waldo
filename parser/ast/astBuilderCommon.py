@@ -42,6 +42,7 @@ def p_EndpointAliasSection(p):
     p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1));
     p[0].addChildren([p[2], p[5]]);
 
+    
 
 def p_TraceSection(p):
     '''
@@ -734,8 +735,13 @@ def p_BinaryOperator(p):
 
 def p_ParenthesizedExpression(p):
     '''ParenthesizedExpression : NOT ReturnableExpression
-                               | InternalReturnableExpression
+                               | InExpression
     '''
+
+    # '''ParenthesizedExpression : NOT ReturnableExpression
+    #                            | InternalReturnableExpression
+    # '''
+
     
     if (len(p) == 3):
         p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(1),p.lexpos(1));
@@ -747,10 +753,21 @@ def p_ParenthesizedExpression(p):
         assert(False);
 
 
+def p_InExpression(p):
+    '''
+    InExpression : BooleanStatement IN InExpression
+                 | BooleanStatement
+    '''
+    if len(p) == 4:
+        p[0] = AstNode(AST_IN_STATEMENT, p[1].lineNo,p[1].linePos);
+        p[0].addChildren([ p[1], p[3] ]);
+    else:
+        p[0] = p[1];
 
-def p_InternalReturnableExpression(p):    
-    '''InternalReturnableExpression : NonBooleanStatement BooleanOperator InternalReturnableExpression
-                                    | NonBooleanStatement'''
+
+def p_BooleanStatement(p):
+    '''BooleanStatement : NonBooleanStatement BooleanOperator BooleanStatement
+                        | NonBooleanStatement'''
 
     #skip over internal_returnable_expression label
     if (len(p) == 2):
@@ -760,7 +777,7 @@ def p_InternalReturnableExpression(p):
         p[0].addChild(p[1]);
         p[0].addChild(p[3]);
     else:
-        errPrint('\nIn InternalReturnableExpression, incorrect number of matches\n');
+        errPrint('\nIn BooleanStatement, incorrect number of matches\n');
         assert(False);
     
     

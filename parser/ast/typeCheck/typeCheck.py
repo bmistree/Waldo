@@ -231,7 +231,51 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         forBodyNode = node.children[forBodyNodeIndex];
         forBodyNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
+
+    elif node.label == AST_IN_STATEMENT:
+        node.type = TYPE_BOOL;
+        lhsNode = node.children[0];
+        rhsNode = node.children[1];
+
+        lhsNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+        rhsNode.typeCheck(progText,typeStack,avoidFunctionObjects);
         
+        if rhsNode.type == TYPE_STRING:
+            if lhsNode.type != TYPE_STRING:
+                errMsg = 'Error with in statement.  Right-hand side of in ';
+                errMsg += 'statement has type Text, left-hand side should ';
+                errMsg += 'also be of type Text.  However, it is actually ';
+                errMsg += 'of type ' + lhsNode.type;
+                errorFunction(errMsg,[lhsNode],[lhsNode.lineNo],progText);
+        elif isMapType(rhsNode.type):
+            if rhsNode.type == EMPTY_MAP_SENTINEL:
+                pass;
+            else:
+                mapIndexType = getMapIndexType(rhsNode.type);
+                if mapIndexType != lhsNode.type:
+                    errMsg = 'Error with in statement.  Right-hand side of ';
+                    errMsg += 'statement is a map type with indices ';
+                    errMsg += mapIndexType + '.  The left-hand side of the in ';
+                    errMsg += 'statement should have same type.  Instead, it ';
+                    errMsg += 'has type ' + lhsNode.type + '.';
+                    errorFunction(errMsg, [lhsNode],[lhsNode.lineNo],progText);
+        elif isListType(rhsNode.type):
+            if rhsNode.type == EMPTY_LIST_SENTINEL:
+                pass;
+            else:
+                listElementType = getListValueType(rhsNode.type);
+                if listElementType != lhsNode.type:
+                    errMsg = 'Error with in statement.  Right-hand side of ';
+                    errMsg += 'statement is a list type with indices ';
+                    errMsg += listElementType + '.  The left-hand side of the in ';
+                    errMsg += 'statement should have same type.  Instead, it ';
+                    errMsg += 'has type ' + lhsNode.type + '.';
+                    errorFunction(errMsg, [lhsNode],[lhsNode.lineNo],progText);
+        else:
+            errMsg = 'Error with in statement.  Right-hand side of statement ';
+            errMsg += 'must have type List, Map, or Text.  Instead, it has type ';
+            errMsg += lhsNode.type + '.';
+            errorFunction(errMsg,[lhsNode],[lhsNode.lineNo],progText);
             
     elif (node.label == AST_JUMP_COMPLETE) or (node.label == AST_JUMP):
 

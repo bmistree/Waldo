@@ -1,5 +1,6 @@
 *************************
-Cannot infer type of badInit.  Are you sure it is valid? 
+Cannot infer type of badInit.  Are you sure it is valid?  Are you sure that you 
+declared it first? 
 -------
 Line numbers:
 25
