@@ -158,14 +158,15 @@ def _emitPublicPrivateOnCreateFunctionDefinition(
 # external caller and don't have to generate new function
 # calls for it.
 _returner = self.%s('''% _convertSrcFuncNameToInternal(funcName);
+        
+        # insert function arguments
 
-        # insert in function arguments
+        publicMethodBody += '_Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,\nNone,None';
         for argName in funcArguments:
-            publicMethodBody += argName + ',';
+            publicMethodBody += ',' + argName;
+        publicMethodBody += ');\n';
 
-        publicMethodBody += '''_Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,
-    None,None);
-
+        publicMethodBody += '''
 # should check if there are other active events
 self._tryNextEvent();
 return _returner;
@@ -184,10 +185,12 @@ return _returner;
     
     # actually emit the function    
     returner += 'def %s(self,' % _convertSrcFuncNameToInternal(funcName);
+    returner += '_callType,_actEvent,_context'    
     for argName in funcArguments:
-        returner += argName + ',';
+        returner += ',' + argName;
 
-    returner += '_callType,_actEvent=None,_context=None):\n'
+    returner += '):\n';
+
 
     funcBody = r"""'''
 @param{String} _callType ---
@@ -279,8 +282,7 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
     # (_callType, _actEvent, and _context) off the
     # back, because these will be automatically filled when
     # function is called internally.
-    _functionArgs = _functionArgs[1:];
-    _functionArgs = _functionArgs[0: len(_functionArgs) - 3];
+    _functionArgs = _functionArgs[4:];
 
     self._lock(); # locking at this point, because call to
                   # generateActiveEvent, uses the committed dict.
@@ -525,7 +527,6 @@ _Endpoint.__init__(
         astRootNode,fdepDict,emitContext);
     initMethodBody += '\n\n';
 
-    
     # on create function (if it exists)
     if onCreateNode != None:
         initMethodBody += '# call oncreate function for remaining initialization \n';
@@ -667,7 +668,7 @@ class _MessageFuncNodeShared(object):
 
         # note, if change oncomplete function name, must also change
         # it in specifyOnCompleteDict of onCompleteDict.py
-        returner += ('def %s(self,_callType,_actEvent=None,_context=None):' %
+        returner += ('def %s(self,_callType,_actEvent,_context):' %
                      self.msgFuncNode.sliceAnnotationName);
         returner += '\n';
 
@@ -748,9 +749,10 @@ if _context == None:
 
         returner = '';
         returner += 'def %s (self, ' % _convertSrcFuncNameToInternal(funcName);
-        for argName in funcArguments:
-            returner += argName + ', ';
-        returner +=  '_callType,_actEvent=None,_context=None):\n'
+        # for argName in funcArguments:
+        #     returner += argName + ', ';
+        # takes no external arguments
+        returner +=  '_callType,_actEvent,_context):\n'
 
         # header will be the same for all message sends
         receiveBody = r"""'''
@@ -825,9 +827,13 @@ if _context == None:
         returner = '';
 
         returner += 'def %s (self, ' % _convertSrcFuncNameToInternal(funcName);
+        returner +=  '_callType,_actEvent,_context'
         for argName in funcArguments:
-            returner += argName + ', ';
-        returner +=  '_callType,_actEvent=None,_context=None):\n'
+            # defaulting to none here in case function is called as a
+            # result of a message.
+            returner += ',' + argName + '=None ';
+        returner += '):\n';
+
 
         # header will be the same for all message sends
         sendBody = r"""'''

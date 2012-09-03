@@ -509,45 +509,45 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     funcCallText += '('
     returner += funcCallText;
 
+
     amtToIndent = len(funcCallText);
     indentStr = '';
     for counter in range(0,amtToIndent):
         indentStr += ' ';
 
+
     first = True;
-    for argNode in funcArgListNode.children:
-        if not first:
-            returner += indentStr;
-        else:
-            first = False;
-
-        returner += emit(endpointName,argNode,fdepDict,emitContext);
-        returner += ',\n';
-
-    if funcNameNode.sliceAnnotationName != None:
-        # handling calling a function object differently from calling function from source
-        returner += indentStr + ')';
-    else:
-        if not first:
-            returner += indentStr;
+    if funcNameNode.sliceAnnotationName  == None:
+        # we are handling a call to a user-defined function, not a
+        # funciton object.
 
         if not emitContext.insideOnComplete:
+            # means that we are not inside an oncomplete function and
+            # that we should call the internal version of the function
+            first = False;
             returner +=  '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n'
             returner += indentStr + '_actEvent,\n';
-            returner += indentStr + '_context)';
+            returner += indentStr + '_context';
+
+    
+    # emit user-defined functions
+    for argNode in funcArgListNode.children:
+        if not first:
+            returner += ',' + indentStr;
         else:
-            returner += ')';
-            # returner +=  '_Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,\n'
-            # returner += indentStr + 'None,\n';
-            # returner += indentStr + 'None)';
+            first = False;
+            
+        returner += emit(endpointName,argNode,fdepDict,emitContext);
+        returner += '\n';
 
+    returner += ')'
 
+    if funcNameNode.sliceAnnotationName == None:
         if _isMessageSend(funcName,endpointName,fdepDict) and (not emitContext.insideOnComplete):
             # if this is a call to a message function, need to block
             # until completes.
             returner += '\n';
             returner += _messageSendBlockingCode();
-
             
     return returner;
 

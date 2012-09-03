@@ -1026,12 +1026,13 @@ class _ActiveEvent(object):
         # construct the string that will be eval-ed to give the function.
         funcName = self.endpoint._execFromToInternalFuncDict[self.toExecFrom];
         funcArgs = '';
-        for argIndex in range(0,len(self.argsArray)):
-            funcArgs += 'self.argsArray[%s],' % str(argIndex);
-
 
         # _callType, _actEvent, and _context, respectively
         funcArgs += str(functionArgumentType) + ',self,contextToUse';
+
+        for argIndex in range(0,len(self.argsArray)):
+            funcArgs += ',self.argsArray[%s]' % str(argIndex);
+
         funcCall = ('self.endpoint.%s(%s)' %
                     (funcName,funcArgs));
 
@@ -1670,7 +1671,7 @@ class _Endpoint(object):
             eventContext,
             # specified so that internal message function does not
             # use return message queue, etc.
-            _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSSAGE);
+            _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE);
         
     def _iInitiated(self,actEventId):
         '''
@@ -1759,7 +1760,7 @@ class _Endpoint(object):
         collision with user-defined functions
         '''
         #### DEBUG
-        if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
+        if _callType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE:
             errMsg = '\nBehram error.  A message receive function was ';
             errMsg += 'called without an internally_called _callType.\n';
             print(errMsg);
