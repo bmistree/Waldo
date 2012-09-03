@@ -194,6 +194,9 @@ if _actEvent.contextId != _context.id:
 
 # request the other side to perform next action.
 self._writeMsg(_Message._endpointMsg(_context,_actEvent,'%s','%s'));
+return; # if this was because of a jump, having
+        # return here ensures that the function does
+        # not execute further.
 """ % (nextFuncEventName,sequenceName);
             
 
