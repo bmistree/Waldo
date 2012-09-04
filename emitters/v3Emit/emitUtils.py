@@ -164,18 +164,21 @@ self._writeMsg(
         _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH,
         '%s'));
 
+_onCompleteNameToLookup = self._generateOnCompleteNameToLookup(
+   # hard-coded sequence name
+   '%s');
+_onCompleteFunction = _OnCompleteDict.get(_onCompleteNameToLookup,None);
+
 if not self._iInitiated(_actEvent.id):
    # means that I need to check if I should add an oncomplete
    # to context
-   _onCompleteNameToLookup = self._generateOnCompleteNameToLookup(
-       # hard-coded sequence name
-       '%s');
-   _onCompleteFunction = _OnCompleteDict.get(_onCompleteNameToLookup,None);
    if _onCompleteFunction != None:
        _context.addOnComplete(
            _onCompleteFunction,_onCompleteNameToLookup,self);
-
-_context.signalMessageSequenceComplete(_context.id);
+else:
+    _context.signalMessageSequenceComplete(
+        _context.id,_onCompleteFunction,_onCompleteNameToLookup,
+        self);
 
 return; # if this was because of a jump, abort, etc., having
         # return here ensures that the function does not

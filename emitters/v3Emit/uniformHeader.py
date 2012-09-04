@@ -354,9 +354,12 @@ class _Context(object):
 
 
     def postpone(self):
-        self.signalMessageSequenceComplete(_Context.INVALID_CONTEXT_ID);
+        self.signalMessageSequenceComplete(
+            _Context.INVALID_CONTEXT_ID,None,None,None);
 
-    def signalMessageSequenceComplete(self,contextId):
+    def signalMessageSequenceComplete(
+        self,contextId,onCompleteFunctionToAppendToContext,
+        onCompleteKey,endpoint):
         '''
         @param {int} contextId --- The id of the most up-to-date
         context that we should be using.  If the executing code is
@@ -373,6 +376,12 @@ class _Context(object):
         sequence.
         '''
 
+        # add oncomplete function if exists
+        if onCompleteFunctionToAppendToContext != None:
+            self.addOnComplete(
+                onCompleteFunctionToAppendToContext,
+                onCompleteKey,endpoint);        
+        
         # execution thread that had been blocking on reading queue now
         # can continue.  depending on result of this read, it keeps
         # executing or raises a _PostponeException that the caller
@@ -1490,17 +1499,13 @@ class _Endpoint(object):
         # possibility for doing something more intelligent, vis-a-vis
         # not sending full frames.
         actEventContext.updateEnvironmentData(contextData,self);
-        
+
         # notify active event that had been waiting that it can resume
         # its execution.
-        actEventContext.signalMessageSequenceComplete(actEventContext.id);
+        actEventContext.signalMessageSequenceComplete(
+            actEventContext.id,onCompleteFunctionToAppendToContext,
+            onCompleteKey,self);
 
-        # add oncomplete function if exists
-        if onCompleteFunctionToAppendToContext != None:
-            actEventContext.addOnComplete(
-                onCompleteFunctionToAppendToContext,
-                onCompleteKey,self);        
-        
 
     def _writeMsgSelf(self,msgDictionary):
         '''
@@ -1814,7 +1819,7 @@ class _Endpoint(object):
                 # not to add an oncomplete when this finishes
                 _REFRESH_SEND_FUNCTION_NAME));
 
-        _context.signalMessageSequenceComplete(_context.id);
+        _context.signalMessageSequenceComplete(_context.id,None,None,None);
 
         # note because know that no oncomplete function for refresh,
         # do not need to check oncomplete dict.
