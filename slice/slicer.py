@@ -155,6 +155,15 @@ def slicer(node,functionDeps=None,typeStack=None):
         rhsNode = node.children[1];
         slicer(lhsNode,functionDeps,typeStack);
         slicer(rhsNode,functionDeps,typeStack);
+
+    elif node.label == AST_APPEND_STATEMENT:
+        toAppendToNode = node.children[0];
+        toAppendNode = node.children[1];
+        slicer(toAppendToNode,functionDeps,typeStack);
+        slicer(toAppendNode,functionDeps,typeStack);
+        # FIXME: Need to improve slicing for append statement.  Should
+        # specify that toAppendToNode got written to.
+
         
     elif node.label == AST_REFRESH:
         # don't need to do anything for refresh statement.
@@ -389,7 +398,11 @@ def slicer(node,functionDeps=None,typeStack=None):
         nameNode = node.children[1];
         nodeName = nameNode.value;
         isMute = isMutable(nodeTypeNode);
-        ntt = typeStack.addIdentifier(nodeName,isMute);
+
+        ntt = typeStack.getIdentifier(nodeName);
+        if ntt == None:
+            ntt = typeStack.addIdentifier(nodeName,isMute);
+            
         if len(node.children) == 3:
             # means that we are initializing the declaration too.
             initializationNode = node.children[2];
@@ -454,7 +467,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             isMute = isMutable(identifierTypeNode);
             newNtt = typeStack1.addIdentifier(
                 identifierName,isMute,TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL);
-            
+
             typeStack2.addIdentifierAsNtt(newNtt);
             
             # does not matter which type stack annotates the node
