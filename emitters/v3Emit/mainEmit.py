@@ -103,6 +103,15 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         returner += emitUtils.lastMessageSuffix(msgSeqName);
         returner += '\n';
 
+    elif astNode.label == AST_APPEND_STATEMENT:
+        toAppendToNode = astNode.children[0];
+        toAppendNode = astNode.children[1];
+        returner += emit(endpointName,toAppendToNode,fdepDict,emitContext);
+        returner += '.append(';
+        returner += emit(endpointName,toAppendNode,fdepDict,emitContext);
+        returner += ')';
+        
+        
     elif astNode.label == AST_JUMP:
         if ((emitContext.msgSequenceNode == None) or
             (emitContext.msgSeqFuncNode == None)):

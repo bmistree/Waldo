@@ -261,6 +261,7 @@ def p_NonBracketOperatableOn(p):
                               | KeysStatement
                               | LenStatement
                               | RangeStatement
+                              | AppendStatement
                               ''';
     p[0] = p[1];
 
@@ -720,9 +721,9 @@ def p_BooleanOperator(p):
                        | LESS_THAN_EQ
                        '''
 
-    if (p[1] == 'And'):
+    if (p[1] == 'and'):
         p[0] = AstNode(AST_AND,p.lineno(1),p.lexpos(1));
-    elif(p[1] == 'Or'):
+    elif(p[1] == 'or'):
         p[0] = AstNode(AST_OR,p.lineno(1),p.lexpos(1));
     elif(p[1] == '=='):
         p[0] = AstNode(AST_BOOL_EQUALS,p.lineno(1),p.lexpos(1));
@@ -741,6 +742,13 @@ def p_BooleanOperator(p):
         assert(False);
     
 
+def p_AppendStatement(p):
+    '''
+    AppendStatement : OperatableOn DOT_APPEND LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_APPEND_STATEMENT,p[1].lineNo,p[1].linePos);
+    p[0].addChildren([p[1],p[4]]);
+    
 
 def p_AssignmentStatement(p):
     '''

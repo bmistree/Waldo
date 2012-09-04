@@ -231,7 +231,35 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         forBodyNode = node.children[forBodyNodeIndex];
         forBodyNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-    
+    elif node.label == AST_APPEND_STATEMENT:
+        toAppendToNode = node.children[0];
+        toAppendNode = node.children[1];
+
+        toAppendToNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+        toAppendNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+
+        if not isListType(toAppendToNode.type):
+            errMsg = 'Error append operation is only supported on lists.  ';
+            errMsg += 'You are calling append on ' + toAppendToNode.type + '.';
+            errorFunction(errMsg,[toAppendToNode],[toAppendToNode.lineNo],
+                          progText);
+
+        if toAppendToNode.type == EMPTY_LIST_SENTINEL:
+            nodeType = buildListTypeSignatureFromTypeName(toAppendNode.type);
+            node.type = json.dumps(nodeType);
+        else:
+            node.type = toAppendToNode.type;
+            # check that the elements of the list match what we're appending
+            listElemType = getListValueType(toAppendToNode.type);
+            if checkTypeMismatch(toAppendToNode,listElemType,toAppendNode.type,
+                                 typeStack,progText):
+                errMsg = 'Type mismatch when trying to append element.  List ';
+                errMsg += 'appending to has type ' + toAppendToNode.type + ', and ';
+                errMsg += 'therefore you must append an element with type ';
+                errMsg += listElemType + '.  Instead, you appended an element with ';
+                errMsg += 'type ' + toAppendNode.type + '.';
+                errorFunction(errMsg, [toAppendToNdoe],[toAppendToNode.lineNo],
+                              progText);
         
     elif node.label == AST_IN_STATEMENT:
         node.type = TYPE_BOOL;
