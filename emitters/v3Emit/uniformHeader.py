@@ -298,7 +298,7 @@ class _Context(object):
                 # that we are copying (ie, this event relies on the
                 # other endpoint's endpoint global variable.  put in a
                 # does not exist placeholder.
-                returner.endGlobals[readKey] = _Context.DNE_PLACE_HOLDER;
+                returner.endGlobals[writeKey] = _Context.DNE_PLACE_HOLDER;
                 
 
         returner.seqGlobals = activeEvent.seqGlobals;
@@ -979,16 +979,21 @@ class _ActiveEvent(object):
         # decrement the reference counter for each of the reads and
         # writes that we had been using as part of these events.
         for globReadKey in self.activeGlobReads.keys():
-            self.endpoint._globSharedReadVars[globReadKey] -= 1;
-            
-            potentialTransition = (potentialTransition or
-                                   (self.endpoint._globSharedReadVars[globReadKey] == 0));
+            # check if in dict so that do not try to decrement
+            # value for global variable this endpoint does not own.
+            if globReadKey in self.endpoint._globSharedReadVars:
+                self.endpoint._globSharedReadVars[globReadKey] -= 1;
+                potentialTransition = (potentialTransition or
+                                       (self.endpoint._globSharedReadVars[globReadKey] == 0));
 
         for globWriteKey in self.activeGlobWrites.keys():
-            self.endpoint._globSharedWriteVars[globWriteKey] -= 1;
+            # check if in dict so that do not try to decrement
+            # value for global variable this endpoint does not own.
+            if globWriteKey in self.endpoint._globSharedWriteVars:
+                self.endpoint._globSharedWriteVars[globWriteKey] -= 1;
             
-            potentialTransition = (potentialTransition or
-                                   (self.endpoint._globSharedWriteVars[globWriteKey] == 0));            
+                potentialTransition = (potentialTransition or
+                                       (self.endpoint._globSharedWriteVars[globWriteKey] == 0));            
         
         return potentialTransition;
 
