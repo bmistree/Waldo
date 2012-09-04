@@ -119,16 +119,17 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         jumpToEndpointName = astNode.children[0].value;
         jumpToFuncName = astNode.children[1].value;        
 
+        nextFuncEventName = emitUtils.getFuncEventKey(
+            jumpToFuncName,jumpToEndpointName,fdepDict);
         if currentEndpointName != jumpToEndpointName:
-            nextFuncEventName = emitUtils.getFuncEventKey(
-                jumpToFuncName,jumpToEndpointName,fdepDict);
-
             returner += '\n# handling jump statement \n'
+            jumpToSelf = False;
             returner += emitUtils.nextMessageSuffix(nextFuncEventName,msgSeqName);
         else:
-            #lkjs;
-            print('\nBehram error: still need to permit jumps to self.\n');
+            jumpToSelf = True;
+            returner += '\n# handling jump to self statement \n'
             
+        returner += emitUtils.nextMessageSuffix(nextFuncEventName,msgSeqName,jumpToSelf);
         returner += '\n';
             
             

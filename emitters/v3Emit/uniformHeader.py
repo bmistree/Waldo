@@ -138,7 +138,17 @@ class _OnComplete(threading.Thread):
     def fire(self):
         self.start();
 
-        
+class _MsgSelf(threading.Thread):
+    '''
+    Used by an endpoint to start a new thread to send a message to
+    itself (arises eg from jump statements)
+    '''
+    def __init__(self,endpoint,msgDict):
+        self.endpoint = endpoint;
+        self.msgDict = msgDict;
+    def start(self):
+        self.endpoint._msgReceive(self.msgDict);
+
         
 class _NextEventLoader(threading.Thread):
     '''
@@ -1486,7 +1496,14 @@ class _Endpoint(object):
                 onCompleteFunctionToAppendToContext,
                 onCompleteKey,self);        
         
-                
+
+    def _writeMsgSelf(self,msgDictionary):
+        '''
+        @param {dict} msgDictionary --- @see _writeMsg
+        '''
+        msgSelf = _MsgSelf(self,msgDictionary);
+        msgSelf.start();
+            
     def _writeMsg(self,msgDictionary):
         '''
         @param {dict} msgDictionary --- Should have at least some of

@@ -183,7 +183,11 @@ return; # if this was because of a jump, abort, etc., having
 """ % (sequenceName,sequenceName);
 
 
-def nextMessageSuffix(nextFuncEventName,sequenceName):
+def nextMessageSuffix(nextFuncEventName,sequenceName,toSelf=False):
+    writeFuncName = '_writeMsg';
+    if toSelf:
+        writeFuncName = '_writeMsgSelf';
+    
     return """
 # note that we may have postponed this event before we got to
 # writing the message.  This check ensures that we do not use
@@ -191,14 +195,14 @@ def nextMessageSuffix(nextFuncEventName,sequenceName):
 if _actEvent.contextId != _context.id:
     return;
 
-
 # request the other side to perform next action.
-self._writeMsg(_Message._endpointMsg(_context,_actEvent,'%s','%s'));
+self.%s(_Message._endpointMsg(_context,_actEvent,'%s','%s'));
 return; # if this was because of a jump, having
         # return here ensures that the function does
         # not execute further.
-""" % (nextFuncEventName,sequenceName);
+""" % (writeFuncName,nextFuncEventName,sequenceName);
             
+    
 
 
 def getFuncEventKey(funcName,endpointName,fdepDict):
