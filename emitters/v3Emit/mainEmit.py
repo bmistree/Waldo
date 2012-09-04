@@ -543,14 +543,14 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     # emit user-defined functions
     for argNode in funcArgListNode.children:
         if not first:
-            returner += ',' + indentStr;
+            returner += ',\n' + indentStr;
         else:
             first = False;
             
         returner += emit(endpointName,argNode,fdepDict,emitContext);
-        returner += '\n';
 
-    returner += ')'
+
+    returner +=  ')'
 
     if funcNameNode.sliceAnnotationName == None:
         if _isMessageSend(funcName,endpointName,fdepDict) and (not emitContext.insideOnComplete):
