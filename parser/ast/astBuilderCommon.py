@@ -88,10 +88,10 @@ def p_TraceLine(p):
 def p_Jump(p):
     '''
     Jump : JUMP Identifier DOT Identifier
-         | JUMP ONCOMPLETE
+         | FINISH LEFT_PAREN RIGHT_PAREN
     '''
 
-    if len(p) == 3:
+    if len(p) == 4:
         p[0] = AstNode(AST_JUMP_COMPLETE,p.lineno(1),p.lexpos(1));
     else:
         p[0] = AstNode(AST_JUMP,p.lineno(1),p.lexpos(1));

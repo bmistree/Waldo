@@ -42,6 +42,7 @@ reserved = {
     'range': 'RANGE',
     'keys': 'KEYS',
     'len': 'LEN',
+    'finish': 'FINISH',
     'refresh': 'REFRESH',
     'Jump': 'JUMP'
     };

@@ -312,8 +312,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if ((not typeStack.inSequencesSection) or
             typeStack.inOnComplete):
             errMsg = 'Error.  You can only issue a jump statement ';
-            errMsg += 'directly from a message sequence (and you cannot ';
-            errMsg += 'jump from within an oncomplete statement).'
+            errMsg += 'or finish directly from a message sequence ';
+            errMsg += '(and you cannot jump or finish ';
+            errMsg += 'from within an oncomplete statement).'
             errorFunction(errMsg,[node],[node.lineNo],progText);
 
         
