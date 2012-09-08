@@ -21,6 +21,7 @@ class AstNode():
         self.lineNo   = _lineNo;
         self.linePos  = _linePos;
         self.type     = None;
+        self.external = None;
         self.note     = None;
         self.children = [];
 

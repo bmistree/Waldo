@@ -147,15 +147,30 @@ def p_Type(p):
          | FunctionType
          | ListType
          | MapType
+         
+         | EXTERNAL NUMBER_TYPE
+         | EXTERNAL STRING_TYPE
+         | EXTERNAL BOOL_TYPE
+         | EXTERNAL ListType
+         | EXTERNAL MapType
          '''
 
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1));    
+    if len(p) == 2:
+        typeIndex = 1;
+    else:
+        typeIndex = 2;
+
     if (isinstance(p[1],basestring)):
         p[0].value = p[1];
     else:
         # means that has function or list type
         p[0] = p[1];
 
+    if len(p) == 3:
+        p[0].external = True;
+        
+        
 
 def p_MapType(p):
     '''
