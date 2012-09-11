@@ -1249,6 +1249,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 node.type = json.dumps(funcType.createJsonType());
         else:
             node.type = typer;
+            # need to copy external tag too
+            ctxElm = typeStack.getIdentifierElement(name);
+            if ctxElm == None:
+                assert(False);
+                
+            node.external = ctxElm.astNode.external;
+            
 
 
     elif(node.label == AST_ENDPOINT_FUNCTION_SECTION):
@@ -1424,6 +1431,14 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (lhs.label == AST_IDENTIFIER):
             lhsType,controlledBy = typeStack.getIdentifierType(lhs.value);
             lhs.type  = lhsType;
+            
+            # need to copy external tag too
+            ctxElm = typeStack.getIdentifierElement(lhs.value);
+            if ctxElm == None:
+                assert(False);
+                
+            lhs.external = ctxElm.astNode.external;
+            
         else:
             lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
             lhsType = lhs.type;
