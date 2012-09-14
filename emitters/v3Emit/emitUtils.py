@@ -196,7 +196,7 @@ def nextMessageSuffix(nextFuncEventName,sequenceName,toSelf=False):
 # writing the message.  This check ensures that we do not use
 # the network extra when we do not have to.
 if _actEvent.contextId != _context.id:
-    return;
+    raise _PostponeException();
 
 # request the other side to perform next action.
 self.%s(_Message._endpointMsg(_context,_actEvent,'%s','%s'));
@@ -204,7 +204,6 @@ return; # if this was because of a jump, having
         # return here ensures that the function does
         # not execute further.
 """ % (writeFuncName,nextFuncEventName,sequenceName);
-            
     
 
 
