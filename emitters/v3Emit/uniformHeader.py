@@ -1869,7 +1869,8 @@ class _Endpoint(object):
             if inactiveEvent.active:
                 continue;
 
-            eventAdded, context = inactiveEvent.addEventToEndpointIfCan(False,True);
+            eventAdded, context = inactiveEvent.addEventToEndpointIfCan(
+                inactiveEvent.argsArray,False,True);
             if eventAdded:
                 self._unlock();
                 self._executeActive(
@@ -2181,7 +2182,7 @@ class _Endpoint(object):
             # are postponed.
             forceAddition = self._myPriority < self._theirPriority;
             eventAdded,eventContext = actEvent.addEventToEndpointIfCan(
-                forceAddition);
+                None,forceAddition);
 
             self._unlock();
 
