@@ -22,6 +22,7 @@ import inspect as _inspect;
 import time as _time;
 import threading;
 import Queue;
+import numbers;
 
 '''
 Designed message sequencing so that the sender of a message
@@ -138,6 +139,47 @@ class _OnComplete(threading.Thread):
     def fire(self):
         self.start();
 
+class _ExtInterfaceCleanup(threading.Thread):
+    '''
+    If we begin an internal event by being called externally, we need
+    to do two things:
+    
+      1) If we were passed any external objects as function arguments,
+         we put these in the external store and increased their
+         reference counts by one.  After finishing the event, we need
+         to decrement the reference counts for each of these objects
+         to their original state.
+
+      2) Check whether to remove any external objects from the shared
+         store because nothing is pointing at them (ie, call
+         gcCheckEmptyRefCounts)
+    
+    This class contains a separate class to do each.
+    '''
+    def __init__(self, externalsArray,externalStore,endpointName):
+        '''
+        @param {Array} externalsArray --- An array of external
+        (_Shared) objects.
+
+        @param {ExternalStore object} --- externalStore
+        '''
+        self.externalsArray = externalsArray;
+        self.externalStore = externalStore;
+        self.endpointName = endpointName;
+
+        threading.Thread.__init__(self);
+        
+    def run(self):
+
+        # FIXME: Could eventually be much faster if passed the array
+        # of externalObjects to decrease reference counts for and did
+        # them as a batch rather than doing each successively.
+        for extObj in self.externalsArray:
+            self.externalStore.decreaseRefCount(self.endpointName,extObj);
+        self.externalStore.gcCheckEmptyRefCounts();
+
+
+        
 class _MsgSelf(threading.Thread):
     '''
     Used by an endpoint to start a new thread to send a message to
@@ -162,6 +204,149 @@ class _NextEventLoader(threading.Thread):
         self.endpoint._checkNextEvent();
 
 
+_EXT_ID_KEY_SEPARATOR = '________'
+
+def _externalIdKey(endpointName,extId):
+    return str(extId) + _EXT_ID_KEY_SEPARATOR + endpointName;
+
+def _keyToExternalId(key):
+    '''
+    @param {String} key --- Should have been generated from _externalIdKey;
+
+    @returns{int} --- the id of the external object (ie, the first
+    part of the key.
+    '''
+    index = key.find(_EXT_ID_KEY_SEPARATOR);
+    #### DEBUG
+    if index == -1:
+        assert(False);
+    #### END DEBUG
+
+    return int( key[0:index] );
+
+def _getExtIdIfMyEndpoint(key,endpointName):
+    '''
+    @returns {int or None} --- Returns None if this key does not match
+    this endpoint. Otherwise, return the external id.
+    '''
+    index = key.find(_EXT_ID_KEY_SEPARATOR);
+
+    #### DEBUG
+    if index == -1:
+        assert(False);
+    #### END DEBUG
+
+    if key[index + len(_EXT_ID_KEY_SEPARATOR):] != endpointName:
+        return None;
+    
+    return _keyToExternalId(key);       
+
+
+class _ExternalStoreElement(object):
+    def __init__(self,externalObject):
+        self.referenceCount = 0;
+        self.externalObject = externalObject;
+
+        
+class _ExternalStore(object):
+    def __init__(self):
+        # maps what is returned from _externalIdKey to
+        # _ExternalStoreElement (reference count + object itself)
+        self.dict = {};
+        self._mutex = threading.RLock();
+
+    def gcCheckEmptyRefCounts(self):
+        '''
+        We do not want to hold onto a reference to to the externally
+        shared object forever because this would prevent the shared
+        object from being garbage collected when no other references
+        point at it.  Therefore, after commit check if need to hold
+        onto the external any longer.
+        '''
+        self._lock();
+        
+        toRemove = [];
+        for keys in self.dict.keys():
+            element = self.dict[keys];
+            if element.referenceCount == 0:
+                toRemove.append(keys);
+                
+        for keyToRemove in toRemove:
+            del self.dict[keyToRemove];
+
+        self._unlock();
+
+    def getExternalObject(self,endpointName,extId):
+        '''
+        @returns{External shared object or None} --- None if does not
+        exist in dictionary.
+        '''
+        self._lock();
+
+        key = _externalIdKey(endpointName,extId);
+        returner = self.dict.get(key,None);
+
+        self._unlock();
+
+        if returner == None:
+            return None;
+        
+        return returner.externalObject;
+
+
+    def incrementRefCountAddIfNoExist(self,endpointName,extObj):
+        '''
+        Only interface for adding external objects if they do not
+        already exist.  When add (or even if it already exists),
+        increment reference count by 1.
+        '''
+        self.lock();
+        key = _externalIdKey(endpointName,extObj.id);
+        extElement = self.dict.get(key,None);
+        if extElement == None:
+            self.dict[key] = _ExternalStoreElement(extObj);
+
+        self.changeRefCountById(endpointName,extObj.id,1,True);
+        
+        self.unlock();
+    
+    def changeRefCountById(self,endpointName,extId,howMuch,alreadyLocked=False):
+        '''
+        @param{String} endpointName
+        @param{int} extId
+        @param{int} howMuch
+        
+        Throws an error if the external does not already exist in dict.
+        '''
+        if not alreadyLocked:
+            self.lock();
+
+        key = _externalIdKey(endpointName,extId);
+        extElement = self.dict.get(key,None);
+
+        #### DEBUG
+        if extElement == None:
+            assert(False);
+        #### END DEBUG
+                        
+        extElement.referenceCount += howMuch;
+
+        #### DEBUG        
+        if extElement.referenceCount < 0:
+            assert(False);
+        #### END DEBUG
+            
+        if not alreadyLocked:
+            self._unlock();
+        
+        
+    def _lock(self):
+        self._mutex.acquire();
+    def _unlock(self):
+        self._mutex.release();
+
+        
+
 class _ExecuteActiveEventThread(threading.Thread):
     '''
     Each _ActiveEvent only performs the internal execution of its
@@ -171,7 +356,7 @@ class _ExecuteActiveEventThread(threading.Thread):
     before scheduling the next.
     '''
 
-    def __init__(self,toExecEvent,context,callType):
+    def __init__(self,toExecEvent,context,callType,endpoint,extsToRead,extsToWrite):
         '''
         @param{_ActiveEvent} toExecEvent
         @param{_Context} context
@@ -179,12 +364,50 @@ class _ExecuteActiveEventThread(threading.Thread):
         self.toExecEvent = toExecEvent;
         self.context = context;
         self.callType = callType;
+
+        self.endpoint = endpoint;
+        self.extsToRead = extsToRead;
+        self.extsToWrite = extsToWrite;
+
         threading.Thread.__init__(self);
+
+
+        
     def run(self):
         try:
             self.toExecEvent.executeInternal(self.context,self.callType);
         except _PostponeException as postExcep:
-            pass;            
+
+            # FIXME: It sucks that we have to wait until an event got
+            # postponed to actually remove the read-write locks we
+            # generated *if* shared external resources are heavily in
+            # demand and do a lot of computation on top of them.
+            # Instead, could do something like we do with the rest of
+            # our data (make deep copy of data first, and use
+            # that...which we then couldn't commit)
+            
+            # should release read/write locks held on external data
+            # here and backout changes because know that we were
+            # postponed and that there can be no further operations
+            # made on them.  note that any call into internal
+            # functions must be through this function.  So we're good
+            # if we just catch all postpones here.
+
+
+            # calls backout on everything that we read/wrote to as
+            # well as cleaning up reference counts for the external
+            # store.  note: we know nothing else will subsequently
+            # touch internal data of this context.
+            self.context.backoutExternalChanges();
+
+            
+            # remove the read/write locks made on externals for this event
+            # in reservation manager.
+            self.endpoint._reservationManager.release(
+                self.extsToRead,
+                self.extsToWrite,
+                []);
+
             
 class _PostponeException(Exception):
     '''
@@ -211,7 +434,7 @@ class _Context(object):
     # Guarantee that no context can have this id.
     INVALID_CONTEXT_ID = -1;
 
-    def __init__(self):
+    def __init__(self,extStore,endpointName):
         # actively executing events that start message sequences block
         # until those message sequences are complete before
         # continuing.  to communicate to those active events that the
@@ -248,6 +471,95 @@ class _Context(object):
         # array.  when we commit this context object, we can fire all
         # the handlers.  Each element is an _OnComplete object.
         self.onCompletesToFire = [];
+
+        # contains the _externalIdKey-d version of all externals that
+        # got written to on the local endpoint during this event
+        # sequence.  during this event sequence (and therefore all the
+        # externals that we'll either need to commit to or back out
+        # depending on whether the event proceeds to completion.
+        self.writtenToExternalsOnThisEndpoint = {};
+        self.externalStore = extStore;
+
+        # maps external ids to integers.  The idea is that if we
+        # postpone an event, we also need to remove all of the changes
+        # made to the external store's reference counts.
+        self.refCounts = {};
+
+        # @see holdExternalReferences
+        self.heldExternalReferences = [];
+        self.endpointName = endpointName;
+
+    def notateWritten(self,extId):
+        '''
+        @param{unique int} --- extId
+        
+        We keep track of all the externals that have been written to
+        during the course of this active event.  This is so that we
+        know what externals we'll need to commit or to roll back when
+        event gets postponed or committed.
+        '''
+        key = _externalIdKey(self.endpointName,extId);
+        self.writtenToExternalsOnThisEndpoint[key] = True;
+
+    def increaseContextRefCountById(self, extId):
+        key = _externalIdKey(self.endpointName,extId);
+        if not (key in self.refCounts):
+            self.refCounts[key] = 0;
+        self.refCounts[key] += 1;
+
+    def increaseContextRefCount(self, externalObject):
+        return increaseContextRefCountById(externalObject.id);
+
+    def decreaseContextRefCountById(self,extId):
+        key = _externalIdKey(self.endpointName,extId);
+        if not (key in self.refCounts):
+            self.refCounts[key] = 0;
+        self.refCounts[key] -= 1;
+    
+    def decreaseContextRefCount(self, externalObject):
+        decreaseContextRefCountById(externalObject.id);
+
+
+    def holdExternalReferences(self,externalVarNames):
+        '''
+        @param {Array} externalVarNames --- Each element is a string
+        that represents the internal name of the external variable
+        that is being passed in.
+
+        Should only be called once: when initially create context
+        
+        When create an active context for an event, run through all
+        variable names for externals that could be used during the
+        execution of the function.  For each, increment its reference
+        count by 1 in the external data store (this happens in @see
+        holdExternalReferences).  If the event gets postponed, must
+        decrement each of taken references.  Similarly, if event runs
+        to completion, must decrement the references taken.
+        
+        '''
+        # externalVarNames is a list of all the names of global
+        # variables that this event touches that have external types.
+        for externalVarName in externalVarNames:
+
+            #### DEBUG
+            if not (externalVarName in self.externals):
+                assert(False);
+            
+            #### END DEBUG
+                
+            externalId = self.externals[externalVarName];
+            
+            if externalId != None:
+                # the external id can equal none if the external is
+                # unitialized to a value.
+
+                # ensures that this external object will not go away
+                # while we are operating on it.
+                self.externalStore.changeRefCountById(
+                    self.endpointName,externalId,1);
+
+                key = _externalIdKey(self.endpointName,externalId);
+                self.heldExternalReferences.append(key);
         
         
     def mergeContextIntoMe(self,otherContext):
@@ -274,7 +586,7 @@ class _Context(object):
         the active event object all the data that activeEvent is known
         to read from/write to.
         '''
-        returner = _Context();
+        returner = _Context(self.externalStore,self.endpointName);        
         for readKey in activeEvent.activeGlobReads.keys():
             if readKey in self.shareds:
                 returner.shareds[readKey] = self.shareds[readKey];
@@ -354,9 +666,78 @@ class _Context(object):
 
 
     def postpone(self):
+        '''
+        Gets called when postponing an event.  Note that because the
+        actual execution of event code is on another thread that may
+        continue to run after postpone is called, cannot do clean up
+        of external references and backout of external objects here
+        (ie, call self.backoutExternalChanges).  That gets done from
+        the exception-catching block of the _ExecuteActiveEventThread
+        object.
+        '''
         self.signalMessageSequenceComplete(
             _Context.INVALID_CONTEXT_ID,None,None,None);
 
+    def backoutExternalChanges(self):
+        '''
+        Resets all the changes that were made external objects along
+        the way.  (Including reference count changes in external
+        store.)
+        '''
+        for key in self.writtenToExternalsOnThisEndpoint.keys():
+            extId = _keyToExternalId(key);
+            
+            extObj = self.externalStore.getExternalObject(
+                self.endpointName,extId);
+            #### DEBUG
+            if extObj == None:
+                assert(False);
+            #### END DEBUG
+            extObj._backout();
+
+        # re-adjust the reference counts of all external objects that
+        # got updated during this execution to their values before
+        # they were postponed.
+
+        for key in self.refCounts.keys():
+            amountToChangeBy = self.refCounts[key];
+
+            # rolls back changes made to reference counters during
+            # course of execution of postponed task.
+            self.externalStore.changeRefCountById(
+                self.endpointName,extId,amountToChangeBy);
+
+        self._unholdExternalReferences();
+
+
+    def commit(self):
+        self._unholdExternalReferences();
+
+
+    def _unholdExternalReferences(self):
+        '''
+        When initiated this event, we incremented the reference counts
+        of all external objects that we might encounter.  This was to
+        ensure that they would not disappear if we rolled back.  If we
+        finish the associated event or if we postpone the associated
+        event however, we should decrement the references that we had
+        previously incremented (ie, unhold them).  This function does that.
+        '''
+
+        for key in self.heldExternalReferences:
+
+            # only change reference counts in the external store for
+            # my own objects.  trust other side to handle its own.
+            myExtId = _getExtIdIfMyEndpoint(key,self.endpointName)
+            if myExtId == None:
+                continue;
+            
+            self.externalStore.changeRefCountById(
+                self.endpointName,myExtId,-1);
+
+        self.heldExternalReferences = [];
+        
+            
     def signalMessageSequenceComplete(
         self,contextId,onCompleteFunctionToAppendToContext,
         onCompleteKey,endpoint):
@@ -429,7 +810,7 @@ class _Event(object):
     
     def __init__(
         self,eventName,defGlobReads,defGlobWrites,condGlobReads,
-        condGlobWrites,seqGlobals,endpoint):
+        condGlobWrites,seqGlobals,externalVarNames,endpoint):
         '''
         @param {dict} defGlobReads --- string to bool.  can use the
         same indices to index into context objects.
@@ -439,6 +820,13 @@ class _Event(object):
         writes,seqGlobals
 
         @param {Endpoint) endpoint --- either Ping or Pong.
+
+        @param{array} externalVarNames --- An array of all the
+        (unique) variable identifiers for externals that this active
+        event touches.  Can use these to increase their reference
+        counts to ensure that they do not get removed from external
+        store.
+        
         '''
         # mostly used for debugging.
         self.eventName = eventName;
@@ -447,7 +835,9 @@ class _Event(object):
         self.defGlobWrites = defGlobWrites;
         self.condGlobReads = condGlobReads;
         self.condGlobWrites = condGlobWrites;
-
+        
+        self.externalVarNames = externalVarNames;
+        
         self.seqGlobals = seqGlobals;
         self.endpoint = endpoint;
 
@@ -457,7 +847,7 @@ class _Event(object):
         '''
         return _Event(self.eventName,self.defGlobReads,self.defGlobWrites,
                       self.condGlobReads,self.condGlobWrites,self.seqGlobals,
-                      endpoint);
+                      self.externalVarNames,endpoint);
         
         
     def generateActiveEvent(self):
@@ -479,7 +869,7 @@ class _Event(object):
 
         return _ActiveEvent(
             self.eventName,self.defGlobReads,self.defGlobWrites,
-            self.seqGlobals,self.endpoint);
+            self.seqGlobals,self.endpoint,self.externalVarNames);
 
 
     
@@ -633,15 +1023,21 @@ class _Message(object):
             _Message.SEQUENCE_NAME_FIELD: sequenceName
             };
         return returner;
-        
-        
+
+
 class _ActiveEvent(object):
+
     def __init__ (
         self,eventName,activeGlobReads,activeGlobWrites,
-        seqGlobals,endpoint):
+        seqGlobals,endpoint,externalVarNames):
         '''
         @param{Int} eventId --- Unique among all other active events.
 
+        @param{array} externalVarNames --- An array of all the
+        (unique) variable identifiers for externals that this active
+        event touches.  Can use these to increase their reference
+        counts to ensure that they do not get removed from external
+        store.
         '''
         self.activeGlobReads = activeGlobReads;
         self.activeGlobWrites = activeGlobWrites;
@@ -677,6 +1073,11 @@ class _ActiveEvent(object):
         self.returnQueue = Queue.Queue();
 
         self.toExecFrom = None;
+
+        self.extsToRead = [];
+        self.extsToWrite = [];
+        self.externalVarNames = externalVarNames;
+
 
     def setId(self,toSetTo):
         '''
@@ -867,10 +1268,13 @@ class _ActiveEvent(object):
                 self.endpoint._postponeActiveEvent(actEventKey);
 
 
-    def addEventToEndpointIfCan(self,force=False,newId=False):
+    def addEventToEndpointIfCan(self,argumentArray=None,force=False,newId=False):
         '''
         CALLED WITHIN ENDPOINT's LOCK.
 
+        @param {Array} argumentArray --- Each element is the argument
+        to the function.
+        
         @param{bool} force --- If true, this means that we should
         postpone all other active events that demand the same
         variables.
@@ -888,10 +1292,15 @@ class _ActiveEvent(object):
             assert(False);
         #### END DEBUG
 
+        # if an event touches any external objects, need to request
+        # the resource manager for permission to either write to it or
+        # read from it.
+        externalsToRead = {};
+        externalsToWrite = {};
+                
         if newId:
             self.id = self.endpoint._getNextActiveEventIdToAssign();
 
-            
         endpointGlobSharedReadVars = self.endpoint._globSharedReadVars;
         endpointGlobSharedWriteVars = self.endpoint._globSharedWriteVars;
 
@@ -907,9 +1316,8 @@ class _ActiveEvent(object):
 
                 if ((actReadKey in endpointGlobSharedWriteVars) and
                     (endpointGlobSharedWriteVars[actReadKey] > 0)):
-
                     return False,None;
-
+                        
             for actWriteKey in self.activeGlobWrites.keys():
 
                 if (((actWriteKey in endpointGlobSharedWriteVars) and
@@ -920,7 +1328,77 @@ class _ActiveEvent(object):
 
                     return False,None;
 
+        # now check if can add externals
+        for actWriteKey in self.activeGlobWrites.keys():
+            
+            if self.endpoint._isExternalVarId(actWriteKey):
+                externalsToWrite[actWriteKey] = True;
+
+            # if it's not a write key for me, then it is either an
+            # argument id (which can be used to index into the
+            # argument array) or it is for the other endpoint.
+            # below tests if it's an index into the argument
+            elif isinstance(actWriteKey,numbers.Number):
+
+                #### DEBUG
+                if argumentArray == None:
+                    assert(False);
                 
+                if len(actWriteKey) > len(argumentArray):
+                    assert(False);
+                #### END DEBUG
+                    
+                extObj = argumentArray[actWriteKey];
+
+                #### DEBUG
+                if not isinstance(extObj,_Shared):
+                    assert(False);
+                #### END DEBUG
+                    
+                externalsToWrite[extObj.id]= True;
+
+        for actReadKey in self.activeGlobReads.keys():
+            if self.endpoint._isExternalVarId(actReadKey):
+                externalsToRead[actReadKey] = True;
+
+            # if it's not a read key for me, then it is either an
+            # argument id (which can be used to index into the
+            # argument array) or it is for the other endpoint.
+            # below tests if it's an index into the argument
+            elif isinstance(actReadKey,numbers.Number):
+
+                #### DEBUG
+                if argumentArray == None:
+                    assert(False);
+                
+                if len(actReadKey) > len(argumentArray):
+                    assert(False);
+                #### END DEBUG
+                    
+                extObj = argumentArray[actReadKey];
+
+                #### DEBUG
+                if not isinstance(extObj,_Shared):
+                    assert(False);
+                #### END DEBUG
+                    
+                externalsToRead[extObj.id]= True;
+
+                
+        self.extsToRead = list(externalsToRead.keys());
+        self.extsToWrite = list(externalsToWrite.keys());
+        if (len(self.extsToRead) == 0) and (len(self.extsToWrite) == 0):
+            # short-circuits acquiring lock in reservation manager if
+            # don't need to.
+            externalsReserved = True;
+        else:
+            externalsReserved = self.reservationManager.acquire(
+                self.extsToRead,
+                self.extsToWrite);
+
+        if not externalsReserved:
+            return False,None;
+
         # no conflict, can add event.
         for actReadKey in self.activeGlobReads.keys():
             # have to do additional check because there is a chance
@@ -945,7 +1423,7 @@ class _ActiveEvent(object):
             print(errMsg);
             assert(False);
         #### END DEBUG
-        
+
 
         # the context for this event should be freshly copied as soon
         # as activated.  (If had copied the context in the constructor
@@ -961,7 +1439,13 @@ class _ActiveEvent(object):
         self.endpoint._activeEventDict[self.id] = _ActiveEventDictElement(self,eventContext);
         
         self.active = True;
+
+        # self.externalVarNames is a list of all the names of global
+        # variables that this event touches that have external types.
+        eventContext.holdExternalReferences(self.externalVarNames);
+            
         return True,eventContext;
+
 
         
     def cancelActiveEvent(self):
@@ -1158,7 +1642,16 @@ class _Endpoint(object):
     
     def __init__ (self,connectionObj,globSharedReadVars,globSharedWriteVars,
                   lastIdAssigned,myPriority,theirPriority,context,
-                  execFromToInternalFuncDict, prototypeEventsDict,endpointName):
+                  execFromToInternalFuncDict, prototypeEventsDict,endpointName,
+                  externalGlobals,reservationManager):
+        '''
+        @param {dict} externalGlobals --- used for reference counting
+        reads and writes to external variables.  (ie, the variable
+        named by the key).  <String:Bool>
+
+        @param {ReservationManager object} reservationManager
+        '''
+                  
 
         # <_ActiveEvent.id:_ActiveEventDictElement (which contains
         # _ActiveElement and context)>
@@ -1211,6 +1704,10 @@ class _Endpoint(object):
         # FIXME: unclear what the actual interface should be between
         # connection object and endpoint.
         self._connectionObj.addEndpoint(self);
+
+        self._externalGlobals = externalGlobals;
+        self._reservationManager = reservationManager;
+
         
     ##### helper functions #####
 
@@ -1274,6 +1771,8 @@ class _Endpoint(object):
         activeEvent = self._activeEventDict[activeEventId].actEvent;
         return activeEvent.cancelActiveEvent();
 
+    def _isExternalVarId(self,varId):
+        return varId in self._externalGlobals;
 
     def _commitActiveEvent(self,activeEvent,contextToCommit):
         '''
@@ -1285,10 +1784,32 @@ class _Endpoint(object):
         #### DEBUG
         self._checkHasActiveEvent(activeEvent.id,'_commitActiveEvent');
         #### END DEBUG
-        
+
+        writtenExternals = [];
+
+        for key in contextToCommit.writtenToExternalsOnThisEndpoint.keys():
+            # note that each context
+            extId = _getExtIdIfMyEndpoint(key,self.endpointName);
+            extObj = self._externalStore.getExternalObject(self.endpointName, extId);
+            
+            #### DEBUG
+            if extObj == None:
+                assert(False);
+            #### END DEBUG
+
+            writtenExternals.append(extObj);
+            
+        extIdsRead = activeEvent.extsToRead;
+        extIdsWrite = activeEvent.extsToWrite;
+            
+        self._reservationManager.release(
+            extIdsRead,
+            extIdsWrite,
+            writtenExternals);
+        contextToCommit.commit();
+
         self._committedContext.mergeContextIntoMe(contextToCommit);
         self._cancelActiveEvent(activeEvent.id);
-        
 
 
     def _executeActive(self,execEvent,execContext,callType):
@@ -1300,10 +1821,6 @@ class _Endpoint(object):
         active event, execEvent, from active dict.
         '''
 
-        # FIXME: I feel like this would be a lot better if it actually
-        # started a new thread.  the try-catch would have to be inside
-        # the new thread of course. IMPORTANT;
-
         if execEvent.id in self._activeEventDict:
             # may not still be in active event dict if got postponed
             # between when called _executeActive and got here.
@@ -1314,8 +1831,15 @@ class _Endpoint(object):
             # automatically, we can just wait for its
             # returnQueue to have data in it.
 
-            executeEventThread = _ExecuteActiveEventThread(execEvent,execContext,callType);
+            executeEventThread = _ExecuteActiveEventThread(
+                execEvent,
+                execContext,
+                callType,
+                self,
+                execEvent.extsToRead,
+                execEvent.extsToWrite);
             executeEventThread.start();
+
 
     def _checkNextEvent(self):
         '''

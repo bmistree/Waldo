@@ -25,7 +25,8 @@ _REFRESH_KEY:_Event(
     {}, 
     {}, 
     {}, 
-    {}, 
+    {},
+    [], # doesn't touch any externals directly
     None), 
 
 _REFRESH_RECEIVE_KEY: _Event(
@@ -34,7 +35,8 @@ _REFRESH_RECEIVE_KEY: _Event(
     {}, 
     {}, 
     {}, 
-    {}, 
+    {},
+    [], # doesn't touch any externals directly
     None),
 
 """;
@@ -50,6 +52,8 @@ _REFRESH_RECEIVE_KEY: _Event(
     # closes the literal that is being assigned to
     # _PROTOTYPE_EVENTS_DICT
     returner += emitUtils.indentString('};\n\n',1);
+    returner += r"print('\nBehram warn: loading blank data into events for externasl\n');"
+    returner += '\n';
     return returner;
 
 
@@ -92,6 +96,9 @@ def _emitIndividualEvent(eventName,fdep,fdepDict,amountToIndent):
     internal += _dictIzeGlobShareds(seqGlobs);
     internal += ', # seq globals \n';
 
+    # FIXME: need to use actual external variable names.
+    internal += '[], # blank for now: contains the external var names\n';
+    
     # write None to signify that this event does not yet have an
     # associated endpoint.
     internal += 'None), # Placeholder for endpoint obj, which gets set when each endpoint is init-ed\n'

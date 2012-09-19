@@ -377,7 +377,7 @@ elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
         rhsText = emit(endpointName,rhsNode,fdepDict,emitContext);
         operatorText = _getBinaryOperatorFromLabel(astNode.label);
 
-        returner += ' (' + lhsText + operatorText + rhsText + ')';
+        returner += '(' + lhsText + operatorText + rhsText + ')';
 
     elif astNode.label == AST_LEN:
         lenArgNode = astNode.children[0];

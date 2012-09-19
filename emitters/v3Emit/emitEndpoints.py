@@ -140,9 +140,11 @@ def _emitPublicPrivateOnCreateFunctionDefinition(
     funcNameNode = funcNode.children[0];
     funcName = funcNameNode.value;
     funcArguments = _getArgumentNamesFromFuncNode(funcNode);
+
     functionBodyNode = _getFuncBodyNodeFromFuncNode(funcNode);    
     
     returner = '';
+
     
     if funcNode.label == AST_PUBLIC_FUNCTION:
         # means that we have to emit both a public version and a
@@ -153,6 +155,18 @@ def _emitPublicPrivateOnCreateFunctionDefinition(
             returner += argName + ',';
         returner += '):\n';
 
+        externalFuncArguments = _getExternalArgumentNamesFromFuncNode(funcNode);
+        
+        returner += '# put the external object in the external store\n';
+        extArgString = '';
+        for extFuncArg in externalFuncArguments:
+            returner +='''
+self._externalStore.incrementRefCountAddIfNoExist(
+    self._endpointName,%s);
+''' % extFuncArg;
+
+            extArgString += extFuncArg + ',';
+            
         publicMethodBody = '''# passing in FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL
 # ... that way know that the function call happened from
 # external caller and don't have to generate new function
@@ -169,8 +183,17 @@ _returner = self.%s('''% _convertSrcFuncNameToInternal(funcName);
         publicMethodBody += '''
 # should check if there are other active events
 self._tryNextEvent();
+
+# to release reference count I took on external argument
+# passed in and to garbage collect any externals with no
+# references.
+
+_extInterfaceCleanup = _ExtInterfaceCleanup(
+    [%s],self._externalStore,self._endpointName);
+_extInterfaceCleanup.start();
+
 return _returner;
-''';
+''' % extArgString;
 
         returner += emitUtils.indentString(publicMethodBody,1);
         returner += '\n';
@@ -377,7 +400,7 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     if onCreateNode != None:
         onCreateArgumentNames = _getArgumentNamesFromFuncNode(onCreateNode);
 
-    initMethod = 'def __init__(self,_connectionObj,';
+    initMethod = 'def __init__(self,_connectionObj,_reservationManager,';
     for argName in onCreateArgumentNames:
         initMethod += argName + ',';
     initMethod += '):\n\n'
@@ -406,6 +429,10 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     initMethodBody += '\n\n';    
 
 
+    # each endpoint needs an external store.
+    initMethodBody += '\nself._externalStore = _ExternalStore();\n';
+
+
     # one endpoint can only assign even event ids the other can only
     # assign odd endpoint ids.
     evenOddEventId = whichEndpoint;
@@ -420,8 +447,7 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     initMethodBody += '_theirPriority = ' + str(otherEvenOdd) + ';\n\n';
 
     # handle context
-    initMethodBody += '_context = _Context();\n';
-
+    initMethodBody += '_context = _Context(self._externalStore,\'%s\');\n' % endpointName;
 
     # create a prototype events dict for this endpoint to copy active
     # events from.
@@ -470,8 +496,13 @@ for _pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 _Endpoint.__init__(
     self,_connectionObj,_globSharedReadVars,_globSharedWriteVars,
     _lastIdAssigned,_myPriority,_theirPriority,_context,
-    _execFromToInternalFuncDict,_prototypeEventsDict, '%s');
+    _execFromToInternalFuncDict,_prototypeEventsDict, '%s',
+    {}, _reservationManager);
 ''' % endpointName;
+    
+    initMethodBody += r'''
+print('\nBehram warning: using empty dictionary for external variable dict for now.\n')
+''';
 
     initMethodBody += '\n\n';
 
@@ -532,28 +563,26 @@ _Endpoint.__init__(
         initMethodBody += '# call oncreate function for remaining initialization \n';
         funcCallHead = 'self.%s(' % _convertSrcFuncNameToInternal(ONCREATE_TOKEN);
         indentStr = '';
+        
         for counter in range(0,len(funcCallHead)):
             indentStr += ' ';
         
         initMethodBody += funcCallHead;
-        first = True;
-        for argName in onCreateArgumentNames:
-            if not first:
-                initMethodBody += indentStr;
-            else:
-                first = False;
-            initMethodBody += argName + ', # user-defined argument \n';
 
-            
         # now emit function control commands for oncreate
-        if not first:
-            initMethodBody += indentStr;
         initMethodBody += '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n';
         initMethodBody += indentStr + '1, # note that this is just a dummy variable.  act event should not be used within function. \n';
-        initMethodBody += indentStr + 'self._committedContext);\n'
+        initMethodBody += indentStr + 'self._committedContext,\n'
+
+        # now emit user-defined arguments
+        for argName in onCreateArgumentNames:
+            initMethodBody += indentStr + argName + ', # user-defined argument \n';
+
+        initMethodBody += ');\n';
+
     else:
         initMethodBody += '# no oncreate function to call.\n';
-    
+
     initMethod += emitUtils.indentString(initMethodBody,1);
     return initMethod;
 
@@ -962,8 +991,46 @@ def _getOnCreateNode(endpointName,astRootNode):
 
     return None;
 
+def _getExternalArgumentNamesFromFuncNode(funcNode):
+    '''
+    @param {AstNode} funcNode --- for private, public, oncreate,
+    message receive, and message send functions.
+
+    @returns {Array} --- Each element is a string representing the
+    name of the argument that the user passed in.
+    '''
+    argNodeIndex = _getArgumentIndexFromFuncNodeLabel(funcNode.label);
+
+    if argNodeIndex == None:
+        assert(False);
+
+    returner = [];
+    funcDeclArgListNode = funcNode.children[argNodeIndex];
+    for funcDeclArgNode in funcDeclArgListNode.children:
+        if funcDeclArgNode.external == True:
+            nameNode = funcDeclArgNode.children[1];
+            returner.append(nameNode);
+
+    return returner;
+
     
-    
+def _getArgumentIndexFromFuncNodeLabel(label):
+    argNodeIndex = None;
+    if label == AST_PUBLIC_FUNCTION:
+        argNodeIndex = 2;
+    elif label == AST_PRIVATE_FUNCTION:
+        argNodeIndex = 2;
+    elif label == AST_ONCREATE_FUNCTION:
+        argNodeIndex = 1;
+    elif label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        argNodeIndex = 2;
+    else:
+        errMsg = '\nBehram error: cannot call getArgIndFromFunc on ';
+        errMsg += 'nodes that are not function nodes.\n';
+        print(errMsg);
+        assert(False);
+
+    return argNodeIndex;
 
 
 def _getArgumentNamesFromFuncNode(funcNode):
@@ -974,18 +1041,11 @@ def _getArgumentNamesFromFuncNode(funcNode):
     @returns {Array} --- Each element is a string representing the
     name of the argument that the user passed in.
     '''
-    argNodeIndex = None;
-    if funcNode.label == AST_PUBLIC_FUNCTION:
-        argNodeIndex = 2;
-    elif funcNode.label == AST_PRIVATE_FUNCTION:
-        argNodeIndex = 2;
-    elif funcNode.label == AST_ONCREATE_FUNCTION:
-        argNodeIndex = 1;
-    elif funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
-        argNodeIndex = 2;
-    elif funcNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+    if funcNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         return [];
-    else:
+
+    argNodeIndex = _getArgumentIndexFromFuncNodeLabel(funcNode.label);
+    if argNodeIndex == None:
         errMsg = '\nBehram error: cannot call argumentnamesfromfuncnode on ';
         errMsg += 'nodes that are not function nodes.\n';
         print(errMsg);
