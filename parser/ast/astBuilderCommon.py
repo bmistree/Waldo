@@ -161,11 +161,11 @@ def p_Type(p):
     else:
         typeIndex = 2;
 
-    if (isinstance(p[1],basestring)):
-        p[0].value = p[1];
+    if isinstance(p[typeIndex],basestring):
+        p[0].value = p[typeIndex];
     else:
         # means that has function or list type
-        p[0] = p[1];
+        p[0] = p[typeIndex];
 
     if len(p) == 3:
         p[0].external = True;

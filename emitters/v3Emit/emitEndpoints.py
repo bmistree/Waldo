@@ -489,6 +489,13 @@ for _pEvtKey in _PROTOTYPE_EVENTS_DICT.keys():
 
     initMethodBody += '\n\n';
 
+    # now emit the externals dict
+    externalsNamesDict = _getEndpointExternalsFromEndpointName(
+        endpointName,astRootNode);
+
+    initMethodBody += emitUtils.createDictLiteralAssignment(
+        '_externalGlobals',externalsNamesDict);
+    
     # now emit the base _Endpoint class initializer
     initMethodBody += '''
 
@@ -497,13 +504,13 @@ _Endpoint.__init__(
     self,_connectionObj,_globSharedReadVars,_globSharedWriteVars,
     _lastIdAssigned,_myPriority,_theirPriority,_context,
     _execFromToInternalFuncDict,_prototypeEventsDict, '%s',
-    {}, _reservationManager);
+    _externalGlobals, _reservationManager);
 ''' % endpointName;
     
     initMethodBody += r'''
 print('\nBehram warning: using empty dictionary for external variable dict for now.\n')
 ''';
-
+    
     initMethodBody += '\n\n';
 
     # now emit global and shared variable dictionaries.  each contains
@@ -973,8 +980,35 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
                 nextFuncEventName,self.sequenceName);
 
         return returner;
-            
 
+
+def _getEndpointExternalsFromEndpointName(
+    endpointName,astRootNode):
+    '''
+    @returns {dict} keys of dict are the identifiers that should
+    use for each function and the values are simple boolean true.
+
+    # creates something like
+    #   {
+    #      "''0__externalValue''" : True,
+    #       ...
+    #   }
+    '''
+    endpointNode = _getEndpointNodeFromEndpointName(endpointName,astRootNode);
+    endpointBodyNode = endpointNode.children[1];
+    endpointGlobalsNode = endpointBodyNode.children[0];
+
+    returner = {};
+    for declNode in endpointGlobalsNode.children:
+        if declNode.external == True:
+            declIdNode = declNode.children[1];
+            declIdNode._debugErrorIfHaveNoAnnotation(
+                '_getEndpointExternalsFromEndpointName');
+
+            returner ["'" + declIdNode.sliceAnnotationName + "'"] = str(True);
+
+    return returner;
+    
 def _getOnCreateNode(endpointName,astRootNode):
     '''
     @return {None or AstNode} --- None if endpoint named endpointName

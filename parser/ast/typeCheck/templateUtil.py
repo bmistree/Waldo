@@ -45,7 +45,6 @@ def isFunctionType(typeLabel):
     exclude all of the other types it could be.
 
     Returns true if it is a user-defined function type, false otherwise.
-    
     '''
     
     if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and

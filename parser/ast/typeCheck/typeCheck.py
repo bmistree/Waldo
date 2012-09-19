@@ -1165,10 +1165,12 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         # type check the declared type statement (necessary
         # because of function statements).
-        node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
+        typeNode = node.children[0];
+        typeNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        declaredType = node.children[0].value;
-        node.lineNo = node.children[0].lineNo;
+        declaredType = typeNode.value;
+        node.lineNo = typeNode.lineNo;
+        node.external = typeNode.external;
 
         if (node.children[1].label != AST_IDENTIFIER):
             errMsg = '\nError at declaration statement. ';
@@ -1177,7 +1179,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(errMsg,[node],[currentLineNo],progText);
             return;
 
-        name = node.children[1].value;
+        nameNode = node.children[1];
+        nameNode.external = typeNode.external;
+        name = nameNode.value;
         currentLineNo = node.children[0].lineNo;
         if (len(node.children) == 3):
             rhs = node.children[2];
@@ -1225,6 +1229,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         typeStack.addIdentifier(name,declaredType,None,node,currentLineNo);
         node.type = declaredType;
 
+        
     elif(node.label == AST_RETURN_STATEMENT):
         node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
 
@@ -1435,8 +1440,12 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             # need to copy external tag too
             ctxElm = typeStack.getIdentifierElement(lhs.value);
             if ctxElm == None:
-                assert(False);
-                
+                errMsg = '\nError in assignment statement.  Left hand side ';
+                errMsg += 'has no type information.  Are you sure that you ';
+                errMsg += 'defined ' + lhs.value + ' above?\n';
+                errorFunction(errMsg,[node],[node.lineNo],progText);
+                return;
+
             lhs.external = ctxElm.astNode.external;
             
         else:
