@@ -5,29 +5,18 @@ import os;
 astParserPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast');
 sys.path.insert(0, astParserPath);
 
-from astBuilder_v1 import getParser as v1GetParser;
-from astBuilder_v1 import getErrorEncountered as v1GetErrorEncountered;
-from astBuilder_v1 import resetErrorEncountered as v1ResetErrorEncountered;
-
-
 import canonicalize;
 from astBuilder_v2 import getParser as v2GetParser;
 from astBuilder_v2 import getErrorEncountered as v2GetErrorEncountered;
 from astBuilder_v2 import resetErrorEncountered as v2ResetErrorEncountered;
 
 def getParser(progText,outputErrsTo,versionNum):
-    if versionNum == 1:
-        return v1GetParser(progText,outputErrsTo);
     return v2GetParser(progText,outputErrsTo);
 
 def getErrorEncountered(versionNum):
-    if versionNum == 1:
-        return v1GetErrorEncountered();
     return v2GetErrorEncountered();
 
 def resetErrorEncountered(versionNum):
-    if versionNum == 1:
-        return v1ResetErrorEncountered();
     return v2ResetErrorEncountered();
 
 
@@ -233,8 +222,6 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
 
 
 
-
-
 def parseGraphicalOutputArg(goJSON):
     '''
     @param {String} in form of JSON_OBJECT in printUsage.
@@ -276,7 +263,7 @@ def printUsage():
 
     -e <filename> Emit the generated code to filename
 
-    -v <version number 1 or 2> Input file is of version 1 or version 2.  Default is version 1
+    -v <version number 2> Input file is of version 2.  Default is version 2
 
     no args ... run ast tests
     
@@ -295,7 +282,7 @@ if __name__ == '__main__':
     emitArg = None;
     typeCheckArg = True;
     skipNext = False;
-    versionNum = 1;
+    versionNum = 2;
     
     
     for s in range(0,len(sys.argv)):
@@ -317,6 +304,9 @@ if __name__ == '__main__':
                 skipNext = True;
                 if (versionNum != 1) and (versionNum != 2):
                     print('\nI can only handle Waldo versions 1 or 2.\n');
+                    helpArg = True;
+                if versionNum == 1:
+                    print('\nError.  Version 1 is no longer supported.\n');
                     helpArg = True;
 
                 
