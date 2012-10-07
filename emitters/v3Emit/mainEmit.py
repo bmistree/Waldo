@@ -11,7 +11,7 @@ sys.path.append(os.path.join(curDir,'..','..','parser','ast'));
 from astLabels import *;
 from astBuilderCommon import isEmptyNode;
 
-sys.path.append(os.path.join(curDir,'..','..','slice','typeStack'));
+sys.path.append(os.path.join(curDir,'..','..','slice'));
 from typeStack import TypeStack;
 
 
