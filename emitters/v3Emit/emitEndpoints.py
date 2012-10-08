@@ -507,10 +507,6 @@ _Endpoint.__init__(
     _externalGlobals, _reservationManager);
 ''' % endpointName;
     
-    initMethodBody += r'''
-print('\nBehram warning: using empty dictionary for external variable dict for now.\n')
-''';
-    
     initMethodBody += '\n\n';
 
     # now emit global and shared variable dictionaries.  each contains
