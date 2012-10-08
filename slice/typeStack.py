@@ -188,14 +188,14 @@ class TypeStack(object):
         self.stack.pop();
 
     def addIdentifier(
-        self,identifierName,isMutable,identifierType=None,
+        self,identifierName,isMutable,astNode,identifierType=None,
         argPosition=None):
         '''
         @see Context.addIdentifier
         '''
         topStack = self.checkStackLen('addIdentifier');        
         return topStack.addIdentifier(
-            identifierName,isMutable,identifierType,argPosition);
+            identifierName,isMutable,identifierType,argPosition,astNode);
 
     def addIdentifierAsNtt(self,ntt):
         topStack = self.checkStackLen('addIdentifierAsNtt');
@@ -400,7 +400,7 @@ class Context(object):
         return val;
         
     def addIdentifier(
-        self,identifierName,isMutable,identifierType,argPosition):
+        self,identifierName,isMutable,identifierType,argPosition,astNode):
         '''
         @param {String} identifierName
         
@@ -415,7 +415,10 @@ class Context(object):
         '''
         if identifierType == None:
             identifierType = self.labelAs;
-        ntt = NameTypeTuple(identifierName,identifierType,isMutable,argPosition);
+        ntt = NameTypeTuple(identifierName,identifierType,
+                            isMutable,argPosition,astNode);
+
+        
         self.dict[identifierName] = ntt;
         return ntt;
 
@@ -432,7 +435,7 @@ class NameTypeTuple(object):
     # uniqueNameForEndpoints assumes that staticId can never be -1.
     staticId = 0;
     
-    def __init__(self,varName,varType,isMutable,argPosition):
+    def __init__(self,varName,varType,isMutable,argPosition,astNode):
         '''
         @param {String} varName
         @param {Int} varType --- TypeStack.IDENTIFIER_TYPE_*;
@@ -444,10 +447,14 @@ class NameTypeTuple(object):
         a IDENTIFIER_TYPE_FUNCTION_ARGUMENT, then this will be an
         integer representing the zero-indexed position of the argument
         passed to the function.  Otherwise, it must be None.
+
+        @param {AstNode} --- astNode...used to check if using external
+        or not.
         '''
         self.varName = varName;
         self.varType = varType;
         self.mutable = isMutable;
+        self.astNode = astNode;
         self._mark = False;
 
         self.id = NameTypeTuple.staticId;
@@ -506,7 +513,7 @@ class ReturnStatementNtt(NameTypeTuple):
         '''
         NameTypeTuple.__init__(
             self,'return statement',
-            TypeStack.IDENTIFIER_TYPE_RETURN_STATEMENT,False,None);
+            TypeStack.IDENTIFIER_TYPE_RETURN_STATEMENT,False,None,None);
 
         self.returnStatementReads = returnStatementReads;
 
@@ -527,7 +534,8 @@ class FuncCallNtt(NameTypeTuple):
         this positional argument.
         '''
         NameTypeTuple.__init__(
-            self,nameOfFunc,TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL,False,None);
+            self,nameOfFunc,TypeStack.IDENTIFIER_TYPE_FUNCTION_CALL,False,
+            None,None);
         
         self.funcArgReads = funcArgReads;
 

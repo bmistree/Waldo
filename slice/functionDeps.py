@@ -289,8 +289,50 @@ class FunctionDeps(object):
 
         return returner;
 
+
+
+    def getTouchedExternals(self,funcDepsDict,alreadyChecked=None):
+        '''
+        Runs through this function to see what external variables this
+        could potentially touch while it's being executed.
+        Returns dict: <String:bool>
+        '''
+        if alreadyChecked == None:
+            alreadyChecked = {}
+        return self._getTouchedExternals(funcDepsDict,alreadyChecked);
+
+    def _getTouchedExternals(self,funcDepsDict,alreadyChecked):
+        toReturn= {}
+        if self.funcName in alreadyChecked:
+            return toReturn
+        
+        alreadyChecked[self.funcName] = True;
+
+        for item in self.varReadSet.values():
+            ntt = item.ntt;
+            if (ntt.astNode != None) and (ntt.astNode.external != None):
+                toReturn[ntt.getUniqueName()] = True
+
+        for funcCallNtt in self.funcCalls.values():
+            funcCallName = funcCallNtt.varName;
+            if alreadyChecked.get(funcCallName,None) == None:
+                alreadyChecked[funcCallName] = True;
+                fdep = funcDepsDict.get(funcCallName,None);
+                if fdep == None:
+                    errMsg = '\nBehram error: Looking up function named "';
+                    errMsg += funcCallName + '" that ';
+                    errMsg += 'was not defined.\n';
+                    print(errMsg);
+                    assert(False);
+        
+                touchedExternals = fdep.getTouchedExternals(funcDepsDict,alreadyChecked)
+                for tExt in touchedExternals.keys():
+                    toReturn[tExt] = True;
+
+        return toReturn;
+
+    
     def definiteSharedGlobalWrites(self,funcDepsDict,alreadyChecked=None):
-        # newFDep = self._constructMegaFunction(funcDepsDict,{});
         if alreadyChecked == None:
             alreadyChecked = {};
         return self._definiteSharedGlobalWrites(funcDepsDict,alreadyChecked);
@@ -493,7 +535,7 @@ class FunctionDeps(object):
         # -> we can write test cases and compare to previous outputs.
         for nttKey in sorted(dynamicCheckDict.keys()):
             returner.append(dynamicCheckDict[nttKey]);
-                    
+            
         return returner;
 
     def conditionalSharedGlobalWrites(self,funcDepsDict):

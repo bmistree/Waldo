@@ -52,7 +52,7 @@ _REFRESH_RECEIVE_KEY: _Event(
     # closes the literal that is being assigned to
     # _PROTOTYPE_EVENTS_DICT
     returner += emitUtils.indentString('};\n\n',1);
-    returner += r"print('\nBehram warn: loading blank data into events for externasl\n');"
+    returner += r"print('\nBehram warn: loading blank data into events for externals\n');"
     returner += '\n';
     return returner;
 
@@ -67,7 +67,6 @@ def _emitIndividualEvent(eventName,fdep,fdepDict,amountToIndent):
 
     # write the event name
     internal = "'" + eventName + "',\n";
-
     
     # write the definite global reads
     defGlobReads = fdep.definiteSharedGlobalReads(fdepDict);
@@ -95,10 +94,14 @@ def _emitIndividualEvent(eventName,fdep,fdepDict,amountToIndent):
     seqGlobs = fdep.seqGlobals(fdepDict);
     internal += _dictIzeGlobShareds(seqGlobs);
     internal += ', # seq globals \n';
-
-    # FIXME: need to use actual external variable names.
-    internal += '[], # blank for now: contains the external var names\n';
     
+    touchedExternalVarNames = fdep.getTouchedExternals(fdepDict)
+
+    internal += '['
+    for touchedExternal in touchedExternalVarNames.keys():
+        internal += "'" + touchedExternal + "',"
+    internal += '], # all external var names that this event may touch\n';
+
     # write None to signify that this event does not yet have an
     # associated endpoint.
     internal += 'None), # Placeholder for endpoint obj, which gets set when each endpoint is init-ed\n'

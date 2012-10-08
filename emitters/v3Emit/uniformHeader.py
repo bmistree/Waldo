@@ -1035,9 +1035,10 @@ class _ActiveEvent(object):
 
         @param{array} externalVarNames --- An array of all the
         (unique) variable identifiers for externals that this active
-        event touches.  Can use these to increase their reference
-        counts to ensure that they do not get removed from external
-        store.
+        event touches.  These should only be variable identifiers for
+        shared and endpoint global references.  Can use these to
+        increase their reference counts to ensure that they do not get
+        removed from external store.
         '''
         self.activeGlobReads = activeGlobReads;
         self.activeGlobWrites = activeGlobWrites;

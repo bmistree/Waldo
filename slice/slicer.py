@@ -135,7 +135,8 @@ def slicer(node,functionDeps=None,typeStack=None):
             identifierName = identifierNameNode.value;
             isMute = isMutable(typeNode);
 
-            ntt = typeStack.addIdentifier(identifierName,isMute);
+            ntt = typeStack.addIdentifier(identifierName,isMute,
+                                          typeNode);
 
         identifierNode = node.children[identifierNodeIndex];
         toIterateNode = node.children[toIterateNodeIndex];
@@ -186,7 +187,7 @@ def slicer(node,functionDeps=None,typeStack=None):
     elif node.label == AST_ANNOTATED_DECLARATION:
         idName = node.children[2].value;
         typeNode = node.children[1];
-        typeStack.addIdentifier(idName,isMutable(typeNode));
+        typeStack.addIdentifier(idName,isMutable(typeNode),typeNode);
 
         # gets passed to emitter
         typeStack.annotateNode(node.children[2],idName);
@@ -350,6 +351,7 @@ def slicer(node,functionDeps=None,typeStack=None):
             argName = nameNode.value;
             ntt = typeStack.addIdentifier(argName,
                                           isMutable(typeNode),
+                                          typeNode,
                                           TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT,
                                           argumentNumber);
 
@@ -401,7 +403,7 @@ def slicer(node,functionDeps=None,typeStack=None):
 
         ntt = typeStack.getIdentifier(nodeName);
         if ntt == None:
-            ntt = typeStack.addIdentifier(nodeName,isMute);
+            ntt = typeStack.addIdentifier(nodeName,isMute,nodeTypeNode);
             
         if len(node.children) == 3:
             # means that we are initializing the declaration too.
@@ -466,7 +468,8 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             identifierTypeNode = declGlobNode.children[0];
             isMute = isMutable(identifierTypeNode);
             newNtt = typeStack1.addIdentifier(
-                identifierName,isMute,TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL);
+                identifierName,isMute,identifierTypeNode,
+                TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL);
 
             typeStack2.addIdentifierAsNtt(newNtt);
             
@@ -485,7 +488,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             identifierNode = funcDeclArgNode.children[1];
             identifierName = identifierNode.value;
             newNtt = typeStack1.addIdentifier(
-                identifierName,isMute,
+                identifierName,isMute,typeNode,
                 TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT);
             
             typeStack2.addIdentifierAsNtt(newNtt);
