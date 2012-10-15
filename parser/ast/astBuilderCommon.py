@@ -170,7 +170,22 @@ def p_Type(p):
     if len(p) == 3:
         p[0].external = True;
         
-        
+
+def p_ExtAssign(p):
+    '''
+    ExtAssign : EXT_ASSIGN Identifier TO_OPERATOR Identifier 
+    '''
+    p[0] = AstNode(AST_EXT_ASSIGN,p.lineno(1),p.lexpos(1))
+    p[0].addChildren([p[2],p[4]])
+
+def p_ExtCopy(p):
+    '''
+    ExtCopy : EXT_COPY ReturnableExpression TO_OPERATOR Identifier
+    '''
+    p[0] = AstNode(AST_EXT_COPY,p.lineno(1),p.lexpos(1))
+    p[0].addChildren([p[2],p[4]])
+
+    
 
 def p_MapType(p):
     '''

@@ -211,6 +211,8 @@ def p_NonOperatableOn(p):
     NonOperatableOn : PrintCall
                     | RefreshCall
                     | Jump
+                    | ExtAssign
+                    | ExtCopy
     '''
     #cannot use operators between PrintCall and message literal (they
     #are not operatable on).  Everything in OperatableOn we can put

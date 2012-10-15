@@ -131,6 +131,82 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(traceError.errMsg,traceError.nodes,
                           traceError.lineNos,progText);
 
+    elif node.label == AST_EXT_COPY:
+        from_node = node.children[0]
+        to_node = node.children[1]
+        
+        from_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+        
+        if to_node.label != AST_IDENTIFIER:
+            err_msg = 'You are trying to perform an external copy '
+            err_msg += 'to an invalid element.  You can only copy '
+            err_msg += 'to an external identifier.'
+            errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
+            return
+            
+        if not to_node.external:
+            err_msg = 'You are trying to extCopy to a non-external '
+            err_msg += 'named "' + to_node.value + '."'
+            errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
+            return
+            
+        
+        if checkTypeMismatch(
+            to_node,to_node.type,from_node.type,typeStack,progText):
+
+            err_msg = 'Error in copying value to external.  External '
+            err_msg += 'has type ' + to_node.type + ', but copied value '
+            err_msg += 'has type ' + from_node.type +'.'
+
+            err_nodes = [to_node,from_node]
+            err_line_nos = [x.lineNo for x in err_nodes]
+            errorFunction(err_msg,err_nodes,err_line_nos,progText)
+            return
+
+    elif node.label == AST_EXT_ASSIGN:
+        from_node = node.children[0]
+        to_node = node.children[1]
+
+        from_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+        if to_node.label != AST_IDENTIFIER:
+            err_msg = 'You are trying to perform an external assign '
+            err_msg += 'to an invalid element.  You can only assign '
+            err_msg += 'to an external identifier.'
+            errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
+            return
+            
+        if not to_node.external:
+            err_msg = 'You are trying to assign to a non-external '
+            err_msg += 'named "' + to_node.value + '."'
+            errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
+            return
+            
+
+        if not from_node.external:
+            err_msg = 'Error in external assign.  Must assign from an '
+            err_msg += 'external to another external.  What you are trying '
+            err_msg += 'to assign from is not external.'
+            errorFunction(err_msg,[from_node],[from_node.lineNo],progText)
+            return
+        
+        if checkTypeMismatch(
+            to_node,to_node.type,from_node.type,typeStack,progText):
+
+            err_msg = 'Error in assigning value to external.  External '
+            err_msg += 'has type ' + to_node.type + ', but copied value '
+            err_msg += 'has type ' + from_node.type +'.'
+
+            err_nodes = [to_node,from_node]
+            err_line_nos = [x.lineNo for x in err_nodes]
+            errorFunction(err_msg,err_nodes,err_line_nos,progText)
+            return
+
+        
+            
     elif node.label == AST_FOR_STATEMENT:
 
         currentLineNo = node.children[0].lineNo;
@@ -1362,16 +1438,19 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         for s in node.children:
             s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
+            
     elif (node.label == AST_FUNCTION_DECL_ARG):
         '''
         for declared argument, checks for its collision
         with existing variables and functions, and then inserts
         it into a typestack context.
         '''
-        node.lineNo = node.children[0].lineNo;
-        argType = node.children[0].value;
+        arg_type_node = node.children[0]
+        node.lineNo = arg_type_node.lineNo;
+        argType = arg_type_node.value;
         argName = node.children[1].value;
 
+        
         collisionObj = typeStack.checkCollision(argName,node);
 
         if (collisionObj != None):
@@ -1389,8 +1468,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if (argType == TYPE_FUNCTION) and avoidFunctionObjects:
                 pass;
             else:
+                node.external = arg_type_node.external
                 typeStack.addIdentifier(argName,argType,None,node,node.lineNo);
 
+                
 
     elif (node.label == AST_FUNCTION_BODY_STATEMENT):
         for s in node.children:

@@ -81,8 +81,6 @@ def _emitEndpoint(
             1);
         returner += '\n\n';
 
-
-        
     # handle message sequence functions
     returner += emitUtils.indentString('###### User-defined message sequence functions #######\n',1);
     returner += emitUtils.indentString(

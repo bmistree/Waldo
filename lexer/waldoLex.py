@@ -45,7 +45,9 @@ reserved = {
     'External': 'EXTERNAL',
     'finish': 'FINISH',
     'refresh': 'REFRESH',
-    'Jump': 'JUMP'
+    'Jump': 'JUMP',
+    'extAssign':'EXT_ASSIGN',
+    'extCopy':'EXT_COPY'
     };
 
 
