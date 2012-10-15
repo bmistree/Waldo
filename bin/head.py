@@ -27,7 +27,7 @@ sys.path.insert(0, astParserPath);
 from typeCheckUtil import WaldoTypeCheckException;
 
 import json;
-astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','emitters','pyEmit');
+astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','emitters','v3Emit');
 sys.path.insert(0, astEmitPath);
 import astEmit;
 from astBuilderCommon import WaldoParseException;
@@ -116,7 +116,7 @@ def compileText(progText,outputErrStream,versionNum):
         return None;
     
     resetErrorEncountered(versionNum);
-    emitText = astEmit.runEmitter(astRootNode,None,outputErrStream);
+    emitText = astEmit.astEmit(astRootNode);
     return emitText; # will be none if encountered an error during
                      # emit.  otherwise, file text.
 
@@ -161,9 +161,12 @@ def lexAndParse(progText,outputErrStream,versionNum):
 
 
         
-def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg,versionNum):
-    errOutputStream = sys.stderr;
+def handleArgs(
+    inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,
+    typeCheckArg,emitArg,versionNum):
 
+    
+    errOutputStream = sys.stderr;
 
     try:
         ast,fileText = genAstFromFile(inputFilename,errOutputStream,versionNum);
@@ -207,7 +210,7 @@ def handleArgs(inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,typ
                 errMsg = '\nType error: cancelling code emit\n';
                 print >> errOutputStream, errMsg;
             else:
-                emitText = astEmit.runEmitter(ast,None,errOutputStream);
+                emitText = astEmit.astEmit(ast);
                 if (emitText == None):
                     errMsg = '\nBehram error when requesting emission of ';
                     errMsg += 'source code from astHead.py.\n';

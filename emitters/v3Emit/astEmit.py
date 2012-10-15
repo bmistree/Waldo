@@ -3,6 +3,8 @@
 import sys;
 import os;
 
+from emitUtils import EmitContext
+
 curDir = os.path.dirname(__file__);
 
 # so can get ast labels
@@ -19,7 +21,7 @@ from eventDependencies import specifyDependencies;
 from emitEndpoints import emitEndpoints;
 from onCompleteDict import specifyOnCompleteDict;
 
-def astEmit(astRootNode,emitContext):
+def astEmit(astRootNode,emitContext=None):
     '''
     @pararm {AstNode} astRootNode --- The root node of the ast that
     was generated from the source text after it has been type checked,
@@ -32,6 +34,9 @@ def astEmit(astRootNode,emitContext):
     failed.
     '''
 
+    if emitContext == None:
+        emitContext = EmitContext(False)
+    
     ####### slice the ast
     fdepArray = slicer(astRootNode);
 
