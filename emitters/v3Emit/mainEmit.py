@@ -39,10 +39,29 @@ def emit(endpointName,astNode,fdepDict,emitContext):
 
         if ((idAnnotationType == TypeStack.IDENTIFIER_TYPE_LOCAL) or
             (idAnnotationType == TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT)):
-            returner += astNode.value + ' ';
+
+            returner += astNode.value
+            if ((astNode.external != None) and
+                (emitContext.external_arg_in_func_call == False)):
+                # means that this was an external passed at the top of our
+                # function call.  still need to get its value rather than
+                # the external object itself.
+                returner += '._get()'
+            
+            returner += ' '
+
         elif idAnnotationType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL:
-            returner += "_context.endGlobals['";
-            returner += idAnnotationName + "'] ";
+
+            # if it's an external then, we need to do a double lookup
+            if astNode.external != None:
+                returner += 'self._externalStore.getExternalObject("'
+                returner += endpointName + ', ' 
+                returner += '_context.endGlobals["' + idAnnotationName + '"])'
+                if emitContext.external_arg_in_func_call == False:
+                    returner += '._get()'
+            else:
+                returner += "_context.endGlobals['";
+                returner += idAnnotationName + "'] ";
         elif ((idAnnotationType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL) or
               (idAnnotationType == TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)):
             returner += "_context.seqGlobals['";
@@ -50,6 +69,8 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         elif idAnnotationType == TypeStack.IDENTIFIER_TYPE_SHARED:
             returner += "_context.shareds['";
             returner += idAnnotationName + "'] ";
+            
+            
         else:
             errMsg = '\nBehram error: incorrect annotation type for ';
             errMsg += 'declared variable in emit of mainEmit.\n';
@@ -397,14 +418,145 @@ elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
         returner += ',';
         returner += emit(endpointName,incrementRangeNode,fdepDict,emitContext);
         returner += ')';
+
+
+    elif astNode.label == AST_EXT_COPY:
+        to_copy_from_node = astNode.children[0]
+        to_copy_to_node = astNode.children[1]
+
+        to_copy_to_node._debugErrorIfHaveNoAnnotation(
+            'ast_ext_copy mainEmit.py')
+
+        # unique name used by external variable throughout code.
+        ext_var_id = to_copy_to_node.sliceAnnotationName
+        
+        to_copy_emitted = emit(
+            endpointName,to_copy_from_node,fdepDict,emitContext)
+
+        if to_copy_to_node.label != AST_IDENTIFIER:
+            err_msg = '\nBehram error. when copying to external.  '
+            err_msg += 'Require external that we are copying to to '
+            err_msg += 'be an identifier for now.  You passed in a '
+            err_msg += to_copy_to_node.label + '.\n'
+            print(err_msg)
+            assert(False)
+
+
+        returner += '''
+# check if this external is an endpoint global
+_ext_var_id = "%s"
+if self._isExternalVarId(_ext_var_id):
+    # this is an endpoint global variable
+
+    # gets mapping from variable name to current
+    # external id space
+    _ext_glob_id = _context.endGlobals[_ext_var_id]
+    _ext_obj = self._externalStore.getExternalObject("%s",_ext_glob_id)
+else:
+    _ext_obj = %s
+
+if _ext_obj == None:
+    # FIXME: runtime error lkjs;
+    err_msg = 'Runtime error.  Trying to copy to %s before '
+    err_msg += 'it was assigned to.  Aborting.'
+    print(err_msg)
+    assert(False)
+
+_ext_obj._set(%s)
+# so can know what to commit or roll back when the event
+# completes
+_actEvent.notateWritten(_ext_obj.id)
+
+''' % (ext_var_id, endpointName, to_copy_to_node.label,
+       to_copy_to_node.label,to_copy_emitted)
+
+
+    elif astNode.label == AST_EXT_ASSIGN:
+        to_assign_from_node = astNode.children[0]
+        to_assign_to_node = astNode.children[1]
+
+        to_assign_to_node._debugErrorIfHaveNoAnnotation(
+            'ast_ext_assign mainEmit.py')
+        ext_to_var_id = to_assign_to_node.sliceAnnotationName
+        ext_to_name = to_assign_to_node.value
+        
+        to_assign_from_node._debugErrorIfHaveNoAnnotation(
+            'ast_ext_assign mainEmit.py')
+        ext_from_var_id = to_assign_from_node.sliceAnnotationName
+        ext_from_name = to_assign_from_node.value
+
+        
+        # reference counting logic for external we are assigning from
+        returner += '''
+# need to handle reference counts of external objects.  if we
+# assign to an external, global object, then we need to
+# decrease the reference count for the external object that it
+# had been holding.  Further, we increase the reference count
+# for the external that we assigned to the external global.
+
+
+# handling logic to get the external object that we are assigning from
+_ext_from_var_id = "%s"
+if self._isExternalvarId(_ext_from_var_id):
+    # copying from an endpoint global variable
+
+    # get mapping from variable name to current external id
+    _ext_from_glob_id = _context.endGlobals[_ext_from_var_id]
+    _ext_from_obj = self._externalStore.getExternalObject("%s",_ext_from_glob_id)
+
+    # would equal none if trying to assign from an external
+    # that had not already been written to.
+    # FIXME runtime error lkjs;
+    err_msg = '\nRuntime error.  Trying to assign from external '
+    err_msg += '%s before %s had ever been assigned to.  Aborting.'
+    print(err_msg)
+    assert(False)            
+
+else:
+    # must have been passed in as an argument
+    _ext_from_obj = %s
+
+''' % (ext_from_var_id,endpointName,ext_from_name,
+       ext_from_name,ext_from_name)
+            
+        # handling reference counting logic for external we are
+        # assigning to
+        returner += '''
+# handle reference counting for external we are assigning to,
+# plus actually perform the assignment
+_ext_to_var_id = "%s"
+if self._isExternalVarId(_ext_to_var_id):
+    # this external is an endpoint global variable
+
+    # gets mapping from variable name to current
+    # external id space
+    _ext_to_glob_id = _context.endGlobals[_ext_to_var_id]
+    _ext_to_obj = self._externalStore.getExternalObject("%s",_ext_to_glob_id)
+
+    # increase the reference count of the assigned *from* external
+    # because we're going to maintain a reference to it after
+    # this.
+    _context.increaseContextRefCountById(_ext_from_obj.id)
+    if _ext_to_obj != None:
+        # note can equal None if a value had never been
+        # assigned before-hand
+        _context.decreaseContextRefCountById(_ext_to_obj.id)
+
+    # ensures that the next time the external is used, it will
+    # have the newly assigned id.
+    _context.endGlobals[_ext_to_var_id] = _ext_from_obj.id
+
+else:
+    # must have been passed in as an argument.  just use the
+    # argument name here.
+    %s = _ext_from_obj
+'''  % (ext_to_var_id,endpointName,ext_to_name)
         
     else:
         errMsg = '\nBehram error: emitting for unknown label: ';
         errMsg += astNode.label + '\n';
         print(errMsg);
     
-
-
     return returner;
 
 
@@ -508,14 +660,12 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
                 returner += '\n#### END DEBUG';
                 returner += '\n_time.sleep(_COLLISION_TIMEOUT_VAL);\n\n';
 
-
         
         funcCallText = 'self.%s' % emitUtils._convertSrcFuncNameToInternal(funcName);
         if emitContext.insideOnComplete:
             funcCallText = 'self.%s' % funcName;
         
-        
-
+     
     funcCallText += '('
     returner += funcCallText;
 
@@ -539,16 +689,34 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             returner += indentStr + '_actEvent,\n';
             returner += indentStr + '_context';
 
-    
-    # emit user-defined functions
-    for argNode in funcArgListNode.children:
-        if not first:
-            returner += ',\n' + indentStr;
-        else:
-            first = False;
-            
-        returner += emit(endpointName,argNode,fdepDict,emitContext);
 
+
+            
+    # emit user-defined functions
+    func_def_node = _findFunctionDepFromFDepDict(
+        funcNameNode.value,endpointName,fdepDict).funcNode
+
+
+    func_decl_arg_nodes = func_def_node.children[2] 
+    for counter in range(0,len(func_decl_arg_nodes.children)):
+        func_decl_arg = func_decl_arg_nodes.children[counter]
+        type_node = func_decl_arg.children[0]
+
+        # the actual node corresponding to the argument being passed
+        # in.
+        arg_node = funcArgListNode.children[counter]
+        
+        # modify returner
+        if counter != 0:
+            # for formatting
+            returner += ',\n' + indentStr
+
+        # need to know whether we need the value of the external or
+        # the external object itself so that call to emit argument
+        # knows what to do
+        emitContext.external_arg_in_func_call = (type_node.external != None)
+        returner += emit(endpointName,arg_node,fdepDict,emitContext)
+        emitContext.external_arg_in_func_call = False # just reset to False 
 
     returner +=  ')'
 
@@ -578,24 +746,45 @@ if _msgReceivedContextId != _context.id:
 """;    
 
 
+def _findFunctionDepFromFDepDict(func_name,endpoint_name,fdep_dict):
+    '''
+    @param {String} func_name --- The name of the function as declared
+    in the source.
+
+    @param {String} endpoint_name --- The name of the endpoint that
+    the function is associated with.
+    
+    @returns {FunctionDep object or None} --- Returns None if cannot find.
+    '''
+    for fdep_key in fdep_dict.keys():
+        fdep = fdep_dict[fdep_key]
+
+        if ((fdep.endpointName == endpoint_name) and
+            (fdep.srcFuncName == func_name)):
+            return fdep
+
+    return None
+
+    
+
 def _isMessageSend(funcName,endpointName,fdepDict):
     '''
     @returns{Bool} --- True if this function is a message send, false
     otherwise
     '''
-    for fdepKey in fdepDict.keys():
-        fdep = fdepDict[fdepKey];
+    fdep = _findFunctionDepFromFDepDict(funcName,endpointName,fdepDict)
+    if fdep == None:
+        # should always be able to find the function if have performed
+        # type checking correctly.
+        errMsg = '\nBehram error: unable to find function in fdepDict when ';
+        errMsg += 'checking if it is a message send.  Abortin.\n';
+        print(errMsg);
+        assert(False);
 
-        if ((fdep.endpointName == endpointName) and
-            (fdep.srcFuncName == funcName)):
-            # same function as fdep.  check if the node is labeled as
-            # a message sequence node.
-            return fdep.funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
+    # check if the node is labeled as
+    # a message sequence node.
+    return fdep.funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
 
-    # should always be able to find the function.
-    errMsg = '\nBehram error: unable to find function in fdepDict when ';
-    errMsg += 'checking if it is a message send.  Abortin.\n';
-    print(errMsg);
-    assert(False);
+
             
             

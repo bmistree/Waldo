@@ -262,6 +262,16 @@ class EmitContext(object):
         # non-none.  important for jump statements.
         self.msgSequenceNode = None;
         self.msgSeqFuncNode = None;
+
+        # We need to know whether we want to pass in the value
+        # associated with an external or the external object itself.
+        # If we want to pass in the external object as a function
+        # argument itself, we set this to true.  Then, when we are
+        # emitting the function call argument, we can check this
+        # variable and know that we should emit the object rather than
+        # the value.
+        self.external_arg_in_func_call = False
+
         
     def outOfOnComplete(self):
         self.insideOnComplete = False;

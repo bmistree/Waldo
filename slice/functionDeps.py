@@ -27,7 +27,8 @@ class FunctionDeps(object):
 
         @param {AstNode} funcNode --- 
 
-        @param{Bool} isOnComplete --- True if this is an onCompleteFunction
+        @param{Bool} isOnComplete --- True if this is an
+        onCompleteFunction
         
         '''
         

@@ -433,9 +433,38 @@ def slicer(node,functionDeps=None,typeStack=None):
     elif node.label == AST_TOTEXT_FUNCTION:
         for child in node.children:
             slicer(child,functionDeps,typeStack);
-            
+
+    elif ((node.label == AST_EXT_ASSIGN) or
+          (node.label == AST_EXT_COPY)):
+        
+        from_node = node.children[0]
+        to_node = node.children[1]
+        to_node_name = to_node.value
+
+        read_index = typeStack.getReadIndex()
+        slicer(from_node,functionDeps,typeStack)
+        assign_reads = typeStack.getReadsAfter(read_index)
+
+        # actually add the read and write on the to node.  do not have
+        # to add read on from node because we slice that.
+        to_node_ntt = typeStack.getIdentifier(to_node_name)
+        typeStack.addToVarReadSet(to_node_ntt)
+        typeStack.addReadsToVarReadSet(to_node_ntt,assign_reads)
+
+        # annotate the to and from nodes so that the emitter can use
+        # their globally unique names
+        typeStack.annotateNode(to_node,to_node_name)
+        if from_node.label == AST_IDENTIFIER:
+            # copy does not necessarily require an identifier to be
+            # copied from
+            from_node_name = from_node.value
+            typeStack.annotateNode(from_node,from_node_name)
+        
     else:
-        print('\nBehram error: in slicer, still need to process label for ' + node.label + '\n');
+        warn_msg = '\nBehram error: in slicer, still need to '
+        warn_msg += 'process label for ' + node.label + '\n'
+        print(warn_msg)
+
         for child in node.children:
             slicer(child,functionDeps,typeStack);
 
