@@ -300,7 +300,7 @@ class _ExternalStore(object):
         already exist.  When add (or even if it already exists),
         increment reference count by 1.
         '''
-        self.lock();
+        self._lock();
         key = _externalIdKey(endpointName,extObj.id);
         extElement = self.dict.get(key,None);
         if extElement == None:
@@ -308,7 +308,7 @@ class _ExternalStore(object):
 
         self.changeRefCountById(endpointName,extObj.id,1,True);
         
-        self.unlock();
+        self._unlock();
     
     def changeRefCountById(self,endpointName,extId,howMuch,alreadyLocked=False):
         '''
@@ -319,7 +319,7 @@ class _ExternalStore(object):
         Throws an error if the external does not already exist in dict.
         '''
         if not alreadyLocked:
-            self.lock();
+            self._lock();
 
         key = _externalIdKey(endpointName,extId);
         extElement = self.dict.get(key,None);
@@ -542,12 +542,12 @@ class _Context(object):
         for externalVarName in externalVarNames:
 
             #### DEBUG
-            if not (externalVarName in self.externals):
+            if not (externalVarName in self.endGlobals):
                 assert(False);
             
             #### END DEBUG
                 
-            externalId = self.externals[externalVarName];
+            externalId = self.endGlobals[externalVarName];
             
             if externalId != None:
                 # the external id can equal none if the external is
@@ -1333,7 +1333,19 @@ class _ActiveEvent(object):
         for actWriteKey in self.activeGlobWrites.keys():
             
             if self.endpoint._isExternalVarId(actWriteKey):
-                externalsToWrite[actWriteKey] = True;
+                ##### get external id associated with external's key
+
+                # the ext_id will be the integer id of the shared
+                # data.  (ie, it won't be in its string-ified key form)
+                ext_id = self.endpoint._committedContext.endGlobals.get(actWriteKey,None)
+                if ext_id == None:
+                    # means that the external variable that we are
+                    # writing to did not already contain an external
+                    # object to work with.  do not need to try to
+                    # acquire a lock on it
+                    continue
+                
+                externalsToWrite[ext_id] = True;
 
             # if it's not a write key for me, then it is either an
             # argument id (which can be used to index into the
@@ -1360,7 +1372,22 @@ class _ActiveEvent(object):
 
         for actReadKey in self.activeGlobReads.keys():
             if self.endpoint._isExternalVarId(actReadKey):
-                externalsToRead[actReadKey] = True;
+                ##### get external id associated with external's key
+
+                # the ext_id will be the integer id of the shared
+                # data.  (ie, it won't be in its string-ified key form)
+                ext_id = self.endpoint._committedContext.endGlobals.get(actReadKey,None)
+                if ext_id == None:
+                    # means that the external variable that we are
+                    # writing to did not already contain an external
+                    # object to work with.  do not need to try to
+                    # acquire a lock on it.  note that this won't
+                    # necessarily cause an error, because we may write
+                    # something to this variable before trying to read
+                    # it again.
+                    continue
+                
+                externalsToRead[ext_id] = True;
 
             # if it's not a read key for me, then it is either an
             # argument id (which can be used to index into the
@@ -1393,7 +1420,7 @@ class _ActiveEvent(object):
             # don't need to.
             externalsReserved = True;
         else:
-            externalsReserved = self.reservationManager.acquire(
+            externalsReserved = self.endpoint._reservationManager.acquire(
                 self.extsToRead,
                 self.extsToWrite);
 

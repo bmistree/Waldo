@@ -54,7 +54,7 @@ def emit(endpointName,astNode,fdepDict,emitContext):
 
             # if it's an external then, we need to do a double lookup
             if astNode.external != None:
-                returner += 'self._externalStore.getExternalObject("'
+                returner += 'self._externalStore.getExternalObject('
                 returner += endpointName + ', ' 
                 returner += '_context.endGlobals["' + idAnnotationName + '"])'
                 if emitContext.external_arg_in_func_call == False:
@@ -319,16 +319,22 @@ def emit(endpointName,astNode,fdepDict,emitContext):
     elif astNode.label == AST_DECLARATION:
         # could either be a shared or local variable.  use annotation
         # to determine.
-        identifierNode = astNode.children[1];
-        returner += emit(endpointName,identifierNode,fdepDict,emitContext);
-        if len(astNode.children) == 3:
-            # includes initialization information
-            initializationNode = astNode.children[2];
-            returner += ' = ';
-            returner += emit(endpointName,initializationNode,fdepDict,emitContext);
-        else:
-            returner += ' = ';
-            returner += emitUtils.getDefaultValueFromDeclNode(astNode);
+        typeNode = astNode.children[0]
+
+        if typeNode.external == None:
+            # we only want to emit declarations/initializers for
+            # non-externals.  externals cannot use the '=' sign.
+            identifierNode = astNode.children[1];
+            returner += emit(endpointName,identifierNode,fdepDict,emitContext);
+            if len(astNode.children) == 3:
+                # includes initialization information
+                initializationNode = astNode.children[2];
+                returner += ' = ';
+                returner += emit(endpointName,initializationNode,fdepDict,emitContext);
+            else:
+                # initialize to default value for type                
+                returner += ' = ';
+                returner += emitUtils.getDefaultValueFromDeclNode(astNode);
 
         returner += '\n';
 
@@ -497,7 +503,7 @@ _actEvent.notateWritten(_ext_obj.id)
 
 # handling logic to get the external object that we are assigning from
 _ext_from_var_id = "%s"
-if self._isExternalvarId(_ext_from_var_id):
+if self._isExternalVarId(_ext_from_var_id):
     # copying from an endpoint global variable
 
     # get mapping from variable name to current external id
@@ -507,7 +513,7 @@ if self._isExternalvarId(_ext_from_var_id):
     # would equal none if trying to assign from an external
     # that had not already been written to.
     # FIXME runtime error lkjs;
-    err_msg = '\nRuntime error.  Trying to assign from external '
+    err_msg = 'Runtime error.  Trying to assign from external '
     err_msg += '%s before %s had ever been assigned to.  Aborting.'
     print(err_msg)
     assert(False)            

@@ -529,8 +529,16 @@ _Endpoint.__init__(
     globalsDict = {};
     for globalId in sorted(globalIdentifiersToDeclNodesDict.keys()):
         declNode = globalIdentifiersToDeclNodesDict[globalId];
+        typeDeclNode = declNode.children[0]
         defaultVal = emitUtils.getDefaultValueFromDeclNode(declNode);
-        sharedDict[ "'" + globalId + "'"] = defaultVal;
+
+        # put some default values in for endpoint global variables.
+        # after this, still initialize variables later below
+        if typeDeclNode.external == None:
+            sharedDict[ "'" + globalId + "'"] = defaultVal;
+        else:
+            sharedDict[ "'" + globalId + "'"] = "None";
+
 
     initMethodBody += '# emitting local copies of endpoint global variables\n';
     initMethodBody += '# with default args.  later section of code \n';
@@ -1137,6 +1145,7 @@ def _emitInitSharedGlobalVariables(
     returner = '';
     for _id in idsToDeclNodesDict:
         declNode = idsToDeclNodesDict[_id];
+        typeNode = declNode.children[0]
         returner += mainEmit.emit(endpointName,declNode,fdepDict,emitContext);
         returner += '\n';
     return returner;
