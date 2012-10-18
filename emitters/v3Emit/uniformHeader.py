@@ -175,7 +175,7 @@ class _ExtInterfaceCleanup(threading.Thread):
         # of externalObjects to decrease reference counts for and did
         # them as a batch rather than doing each successively.
         for extObj in self.externalsArray:
-            self.externalStore.decreaseRefCount(self.endpointName,extObj);
+            self.externalStore.changeRefCountById(self.endpointName,extObj.id,-1);
         self.externalStore.gcCheckEmptyRefCounts();
 
 
@@ -731,7 +731,7 @@ class _Context(object):
             myExtId = _getExtIdIfMyEndpoint(key,self.endpointName)
             if myExtId == None:
                 continue;
-            
+
             self.externalStore.changeRefCountById(
                 self.endpointName,myExtId,-1);
 
@@ -1817,8 +1817,8 @@ class _Endpoint(object):
 
         for key in contextToCommit.writtenToExternalsOnThisEndpoint.keys():
             # note that each context
-            extId = _getExtIdIfMyEndpoint(key,self.endpointName);
-            extObj = self._externalStore.getExternalObject(self.endpointName, extId);
+            extId = _getExtIdIfMyEndpoint(key,self._endpointName);
+            extObj = self._externalStore.getExternalObject(self._endpointName, extId);
             
             #### DEBUG
             if extObj == None:

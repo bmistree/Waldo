@@ -121,6 +121,66 @@ def _emitEndpoint(
     return returner;
 
 
+def _publicFunctionBodyDefinition(externalFuncArguments,funcArguments,funcName):
+    '''
+    @param{Array} externalFuncArguments --- Each element is the name
+    of an argument to this function that is an external variable.
+
+    @param{Array} funcArguments --- Each element is the name of a
+    variable that was pased in.
+    
+    @param{String} funcName --- The name of the public function (it
+    gets mangled to a private function that we call)
+
+    Note: this also gets called from inside constructor for onCreates.
+    The reason is that we need to handle reference counting for
+    externals passed in for onCreate calls as well.
+    '''
+
+    publicMethodBody = '\n# put the external object in the external store\n';
+    extArgString = '';
+    for extFuncArg in externalFuncArguments:
+        publicMethodBody +='''
+self._externalStore.incrementRefCountAddIfNoExist(
+    self._endpointName,%s);
+''' % extFuncArg;
+
+        extArgString += extFuncArg + ',';
+
+    publicMethodBody = '''# passing in FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL
+# ... that way know that the function call happened from
+# external caller and don't have to generate new function
+# calls for it.
+_returner = self.%s('''% _convertSrcFuncNameToInternal(funcName);
+
+    # insert function arguments
+
+    publicMethodBody += '_Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,None,None';
+    for argName in funcArguments:
+        publicMethodBody += ',' + argName;
+    publicMethodBody += ');\n';
+
+    publicMethodBody += '''
+# should check if there are other active events
+self._tryNextEvent();
+
+# to release reference count I took on external argument
+# passed in and to garbage collect any externals with no
+# references.
+
+_extInterfaceCleanup = _ExtInterfaceCleanup(
+    [%s],self._externalStore,self._endpointName);
+_extInterfaceCleanup.start();
+
+return _returner;
+''' % extArgString;
+
+    returner = emitUtils.indentString(publicMethodBody,1);
+    returner += '\n';
+    return returner
+
+    
+
 def _emitPublicPrivateOnCreateFunctionDefinition(
     funcNode,endpointName,astRootNode,fdepDict,emitContext):
     '''
@@ -143,58 +203,16 @@ def _emitPublicPrivateOnCreateFunctionDefinition(
     
     returner = '';
 
-    
+
     if funcNode.label == AST_PUBLIC_FUNCTION:
-        # means that we have to emit both a public version and a
-        # hidden, internal version.
+        externalFuncArguments = _getExternalArgumentNamesFromFuncNode(funcNode);
         # here we emit the public version.
         returner += 'def ' + funcName + '(self,';
         for argName in funcArguments:
             returner += argName + ',';
         returner += '):\n';
-
-        externalFuncArguments = _getExternalArgumentNamesFromFuncNode(funcNode);
-        
-        returner += '# put the external object in the external store\n';
-        extArgString = '';
-        for extFuncArg in externalFuncArguments:
-            returner +='''
-self._externalStore.incrementRefCountAddIfNoExist(
-    self._endpointName,%s);
-''' % extFuncArg;
-
-            extArgString += extFuncArg + ',';
-            
-        publicMethodBody = '''# passing in FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL
-# ... that way know that the function call happened from
-# external caller and don't have to generate new function
-# calls for it.
-_returner = self.%s('''% _convertSrcFuncNameToInternal(funcName);
-        
-        # insert function arguments
-
-        publicMethodBody += '_Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,\nNone,None';
-        for argName in funcArguments:
-            publicMethodBody += ',' + argName;
-        publicMethodBody += ');\n';
-
-        publicMethodBody += '''
-# should check if there are other active events
-self._tryNextEvent();
-
-# to release reference count I took on external argument
-# passed in and to garbage collect any externals with no
-# references.
-
-_extInterfaceCleanup = _ExtInterfaceCleanup(
-    [%s],self._externalStore,self._endpointName);
-_extInterfaceCleanup.start();
-
-return _returner;
-''' % extArgString;
-
-        returner += emitUtils.indentString(publicMethodBody,1);
-        returner += '\n';
+        returner += _publicFunctionBodyDefinition(
+            externalFuncArguments,funcArguments,funcName)
 
         
 
@@ -397,6 +415,9 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     onCreateArgumentNames = [];
     if onCreateNode != None:
         onCreateArgumentNames = _getArgumentNamesFromFuncNode(onCreateNode);
+        externalOnCreateArgumentNames = _getExternalArgumentNamesFromFuncNode(onCreateNode);
+
+
 
     initMethod = 'def __init__(self,_connectionObj,_reservationManager,';
     for argName in onCreateArgumentNames:
@@ -416,6 +437,10 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     for endpointVarName in endpointVariableNames:
         globSharedVarsDict [ "'" + endpointVarName + "'"] = '0';
 
+    initMethodBody += '''
+# keeps track of the number of outstanding events that
+# are using each variable for a read or a write.
+'''
     initMethodBody += emitUtils.createDictLiteralAssignment(
         '_globSharedReadVars',globSharedVarsDict);
     initMethodBody += '\n';
@@ -567,30 +592,58 @@ _Endpoint.__init__(
         astRootNode,fdepDict,emitContext);
     initMethodBody += '\n\n';
 
+
     # on create function (if it exists)
     if onCreateNode != None:
-        initMethodBody += '# call oncreate function for remaining initialization \n';
+        # need to do reference counting setup for external variables, etc.
+
+        oncreate_call = '\n# put the external object in the external store\n';
+
+        extArgString = '';
+        for extFuncArg in externalOnCreateArgumentNames:
+            oncreate_call +='''
+self._externalStore.incrementRefCountAddIfNoExist(
+    self._endpointName,%s);
+''' % extFuncArg;
+            
+            extArgString += extFuncArg + ',';
+
+        oncreate_call += '\n# call oncreate function for remaining initialization \n'
         funcCallHead = 'self.%s(' % _convertSrcFuncNameToInternal(ONCREATE_TOKEN);
-        indentStr = '';
-        
-        for counter in range(0,len(funcCallHead)):
-            indentStr += ' ';
-        
-        initMethodBody += funcCallHead;
+        oncreate_call += funcCallHead
 
-        # now emit function control commands for oncreate
-        initMethodBody += '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n';
-        initMethodBody += indentStr + '1, # note that this is just a dummy variable.  act event should not be used within function. \n';
-        initMethodBody += indentStr + 'self._committedContext,\n'
+        # indent_str keeps track of how much we need to indent to align arguments
+        indent_str = ''
+        for count in range(0,len(funcCallHead)):
+            indent_str += ' '
 
-        # now emit user-defined arguments
+        # insert function arguments
+        oncreate_call += '_Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,\n'
+        oncreate_call += indent_str + '1, '
+        oncreate_call += '# note that this is just a dummy variable. \n'
+        oncreate_call += indent_str + '   # act event should not be used within funciton\n'
+        oncreate_call += indent_str + 'self._committedContext'
+
         for argName in onCreateArgumentNames:
-            initMethodBody += indentStr + argName + ', # user-defined argument \n';
+            oncreate_call += ',\n' + indent_str + argName + ' # user-defined arg'
+        oncreate_call += '\n' + indent_str + ');\n';
 
-        initMethodBody += ');\n';
+        oncreate_call += '''
 
+# to release reference count I took on external argument
+# passed in and to garbage collect any externals with no
+# references.
+
+_extInterfaceCleanup = _ExtInterfaceCleanup(
+    [%s],self._externalStore,self._endpointName);
+_extInterfaceCleanup.start();
+
+''' % extArgString;
+        initMethodBody += oncreate_call + '\n'
+    
     else:
         initMethodBody += '# no oncreate function to call.\n';
+
 
     initMethod += emitUtils.indentString(initMethodBody,1);
     return initMethod;
@@ -1033,7 +1086,7 @@ def _getExternalArgumentNamesFromFuncNode(funcNode):
     message receive, and message send functions.
 
     @returns {Array} --- Each element is a string representing the
-    name of the argument that the user passed in.
+    name of the external argument that the user passed in.
     '''
     argNodeIndex = _getArgumentIndexFromFuncNodeLabel(funcNode.label);
 
@@ -1045,7 +1098,7 @@ def _getExternalArgumentNamesFromFuncNode(funcNode):
     for funcDeclArgNode in funcDeclArgListNode.children:
         if funcDeclArgNode.external == True:
             nameNode = funcDeclArgNode.children[1];
-            returner.append(nameNode);
+            returner.append(nameNode.value);
 
     return returner;
 

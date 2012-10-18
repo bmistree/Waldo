@@ -54,8 +54,8 @@ def emit(endpointName,astNode,fdepDict,emitContext):
 
             # if it's an external then, we need to do a double lookup
             if astNode.external != None:
-                returner += 'self._externalStore.getExternalObject('
-                returner += endpointName + ', ' 
+                returner += 'self._externalStore.getExternalObject("'
+                returner += endpointName + '", ' 
                 returner += '_context.endGlobals["' + idAnnotationName + '"])'
                 if emitContext.external_arg_in_func_call == False:
                     returner += '._get()'
@@ -471,7 +471,7 @@ if _ext_obj == None:
 _ext_obj._set(%s)
 # so can know what to commit or roll back when the event
 # completes
-_actEvent.notateWritten(_ext_obj.id)
+_context.notateWritten(_ext_obj.id)
 
 ''' % (ext_var_id, endpointName, to_copy_to_node.label,
        to_copy_to_node.label,to_copy_emitted)
