@@ -504,7 +504,7 @@ _context.notateWritten(_ext_obj.id)
 # handling logic to get the external object that we are assigning from
 _ext_from_var_id = "%s"
 if self._isExternalVarId(_ext_from_var_id):
-    # copying from an endpoint global variable
+    # assigning from an endpoint global variable
 
     # get mapping from variable name to current external id
     _ext_from_glob_id = _context.endGlobals[_ext_from_var_id]
@@ -533,7 +533,7 @@ else:
 _ext_to_var_id = "%s"
 if self._isExternalVarId(_ext_to_var_id):
     # this external is an endpoint global variable
-
+ 
     # gets mapping from variable name to current
     # external id space
     _ext_to_glob_id = _context.endGlobals[_ext_to_var_id]

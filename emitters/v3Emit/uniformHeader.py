@@ -695,22 +695,21 @@ class _Context(object):
             #### END DEBUG
             extObj._backout();
 
-        # re-adjust the reference counts of all external objects that
-        # got updated during this execution to their values before
-        # they were postponed.
-
-        for key in self.refCounts.keys():
-            amountToChangeBy = self.refCounts[key];
-
-            # rolls back changes made to reference counters during
-            # course of execution of postponed task.
-            self.externalStore.changeRefCountById(
-                self.endpointName,extId,amountToChangeBy);
 
         self._unholdExternalReferences();
 
 
     def commit(self):
+        for key in self.refCounts.keys():
+            amountToChangeBy = self.refCounts[key];
+
+            extId = _keyToExternalId(key)
+            
+            # adds changes made to reference counters during
+            # course of execution of postponed task.
+            self.externalStore.changeRefCountById(
+                self.endpointName,extId,amountToChangeBy);
+    
         self._unholdExternalReferences();
 
 

@@ -131,10 +131,6 @@ def _publicFunctionBodyDefinition(externalFuncArguments,funcArguments,funcName):
     
     @param{String} funcName --- The name of the public function (it
     gets mangled to a private function that we call)
-
-    Note: this also gets called from inside constructor for onCreates.
-    The reason is that we need to handle reference counting for
-    externals passed in for onCreate calls as well.
     '''
 
     publicMethodBody = '\n# put the external object in the external store\n';
@@ -609,6 +605,22 @@ self._externalStore.incrementRefCountAddIfNoExist(
             extArgString += extFuncArg + ',';
 
         oncreate_call += '\n# call oncreate function for remaining initialization \n'
+        oncreate_call += '# first need to hold all the references that it could use.'
+        oncreate_call += 'self._committedContext.holdExternalReferences('
+        fdep = mainEmit._findFunctionDepFromFDepDict(ONCREATE_TOKEN,endpointName,fdepDict)
+        if fdep == None:
+            assert(False)
+        
+        touchedExternalVarNames = fdep.getTouchedExternals(fdepDict)
+
+        external_vars = '['
+        for touchedExternal in touchedExternalVarNames.keys():
+            external_vars += "'" + touchedExternal + "',"
+        external_vars += ']'
+        oncreate_call += external_vars + ')\n'
+
+        oncreate_call += '\n# actually make the call\n'
+        
         funcCallHead = 'self.%s(' % _convertSrcFuncNameToInternal(ONCREATE_TOKEN);
         oncreate_call += funcCallHead
 
@@ -630,6 +642,14 @@ self._externalStore.incrementRefCountAddIfNoExist(
 
         oncreate_call += '''
 
+
+# oncreate_call actually needs to commit the context.
+# Although we assume that oncreate cannot be pre-empted, and
+# therefore use _committedContext directly, we still need to
+# commit it in case oncreate call makes any changes to
+# external reference objects.
+self._committedContext.commit()
+
 # to release reference count I took on external argument
 # passed in and to garbage collect any externals with no
 # references.
@@ -639,6 +659,8 @@ _extInterfaceCleanup = _ExtInterfaceCleanup(
 _extInterfaceCleanup.start();
 
 ''' % extArgString;
+
+
         initMethodBody += oncreate_call + '\n'
     
     else:
