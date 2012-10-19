@@ -695,9 +695,6 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             returner += indentStr + '_actEvent,\n';
             returner += indentStr + '_context';
 
-
-
-            
     # emit user-defined functions
     func_def_node = _findFunctionDepFromFDepDict(
         funcNameNode.value,endpointName,fdepDict).funcNode
@@ -713,10 +710,12 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
         arg_node = funcArgListNode.children[counter]
         
         # modify returner
-        if counter != 0:
+        if not first:
             # for formatting
             returner += ',\n' + indentStr
+        first = False
 
+        
         # need to know whether we need the value of the external or
         # the external object itself so that call to emit argument
         # knows what to do
