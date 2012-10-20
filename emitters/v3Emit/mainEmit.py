@@ -695,36 +695,53 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             returner += indentStr + '_actEvent,\n';
             returner += indentStr + '_context';
 
-    # emit user-defined functions
-    func_def_node = _findFunctionDepFromFDepDict(
-        funcNameNode.value,endpointName,fdepDict).funcNode
+    # emit function call
+    fdep = _findFunctionDepFromFDepDict(
+        funcNameNode.value,endpointName,fdepDict)
+
+    # this is gross.  I want to combine both of these branches.  maybe later.
+    if fdep != None:
+        # means that the function wasn't a function object being
+        # called
+        func_def_node = _findFunctionDepFromFDepDict(
+            funcNameNode.value,endpointName,fdepDict).funcNode
+        func_decl_arg_nodes = func_def_node.children[2] 
+        for counter in range(0,len(func_decl_arg_nodes.children)):
+            func_decl_arg = func_decl_arg_nodes.children[counter]
+            type_node = func_decl_arg.children[0]
+
+            # the actual node corresponding to the argument being passed
+            # in.
+            arg_node = funcArgListNode.children[counter]
+
+            # modify returner
+            if not first:
+                # for formatting
+                returner += ',\n' + indentStr
+            first = False
 
 
-    func_decl_arg_nodes = func_def_node.children[2] 
-    for counter in range(0,len(func_decl_arg_nodes.children)):
-        func_decl_arg = func_decl_arg_nodes.children[counter]
-        type_node = func_decl_arg.children[0]
+            # need to know whether we need the value of the external or
+            # the external object itself so that call to emit argument
+            # knows what to do
+            emitContext.external_arg_in_func_call = (type_node.external != None)
+            returner += emit(endpointName,arg_node,fdepDict,emitContext)
+            emitContext.external_arg_in_func_call = False # just reset to False 
 
-        # the actual node corresponding to the argument being passed
-        # in.
-        arg_node = funcArgListNode.children[counter]
-        
-        # modify returner
-        if not first:
-            # for formatting
-            returner += ',\n' + indentStr
-        first = False
+    else:
+        # means that we were calling a function object.  do not permit
+        # passing externals
 
-        
-        # need to know whether we need the value of the external or
-        # the external object itself so that call to emit argument
-        # knows what to do
-        emitContext.external_arg_in_func_call = (type_node.external != None)
-        returner += emit(endpointName,arg_node,fdepDict,emitContext)
-        emitContext.external_arg_in_func_call = False # just reset to False 
+        for arg_node in funcArgListNode.children:
+            if not first:
+                # for formatting
+                returner += ',\n' + indentStr
+            first = False
 
+            returner += emit(endpointName,arg_node,fdepDict,emitContext)
     returner +=  ')'
 
+    
     if funcNameNode.sliceAnnotationName == None:
         if _isMessageSend(funcName,endpointName,fdepDict) and (not emitContext.insideOnComplete):
             # if this is a call to a message function, need to block
