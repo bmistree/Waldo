@@ -1259,7 +1259,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         nameNode.external = typeNode.external;
         name = nameNode.value;
         currentLineNo = node.children[0].lineNo;
-        if (len(node.children) == 3):
+        if len(node.children) == 3:
             rhs = node.children[2];
             rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
             rhsType = rhs.type;
@@ -1270,18 +1270,20 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += 'assigned to type [' + rhsType + '].';
                 errorFunction(errMsg,[node],[currentLineNo],progText);
 
-        else:
-            # not initialization information.  There are several
-            # types that require initialization information.  Most
-            # importantly, user-defined functions do.  Throw an
-            # error if user-defined function does not.
-            if (isFunctionType(declaredType)):
-                errMsg = 'Error when declaring a user-defined function ';
-                errMsg += 'named "' + name + '".  Every user-defined ';
-                errMsg += 'function requires that it should be initialized.  ';
-                errMsg += 'That means that you have to set ' + name + ' ';
-                errMsg += 'to a valid function when you declare it.';
-                errorFunction(errMsg,[node],[currentLineNo],progText);
+            # uncomment the following if want to require
+            # initialization of function arguments before start.
+            # else:
+            # # not initialization information.  There are several
+            # # types that require initialization information.  Most
+            # # importantly, user-defined functions do.  Throw an
+            # # error if user-defined function does not.
+            # if (isFunctionType(declaredType)):
+            #     errMsg = 'Error when declaring a user-defined function ';
+            #     errMsg += 'named "' + name + '".  Every user-defined ';
+            #     errMsg += 'function requires that it should be initialized.  ';
+            #     errMsg += 'That means that you have to set ' + name + ' ';
+            #     errMsg += 'to a valid function when you declare it.';
+            #     errorFunction(errMsg,[node],[currentLineNo],progText);
 
         #check if already have a function or variable with the
         #targetted name.

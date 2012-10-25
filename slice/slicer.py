@@ -235,8 +235,11 @@ def slicer(node,functionDeps=None,typeStack=None):
         else:
             # means that this is a function call being made on a
             # function object.  annotate the func call node
+            typeStack.addFuncObjectCall(idExists) # idExists is an ntt
             typeStack.annotateNode(funcCallNameNode,funcCallName);
-        
+
+
+
     elif node.label == AST_ASSIGNMENT_STATEMENT:
         # left-hand side can only be a bracket statement or an
         # identifier according to type checking.
@@ -622,7 +625,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
                     onCompleteOtherTypeStack = otherTypeStack;
                     if otherTypeStack.mEndpointName != onCompleteEndpointName:
                         onCompleteOtherTypeStack = typeStack;
-                    
+
                     hashedFuncNameNextCall = onCompleteOtherTypeStack.onCompleteHashFuncName(
                         nextMsgName,msgSeqIdentifierNode);
 

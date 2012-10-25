@@ -52,8 +52,6 @@ _REFRESH_RECEIVE_KEY: _Event(
     # closes the literal that is being assigned to
     # _PROTOTYPE_EVENTS_DICT
     returner += emitUtils.indentString('};\n\n',1);
-    returner += r"print('\nBehram warn: loading blank data into events for externals\n');"
-    returner += '\n';
     return returner;
 
 

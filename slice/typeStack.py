@@ -22,6 +22,7 @@ class TypeStack(object):
     IDENTIFIER_TYPE_ENDPOINT_NAME = 8;
 
     IDENTIFIER_TYPE_ONCOMPLETE_NODE = 9;
+    IDENTIFIER_TYPE_FUNCTION_OBJECT_CALL = 10
     
     def __init__(self,prevStack=None):
         self.stack  = []; #last element in array is always top of stack.
@@ -270,7 +271,14 @@ class TypeStack(object):
         '''
         topStack = self.checkStackLen('addReadsWritesToVarReadSet');
         topStack.addRead(ntt);
-            
+
+    def addFuncObjectCall(self,ntt):
+        '''
+        '''
+        topStack = self.checkStackLen('addReadsWritesToVarReadSet');
+        topStack.addFuncObjectCall(ntt)
+
+        
     def addFuncCall(self,nameOfFunc,funcArgReads):
         '''
         @see FuncCallNtt for description of arguments.
@@ -329,7 +337,10 @@ class Context(object):
         self.labelAs = labelAs;
         self.currentFunctionDep = currentFunctionDep;
 
+    def addFuncObjectCall(self,ntt):
+        return self.addRead(ntt.copyFunctionObjectCall())
 
+                          
     def addFuncCall(self,nameOfFunc,funcArgReads):
         '''
         @see FuncCallNtt for description of arguments.
@@ -390,7 +401,8 @@ class Context(object):
             # happened inside a function instead of happening
             # inside of an endpoint global section.
             self.currentFunctionDep.addFuncReads([ntt]);
-        
+
+
     def getIdentifier(self,identifierName):
         '''
         @returns None if identifierName does not exist in this context
@@ -470,6 +482,18 @@ class NameTypeTuple(object):
 
         self.argPosition = argPosition;
 
+    def copyFunctionObjectCall(self):
+        # make a copy of myself; should only be used for function
+        # object calls
+        returner = NameTypeTuple(
+            self.varName,TypeStack.IDENTIFIER_TYPE_FUNCTION_OBJECT_CALL,
+            self.mutable,self.argPosition, self.astNode)
+
+        returner.id = self.id
+        return returner
+        
+        
+        
     @staticmethod
     def uniqueNameForEndpoints():
         '''

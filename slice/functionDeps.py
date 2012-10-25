@@ -249,10 +249,13 @@ class FunctionDeps(object):
             fdep._seqGlobals(allFound,funcDepsDict,alreadyCheckedFuncDict);
             
     
-    def definiteSharedGlobalReads(self,funcDepsDict):
-        return self._definiteSharedGlobalReads(funcDepsDict);
+    def definiteSharedGlobalReads(self,funcDepsDict,already_checked=None):
+        if already_checked == None:
+            already_checked = {}
+            
+        return self._definiteSharedGlobalReads(funcDepsDict,already_checked);
     
-    def _definiteSharedGlobalReads(self,funcDepsDict):
+    def _definiteSharedGlobalReads(self,funcDepsDict,already_checked):
         '''
         Runs through all variables that are read and returns a list of
         all shared or global variable ntt-s that this function may
@@ -277,12 +280,33 @@ class FunctionDeps(object):
         for key in sorted(self.mReadSet.keys()):
             item = self.mReadSet[key];
             if ((item.varType == TypeStack.IDENTIFIER_TYPE_SHARED) or
-                (item.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL)):
+                (item.varType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL) or
+                (item.varType == TypeStack.IDENTIFIER_TYPE_FUNCTION_OBJECT_CALL)):
 
                 if returnerDict.get(item.id,None) == None:
                     # we did not already have this global.  add it.
                     returnerDict[item.id] = item;
 
+
+        for funcCallNtt in self.funcCalls.values():
+            func_call_name = funcCallNtt.varName
+            if already_checked.get(func_call_name,None) == None:
+                already_checked[func_call_name] = True;
+                fdep = funcDepsDict.get(func_call_name,None);
+                if fdep == None:
+                    errMsg = '\nBehram error: Looking up function named "';
+                    errMsg += func_call_name + '" that ';
+                    errMsg += 'was not defined.\n';
+                    print(errMsg);
+                    assert(False);
+                    
+                def_reads_array = fdep._definiteSharedGlobalReads(
+                    funcDepsDict,already_checked)
+
+                for read_item in def_reads_array:
+                    returnerDict[read_item.id] = read_item
+
+                    
         # flatten the returner dictionary and return it.
         returner = [];
         for key in sorted(returnerDict.keys()):
