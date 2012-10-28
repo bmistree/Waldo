@@ -634,10 +634,10 @@ self._externalStore.incrementRefCountAddIfNoExist(
         oncreate_call += indent_str + '1, '
         oncreate_call += '# note that this is just a dummy variable. \n'
         oncreate_call += indent_str + '   # act event should not be used within funciton\n'
-        oncreate_call += indent_str + 'self._committedContext'
+        oncreate_call += indent_str + 'self._committedContext,'
 
         for argName in onCreateArgumentNames:
-            oncreate_call += ',\n' + indent_str + argName + ' # user-defined arg'
+            oncreate_call += '\n' + indent_str + argName + ', # user-defined arg'
         oncreate_call += '\n' + indent_str + ');\n';
 
         oncreate_call += '''
