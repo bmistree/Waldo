@@ -108,11 +108,11 @@ def getDefaultValueFromDeclNode(astDeclNode):
     elif typeLabel == TYPE_NOTHING:
         returner = 'None';
     elif templateUtil.isListType(typeLabel):
-        returner = '[]';
+        returner = '_WaldoList([])';
     elif templateUtil.isFunctionType (typeLabel):
         returner = '_defaultFunction';
     elif templateUtil.isMapType(typeLabel):
-        returner = '{}';
+        returner = '_WaldoMap({})';
     else:
         errMsg = '\nBehram error: unrecognized type name when writing ';
         errMsg += 'default value for node.\n';

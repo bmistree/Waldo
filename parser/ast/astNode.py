@@ -5,8 +5,8 @@ import os;
 curDir = os.path.dirname(__file__);
 sys.path.append(os.path.join(curDir,'typeCheck'));
 
-import typeCheck as typeChecker;
-import d3.treeDraw as treeDraw;
+import typeCheck as typeChecker
+import d3.treeDraw as treeDraw
 
 
 class AstNode():
@@ -99,6 +99,7 @@ class AstNode():
     def typeCheck(self,progText,typeStack=None,avoidFunctionObjects=False):
         return typeChecker.typeCheck(self,progText,typeStack);
 
+    
     def toJSON(self,indentLevel=0,drawHigh=False):
         '''
         JSON format:

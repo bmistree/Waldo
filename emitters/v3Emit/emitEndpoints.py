@@ -8,14 +8,20 @@ import mainEmit;
 curDir = os.path.dirname(__file__);
 
 # so can get ast labels
-sys.path.append(os.path.join(curDir,'..','..','parser','ast'));
-from astLabels import *;
+sys.path.append(os.path.join(curDir,'..','..','parser'));
+import ast
+from astLabels import *
+import typeCheck as TypeCheck
+from astBuilderCommon import isEmptyNode
+
 
 # so can get oncreate token name
 sys.path.append(os.path.join(curDir,'..','..','lexer'));
 from waldoLex import ONCREATE_TOKEN;
 
 from emitUtils import _convertSrcFuncNameToInternal;
+
+
 
 def emitEndpoints(astRootNode,fdepDict,emitContext):
     '''
@@ -121,7 +127,8 @@ def _emitEndpoint(
     return returner;
 
 
-def _publicFunctionBodyDefinition(externalFuncArguments,funcArguments,funcName):
+def _publicFunctionBodyDefinition(
+    externalFuncArguments,funcArguments,funcName,funcNode):
     '''
     @param{Array} externalFuncArguments --- Each element is the name
     of an argument to this function that is an external variable.
@@ -131,6 +138,8 @@ def _publicFunctionBodyDefinition(externalFuncArguments,funcArguments,funcName):
     
     @param{String} funcName --- The name of the public function (it
     gets mangled to a private function that we call)
+
+    @param{AstNode} funcNode --- The AstNode for this public function
     '''
 
     publicMethodBody = '\n# put the external object in the external store\n';
@@ -148,12 +157,22 @@ self._externalStore.incrementRefCountAddIfNoExist(
 # external caller and don't have to generate new function
 # calls for it.
 _returner = self.%s('''% _convertSrcFuncNameToInternal(funcName);
-
+    
     # insert function arguments
-
     publicMethodBody += '_Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL,None,None';
     for argName in funcArguments:
-        publicMethodBody += ',' + argName;
+        
+        publicMethodBody += ','
+        
+        # if the argument is a list or a map, then we have to deep
+        # copy it into a WaldoMap or WaldoList object.  
+        if _argIsMap(funcNode,argName):
+            publicMethodBody += '_WaldoMap(' + argName + ',True)'
+        elif _argIsList(funcNode,argName):
+            publicMethodBody += '_WaldoList(' + argName + ',True)'
+        else:
+            publicMethodBody += argName
+
     publicMethodBody += ');\n';
 
     publicMethodBody += '''
@@ -168,15 +187,111 @@ _extInterfaceCleanup = _ExtInterfaceCleanup(
     [%s],self._externalStore,self._endpointName);
 _extInterfaceCleanup.start();
 
-return _returner;
-''' % extArgString;
+''' % extArgString
 
+    publicMethodBody += 'return _returner'
+    if _returnTypeIsMapOrList(funcNode):
+        # copies waldo list/map object into regular python list/dict
+        publicMethodBody += '._map_list_copy_return()'
+    publicMethodBody += '\n'
+    
     returner = emitUtils.indentString(publicMethodBody,1);
     returner += '\n';
     return returner
 
+def _returnTypeIsMapOrList(func_node):
+    '''
+    @returns {Bool} --- True if the return type of func_node is a map
+    or a list.  False otherwise.
+    
+    Note: asserts out if func_node isn't private or public.
+    '''
+    return_node_index = _getReturnTypeIndexFromFuncNodeLabel(
+        func_node.label)
+    
+    return_node = func_node.children[return_node_index]
+
+
+    if (TypeCheck.TemplateUtil.isMapType(return_node.type) or
+        TypeCheck.TemplateUtil.isListType(return_node.type)):
+        return True
+
+    return False
     
 
+def _argIsMap(func_node,arg_name):
+    '''
+    @param{AstNode} func_node ---
+
+    @param{String} arg_name --- The name of the argument the
+
+    @returns{Bool} True if the argument named arg_name of the function
+    contained in func_node is a map type.  False otherwise.
+    '''
+    if func_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        err_msg = '\nBehram error: message_receive_sequence_functions '
+        err_msg += 'do not have arguments.\n'
+        print err_msg
+        assert(False)
+
+    argNodeIndex = _getArgumentIndexFromFuncNodeLabel(func_node.label);
+    if argNodeIndex == None:
+        errMsg = '\nBehram error: cannot call argumentnamesfromfuncnode on ';
+        errMsg += 'nodes that are not function nodes.\n';
+        print(errMsg);
+        assert(False);
+
+    returner = [];
+    funcDeclArgListNode = func_node.children[argNodeIndex];
+    for funcDeclArgNode in funcDeclArgListNode.children:
+        name_node = funcDeclArgNode.children[1]
+        type_node = funcDeclArgNode.children[0]
+        name = name_node.value
+        if name == arg_name:
+            if TypeCheck.TemplateUtil.isMapType(type_node.type):
+                return True
+            else:
+                return False
+    err_msg = '\nBehram error.  Funtion does not have an argument named "'
+    err_msg += arg_name + '."\n'
+    print err_msg
+    assert (False)
+
+
+def _argIsList(func_node,arg_name):
+    '''
+    @see _argIsMap, except for list types
+    '''
+    if func_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        err_msg = '\nBehram error: message_receive_sequence_functions '
+        err_msg += 'do not have arguments.\n'
+        print err_msg
+        assert(False)
+
+    argNodeIndex = _getArgumentIndexFromFuncNodeLabel(func_node.label);
+    if argNodeIndex == None:
+        errMsg = '\nBehram error: cannot call argumentnamesfromfuncnode on ';
+        errMsg += 'nodes that are not function nodes.\n';
+        print(errMsg);
+        assert(False);
+
+    returner = [];
+    funcDeclArgListNode = func_node.children[argNodeIndex];
+    for funcDeclArgNode in funcDeclArgListNode.children:
+        name_node = funcDeclArgNode.children[1]
+        type_node = funcDeclArgNode.children[0]
+        name = name_node.value
+        if name == arg_name:
+            if TypeCheck.TemplateUtil.isListType(type_node.type):
+                return True
+            else:
+                return False
+    err_msg = '\nBehram error.  Funtion does not have an argument named "'
+    err_msg += arg_name + '."\n'
+    print err_msg
+    assert (False)
+
+    
 def _emitPublicPrivateOnCreateFunctionDefinition(
     funcNode,endpointName,astRootNode,fdepDict,emitContext):
     '''
@@ -208,9 +323,8 @@ def _emitPublicPrivateOnCreateFunctionDefinition(
             returner += argName + ',';
         returner += '):\n';
         returner += _publicFunctionBodyDefinition(
-            externalFuncArguments,funcArguments,funcName)
+            externalFuncArguments,funcArguments,funcName,funcNode)
 
-        
 
     ####### now handle internal definition of function #########
     # every function should have a special key associated in the event
@@ -636,10 +750,22 @@ self._externalStore.incrementRefCountAddIfNoExist(
         oncreate_call += indent_str + '   # act event should not be used within funciton\n'
         oncreate_call += indent_str + 'self._committedContext,'
 
+        # actually perform call to internal oncreate
         for argName in onCreateArgumentNames:
-            oncreate_call += '\n' + indent_str + argName + ', # user-defined arg'
+            # before calling internal oncreate, need to change all
+            # map/list user-supplied arguments over to _WaldoList and
+            # _WaldoMap objects
+            oncreate_call += '\n' + indent_str
+            if _argIsMap(onCreateNode,argName):
+                oncreate_call +=  '_WaldoMap(' + argName + ',True)'
+            elif _argIsList(onCreateNode,argName):
+                oncreate_call +=  '_WaldoList(' + argName + ',True)'
+            else:
+                oncreate_call += argName
+                
+            oncreate_call += ', # user-defined arg'
+            
         oncreate_call += '\n' + indent_str + ');\n';
-
         oncreate_call += '''
 
 
@@ -669,7 +795,6 @@ _extInterfaceCleanup.start();
 
     initMethod += emitUtils.indentString(initMethodBody,1);
     return initMethod;
-
 
 def _getMessageFunctionNodes(endpointName,astRootNode):
     '''
@@ -1124,7 +1249,21 @@ def _getExternalArgumentNamesFromFuncNode(funcNode):
 
     return returner;
 
-    
+
+def _getReturnTypeIndexFromFuncNodeLabel(label):
+    return_node_index = None
+    if label == AST_PUBLIC_FUNCTION:
+        return_node_index = 1
+    elif label == AST_PRIVATE_FUNCTION:
+        return_node_index = 1
+    else:
+        err_msg = '\nBehram error: cannot request a return type '
+        err_msg += 'node for non-public or non-private node.\n'
+        print err_msg
+        assert (False)
+        
+    return return_node_index
+
 def _getArgumentIndexFromFuncNodeLabel(label):
     argNodeIndex = None;
     if label == AST_PUBLIC_FUNCTION:

@@ -7,12 +7,17 @@ import emitUtils;
 curDir = os.path.dirname(__file__);
 
 # so can get ast labels
-sys.path.append(os.path.join(curDir,'..','..','parser','ast'));
-from astLabels import *;
-from astBuilderCommon import isEmptyNode;
+sys.path.append(os.path.join(curDir,'..','..','parser'))
+import ast
+from astLabels import *
+import typeCheck as TypeCheck
+from astBuilderCommon import isEmptyNode
 
-sys.path.append(os.path.join(curDir,'..','..','slice'));
-from typeStack import TypeStack;
+
+sys.path.append(os.path.join(curDir,'..','..','slice'))
+sys.path.append(os.path.join(curDir,'..','..','parser','ast','typeStack'))
+from typeStack import TypeStack
+
 
 
 def emit(endpointName,astNode,fdepDict,emitContext):
@@ -46,8 +51,12 @@ def emit(endpointName,astNode,fdepDict,emitContext):
                 # means that this was an external passed at the top of our
                 # function call.  still need to get its value rather than
                 # the external object itself.
+                
+                # may return a _WaldoMap or _WaldoList object.  @see
+                # _WaldoMap and _WaldoList in uniformHeader.py to
+                # understand the interface these classes provide.
                 returner += '._get()'
-            
+
             returner += ' '
 
         elif idAnnotationType == TypeStack.IDENTIFIER_TYPE_ENDPOINT_GLOBAL:
@@ -100,23 +109,30 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         forBodyNode = astNode.children[forBodyNodeIndex];
         toIterateNode = astNode.children[toIterateNodeIndex];
         identifierName = astNode.children[identifierNodeIndex].value;
-        
+
+        # actually emit the for loop itself
         returner += 'for ' + identifierName + ' in ';
-        returner += emit(endpointName,toIterateNode,fdepDict,emitContext);
+
+        returner += emit(endpointName,toIterateNode,fdepDict,emitContext)
+        if (TypeCheck.TemplateUtil.isListType(toIterateNode.type) or
+            TypeCheck.TemplateUtil.isMapType(toIterateNode.type)):
+            returner += '._map_list_iter()'
+            
         returner += ':\n';
         forBody = emit(endpointName,forBodyNode,fdepDict,emitContext);
         returner += emitUtils.indentString(forBody,1);
         returner += '\n';
-        
+            
             
     elif astNode.label == AST_JUMP_COMPLETE:
-
+                
         if emitContext.msgSequenceNode == None:
             errMsg = '\nBehram error: require a message sequence node ';
             errMsg += 'when emitting a jump complete label.\n';
             print(errMsg);
             assert(False);
 
+            
         # tell side to signal sequence complete and schedule oncompletes
         msgSeqNameNode = emitContext.msgSequenceNode.children[0];
         msgSeqName = msgSeqNameNode.value;
@@ -128,7 +144,7 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         toAppendToNode = astNode.children[0];
         toAppendNode = astNode.children[1];
         returner += emit(endpointName,toAppendToNode,fdepDict,emitContext);
-        returner += '.append(';
+        returner += '._list_append(';
         returner += emit(endpointName,toAppendNode,fdepDict,emitContext);
         returner += ')';
         
@@ -170,17 +186,40 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
 
-        returner += emit(endpointName,lhsNode,fdepDict,emitContext);
-        returner += ' in ';
-        returner += emit(endpointName,rhsNode,fdepDict,emitContext);
+            
+        if (TypeCheck.TemplateUtil.isMapType(rhsNode.type) or
+            TypeCheck.TemplateUtil.isListType(lhsNode.type)):
+            # means that it's a list or map: need to call
+            # _map_list_bool_in statement.
+            returner += emit(endpointName,rhsNode,fdepDict,emitContext)
+            returner += '._map_list_bool_in('
+            returner += emit(endpointName,lhsNode,fdepDict,emitContext)
+            returner += ')'
+        else:
+            returner += emit(endpointName,lhsNode,fdepDict,emitContext);                        
+            returner += ' in ';
+            returner += emit(endpointName,rhsNode,fdepDict,emitContext);
 
+        
     elif astNode.label == AST_BRACKET_STATEMENT:
         indexedIntoNode = astNode.children[0];
         indexNode = astNode.children[1];
-        returner += emit(endpointName,indexedIntoNode,fdepDict,emitContext);
-        returner += '[';
-        returner += emit(endpointName,indexNode,fdepDict,emitContext);
-        returner += ']';
+
+        returner += emit(endpointName,indexedIntoNode,fdepDict,emitContext);        
+        if (TypeCheck.TemplateUtil.isMapType(indexedIntoNode.type) or
+            TypeCheck.TemplateUtil.isListType(indexedIntoNode.type)):
+            # means that we are indexing into a map or a list
+            open_emitter = '._map_list_index_get('
+            close_emitter = ')'
+        else:
+            # dealing with string
+            open_emitter = '['
+            close_emitter = ']'
+            
+        returner += open_emitter
+        returner += emit(endpointName,indexNode,fdepDict,emitContext)
+        returner += close_emitter
+
         
     elif astNode.label == AST_TOTEXT_FUNCTION:
         toTextArgNode = astNode.children[0];
@@ -234,7 +273,7 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         returner += emitUtils.indentString(condBodyStr,1);
 
     elif astNode.label == AST_ELSE_STATEMENT:
-        if (len(astNode.children) == 0):
+        if len(astNode.children) == 0:
             return '';
         
         elseHeadStr = 'else: \n';
@@ -277,16 +316,38 @@ def emit(endpointName,astNode,fdepDict,emitContext):
                 fromBodyString += '\n';
                 
         if len(fromBodyString) == 0:
-            returner += 'pass;'; # takes care of blank function bodies.
+            returner += 'pass '; # takes care of blank function bodies.
         else:
             returner += fromBodyString;
 
     elif astNode.label == AST_ASSIGNMENT_STATEMENT:
         lhsNode = astNode.children[0];
         rhsNode = astNode.children[1];
-        returner += emit(endpointName,lhsNode,fdepDict,emitContext);
-        returner += ' = ';
-        returner += emit(endpointName,rhsNode,fdepDict,emitContext);
+
+        if ((lhsNode.label == AST_BRACKET_STATEMENT) and
+            (lhsNode.children[0].type != TYPE_STRING)):
+            # inserting into map or list.  need to call insert
+            # directly on map/list structure.  note second condition
+            # is necessary because can have a bracket statement
+            # wherein we're accessing indices of a string.
+
+            indexed_into_node = lhsNode.children[0]
+            index_node = lhsNode.children[1]
+            
+            # format:
+            #   <toIndexInto>._map_list_index_insert(<index>,<to insert>)
+            returner += emit(
+                endpointName,indexed_into_node,fdepDict,emitContext)
+            returner += '._map_list_index_insert('
+            returner += emit(endpointName,index_node,fdepDict,emitContext)
+            returner += ','
+            returner += emit(endpointName,rhsNode,fdepDict,emitContext)
+            returner += ')'
+
+        else:
+            returner += emit(endpointName,lhsNode,fdepDict,emitContext)
+            returner += ' = ';
+            returner += emit(endpointName,rhsNode,fdepDict,emitContext);
 
     elif astNode.label == AST_PRINT:
         toPrintNode = astNode.children[0];
@@ -349,19 +410,19 @@ def emit(endpointName,astNode,fdepDict,emitContext):
 
     elif astNode.label == AST_LIST:
         # handle list literal
-        returner += '[ ';
+        returner += '_WaldoList([ ';
         for child in astNode.children:
             returner += emit(endpointName,child,fdepDict,emitContext);
             returner += ', ';
-        returner += '] ';
+        returner += ']) ';
 
     elif astNode.label == AST_MAP:
         # handle map literal
-        returner += '{ ';
+        returner += '_WaldoMap({ ';
         for mapLiteralItem in astNode.children:
             returner += emit(endpointName,mapLiteralItem,fdepDict,emitContext);
             returner += ', ';
-        returner += '} ';
+        returner += '}) ';
 
     elif astNode.label == AST_FUNCTION_BODY_STATEMENT:
         for child in astNode.children:
@@ -408,22 +469,28 @@ elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
 
     elif astNode.label == AST_LEN:
         lenArgNode = astNode.children[0];
-        returner += 'len( ';
-        returner += emit(endpointName,lenArgNode,fdepDict,emitContext);
-        returner += ')';
+
+        if (TypeCheck.TemplateUtil.isMapType(lenArgNode.type) or
+            TypeCheck.TemplateUtil.isListType(lenArgNode.type)):
+            returner += emit(endpointName,lenArgNode,fdepDict,emitContext)
+            returner += '._map_list_len()'
+        else:
+            returner += 'len( ';
+            returner += emit(endpointName,lenArgNode,fdepDict,emitContext);
+            returner += ')';
 
     elif astNode.label == AST_RANGE:
         bottomRangeNode = astNode.children[0];
         upperRangeNode = astNode.children[1];
         incrementRangeNode = astNode.children[2];
 
-        returner += 'range( ';
+        returner += '_WaldoList(range( ';
         returner += emit(endpointName,bottomRangeNode,fdepDict,emitContext);
         returner += ',';
         returner += emit(endpointName,upperRangeNode,fdepDict,emitContext);
         returner += ',';
         returner += emit(endpointName,incrementRangeNode,fdepDict,emitContext);
-        returner += ')';
+        returner += '))';
 
 
     elif astNode.label == AST_EXT_COPY:
@@ -565,8 +632,6 @@ else:
     
     return returner;
 
-
-
 def _isBinaryOperatorLabel(nodeLabel):
     '''
     @param {String} nodeLabel --- The label field of an ast node.
@@ -575,7 +640,6 @@ def _isBinaryOperatorLabel(nodeLabel):
     False otherwise.
 
     '''
-    
     if nodeLabel in _getBinaryOperatorLabelDict():
         return True;
     return False;
@@ -683,7 +747,7 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
 
 
     first = True;
-    if funcNameNode.sliceAnnotationName  == None:
+    if funcNameNode.sliceAnnotationName == None:
         # we are handling a call to a user-defined function, not a
         # funciton object.
 

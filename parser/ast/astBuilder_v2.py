@@ -20,8 +20,6 @@ from typeCheckUtil import getErrorEncountered as astGetErrorEncountered;
 from typeCheckUtil import resetErrorEncountered as astResetErrorEncountered;
 from typeCheckUtil import setErrorEncountered;
 
-# from astNode import getErrorEncountered as astGetErrorEncountered;
-# from astNode import resetErrorEncountered as astResetErrorEncountered;
 import ply.yacc as yacc;
 from parserUtil import errPrint;
 from parserUtil import setOutputErrorsTo;
@@ -74,7 +72,6 @@ def p_MessageSequenceSection(p):
                 continue;
             p[0].addChild(kid);
             
-        # p[0].addChildren(p[2].getChildren());
 
 
                    

@@ -87,7 +87,7 @@ during the course of its execution completes.
 This strategy can be particularly problematic if a lot of work was
 backloaded to the end of the function because we lock a lot of data
 that we do not really need.
-'''""" + """
+''' """ + """
 
 # emitting empty oncomplete dict for now, will need to specially
 # populate it with oncomplete functions in future commits.
@@ -241,7 +241,187 @@ def _getExtIdIfMyEndpoint(key,endpointName):
     
     return _keyToExternalId(key);       
 
+class _WaldoListMapObj(object):
+    '''
+    Waldo lists and maps support special operations that are like
+    regular maps and lists, but allow us to instrument external lists
+    and maps to do special things.  For instance, if we have an
+    external list/map that represents the file system, for each get
+    performed on it, we could actually read the file from the file
+    system.  That way, do not have to hold full file system in memory,
+    but just fetch resources whenever they are required.
+    '''
+    def __init__(self,initial_val,requires_copy=False):
+        if not requires_copy:
+            self.val = initial_val
+        else:
+            # FIXME: we need to perform a deep copy when application
+            # code passes us a map or a list.  That way, we won't have
+            # side effects.  For now though, skipping deep copy.  Must
+            # fix later.
+            self.val = initial_val
 
+    def _map_list_serializable_obj(self):
+        '''
+        Must be able to serialize maps and lists to send across the
+        network to the opposite side.  This function call returns an
+        object that can be string-ified by a call to json.dumps.
+
+        If values in list/map are lists or maps themselves, need to
+        get serializable objects for these too.
+        '''
+
+        # pure virtual function in parent class.  must define in each
+        # of map and list itself.
+        assert(False)
+
+    
+    def _map_list_bool_in(self,val_to_check):
+        return val_to_check in self.val
+
+    def _map_list_iter(self):
+        return iter(self.val)
+
+    def _map_list_index_insert(self,index_to_insert,val_to_insert):
+        self.val[index_to_insert] = val_to_insert
+
+    def _map_list_len(self):
+        return len(self.val)
+        
+    def _map_list_index_get(self,index_to_get):
+        '''
+        @param{anything} index_to_get --- Index to use to get a field
+        from the map.
+        '''
+        return self.val[index_to_get]
+
+    def _map_list_copy_return(self):
+        '''
+        When returning data from out of Waldo to application code,
+        perform a deep copy of Waldo list/map so that have isolation
+        between Waldo and non-Waldo code.
+        '''
+    
+        def _copied_dict(to_copy):
+            '''
+            Produces a copy of to_copy, where all the WaldoLists
+            and maps are replaced by python lists and dicts.
+            '''
+            new_dict = {}
+            for key in to_copy.keys():
+                to_add = to_copy[key]
+
+                if isinstance(to_add,_WaldoMap):
+                    to_add = _copied_dict(to_add._map_list_serializable_obj())
+                elif isinstance(to_add,_WaldoList):
+                    to_add = _copied_list(to_add._map_list_serializable_obj())
+
+                elif isinstance(to_add,dict):
+                    to_add = _copied_dict(to_add)
+                elif isinstance(to_add,list):
+                    to_add = _copied_list(to_add)
+
+                new_dict[key] = to_add
+            return new_dict
+
+        def _copied_list(to_copy):
+            '''
+            Produces a copy of to_copy, where all the WaldoLists
+            and maps are replaced by python lists and dicts.
+            '''        
+            new_array = []
+            for item in to_copy:
+                to_add = item
+                if isinstance(to_add,_WaldoMap):
+                    to_add = _copied_dict(to_add._map_list_serializable_obj())
+                elif isinstance(to_add,_WaldoList):
+                    to_add = _copied_list(to_add._map_list_serializable_obj())
+
+                elif isinstance(to_add,dict):
+                    to_add = _copied_dict(to_add)
+                elif isinstance(to_add,list):
+                    to_add = _copied_list(to_add)
+
+                    
+                new_array.append(to_add)
+
+            return new_array
+
+        
+        # FIXME: Actually need to perform deep copy of data out.
+        if isinstance(self.val,list):
+            return _copied_list(self.val)
+        return _copied_dict(self.val)
+    
+
+class _WaldoList(_WaldoListMapObj):
+    '''
+    All Waldo lists, external and internal inherit or instantiate this
+    class.
+    '''
+    
+    def _list_append(self,to_append):
+        self.val.append(to_append)
+
+    def _map_list_serializable_obj(self):
+        '''
+        @see _map_list_serializable_obj in parent class
+        '''
+        to_return = self.val
+        if len(self.val) > 0:
+            # note that this probably doesn't need to be a dynamic
+            # check if restructured a lot of emitting and added
+            # different list types for lists of value types vs lists
+            # of container types.  for now though, this is easier and
+            # should work
+            if isinstance (self.val[0],_WaldoListMapObj):
+                
+                # if this list contains lists and maps, then construct
+                # a list to return from calling
+                # map_list_serializable_obj on each element in the
+                # list. 
+                to_return = [ x._map_list_serializable_obj()
+                              for x in self.val ]
+
+        return to_return
+        
+
+    def _list_del(self,index_to_del):
+        del self.val[index_to_del]
+
+
+class _WaldoMap(_WaldoListMapObj):
+    '''
+    All Waldo maps, internal or external inherit or instantiate this
+    base class.
+    '''
+    def _map_list_serializable_obj(self):
+        '''
+        @see _map_list_serializable_obj in parent class
+        '''
+        to_return = self.val
+        if len(self.val) > 0:
+            
+            # note that this probably doesn't need to be a dynamic
+            # check if restructured a lot of emitting and added
+            # different list types for lists of value types vs lists
+            # of container types.  for now though, this is easier and
+            # should work
+            if isinstance (self.val.values()[0],_WaldoListMapObj):
+
+                # if this map contains lists and maps, then construct
+                # a map to return from calling
+                # map_list_serializable_obj on each element in the
+                # map
+                to_return = {}
+                for key in self.val.keys():
+                    item = self.val[key] 
+                    to_return[key] = item._map_list_serializable_obj()
+
+        return to_return
+
+
+    
 class _ExternalStoreElement(object):
     def __init__(self,externalObject):
         self.referenceCount = 0;
@@ -2081,16 +2261,66 @@ class _Endpoint(object):
             assert(False);
         #### END DEBUG
 
-        # FIXME: currently, very simple/silly interface to connection
-        # object.  Unclear what the exact interface should actually
-        # be.
-        self._connectionObj.writeMsg(msgDictionary,self);
+        # now trying to convert context dictionary to msg to
+        # send...change all _WaldoMap objects in the context field to
+        # regular python dicts.  Similarly, change all _WaldoList
+        # objects in the context field to python lists.
+        def _copied_dict(to_copy):
+            '''
+            Produces a copy of to_copy, where all the WaldoLists
+            and maps are replaced by python lists and dicts.
+            '''
+            new_dict = {}
+            for key in to_copy.keys():
+                to_add = to_copy[key]
+
+                if isinstance(to_add,_WaldoMap):
+                    to_add = _copied_dict(to_add._map_list_serializable_obj())
+                elif isinstance(to_add,_WaldoList):
+                    to_add = _copied_list(to_add._map_list_serializable_obj())
+
+                elif isinstance(to_add,dict):
+                    to_add = _copied_dict(to_add)
+                elif isinstance(to_add,list):
+                    to_add = _copied_list(to_add)
+
+                    
+                new_dict[key] = to_add
+            return new_dict
+
+        def _copied_list(to_copy):
+            '''
+            Produces a copy of to_copy, where all the WaldoLists
+            and maps are replaced by python lists and dicts.
+            '''        
+            new_array = []
+            for item in to_copy:
+                to_add = item
+                if isinstance(to_add,_WaldoMap):
+                    to_add = _copied_dict(to_add._map_list_serializable_obj())
+                elif isinstance(to_add,_WaldoList):
+                    to_add = _copied_list(to_add._map_list_serializable_obj())
+
+                elif isinstance(to_add,dict):
+                    to_add = _copied_dict(to_add)
+                elif isinstance(to_add,list):
+                    to_add = _copied_list(to_add)
+
+                    
+                new_array.append(to_add)
+
+            return new_array
+
+        self._connectionObj.writeMsg(
+            _copied_dict(msgDictionary),
+            self);
 
 
     def _msgReceive(self,msg):
         '''
         @param {dict} msg --- @see _Message for list of fields and
         their meanings.
+        
         '''
 
         # FIXME: Intended rule was supposed to be to postpone
@@ -2117,9 +2347,45 @@ class _Endpoint(object):
             
         # only guaranteed to get these data if it is not a message
         # not accepted message.
-        contextData = msg[_Message.CONTEXT_FIELD];
         eventName = msg[_Message.EVENT_NAME_FIELD];
         sequenceName = msg[_Message.SEQUENCE_NAME_FIELD];
+        contextData = msg[_Message.CONTEXT_FIELD];        
+
+        # Should change all python lists and dicts in contextData back
+        # to Waldo list and map objects, respectively
+        def _dict_vals_to_waldo(to_convert):
+            to_return = {}
+            for key in to_convert.keys():
+                item = to_convert[key]
+                if isinstance(item,dict):
+                    to_return[key] = _WaldoMap(
+                        _dict_vals_to_waldo(item),False)
+                elif isinstance(item,list):
+                    to_return[key] = _WaldoList(
+                        _list_vals_to_waldo(item),False)
+                else:
+                    to_return[key] = item
+
+            return to_return
+
+        def _list_vals_to_waldo(to_convert):
+            to_return = []
+            for item in to_convert:
+                if isinstance(item,dict):
+                    to_return.append(_WaldoMap(
+                        _dict_vals_to_waldo(item),False))
+                elif isinstance(item,list):
+                    to_return.append(_WaldoList(
+                        _list_vals_to_waldo(item),False))
+                else:
+                    to_return.append(item)
+
+            return to_return
+
+        # actually changes context data to use waldo lists and maps.
+        for key in contextData.keys():
+            contextData[key] = _dict_vals_to_waldo(contextData[key])
+
         
         if ctrlMsg == _Message.RELEASE_EVENT_SENTINEL:
             # means that we should commit the specified outstanding
