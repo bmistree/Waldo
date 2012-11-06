@@ -158,12 +158,12 @@ _returner = self.%s('''% _convertSrcFuncNameToInternal(funcName);
     for argName in funcArguments:
         
         publicMethodBody += ','
-        
+
         # if the argument is a list or a map, then we have to deep
         # copy it into a WaldoMap or WaldoList object.  
-        if _argIsMap(funcNode,argName):
+        if _argIsNonExternalMap(funcNode,argName):
             publicMethodBody += '_WaldoMap(' + argName + ',True)'
-        elif _argIsList(funcNode,argName):
+        elif _argIsNonExternalList(funcNode,argName):
             publicMethodBody += '_WaldoList(' + argName + ',True)'
         else:
             publicMethodBody += argName
@@ -185,19 +185,20 @@ _extInterfaceCleanup.start();
 ''' % extArgString
 
     publicMethodBody += 'return _returner'
-    if _returnTypeIsMapOrList(funcNode):
+    if _returnTypeIsNonExternalMapOrList(funcNode):
         # copies waldo list/map object into regular python list/dict
         publicMethodBody += '._map_list_copy_return()'
     publicMethodBody += '\n'
-    
+
+
     returner = emitUtils.indentString(publicMethodBody,1);
     returner += '\n';
     return returner
 
-def _returnTypeIsMapOrList(func_node):
+def _returnTypeIsNonExternalMapOrList(func_node):
     '''
     @returns {Bool} --- True if the return type of func_node is a map
-    or a list.  False otherwise.
+    or a list that is not external.  False otherwise.
     
     Note: asserts out if func_node isn't private or public.
     '''
@@ -209,19 +210,22 @@ def _returnTypeIsMapOrList(func_node):
 
     if (TypeCheck.templateUtil.isMapType(return_node.type) or
         TypeCheck.templateUtil.isListType(return_node.type)):
-        return True
+
+        if return_node.external == None:
+            return True
 
     return False
     
 
-def _argIsMap(func_node,arg_name):
+def _argIsNonExternalMap(func_node,arg_name):
     '''
     @param{AstNode} func_node ---
 
     @param{String} arg_name --- The name of the argument the
 
     @returns{Bool} True if the argument named arg_name of the function
-    contained in func_node is a map type.  False otherwise.
+    contained in func_node is a map type and not an external variable.
+    False otherwise.
     '''
     if func_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         err_msg = '\nBehram error: message_receive_sequence_functions '
@@ -242,7 +246,9 @@ def _argIsMap(func_node,arg_name):
         name_node = funcDeclArgNode.children[1]
         type_node = funcDeclArgNode.children[0]
         name = name_node.value
-        if name == arg_name:
+        if type_node.external != None:
+            return False
+        elif name == arg_name:
             if TypeCheck.templateUtil.isMapType(type_node.type):
                 return True
             else:
@@ -253,7 +259,7 @@ def _argIsMap(func_node,arg_name):
     assert (False)
 
 
-def _argIsList(func_node,arg_name):
+def _argIsNonExternalList(func_node,arg_name):
     '''
     @see _argIsMap, except for list types
     '''
@@ -277,7 +283,9 @@ def _argIsList(func_node,arg_name):
         type_node = funcDeclArgNode.children[0]
         name = name_node.value
         if name == arg_name:
-            if TypeCheck.templateUtil.isListType(type_node.type):
+            if type_node.external != None:
+                return False
+            elif TypeCheck.templateUtil.isListType(type_node.type):
                 return True
             else:
                 return False
@@ -750,10 +758,12 @@ self._externalStore.incrementRefCountAddIfNoExist(
             # before calling internal oncreate, need to change all
             # map/list user-supplied arguments over to _WaldoList and
             # _WaldoMap objects
+
+
             oncreate_call += '\n' + indent_str
-            if _argIsMap(onCreateNode,argName):
+            if _argIsNonExternalMap(onCreateNode,argName):
                 oncreate_call +=  '_WaldoMap(' + argName + ',True)'
-            elif _argIsList(onCreateNode,argName):
+            elif _argIsNonExternalList(onCreateNode,argName):
                 oncreate_call +=  '_WaldoList(' + argName + ',True)'
             else:
                 oncreate_call += argName

@@ -262,6 +262,10 @@ class EmitContext(object):
         self.msgSequenceNode = None;
         self.msgSeqFuncNode = None;
 
+        self.suppress_get_on_externals = False
+
+
+        
         # We need to know whether we want to pass in the value
         # associated with an external or the external object itself.
         # If we want to pass in the external object as a function

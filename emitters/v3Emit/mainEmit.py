@@ -10,9 +10,7 @@ from parser.ast.astLabels import *
 import parser.ast.typeCheck as TypeCheck
 from parser.ast.astBuilderCommon import isEmptyNode
 
-
 from slice.typeStack import TypeStack
-
 
 
 def emit(endpointName,astNode,fdepDict,emitContext):
@@ -46,11 +44,14 @@ def emit(endpointName,astNode,fdepDict,emitContext):
                 # means that this was an external passed at the top of our
                 # function call.  still need to get its value rather than
                 # the external object itself.
-                
+
                 # may return a _WaldoMap or _WaldoList object.  @see
                 # _WaldoMap and _WaldoList in uniformHeader.py to
                 # understand the interface these classes provide.
-                returner += '._get()'
+
+                # FIXME
+                if not emitContext.suppress_get_on_external:
+                    returner += '._get()'
 
             returner += ' '
 
@@ -62,7 +63,10 @@ def emit(endpointName,astNode,fdepDict,emitContext):
                 returner += endpointName + '", ' 
                 returner += '_context.endGlobals["' + idAnnotationName + '"])'
                 if emitContext.external_arg_in_func_call == False:
-                    returner += '._get()'
+
+                    # FIXME
+                    if not emitContext.suppress_get_on_external:
+                        returner += '._get()'
             else:
                 returner += "_context.endGlobals['";
                 returner += idAnnotationName + "'] ";
@@ -108,9 +112,14 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         # actually emit the for loop itself
         returner += 'for ' + identifierName + ' in ';
 
+        
+        if toIterateNode.external != None:
+            emitContext.suppress_get_on_external = True
         returner += emit(endpointName,toIterateNode,fdepDict,emitContext)
-        if (TypeCheck.TemplateUtil.isListType(toIterateNode.type) or
-            TypeCheck.TemplateUtil.isMapType(toIterateNode.type)):
+        emitContext.suppress_get_on_external = False        
+        if (TypeCheck.templateUtil.isListType(toIterateNode.type) or
+            TypeCheck.templateUtil.isMapType(toIterateNode.type)):
+            
             returner += '._map_list_iter()'
             
         returner += ':\n';
@@ -138,11 +147,16 @@ def emit(endpointName,astNode,fdepDict,emitContext):
     elif astNode.label == AST_APPEND_STATEMENT:
         toAppendToNode = astNode.children[0];
         toAppendNode = astNode.children[1];
+
+        # FIXME: this is probably buggy: will get into trouble if call
+        # a function that returns 
+        if toAppendToNode.external != None:
+            emitContext.suppress_get_on_external = True
         returner += emit(endpointName,toAppendToNode,fdepDict,emitContext);
+        emitContext.suppress_get_on_external = False
         returner += '._list_append(';
         returner += emit(endpointName,toAppendNode,fdepDict,emitContext);
         returner += ')';
-        
         
     elif astNode.label == AST_JUMP:
         if ((emitContext.msgSequenceNode == None) or
@@ -153,7 +167,6 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             assert(False);
 
         currentEndpointName = emitContext.msgSeqFuncNode.children[0].value;
-
 
         msgSeqNameNode = emitContext.msgSequenceNode.children[0];
         msgSeqName = msgSeqNameNode.value;
@@ -182,11 +195,16 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         rhsNode = astNode.children[1];
 
             
-        if (TypeCheck.TemplateUtil.isMapType(rhsNode.type) or
-            TypeCheck.TemplateUtil.isListType(lhsNode.type)):
+        if (TypeCheck.templateUtil.isMapType(rhsNode.type) or
+            TypeCheck.templateUtil.isListType(lhsNode.type)):
             # means that it's a list or map: need to call
             # _map_list_bool_in statement.
+            
+            # FIXME: bug!  See earlier version.
+            if rhsNode.external != None:
+                emitContext.suppress_get_on_external = True
             returner += emit(endpointName,rhsNode,fdepDict,emitContext)
+            emitContext.suppress_get_on_external = True            
             returner += '._map_list_bool_in('
             returner += emit(endpointName,lhsNode,fdepDict,emitContext)
             returner += ')'
@@ -200,10 +218,14 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         indexedIntoNode = astNode.children[0];
         indexNode = astNode.children[1];
 
-        returner += emit(endpointName,indexedIntoNode,fdepDict,emitContext);        
-        if (TypeCheck.TemplateUtil.isMapType(indexedIntoNode.type) or
-            TypeCheck.TemplateUtil.isListType(indexedIntoNode.type)):
-            # means that we are indexing into a map or a list
+        if indexedIntoNode.external != None:
+            emitContext.suppress_get_on_external = True
+        returner += emit(endpointName,indexedIntoNode,fdepDict,emitContext);
+        emitContext.suppress_get_on_external = False
+        
+        if (TypeCheck.templateUtil.isMapType(indexedIntoNode.type) or
+            TypeCheck.templateUtil.isListType(indexedIntoNode.type)):
+            # means that we are indexing into a map or a list            
             open_emitter = '._map_list_index_get('
             close_emitter = ')'
         else:
@@ -331,8 +353,13 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             
             # format:
             #   <toIndexInto>._map_list_index_insert(<index>,<to insert>)
+
+            if indexed_into_node.external != None:
+                emitContext.suppress_get_on_external = True            
             returner += emit(
                 endpointName,indexed_into_node,fdepDict,emitContext)
+            emitContext.suppress_get_on_external = False
+            
             returner += '._map_list_index_insert('
             returner += emit(endpointName,index_node,fdepDict,emitContext)
             returner += ','
@@ -438,8 +465,12 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         if isEmptyNode(retStatementNode):
             toReturnStatementText = 'None';
         else:
+            # FIXME
+            if retStatementNode.external != None:
+                emitContext.suppress_get_on_external = True
             toReturnStatementText = emit(endpointName,retStatementNode,fdepDict,emitContext);
-
+            emitContext.suppress_get_on_external = False;
+            
         # need to special-case return statement so that can notify
         # waiting blocking statement through return queue.
         returner +='''
@@ -465,9 +496,13 @@ elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
     elif astNode.label == AST_LEN:
         lenArgNode = astNode.children[0];
 
-        if (TypeCheck.TemplateUtil.isMapType(lenArgNode.type) or
-            TypeCheck.TemplateUtil.isListType(lenArgNode.type)):
+        if (TypeCheck.templateUtil.isMapType(lenArgNode.type) or
+            TypeCheck.templateUtil.isListType(lenArgNode.type)):
+
+            if lenArgNode.external != None:
+                emitContext.suppress_get_on_external = True
             returner += emit(endpointName,lenArgNode,fdepDict,emitContext)
+            emitContext.suppress_get_on_external = False            
             returner += '._map_list_len()'
         else:
             returner += 'len( ';
