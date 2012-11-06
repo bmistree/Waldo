@@ -353,9 +353,16 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             
             # format:
             #   <toIndexInto>._map_list_index_insert(<index>,<to insert>)
-
+            
             if indexed_into_node.external != None:
-                emitContext.suppress_get_on_external = True            
+                emitContext.suppress_get_on_external = True
+                # need to notate that the external was written to
+                # so that it gets updated.
+                returner += '_context.notateWritten('
+                returner += emit(
+                    endpointName,indexed_into_node,fdepDict,emitContext)
+                returner += '.id)\n'
+
             returner += emit(
                 endpointName,indexed_into_node,fdepDict,emitContext)
             emitContext.suppress_get_on_external = False
