@@ -2,7 +2,7 @@
 
 import numbers;
 
-class _Shared(object):
+class _External(object):
     def __init__ (self,initialVal,resourceManager):
         # Will get written with a valid value when registering it with
         # resourceManager.
@@ -50,30 +50,30 @@ def _deepCopy(valToCopy):
 
     return returner;
         
-class SharedTrueFalse(_Shared):
+class ExternalTrueFalse(_External):
     def __init__(self,initialVal,resourceManager):
         if isinstance(initialVal,bool):
-            _Shared.__init__(self,initialVal,resourceManager);
+            _External.__init__(self,initialVal,resourceManager);
         else:
-            errMsg = '\nError required TrueFalse type in SharedTrueFalse.\n';
+            errMsg = '\nError required TrueFalse type in ExternalTrueFalse.\n';
             print(errMsg);
             assert(False);
             
-class SharedNumber(_Shared):
+class ExternalNumber(_External):
     def __init__(self,initialVal,resourceManager):
         if isinstance(initialVal,numbers.Number):
-            _Shared.__init__(self,initialVal,resourceManager);
+            _External.__init__(self,initialVal,resourceManager);
         else:
-            errMsg = '\nError required number type in SharedNumber.\n';
+            errMsg = '\nError required number type in ExternalNumber.\n';
             print(errMsg);
             assert(False);
 
-class SharedText(_Shared):
+class ExternalText(_External):
     def __init__(self,initialVal,resourceManager):
         if isinstance(initialVal,basestring):
-            _Shared.__init__(self,initialVal,resourceManager);
+            _External.__init__(self,initialVal,resourceManager);
         else:
-            errMsg = '\nError required string type in SharedText.\n';
+            errMsg = '\nError required string type in ExternalText.\n';
             print(errMsg);
             assert(False);
 
@@ -203,9 +203,9 @@ class _WaldoListMapObj(object):
 
             
             
-class SharedList(_Shared,_WaldoListMapObj):
+class ExternalList(_External,_WaldoListMapObj):
     def __init__(self,initial_val,resourceManager):
-        _Shared.__init__(self,initial_val,resourceManager);
+        _External.__init__(self,initial_val,resourceManager);
 
     def _list_append(self,to_append):
         self.val.append(to_append)
@@ -215,18 +215,18 @@ class SharedList(_Shared,_WaldoListMapObj):
         del self.val[index_to_del]
         
     
-class SharedMap(_Shared,_WaldoListMapObj):
+class ExternalMap(_External,_WaldoListMapObj):
 
     # eventually
     def _map_keys(self):
         return self.val.keys()
 
         
-class SharedFile(SharedText):
+class ExternalFile(ExternalText):
 
     def __init__(self,filename,file_contents,resource_manager):
         self.filename = filename
-        SharedText.__init__(self,file_contents,resource_manager)
+        ExternalText.__init__(self,file_contents,resource_manager)
         self._write_committed()
 
     def _write_committed(self):
@@ -244,19 +244,19 @@ class SharedFile(SharedText):
         '''
         Generic commit, plus actually write commit to file system.
         '''
-        SharedText._commit(self)
+        ExternalText._commit(self)
         self._write_committed()
 
 
 import os
 
-class SharedFs(SharedMap):
+class ExternalFs(ExternalMap):
     def __init__(self,folder_name,resource_manager):
         self.folder_name = folder_name
         if not os.path.exists(folder_name):
             os.mkdir(folder_name)
             
-        SharedMap.__init__(self,{},resource_manager)
+        ExternalMap.__init__(self,{},resource_manager)
         self._write_committed()
 
     def _backout(self):
@@ -284,7 +284,6 @@ class SharedFs(SharedMap):
         '''
         Generic commit, plus actually write commit to file system.
         '''
-        print '\n\nGot into commit\n\n'
         self._write_committed()
 
 
@@ -294,8 +293,12 @@ class SharedFs(SharedMap):
     
     def _map_list_bool_in(self,val_to_check):
         # check fs to see if file exists
-        return os.path.exists(
-            os.path.join(self.folder_name,val_to_check))
+        
+        if os.path.exists(
+            os.path.join(self.folder_name,val_to_check)):
+            return True
+
+        return val_to_check in self.val
 
     def _get_list_of_filenames(self):
         list_of_filenames = []
