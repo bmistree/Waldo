@@ -262,7 +262,7 @@ class EmitContext(object):
         self.msgSequenceNode = None;
         self.msgSeqFuncNode = None;
 
-        self.suppress_get_on_externals = False
+        self.suppress_get_on_external = False
 
 
         
