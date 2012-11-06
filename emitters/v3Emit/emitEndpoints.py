@@ -207,8 +207,8 @@ def _returnTypeIsMapOrList(func_node):
     return_node = func_node.children[return_node_index]
 
 
-    if (TypeCheck.TemplateUtil.isMapType(return_node.type) or
-        TypeCheck.TemplateUtil.isListType(return_node.type)):
+    if (TypeCheck.templateUtil.isMapType(return_node.type) or
+        TypeCheck.templateUtil.isListType(return_node.type)):
         return True
 
     return False
@@ -243,7 +243,7 @@ def _argIsMap(func_node,arg_name):
         type_node = funcDeclArgNode.children[0]
         name = name_node.value
         if name == arg_name:
-            if TypeCheck.TemplateUtil.isMapType(type_node.type):
+            if TypeCheck.templateUtil.isMapType(type_node.type):
                 return True
             else:
                 return False
@@ -277,7 +277,7 @@ def _argIsList(func_node,arg_name):
         type_node = funcDeclArgNode.children[0]
         name = name_node.value
         if name == arg_name:
-            if TypeCheck.TemplateUtil.isListType(type_node.type):
+            if TypeCheck.templateUtil.isListType(type_node.type):
                 return True
             else:
                 return False
