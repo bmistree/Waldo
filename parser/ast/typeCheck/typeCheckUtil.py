@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-import os;
-import sys;
-curDir = os.path.join(os.path.abspath(__file__), '..');
-from parserUtil import *;
-from astLabels import *;
+from parser.ast.astLabels import *
+from parser.ast.parserUtil import *
+
 
 TYPE_ERROR_ENCOUNTERED = False;
 
@@ -33,17 +31,12 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
     @param {String} progText -- The source text of the program.
     '''
     
-    # errPrint('\n\n');
+
     errPrint('*************************');
-    # errPrint('Error in type checking:');
 
     # reformat errorString so that doesn't print off side
     errPrint(splitString(errorString,80));
 
-    # errPrint('-------\nAST node labels:');
-    # for s in astNodes:
-    #     errPrint(s.label)
-        
     errPrint('-------\nLine numbers:');
     for s in lineNumbers:
         errPrint(s);

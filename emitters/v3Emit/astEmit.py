@@ -5,16 +5,12 @@ import os;
 
 from emitUtils import EmitContext
 
-curDir = os.path.dirname(__file__);
-
-# so can get ast labels
-sys.path.append(os.path.join(curDir,'..','..','parser','ast'));
-from astLabels import *;
+from parser.ast.astLabels import *;
 
 # so can get slicer code
-sys.path.append(os.path.join(curDir,'..','..','slice')); # so can get at slicer
-from slicer import slicer;
-from typeStack import TypeStack;
+from slice.slicer import slicer
+from slice.typeStack import TypeStack
+
 
 from uniformHeader import uniformHeader;
 from eventDependencies import specifyDependencies;

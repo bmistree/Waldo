@@ -4,11 +4,8 @@ import emitUtils;
 import os; 
 import sys;
 
-curDir = os.path.dirname(__file__);
-
 # so can get ast labels
-sys.path.append(os.path.join(curDir,'..','..','parser','ast'));
-from astLabels import *;
+from parser.ast.astLabels import * 
 
 
 def specifyOnCompleteDict(astRootNode):

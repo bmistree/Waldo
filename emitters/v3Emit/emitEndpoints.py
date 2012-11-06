@@ -5,19 +5,14 @@ import os;
 import emitUtils;
 import mainEmit;
 
-curDir = os.path.dirname(__file__);
-
 # so can get ast labels
-sys.path.append(os.path.join(curDir,'..','..','parser'));
-import ast
-from astLabels import *
-import typeCheck as TypeCheck
-from astBuilderCommon import isEmptyNode
+from parser.ast.astLabels import *
+import parser.ast.typeCheck as TypeCheck
+from parser.ast.astBuilderCommon import isEmptyNode
 
 
 # so can get oncreate token name
-sys.path.append(os.path.join(curDir,'..','..','lexer'));
-from waldoLex import ONCREATE_TOKEN;
+from lexer.waldoLex import ONCREATE_TOKEN
 
 from emitUtils import _convertSrcFuncNameToInternal;
 

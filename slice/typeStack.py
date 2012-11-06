@@ -3,9 +3,7 @@ import util;
 import os;
 import sys;
 
-curDir = os.path.dirname(__file__);
-sys.path.append(os.path.join(curDir,'..','parser','ast'));
-from astLabels import *;
+from parser.ast.astLabels import *
 
 class TypeStack(object):
     IDENTIFIER_TYPE_SHARED = 0;

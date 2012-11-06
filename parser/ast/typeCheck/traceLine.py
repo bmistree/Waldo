@@ -1,13 +1,11 @@
 #!/usr/bin/python
 
-from parserUtil import errPrint;
+
 
 import sys;
 import os;
-curDir = os.path.dirname(__file__);
-sys.path.append(os.path.join('..',curDir));
-
-from astLabels import AST_MESSAGE_SEND_SEQUENCE_FUNCTION, AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION;
+from parser.ast.parserUtil import errPrint
+from parser.ast.astLabels import AST_MESSAGE_SEND_SEQUENCE_FUNCTION, AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION
 
 
 def endpointFuncNameToString(endpointName, funcName):

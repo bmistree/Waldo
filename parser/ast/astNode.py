@@ -2,10 +2,8 @@
 
 import sys;
 import os;
-curDir = os.path.dirname(__file__);
-sys.path.append(os.path.join(curDir,'typeCheck'));
 
-import typeCheck as typeChecker
+import parser.ast.typeCheck.typeCheck as typeChecker
 import d3.treeDraw as treeDraw
 
 

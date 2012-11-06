@@ -5,13 +5,12 @@ import os;
 
 curDir = os.path.dirname(__file__);
 
+
 # so can get ast labels
-sys.path.append(os.path.join(curDir,'..','..','parser','ast'));
-from astLabels import *;
+from parser.ast.astLabels import *
 
 # so can get type checking helper functions to determine types
-sys.path.append(os.path.join(curDir,'..','..','parser','ast','typeCheck'));
-import templateUtil;
+from parser.ast.typeCheck import templateUtil
 
 
 _REFRESH_KEY = '______REFRESH_REQUEST_____';

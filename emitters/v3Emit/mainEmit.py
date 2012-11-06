@@ -4,19 +4,14 @@ import sys;
 import os;
 import emitUtils;
 
-curDir = os.path.dirname(__file__);
 
 # so can get ast labels
-sys.path.append(os.path.join(curDir,'..','..','parser'))
-import ast
-from astLabels import *
-import typeCheck as TypeCheck
-from astBuilderCommon import isEmptyNode
+from parser.ast.astLabels import *
+import parser.ast.typeCheck as TypeCheck
+from parser.ast.astBuilderCommon import isEmptyNode
 
 
-sys.path.append(os.path.join(curDir,'..','..','slice'))
-sys.path.append(os.path.join(curDir,'..','..','parser','ast','typeStack'))
-from typeStack import TypeStack
+from slice.typeStack import TypeStack
 
 
 

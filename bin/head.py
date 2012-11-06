@@ -2,13 +2,16 @@
 
 import sys;
 import os;
-astParserPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast');
-sys.path.insert(0, astParserPath);
 
-import canonicalize;
-from astBuilder_v2 import getParser as v2GetParser;
-from astBuilder_v2 import getErrorEncountered as v2GetErrorEncountered;
-from astBuilder_v2 import resetErrorEncountered as v2ResetErrorEncountered;
+
+base_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..');
+sys.path.insert(0, base_path);
+
+import parser
+import parser.ast.canonicalize as canonicalize
+from parser.ast.astBuilder_v2 import getParser as v2GetParser;
+from parser.ast.astBuilder_v2 import getErrorEncountered as v2GetErrorEncountered;
+from parser.ast.astBuilder_v2 import resetErrorEncountered as v2ResetErrorEncountered;
 
 def getParser(progText,outputErrsTo,versionNum):
     return v2GetParser(progText,outputErrsTo);
@@ -19,27 +22,18 @@ def getErrorEncountered(versionNum):
 def resetErrorEncountered(versionNum):
     return v2ResetErrorEncountered();
 
+import re
+import json
+from emitters.v3Emit import astEmit
+from parser.ast.astBuilderCommon import WaldoParseException;
+from lexer.waldoLex import WaldoLexException
 
-
-import re;
-typeCheckUtilPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','parser','ast','typeCheck');
-sys.path.insert(0, astParserPath);
-from typeCheckUtil import WaldoTypeCheckException;
-
-import json;
-astEmitPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','emitters','v3Emit');
-sys.path.insert(0, astEmitPath);
-import astEmit;
-from astBuilderCommon import WaldoParseException;
-
-
-lexPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..','lexer');
-from waldoLex import WaldoLexException;
 
 
 class GraphicalOutArg():
     def __init__(self,jsonDict):
-        ##checks before hand if have file in dict, and if don't throws exception.
+        # checks before hand if have file in dict, and if don't throws
+        # exception.
         self.outFile = jsonDict['file'];
         self.width = jsonDict.get('w',None);
         self.height = jsonDict.get('h',None);
@@ -134,7 +128,7 @@ def lexAndParse(progText,outputErrStream,versionNum):
     except WaldoParseException as excep:
         print >> outputErrStream, excep.value;
         return None;
-    except WaldoTypeCheckException as excep:
+    except parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
         print >> errOutputStream, excep.value;
         return None;
 
@@ -146,7 +140,7 @@ def lexAndParse(progText,outputErrStream,versionNum):
 
     try:
         astRootNode.typeCheck(progText);
-    except WaldoTypeCheckException as excep:
+    except parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
         resetErrorEncountered(versionNum);
         return None;
 
@@ -169,39 +163,38 @@ def handleArgs(
     errOutputStream = sys.stderr;
 
     try:
-        ast,fileText = genAstFromFile(inputFilename,errOutputStream,versionNum);
+        astRootNode,fileText = genAstFromFile(inputFilename,errOutputStream,versionNum);
     except WaldoLexException as excep:
         print >> errOutputStream, excep.value;
         return;
     except WaldoParseException as excep:
         print >> errOutputStream, excep.value;
         return;
-    except WaldoTypeCheckException as excep:
+    except parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
         print >> errOutputStream, excep.value;
         return;
     
-    if (ast == None):
+    if (astRootNode == None):
         print >> errOutputStream, '\nError with program.  Please fix and continue\n';
     else:
         performedOperation = False;
         if (textOutputArg != None):
-            astProduceTextOutput(ast,textOutputArg);
+            astProduceTextOutput(astRootNode,textOutputArg);
             performedOperation = True;
         if (printOutputArg != None):
-            astProducePrintOutput(ast);
+            astProducePrintOutput(astRootNode);
             performedOperation = True;
         if(graphicalOutputArg != None):
-            astProduceGraphicalOutput(ast,graphicalOutputArg);
+            astProduceGraphicalOutput(astRootNode,graphicalOutputArg);
             performedOperation = True;
 
         
         if(typeCheckArg):
             try:
-                ast.typeCheck(fileText);
-            except WaldoTypeCheckException as excep:
+                astRootNode.typeCheck(fileText)
+            except parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
                 pass;
-
-            
+                
         if (emitArg != None):
             
             if (getErrorEncountered(versionNum)):
@@ -210,7 +203,7 @@ def handleArgs(
                 errMsg = '\nType error: cancelling code emit\n';
                 print >> errOutputStream, errMsg;
             else:
-                emitText = astEmit.astEmit(ast);
+                emitText = astEmit.astEmit(astRootNode);
                 if (emitText == None):
                     errMsg = '\nBehram error when requesting emission of ';
                     errMsg += 'source code from astHead.py.\n';
@@ -365,5 +358,7 @@ if __name__ == '__main__':
         if (inputFilenameArg == None):
             runTests();
         else:
-            handleArgs(inputFilenameArg,graphicalOutputArg,textOutputArg,printOutputArg,typeCheckArg,emitArg,versionNum);
+            handleArgs(
+                inputFilenameArg,graphicalOutputArg,textOutputArg,
+                printOutputArg,typeCheckArg,emitArg,versionNum);
             

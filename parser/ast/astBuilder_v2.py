@@ -3,22 +3,17 @@
 import sys;
 import os;
 
-lexerPath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..','..','lexer');
-sys.path.insert(0, lexerPath);
 
-from waldoLex import tokens;
-from waldoLex import ONCREATE_TOKEN;
-from waldoLex import constructLexer;
+from lexer.waldoLex import tokens;
+from lexer.waldoLex import ONCREATE_TOKEN;
+from lexer.waldoLex import constructLexer;
 from astLabels import *;
 from astNode import AstNode;
 
-typeCheckErrorUtilPath = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                      'typeCheck');
-sys.path.append(typeCheckErrorUtilPath);
 
-from typeCheckUtil import getErrorEncountered as astGetErrorEncountered;
-from typeCheckUtil import resetErrorEncountered as astResetErrorEncountered;
-from typeCheckUtil import setErrorEncountered;
+from typeCheck.typeCheckUtil import getErrorEncountered as astGetErrorEncountered;
+from typeCheck.typeCheckUtil import resetErrorEncountered as astResetErrorEncountered;
+from typeCheck.typeCheckUtil import setErrorEncountered;
 
 import ply.yacc as yacc;
 from parserUtil import errPrint;

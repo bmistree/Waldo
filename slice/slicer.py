@@ -3,15 +3,12 @@
 import sys;
 import os;
 
-curDir = os.path.dirname(__file__);
-sys.path.append(os.path.join(curDir,'..','parser','ast'));
-sys.path.append(os.path.join(curDir,'..','parser','ast','typeCheck'));
 
-from astLabels import *;
+from parser.ast.astLabels import *;
 from typeStack import TypeStack;
 from typeStack import NameTypeTuple;
 from functionDeps import FunctionDeps;
-import templateUtil;
+import parser.ast.typeCheck.templateUtil as templateUtil
 
 def slicer(node,functionDeps=None,typeStack=None):
     '''

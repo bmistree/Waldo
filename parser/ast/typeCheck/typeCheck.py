@@ -3,10 +3,8 @@
 import sys;
 import os;
 
-curDir = os.path.dirname(__file__);
-sys.path.append(os.path.join('..',curDir));
 
-from astLabels import *;
+from parser.ast.astLabels import *;
 from astTypeCheckStack import TypeCheckContextStack;
 from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH;
 from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH;
@@ -14,7 +12,7 @@ from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
 from astTypeCheckStack import createFuncMatchObjFromJsonStr;
-from parserUtil import errPrint;
+from parser.ast.parserUtil import errPrint;
 
 from typeCheckUtil import *;
 from templateUtil import *;

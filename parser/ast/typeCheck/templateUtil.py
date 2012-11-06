@@ -2,10 +2,9 @@
 
 import sys;
 import os;
-curDir = os.path.dirname(__file__);
-sys.path.append(os.path.join('..',curDir));
-from  astLabels import *;
-import json;
+
+from parser.ast.astLabels import *
+import json
 
 
 '''

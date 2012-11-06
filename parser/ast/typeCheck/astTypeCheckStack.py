@@ -1,31 +1,21 @@
 #!/usr/bin/python
 
-from astLabels import TYPE_BOOL;
-from astLabels import TYPE_STRING;
-from astLabels import TYPE_NUMBER;
-from astLabels import TYPE_NOTHING;
-from astLabels import TYPE_FUNCTION;
 
-from astLabels import AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
-from astLabels import AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION;
+from parser.ast.astLabels import *
 
-from astLabels import AST_ONCOMPLETE_FUNCTION;
-from astLabels import AST_RETURN_STATEMENT;
-from astLabels import AST_PUBLIC_FUNCTION;
-from astLabels import AST_PRIVATE_FUNCTION;
-from astLabels import AST_ONCREATE_FUNCTION;
+from parser.ast.parserUtil import errPrint
+
+
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
 
 
-from parserUtil import errPrint;
 from templateUtil import isTemplatedType;
 
 from templateUtil import JSON_TYPE_FIELD;
 from templateUtil import JSON_FUNC_RETURNS_FIELD;
 from templateUtil import JSON_FUNC_IN_FIELD;
 from templateUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
-
 
 import json;
 
