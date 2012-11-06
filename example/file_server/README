@@ -1,0 +1,82 @@
+===Overview===
+
+This example is composed of a single server and potentially many
+clients.  Clients can read and write files on the server's file
+system.
+
+  * server.py: contains the server application code
+  * client.py: contains the client application code
+  * file_server.wld: contains the application protocol code for both
+    the client and server.
+
+Each of these is commented and has an additional notes section below.
+    
+===Running the code===
+
+You will first need to compile the Waldo file.  To do so, from the
+current directory, call:
+ ../../bin/head.py -f file_server.wld -e emitted.py
+
+This tells the compiler, "Take the Waldo file 'file_server.wld' and
+emit it into a single Python file, emitted.py."  emitted.py will
+contain both the Client and Server application protocol code.
+
+After compiling, run ./server.py and then run ./client.py.  server.py
+should make a folder in the directory from which you run it, named
+'test_folder.'  This will contain the files that the clients read and
+write to.
+
+You can run as many clients as you like.  The client prompts the user
+for which files he/she wants to read from and write to.  Currently,
+clients are not permitted to create new directories or delete files.
+    
+
+===Killing the code===
+
+Waldo does not shutdown cleanly.  Modify killScript.py in
+../utils to use your username.  To kill your client, just run:
+
+  ../utils/killScript.py ./client.py
+
+To kill your server, just run:
+
+  ../utils/killScript.py ./server.py
+
+  
+===Server application code===
+
+The server creates an external map object (an object which can be
+shared between multiple Waldo connections), external_fs, which maps
+from Text values to Text values.  Because external_fs is an ExternalFs
+object, all changes that are committed to it are reproduced on the
+local file system, in the specified directory ('test_folder' in this
+case).  The keys of external_fs will be the filenames in test_folder
+and the values will be the actual contents of the file.
+
+Note that external_fs does not actually hold the full contents of the
+folder it represents in memory, but rather reads files from the file
+system as they are requested.
+
+The call to TCPConnectionObject.accept listens for client connections
+and spins off the server end of a connection when a new client
+connects.
+
+
+===Client application code===
+
+The majority of the client code is spent taking in and parsing user
+input.  The connection establishment section is the most
+Waldo-relevant part of the code.  Create a TCPConnectionObject
+directly rather than listening at a port to connect.
+
+
+===Application protocol code===
+
+Two sequences, each initiated by the client allow the client to read
+and write to files on the server.  Notice that Server's onCreate
+method takes two arguments, to_use_map and written_cb.  These are
+passed in as external_fs and written_callback in server.py when
+calling TCPConnectionObject.accept.
+
+
+
