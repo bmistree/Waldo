@@ -1745,8 +1745,9 @@ class _ActiveEvent(object):
         # _callType, _actEvent, and _context, respectively
         funcArgs += str(functionArgumentType) + ',self,contextToUse';
 
-        for argIndex in range(0,len(self.argsArray)):
-            funcArgs += ',self.argsArray[%s]' % str(argIndex);
+        if functionArgumentType != _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE:
+            for argIndex in range(0,len(self.argsArray)):
+                funcArgs += ',self.argsArray[%s]' % str(argIndex);
 
         funcCall = ('self.endpoint.%s(%s)' %
                     (funcName,funcArgs));
