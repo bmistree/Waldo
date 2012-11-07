@@ -6,7 +6,13 @@ pip install ply
 
 ===Running===
 
-bin/head.py -f <waldo filename> -e <python file to emit to>
+bin/wcompile.py -f <waldo filename> -e <python file to emit to>
+or
+to automatically emit to emitted.py:
+bin/wcompile.py <waldo filename> 
+
+For compile options:
+bin/wcompile.py -h 
 
 
 ===Navigation===

@@ -15,7 +15,7 @@ Each of these is commented and has an additional notes section below.
 
 You will first need to compile the Waldo file.  To do so, from the
 current directory, call:
- ../../bin/head.py -f file_server.wld -e emitted.py
+ ../../bin/wcompile.py -f file_server.wld -e emitted.py
 
 This tells the compiler, "Take the Waldo file 'file_server.wld' and
 emit it into a single Python file, emitted.py."  emitted.py will

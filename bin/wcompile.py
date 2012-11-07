@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys;
 import os;
@@ -52,8 +52,6 @@ def getFileText(inputFile):
 def stripWindowsLineEndings(textToStripFrom):
     return re.sub(r'\r','',textToStripFrom)
 
-def runTests():
-    print('Still to fill in');
 
 def genAstFromFile(inputFilename,outputErrsTo,versionNum):
     fileText = getFileText(inputFilenameArg);
@@ -257,11 +255,12 @@ def printUsage():
 
     -h print options
 
-    -e <filename> Emit the generated code to filename
+    -e <filename> Emit the generated code to filename.  
 
     -v <version number 2> Input file is of version 2.  Default is version 2
 
-    no args ... run ast tests
+    single arg (filename) .... try compiling the file to emitted.py
+
     
     ''');
 
@@ -351,12 +350,16 @@ if __name__ == '__main__':
                 helpArg = True;
 
             
-
+    if inputFilenameArg == None:
+        if len(sys.argv) == 2:
+            inputFilenameArg = sys.argv[1]
+            emitArg = 'emitted.py'
+                
     if (helpArg):
         printUsage();
     else:
         if (inputFilenameArg == None):
-            runTests();
+            printUsage()
         else:
             handleArgs(
                 inputFilenameArg,graphicalOutputArg,textOutputArg,
