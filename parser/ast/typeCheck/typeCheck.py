@@ -238,16 +238,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
                     progText)
                     
-        elif (isListType(to_remove_from_node.type) or 
-              (to_remove_from_node.type == TYPE_STRING)):
-
-            which_type = 'Text'
-            if isListType(to_remove_from_node.type):
-                which_type = 'List'
+        elif isListType(to_remove_from_node.type):
 
             if to_remove_index.type != TYPE_NUMBER:
-                err_msg = 'Error in remove statement.  To remove from '
-                err_msg += which_type + ', you must pass a Number to '
+                err_msg = 'Error in remove statement.  To remove from List'
+                err_msg += ', you must pass a Number to '
                 err_msg += 'remove.  You passed a ' + to_remove_index.type
                 err_msg += '.'
                 errorFunction(
@@ -257,8 +252,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         else:
             err_msg = 'Error in remove statement.  Item '
-            err_msg += 'calling remove on must be a Map, '
-            err_msg += 'a List, or a Text.  The inferred '
+            err_msg += 'calling remove on must be a Map or '
+            err_msg += 'a List.  The inferred '
             err_msg += 'type is instead ' + to_remove_from_node.type
             err_msg += '.'
             
