@@ -203,8 +203,71 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(err_msg,err_nodes,err_line_nos,progText)
             return
 
-        
+    elif node.label == AST_REMOVE_STATEMENT:
+        to_remove_from_node = node.children[0]
+        to_remove_index = node.children[1]
+
+        to_remove_from_node.typeCheck(
+            progText,typeStack,avoidFunctionObjects)
+
+        to_remove_index.typeCheck(
+            progText,typeStack,avoidFunctionObjects)
+
+        # do not get anything back when remove the element
+        node.type = TYPE_NOTHING
+
+
+        # most of the type checking is on the indices to ensure that
+        # they remove the same type 
+        if isMapType(to_remove_from_node.type):
+            if to_remove_from_node.type == EMPTY_MAP_SENTINEL:
+                err_msg = 'Error in remove statement.  Cannot '
+                err_msg += 'call remove directly on an empty map.'
+                errorFunction(
+                    err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
+                    progText)
+
+            map_index_type = getMapIndexType(to_remove_from_node.type)
+            if map_index_type != to_remove_index.type:
+                err_msg = 'Error in remove statement.  Map\'s indices '
+                err_msg += 'have type ' + map_index_type + ', but '
+                err_msg += 'you are asking to remove an index that has '
+                err_msg += 'type ' + to_remove_index.type + '.'
+                
+                errorFunction(
+                    err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
+                    progText)
+                    
+        elif (isListType(to_remove_from_node.type) or 
+              (to_remove_from_node.type == TYPE_STRING)):
+
+            which_type = 'Text'
+            if isListType(to_remove_from_node.type):
+                which_type = 'List'
+
+            if to_remove_index.type != TYPE_NUMBER:
+                err_msg = 'Error in remove statement.  To remove from '
+                err_msg += which_type + ', you must pass a Number to '
+                err_msg += 'remove.  You passed a ' + to_remove_index.type
+                err_msg += '.'
+                errorFunction(
+                    err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
+                    progText)
+
+
+        else:
+            err_msg = 'Error in remove statement.  Item '
+            err_msg += 'calling remove on must be a Map, '
+            err_msg += 'a List, or a Text.  The inferred '
+            err_msg += 'type is instead ' + to_remove_from_node.type
+            err_msg += '.'
             
+            errorFunction(
+                err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
+                progText)
+
+        
+        
     elif node.label == AST_FOR_STATEMENT:
 
         currentLineNo = node.children[0].lineNo;

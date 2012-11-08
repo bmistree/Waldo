@@ -285,6 +285,7 @@ def p_NonBracketOperatableOn(p):
                               | LenStatement
                               | RangeStatement
                               | AppendStatement
+                              | RemoveStatement
                               ''';
     p[0] = p[1];
 
@@ -771,8 +772,16 @@ def p_AppendStatement(p):
     '''
     p[0] = AstNode(AST_APPEND_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[4]]);
-    
 
+    
+def p_RemoveStatement(p):
+    '''
+    RemoveStatement : OperatableOn DOT_REMOVE LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_REMOVE_STATEMENT,p[1].lineNo,p[1].linePos);
+    p[0].addChildren([p[1],p[4]]);
+
+    
 def p_AssignmentStatement(p):
     '''
     AssignmentStatement : OperatableOn EQUALS ReturnableExpression

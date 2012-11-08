@@ -99,6 +99,7 @@ tokens = [
     "CURLY_LEFT",
     "CURLY_RIGHT",
 
+    "DOT_REMOVE",
     "DOT_APPEND",
     "DOT",
     
@@ -414,6 +415,9 @@ def t_DOT_APPEND(t):
     '[.]append';
     return mStateMachine.addToken(t);
 
+def t_DOT_REMOVE(t):
+    '[.]remove'
+    return mStateMachine.addToken(t);
 
 def t_DOT(t):
     '[.]';
