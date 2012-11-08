@@ -289,6 +289,7 @@ if __name__ == '__main__':
             if (s + 1< len(sys.argv)):
                 inputFilenameArg = sys.argv[s+1];
                 skipNext = True;
+                emitArg = 'emitted.py'
             else:
                 #will force printing usage without doing any work.
                 helpArg = True;
