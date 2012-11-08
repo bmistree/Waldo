@@ -154,15 +154,17 @@ def slicer(node,functionDeps=None,typeStack=None):
         slicer(lhsNode,functionDeps,typeStack);
         slicer(rhsNode,functionDeps,typeStack);
 
-    elif node.label == AST_APPEND_STATEMENT:
+        
+    elif ((node.label == AST_APPEND_STATEMENT) or
+          (node.label == AST_REMOVE_STATEMENT)):
         toAppendToNode = node.children[0];
         toAppendNode = node.children[1];
         slicer(toAppendToNode,functionDeps,typeStack);
         slicer(toAppendNode,functionDeps,typeStack);
-        # FIXME: Need to improve slicing for append statement.  Should
-        # specify that toAppendToNode got written to.
+        # FIXME: Need to improve slicing for append/remove statement.
+        # Should specify that toAppendToNode got written to.
 
-        
+
     elif node.label == AST_REFRESH:
         # don't need to do anything for refresh statement.
         # it doesn't touch any additional data

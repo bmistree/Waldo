@@ -157,6 +157,20 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         returner += '._list_append(';
         returner += emit(endpointName,toAppendNode,fdepDict,emitContext);
         returner += ')';
+
+    elif astNode.label == AST_REMOVE_STATEMENT:
+
+        to_remove_from_node = astNode.children[0]
+        to_remove_index_node = astNode.children[1]
+
+        if to_remove_from_node.external != None:
+            emitContext.suppress_get_on_external = True
+        returner += emit(endpointName,to_remove_from_node,fdepDict,emitContext)
+        emitContext.suppress_get_on_external = False
+        returner += '._map_list_remove('
+        returner += emit(endpointName,to_remove_index_node,fdepDict,emitContext)
+        returner += ')'
+
         
     elif astNode.label == AST_JUMP:
         if ((emitContext.msgSequenceNode == None) or

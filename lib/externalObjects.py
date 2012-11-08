@@ -109,7 +109,9 @@ class _WaldoListMapObj(object):
         # of map and list itself.
         assert(False)
 
-    
+    def _map_list_remove(self,index_to_del):
+        del self.val[index_to_del]
+        
     def _map_list_bool_in(self,val_to_check):
         return val_to_check in self.val
 
@@ -210,9 +212,6 @@ class ExternalList(_External,_WaldoListMapObj):
     def _list_append(self,to_append):
         self.val.append(to_append)
 
-    # eventually
-    def _list_del(self,index_to_del):
-        del self.val[index_to_del]
         
     
 class ExternalMap(_External,_WaldoListMapObj):

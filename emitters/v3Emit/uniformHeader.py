@@ -275,7 +275,9 @@ class _WaldoListMapObj(object):
         # of map and list itself.
         assert(False)
 
-    
+    def _map_list_remove(self,index_to_del):
+        del self.val[index_to_del]
+        
     def _map_list_bool_in(self,val_to_check):
         return val_to_check in self.val
 
