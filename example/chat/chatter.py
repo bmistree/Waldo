@@ -9,8 +9,7 @@ import time
 
 proj_root_folder = os.path.join(os.path.dirname(__file__),'..','..')
 sys.path.append(proj_root_folder)
-from emitters.v3Emit.lib import TCPConnectionObject
-from emitters.v3Emit.lib import ReservationManager
+import lib.Waldo as Waldo
 
 def print_chat_log(chat_log):
     print '\n'    
@@ -19,18 +18,22 @@ def print_chat_log(chat_log):
 
     
 def run(chatter_name):
-    # no external objects for reservation manager to control, but
-    # still used.
-    reservation_manager = ReservationManager()
 
-    # try to bind to HOST_NAME:PORT_NO when creating chatter
-    tcp_conn_obj = TCPConnectionObject(HOST_NAME,PORT_NO,None)
-    chatter = Chatter(tcp_conn_obj,reservation_manager,
-                      chatter_name,print_chat_log)
+    Waldo.initialize()
 
-    # ugly sleep for now.  more likely that in the future, will block
-    # until connection is established.
-    time.sleep(1)
+    # actually produce the endpoint object by connecting to the host
+    # and port that are running the room.
+    chatter = Waldo.connect(
+        # initialization args for chatter
+        chatter_name,
+        print_chat_log,
+        # who to connect to args
+        connection_type = Waldo.CONNECTION_TYPE_TCP,
+        host_name = HOST_NAME,
+        port = PORT_NO,
+        # the Waldo endpoint to create when connecting
+        constructor = Chatter)
+                  
 
     while True:
         # event loop to grab user input        

@@ -103,8 +103,9 @@ class TCPConnectionObject(ConnectionObject):
 
             created_endpoint = endpoint_constructor(
                 tcp_conn_obj,reservation_manager,*args)
-                
-            cb(created_endpoint)
+
+            if cb != None:
+                cb(created_endpoint)
 
         
     def addEndpoint(self,local_endpoint):

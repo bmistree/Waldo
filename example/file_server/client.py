@@ -10,8 +10,7 @@ import time
 
 proj_root_folder = os.path.join(os.path.dirname(__file__),'..','..')
 sys.path.append(proj_root_folder)
-from emitters.v3Emit.lib import TCPConnectionObject
-from emitters.v3Emit.lib import ReservationManager
+import lib.Waldo as Waldo
 
 
 def written_callback(filename,contents):
@@ -21,17 +20,14 @@ def written_callback(filename,contents):
     
 def run():
 
-    # no external objects for reservation manager to control, but
-    # still used.
-    reservation_manager = ReservationManager()
-
+    Waldo.initialize()
+    
     # try to bind to HOST_NAME:PORT_NO when creating client
-    tcp_conn_obj = TCPConnectionObject(HOST_NAME,PORT_NO,None)
-    client = Client(tcp_conn_obj,reservation_manager)
-
-    # ugly sleep for now.  more likely that in the future, will block
-    # until connection is established.
-    time.sleep(1)
+    client = Waldo.connect(
+        connection_type = Waldo.CONNECTION_TYPE_TCP,
+        host_name = HOST_NAME,
+        port = PORT_NO,
+        constructor = Client)
 
 
     while True:

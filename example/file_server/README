@@ -57,7 +57,7 @@ Note that external_fs does not actually hold the full contents of the
 folder it represents in memory, but rather reads files from the file
 system as they are requested.
 
-The call to TCPConnectionObject.accept listens for client connections
+The call to Waldo.accept listens for client connections
 and spins off the server end of a connection when a new client
 connects.
 
@@ -66,7 +66,7 @@ connects.
 
 The majority of the client code is spent taking in and parsing user
 input.  The connection establishment section is the most
-Waldo-relevant part of the code.  Create a TCPConnectionObject
+Waldo-relevant part of the code.  Create a Waldo Client object
 directly rather than listening at a port to connect.
 
 
@@ -76,7 +76,7 @@ Two sequences, each initiated by the client allow the client to read
 and write to files on the server.  Notice that Server's onCreate
 method takes two arguments, to_use_map and written_cb.  These are
 passed in as external_fs and written_callback in server.py when
-calling TCPConnectionObject.accept.
+calling Waldo.accept.
 
 
 
