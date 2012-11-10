@@ -8,6 +8,9 @@ Sequences{
     GetSequence: Client.issue_get -> Server.get_response -> Client.process_get_response;
 
     WriteSequence: Client.issue_write -> Server.write_response;
+
+    DelFileSequence: Client.del_file ->  Server.del_file_response;
+    
 }
 
 
@@ -45,6 +48,18 @@ MessageSequence GetSequence
         gotten_val = sequence_val;
     }
 }
+
+MessageSequence DelFileSequence
+{
+    Client.del_file(Text filename)
+    {}
+    
+    Server.del_file_response
+    {
+        ext_map.remove(filename);
+    }
+}
+
 
 MessageSequence WriteSequence
 {
@@ -89,6 +104,12 @@ Client
     {
         issue_write(filename,to_write);
     }
+
+    Public Function delete_file(Text filename)
+    {
+        del_file(filename);
+    }
+
     
 }
 

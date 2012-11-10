@@ -111,15 +111,15 @@ class _WaldoListMapObj(object):
 
     def _map_list_remove(self,index_to_del):
         del self.val[index_to_del]
+
+    def _map_list_index_insert(self,index_to_insert,val_to_insert):
+        self.val[index_to_insert] = val_to_insert
         
     def _map_list_bool_in(self,val_to_check):
         return val_to_check in self.val
 
     def _map_list_iter(self):
         return iter(self.val)
-
-    def _map_list_index_insert(self,index_to_insert,val_to_insert):
-        self.val[index_to_insert] = val_to_insert
 
     def _map_list_len(self):
         return len(self.val)
@@ -254,7 +254,11 @@ class ExternalFs(ExternalMap):
         self.folder_name = folder_name
         if not os.path.exists(folder_name):
             os.mkdir(folder_name)
-            
+
+        # keeps track of files that we are scheduling to remove.  when
+        # committing, run through list and remove these from the fs.
+        self.to_remove = {}
+        
         ExternalMap.__init__(self,{},resource_manager)
         self._write_committed()
 
@@ -263,7 +267,33 @@ class ExternalFs(ExternalMap):
             self.val = {}
             self.hasChanged = False;
 
+    def _map_list_remove(self,index_to_del):
+
+        if index_to_del in self.val:
+            del self.val[index_to_del]
+            
+        self.to_remove[index_to_del] = True
+        self.hasChanged = True
+        
+    def _map_list_index_insert(self,index_to_insert,val_to_insert):
+        if index_to_insert in self.to_remove:
+            del self.to_remove[index_to_insert]
+        self.val[index_to_insert] = val_to_insert
+        self.hasChanged = True
+
+
     def _set(self,toSetTo):
+        # if we set the map to a new value, we must delete all the
+        # other values that it previously contained on the file
+        # system.  get a list of all files on the file system and add
+        # them to self.to_remove (for deletion on commit) if they
+        # aren't in the new map that we're setting to.
+        self.to_remove = {}
+        list_filenames = self._get_list_of_filenames()
+        for filename in list_filenams:
+            if not (filename in toSetTo):
+                self.to_remove[filename] = True
+
         self.val = toSetTo;
         self.hasChanged = True;
             
@@ -275,9 +305,16 @@ class ExternalFs(ExternalMap):
             filer.flush()
             filer.close()
 
+        for key in self.to_remove.keys():
+            filename = os.path.join(self.folder_name,key)
+            
+            if os.path.exists(filename):
+                os.remove(filename)
+            
         self.val = {}
+        self.to_remove = {}        
         self.hasChanged = False
-        
+
         
     def _commit(self):
         '''
@@ -287,66 +324,85 @@ class ExternalFs(ExternalMap):
 
 
     def _map_list_serializable_obj(self):
+        # only call serializable obj when transferring the object from
+        # one endpoint to the other.  Should never be allowed to do
+        # this with an external.
         assert(False)
 
     
     def _map_list_bool_in(self,val_to_check):
+
+        # already asked to remove value
+        if val_to_check in self.to_remove:
+            return False
+
         # check fs to see if file exists
-        
-        if os.path.exists(
-            os.path.join(self.folder_name,val_to_check)):
+        dict_filenames = self._get_dict_of_filenames_on_fs()
+        if val_to_check in dict_filenames:
             return True
 
+        # otherwise, if in buffer of actions to write, return true
+        # (the file may have just been created on this sequence.
         return val_to_check in self.val
 
-    def _get_list_of_filenames(self):
-        list_of_filenames = []
+    def _get_dict_of_filenames_on_fs(self):
+        dict_of_filenames = []
         for root_dir,dirs,filenames in os.walk(self.folder_name):
             for filename in filenames:
                 if (filename == '.') or (filename == '..'):
                     continue
-                
-                list_of_filenames.append(
-                    os.path.join(root_dir,filename))
 
-        return list_of_filenames
+                dict_of_filenames[filename] = True
+
+        return dict_of_filenames
         
     def _map_list_iter(self):
-        dict_filenames = {}
-        for filename in self._get_list_of_filenames():
-            dict_filenames[filename] = True
+        dict_filenames = self._get_dict_of_filenames_on_fs()
         for filename in self.val:
             dict_filenames[filename] = True
-        
+
+        for filename in self.to_remove:
+            if filename in dict_filenames:
+                del dict_filenames[filename]
+            
         return dict_filenames.keys()
 
-    def _map_list_index_insert(self,index_to_insert,val_to_insert):
-        # print '\n\ngot an index to insert'
-        # print index_to_insert
-        # print val_to_insert
-        # print '\n\n'
-        self.val[index_to_insert] = val_to_insert
-
     def _map_list_len(self):
-        dict_of_filenames = {}
-        for filename in self.get_list_of_filenames():
-            dict_of_filenames[filename] = True
+        dict_of_filenames = self._get_dict_of_filenames_on_fs()
+
         for filename in self.val:
             dict_of_filenames[filename] = True
-        
+            
+        for filename in self.to_remove:
+            if filename in dict_filenames:
+                del dict_filenames[filename]
+
         return len(dict_of_filenames)
         
     def _map_list_index_get(self,index_to_get):
+        if index_to_get in self.to_remove:
+            err_msg = '"' + index_to_get + '" was removed from this map.'
+            raise KeyError(err_msg)
+        
         if index_to_get in self.val:
             return self.val[index_to_get]
 
-        filer = open(
-            os.path.join(self.folder_name,index_to_get))
-        to_return = filer.read()
-        filer.close()
-        self.val[index_to_get] = to_return
-        return to_return
+        dict_of_filenames = self._get_dict_of_filenames_on_fs()
+        if index_to_get in dict_of_filenames:
+            filer = open(
+                os.path.join(self.folder_name,index_to_get),'r')
+            to_return = filer.read()
+            filer.close()
+            # cache the value in case it's needed again son
+            self.val[index_to_get] = to_return
+            return to_return
+        
+        # did not appear anywhere in map.  raise a key error
+        err_msg = 'File system does not have file named "'
+        err_msg += index_to_get + '" on it.'
+        raise KeyError(err_msg)
 
+    
     def _map_list_copy_return(self):
         list_filenames = self._get_list_of_filenames()
         

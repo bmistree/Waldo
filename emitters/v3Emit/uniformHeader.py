@@ -388,10 +388,6 @@ class _WaldoList(_WaldoListMapObj):
         return to_return
         
 
-    def _list_del(self,index_to_del):
-        del self.val[index_to_del]
-
-
 class _WaldoMap(_WaldoListMapObj):
     '''
     All Waldo maps, internal or external inherit or instantiate this

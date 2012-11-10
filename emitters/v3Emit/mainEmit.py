@@ -152,6 +152,13 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         # a function that returns 
         if toAppendToNode.external != None:
             emitContext.suppress_get_on_external = True
+            
+            # notating that we changed the map/list ensures that it
+            # will be updated on commit.
+            returner += '_context.notateWritten('
+            returner += emit(endpointName,toAppendToNode,fdepDict,emitContext)
+            returner += '.id)\n'
+            
         returner += emit(endpointName,toAppendToNode,fdepDict,emitContext);
         emitContext.suppress_get_on_external = False
         returner += '._list_append(';
@@ -165,6 +172,14 @@ def emit(endpointName,astNode,fdepDict,emitContext):
 
         if to_remove_from_node.external != None:
             emitContext.suppress_get_on_external = True
+
+            # notating that we changed the map/list ensures that it
+            # will be updated on commit.
+            returner += '_context.notateWritten('
+            returner += emit(endpointName,to_remove_from_node,fdepDict,emitContext)
+            returner += '.id)\n'
+
+            
         returner += emit(endpointName,to_remove_from_node,fdepDict,emitContext)
         emitContext.suppress_get_on_external = False
         returner += '._map_list_remove('

@@ -35,7 +35,9 @@ def run():
         print '\nTo load contents into a file, use ',
         print 'write "<filename>" "<contents to write>".'
         print 'To read contents from file, use ',
-        print 'read "filename"\n'
+        print 'read "<filename>".  To remove a file, ',
+        print 'use remove "<filename>"\n'
+        
         
         user_input = raw_input ('-->')
 
@@ -48,6 +50,9 @@ def run():
         elif action == 'write':
             client.write(filename,contents)
             print 'Contents have been written.'
+        elif action == 'remove':
+            client.delete_file(filename)
+            print 'Contents have been removed.'
         else:
             print 'Invalid action selected.  Try again.'
             
@@ -60,6 +65,8 @@ def parse_user_input(user_input):
        write "<filename>" "<contents to write>"
     or
        read "<filename>"
+    or
+       remove "<filename>"
 
     In first case, returns 3-tuple: 'write', <filename>, <contents to
     write>
@@ -73,7 +80,7 @@ def parse_user_input(user_input):
         return None,None,None
     action = user_input[0:space_index]
 
-    if not (action in ['read','write']):
+    if not (action in ['read','write','remove']):
         return None,None,None
     
     user_input = user_input[space_index + 1:]
