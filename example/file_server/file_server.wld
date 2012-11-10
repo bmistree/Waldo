@@ -14,10 +14,6 @@ Sequences{
 }
 
 
-// no shared data
-Shared{}
-
-
 MessageSequence GetSequence
 {
     // shared for the lifetime of the sequence by both client and

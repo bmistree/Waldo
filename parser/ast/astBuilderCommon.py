@@ -92,15 +92,13 @@ def p_Jump(p):
         
 
 def p_SharedSection(p):
-    '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
+    '''SharedSection : Empty
+                     | SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
                      | SHARED CURLY_LEFT CURLY_RIGHT''';
 
     p[0] = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1));
-    if (len(p) == 5):
-        if (not isEmptyNode(p[3])):
-            p[0].addChildren(p[3].getChildren());
-        else:
-            p[0].addChild(p[3]);
+    if len(p) == 5:
+        p[0].addChildren(p[3].getChildren());
 
             
 def p_SharedBodySection(p):

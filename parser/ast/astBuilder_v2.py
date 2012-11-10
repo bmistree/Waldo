@@ -26,7 +26,7 @@ from astBuilderCommon import *
 # NameSection
 # EndpointAliasSection
 # TraceSection
-# SharedSection
+# SharedSection (optional)
 # Message sequence section
 # EndpointSection
 # EndpointSection ... not necessary if have symmetric names....
