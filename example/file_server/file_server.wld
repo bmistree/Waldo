@@ -14,7 +14,7 @@ Sequences{
 }
 
 
-MessageSequence GetSequence
+Sequence GetSequence(Text filename,Text default)
 {
     // shared for the lifetime of the sequence by both client and
     // server.  
@@ -25,7 +25,7 @@ MessageSequence GetSequence
       variables scoped to the lifetime of the sequence.  Note: if they
       were function objects or externals, they could only be used by client.
     */
-    Client.issue_get(Text filename,Text default)
+    Client.issue_get
     {} // nothing to do 
     
     Server.get_response // note no arguments to subsequent calls
@@ -45,9 +45,9 @@ MessageSequence GetSequence
     }
 }
 
-MessageSequence DelFileSequence
+Sequence DelFileSequence(Text filename)
 {
-    Client.del_file(Text filename)
+    Client.del_file
     {}
     
     Server.del_file_response
@@ -57,9 +57,9 @@ MessageSequence DelFileSequence
 }
 
 
-MessageSequence WriteSequence
+Sequence WriteSequence(Text filename,Text to_write)
 {
-    Client.issue_write(Text filename,Text to_write)
+    Client.issue_write
     {}
 
     Server.write_response

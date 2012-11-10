@@ -69,22 +69,44 @@ def p_MessageSequenceSection(p):
             
 
 
-                   
 def p_MessageSequence(p):
     '''
-    MessageSequence : SEQUENCE Identifier CURLY_LEFT MessageSequenceGlobalSection MessageSequenceFunctions CURLY_RIGHT
-    MessageSequence : SEQUENCE Identifier CURLY_LEFT MessageSequenceFunctions CURLY_RIGHT
+    MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT MessageSequenceGlobalSection MessageSequenceFunctions CURLY_RIGHT
+    MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT MessageSequenceFunctions CURLY_RIGHT
     '''
-    p[0] = AstNode(AST_MESSAGE_SEQUENCE,p[2].lineNo,p[2].linePos);
-    # default to empty message sequence globals section if not defined
-    globs = AstNode(AST_MESSAGE_SEQUENCE_GLOBALS,p[2].lineNo,p[2].linePos);
-    sequenceFunctions = p[4];
-    if (len(p) == 7):
-        globs = p[4];
-        sequenceFunctions = p[5];
+    # syntax:
+    #    Sequence <some name> (<some arguments>)
+    #    {
+    #        <some sequence globals> (optional)
+    #        <some sequence functions>
+    #    }
 
-    p[0].addChildren([p[2],globs,sequenceFunctions]);
-            
+    # children produced:
+    #   Identifier: <some name>
+    #   FunctionDeclArgList: <some arguments>
+    #   SEQUENCE GLOBALS: <some sequence globals>
+    #   MessageSequenceFunctions: <some sequence functions>
+
+    # note that canonicalize moves FunctionDeclArgList from child of
+    # AST_MESSAGE_SEQUENCE to child of the first message send
+    # function.
+    
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE,p[2].lineNo,p[2].linePos);
+    seq_args = p[4]
+    seq_name = p[2]
+    p[0].addChildren([seq_name,seq_args])
+
+    
+    # default to empty message sequence globals section if not defined
+    seq_globs = AstNode(AST_MESSAGE_SEQUENCE_GLOBALS,p[2].lineNo,p[2].linePos);
+    seq_functions = p[7]
+    if len(p) == 10:
+        seq_globs = p[7]
+        seq_functions= p[8];
+
+    p[0].addChildren([seq_globs,seq_functions]);
+
+    
 def p_MessageSequenceGlobalSection(p):
     '''MessageSequenceGlobalSection : Declaration SEMI_COLON MessageSequenceGlobalSection
                                     | Declaration SEMI_COLON '''
@@ -106,19 +128,33 @@ def p_MessageSequenceFunctions(p):
     
 def p_MessageSendSequenceFunction(p):
     '''
-    MessageSendSequenceFunction : Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
-                                | Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+    MessageSendSequenceFunction : Identifier DOT Identifier CURLY_LEFT CURLY_RIGHT
+                                | Identifier DOT Identifier CURLY_LEFT FunctionBody CURLY_RIGHT
     '''
+    # Syntax
+    #    <endpoint name>.<function name>
+    #    {
+    #        <function body> (optional)
+    #    }
 
+    # Children produced
+    #    Identifier: <endpoint name>
+    #    Identifier: <function name>
+    #    FunctionBody: <function body>
+
+    # note: canonicalize inserts a FunctionDeclArgList as a child for
+    # this between function name and endpoint body
+    
     p[0] = AstNode(AST_MESSAGE_SEND_SEQUENCE_FUNCTION,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[3],p[5]]);
-    if (len(p) == 10):
-        p[0].addChild(p[8]);
-    else:
-        #means that we had no function body, insert an impostor
-        #function body node.
-        p[0].addChild(AstNode(AST_FUNCTION_BODY, p[1].lineNo,p[1].linePos));
+    endpoint_name = p[1]
+    func_name = p[3]
+    
+    # imposter function body in case this was a noop.
+    func_body = AstNode(AST_FUNCTION_BODY,p[1].lineNo,p[1].linePos)
+    if len(p) == 7:
+        func_body = p[5]
 
+    p[0].addChildren([endpoint_name,func_name,func_body])
 
         
 def p_MessageReceiveSequenceFunctions(p):

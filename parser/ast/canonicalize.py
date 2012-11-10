@@ -1,11 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-# Pre-type checking processing on ast to make it easier to type check.
-#
-#    * Rule is that any argument passed into message sequence ends
-#      up in global section of message sequence.  Copy argument names
-#      from message send sequence into sequence global names
-#
 
 from astNode import *;
 from astLabels import *;
@@ -13,34 +7,63 @@ from astLabels import *;
 def preprocess(astNode,progText):
     '''
     @param {AstNode} astNode --- Root of ast.
+    @param {String} progText --- Text of program.
     
-    Runs through all the sequences provided and copies the
-    declarations for the arguments passed into sendMessage function
-    into shared arguments for sequence.
+    Run through the ast generated from parsing and operate on it so
+    that it is ready for type checking, slicing, and emitting.
+    (Shouldn't really need the intermediate stage from parsing to type
+    checking, but having this makes it easier to prototype fast
+    changes to syntax.
 
-    All changes to astNode happen through reference.
+    Big changes:
+
+        * Run through all definitions of message sequences and move
+          the FunctionDeclArgList-s that appear as children under each
+          to appear instead as children of each sequence's respective
+          message send sequence function.
+    
     '''
-    # no op for now.
-    pass;
-#     sequencesSection = astNode.children[6];
-#     endPt1Section = astNode.children[4];
-#     endPt2Section = astNode.children[5];
-#     sharedSection = astNode.children[3];
-#     tracesSection = astNode.children[2];
-
-#     for sequence in sequencesSection.children:
-#         copyPassedInToSeqShared(sequence);
-
-
-# def copyPassedInToSeqShared(seqNode):
-#     seqGlobs = seqNode.children[1];
     
-#     seqFunctions = seqNode.children[2];
-#     msgSendFunction = seqFunctions.children[1];
-#     msgSendArgs = msgSendFunction.children[2];
-#     for funcDeclArg in msgSendArgs.children:
-#         newGlob = AstNode(AST_DECLARATION,funcDeclArg.lineNo,funcDeclArg.linePos);
-#         newGlob.addChildren(funcDeclArg.getChildren());
-#         seqGlobs.addChild(newGlob);
+    move_sequence_function_args(astNode)
+
+def move_sequence_function_args(ast_node):
+    '''
+    Run through all definitions of message sequences and move
+    the FunctionDeclArgList-s that appear as children under each
+    to appear instead as children of each sequence's respective
+    message send sequence function.
+    '''
+
+    msg_sequences_node = ast_node.children[6]
+    # debug
+    if msg_sequences_node.label != AST_MESSAGE_SEQUENCE_SECTION:
+        err_msg = '\nIncorrect label on message sequences node.\n'
+        print err_msg
+        assert (False)
+    # end debug
 
         
+    for msg_seq_node in msg_sequences_node.children:
+        # remove the second child (containing function aguments) from
+        # msg_seq_node's children.  
+
+        func_args_node = msg_seq_node.children[1]
+        msg_seq_functions_node = msg_seq_node.children[3]
+
+        # debug
+        if func_args_node.label != AST_FUNCTION_DECL_ARGLIST:
+            print '\nError: require function decl arglist.\n'
+            assert(False)
+        # end debug
+            
+        
+        # remove func_args_node from msg sequence
+        del msg_seq_node.children[1]
+
+        
+        # insert it into msg send func node
+        msg_send_func_node = msg_seq_functions_node.children[0]
+
+        msg_send_func_node.children.insert(
+            2,func_args_node)
+    

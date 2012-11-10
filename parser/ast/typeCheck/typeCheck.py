@@ -1999,7 +1999,7 @@ def typeCheckMessageSequencesGlobals(msgSeqSectionNode,progText,typeStack):
         for declNode in msgSeqGlobalsNode.children:
             declNode.typeCheck(progText,typeStack,True);
         typeStack.popContext();
-        
+
 
 def typeCheckMessageSequencesEndpoint(msgSeqSectionNode,progText,typeStack):
     '''

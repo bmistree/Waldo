@@ -19,9 +19,9 @@ Shared
 }
 
 
-MessageSequence WriteMessage
+Sequence WriteMessage(Text msg)
 {
-    Chatter.issue_write(Text msg)
+    Chatter.issue_write
     {}
 
     Room.write_response
@@ -38,9 +38,9 @@ MessageSequence WriteMessage
     }
 }
 
-MessageSequence UpdateChatter
+Sequence UpdateChatter(Text chat_log)
 {
-    Room.issue_update(Text chat_log)
+    Room.issue_update
     {}
     Chatter.update_response
     {}

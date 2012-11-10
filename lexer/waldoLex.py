@@ -16,7 +16,7 @@ reserved = {
     'element': 'ELEMENT',
     'Public': 'PUBLIC',
     'Private': 'PRIVATE',
-    'MessageSequence': 'SEQUENCE',
+    'Sequence': 'SEQUENCE',
     'returns': 'RETURNS',
     'in': 'IN',
     'toText': 'TOTEXT',
