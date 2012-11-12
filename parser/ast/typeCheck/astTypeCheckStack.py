@@ -80,6 +80,13 @@ class TypeCheckContextStack(object):
         #      on_create, private_func
         self.currentFunctionNode = None;
 
+        # allowed to have placeholder extAssigns and extCopies in lhs
+        # of assignment statement to accommodate tuples.  Ie, you're
+        # allowed to do extAssign _ to some_ext = some_func(); In the
+        # rest of the code, you're not allowed to use and lhs_assign
+        # statement.
+        self.in_lhs_assign = False
+        
     def setRootNode(self,root):
         if self.rootNode != None:
             errMsg = '\nBehram error: should not set root node after it has ';

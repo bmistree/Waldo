@@ -163,6 +163,44 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(err_msg,err_nodes,err_line_nos,progText)
             return
 
+    elif node.label in [AST_EXT_ASSIGN_FOR_TUPLE, AST_EXT_COPY_FOR_TUPLE]:
+
+        # used for error message printing
+        for_tuple_type = 'extAssign'
+        if node.label == AST_EXT_COPY_FOR_TUPLE:
+            for_tuple_type = 'extCopy'
+        
+        if not typeStack.in_lhs_assign:
+            err_msg = 'Error in call "' + for_tuple_type + ' _ to ..."  '
+            err_msg += 'You can only use a placeholder, "_", '
+            err_msg += 'when this expression is on the '
+            err_msg += 'left hand side of an assignment.  Ie, '
+            err_msg += for_tuple_type
+            err_msg += ' _ to some_ext = some_func(); is '
+            err_msg += 'fine.  But ' + for_tuple_type + ' _ to some_ext; '
+            err_msg += 'by itself is not.'
+            err_nodes = [node]
+            err_line_nos = [node.lineNo]
+            errorFunction(err_msg,err_nodes,err_line_nos)
+            return
+
+        to_node = node.children[0]
+        to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+        if to_node.external == None:
+            err_msg = 'Error in call "' + for_tuple_type + ' _ to ..." '
+            err_msg += 'What you are assigning to is not an '
+            err_msg += 'external.  If it is not supposed to be, '
+            err_msg += 'then, just use the variable instead.'
+            err_nodes = [node]
+            err_line_nos = [node.lineNo]
+            errorFunction(err_msg,err_nodes,err_line_nos)
+
+        # need to bubble up type information to ensure that when type
+        # check assign, can also type check here.
+        node.type = to_node.type
+
+        
     elif node.label == AST_EXT_ASSIGN:
         from_node = node.children[0]
         to_node = node.children[1]
@@ -778,7 +816,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             typeStack.addIdentifier(identifierName,
                                     node.type,
                                     controlledByStr,node,currentLineNo);
-
 
             
     elif(node.label == AST_NUMBER):
@@ -1565,8 +1602,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         for to_assign_to_counter in range(0,len(lhs_list.children)):
             to_assign_to_node = lhs_list.children[to_assign_to_counter]
 
+            typeStack.in_lhs_assign = True
             to_assign_to_node.typeCheck(
                 progText,typeStack,avoidFunctionObjects)
+            typeStack.in_lhs_assign = False
             
             _check_single_assign(
                 to_assign_to_node,rhs,to_assign_to_counter,
@@ -2142,15 +2181,16 @@ def _check_single_assign(
     '''
 
     if ((to_assign_to_node.label != AST_BRACKET_STATEMENT) and
-        (to_assign_to_node.label != AST_IDENTIFIER)):
+        (to_assign_to_node.label != AST_IDENTIFIER) and
+        (to_assign_to_node.label != AST_EXT_ASSIGN_FOR_TUPLE) and
+        (to_assign_to_node.label != AST_EXT_COPY_FOR_TUPLE)):
         
-        # FIXME: this disallows the following types of calls:
+        # This disallows the following types of calls:
         #   public function a () returns External int{}
         #   a() = 3;
         #
-        #   Okay for now, because this is bad style, but something to
-        #   think about longterm.
-        
+        # But these were disallowed anyways because you must use
+        # extAssign and extCopy to affect externals.
         err_msg = 'Error in assignment statement.  '
         
         if ((rhs_node.label == AST_FUNCTION_CALL) and
@@ -2215,6 +2255,8 @@ def _check_single_assign(
         err_line_nos = [to_assign_to_node.lineNo]
         errorFunction(err_msg, err_nodes,err_line_nos,progText);
 
+    
+        
     # check controls by statement to ensure writes are okay
     to_assign_to_var_name = to_assign_to_node.value
     if to_assign_to_node.label == AST_BRACKET_STATEMENT:

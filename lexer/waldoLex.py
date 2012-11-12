@@ -47,7 +47,7 @@ reserved = {
     'refresh': 'REFRESH',
     'Jump': 'JUMP',
     'extAssign':'EXT_ASSIGN',
-    'extCopy':'EXT_COPY'
+    'extCopy':'EXT_COPY',
     };
 
 
@@ -105,6 +105,7 @@ tokens = [
     
     "NUMBER",
     IDENTIFIER_TOKEN,
+    'HOLDER',
     
     #Strings and quotes
     "MULTI_LINE_STRING",
@@ -161,13 +162,11 @@ def generateTokenErrMessage(toke):
     elif (tVal == '#'):
         additional = 'If you were trying to write a comment, comments in ';
         additional += 'Waldo are written with // or /* */'
-    elif (tVal == '_'):
-        additional = 'If you were trying to begin a variable name with "_", ';
-        additional += 'This is not allowed.';
     elif(tVal == '%'):
         additional = 'There is no modulo operator in Waldo yet';
 
     return errMsg, additional;
+
 
 class LexStateMachine():
     def __init__ (self):
@@ -213,11 +212,7 @@ class LexStateMachine():
                 returner.type = SkipTokenType;
             else:
                 errMsg,additionalMsg= generateTokenErrMessage(toke);
-                # errMsg = 'Should not have gotten an ';
-                # errMsg += 'all else when not in comment';
-                # errMsg += '\n' + repr(toke.value) + '\n';
                 raise WaldoLexException(generateTypeError(errMsg, toke,additionalMsg));
-            
 
         #adjust state machine
         if (self.inMultiLineString):
@@ -426,13 +421,16 @@ def t_DOT(t):
 
 def t_NUMBER(t):
     '\d+(\.\d*)?'
-    # '[\-]?\d+(\.\d*)?'
     return mStateMachine.addToken(t);
 
 def t_IDENTIFIER(t):
     r'[a-zA-Z][a-zA-Z_0-9_]*';
     t.type = reserved.get(t.value,IDENTIFIER_TOKEN);    # Check for reserved words
     return mStateMachine.addToken(t);
+
+def t_HOLDER(t):
+    r'_'
+    return mStateMachine.addToken(t)
 
 def t_MULTI_LINE_STRING(t):
     r'[\"]'
