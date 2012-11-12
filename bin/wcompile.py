@@ -244,7 +244,6 @@ def printUsage():
        d3: (optional) <path to d3 so output html can link to it>,
        h: (optional) <int> height of image to be drawn onto output html (default 1000),
        w: (optional) <int> width of image to be drawn onto output html (default 1000)
-
     }
     
     -tc  (optional) true/false whether to type check the function or not. defaults to True.
@@ -256,6 +255,8 @@ def printUsage():
     -h print options
 
     -e <filename> Emit the generated code to filename.  
+
+    -ne don't emit 
 
     -v <version number 2> Input file is of version 2.  Default is version 2
 
@@ -274,10 +275,11 @@ if __name__ == '__main__':
     textOutputArg = None;
     helpArg = None;
     printOutputArg = None;
-    emitArg = None;
+    emitArg = 'emitted.py'
     typeCheckArg = True;
     skipNext = False;
     versionNum = 2;
+
     
     
     for s in range(0,len(sys.argv)):
@@ -289,11 +291,13 @@ if __name__ == '__main__':
             if (s + 1< len(sys.argv)):
                 inputFilenameArg = sys.argv[s+1];
                 skipNext = True;
-                emitArg = 'emitted.py'
             else:
                 #will force printing usage without doing any work.
                 helpArg = True;
 
+        if sys.argv[s] == '-ne':
+            emitArg = None
+                
         if (sys.argv[s] == '-v'):
             if (s + 1 < len(sys.argv)):
                 versionNum = int(sys.argv[s+1]);
