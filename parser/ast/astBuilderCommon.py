@@ -313,41 +313,84 @@ def p_PlusEqual(p):
     '''
     PlusEqual : OperatableOn PLUS_EQUAL ReturnableExpression
     '''
-    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChild(p[1]);
+    to_assign_to = p[1]
+    to_assign_with = p[3]
+    
+    p[0] = AstNode(
+        AST_ASSIGNMENT_STATEMENT,to_assign_to.lineNo,to_assign_to.linePos)
+    list_to_assign_to = AstNode(
+        AST_OPERATABLE_ON_COMMA_LIST,to_assign_to.lineNo,to_assign_to.linePos)
+    list_to_assign_to.addChild(to_assign_to)
+
+    p[0].addChild(list_to_assign_to);
     plusNode = AstNode(AST_PLUS,p[1].lineNo,p[1].linePos);
-    plusNode.addChildren([p[1],p[3]]);
+    plusNode.addChildren([to_assign_to,to_assign_with]);
     p[0].addChild(plusNode);
+
     
 def p_MinusEqual(p):
     '''
     MinusEqual : OperatableOn MINUS_EQUAL ReturnableExpression
     '''
-    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChild(p[1]);
+    to_assign_to = p[1]
+    to_assign_with = p[3]
+    
+
+    p[0] = AstNode(
+        AST_ASSIGNMENT_STATEMENT,to_assign_to.lineNo,to_assign_to.linePos)
+    list_to_assign_to = AstNode(
+        AST_OPERATABLE_ON_COMMA_LIST,to_assign_to.lineNo,to_assign_to.linePos)
+    list_to_assign_to.addChild(to_assign_to)
+
+    p[0].addChild(list_to_assign_to);
     minusNode = AstNode(AST_MINUS,p[1].lineNo,p[1].linePos);
-    minusNode.addChildren([p[1],p[3]]);
+    minusNode.addChildren([to_assign_to,to_assign_with]);
     p[0].addChild(minusNode);
     
 def p_MultiplyEqual(p):
     '''
     MultiplyEqual : OperatableOn MULTIPLY_EQUAL ReturnableExpression
     '''
-    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChild(p[1]);
+    to_assign_to = p[1]
+    to_assign_with = p[3]
+    
+    p[0] = AstNode(
+        AST_ASSIGNMENT_STATEMENT,to_assign_to.lineNo,to_assign_to.linePos)
+    list_to_assign_to = AstNode(
+        AST_OPERATABLE_ON_COMMA_LIST,to_assign_to.lineNo,to_assign_to.linePos)
+    list_to_assign_to.addChild(to_assign_to)
+
+    p[0].addChild(list_to_assign_to);
     multiplyNode = AstNode(AST_MULTIPLY,p[1].lineNo,p[1].linePos);
-    multiplyNode.addChildren([p[1],p[3]]);
+    multiplyNode.addChildren([to_assign_to,to_assign_with]);
     p[0].addChild(multiplyNode);
+
     
 def p_DivideEqual(p):
     '''
     DivideEqual : OperatableOn DIVIDE_EQUAL ReturnableExpression
     '''
-    p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChild(p[1]);
+    to_assign_to = p[1]
+    to_assign_with = p[3]
+    
+
+    p[0] = AstNode(
+        AST_ASSIGNMENT_STATEMENT,to_assign_to.lineNo,to_assign_to.linePos)
+    list_to_assign_to = AstNode(
+        AST_OPERATABLE_ON_COMMA_LIST,to_assign_to.lineNo,to_assign_to.linePos)
+    list_to_assign_to.addChild(to_assign_to)
+
+    p[0].addChild(list_to_assign_to);
     divideNode = AstNode(AST_DIVIDE,p[1].lineNo,p[1].linePos);
-    divideNode.addChildren([p[1],p[3]]);
+    divideNode.addChildren([to_assign_to,to_assign_with]);
     p[0].addChild(divideNode);
+
+    
+    
+    # p[0].addChild(p[1]);
+    # divideNode = AstNode(AST_DIVIDE,p[1].lineNo,p[1].linePos);
+    # divideNode.addChildren([p[1],p[3]]);
+    # p[0].addChild(divideNode);
 
     
 def p_OperatableOn(p):
@@ -806,7 +849,7 @@ def p_AssignmentStatement(p):
     p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
 
-
+    
 def p_OperatableOnCommaList(p):
     '''
     OperatableOnCommaList : OperatableOn
