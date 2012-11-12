@@ -206,7 +206,9 @@ def isTemplatedType(typeLabel):
     @returns{bool} True if it's a function or list type, false otherwise.
     '''
     if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
-        (typeLabel != TYPE_STRING) and  (typeLabel != TYPE_NOTHING)):
+        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_NOTHING) and
+        (not isinstance(typeLabel,list))):
+
         return True;
 
     return False;
@@ -442,13 +444,13 @@ def buildFuncTypeSignature(node,progText,typeStack):
     {
        Type: 'Function',
        In: [ { Type: 'TrueFalse'} ],
-       Returns: { Type: 'Nothing'}
+       Returns: [{ Type: 'Nothing'}] # this is a list so that can return tuples
     }
     '''
     returner = {};
     returner[JSON_TYPE_FIELD] = TYPE_FUNCTION;
 
-    
+
     ##### HANDLE INPUT ARGS #####
     inArgNode = node.children[0];
     inputTypes = [];
@@ -478,6 +480,6 @@ def buildFuncTypeSignature(node,progText,typeStack):
         returner[JSON_FUNC_RETURNS_FIELD] = {
             JSON_TYPE_FIELD: outArgNode.type
             };
-
+        
     return returner;
 

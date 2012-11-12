@@ -145,46 +145,88 @@ class TypeCheckContextStack(object):
 
         self.currentFunctionNode = node;
         
-    def checkReturnStatement(self,returnNode):
+    def checkReturnStatement(self,returnNode,check_type_mismatch_func):
+        '''
+        @param {function} check_type_mismatch_func ... should just be
+        typeCheck.checkTypeMismatch.
+        '''
         if (returnNode.label != AST_RETURN_STATEMENT):
             errMsg = '\nBehram error: trying to check a ';
             errMsg += 'return statement without a return statement node.\n';
             errPrint(errMsg);
             assert(False);
 
+            
         if self.currentFunctionNode == None:
             errMsg = '\nBehram error: any return statement should have a ';
             errMsg += 'currentFunctionNode to compare to.\n';
             print(errMsg);
             assert(False);
 
+        
+        return_tuple_node = returnNode.children[0]
+        # list of the types that we're actually returning
+        return_type_list = []
+        for single_node in return_tuple_node.children:
+            return_type_list.append(single_node.type)
 
+            
         returnStatementType = returnNode.children[0].type;
         if ((self.currentFunctionNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION) or
             (self.currentFunctionNode.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
-            declaredType = TYPE_NOTHING;
-            funcName = self.currentFunctionNode.children[1].value;
-            # Sets the node that specifies the return type to the
-            # msg_send_seq_func or msg_recv_seq_func for error message
-            # printing.
-            returnsTypeNode = self.currentFunctionNode;
-            
-        else:
-            returnsTypeNode = self.currentFunctionNode.children[1];
-            declaredType = returnsTypeNode.value;
-            funcName = self.currentFunctionNode.children[0].value;            
 
-        if (declaredType != returnStatementType):
-            errMsg = '\nReturn error.  You have declared that the function ';
-            errMsg += 'named "' + funcName + '" ';
-            errMsg += 'should return type "' + declaredType + '", ';
-            errMsg += 'but your Return statement actually returns type "';
-            errMsg += returnStatementType + '".\n';
-            nodes= [returnsTypeNode,returnNode];
-            return TypeCheckError(nodes,errMsg);
+            if len(return_type) > 0:
+                err_msg = 'Error.  Cannot return a value from a sequence function.'
+                nodes= [returnNode];
+                return TypeCheckError(nodes,err_msg);
+
+            # no error because message sequences are not declared to
+            # return anything and this return statement does not.
+            return None
+
+        # check public and privates for return statement...
+        function_returns_type_node = self.currentFunctionNode.children[1];
+        # the declared return type of this function
+        function_returns_type_list = []
+        for single_type in function_returns_type_node.children:
+            function_returns_type_list.append(single_type.value)
+
+        funcName = self.currentFunctionNode.children[0].value;
+
+        if len(function_returns_type_list) != len(return_type_list):
+            err_msg = 'Error.  ' + funcName + ' expects to return '
+            err_msg += str(len(function_returns_type_list)) + ' arguments.  '
+            err_msg += 'Instead, you returned ' + str(len(return_type_list))
+            err_msg += ' arguments.'
+            err_nodes = [returnNode, function_returns_type_node]
+            return TypeCheckError(err_nodes,err_msg)
+
+        for return_index in range(0,len(return_type_list)):
+            
+            declared_return_type = function_returns_type_list[return_index]
+            actual_return_type = return_type_list[return_index]
+
+            
+            if check_type_mismatch_func(
+                returnNode,declared_return_type,actual_return_type,self,''):
+                
+                err_msg = 'Incorrect return type in ' + funcName + '.  '
+                if len(return_type_list) == 1:
+                    err_msg += 'Expected type ' + declared_return_type
+                    err_msg += ', but actually returned type ' + actual_return_type
+                    err_msg += '.'
+                else:
+                    err_msg += 'The ' + str(return_index + 1) + ' tuple return '
+                    err_msg += 'element expected a type of ' + declared_return_type
+                    err_msg += ', but actually returned type of ' + actual_return_type
+                    err_msg += '.'
+                    
+                err_nodes = [returnNode, function_returns_type_node]
+                return TypeCheckError(err_nodes, err_msg)
 
         return None;
 
+    
     def checkTraceItemInputOutput(self):
         '''
         run through all trace lines to see if the message outputs
@@ -323,9 +365,16 @@ class TypeCheckContextStack(object):
     def addFuncIdentifier(self,functionName,functionType,functionArgTypes,astNode,lineNum=None):
         '''
         @param {string} functionName: name of function
-        @param {string} functionType: effectively the return type of the function.
+
+        @param{list of strings} functionType --- The return type of
+        this function.  We're using a list to support returning
+        tuples.  Each element of the list is the return type of that
+        element of the tuple.
+        
+
         @param {list} functionArgTypes: ordered (from left to right)
         list of types for function arguments.
+        
         @param {int} lineNum: line number that function was declared on.
 
         @returns {None or TyepCheckError} -- None if nothing is wrong
@@ -445,7 +494,10 @@ class FuncContext():
         
 class FuncContextElement():
     def __init__ (self,funcIdentifierType,funcArgTypes,astNode,lineNum):
+        # note this is a list of strings.  each element of the list is
+        # the type of one of the elements in the tuple.
         self.funcIdentifierType = funcIdentifierType;
+        
         self.funcArgTypes = funcArgTypes;
         self.astNode = astNode;
         self.lineNum = lineNum;
@@ -456,6 +508,7 @@ class FuncContextElement():
         @returns {FuncMatchObject} 
         '''
         return FuncMatchObject(self);
+
     
     #FIXME: make consistent with astNode.  In one place, using
     #lineNum, in another, lineNo.
@@ -512,24 +565,10 @@ class FuncMatchObject():
     def __init__(self,funcContextElement):
         self.element = funcContextElement;
 
-    def matches(self,funcIdentifierType,funcArgTypes):
-        '''
-        @param {String} funcIdentifierType -- the type we assume the
-        function is supposed to return.
-        
-        @param {List of Strings} funcArgTypes -- the types of each
-        argument for the function.
-        '''
-        
-        if (funcIdentifierType != self.element.funcIdentifierType):
-            return False;
-
-        if (self.argMatches(funcArgTypes) == None):
-            return True;
-
-        return False;
-
     def getReturnType(self):
+        '''
+        @returns{List of strings} --- List to support tuple return.
+        '''
         return self.element.funcIdentifierType;
 
     def createJsonType(self):

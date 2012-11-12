@@ -780,6 +780,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                                     controlledByStr,node,currentLineNo);
 
 
+            
     elif(node.label == AST_NUMBER):
         node.type = TYPE_NUMBER;
     elif(node.label == AST_STRING):
@@ -832,6 +833,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #set my type as that returned by the function
         node.type = funcMatchObj.getReturnType();
 
+        
         #check the argument types passed into the function
         funcArgList = node.children[1].children;
         allArgTypes = [];
@@ -877,8 +879,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 assert(False);
 
     elif node.label == AST_FUNCTION_TYPE_LIST:
-        print('\nBehram error: should never have gotten to type list\n');
-        assert(False);
+        node.type = []
+        for type_node in node.children:
+            type_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+            node.type.append(type_node.type)
 
     elif (node.label == AST_TYPE):
 
@@ -896,7 +900,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #          {
             #            Type: "TrueFalse"
             #          }],
-            #    Returns: { Type: "Text"}
+            #    Returns: [{ Type: "Text"}]
             # }
             typeSignature = buildFuncTypeSignature(node,progText,typeStack);
             node.type = json.dumps(typeSignature);
@@ -1365,13 +1369,19 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         
     elif(node.label == AST_RETURN_STATEMENT):
-        node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
+        node.type = TYPE_NOTHING
 
-        typeCheckError = typeStack.checkReturnStatement(node);
+        return_tuple_node = node.children[0]
+        return_tuple_node.typeCheck(
+            progText,typeStack,avoidFunctionObjects)
+
+        typeCheckError = typeStack.checkReturnStatement(node,checkTypeMismatch);
         if (typeCheckError != None):
-            errorFunction(typeCheckError.errMsg,typeCheckError.nodes,typeCheckError.lineNos,progText);
-        node.type = TYPE_NOTHING;
+            errorFunction(
+                typeCheckError.errMsg,typeCheckError.nodes,
+                typeCheckError.lineNos,progText)
 
+            
     elif(node.label == AST_IDENTIFIER):
         name = node.value;
         typer,ctrldBy = typeStack.getIdentifierType(name);
@@ -1394,8 +1404,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 assert(False);
                 
             node.external = ctxElm.astNode.external;
-            
-
 
     elif(node.label == AST_ENDPOINT_FUNCTION_SECTION):
         # this just type checks the headers of each function.
@@ -1496,6 +1504,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         for s in node.children:
             s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
+    elif node.label == AST_FUNCTION_ARGLIST:
+        for child in node.children:
+            child.typeCheck(progText,typeStack,avoidFunctionObjects)
+
             
     elif (node.label == AST_FUNCTION_DECL_ARG):
         '''
@@ -1543,106 +1555,22 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         node.type = TYPE_BOOL;
 
     elif (node.label == AST_ASSIGNMENT_STATEMENT):
-        lhs = node.children[0];
-        node.lineNo = lhs.lineNo;
-        
-        if lhs.label != AST_IDENTIFIER:
-            errMsg = None;
-            if lhs.label != AST_BRACKET_STATEMENT:
-                errMsg = '\nError in assignment statement.  Can only assign ';
-                errMsg += 'to a variable.  (Left hand side must be a variable)\n';
-            else:
-                # means that it's a bracket statement.
-                indexIntoBracketNode = lhs.children[0];
-                if indexIntoBracketNode.label != AST_IDENTIFIER:
-                    # bracket statement's from function calls may not
-                    # be assigned to.  eg. Public Function getter() returns Map;
-                    #    getter()[0] = 'a';
-                    # is disallowed.  That's mostly because it's
-                    # gross.  If decide to re-allow it, ensure that
-                    # fix slicing so that it handles such a case.
-                    # Right now, I do not think that it does.
-                    errMsg = '\nError in assignment statement.  You can only ';
-                    errMsg += 'into a variable identifier.  eg. someVar = 3; or ';
-                    errMsg += 'someMap[1] = 2;.  You cannot assign by directly ';
-                    errMsg += 'indexing into the returned value of a function.\n';
-            if errMsg != None:
-                errorFunction(errMsg,[node],[node.lineNo],progText);                    
+        # lhs can only hold a list of values if assignment is a result
+        # of function call.
+        lhs_list = node.children[0]
+        node.lineNo = lhs_list.lineNo
+        rhs = node.children[1]
+        rhs.typeCheck(progText,typeStack,avoidFunctionObjects)
 
-        
-        rhs = node.children[1];
+        for to_assign_to_counter in range(0,len(lhs_list.children)):
+            to_assign_to_node = lhs_list.children[to_assign_to_counter]
 
-        if (lhs.label == AST_IDENTIFIER):
-            lhsType,controlledBy = typeStack.getIdentifierType(lhs.value);
-            lhs.type  = lhsType;
+            to_assign_to_node.typeCheck(
+                progText,typeStack,avoidFunctionObjects)
             
-            # need to copy external tag too
-            ctxElm = typeStack.getIdentifierElement(lhs.value);
-            if ctxElm == None:
-                errMsg = '\nError in assignment statement.  Left hand side ';
-                errMsg += 'has no type information.  Are you sure that you ';
-                errMsg += 'defined ' + lhs.value + ' above?\n';
-                errorFunction(errMsg,[node],[node.lineNo],progText);
-                return;
-
-            lhs.external = ctxElm.astNode.external;
-            
-        else:
-            lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
-            lhsType = lhs.type;
-            controlledBy = None;
-
-        if (lhsType == None):
-            errMsg = '\nError in assignment statement.  Left hand side ';
-            errMsg += 'has no type information.\n';
-            errorFunction(errMsg,[node],[node.lineNo],progText);
-            return;
-
-        if (controlledBy != None) and (controlledBy != TYPE_NOTHING):
-            # check if the variable that we are assigning to is
-            # controlled by this endpoint or another endpoint.
-            if (typeStack.currentEndpointName != controlledBy):
-                errMsg = '\nError: you are trying to write to a ';
-                errMsg += 'variable named "' + lhs.value + '" in ';
-                errMsg += 'endpoint "' + typeStack.currentEndpointName + '".  ';
-                errMsg += 'However, this variable is controlled by "';
-                errMsg += typeStack.getOtherEndpointName() + '," which ';
-                errMsg += 'means that only functions in ';
-                errMsg += typeStack.getOtherEndpointName() + ' can assign ';
-                errMsg += 'it values.  Either change who controls ';
-                errMsg += lhs.value + ' in the Shared section, or ';
-                errMsg += 'do not write to it in ' + typeStack.currentEndpointName;
-                errMsg += '.\n';
-                errorFunction(errMsg,[node],[node.lineNo],progText);
-
-        rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
-        rhsType = rhs.type;
-
-        if (rhsType == None):
-            errMsg = '\nError in assignment statement.  Right hand side ';
-            errMsg += 'has no type information.\n';
-            errorFunction(errMsg,[node],[node.lineNo],progText);
-            return;
-
-        if (checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText)):
-            #FIXME: this should really identify *why* we inferred
-            #the type that we did.  Maybe where the variable was
-            #decalred too.
-            errMsg = '\nError in assignment statement.  Type of ';
-            errMsg += 'left-hand side (' + lhsType + ') does not ';
-            errMsg += 'match type of right-hand side (' + rhsType;
-            errMsg += ').\n';
-            errorFunction(errMsg,[node],[node.lineNo],progText);
-
-        # makes type checking declarations easier in sequence globals
-        # section.
-        node.type = lhs.type;
-            
-    else:
-        errPrint('\nLabels that still need type checking: ');
-        errPrint('\t' + node.label);
-
-
+            _check_single_assign(
+                to_assign_to_node,rhs,to_assign_to_counter,
+                progText,typeStack,avoidFunctionObjects)
 
 
     #remove the new context that we had created.  Note: shared
@@ -1654,7 +1582,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         
         typeStack.popContext();
         
-
+        
 def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
     '''
     Takes a node of type public function, private function,
@@ -1684,27 +1612,25 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         argDeclIndex = 2;
         funcNameIndex = 0;
     elif(node.label == AST_ONCREATE_FUNCTION):
-        returnType = TYPE_NOTHING;
+        returnType = [TYPE_NOTHING];
         argDeclIndex = 1;
         funcNameIndex = 0;
     elif node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
         argDeclIndex = 2;
-        returnType = TYPE_NOTHING;
+        returnType = [TYPE_NOTHING];
         funcNameIndex = 1;
     elif node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # does not take any arguments
         argDeclIndex = None;
         funcNameIndex = 1;
-        returnType = TYPE_NOTHING;
+        returnType = [TYPE_NOTHING];
     elif node.label == AST_ONCOMPLETE_FUNCTION:
         # should never load an oncomplete function into stack because
         # it will never get called.
         return;
-
     
     funcName = node.children[funcNameIndex].value;
     node.lineNo = node.children[funcNameIndex].lineNo;
-
     
     #get types of function arguments
 
@@ -1770,11 +1696,11 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
     Reasons not to indicate type mismatch error
     
        * lhsType and rhsType are the same
+
+       * unknown list and map types.  For instance, if rhsType was
+         produced from [], and lhsType was List(element: Number),
+         would not produce error.
        
-       * rhsType is a message literal and is being assigned to an
-         outgoing or incoming message and all its fields agree with
-         those.
-    
     '''
     errorTrue = False;
     if (lhsType != rhsType):
@@ -2193,4 +2119,122 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
     else:
         # add function objects to context when type check them
         argList.typeCheck(progText,typeStack,True);
+
+
+
+def _check_single_assign(
+    to_assign_to_node,rhs_node,to_assign_to_index,
+    progText,typeStack,avoidFunctionObjects):
+    '''
+    @param{AstNode} to_assign_to_node --- Type check has already been
+    called on this element.
+    
+    @param{AstNode} rhs_node --- Type check has already been called on
+    this element
+    
+    @param{Int} to_assign_to_index --- If rhs_node is a function
+    call, function may return a tuple.  In this case, we're only
+    supposed to type check the return value of the
+    to_assign_to_counter-th element of the return type against
+    to_assing_to_node's type.
+
+    Calls errorFunction on any type check errors.
+    '''
+
+    if ((to_assign_to_node.label != AST_BRACKET_STATEMENT) and
+        (to_assign_to_node.label != AST_IDENTIFIER)):
+        
+        # FIXME: this disallows the following types of calls:
+        #   public function a () returns External int{}
+        #   a() = 3;
+        #
+        #   Okay for now, because this is bad style, but something to
+        #   think about longterm.
+        
+        err_msg = 'Error in assignment statement.  '
+        
+        if ((rhs_node.label == AST_FUNCTION_CALL) and
+            (len(rhs_node.type) > 1)):
+            err_msg += 'When trying to assign to the '
+            err_msg += str(to_assign_to_index + 1) + ' element '
+
+        err_msg += 'on the left hand side of the = sign, must '
+        err_msg += 'either be a variable or a bracket statment.'
+
+        err_nodes = [to_assign_to_node]
+        err_line_nos = [to_assign_to_node.lineNo]
+        
+        errorFunction(err_msg,err_nodes,err_line_nos,progText)
+    elif to_assign_to_node.label == AST_BRACKET_STATEMENT:
+        # check that the root of the bracket statement is an
+        # identifier
+
+        lhs_bracket = to_assign_to_node.children[0]
+        if lhs_bracket.label != AST_IDENTIFIER:
+            err_msg = 'When performing assignment, left hand side of '
+            err_msg += 'assignment must be rooted in a variable.  '
+            err_nodes = [to_assign_to_node]
+            err_line_nos = [to_assign_to_node.lineNo]
+            errorFunction(err_msg,err_nodes,err_line_nos,progText)
+
+
+    # note that this will handle brackets okay because their types the
+    # entire statement will have the type of the list/map value.
+    lhs_type = to_assign_to_node.type
+    rhs_type = rhs_node.type
+    
+    if rhs_node.label == AST_FUNCTION_CALL:
+
+        if to_assign_to_index >= len(rhs_node.type):
+            err_msg = 'Error in assignment statement.  The function '
+            err_msg += 'call on the right only returns ' + len(rhs_node.type)
+            err_msg += ' element.  But you are trying to assign to at least '
+            err_msg += str(to_assign_to_index + 1) + ' elements.'
+            
+            err_nodes = [to_assign_to_node]
+            err_line_nos = [to_assign_to_node.lineNo]
+            errorFunction(err_msg,err_nodes,err_line_nos,progText)
+
+        rhs_type = rhs_type[to_assign_to_index]
+
+    if checkTypeMismatch(to_assign_to_node,lhs_type,rhs_type,typeStack,progText):
+        err_msg = 'Error in assignment statement.  '
+
+        if ((rhs_node.label == AST_FUNCTION_CALL) and
+            (len(rhs_node.type) > 1)):
+            err_msg += 'The '
+            err_msg += str(to_assign_to_index + 1) + ' element of '
+            err_msg += 'the left hand side of the assignment statment '
+        else:
+            err_msg += 'The left hand side side of the assignment statement '
+            
+        err_msg += 'has type ' + lhs_type + ', but the right hand side has '
+        err_msg += 'type ' + rhs_type + '.'
+
+        err_nodes = [to_assign_to_node]
+        err_line_nos = [to_assign_to_node.lineNo]
+        errorFunction(err_msg, err_nodes,err_line_nos,progText);
+
+    # check controls by statement to ensure writes are okay
+    to_assign_to_var_name = to_assign_to_node.value
+    if to_assign_to_node.label == AST_BRACKET_STATEMENT:
+        to_assign_to_var_name = to_assign_to_node.children[0].value
+
+    unused,controlled_by = typeStack.getIdentifierType(to_assign_to_var_name);
+    if ((controlled_by != None) and (controlled_by != TYPE_NOTHING)):
+        
+        if (typeStack.currentEndpointName != controlled_by):
+            err_msg = 'Error when trying to assign to ' + to_assign_to_var_name
+            err_msg += ' while in ' + typeStack.currentEndpointName + '\'s '
+            err_msg += 'body.  ' + typeStack.currentEndpointName + ' does not '
+            err_msg += 'control this variable (is not allowed to write to this '
+            err_msg += 'variable) because of a controls annotation in the Shared '
+            err_msg += 'section.  Only ' + typeStack.getOtherEndpointName()
+            err_msg += ' is allowed to write to it.'
+
+            err_nodes = [to_assign_to_node]
+            err_line_nos = [to_assign_to_node.lineNo]
+            errorFunction(err_msg,err_nodes,err_line_nos,progText)
+            
+    # FIXME: unsure how to handle assignments to externals 
 

@@ -7,12 +7,10 @@ from parser.ast.typeCheck.typeCheckUtil import setErrorEncountered
 
 
 
-
 from astLabels import *;
 from astNode import AstNode;
 from lexer.waldoLex import ONCREATE_TOKEN;
 from parserUtil import errPrint;
-
 
 #Program text that we are parsing.  Set in getParser function.  Allows
 #us to output surrounding lines when reporting an error.
@@ -198,9 +196,10 @@ def p_ListType(p):
         
 def p_FunctionType(p):
     '''
-    FunctionType : FUNCTION LEFT_PAREN IN COLON FunctionTypeList SEMI_COLON RETURNS COLON Type RIGHT_PAREN
-    FunctionType : FUNCTION LEFT_PAREN RETURNS COLON Type RIGHT_PAREN
+    FunctionType : FUNCTION LEFT_PAREN IN COLON FunctionTypeList SEMI_COLON RETURNS COLON FunctionTypeList RIGHT_PAREN
+    FunctionType : FUNCTION LEFT_PAREN RETURNS COLON FunctionTypeList RIGHT_PAREN
     '''
+    
     p[0] = AstNode(AST_TYPE, p.lineno(1),p.lexpos(1),TYPE_FUNCTION);
 
     inToAdd = AstNode(AST_EMPTY,p.lineno(1),p.lexpos(1));
@@ -522,8 +521,8 @@ def p_EndpointGlobalSection(p):
 
 
 def p_Function(p):
-    '''Function : PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
-                | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT
+    '''Function : PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS FunctionTypeList CURLY_LEFT FunctionBody CURLY_RIGHT
+                | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS FunctionTypeList CURLY_LEFT  CURLY_RIGHT
                 | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
                 | PRIVATE FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT  CURLY_RIGHT
                 '''                 
@@ -550,11 +549,10 @@ def p_Function(p):
         p[0].addChild(AstNode(AST_FUNCTION_BODY, p.lineno(1),p.lexpos(1)));
 
     
-        
 def p_PublicFunction(p):
     '''
-    PublicFunction : PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT FunctionBody CURLY_RIGHT
-                   | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS Type CURLY_LEFT  CURLY_RIGHT
+    PublicFunction : PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS FunctionTypeList CURLY_LEFT FunctionBody CURLY_RIGHT
+                   | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN RETURNS FunctionTypeList CURLY_LEFT  CURLY_RIGHT
                    | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
                    | PUBLIC FUNCTION Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
                    '''
@@ -598,18 +596,11 @@ def p_FunctionBody(p):
 
 def p_ReturnStatement(p):
     '''
-    ReturnStatement : RETURN_OPERATOR ReturnableExpression
-                    | RETURN_OPERATOR Empty
+    ReturnStatement : RETURN_OPERATOR FunctionArgList
     '''
     p[0] = AstNode(AST_RETURN_STATEMENT,p.lineno(1),p.lexpos(1));
-    if (isEmptyNode(p[2])):
-        # insert type nothing node so can still perform check
-        p[0].addChild(AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_NOTHING));
-    else:
-        # insert returnable expression
-        p[0].addChild(p[2]);
-
-
+    p[0].addChild(p[2])
+        
 def p_OnCreateFunction(p):
     '''
     OnCreateFunction : ONCREATE  LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
@@ -782,12 +773,37 @@ def p_RemoveStatement(p):
     
 def p_AssignmentStatement(p):
     '''
-    AssignmentStatement : OperatableOn EQUALS ReturnableExpression
+    AssignmentStatement : OperatableOnCommaList EQUALS ReturnableExpression
     '''
+    operatable_on_list = p[1]
+    if len(operatable_on_list.children) == 0:
+        err_msg = 'Error in assignment statement.  Must assign '
+        err_msg += 'to something.'
+        raise WaldoParseException(
+            operatable_on_list,err_msg);
+    
     p[0] = AstNode(AST_ASSIGNMENT_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
 
-    
+
+def p_OperatableOnCommaList(p):
+    '''
+    OperatableOnCommaList : OperatableOn
+                          | OperatableOnCommaList COMMA OperatableOn
+                          | Empty
+    '''
+
+    p[0] = AstNode(AST_OPERATABLE_ON_COMMA_LIST,p[1].lineNo,p[1].linePos);
+    if (len(p) == 4):
+        p[0].addChildren(p[1].getChildren());
+        p[0].addChild(p[3]);
+    elif(len(p) == 2):
+        if (not isEmptyNode(p[1])):
+            p[0].addChild(p[1]);
+    else:
+        errPrint('\nError in OperatableOnCommaList.  Unexpected length to match\n');
+        assert(False);
+
 
 def p_ReturnableExpression(p):
     '''ReturnableExpression : LEFT_PAREN ReturnableExpression RIGHT_PAREN BinaryOperator ReturnableExpression
@@ -997,6 +1013,8 @@ def isEmptyNode(nodeToCheck):
 
 def p_error(p):
     raise WaldoParseException(p);
+
+
 
 class WaldoParseException(Exception):
 
