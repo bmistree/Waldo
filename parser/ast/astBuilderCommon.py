@@ -656,15 +656,15 @@ def p_FunctionBody(p):
         errPrint('\nError statement length mismatch in FunctionBody\n');
         assert(False);
 
-        
-
+    
 def p_ReturnStatement(p):
     '''
     ReturnStatement : RETURN_OPERATOR FunctionArgList
     '''
     p[0] = AstNode(AST_RETURN_STATEMENT,p.lineno(1),p.lexpos(1));
     p[0].addChild(p[2])
-        
+
+    
 def p_OnCreateFunction(p):
     '''
     OnCreateFunction : ONCREATE  LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT

@@ -197,16 +197,19 @@ def slicer(node,functionDeps=None,typeStack=None):
         # been reached anyways.
         pass;
         
-        
     elif node.label == AST_RETURN_STATEMENT:
         # should keep track of all identifiers that could be touched
         # by returning.
+
+        return_list = node.children[0]
+
         readIndex = typeStack.getReadIndex();
-        for childNode in node.children:
+        for childNode in return_list.children:
             slicer(childNode,functionDeps,typeStack);
             
         returnStatementReads = typeStack.getReadsAfter(readIndex);
         typeStack.addReturnStatement(returnStatementReads);
+
         
     elif node.label == AST_FUNCTION_CALL:
         funcCallNameNode = node.children[0];
@@ -238,74 +241,83 @@ def slicer(node,functionDeps=None,typeStack=None):
             typeStack.annotateNode(funcCallNameNode,funcCallName);
 
 
-
     elif node.label == AST_ASSIGNMENT_STATEMENT:
-        # left-hand side can only be a bracket statement or an
-        # identifier according to type checking.
-        lhsNode = node.children[0];
-        
-        rhsNode = node.children[1];
-        if lhsNode.label == AST_IDENTIFIER:
-            nodeName = lhsNode.value;
-            readIndex = typeStack.getReadIndex();
-            slicer(rhsNode,functionDeps,typeStack);
 
-            # gets passed to emitter
-            typeStack.annotateNode(lhsNode,nodeName);
-            
-            # contains all reads that may have been made from
-            # executing rhs of code.
-            readsMadeByRhs = typeStack.getReadsAfter(readIndex);
+        # contains the tuple that we are assigning in to (note that unless
+        # we're assigning from a function call, the tuple will only ever
+        # have one vaue).
+        to_assign_to_tuple_node = node.children[0]
 
-            # tell typeStack that this variable may get written to and
-            # its written to value depends on the values that the rhs reads made.
-            ntt = typeStack.getIdentifier(nodeName);
-            typeStack.addToVarReadSet(ntt);
-            typeStack.addReadsToVarReadSet(ntt,readsMadeByRhs);
+        # the rhs of the assignment statement
+        to_assign_from_node = node.children[1]
 
-        elif lhsNode.label == AST_BRACKET_STATEMENT:
-            toReadFromNode = lhsNode.children[0];
-            # toReadFromNode can either be an identifier or a function call
-            if toReadFromNode.label == AST_IDENTIFIER:
-                nodeName = toReadFromNode.value;
-                readIndex = typeStack.getReadIndex();
 
+        # notes all the dependencies we get from rhs
+        from_read_index = typeStack.getReadIndex()
+        slicer(to_assign_from_node,functionDeps,typeStack)
+        reads_made_by_to_assign_from = typeStack.getReadsAfter(from_read_index)
+
+
+        for to_assign_to_node in to_assign_to_tuple_node.children:
+            actual_assign_node = to_assign_to_node
+            if ((to_assign_to_node.label == AST_EXT_ASSIGN_FOR_TUPLE) or
+                (to_assign_to_node.label == AST_EXT_COPY_FOR_TUPLE)):
+                actual_assign_node = to_assign_to_node.children[0]
+
+            if actual_assign_node.label == AST_IDENTIFIER:
+
+                nodeName = actual_assign_node.value
                 # gets passed to emitter
-                typeStack.annotateNode(toReadFromNode,nodeName);
-                
-                slicer(rhsNode,functionDeps,typeStack);
-                
-                readsMadeByRhs = typeStack.getReadsAfter(readIndex);
-                ntt = typeStack.getIdentifier(nodeName);
-                typeStack.addToVarReadSet(ntt);
-                typeStack.addReadsToVarReadSet(ntt,readsMadeByRhs);
+                typeStack.annotateNode(actual_assign_node,nodeName)
 
-                # add all identifiers to function that results from
-                # accessing map identifier.
-                # FIXME: lkjs; may add to read set.
-                slicer(lhsNode,functionDeps,typeStack);
-                indexNode = lhsNode.children[1];
-                
+                # tell typeStack that this variable may get written to and
+                # its written to value depends on the values that the rhs reads made.
+                ntt = typeStack.getIdentifier(nodeName)
+                typeStack.addToVarReadSet(ntt)
+                typeStack.addReadsToVarReadSet(ntt,reads_made_by_to_assign_from)
+
+            elif actual_assign_node.label == AST_BRACKET_STATEMENT:
+                toReadFromNode = actual_assign_node.children[0];
+                # toReadFromNode can either be an identifier or a function call
+                if toReadFromNode.label == AST_IDENTIFIER:
+                    nodeName = toReadFromNode.value;
+                    # gets passed to emitter
+                    typeStack.annotateNode(toReadFromNode,nodeName);
+
+                    ntt = typeStack.getIdentifier(nodeName);
+                    typeStack.addToVarReadSet(ntt);
+                    typeStack.addReadsToVarReadSet(ntt,reads_made_by_to_assign_from);
+
+                    # add all identifiers to function that results from
+                    # accessing map identifier.
+                    # FIXME: lkjs; may add to read set.
+                    slicer(actual_assign_node,functionDeps,typeStack);
+                    indexNode = actual_assign_node.children[1];
+
+                else:
+                    # NOTE: Based on current type checking rules in
+                    # typeCheck.py's switch statement for the assignment
+                    # statement, it is impossible to assign into an
+                    # element that is directly returned by a function
+                    # call.  (Eg.  funcCall()[1] = 2;) Therefore should
+                    # not go down this path.  If change rule in
+                    # typeCheck.py, then change this as well.
+                    errMsg = '\nBehram error: Type checking should have prevented ';
+                    errMsg += 'case where assigning to ';
+                    errMsg += "a function call's bracket index.\n";
+                    print(errMsg);
+                    assert(False);
+
             else:
-                # NOTE: Based on current type checking rules in
-                # typeCheck.py's switch statement for the assignment
-                # statement, it is impossible to assign into an
-                # element that is directly returned by a function
-                # call.  (Eg.  funcCall()[1] = 2;) Therefore should
-                # not go down this path.  If change rule in
-                # typeCheck.py, then change this as well.
-                errMsg = '\nBehram error: Type checking should have prevented ';
-                errMsg += 'case where assigning to ';
-                errMsg += "a function call's bracket index.\n";
+                errMsg = '\nError in assignment statement.  LHS is only '
+                errMsg += 'allowed to be a bracket statement, identifier, '
+                errMsg += 'or extAssign/extCopy tuple statement.\n'
                 print(errMsg);
                 assert(False);
 
-        else:
-            errMsg = '\nError in assignment statement.  LHS is only ';
-            errMsg += 'allowed to be a bracket statement or identifier.\n';
-            print(errMsg);
-            assert(False);
 
+            
+            
     elif ((node.label == AST_STRING) or (node.label == AST_NUMBER) or
           (node.label == AST_BOOL)):
         # nothing to do on literals
