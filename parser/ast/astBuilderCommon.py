@@ -225,7 +225,6 @@ def p_FunctionType(p):
         
     p[0].addChildren([inToAdd, returnsToAdd]);
 
-    
 
 def p_FunctionTypeList(p):
     '''

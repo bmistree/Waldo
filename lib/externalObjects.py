@@ -346,7 +346,7 @@ class ExternalFs(ExternalMap):
         return val_to_check in self.val
 
     def _get_dict_of_filenames_on_fs(self):
-        dict_of_filenames = []
+        dict_of_filenames = {}
         for root_dir,dirs,filenames in os.walk(self.folder_name):
             for filename in filenames:
                 if (filename == '.') or (filename == '..'):

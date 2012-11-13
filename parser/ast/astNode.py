@@ -8,6 +8,12 @@ import d3.treeDraw as treeDraw
 
 
 class AstNode():
+
+    # quite a hack.  the emitter occasionally needs to create nodes on
+    # the fly, with annotation values that do not conflict with any
+    # other annotation values.  Can use these to handle this
+    NULL_ANNOTATION_NAME = ''
+    NULL_ANNOTATION_TYPE_HUMAN_READABLE = ''
     
     def __init__(self,_label,_lineNo=None,_linePos=None,_value=None):
         '''

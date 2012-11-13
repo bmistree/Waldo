@@ -182,12 +182,37 @@ _extInterfaceCleanup = _ExtInterfaceCleanup(
     [%s],self._externalStore,self._endpointName);
 _extInterfaceCleanup.start();
 
+_new_returner = []
 ''' % extArgString
 
-    publicMethodBody += 'return _returner'
-    if _returnTypeIsNonExternalMapOrList(funcNode):
-        # copies waldo list/map object into regular python list/dict
-        publicMethodBody += '._map_list_copy_return()'
+    return_node = _get_func_return_node(funcNode)
+
+    for return_node_counter in range(0,len(return_node.children)):
+        return_type_node  = return_node.children[return_node_counter]
+        
+        if (TypeCheck.templateUtil.isMapType(return_type_node.type) or
+            TypeCheck.templateUtil.isListType(return_type_node.type)):
+            
+            if return_type_node.external != None:
+                # copy the return node
+                publicMethodBody += '''
+_new_returner.append(_returner[%s]._map_list_copy_return())
+''' % str(return_node_counter)
+                continue
+
+        publicMethodBody += '''
+_new_returner.append(_returner[%s])
+''' % str(return_node_counter)
+
+        
+    
+    publicMethodBody += '''
+if len(_new_returner) == 1:
+    return _returner[0]
+
+return tuple(_new_returner)
+
+'''
     publicMethodBody += '\n'
 
 
@@ -195,26 +220,16 @@ _extInterfaceCleanup.start();
     returner += '\n';
     return returner
 
-def _returnTypeIsNonExternalMapOrList(func_node):
+
+def _get_func_return_node(func_node):
     '''
-    @returns {Bool} --- True if the return type of func_node is a map
-    or a list that is not external.  False otherwise.
-    
     Note: asserts out if func_node isn't private or public.
     '''
     return_node_index = _getReturnTypeIndexFromFuncNodeLabel(
         func_node.label)
     
     return_node = func_node.children[return_node_index]
-
-
-    if (TypeCheck.templateUtil.isMapType(return_node.type) or
-        TypeCheck.templateUtil.isListType(return_node.type)):
-
-        if return_node.external == None:
-            return True
-
-    return False
+    return return_node
     
 
 def _argIsNonExternalMap(func_node,arg_name):
@@ -493,10 +508,10 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
 # special-cased return statement
 if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_RESUME_POSTPONE:
     # note that also commit outstanding changes to context here.
-    _actEvent.setCompleted(None,_context);
+    _actEvent.setCompleted([None],_context);
     return;
 elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
-    return None;
+    return [None];
 """;
         
     returner += emitUtils.indentString(funcBody,1);

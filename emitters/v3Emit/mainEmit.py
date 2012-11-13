@@ -9,6 +9,7 @@ import emitUtils;
 from parser.ast.astLabels import *
 import parser.ast.typeCheck as TypeCheck
 from parser.ast.astBuilderCommon import isEmptyNode
+from parser.ast.astNode import AstNode
 
 from slice.typeStack import TypeStack
 
@@ -367,46 +368,101 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             returner += fromBodyString;
 
     elif astNode.label == AST_ASSIGNMENT_STATEMENT:
-        lhsNode = astNode.children[0];
-        rhsNode = astNode.children[1];
+        to_assign_to_tuple_node = astNode.children[0]
+        to_assign_from_node = astNode.children[1]
 
-        if ((lhsNode.label == AST_BRACKET_STATEMENT) and
-            (lhsNode.children[0].type != TYPE_STRING)):
-            # inserting into map or list.  need to call insert
-            # directly on map/list structure.  note second condition
-            # is necessary because can have a bracket statement
-            # wherein we're accessing indices of a string.
+        rhs_emitted = emit(
+            endpointName,to_assign_from_node,fdepDict,emitContext)
 
-            indexed_into_node = lhsNode.children[0]
-            index_node = lhsNode.children[1]
+        is_rhs_func_call = False
+        if to_assign_from_node.label == AST_FUNCTION_CALL:
+            returner += '_tmp_return_array = '
+            returner += rhs_emitted
+            returner += '\n'
+            is_rhs_func_call = True
+
+
+        for assign_to_counter in range(0,len(to_assign_to_tuple_node.children)):
+
+            individual_assign_to_node = to_assign_to_tuple_node.children[assign_to_counter]
+
+            if ((individual_assign_to_node.label == AST_EXT_ASSIGN_FOR_TUPLE) or
+                (individual_assign_to_node.label == AST_EXT_COPY_FOR_TUPLE)): 
+                                
+                # create an ast_ext_assign set of nodes out of this
+                # instead, pointing at _waldo_secret_tmp, which
+                # contains contents of _tmp_return_array
+                returner += '''
+# trying to assign or copy to an external from a function call's tuple return.
+# first copy the value out from the _tmp_return_array and then
+# take that value and assign into using it
+_waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
+''' % str(assign_to_counter)
+
+                # secret identifier node serves as the assign from node
+                from_node = AstNode(AST_IDENTIFIER,0,0,'_waldo_secret_ext_assign_copy_from_func_tmp')
+                from_node.setSliceAnnotation(
+                    AstNode.NULL_ANNOTATION_NAME,
+                    TypeStack.IDENTIFIER_TYPE_LOCAL,
+                    AstNode.NULL_ANNOTATION_TYPE_HUMAN_READABLE)
+
+                
+                to_node = individual_assign_to_node.children[0]
+                created_node = AstNode(AST_EXT_COPY,0,0)
+                if individual_assign_to_node.label == AST_EXT_ASSIGN_FOR_TUPLE:
+                    created_node = AstNode(AST_EXT_ASSIGN,0,0)
+                    
+                created_node.addChildren([from_node,to_node])
+                emit(endpointName,created_node,fdepDict,emitContext)
+
             
-            # format:
-            #   <toIndexInto>._map_list_index_insert(<index>,<to insert>)
-            
-            if indexed_into_node.external != None:
-                emitContext.suppress_get_on_external = True
-                # need to notate that the external was written to
-                # so that it gets updated.
-                returner += '_context.notateWritten('
+            elif ((individual_assign_to_node.label == AST_BRACKET_STATEMENT) and
+                (individual_assign_to_node.children[0].type != TYPE_STRING)):
+                # inserting into map or list.  need to call insert
+                # directly on map/list structure.  note second condition
+                # is necessary because can have a bracket statement
+                # wherein we're accessing indices of a string.
+
+                indexed_into_node = individual_assign_to_node.children[0]
+                index_node = individual_assign_to_node.children[1]
+                # format:
+                #   <toIndexInto>._map_list_index_insert(<index>,<to insert>)
+
+                if indexed_into_node.external != None:
+                    emitContext.suppress_get_on_external = True
+                    # need to notate that the external was written to
+                    # so that it gets updated.
+                    returner += '_context.notateWritten('
+                    returner += emit(
+                        endpointName,indexed_into_node,fdepDict,emitContext)
+                    returner += '.id)\n'
+
                 returner += emit(
                     endpointName,indexed_into_node,fdepDict,emitContext)
-                returner += '.id)\n'
+                emitContext.suppress_get_on_external = False
+                
+                returner += '._map_list_index_insert('
+                returner += emit(endpointName,index_node,fdepDict,emitContext)
+                returner += ','
 
-            returner += emit(
-                endpointName,indexed_into_node,fdepDict,emitContext)
-            emitContext.suppress_get_on_external = False
+                if is_rhs_func_call:
+                    returner += '_tmp_return_array[' + str(assign_to_counter) + ']'
+                else:
+                    returner += rhs_emitted
+                returner += ')'
+                
+            else:
+                returner += emit(
+                    endpointName,individual_assign_to_node,fdepDict,emitContext)
+                returner += ' = ';
+                if is_rhs_func_call:
+                    returner += '_tmp_return_array[' + str(assign_to_counter) + ']'
+                else:
+                    returner += rhs_emitted
+            returner += '\n'
+        
+
             
-            returner += '._map_list_index_insert('
-            returner += emit(endpointName,index_node,fdepDict,emitContext)
-            returner += ','
-            returner += emit(endpointName,rhsNode,fdepDict,emitContext)
-            returner += ')'
-
-        else:
-            returner += emit(endpointName,lhsNode,fdepDict,emitContext)
-            returner += ' = ';
-            returner += emit(endpointName,rhsNode,fdepDict,emitContext);
-
     elif astNode.label == AST_PRINT:
         toPrintNode = astNode.children[0];
         returner += 'print( ';
@@ -495,18 +551,27 @@ def emit(endpointName,astNode,fdepDict,emitContext):
         valText = emit(endpointName,valNode,fdepDict,emitContext);
         returner += keyText + ': ' + valText;
 
-    elif astNode.label == AST_RETURN_STATEMENT:
-        retStatementNode = astNode.children[0];
 
-        if isEmptyNode(retStatementNode):
-            toReturnStatementText = 'None';
-        else:
-            # FIXME
-            if retStatementNode.external != None:
+    elif astNode.label == AST_RETURN_STATEMENT:
+        ret_list_node = astNode.children[0];
+
+        # all returend objects are returned as lists
+        to_return_statement_text = '['
+
+        if len(ret_list_node.children) == 0:
+            to_return_statement_text += 'None'
+
+        for ret_item_node in ret_list_node.children:
+
+            if ret_item_node.external != None:
                 emitContext.suppress_get_on_external = True
-            toReturnStatementText = emit(endpointName,retStatementNode,fdepDict,emitContext);
+
+            to_return_statement_text += emit(
+                endpointName,ret_item_node,fdepDict,emitContext);
+            to_return_statement_text += ','
             emitContext.suppress_get_on_external = False;
-            
+
+        to_return_statement_text += ']'
         # need to special-case return statement so that can notify
         # waiting blocking statement through return queue.
         returner +='''
@@ -516,8 +581,9 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_RESUME_POSTPONE:
     _actEvent.setCompleted(%s,_context);
     return;
 elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
-    return %s;
-''' % (toReturnStatementText,toReturnStatementText);
+    return %s; 
+''' % (to_return_statement_text,to_return_statement_text)
+
         
     elif _isBinaryOperatorLabel(astNode.label):
         lhsNode = astNode.children[0];
@@ -615,12 +681,13 @@ _context.notateWritten(_ext_obj.id)
         to_assign_to_node = astNode.children[1]
 
         to_assign_to_node._debugErrorIfHaveNoAnnotation(
-            'ast_ext_assign mainEmit.py')
+            'ast_ext_assign to mainEmit.py')
         ext_to_var_id = to_assign_to_node.sliceAnnotationName
         ext_to_name = to_assign_to_node.value
-        
+
+
         to_assign_from_node._debugErrorIfHaveNoAnnotation(
-            'ast_ext_assign mainEmit.py')
+            'ast_ext_assign from mainEmit.py')
         ext_from_var_id = to_assign_from_node.sliceAnnotationName
         ext_from_name = to_assign_from_node.value
 
