@@ -19,6 +19,7 @@ class TCPFireEvent(threading.Thread):
         self.tcp_conn_obj = tcp_conn_obj
         self.msg_dict = msg_dict
         threading.Thread.__init__(self)
+        
     def run(self):
         local_endpoint = self.tcp_conn_obj.local_endpoint
         #### DEBUG
@@ -40,6 +41,7 @@ class TCPListeningThread(threading.Thread):
     def __init__(self,tcp_connection_object):
         self.tcp_connection_object = tcp_connection_object
         threading.Thread.__init__(self)
+        self.setDaemon(True)
         
     def run(self):
         self.tcp_connection_object._start_listening_loop()

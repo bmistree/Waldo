@@ -30,18 +30,6 @@ You can run as many clients as you like.  The client prompts the user
 for which files he/she wants to read from and write to.  Currently,
 clients are not permitted to create new directories or delete files.
     
-
-===Killing the code===
-
-Waldo does not shutdown cleanly.  Modify killScript.py in
-../utils to use your username.  To kill your client, just run:
-
-  ../utils/killScript.py ./client.py
-
-To kill your server, just run:
-
-  ../utils/killScript.py ./server.py
-
   
 ===Server application code===
 
