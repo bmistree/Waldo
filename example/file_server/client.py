@@ -45,14 +45,20 @@ def run():
 
         print '\n\n'            
         if action == 'read':
-            str_returned = client.get(filename,'')
-            print 'Got back: "' + str_returned + '"'
+            read_succeed, str_returned = client.get(filename)
+            if not read_succeed:
+                print 'No file named "' + filename + '"'
+            else:
+                print 'Got back: "' + str_returned + '"'
         elif action == 'write':
             client.write(filename,contents)
             print 'Contents have been written.'
         elif action == 'remove':
-            client.delete_file(filename)
-            print 'Contents have been removed.'
+            del_worked = client.delete_file(filename)
+            if not del_worked:
+                print 'No file named "' + filename + '"'
+            else:
+                print 'Contents have been removed.'
         else:
             print 'Invalid action selected.  Try again.'
             

@@ -5,21 +5,29 @@ Endpoint Server;
 
 Sequences{
 
-    GetSequence: Client.issue_get -> Server.get_response -> Client.process_get_response;
+    GetSequence:
+        Client.issue_get ->
+        Server.get_response ->
+        Client.process_get_response;
 
-    WriteSequence: Client.issue_write -> Server.write_response;
+    WriteSequence:
+        Client.issue_write ->
+        Server.write_response;
 
-    DelFileSequence: Client.del_file ->  Server.del_file_response;
-    
+    DelFileSequence:
+        Client.del_file ->
+        Server.del_file_response ->
+        Client.del_file_set_op_successful;
 }
 
 
-Sequence GetSequence(Text filename,Text default)
+Sequence GetSequence(Text filename)
 {
     // shared for the lifetime of the sequence by both client and
     // server.  
     Text sequence_val;
-
+    TrueFalse file_existed;
+    
     /**
       Both filename and default are automatically added as shared
       variables scoped to the lifetime of the sequence.  Note: if they
@@ -32,9 +40,14 @@ Sequence GetSequence(Text filename,Text default)
     {
         // to handle case where requested file does not exist in map
         if (filename in ext_map)
+        {
             sequence_val = ext_map[filename];
+            file_existed = True;
+        }
         else
-            sequence_val = default;
+        {
+            file_existed = False;
+        }
     }
     
     Client.process_get_response
@@ -42,17 +55,29 @@ Sequence GetSequence(Text filename,Text default)
         // contents of file is returned by placing in Client's
         // gotten_val variable.
         gotten_val = sequence_val;
+        op_successful = file_existed;
     }
 }
 
 Sequence DelFileSequence(Text filename)
 {
+    TrueFalse file_existed = False;
+    
     Client.del_file
     {}
     
     Server.del_file_response
     {
-        ext_map.remove(filename);
+        if (filename in ext_map)
+        {
+            ext_map.remove(filename);
+            file_existed = True;
+        }            
+    }
+
+    Client.del_file_set_op_successful
+    {
+        op_successful = file_existed;
     }
 }
 
@@ -81,16 +106,19 @@ Client
     // used to transfer file contents from message sequence to
     // function that calls that sequence
     Text gotten_val;
+    TrueFalse op_successful;
 
     /**
       Initiates GetSequence.  Returns contents of file named
       filename.  If filename does not exist on server, returns default
       instead.
     */
-    Public Function get(Text filename,Text default) returns Text
+    Public Function get(Text filename)
+        returns TrueFalse,Text
     {
-        issue_get(filename,default);
-        return gotten_val;
+        gotten_val = '';
+        issue_get(filename);
+        return op_successful,gotten_val;
     }
 
     /**
@@ -101,9 +129,10 @@ Client
         issue_write(filename,to_write);
     }
 
-    Public Function delete_file(Text filename)
+    Public Function delete_file(Text filename) returns TrueFalse
     {
         del_file(filename);
+        return op_successful;
     }
 
     
