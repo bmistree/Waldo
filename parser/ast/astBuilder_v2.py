@@ -223,6 +223,7 @@ def p_FunctionBodyStatement(p):
                              | AssignmentStatement SEMI_COLON
                              | ConditionStatement
                              | ForStatement
+                             | WhileStatement
                              | PlusEqual SEMI_COLON
                              | MinusEqual SEMI_COLON
                              | DivideEqual SEMI_COLON

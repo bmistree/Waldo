@@ -115,6 +115,14 @@ def slicer(node,functionDeps=None,typeStack=None):
                 
         typeStack.popContext();
 
+    elif node.label == AST_WHILE_STATEMENT:
+        bool_cond = node.children[0]
+        body = node.children[1]
+
+        slicer(bool_cond,functionDeps,typeStack)
+        slicer(body,functionDeps,typeStack)
+        
+        
     elif node.label == AST_FOR_STATEMENT:
         if len(node.children) == 3:
             identifierNodeIndex = 0;

@@ -38,6 +38,7 @@ reserved = {
     'controls': 'CONTROLS',
     'and': 'AND',
     'or': 'OR',
+    'while': 'WHILE',
     'for': 'FOR',
     'range': 'RANGE',
     'keys': 'KEYS',

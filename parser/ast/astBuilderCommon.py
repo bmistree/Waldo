@@ -696,6 +696,16 @@ def p_OnCompleteFunction(p):
     p[0].addChild(functionBodyToAdd);
 
 
+def p_WhileStatement(p):
+    '''
+    WhileStatement : WHILE LEFT_PAREN ReturnableExpression RIGHT_PAREN SingleLineOrMultilineCurliedBlock
+    '''
+    p[0] = AstNode(AST_WHILE_STATEMENT,p.lineno(1),p.lexpos(1))
+    bool_cond = p[3]
+    body = p[5]
+    p[0].addChildren([bool_cond,body])
+    
+    
 def p_ForStatement (p):
     '''
     ForStatement : FOR LEFT_PAREN Identifier IN ReturnableExpression RIGHT_PAREN SingleLineOrMultilineCurliedBlock

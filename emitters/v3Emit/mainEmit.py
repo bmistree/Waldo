@@ -87,6 +87,20 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             print(idAnnotationType);
             assert(False);
 
+    elif astNode.label == AST_WHILE_STATEMENT:
+        bool_cond_node = astNode.children[0]
+        body_node = astNode.children[1]
+        
+        returner += '\n'
+        returner +='while ('
+        returner += emit(endpointName,bool_cond_node,fdepDict,emitContext)
+        returner += '):\n'
+
+        body_str = emit(endpointName,body_node,fdepDict,emitContext)
+        returner += emitUtils.indentString(body_str,1);
+        returner += '\n'
+        
+            
     elif astNode.label == AST_FOR_STATEMENT:
         returner += '\n';
         if len(astNode.children) == 3:

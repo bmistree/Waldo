@@ -163,6 +163,24 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(err_msg,err_nodes,err_line_nos,progText)
             return
 
+    elif node.label == AST_WHILE_STATEMENT:
+        bool_cond = node.children[0]
+        body = node.children[1]
+
+        bool_cond.typeCheck(progText,typeStack,avoidFunctionObjects)
+
+        if bool_cond.type != TYPE_BOOL:
+            err_msg = 'Error in predicate of while loop.  Should have '
+            err_msg += 'TrueFalse type.  Instead, has type ' + bool_cond.type
+            err_msg += '.'
+            err_nodes = [bool_cond]
+            err_line_nos = [bool_cond.lineNo]
+            errorFunction(err_msg,err_nodes,err_line_nos,progText)
+            return
+        
+        body.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+        
     elif node.label in [AST_EXT_ASSIGN_FOR_TUPLE, AST_EXT_COPY_FOR_TUPLE]:
 
         # used for error message printing
