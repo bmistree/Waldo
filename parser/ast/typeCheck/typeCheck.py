@@ -598,9 +598,19 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckListBracket(
                 toReadFrom,index,typeStack,progText);
 
+        elif toReadFrom.type == TYPE_STRING:
+            typeError = False
+            if index.type != TYPE_NUMBER:
+                typeError = True
+                typeErrorMsg = 'Error when reading a single character from a Text.  You '
+                typeErrorMsg += 'must use a number to index into the Text object.'
+                typeErrorNodes = [index]
+
+            statementType = TYPE_STRING
+            
         else:
             typeError = True;
-            typeErrorMsg = 'You can only index into a map type or list type.  ';
+            typeErrorMsg = 'You can only index into a map type, list type, or Text type.  ';
             typeErrorMsg += 'Instead, you are trying to index into a [ ';
             typeErrorMsg += toReadFrom.type + ' ].\n';
             typeErrorNodes = [toReadFrom];
