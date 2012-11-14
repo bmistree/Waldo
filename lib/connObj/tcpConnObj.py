@@ -4,6 +4,7 @@ import socket
 from connectionObject import ConnectionObject
 import json
 import threading
+import inspect
 
 
 class TCPFireEvent(threading.Thread):
@@ -131,8 +132,41 @@ class TCPConnectionObject(ConnectionObject):
             self.received_data += data
             self._decapsulate_msg_and_dispatch()
 
+
+    def _convert_string_remove_funcs(self,dict_to_convert):
+        '''
+        @param {dict} dict_to_convert
+        '''
+        # FIXME: hard coded context field name
+
+        seq_field = None
+        old_seq_dict = None
+        if 'context' in dict_to_convert:
+
+            new_seq_dict = {}
+            seq_field = dict_to_convert['context']['seqGlobals']
+            
+            for key in seq_field:
+                # trying to filter out functions
+                item = seq_field[key]
+                if not inspect.isroutine(item):
+                    new_seq_dict[key] = item
+
+            old_seq_dict = seq_field
+
+            dict_to_convert['context']['seqGlobals'] = new_seq_dict
+                    
+        to_return =  json.dumps(dict_to_convert)
+
+        if old_seq_dict != None:
+            dict_to_convert['context']['seqGlobals'] = old_seq_dict
+        
+        return to_return
+        
+        
+            
     def _encapsulate_msg(self,dict_to_write):
-        str_to_escape = json.dumps(dict_to_write)
+        str_to_escape = self._convert_string_remove_funcs(dict_to_write)
         to_return = str_to_escape.replace(
             self.MSG_HEADER,self.MSG_HEADER+self.MSG_HEADER)
 
