@@ -1310,7 +1310,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg = '\nError in predicate of condition statement.  Should have ';
             errMsg += 'TrueFalse type.  Instead, ';
             if (node.children[0].type != None):
-                errMsg += 'has type ' + node.children[0].type;
+                errMsg += 'has type ' + str(node.children[0].type)
             else:
                 errMsg += 'cannot infer type';
             errMsg += '.\n';
