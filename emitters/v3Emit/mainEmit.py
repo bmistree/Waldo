@@ -849,7 +849,7 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     funcName = funcNameNode.value;
     funcArgListNode = funcCallNode.children[1];
 
-
+    
     if funcNameNode.sliceAnnotationName != None:
         # means that this is a function object that we are making call
         # on....use its reference either as a shared, arg, global, etc.
@@ -950,6 +950,14 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             first = False
 
             returner += emit(endpointName,arg_node,fdepDict,emitContext)
+
+            # want to return the actual list or map in the callback
+            # rather than the _WaldoList or _WaldoMap
+            if (TypeCheck.templateUtil.isMapType(arg_node.type) or
+                TypeCheck.templateUtil.isListType(arg_node.type)):
+                returner += '._map_list_serializable_obj()'
+
+            
     returner +=  ')'
 
     
