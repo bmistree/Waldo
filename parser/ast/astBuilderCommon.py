@@ -1052,7 +1052,7 @@ def p_FunctionDeclArg(p):
     '''FunctionDeclArg : Type Identifier'''
     p[0] = AstNode(AST_FUNCTION_DECL_ARG,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[2]]);
-    
+
 
 def p_Declaration(p):
     '''Declaration : Type Identifier

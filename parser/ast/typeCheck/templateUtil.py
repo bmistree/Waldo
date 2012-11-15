@@ -461,14 +461,19 @@ def buildFuncTypeSignature(node,progText,typeStack):
             
             typeNode.typeCheck(progText,typeStack);
 
-            if (isTemplatedType(typeNode.type)):
-                inputTypes.append(json.loads(typeNode.type));
-            else:
-                toAppend = {
-                    JSON_TYPE_FIELD: typeNode.type
-                    };
-                inputTypes.append(toAppend);
-                
+            # if (isTemplatedType(typeNode.type)):
+            #     inputTypes.append(json.loads(typeNode.type));
+            # else:
+            #     toAppend = {
+            #         JSON_TYPE_FIELD: typeNode.type
+            #         };
+            #     inputTypes.append(toAppend);
+
+            toAppend = {
+                JSON_TYPE_FIELD: typeNode.type
+                };
+            inputTypes.append(toAppend);
+            
     returner[JSON_FUNC_IN_FIELD] = inputTypes;
 
     ##### HANDLE OUTPUT ARGS #####
