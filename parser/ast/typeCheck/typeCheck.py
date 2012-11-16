@@ -18,9 +18,6 @@ from typeCheckUtil import *;
 from templateUtil import *;
 
 
-def isEmptyAstNode(node):
-    return (node.type == "EMPTY");
-
 
 def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     '''
