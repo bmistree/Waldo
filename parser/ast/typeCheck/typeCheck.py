@@ -152,8 +152,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             to_node,to_node.type,from_node.type,typeStack,progText):
 
             err_msg = 'Error in copying value to external.  External '
-            err_msg += 'has type ' + to_node.type + ', but copied value '
-            err_msg += 'has type ' + from_node.type +'.'
+            err_msg += 'has type ' + dict_type_to_str(to_node.type)
+            err_msg += ', but copied value '
+            err_msg += 'has type ' + dict_type_to_str(from_node.type) +'.'
 
             err_nodes = [to_node,from_node]
             err_line_nos = [x.lineNo for x in err_nodes]
@@ -168,7 +169,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         if bool_cond.type != TYPE_BOOL:
             err_msg = 'Error in predicate of while loop.  Should have '
-            err_msg += 'TrueFalse type.  Instead, has type ' + bool_cond.type
+            err_msg += 'TrueFalse type.  Instead, has type '
+            err_msg += dict_type_to_str( bool_cond.type )
             err_msg += '.'
             err_nodes = [bool_cond]
             err_line_nos = [bool_cond.lineNo]
