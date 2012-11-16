@@ -34,11 +34,11 @@ def _deepCopy(valToCopy):
     if isinstance(valToCopy, dict):
         returner = {};
         for key in valToCopy:
-            returner[ _deepCopy(key) ] = _deepCopy(valToCopy);
+            returner[ _deepCopy(key) ] = _deepCopy(valToCopy[key]);
     elif isinstance(valToCopy,list):
         returner = [];
         for index in range(0,len(valToCopy)):
-            returner[ index ] = _deepCopy(valToCopy);
+            returner.append(_deepCopy(valToCopy[index]))
     elif (isinstance(valToCopy, numbers.Number) or
           isinstance(valToCopy, basestring) or
           isinstance(valToCopy,bool)):
