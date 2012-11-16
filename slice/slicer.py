@@ -695,9 +695,9 @@ def isMutable(nodeTypeNode):
     False otherwise.
     '''
     if nodeTypeNode.label == AST_TYPE:
-        if templateUtil.isListType(nodeTypeNode.value):
+        if templateUtil.isListType(nodeTypeNode.type):
             return True;
-        if templateUtil.isMapType(nodeTypeNode.value):
+        if templateUtil.isMapType(nodeTypeNode.type):
             return True;
 
     return False;

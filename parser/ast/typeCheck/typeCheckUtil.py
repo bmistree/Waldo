@@ -22,6 +22,7 @@ def resetErrorEncountered():
 
 
 
+
 def errorFunction(errorString,astNodes,lineNumbers,progText):
     setErrorEncountered();
     '''

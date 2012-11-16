@@ -11,7 +11,7 @@ from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
-from astTypeCheckStack import createFuncMatchObjFromJsonStr;
+from astTypeCheckStack import createFuncMatchObjFromFuncTypeDict
 from parser.ast.parserUtil import errPrint;
 
 from typeCheckUtil import *;
@@ -152,8 +152,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             to_node,to_node.type,from_node.type,typeStack,progText):
 
             err_msg = 'Error in copying value to external.  External '
-            err_msg += 'has type ' + to_node.type + ', but copied value '
-            err_msg += 'has type ' + from_node.type +'.'
+            err_msg += 'has type ' + dict_type_to_str(to_node.type)
+            err_msg += ', but copied value '
+            err_msg += 'has type ' + dict_type_to_str(from_node.type) +'.'
 
             err_nodes = [to_node,from_node]
             err_line_nos = [x.lineNo for x in err_nodes]
@@ -166,9 +167,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         bool_cond.typeCheck(progText,typeStack,avoidFunctionObjects)
 
-        if bool_cond.type != TYPE_BOOL:
+        if not is_true_false(bool_cond.type):
             err_msg = 'Error in predicate of while loop.  Should have '
-            err_msg += 'TrueFalse type.  Instead, has type ' + bool_cond.type
+            err_msg += 'TrueFalse type.  Instead, has type '
+            err_msg += dict_type_to_str( bool_cond.type )
             err_msg += '.'
             err_nodes = [bool_cond]
             err_line_nos = [bool_cond.lineNo]
@@ -248,8 +250,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             to_node,to_node.type,from_node.type,typeStack,progText):
 
             err_msg = 'Error in assigning value to external.  External '
-            err_msg += 'has type ' + to_node.type + ', but copied value '
-            err_msg += 'has type ' + from_node.type +'.'
+            err_msg += 'has type ' + dict_type_to_str(to_node.type)
+            err_msg += ', but copied value '
+            err_msg += 'has type ' + dict_type_to_str(from_node.type) +'.'
 
             err_nodes = [to_node,from_node]
             err_line_nos = [x.lineNo for x in err_nodes]
@@ -267,13 +270,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             progText,typeStack,avoidFunctionObjects)
 
         # do not get anything back when remove the element
-        node.type = TYPE_NOTHING
+        node.type = generate_type_as_dict(TYPE_NOTHING)
 
 
         # most of the type checking is on the indices to ensure that
         # they remove the same type 
         if isMapType(to_remove_from_node.type):
-            if to_remove_from_node.type == EMPTY_MAP_SENTINEL:
+            if is_empty_map(to_remove_from_node.type):
                 err_msg = 'Error in remove statement.  Cannot '
                 err_msg += 'call remove directly on an empty map.'
                 errorFunction(
@@ -293,7 +296,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     
         elif isListType(to_remove_from_node.type):
 
-            if to_remove_index.type != TYPE_NUMBER:
+            if not is_number(to_remove_index.type):
                 err_msg = 'Error in remove statement.  To remove from List'
                 err_msg += ', you must pass a Number to '
                 err_msg += 'remove.  You passed a ' + to_remove_index.type
@@ -333,8 +336,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             typeNode = node.children[identifierTypeNodeIndex];
             typeNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-            declaredIdType = typeNode.value;
-            node.type = TYPE_NOTHING;
+            declaredIdType = typeNode.type;
+            node.type = generate_type_as_dict(TYPE_NOTHING)
 
             identifierNode = node.children[identifierNodeIndex];
             identifierName = identifierNode.value;
@@ -372,18 +375,21 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         toIterateNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         if isMapType(toIterateNode.type):
-            if toIterateNode.type == EMPTY_MAP_SENTINEL:
+            if is_empty_map(toIterateNode.type):
                 pass;
             else:
                 indexType = getMapIndexType(toIterateNode.type);
                 
                 if checkTypeMismatch(identifierNode,identifierNode.type,indexType,typeStack,progText):
                     errMsg = 'Error assigning identifier in for loop.  ';
-                    errMsg += identifierName + ' has type ' + identifierNode.type;
-                    errMsg += ', but map has keys with type ' +  indexType + '.';
+                    errMsg += identifierName + ' has type '
+                    errMsg += dict_type_to_str(identifierNode.type)
+                    errMsg += ', but map has keys with type '
+                    errMsg += dict_type_to_str(indexType) + '.';
                     errorFunction(errMsg,[identifierNode],[identifierNode.lineNo],progText);
+
         elif isListType(toIterateNode.type):
-            if toIterateNode.type == EMPTY_LIST_SENTINEL:
+            if is_empty_list(toIterateNode.type):
                 pass;
             else:
                 elementValueType = getListValueType(toIterateNode.type);
@@ -392,8 +398,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     identifierNode,identifierNode.type,elementValueType,
                     typeStack,progText):
                     errMsg = 'Error assigning identifier in for loop.  ';
-                    errMsg += identifierName + ' has type ' + identifierNode.type;
-                    errMsg += ', but list has elements with type ' +  elementValueType + '.';
+                    errMsg += identifierName + ' has type ' 
+                    errMsg += dict_type_to_str(identifierNode.type)
+                    errMsg += ', but list has elements with type '
+                    errMsg += dict_type_to_str(elementValueType) + '.';
                     errorFunction(errMsg,[identifierNode],[identifierNode.lineNo],progText);
 
         elif toIterateNode.type == AST_STRING:
@@ -401,13 +409,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 pass;
             else:
                 errMsg = 'Error assigning identifier in for loop.  ';
-                errMsg += identiferName + ' has type ' + identifierNode.type;
+                errMsg += identiferName + ' has type '
+                errMsg += dict_type_to_str(identifierNode.type)
                 errMsg += ', but you are trying to iterate over Text, so it should ';
                 errMsg += 'have type text.';
                 errorFunction(errMsg,[identifierNode],[identifierNode.lineNo],progText);
         else:
             errMsg = 'Error in for loop in statement.  Right hand side of in statement ';
-            errMsg += 'must be a map, list, or Text.  You provided a ' + toIterateNode.type;
+            errMsg += 'must be a map, list, or Text.  You provided a '
+            errMsg += dict_type_to_str(toIterateNode.type)
             errMsg += '.';
             errorFunction(errMsg,[toIterateNode],[toIterateNode.lineNo],progText);
                     
@@ -429,9 +439,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(errMsg,[toAppendToNode],[toAppendToNode.lineNo],
                           progText);
 
-        if toAppendToNode.type == EMPTY_LIST_SENTINEL:
-            nodeType = buildListTypeSignatureFromTypeName(toAppendNode.type);
-            node.type = json.dumps(nodeType);
+        if is_empty_list(toAppendToNode.type):
+            node.type = buildListTypeSignatureFromTypeName(toAppendNode.type);
         else:
             node.type = toAppendToNode.type;
             # check that the elements of the list match what we're appending
@@ -439,61 +448,65 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if checkTypeMismatch(toAppendToNode,listElemType,toAppendNode.type,
                                  typeStack,progText):
                 errMsg = 'Type mismatch when trying to append element.  List ';
-                errMsg += 'appending to has type ' + toAppendToNode.type + ', and ';
+                errMsg += 'appending to has type '
+                errMsg += dict_type_to_str(toAppendToNode.type) + ', and ';
                 errMsg += 'therefore you must append an element with type ';
-                errMsg += listElemType + '.  Instead, you appended an element with ';
-                errMsg += 'type ' + toAppendNode.type + '.';
+                errMsg += dict_type_to_str(listElemType) + '.  Instead, '
+                errMsg += 'you appended an element with ';
+                errMsg += 'type ' + dict_type_to_str(toAppendNode.type) + '.';
                 errorFunction(errMsg, [toAppendToNdoe],[toAppendToNode.lineNo],
                               progText);
         
     elif node.label == AST_IN_STATEMENT:
-        node.type = TYPE_BOOL;
+        node.type = generate_type_as_dict(TYPE_BOOL)
         lhsNode = node.children[0];
         rhsNode = node.children[1];
 
         lhsNode.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhsNode.typeCheck(progText,typeStack,avoidFunctionObjects);
         
-        if rhsNode.type == TYPE_STRING:
-            if lhsNode.type != TYPE_STRING:
+        if is_text(rhsNode.type):
+            if not is_text(lhsNode.type):
                 errMsg = 'Error with in statement.  Right-hand side of in ';
                 errMsg += 'statement has type Text, left-hand side should ';
                 errMsg += 'also be of type Text.  However, it is actually ';
                 errMsg += 'of type ' + lhsNode.type;
                 errorFunction(errMsg,[lhsNode],[lhsNode.lineNo],progText);
         elif isMapType(rhsNode.type):
-            if rhsNode.type == EMPTY_MAP_SENTINEL:
+            if is_empty_map(rhsNode.type):
                 pass;
             else:
                 mapIndexType = getMapIndexType(rhsNode.type);
                 if mapIndexType != lhsNode.type:
                     errMsg = 'Error with in statement.  Right-hand side of ';
                     errMsg += 'statement is a map type with indices ';
-                    errMsg += mapIndexType + '.  The left-hand side of the in ';
+                    errMsg += dict_type_to_str(mapIndexType) + '.  The '
+                    errMsg += 'left-hand side of the in ';
                     errMsg += 'statement should have same type.  Instead, it ';
-                    errMsg += 'has type ' + lhsNode.type + '.';
+                    errMsg += 'has type ' + dict_type_to_str(lhsNode.type) + '.';
                     errorFunction(errMsg, [lhsNode],[lhsNode.lineNo],progText);
         elif isListType(rhsNode.type):
-            if rhsNode.type == EMPTY_LIST_SENTINEL:
+            if is_empty_list(rhsNode.type):
                 pass;
             else:
                 listElementType = getListValueType(rhsNode.type);
                 if listElementType != lhsNode.type:
                     errMsg = 'Error with in statement.  Right-hand side of ';
                     errMsg += 'statement is a list type with indices ';
-                    errMsg += listElementType + '.  The left-hand side of the in ';
+                    errMsg += dict_type_to_str(listElementType) + '.  '
+                    errMsg += 'The left-hand side of the in ';
                     errMsg += 'statement should have same type.  Instead, it ';
-                    errMsg += 'has type ' + lhsNode.type + '.';
+                    errMsg += 'has type ' + dict_type_to_str(lhsNode.type) + '.';
                     errorFunction(errMsg, [lhsNode],[lhsNode.lineNo],progText);
         else:
             errMsg = 'Error with in statement.  Right-hand side of statement ';
             errMsg += 'must have type List, Map, or Text.  Instead, it has type ';
-            errMsg += lhsNode.type + '.';
+            errMsg += dict_type_to_str(lhsNode.type) + '.';
             errorFunction(errMsg,[lhsNode],[lhsNode.lineNo],progText);
             
     elif (node.label == AST_JUMP_COMPLETE) or (node.label == AST_JUMP):
 
-        node.type = TYPE_NOTHING;
+        node.type = generate_type_as_dict(TYPE_NOTHING)
         if ((not typeStack.inSequencesSection) or
             typeStack.inOnComplete):
             errMsg = 'Error.  You can only issue a jump statement ';
@@ -539,13 +552,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         childNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         node.lineNo = childNode.lineNo;
-        if childNode.type != TYPE_BOOL:
+        if not is_true_false(childNode.type):
             typeErrorMsg = 'Error in not expession.  You can only ';
             typeErrorMsg += 'apply not to a TrueFalse.';
             astLineNos = [node.lineNo];
             errorFunction(typeErrorMsg,[childNode],astLineNos,progText);
 
-        node.type = TYPE_BOOL;
+        node.type = generate_type_as_dict(TYPE_BOOL)
         
     elif node.label == AST_TRACE_SECTION:
         '''
@@ -587,7 +600,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         node.lineNo = index.lineNo;
 
         if isMapType(toReadFrom.type):
-
+            
             typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckMapBracket(
                 toReadFrom,index,typeStack,progText);
 
@@ -595,25 +608,25 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckListBracket(
                 toReadFrom,index,typeStack,progText);
 
-        elif toReadFrom.type == TYPE_STRING:
+        elif is_text(toReadFrom.type):
             typeError = False
-            if index.type != TYPE_NUMBER:
+            if not is_number(index.type):
                 typeError = True
                 typeErrorMsg = 'Error when reading a single character from a Text.  You '
                 typeErrorMsg += 'must use a number to index into the Text object.'
                 typeErrorNodes = [index]
 
-            statementType = TYPE_STRING
+            statementType = toReadFrom.type
             
         else:
             typeError = True;
             typeErrorMsg = 'You can only index into a map type, list type, or Text type.  ';
             typeErrorMsg += 'Instead, you are trying to index into a [ ';
-            typeErrorMsg += toReadFrom.type + ' ].\n';
+            typeErrorMsg += dict_type_to_str(toReadFrom.type) + ' ].\n';
             typeErrorNodes = [toReadFrom];
 
         if typeError:
-            node.type = TYPE_NOTHING;
+            node.type = generate_type_as_dict(TYPE_NOTHING)
             for node in typeErrorNodes:
                 astLineNos = [node.lineNo];
                 errorFunction(typeErrorMsg,typeErrorNodes,astLineNos,progText);
@@ -695,14 +708,14 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     elif node.label == AST_LEN:
         argumentNode = node.children[0];
         argumentNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-        if ((argumentNode.type != TYPE_STRING) and (not isListType(argumentNode.type)) and
+        if ((not is_text(argumentNode.type)) and (not isListType(argumentNode.type)) and
             (not isMapType(argumentNode.type))):
             errorString = 'Error in calling len.  Can only call len on a ';
             errorString += 'list, map, or Text.  Instead, you passed in a ';
             errorString += argument.type + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
-        node.type = TYPE_NUMBER;
+        node.type = generate_type_as_dict(TYPE_NUMBER)
 
     elif node.label == AST_KEYS:
         argumentNode = node.children[0];
@@ -713,16 +726,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # of numbers.  for a map, take on list of map's element types.
         # if map was empty, then just return an empty list.
         if isListType(argumentNode.type):
-            nodeType = buildListTypeSignatureFromTypeName(TYPE_NUMBER);
-            node.type = json.dumps(nodeType);
+            node.type = buildListTypeSignatureFromTypeName(
+                generate_type_as_dict(TYPE_NUMBER))
         elif isMapType(argumentNode.type):
-            if argumentNode.type == EMPTY_MAP_SENTINEL:
-                node.type = EMPTY_LIST_SENTINEL;
+            if is_empty_map(argumentNode.type):
+                node.type = generate_type_as_dict(EMPTY_LIST_SENTINEL)
             else:
                 mapIndexType = getMapIndexType(argumentNode.type)
-                nodeType = buildListTypeSignatureFromTypeName(
+                node.type = buildListTypeSignatureFromTypeName(
                     mapIndexType);
-                node.type = json.dumps(nodeType);
         else:
             errorString = 'Error in calling keys.  Can only call keys on a ';
             errorString += 'list or map.  Instead, you passed in a ';
@@ -735,7 +747,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         for childNode in node.children:
             argNumber += 1;
             childNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-            if childNode.type != TYPE_NUMBER:
+            if not is_number(childNode.type):
                 errorString = 'Error in calling range.  Range requires all ';
                 errorString += 'of its arguments to be numbers.  Instead, the #';
                 errorString += str(argNumber) + ' argument you passed in to ';
@@ -744,25 +756,25 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     errorString,[node,childNode],[node.lineNo,childNode.lineNo],progText);
 
         # type that assign should be list to numbers
-        nodeType = buildListTypeSignatureFromTypeName(TYPE_NUMBER);
-        node.type = json.dumps(nodeType);
+        node.type = buildListTypeSignatureFromTypeName(TYPE_NUMBER);
+
             
     elif node.label == AST_PRINT:
         #check to ensure that it's passed a string
         argument = node.children[0];
         argument.typeCheck(progText,typeStack,avoidFunctionObjects);
-        if ((argument.type != TYPE_STRING) and (argument.type != TYPE_NUMBER) and
-            (argument.type != TYPE_BOOL)):
+        if ((not is_text(argument.type)) and (not is_number(argument.type)) and
+            (not is_true_false(argument.type))):
             errorString = 'Print requires a Text, TrueFalse, or a Number ';
             errorString += 'to be passed in.  ';
             errorString += 'It seems that you passed in a ';
             errorString += argument.type + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
-        node.type = TYPE_NOTHING;
+        node.type = generate_type_as_dict(TYPE_NOTHING)
 
     elif node.label == AST_REFRESH:
-        node.type = TYPE_NOTHING;
+        node.type = generate_type_as_dict(TYPE_NOTHING)
         
     elif(node.label == AST_TOTEXT_FUNCTION):
         # check to ensure that it's passed a Text, TrueFalse, or a
@@ -770,14 +782,14 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # can't handle it.
         argumentNode = node.children[0];
         argumentNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-        if ((argumentNode.type != TYPE_STRING) and (argumentNode.type != TYPE_NUMBER) and
-            (argumentNode.type != TYPE_BOOL)):
+        if ((not is_text(argumentNode.type)) and (not is_number(argumentNode.type)) and
+            (not is_true_false(argumentNode.type))):
             errorString = 'ToText requires a Text, TrueFalse, or a Number ';
             errorString += 'to be passed in.  It seems that you passed in a ';
             errorString += argumentNode.type + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
-        node.type = TYPE_STRING;
+        node.type = generate_type_as_dict(TYPE_STRING)
 
     elif(node.label == AST_SHARED_SECTION):
         #each child will be an annotated declaration.
@@ -789,7 +801,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #reset my type to it.
         typeNode = node.children[1];
         typeNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-        node.type = typeNode.value;
+        node.type = typeNode.type;
 
         currentLineNo = node.children[1].lineNo;
         if (len(node.children) == 4):
@@ -844,11 +856,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             
     elif(node.label == AST_NUMBER):
-        node.type = TYPE_NUMBER;
+        node.type = generate_type_as_dict(TYPE_NUMBER)
     elif(node.label == AST_STRING):
-        node.type = TYPE_STRING;
+        node.type = generate_type_as_dict(TYPE_STRING)
     elif(node.label == AST_BOOL):
-        node.type = TYPE_BOOL;
+        node.type = generate_type_as_dict(TYPE_BOOL)
 
     elif(node.label == AST_FUNCTION_CALL):
         funcName = node.children[0].value;
@@ -870,7 +882,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     # a function match object from that variable's type signature
                     # to perform type checking on the input arguments that the
                     # scripter provided
-                    funcMatchObj = createFuncMatchObjFromJsonStr(funcType,idElement.astNode);
+                    funcMatchObj = createFuncMatchObjFromFuncTypeDict(funcType,idElement.astNode);
             else:
                 errMsg = '\nError trying to call function named "' + funcName + '".  ';
                 errMsg += 'That function is not defined anywhere.\n';
@@ -902,9 +914,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         for s in funcArgList:
             s.typeCheck(progText,typeStack,avoidFunctionObjects);
             allArgTypes.append(s.type);
-
-
+            
         argError = funcMatchObj.argMatchError(allArgTypes,node);
+        
         if (argError != None):
             #means that the types of the arguments passed into the
             #function do not match the arguments that the function
@@ -926,12 +938,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 #means that although we got the correct number of
                 #arguments, we had type mismatches on several of
                 #them.
-                errMsg = '\nError calling function "' + funcName + '".  ';
+                errMsg = '\nError calling function "' + funcName + '".  '
                 for s in range (0, len(argError.argNos)):
-                    errMsg += '\n\t';
-                    errMsg += 'Argument number ' + str(argError.argNos[s]) + ' was expected ';
-                    errMsg += 'to be of type ' + argError.expected[s] + ', but is inferrred ';
-                    errMsg += 'to have type ' + argError.provided[s];
+                    errMsg += '\n\t'
+                    errMsg += 'Argument number ' + str(argError.argNos[s]) + ' was expected '
+                    errMsg += 'to be of type ' + dict_type_to_str(argError.expected[s])
+                    errMsg += ', but is inferrred '
+                    errMsg += 'to have type ' + dict_type_to_str(argError.provided[s])
 
                 errorFunction(errMsg,argError.astNodes,argError.lineNos,progText); 
             else:
@@ -942,10 +955,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
     elif node.label == AST_FUNCTION_TYPE_LIST:
         node.type = []
+
         for type_node in node.children:
             type_node.typeCheck(progText,typeStack,avoidFunctionObjects)
             node.type.append(type_node.type)
-
+            
     elif (node.label == AST_TYPE):
 
         if node.value == TYPE_FUNCTION:
@@ -964,9 +978,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #          }],
             #    Returns: [{ Type: "Text"}]
             # }
-            typeSignature = buildFuncTypeSignature(node,progText,typeStack);
-            node.type = json.dumps(typeSignature);
-            node.value = node.type;
+            node.type = buildFuncTypeSignature(node,progText,typeStack);
 
         elif node.value == TYPE_LIST:
             # more complicated types for lists
@@ -976,9 +988,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             # { Type: 'List',
             #   ElementType: { Type: "Number" }}
             #
-            typeSignature = buildListTypeSignature(node,progText,typeStack);
-            node.type = json.dumps(typeSignature);
-            node.value = node.type;
+            node.type = buildListTypeSignature(node,progText,typeStack);
 
         elif node.value == TYPE_MAP:
             # more complicated types for maps
@@ -996,17 +1006,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errLineNos = [ x.lineNo for x in errNodes];
                 errorFunction(errMsg,errNodes, errLineNos, progText);
 
-
-            node.type = json.dumps(typeSignature);
-            node.value = node.type;
+            node.type = typeSignature
 
         else:
             # just assign the type directly since it is one of the
             # basic types Text, TrueFalse, or Number.
-            node.type = node.value;
+            node.type = generate_type_as_dict(node.value)
 
     elif (node.label == AST_LIST):
-        node.type = EMPTY_LIST_SENTINEL;
+        node.type = generate_type_as_dict(EMPTY_LIST_SENTINEL)
         allTypes = [];
 
         # get all types from element nodes
@@ -1027,8 +1035,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             potentialType = buildListTypeSignatureFromTypeName(
                 allTypes[typeCheckingIndex]);
 
-            potentialType = json.dumps(potentialType);
-
             node.type = moreSpecificListMapType(node.type,potentialType);
 
             for subTypeCheckingIndex in range(typeCheckingIndex+1,len(allTypes)):
@@ -1039,14 +1045,16 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 if checkTypeMismatch(element,firstType,secondType,typeStack,progText):
                     errMsg = '\nError in list statement.  Different elements in the ';
                     errMsg += 'list have different types.  The ' + str(typeCheckingIndex+1);
-                    errMsg += 'th element in the list has type [' + firstType + '].  The ';
-                    errMsg += str(subTypeCheckingIndex + 1) + 'th has type [' + secondType + '].\n';
+                    errMsg += 'th element in the list has type '
+                    errMsg += dict_type_to_str(firstType) + '.  The ';
+                    errMsg += str(subTypeCheckingIndex + 1) + 'th has type '
+                    errMsg += dict_type_to_str(secondType) + '.\n';
                     errorFunction(errMsg,[node], [node.lineNo], progText);
 
 
     elif node.label == AST_MAP:
         # type check all children
-        node.type = EMPTY_MAP_SENTINEL;
+        node.type = generate_type_as_dict(EMPTY_MAP_SENTINEL)
         allIndexTypes = [];
         allValueTypes = [];
 
@@ -1061,7 +1069,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if not isValueType(index.type):
                 errMsg = '\nError in Map.  You can only index a map using ';
                 errMsg += 'Number, Text, or TrueFalse.  However, the ' + str(counterIndex + 1);
-                errMsg += 'th element in the map has type [' + index.type + '].';
+                errMsg += 'th element in the map has type '
+                errMsg += dict_type_to_str(index.type) + '.';
                 errorFunction(errMsg,[node,index],[node.lineNo,index.lineNo],progText);
 
             allIndexTypes.append(index.type);
@@ -1072,8 +1081,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             valueType = allValueTypes[typeCheckingIndex];
             potentialType = buildMapTypeSignatureFromTypeNames(
                 indexType,valueType);
-            potentialType = json.dumps(potentialType);
-
+            
             node.type = moreSpecificListMapType(node.type,potentialType);
             for subTypeCheckingIndex in range(typeCheckingIndex+1,len(allIndexTypes)):
                 firstIndexType = allIndexTypes[typeCheckingIndex];
@@ -1084,17 +1092,21 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 if checkTypeMismatch(index,firstIndexType,secondIndexType,typeStack,progText):
                     errMsg = '\nError in Map.  Different elements in the map ';
                     errMsg += 'have different types.  The ' + str(typeCheckingIndex + 1);
-                    errMsg += 'th item in the map has an index of [' + firstIndexType + '].  ';
-                    errMsg += 'However, the ' + str(subTypeCheckingIndex +1) + 'th has type [';
-                    errMsg += secondIndexType + '].\n';
-                    errorFunction(errMsg,[node],[node.lineNo],progText);
+                    errMsg += 'th item in the map has an index of '
+                    errMsg += dict_type_to_str(firstIndexType) + '.  ';
+                    errMsg += 'However, the ' + str(subTypeCheckingIndex +1)
+                    errMsg += 'th has type ' 
+                    errMsg += dict_type_to_str(secondIndexType) + '.\n'
+                    errorFunction(errMsg,[node],[node.lineNo],progText)
 
                 if checkTypeMismatch(value,firstValueType,secondValueType,typeStack,progText):
                     errMsg = '\nError in Map.  Different elements in the map ';
                     errMsg += 'have different types.  The ' + str(typeCheckingIndex + 1);
-                    errMsg += 'th item in the map has a value of [' + firstValueType + '].  ';
-                    errMsg += 'However, the ' + str(subTypeCheckingIndex +1) + 'th has type [';
-                    errMsg += secondValueType + '].\n';
+                    errMsg += 'th item in the map has a value of '
+                    errMsg += dict_type_to_str(firstValueType) + '.  ';
+                    errMsg += 'However, the ' + str(subTypeCheckingIndex +1)
+                    errMsg += 'th has type ';
+                    errMsg += dict_type_to_str(secondValueType) + '.\n';
                     errorFunction(errMsg,[node],[node.lineNo],progText);
 
 
@@ -1110,7 +1122,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         condBody = node.children[1];
 
         boolCond.typeCheck(progText,typeStack,avoidFunctionObjects);
-        if (boolCond.type != TYPE_BOOL):
+        if (not is_true_false(boolCond.type)):
             errMsg = '\nError in If or ElseIf statement.  The condition ';
             errMsg += 'must evaluate to a TrueFalse type.  Instead, ';
 
@@ -1131,7 +1143,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs = node.children[1];
         lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
-        node.type = TYPE_BOOL;
+        node.type = generate_type_as_dict(TYPE_BOOL)
         node.lineNo = lhs.lineNo;
         if (lhs.type == None):
             errMsg = '\nError when checking equality. ';
@@ -1148,7 +1160,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg = '\nError when checking equality.  Both left-hand side ';
             errMsg += 'of expression and right-hand side of expression should ';
             errMsg += 'have same type.  Instead, left-hand side has type ';
-            errMsg += lhs.type + ', and right-hand side has type ' + rhs.type;
+            errMsg += dict_type_to_str(lhs.type)
+            errMsg += ', and right-hand side has type '
+            errMsg += dict_type_to_str(rhs.type)
             errMsg += '\n';
             errorFunction(errMsg,[node],[node.lineNo],progText);
 
@@ -1165,7 +1179,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs = node.children[1];
         lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
-        node.type = TYPE_BOOL;
+        node.type = generate_type_as_dict(TYPE_BOOL)
         node.lineNo = lhs.lineNo;
         if (lhs.type == None):
             errMsg = '\nError when checking ' + expressionType + '. ';
@@ -1178,16 +1192,20 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(errMsg, [node],[node.lineNo],progText);
             return;
 
-        if (rhs.type != TYPE_BOOL):
+        if not is_true_false(rhs.type):
             errMsg = '\nError whe checking ' + expressionType + '. ';
-            errMsg += 'Right-hand side expression must be ' + TYPE_BOOL;
-            errMsg += '.  Instead, has type ' + rhs.type + '\n';
+            errMsg += 'Right-hand side expression must be '
+            errMsg += dict_type_to_str(TYPE_BOOL)
+            errMsg += '.  Instead, has type '
+            errMsg += dict_type_to_str(rhs.type) + '\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
         if (lhs.type != TYPE_BOOL):
             errMsg = '\nError whe checking ' + expressionType + '. ';
-            errMsg += 'Left-hand side expression must be ' + TYPE_BOOL;
-            errMsg += '.  Instead, has type ' + lhs.type + '\n';
+            errMsg += 'Left-hand side expression must be '
+            errMsg += dict_type_to_str(TYPE_BOOL)
+            errMsg += '.  Instead, has type '
+            errMsg += dict_type_to_str(lhs.type) + '\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
     elif (node.label == AST_ELSE_STATEMENT):
@@ -1207,7 +1225,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         errSoFar = False;
-        if ((lhs.type != TYPE_NUMBER) and (lhs.type != TYPE_STRING)):
+        if ((not is_number(lhs.type)) and (not is_text(lhs.type))):
             errMsg = '\nError with PLUS expression.  ';
             errMsg += 'Left-hand side should be a Number or a String.  Instead, ';
             if (lhs.type == None):
@@ -1218,7 +1236,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(errMsg, [node],[node.lineNo],progText);
             errSoFar = True;
 
-        if ((rhs.type != TYPE_NUMBER) and (rhs.type != TYPE_STRING)):
+        if ((not is_number(rhs.type)) and (not is_text(rhs.type))):
             errMsg = '\nError with PLUS expression.  ';
             errMsg += 'Right-hand side should be a Number or a String.  Instead, ';
             if (lhs.type == None):
@@ -1237,8 +1255,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (rhs.type != lhs.type):
             errMsg = '\nError with PLUS expression.  Both the left- and ';
             errMsg += 'right-hand sides should have the same type.  Instead, ';
-            errMsg += 'the left-hand side has type ' + lhs.type + ' and the ';
-            errMsg += 'right-hand side has type ' + rhs.type + '.\n';
+            errMsg += 'the left-hand side has type '
+            errMsg += dict_type_to_str(lhs.type) + ' and the ';
+            errMsg += 'right-hand side has type '
+            errMsg += dict_type_to_str(rhs.type) + '.\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
         node.type = rhs.type;
@@ -1253,23 +1273,23 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         #for error reporting
         expressionType  = 'MINUS';
-        node.type = TYPE_NUMBER;                
+        node.type = generate_type_as_dict(TYPE_NUMBER)
         if (node.label == AST_MULTIPLY):
             expressionType = 'MULTIPLY';
         elif(node.label == AST_DIVIDE):
             expressionType = 'DIVIDE';
         elif(node.label == AST_GREATER_THAN):
             expressionType = 'GREATER THAN';
-            node.type = TYPE_BOOL;                
+            node.type = generate_type_as_dict(TYPE_BOOL)
         elif(node.label == AST_GREATER_THAN_EQ):
             expressionType = 'GREATER THAN EQUAL';                
-            node.type = TYPE_BOOL;                
+            node.type = generate_type_as_dict(TYPE_BOOL)
         elif(node.label == AST_LESS_THAN):
             expressionType = 'LESS THAN';
-            node.type = TYPE_BOOL;                
+            node.type = generate_type_as_dict(TYPE_BOOL)
         elif(node.label == AST_LESS_THAN_EQ):
             expressionType = 'LESS THAN EQUAL';
-            node.type = TYPE_BOOL;                
+            node.type = generate_type_as_dict(TYPE_BOOL)
 
         lhs = node.children[0];
         rhs = node.children[1];
@@ -1278,7 +1298,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        if (lhs.type != TYPE_NUMBER):
+        if (not is_number(lhs.type)):
             errMsg = '\nError with ' + expressionType + ' expression.  ';
             errMsg += 'Left-hand side should be a Number.  Instead, ';
             if (lhs.type == None):
@@ -1288,7 +1308,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
-        if (rhs.type != TYPE_NUMBER):
+        if (not is_number(rhs.type)):
             errMsg = '\nError with ' + expressionType + ' expression.  ';
             errMsg += 'Right-hand side should be a Number.  Instead, ';
             if (lhs.type == None):
@@ -1303,11 +1323,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         node.lineNo = node.children[0].lineNo;
         node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        if (node.children[0].type != TYPE_BOOL):
+        if not is_true_false(node.children[0].type):
             errMsg = '\nError in predicate of condition statement.  Should have ';
             errMsg += 'TrueFalse type.  Instead, ';
             if (node.children[0].type != None):
-                errMsg += 'has type ' + str(node.children[0].type)
+                errMsg += 'has type ' + dict_type_to_str(node.children[0].type)
             else:
                 errMsg += 'cannot infer type';
             errMsg += '.\n';
@@ -1366,7 +1386,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         typeNode = node.children[0];
         typeNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        declaredType = typeNode.value;
+        declaredType = typeNode.type
         node.lineNo = typeNode.lineNo;
         node.external = typeNode.external;
 
@@ -1431,12 +1451,12 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         
     elif(node.label == AST_RETURN_STATEMENT):
-        node.type = TYPE_NOTHING
+        node.type = generate_type_as_dict(TYPE_NOTHING)
 
         return_tuple_node = node.children[0]
         return_tuple_node.typeCheck(
             progText,typeStack,avoidFunctionObjects)
-
+        
         typeCheckError = typeStack.checkReturnStatement(node,checkTypeMismatch);
         if (typeCheckError != None):
             errorFunction(
@@ -1457,7 +1477,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errorFunction(errMsg,[node],[node.lineNo],progText);
                 node.type = 'Undefined';
             else:
-                node.type = json.dumps(funcType.createJsonType());
+                node.type = funcType.createTypeDict()
         else:
             node.type = typer;
             # need to copy external tag too
@@ -1517,7 +1537,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #function type was declared.
         node.lineNo = node.children[0].lineNo;
 
-        if (stackFunc == None):
+        if stackFunc == None:
             errMsg = 'Behram error: should have inserted function ';
             errMsg += 'with name "' + funcName + '" into type stack ';
             errMsg += 'before type checking function body.'
@@ -1569,7 +1589,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     elif node.label == AST_FUNCTION_ARGLIST:
         for child in node.children:
             child.typeCheck(progText,typeStack,avoidFunctionObjects)
-
+            
             
     elif (node.label == AST_FUNCTION_DECL_ARG):
         '''
@@ -1578,11 +1598,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         it into a typestack context.
         '''
         arg_type_node = node.children[0]
-        node.lineNo = arg_type_node.lineNo;
-        argType = arg_type_node.value;
-        argName = node.children[1].value;
+        node.lineNo = arg_type_node.lineNo
+        arg_type_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        argType = arg_type_node.type
+        argName = node.children[1].value
 
-        
         collisionObj = typeStack.checkCollision(argName,node);
 
         if (collisionObj != None):
@@ -1595,26 +1615,28 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg += 'You already have a function or variable ';
             errMsg += 'with the same name.';
 
-            errorFunction(errMsg,collisionObj.nodes,collisionObj.lineNos,progText);
+            errorFunction(
+                errMsg,collisionObj.nodes,collisionObj.lineNos,progText)
+            
         else:
-            if (argType == TYPE_FUNCTION) and avoidFunctionObjects:
+            if isFunctionType(argType) and avoidFunctionObjects:
                 pass;
             else:
                 node.external = arg_type_node.external
-                typeStack.addIdentifier(argName,argType,None,node,node.lineNo);
+                typeStack.addIdentifier(
+                    argName,argType,None,node,node.lineNo)
 
-                
 
     elif (node.label == AST_FUNCTION_BODY_STATEMENT):
         for s in node.children:
             s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif (node.label == AST_STRING):
-        node.type = TYPE_STRING;
+        node.type = generate_type_as_dict(TYPE_STRING)
     elif (node.label == AST_NUMBER):
-        node.type = TYPE_NUMBER;
+        node.type = generate_type_as_dict(TYPE_NUMBER)
     elif (node.label == AST_BOOL):
-        node.type = TYPE_BOOL;
+        node.type = generate_type_as_dict(TYPE_BOOL)
 
     elif (node.label == AST_ASSIGNMENT_STATEMENT):
         # lhs can only hold a list of values if assignment is a result
@@ -1662,11 +1684,11 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         (node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION) and
         (node.label != AST_ONCREATE_FUNCTION) and
         (node.label != AST_ONCOMPLETE_FUNCTION)):
-        errPrint('\n\n');
-        errPrint(node.label);
-        errPrint('\n\n');
-        errPrint('\nBehram error, sending an incorrect tag to be loaded into functionDeclarationTypeCheck\n');
-        assert(False);
+
+        err_msg = '\nBehram error.  Sending an incorrect tag to be loaded '
+        err_msg += 'into functionDeclarationTypeCheck.\n'
+        errPrint(err_msg)
+        assert(False)
 
 
     if ((node.label == AST_PUBLIC_FUNCTION) or (node.label == AST_PRIVATE_FUNCTION)):
@@ -1676,18 +1698,22 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         argDeclIndex = 2;
         funcNameIndex = 0;
     elif(node.label == AST_ONCREATE_FUNCTION):
-        returnType = [TYPE_NOTHING];
+        returnType = generate_returned_tuple_type(
+            [ generate_type_as_dict(TYPE_NOTHING) ] )
         argDeclIndex = 1;
         funcNameIndex = 0;
     elif node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
         argDeclIndex = 2;
-        returnType = [TYPE_NOTHING];
+        returnType = generate_returned_tuple_type(
+            [ generate_type_as_dict(TYPE_NOTHING) ] )        
         funcNameIndex = 1;
     elif node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # does not take any arguments
         argDeclIndex = None;
         funcNameIndex = 1;
-        returnType = [TYPE_NOTHING];
+        returnType = generate_returned_tuple_type(
+            [ generate_type_as_dict(TYPE_NOTHING) ] )        
+        
     elif node.label == AST_ONCOMPLETE_FUNCTION:
         # should never load an oncomplete function into stack because
         # it will never get called.
@@ -1722,8 +1748,8 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
                 continue;
 
             #set the type of t to the type identifier of the argument.
-            t.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
-            t.type = t.children[0].value;
+            t.children[0].typeCheck(progText,typeStack,avoidFunctionObjects)
+            t.type = t.children[0].type
 
             #add the argument type to the typeStack representation for this function.
             argTypeList.append(t.type);
@@ -1734,7 +1760,7 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         # because you cannot directly call a message receive function
         # (the system calls it for you when you receive a message).
         # So just insert gibberish for argument.
-        argTypeList.append(TYPE_NOTHING);
+        argTypeList.append(generate_type_as_dict(TYPE_NOTHING))
 
     collisionObj = typeStack.checkCollision(funcName,node);
     if collisionObj != None:
@@ -1779,7 +1805,7 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
         # [Number], should not produce typecheck error.
 
         # determine if lists are involved
-        if (isListType(lhsType) and isListType(rhsType)):
+        if isListType(lhsType) and isListType(rhsType):
             errorTrue = listTypeMismatch(lhsType,rhsType,typeStack,progText);
 
         elif isMapType(lhsType) and isMapType(rhsType):
@@ -1796,60 +1822,38 @@ def mapTypeMismatch(mapTypeA, mapTypeB,typeStack,progText):
     '''
     @see listTypeMismatch
     '''
-    if (mapTypeA == EMPTY_MAP_SENTINEL) or (mapTypeB == EMPTY_MAP_SENTINEL):
+    if is_empty_map(mapTypeA) or is_empty_map(mapTypeB):
         # any time one side or the other side is an empty map, we
         # know we're okay because both sides have to be maps.
         return False;
 
-    
-    dictA = json.loads(mapTypeA);
-    dictB = json.loads(mapTypeB);
+    indexTypeA = getMapIndexType(mapTypeA)
+    indexTypeB = getMapIndexType(mapTypeB)
 
+    valueTypeA = getMapValueType(mapTypeA)
+    valueTypeB = getMapValueType(mapTypeB)
 
-    indexTypeA = dictA[JSON_MAP_FROM_TYPE_FIELD];
-    indexTypeB = dictB[JSON_MAP_FROM_TYPE_FIELD];
-
-    valueTypeA = dictA[JSON_MAP_TO_TYPE_FIELD];
-    valueTypeB = dictB[JSON_MAP_TO_TYPE_FIELD];
-
-
-    # these are the indices for 
-    indTypeA = indexTypeA;
-    if (not isinstance(indexTypeA,basestring)):
-        indTypeA = json.dumps(indexTypeA);
-
-    indTypeB = indexTypeB;
-    if (not isinstance(indexTypeB,basestring)):
-        indTypeB = json.dumps(indexTypeB);
-
-    valTypeA = valueTypeA;
-    if (not isinstance(valueTypeA,basestring)):
-        valTypeA = json.dumps(valueTypeA);
-
-    valTypeB = valueTypeB;
-    if (not isinstance(valueTypeB,basestring)):
-        valTypeB = json.dumps(valueTypeB);
-
-    if checkTypeMismatch(None,indTypeA,indTypeB,typeStack,progText):
+        
+    if checkTypeMismatch(None,indexTypeA,indexTypeB,typeStack,progText):
         # there's an error because the indices have to match.
         return True;
 
-    if (not isMapType(valTypeA)) or (not isMapType(valTypeB)):
+    if (not isMapType(valueTypeA)) or (not isMapType(valueTypeB)):
         # handles all cases where one or both values are not maps
-        return checkTypeMismatch(None,valTypeA,valTypeB,typeStack,progText);
+        return checkTypeMismatch(None,valueTypeA,valueTypeB,typeStack,progText);
 
     # both values are maps.  know that we can quit with no error if
     # one or other is sentinel.
-    if (valTypeA == EMPTY_MAP_SENTINEL) or (valTypeB == EMPTY_MAP_SENTINEL):
+    if is_empty_map(valueTypeA) or is_empty_map(valueTypeB):
         return False;
     
     # recurse on map types
-    return mapTypeMismatch(elTypeA,elTypeB,typeStack,progText);
+    return mapTypeMismatch(valueTypeA,valueTypeB,typeStack,progText);
 
 
 def listTypeMismatch(listTypeA, listTypeB,typeStack,progText):
     '''
-    @param{String} listTypeA, listTypeB: both are known to be list
+    @param{type dict} listTypeA, listTypeB: both are known to be list
     types.
     
     @returns{Bool} True if there is a mismatch, False otherwise.
@@ -1869,38 +1873,24 @@ def listTypeMismatch(listTypeA, listTypeB,typeStack,progText):
     List(Element: Number) l = [True];
         
     '''
-    if (listTypeA == EMPTY_LIST_SENTINEL) or (listTypeB == EMPTY_LIST_SENTINEL):
+    if is_empty_list(listTypeA) or is_empty_list(listTypeB):
         # any time one side or the other side is an empty list, we
         # know we're okay because both sides have to be lists.
         return False;
 
-    
-    dictA = json.loads(listTypeA);
-    dictB = json.loads(listTypeB);
+    elementTypeA = getListValueType(listTypeA)
+    elementTypeB = getListValueType(listTypeB)
 
-    elementTypeA = dictA[JSON_LIST_ELEMENT_TYPE_FIELD];
-    elementTypeB = dictB[JSON_LIST_ELEMENT_TYPE_FIELD];
-
-
-    elTypeA = elementTypeA;
-    if (not isinstance(elementTypeA,basestring)):
-        elTypeA = json.dumps(elementTypeA);
-
-    elTypeB = elementTypeB;
-    if (not isinstance(elementTypeB,basestring)):
-        elTypeB = json.dumps(elementTypeB);
-        
-    
-    if (not isListType(elTypeA)) or (not isListType(elTypeB)):
+    if (not isListType(elementTypeA)) or (not isListType(elementTypeB)):
         # handles all cases where one or both are not lists
-        return checkTypeMismatch(None,elTypeA,elTypeB,typeStack,progText);
+        return checkTypeMismatch(None,elementTypeA,elementTypeB,typeStack,progText);
 
     # both elements are list types.  know that we can quit if one or other is a sentinel.
-    if (elTypeA == EMPTY_LIST_SENTINEL) or (elTypeB == EMPTY_LIST_SENTINEL):
+    if is_empty_list(elementTypeA) or is_empty_list(elementTypeB):
         return False;
     
     # recurse on list types
-    return listTypeMismatch(elTypeA,elTypeB,typeStack,progText);
+    return listTypeMismatch(elementTypeA,elementTypeB,typeStack,progText);
 
 
 
@@ -1924,13 +1914,15 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
       d {Array of ast nodes or None} --- None if no error.  Otherwise,
         a list of nodes that caused the errors.
       '''
+
     if not isValueType(index.type):
         errMsg = '\nYou can only index into a map using Text, Numer, ';
-        errMsg += 'or Number.  Instead, your index has type [ ' + index.type + ' ].\n';
+        errMsg += 'or Number.  Instead, your index has type '
+        errMsg += dict_type_to_str(index.type) + '.\n';
         astErrorNodes = [ index ];
         return True,None,errMsg,astErrorNodes;
 
-    if toReadFrom.type == EMPTY_MAP_SENTINEL:
+    if is_empty_map(toReadFrom.type):
         # reading from a value that is empty
         errMsg = '\nYou cannot read from an empty map.\n';
         astErrorNodes = [ toReadFrom ];
@@ -1948,19 +1940,19 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
         astErrorNodes = [ toReadFrom, index ];
         return True, None, errMsg, astErrorNodes;
     
-    statementType = getMapValueType(toReadFrom);
+    statementType = getMapValueType(toReadFrom.type);
     return False,statementType,None,None;
 
 def typeCheckListBracket(toReadFrom,index,typeStack,progText):
     '''
     @see typeCheckMapBracket
     '''
-    if toReadFrom.type == EMPTY_LIST_SENTINEL:
+    if is_empty_list(toReadFrom.type):
         errMsg = '\nError indexing into empty list.\n';
         astErrorNodes = [ toReadFrom ];
         return True, None, errMsg, astErrorNodes;
 
-    if index.type != TYPE_NUMBER:
+    if not is_number(index.type):
         errMsg = '\nError.  Can only index into a list using a number.  ';
         errMsg += 'Instead, you used a type [ ' + index.type + ' ].\n';
         astErrorNodes = [ index ];
@@ -2159,8 +2151,8 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
 
         # should add the node to the newly-pushed context.
         declNode.typeCheck(progText,typeStack,False);
-
-        if (declNode.type == TYPE_FUNCTION) or isFunctionType(declNode.type):
+        
+        if isFunctionType(declNode.type):
             errMsg = 'Error with sequence shared variables.  You cannot share ';
             errMsg += 'a function object across multiple nodes.';
             errNodes = [declNode];
@@ -2273,8 +2265,9 @@ def _check_single_assign(
         else:
             err_msg += 'The left hand side side of the assignment statement '
             
-        err_msg += 'has type ' + lhs_type + ', but the right hand side has '
-        err_msg += 'type ' + rhs_type + '.'
+        err_msg += 'has type ' + dict_type_to_str(lhs_type)
+        err_msg += ', but the right hand side has '
+        err_msg += 'type ' + dict_type_to_str(rhs_type) + '.'
 
         err_nodes = [to_assign_to_node]
         err_line_nos = [to_assign_to_node.lineNo]
@@ -2288,7 +2281,7 @@ def _check_single_assign(
         to_assign_to_var_name = to_assign_to_node.children[0].value
 
     unused,controlled_by = typeStack.getIdentifierType(to_assign_to_var_name);
-    if ((controlled_by != None) and (controlled_by != TYPE_NOTHING)):
+    if ((controlled_by != None) and (not is_nothing_type(controlled_by))):
         
         if (typeStack.currentEndpointName != controlled_by):
             err_msg = 'Error when trying to assign to ' + to_assign_to_var_name

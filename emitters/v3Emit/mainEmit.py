@@ -431,7 +431,8 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
 
             
             elif ((individual_assign_to_node.label == AST_BRACKET_STATEMENT) and
-                (individual_assign_to_node.children[0].type != TYPE_STRING)):
+                  (not TypeCheck.templateUtil.is_text(individual_assign_to_node.children[0].type))):
+
                 # inserting into map or list.  need to call insert
                 # directly on map/list structure.  note second condition
                 # is necessary because can have a bracket statement

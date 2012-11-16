@@ -311,7 +311,6 @@ def p_FunctionTypeList(p):
     FunctionTypeList : Type
                      | FunctionTypeList COMMA Type
     '''
-
     p[0] = AstNode(AST_FUNCTION_TYPE_LIST,p[1].lineNo,p[1].linePos);
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());
@@ -987,11 +986,6 @@ def p_ParenthesizedExpression(p):
     '''ParenthesizedExpression : NOT ReturnableExpression
                                | InExpression
     '''
-
-    # '''ParenthesizedExpression : NOT ReturnableExpression
-    #                            | InternalReturnableExpression
-    # '''
-
     
     if (len(p) == 3):
         p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(1),p.lexpos(1));

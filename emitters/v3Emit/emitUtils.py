@@ -97,14 +97,15 @@ def getDefaultValueFromDeclNode(astDeclNode):
     '''
     # typeLabel = astTypeNode.label;
     typeLabel = astDeclNode.type;
+
     
-    if typeLabel == TYPE_BOOL:
+    if templateUtil.is_true_false(typeLabel):
         returner = 'False';
-    elif typeLabel == TYPE_NUMBER:
+    elif templateUtil.is_number(typeLabel):
         returner = '0';
-    elif typeLabel == TYPE_STRING:
+    elif templateUtil.is_text(typeLabel):
         returner = "''";
-    elif typeLabel == TYPE_NOTHING:
+    elif templateUtil.is_nothing_type(typeLabel):
         returner = 'None';
     elif templateUtil.isListType(typeLabel):
         returner = '_WaldoList([])';

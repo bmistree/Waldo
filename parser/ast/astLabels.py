@@ -128,6 +128,8 @@ TYPE_FUNCTION = 'Function';
 TYPE_LIST = 'List';
 TYPE_MAP = 'Map';
 
+TYPE_RETURNED_TUPLE = 'Tuple'
+
 TYPE_MSG_SEND_FUNCTION = 'MsgSendFunc';
 TYPE_MSG_RECEIVE_FUNCTION = 'MsgRecvFunc';
 
