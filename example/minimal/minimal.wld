@@ -1,0 +1,16 @@
+ServerApp
+
+Endpoint Client;
+Endpoint Server;
+
+Sequences {
+}
+
+Shared {
+}
+
+Client {
+}
+
+Server {
+}
