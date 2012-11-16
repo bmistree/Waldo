@@ -122,6 +122,9 @@ def slicer(node,functionDeps=None,typeStack=None):
         slicer(bool_cond,functionDeps,typeStack)
         slicer(body,functionDeps,typeStack)
         
+    elif ((node.label == AST_BREAK) or
+          (node.label == AST_CONTINUE)):
+        pass
         
     elif node.label == AST_FOR_STATEMENT:
         if len(node.children) == 3:

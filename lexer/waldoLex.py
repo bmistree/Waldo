@@ -49,6 +49,8 @@ reserved = {
     'Jump': 'JUMP',
     'extAssign':'EXT_ASSIGN',
     'extCopy':'EXT_COPY',
+    'break': 'BREAK',
+    'continue': 'CONTINUE'
     };
 
 

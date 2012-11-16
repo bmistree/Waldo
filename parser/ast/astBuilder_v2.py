@@ -230,6 +230,8 @@ def p_FunctionBodyStatement(p):
                              | MultiplyEqual SEMI_COLON                             
                              | ReturnableExpression SEMI_COLON
                              | ReturnStatement SEMI_COLON
+                             | BreakStatement SEMI_COLON
+                             | ContinueStatement SEMI_COLON
     '''
     p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p[1].lineNo,p[1].linePos);
     p[0].addChild(p[1]);

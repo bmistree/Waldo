@@ -163,6 +163,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(err_msg,err_nodes,err_line_nos,progText)
             return
 
+    elif ((node.label == AST_BREAK) or
+          (node.label == AST_CONTINUE)):
+        node.type = TYPE_NOTHING
+        
     elif node.label == AST_WHILE_STATEMENT:
         bool_cond = node.children[0]
         body = node.children[1]

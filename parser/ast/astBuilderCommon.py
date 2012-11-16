@@ -655,6 +655,20 @@ def p_FunctionBody(p):
         errPrint('\nError statement length mismatch in FunctionBody\n');
         assert(False);
 
+
+def p_BreakStatement(p):
+    '''
+    BreakStatement : BREAK
+    '''
+    p[0] = AstNode(AST_BREAK,p.lineno(1),p.lexpos(1))
+
+def p_ContinueStatement(p):
+    '''
+    ContinueStatement : CONTINUE
+    '''
+    p[0] = AstNode(AST_CONTINUE,p.lineno(1),p.lexpos(1))
+
+    
     
 def p_ReturnStatement(p):
     '''

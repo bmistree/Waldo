@@ -87,6 +87,11 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             print(idAnnotationType);
             assert(False);
 
+    elif astNode.label == AST_BREAK:
+        returner += 'break'
+    elif astNode.label == AST_CONTINUE:
+        returner += 'continue'
+            
     elif astNode.label == AST_WHILE_STATEMENT:
         bool_cond_node = astNode.children[0]
         body_node = astNode.children[1]
