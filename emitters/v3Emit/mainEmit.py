@@ -949,14 +949,23 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
                 returner += ',\n' + indentStr
             first = False
 
-            returner += emit(endpointName,arg_node,fdepDict,emitContext)
+
+
 
             # want to return the actual list or map in the callback
             # rather than the _WaldoList or _WaldoMap
             if (TypeCheck.templateUtil.isMapType(arg_node.type) or
                 TypeCheck.templateUtil.isListType(arg_node.type)):
-                returner += '._map_list_serializable_obj()'
-
+                if arg_node.external == None:
+                    returner += emit(endpointName,arg_node,fdepDict,emitContext)
+                    returner += '._map_list_serializable_obj()'
+                else:
+                    prev_suppress = emitContext.suppress_get_on_external
+                    emitContext.suppress_get_on_external = True
+                    returner += emit(endpointName,arg_node,fdepDict,emitContext)                    
+                    emitContext.suppress_get_on_external = prev_suppress
+            else:
+                returner += emit(endpointName,arg_node,fdepDict,emitContext)
             
     returner +=  ')'
 
