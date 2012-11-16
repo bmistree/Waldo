@@ -90,8 +90,7 @@ def p_Jump(p):
         
 
 def p_SharedSection(p):
-    '''SharedSection : Empty
-                     | SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
+    '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
                      | SHARED CURLY_LEFT CURLY_RIGHT''';
 
     p[0] = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1));
@@ -127,6 +126,86 @@ def p_AnnotatedDeclaration(p):
         #have an initialization statement to perform
         p[0].addChild(p[6]);
 
+def p_StructSharedSection(p):
+    '''
+    StructSharedSection : StructSection SharedSection
+                        | StructSection
+                        | SharedSection
+                        | Empty
+    '''
+
+    p[0] = AstNode(AST_STRUCT_SHARED_SECTION,p.lineno(1),p.lexpos(1))
+    if len(p) == 3:
+        p[0].addChildren([p[1],p[2]])
+    elif len(p) == 2:
+
+        blank_struct = AstNode(AST_STRUCT_SECTION,p.lineno(1),p.lexpos(1))
+        blank_shared = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1))
+        
+        if isEmptyNode(p[1]):
+            # means that we have to fill in two blank
+            p[0].addChildren([blank_struct,blank_shared])
+        elif p[1].label == AST_STRUCT_SECTION:
+            p[0].addChildren([p[1],blank_shared])
+        elif p[1].label == AST_SHARED_SECTION:
+            p[0].addChildren([blank_struct,p[1]])
+        else:
+            err_msg = '\nBehram error.  Unexpected label.\n'
+            print(err_msg)
+            assert(False)
+    else:
+        err_msg = '\nBehram error.  More parts to struct '
+        err_msg += 'shared than expected.\n'
+        print (err_msg)
+        assert(False)
+
+        
+def p_StructSection(p):
+    '''
+    StructSection : Struct
+                  | StructSection Struct
+    '''
+    
+    p[0] = AstNode(AST_STRUCT_SECTION,p[1].lineNo,p[1].linePos)
+    if len(p) == 3:
+        p[0].addChildren(p[1].getChildren())
+        p[0].addChild(p[2])
+    elif len(p) == 2:
+        p[0].addChild(p[1])
+    else:
+        errPrint('\nError in StructSection.  Unexpected length to match.\n')
+    
+def p_Struct (p):
+    '''
+    Struct : STRUCT Identifier CURLY_LEFT StructBody CURLY_RIGHT
+    '''
+    p[0] = AstNode(AST_STRUCT,p.lineno(1),p.lexpos(1))
+    struct_name = p[1]
+    struct_body = p[3]
+    p[0].addChildren([struct_name,struct_body])
+
+    
+def p_StructBody(p):
+    '''
+    StructBody : StructBody Declaration SEMI_COLON
+               | Declaration SEMI_COLON
+    '''
+    p[0] = AstNode(AST_STRUCT_BODY, p.lineno(1),p.lexpos(1))
+
+    if len(p) == 4:
+        struct_body_node = p[1]
+        decl_node = p[2]
+        p[0].addChildren(struct_body_node.getChildren())
+    elif len(p) == 3:
+        decl_node = p[1]
+    else:
+        err_msg = '\nBehram error.  Unexpected length in Struct Body.\n'
+        print (err_msg)
+        assert(False)
+
+    p[0].addChild(decl_node)
+    
+
 def p_Type(p):
     '''
     Type : NUMBER_TYPE
@@ -137,6 +216,7 @@ def p_Type(p):
          | ListType
          | MapType
          
+         | STRUCT Identifier
          | EXTERNAL NUMBER_TYPE
          | EXTERNAL STRING_TYPE
          | EXTERNAL BOOL_TYPE

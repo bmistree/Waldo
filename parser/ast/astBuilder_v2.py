@@ -34,19 +34,38 @@ from astBuilderCommon import *
 
 def p_RootExpression(p):
     '''
-    RootExpression : NameSection EndpointAliasSection TraceSection SharedSection MessageSequenceSection EndpointSection EndpointSection
-                   | NameSection EndpointAliasSection TraceSection SharedSection EndpointSection EndpointSection
-    ''';
+    RootExpression : NameSection EndpointAliasSection TraceSection StructSharedSection MessageSequenceSection EndpointSection EndpointSection
+                   | NameSection EndpointAliasSection TraceSection StructSharedSection EndpointSection EndpointSection
+                   
+    '''
     
     p[0] = AstNode(AST_ROOT,p[1].lineNo,p[1].linePos);
 
-    p[0].addChildren([p[1],p[2],p[3],p[4]]);
+    name_section = p[1]
+    endpoint_alias_section = p[2]
+    trace_section = p[3]
+    struct_shared_section = p[4]
+
+    struct_section = struct_shared_section.children[0]
+    shared_section = struct_shared_section.children[1]
+    
+    
+    p[0].addChildren(
+        [name_section,endpoint_alias_section,trace_section,shared_section]);
+
+    msg_seq_section = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[4].lineNo,p[4].linePos);
+    endpoint_section_1 = p[5]
+    endpoint_section_2 = p[6]
+    
     if len(p) == 8:
-        msgSeqSectionToAdd = p[5];
-        p[0].addChildren([p[6],p[7], msgSeqSectionToAdd]);  # message section gets added to end
-    else:
-        msgSeqSectionToAdd = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[4].lineNo,p[4].linePos);
-        p[0].addChildren([p[5],p[6], msgSeqSectionToAdd]);  # message section gets added to end
+        msg_seq_section = p[5]
+        endpoint_section_1 = p[6]
+        endpoint_section_2 = p[7]
+    
+
+    p[0].addChildren([
+            endpoint_section_1,endpoint_section_2,
+            msg_seq_section,struct_section]);   
 
 
 def p_MessageSequenceSection(p):
