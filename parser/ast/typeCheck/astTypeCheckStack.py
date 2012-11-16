@@ -220,12 +220,12 @@ class TypeCheckContextStack(object):
                 err_msg = 'Incorrect return type in ' + funcName + '.  '
                 if len(return_type_list) == 1:
                     err_msg += 'Expected type ' + declared_return_type
-                    err_msg += ', but actually returned type ' + actual_return_type
+                    err_msg += ', but actually returned type ' + str(actual_return_type)
                     err_msg += '.'
                 else:
                     err_msg += 'The ' + str(return_index + 1) + ' tuple return '
                     err_msg += 'element expected a type of ' + declared_return_type
-                    err_msg += ', but actually returned type of ' + actual_return_type
+                    err_msg += ', but actually returned type of ' + str(actual_return_type)
                     err_msg += '.'
                     
                 err_nodes = [returnNode, function_returns_type_node]

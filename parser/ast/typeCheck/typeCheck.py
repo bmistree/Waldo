@@ -1392,7 +1392,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if (checkTypeMismatch(rhs,declaredType,rhsType,typeStack,progText)):
                 errMsg = 'Type mismatch for variable named "' + name + '".';
                 errMsg += '  Declared with type [' + declaredType + '], but ';
-                errMsg += 'assigned to type [' + rhsType + '].';
+                errMsg += 'assigned to type [' + str(rhsType) + '].';
                 errorFunction(errMsg,[node],[currentLineNo],progText);
 
             # uncomment the following if want to require
@@ -2307,4 +2307,3 @@ def _check_single_assign(
             errorFunction(err_msg,err_nodes,err_line_nos,progText)
             
     # FIXME: unsure how to handle assignments to externals 
-
