@@ -21,47 +21,6 @@ def resetErrorEncountered():
     TYPE_ERROR_ENCOUNTERED = False;
 
 
-def is_true_false(dict_type):
-    _assert_if_not_dict(dict_type,'is_true_false')
-    return dict_type
-    
-
-def _assert_if_not_dict(to_check,caller):
-    '''
-    '''
-    if not isinstance(to_check,dict):
-        err_msg = ''
-        lkjs;
-        
-
-def generate_type_as_dict(type_string):
-    '''
-    The .type fields of all nodes should be dicts with 'TYPE'
-    specified in them.
-
-    This takes one type and wraps it in another.
-    '''
-
-    return {
-        JSON_TYPE_FIELD: type_string
-        }
-
-
-def dict_type_to_str(dict_type):
-    '''
-    @param {dict} dict_type 
-    Used for printing error messages.
-    '''
-    if not isinstance(json_type,dict):
-        err_msg = '\nBehram error when converting type to string. '
-        err_msg += 'Expected a dict.  But instead, got '
-        err_msg += repr(json_type)
-        err_msg += '\n'
-        print err_msg
-        assert(False)
-
-    return json.dumps(dict_type, sort_keys=True,indent=4)
-
 
 
 def errorFunction(errorString,astNodes,lineNumbers,progText):

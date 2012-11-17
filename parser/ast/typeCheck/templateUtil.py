@@ -25,13 +25,105 @@ JSON_LIST_ELEMENT_TYPE_FIELD = 'ElementType';
 
 JSON_MAP_FROM_TYPE_FIELD = 'From';
 JSON_MAP_TO_TYPE_FIELD = 'To';
+JSON_TUPLE_TYPE_FIELD = 'Tuple'
 
 
-def isValueType(typeLabel):
+
+def is_true_false(dict_type):
+    _assert_if_not_dict(dict_type,'is_true_false')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_BOOL
+
+def is_text(dict_type):
+    _assert_if_not_dict(dict_type,'is_text')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_STRING
+
+def is_number(dict_type):
+    _assert_if_not_dict(dict_type,'is_number')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_NUMBER
+
+def is_nothing_type(dict_type):
+    _assert_if_not_dict(dict_type,'is_nothing_type')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_NOTHING
+    
+def is_empty_map(dict_type):
+    _assert_if_not_dict(dict_type,'is_empty_map')
+    return dict_type[JSON_TYPE_FIELD] == EMPTY_MAP_SENTINEL
+
+def is_empty_list(dict_type):
+    _assert_if_not_dict(dict_type,'is_empty_list')
+    return dict_type[JSON_TYPE_FIELD] == EMPTY_LIST_SENTINEL
+
+def is_returned_tuple(dict_type):
+    _assert_if_not_dict(dict_type,'is_returned_tuple')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_RETURNED_TUPLE
+
+
+def generate_returned_tuple_type(tuple_element_list):
+    '''
+    Each one of these should themselves be a type dict.
+    '''
+    to_return = {}
+    to_return[JSON_TYPE_FIELD] = TYPE_RETURNED_TUPLE
+    to_return[JSON_TUPLE_TYPE_FIELD] = []
+    for item in tuple_element_list:
+        to_return[JSON_TUPLE_TYPE_FIELD].append(item)
+    
+    return to_return
+    
+
+def _assert_if_not_dict(to_check,caller):
+    '''
+    Asserts false if to_check is not a dict.
+
+    caller should be a string, with the name of the function that
+    called the check.
+    '''
+    if not isinstance(to_check,dict):
+        err_msg = 'Berham error.  Passed in an incorrect '
+        err_msg += 'data type to _assert_if_not_dict in '
+        err_msg += caller + '\n'
+        print err_msg
+        assert(False)
+        
+
+def generate_type_as_dict(type_string):
+    '''
+    The .type fields of all nodes should be dicts with 'TYPE'
+    specified in them.
+
+    This takes one type and wraps it in another.
+    '''
+
+    return {
+        JSON_TYPE_FIELD: type_string
+        }
+
+
+def dict_type_to_str(dict_type):
+    '''
+    @param {dict} dict_type 
+    Used for printing error messages.
+    '''
+    if not isinstance(json_type,dict):
+        err_msg = '\nBehram error when converting type to string. '
+        err_msg += 'Expected a dict.  But instead, got '
+        err_msg += repr(json_type)
+        err_msg += '\n'
+        print err_msg
+        assert(False)
+
+    return json.dumps(dict_type, sort_keys=True,indent=4)
+
+
+
+
+def isValueType(type_field):
     '''
     Text, TrueFalse, and Number are all value types.  Everything else is not
     '''
-    return (typeLabel == TYPE_BOOL) or (typeLabel == TYPE_NUMBER) or (typeLabel == TYPE_STRING);
+
+    return is_true_false(type_field) or is_text(type_field) or is_number(type_field)
+
 
 def isFunctionType(typeLabel):
     '''
