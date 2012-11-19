@@ -75,7 +75,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                           [typeStack.endpoint1LineNo,typeStack.endpoint2LineNo],
                           progText);
 
+        # check the structs section, loading each type into user type
+        # dict
+        struct_section_node = node.children[7]
+        struct_section_node.typeCheck(progText,typeStack,avoidFunctionObjects)
 
+
+            
         # #Do first level of type chcecking trace items.  see notes in
         # #corresponding elif of AST_TRACE_SECTION
         # corresponds to
@@ -126,6 +132,53 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(traceError.errMsg,traceError.nodes,
                           traceError.lineNos,progText);
 
+    elif node.label == AST_STRUCT_SECTION:
+        # for each struct declared, create a type out of it and add
+        # that type to the type stack by calling type check on the
+        # declared struct.
+
+        for struct_decl_node in node.children:
+            struct_decl_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+
+    elif node.label == AST_STRUCT_DECLARATION:
+
+        struct_name_node = node.children[0]
+        struct_name = struct_name_node.value
+        struct_body = node.children[1]
+
+        # adding a context onto type stack so that the fields that we
+        # type check don't get actually added to type stack context
+        
+        typeStack.pushContext()
+
+        # each element is a tuple.  the first element is a string ---
+        # the name of the field.  the second element is the type dict
+        # for that field
+        field_tuple_array = []
+
+        
+        for field_decl_node in struct_body.children:
+            field_decl_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+            field_identifier_node = field_decl_node.children[1]
+            field_name = field_identifier_node.value
+            
+            # not calling type check directly on field_decl_node
+            # because we do not want to insert it directly into
+            field_tuple_array.append(
+                (field_name,field_decl_node.type))
+
+        # remove the fields that we just added to the context
+        typeStack.popContext()
+
+        node.type = create_struct_type(struct_name,field_tuple_array)
+        err_msg = typeStack.add_struct_type(struct_name,node.type)
+        if err_msg != None:
+            # means that there was some error adding the struct type
+            # to type stack.  (Likely, we already declared a struct of
+            # that type.)
+            errorFunction(err_msg,[node],[node.lineNo],progText)
+            
+            
     elif node.label == AST_EXT_COPY:
         from_node = node.children[0]
         to_node = node.children[1]
@@ -1007,7 +1060,22 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errorFunction(errMsg,errNodes, errLineNos, progText);
 
             node.type = typeSignature
+            
+        elif node.value == TYPE_STRUCT:
+            struct_name = node.children[0].value
 
+            struct_type = typeStack.get_struct_type(struct_name)
+            if struct_type == None:
+                # means that struct with name struct_name has not been
+                # already declared by the user
+                err_msg = 'Error.  Struct ' + struct_name + ' has '
+                err_msg += 'been declared ahead of time.  Did you misspell "'
+                err_msg += struct_name + '" or forget to declare it?'
+                
+                errorFunction(err_msg,[node],[node.lineNo],progText)
+                
+            node.type = struct_type
+            
         else:
             # just assign the type directly since it is one of the
             # basic types Text, TrueFalse, or Number.

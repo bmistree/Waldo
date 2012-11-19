@@ -80,6 +80,10 @@ class TypeCheckContextStack(object):
         # rest of the code, you're not allowed to use and lhs_assign
         # statement.
         self.in_lhs_assign = False
+
+        # indices are the struct names.  values are the types of the
+        # struct with that name
+        self.struct_type_dict = {}
         
     def setRootNode(self,root):
         if self.rootNode != None:
@@ -128,6 +132,28 @@ class TypeCheckContextStack(object):
         return self.endpoint2;
 
 
+    def add_struct_type(self,struct_name,struct_type):
+        '''
+        @returns {None or String} --- String if there's an error (the
+        string is the error message).  None if there's no error.
+        '''
+        if struct_name in self.struct_type_dict:
+            err_msg = 'Error.  Already have a struct named '
+            err_msg += struct_name + '.'
+            return err_msg
+        
+        self.struct_type_dict[struct_name] = struct_type
+        # no error, return None
+        return None
+
+    def get_struct_type(self,struct_name):
+        '''
+        @returns{type dict or None} --- None if struct_name has not
+        been declared by user.  type dict if it has (where type dict
+        is the declared type of that node).
+        '''
+        return self.struct_type_dict.get(struct_name,None)
+        
     def addCurrentFunctionNode(self,node):
         '''
         Sets the current function we're in so that can check return

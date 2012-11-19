@@ -179,9 +179,9 @@ def p_Struct (p):
     '''
     Struct : STRUCT Identifier CURLY_LEFT StructBody CURLY_RIGHT
     '''
-    p[0] = AstNode(AST_STRUCT,p.lineno(1),p.lexpos(1))
-    struct_name = p[1]
-    struct_body = p[3]
+    p[0] = AstNode(AST_STRUCT_DECLARATION,p.lineno(1),p.lexpos(1))
+    struct_name = p[2]
+    struct_body = p[4]
     p[0].addChildren([struct_name,struct_body])
 
     
@@ -215,8 +215,9 @@ def p_Type(p):
          | FunctionType
          | ListType
          | MapType
+         | StructType
+
          
-         | STRUCT Identifier
          | EXTERNAL NUMBER_TYPE
          | EXTERNAL STRING_TYPE
          | EXTERNAL BOOL_TYPE
@@ -233,13 +234,20 @@ def p_Type(p):
     if isinstance(p[typeIndex],basestring):
         p[0].value = p[typeIndex];
     else:
-        # means that has function or list type
+        # means that has function, list type, or struct type
         p[0] = p[typeIndex];
 
     if len(p) == 3:
         p[0].external = True;
 
+def p_StructType(p):
+    '''
+    StructType : STRUCT Identifier
+    '''
+    p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_STRUCT)
+    p[0].addChild(p[2])
 
+    
 def p_ExtAssignForTuple(p):
     '''
     ExtAssignForTuple : EXT_ASSIGN HOLDER TO_OPERATOR Identifier

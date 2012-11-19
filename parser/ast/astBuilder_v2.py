@@ -26,6 +26,7 @@ from astBuilderCommon import *
 # NameSection
 # EndpointAliasSection
 # TraceSection
+# Struct section (optional)
 # SharedSection (optional)
 # Message sequence section
 # EndpointSection

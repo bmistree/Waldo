@@ -28,6 +28,31 @@ JSON_MAP_TO_TYPE_FIELD = 'To';
 JSON_TUPLE_TYPE_FIELD = 'Tuple'
 
 
+JSON_STRUCT_FIELDS_DICT = 'StructFields'
+
+def create_struct_type(struct_name,struct_field_tuples):
+    '''
+    @param {String} struct_name --- The name of the user-defined
+    struct.
+
+    @param{Array} struct_field_tuples --- Each element of the array is
+    a two-tuple.  The first element is the name of the field and the
+    second is the type of that element field.  
+    '''
+    struct_type = {
+        JSON_TYPE_FIELD: TYPE_STRUCT,
+        JSON_STRUCT_FIELDS_DICT: {}
+        }
+
+    for single_field in struct_field_tuples:
+        field_name = single_field[0]
+        field_type = single_field[1]
+
+        # add field type to fields dict
+        struct_type[JSON_STRUCT_FIELDS_DICT][field_name] = field_type
+
+    return struct_type
+
 
 def is_true_false(dict_type):
     _assert_if_not_dict(dict_type,'is_true_false')
