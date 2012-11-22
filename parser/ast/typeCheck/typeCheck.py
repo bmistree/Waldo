@@ -479,6 +479,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         forBodyNode = node.children[forBodyNodeIndex];
         forBodyNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
+
     elif node.label == AST_APPEND_STATEMENT:
         toAppendToNode = node.children[0];
         toAppendNode = node.children[1];
@@ -915,96 +916,231 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     elif(node.label == AST_BOOL):
         node.type = generate_type_as_dict(TYPE_BOOL)
 
-    elif(node.label == AST_FUNCTION_CALL):
-        funcName = node.children[0].value;
-        node.lineNo = node.children[0].lineNo;
+    elif node.label == AST_DOT_STATEMENT:
+        pre_dot_node = node.children[0]
+        post_dot_node = node.children[1]
 
-        # first check if the function has been declared by the
-        # programmer directly
-        funcMatchObj = typeStack.getFuncIdentifierType(funcName);
+        pre_dot_node.typeCheck(progText,typeStack,avoidFunctionObjects)
 
-        if (funcMatchObj == None):
-            # the function has not been defined in the source file.
-            # check if this is an identifier that points at a function.
-            # ie. maybe the user passed in an argument that was a function.
-            idElement = typeStack.getIdentifierElement(funcName);
-            if (idElement != None):
-                funcType = idElement.identifierType;
-                if (isFunctionType(funcType)):
-                    # the coder is trying to call a function variable.  generate
-                    # a function match object from that variable's type signature
-                    # to perform type checking on the input arguments that the
-                    # scripter provided
-                    funcMatchObj = createFuncMatchObjFromFuncTypeDict(funcType,idElement.astNode);
+        # do not type check post_dot_node.  For a.b, b will not be in
+        # scope.  only fully-qualified a.b will be.
+        # post_dot_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+
+        if post_dot_node.label != AST_IDENTIFIER:
+            err_msg = 'For a.b, require that b be an identifier.'
+            errorFunction(
+                err_msg,[post_dot_node],[post_dot_node.lineNo],progText)
+
+        post_dot_node_name = post_dot_node.value
+        if (isListType(pre_dot_node.type) or
+            isMapType(pre_dot_node.type) or
+            is_text(pre_dot_node.type)):
+
+            node.type = generate_type_as_dict(TYPE_NOTHING)
+            
+            # Should only get into this part of statement from
+            # function call.  if calling append or remove, change
+            # these nodes' labels to ast_append and ast_remove,
+            # respectively.  this will serve as a signal to function
+            # call type checking code to handle append and remove
+            # differently (ie, create an AST_APPEND and AST_REMOVE
+            # statement in ast type tree and use existing emitting and
+            # slicing code developed for these labels).
+
+            if post_dot_node_name == 'remove':
+                node.label = AST_REMOVE_STATEMENT
+                node.children = []
+                node.addChild(pre_dot_node)
+            elif post_dot_node_name == 'append':
+                node.label = AST_APPEND_STATEMENT
+                node.children = []
+                node.addChild(pre_dot_node)
             else:
-                errMsg = '\nError trying to call function named "' + funcName + '".  ';
-                errMsg += 'That function is not defined anywhere.\n';
-                errorFunction(errMsg,[node],[node.lineNo],progText);            
+                err_msg = 'Error.  Type '
+                err_msg += dict_type_to_str(pre_dot_node.type)
+                err_msg += ' only permits the operations "remove" '
+                err_msg += 'and "append" to be called on it.  It '
+                err_msg += 'does not support "' + post_dot_node_name + '."'
+                errorFunction(err_msg,
+                              [post_dot_node],
+                              [post_dot_node.lineNo],
+                              progText)
 
+                
+        elif is_struct(pre_dot_node.type):
+            # from struct type, get the type of the field named by
+            # post_dot_node_name
+            node.type = get_struct_field_type(
+                post_dot_node_name,pre_dot_node.type)
+
+            # field we are trying to call did not exist
+            if node.type == None:
+                err_msg = 'Error.  The struct has type '
+                err_msg += dict_type_to_str(pre_dot_node.type)
+                err_msg += '.  It does not have a field named '
+                err_msg += post_dot_node_name + ' for you to access.'
+                errorFunction(
+                    err_msg,[pre_dot_node],[pre_dot_node.lineNo],progText)
+                
+        else:
+            err_msg = 'Error, when calling a.b, a must be a '
+            err_msg += 'struct, list, map, or text type.  Instead, you '
+            err_msg += 'provided type '
+            err_msg += dict_type_to_str(pre_dot_node.type) + '.'
+            errorFunction(
+                err_msg,[pre_dot_node],[pre_dot_node.lineNo],progText)
+
+        
+    elif node.label == AST_FUNCTION_CALL:
+        # a function can be called with a couple of patterns:
+        # first pattern: func_name(<args>)
+        # second pattern: <struct var>.func_name(<args>)
+        # unsupported: func_call()() (ie, a function returns a func,
+        # which we then call
+        
+        func_name_node = node.children[0]
+        func_name_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        node.lineNo = func_name_node.lineNo
+        # arguments to function
+        func_arg_list_node = node.children[1]
+
+
+        # special-cased handling append and remove statements to
+        # preserve as much previous slicing and emitting code as had
+        # been written.  essentially, if the function call was to
+        # append or remove from a map/list, then when we call
+        # typeCheck on func_name_node, the AST_DOT rule will transform
+        # the label of func_name_node to be AST_APPEND_STATEMENT or
+        # AST_REMOVE_STATEMENT, depending on whether the programmer
+        # was trying to append or remove.  Here, in turn, we must form
+        # a *new* ast_append_statement or ast_remove statement,
+        # passing the argument of the append or remove call and type
+        # check the newly generated statement.  The reason for all
+        # this convoluted logic is that the dot notation cannot
+        # construct the full ast_append_statement or
+        # ast_remove_statement itself because it does not have access
+        # to the function's arguments that are available here.
+        if func_name_node.label in [AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT]:
+            node.label = func_name_node.label
+            # clear exsiting children structure.
+            node.children = []
+            # this adds in the node that is being appended to
+            node.addChild(func_name_node.children[0])
+            
+            if len(func_arg_list_node.children) != 1:
+                which_func = 'append' if node.label == AST_APEND_STATEMENT else 'remove'
+                
+                err_msg = 'Error when calling ' + which_func + '.  '
+                err_msg += 'append takes 1 argument.  You '
+                err_msg += 'provided ' + str(len(func_arg_list_node.children))
+                err_msg += '.'
+                errorFunction(
+                    err_msg, [node],[node.lineNo],progText);
+
+            # this adds in the node corresponding to the argument of
+            # the append statement.  Eg, if we called a.append(1),
+            # then here we would be appending the node corresponding
+            # to the literal 1.
+            node.addChild(func_arg_list_node.children[0])
+
+            # need to re-type check to ensure that the append and
+            # remove statements are correct (eg. what we're appending
+            # to a list has the same type as the elements of the list,
+            # etc.
+            node.typeCheck(progText,typeStack,avoidFunctionObjects)
+            
+        else:
+
+            if not isFunctionType(func_name_node.type):
+                err_msg = 'Error in function call attempt.  '
+                err_msg += 'Must make function call on a function '
+                err_msg += 'type.  Instead, making it on '
+                err_msg += dict_type_to_str(func_name_node.type) + '.'
+                errorFunction(
+                    err_msg,[func_name_node],[func_name_node.lineNo],progText)
+            
+            # func_name_node.type should contain the function's type
+            # signature now.
+            func_match_obj = createFuncMatchObjFromFuncTypeDict(
+                func_name_node.type,func_name_node)
+
+            # check if this is a text function or a function object
+            is_function_object = True
+            func_name = ''
+            if func_name_node.label == AST_IDENTIFIER:
+                func_name = func_name_node.value
+                func_id_type = typeStack.getFuncIdentifierType(func_name)
+                if func_id_type != None:
+                    is_function_object = False
 
             # rule that can only call passed-in functions in
             # oncomplete section.
-            if not typeStack.inOnComplete:
+            if is_function_object and (not typeStack.inOnComplete):
                 errMsg = '\nError trying to call function object.  ';
                 errMsg += 'Can only call function object in onComplete ';
                 errMsg += 'section.\n';
                 errorFunction(errMsg,[node],[node.lineNo],progText);
 
-        if (funcMatchObj.element.astNode.label == AST_ONCREATE_FUNCTION):
-            errMsg = '\nError trying to call OnCreate function.  ';
-            errMsg += 'You are not allowed to call OnCreate yournode.  ';
-            errMsg += 'The Waldo system itself will call the function ';
-            errMsg += 'when creating your endpoint.\n';
-            errorFunction(errMsg,[node],[node.lineNo],progText);            
 
-        #set my type as that returned by the function
-        node.type = funcMatchObj.getReturnType();
+            if func_match_obj.element.astNode.label == AST_ONCREATE_FUNCTION:
+                errMsg = '\nError trying to call OnCreate function.  ';
+                errMsg += 'You are not allowed to call OnCreate yournode.  ';
+                errMsg += 'The Waldo system itself will call the function ';
+                errMsg += 'when creating your endpoint.\n';
+                errorFunction(errMsg,[node],[node.lineNo],progText);            
 
-        
-        #check the argument types passed into the function
-        funcArgList = node.children[1].children;
-        allArgTypes = [];
-        for s in funcArgList:
-            s.typeCheck(progText,typeStack,avoidFunctionObjects);
-            allArgTypes.append(s.type);
-            
-        argError = funcMatchObj.argMatchError(allArgTypes,node);
-        
-        if (argError != None):
-            #means that the types of the arguments passed into the
-            #function do not match the arguments that the function
-            #is declared with.
+            #set my type as that returned by the function
+            node.type = func_match_obj.getReturnType();
 
-            argError.checkValid(); # just for debugging
+            #####check the argument types passed into the function
+            funcArgList = func_arg_list_node.children;
+            allArgTypes = [];
+            for s in funcArgList:
+                s.typeCheck(progText,typeStack,avoidFunctionObjects);
+                allArgTypes.append(s.type);
 
-            if (argError.errorType == FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH):
-                #means that expected a different number of
-                #arguments than what we called it with.
-                errMsg = '\nError calling function "' + funcName + '".  ';
-                errMsg += funcName + ' requires ' + str(argError.expected);
-                errMsg += ' arguments.  Instead, you provided ' + str(argError.provided);
-                errMsg += '.\n';
+            argError = func_match_obj.argMatchError(allArgTypes,node);
 
-                errorFunction(errMsg,argError.astNodes,argError.lineNos,progText); 
+            if (argError != None):
+                #means that the types of the arguments passed into the
+                #function do not match the arguments that the function
+                #is declared with.
 
-            elif (argError.errorType == FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH):
-                #means that although we got the correct number of
-                #arguments, we had type mismatches on several of
-                #them.
-                errMsg = '\nError calling function "' + funcName + '".  '
-                for s in range (0, len(argError.argNos)):
-                    errMsg += '\n\t'
-                    errMsg += 'Argument number ' + str(argError.argNos[s]) + ' was expected '
-                    errMsg += 'to be of type ' + dict_type_to_str(argError.expected[s])
-                    errMsg += ', but is inferrred '
-                    errMsg += 'to have type ' + dict_type_to_str(argError.provided[s])
+                argError.checkValid(); # just for debugging
 
-                errorFunction(errMsg,argError.astNodes,argError.lineNos,progText); 
-            else:
-                errMsg = '\nBehram error in AST_FUNCTION_CALL.  Have an error ';
-                errMsg += 'type for a function that is not recognized.\n'
-                errPrint(errMsg);
-                assert(False);
+                if (argError.errorType == FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH):
+                    #means that expected a different number of
+                    #arguments than what we called it with.
+                    # FIXE: unclear if func_name will have relevant value
+                    errMsg = '\nError calling function "' + func_name + '".  ';
+                    errMsg += func_name + ' requires '
+                    errMsg += dict_type_to_str(argError.expected)
+                    errMsg += ' arguments.  Instead, you provided '
+                    errMsg += dict_type_to_str(argError.provided)
+                    errMsg += '.\n';
+
+                    errorFunction(errMsg,argError.astNodes,argError.lineNos,progText); 
+
+                elif (argError.errorType == FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH):
+                    #means that although we got the correct number of
+                    #arguments, we had type mismatches on several of
+                    #them.
+                    # FIXME: func_name may be useless here
+                    errMsg = '\nError calling function "' + func_name + '".  '
+                    for s in range (0, len(argError.argNos)):
+                        errMsg += '\n\t'
+                        errMsg += 'Argument number ' + str(argError.argNos[s]) + ' was expected '
+                        errMsg += 'to be of type ' + dict_type_to_str(argError.expected[s])
+                        errMsg += ', but is inferrred '
+                        errMsg += 'to have type ' + dict_type_to_str(argError.provided[s])
+
+                    errorFunction(errMsg,argError.astNodes,argError.lineNos,progText); 
+                else:
+                    errMsg = '\nBehram error in AST_FUNCTION_CALL.  Have an error ';
+                    errMsg += 'type for a function that is not recognized.\n'
+                    errPrint(errMsg);
+                    assert(False);
+
 
     elif node.label == AST_FUNCTION_TYPE_LIST:
         node.type = []
@@ -1476,8 +1612,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             if (checkTypeMismatch(rhs,declaredType,rhsType,typeStack,progText)):
                 errMsg = 'Type mismatch for variable named "' + name + '".';
-                errMsg += '  Declared with type [' + declaredType + '], but ';
-                errMsg += 'assigned to type [' + rhsType + '].';
+                errMsg += '  Declared with type '
+                errMsg += dict_type_to_str(declaredType) + ', but ';
+                errMsg += 'assigned to type '
+                errMsg += dict_type_to_str(rhsType) + '.';
                 errorFunction(errMsg,[node],[currentLineNo],progText);
 
             # uncomment the following if want to require
@@ -2268,7 +2406,8 @@ def _check_single_assign(
     if ((to_assign_to_node.label != AST_BRACKET_STATEMENT) and
         (to_assign_to_node.label != AST_IDENTIFIER) and
         (to_assign_to_node.label != AST_EXT_ASSIGN_FOR_TUPLE) and
-        (to_assign_to_node.label != AST_EXT_COPY_FOR_TUPLE)):
+        (to_assign_to_node.label != AST_EXT_COPY_FOR_TUPLE) and
+        (to_assign_to_node.label != AST_DOT_STATEMENT)):
         
         # This disallows the following types of calls:
         #   public function a () returns External int{}

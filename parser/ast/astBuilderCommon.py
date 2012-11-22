@@ -382,8 +382,7 @@ def p_NonBracketOperatableOn(p):
                               | KeysStatement
                               | LenStatement
                               | RangeStatement
-                              | AppendStatement
-                              | RemoveStatement
+                              | DotStatement
                               | ExtAssignForTuple
                               | ExtCopyForTuple
                               ''';
@@ -470,13 +469,6 @@ def p_DivideEqual(p):
     divideNode = AstNode(AST_DIVIDE,p[1].lineNo,p[1].linePos);
     divideNode.addChildren([to_assign_to,to_assign_with]);
     p[0].addChild(divideNode);
-
-    
-    
-    # p[0].addChild(p[1]);
-    # divideNode = AstNode(AST_DIVIDE,p[1].lineNo,p[1].linePos);
-    # divideNode.addChildren([p[1],p[3]]);
-    # p[0].addChild(divideNode);
 
     
 def p_OperatableOn(p):
@@ -913,22 +905,30 @@ def p_BooleanOperator(p):
     else:
         errPrint('\nIncorrect boolean operator: ' + p[1] + '\n');
         assert(False);
-    
 
-def p_AppendStatement(p):
+
+def p_DotStatement(p):
     '''
-    AppendStatement : OperatableOn DOT_APPEND LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    DotStatement : OperatableOn DOT Identifier
     '''
-    p[0] = AstNode(AST_APPEND_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[4]]);
+    p[0] = AstNode(AST_DOT_STATEMENT,p.lineno(2),p.lexpos(2))
+    p[0].addChildren([p[1],p[3]])
+# lkjs;
+    
+# def p_AppendStatement(p):
+#     '''
+#     AppendStatement : OperatableOn DOT_APPEND LEFT_PAREN ReturnableExpression RIGHT_PAREN
+#     '''
+#     p[0] = AstNode(AST_APPEND_STATEMENT,p[1].lineNo,p[1].linePos);
+#     p[0].addChildren([p[1],p[4]]);
 
     
-def p_RemoveStatement(p):
-    '''
-    RemoveStatement : OperatableOn DOT_REMOVE LEFT_PAREN ReturnableExpression RIGHT_PAREN
-    '''
-    p[0] = AstNode(AST_REMOVE_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[4]]);
+# def p_RemoveStatement(p):
+#     '''
+#     RemoveStatement : OperatableOn DOT_REMOVE LEFT_PAREN ReturnableExpression RIGHT_PAREN
+#     '''
+#     p[0] = AstNode(AST_REMOVE_STATEMENT,p[1].lineNo,p[1].linePos);
+#     p[0].addChildren([p[1],p[4]]);
 
     
 def p_AssignmentStatement(p):
@@ -1107,9 +1107,13 @@ def p_FunctionDeclArgList(p):
 
 
 def p_FunctionCall(p):
-    '''FunctionCall : Identifier LEFT_PAREN FunctionArgList RIGHT_PAREN'''
+    '''
+    FunctionCall : OperatableOn LEFT_PAREN FunctionArgList RIGHT_PAREN
+    '''
+    # '''FunctionCall : Identifier LEFT_PAREN FunctionArgList RIGHT_PAREN'''
     p[0] = AstNode(AST_FUNCTION_CALL,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
+# lkjs;
 
     
 def p_FunctionArgList(p):

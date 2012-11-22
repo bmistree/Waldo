@@ -284,37 +284,25 @@ def slicer(node,functionDeps=None,typeStack=None):
                 typeStack.addToVarReadSet(ntt)
                 typeStack.addReadsToVarReadSet(ntt,reads_made_by_to_assign_from)
 
-            elif actual_assign_node.label == AST_BRACKET_STATEMENT:
-                toReadFromNode = actual_assign_node.children[0];
-                # toReadFromNode can either be an identifier or a function call
-                if toReadFromNode.label == AST_IDENTIFIER:
-                    nodeName = toReadFromNode.value;
-                    # gets passed to emitter
-                    typeStack.annotateNode(toReadFromNode,nodeName);
+            elif actual_assign_node.label in [AST_DOT_STATEMENT,AST_BRACKET_STATEMENT]:
+                
+                root_identifier_node = get_root_node_from_bracket_dot(actual_assign_node)
+                node_name = root_identifier_node.value
 
-                    ntt = typeStack.getIdentifier(nodeName);
-                    typeStack.addToVarReadSet(ntt);
-                    typeStack.addReadsToVarReadSet(ntt,reads_made_by_to_assign_from);
+                # adds a globally unique label to root_identifier_node
+                typeStack.annotateNode(root_identifier_node,node_name)
+                
+                ntt = typeStack.getIdentifier(node_name)
+                typeStack.addToVarReadSet(ntt)
 
-                    # add all identifiers to function that results from
-                    # accessing map identifier.
-                    # FIXME: lkjs; may add to read set.
-                    slicer(actual_assign_node,functionDeps,typeStack);
-                    indexNode = actual_assign_node.children[1];
+                
+                typeStack.addReadsToVarReadSet(
+                    ntt,
+                    reads_made_by_to_assign_from)
 
-                else:
-                    # NOTE: Based on current type checking rules in
-                    # typeCheck.py's switch statement for the assignment
-                    # statement, it is impossible to assign into an
-                    # element that is directly returned by a function
-                    # call.  (Eg.  funcCall()[1] = 2;) Therefore should
-                    # not go down this path.  If change rule in
-                    # typeCheck.py, then change this as well.
-                    errMsg = '\nBehram error: Type checking should have prevented ';
-                    errMsg += 'case where assigning to ';
-                    errMsg += "a function call's bracket index.\n";
-                    print(errMsg);
-                    assert(False);
+                # don't forget to include reads made for instance to
+                # index into maps/lists
+                slicer(actual_assign_node,functionDeps,typeStack)
 
             else:
                 errMsg = '\nError in assignment statement.  LHS is only '
@@ -456,6 +444,15 @@ def slicer(node,functionDeps=None,typeStack=None):
         for child in node.children:
             slicer(child,functionDeps,typeStack);
 
+    elif node.label == AST_DOT_STATEMENT:
+        pre_dot_node = node.children[0]
+        slicer(pre_dot_node,functionDeps,typeStack)
+
+        # FIXME: level of granularity on object accesses is just
+        # enough so that a read/write on any part of the object
+        # will be treated as a read/write on the entire object.
+        # post_dot_node = node.children[1]
+            
     elif ((node.label == AST_EXT_ASSIGN) or
           (node.label == AST_EXT_COPY)):
         
@@ -708,4 +705,43 @@ def reset():
     Ensures that all static variables are reset to their original values.
     '''
     NameTypeTuple.staticId = 0;
+
+
+
+def get_root_node_from_bracket_dot(node):
+    '''
+    @param{AstNode} node --- Either a bracket node or a dot node.
+    Otherwise, throws error.
+
+    When we have an assignment statement, eg
+    a[b][c].d, returns the identifier node of a.
+
+
+    @returns{AstNode} --- An identifier node containing the name of
+    the root-most value that is changing.  (In the above example,
+    'a'.)
+    
+    '''
+
+    if not (node.label in [AST_BRACKET_STATEMENT,
+                           AST_DOT_STATEMENT]):
+        err_msg = '\nBehram error.  Cannot slice in '
+        err_msg += 'get_root_node_from_bracket_dot a non-'
+        err_msg += 'bracket/dot node.\n'
+        print err_msg
+        assert(False)
+
+        
+    lhs_node = node.children[0]
+
+    if lhs_node.label != AST_IDENTIFIER:
+        # FIXME: note that this disqualifies statements, such as
+        # func_call()[0]
+        err_msg = '\nBehram error in get_root_node_from_bracket_dot.  '
+        err_msg += 'Expected an identifier node as first child of root/'
+        err_msg += 'dot, but received something else.\n'
+        print err_msg
+        assert(False)
+
+    return lhs_node
 

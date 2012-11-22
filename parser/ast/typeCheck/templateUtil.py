@@ -54,6 +54,32 @@ def create_struct_type(struct_name,struct_field_tuples):
     return struct_type
 
 
+def get_struct_field_type(field_name,struct_type_dict):
+    '''
+    @param{String} field_name --- The name of the field that we want
+    to know the type of in struct_type_dict
+    
+    @param{dict type} struct_type_dict --- Throws error if is not a struct
+    type.
+
+    @returns {None or type dict} --- Returns None if the field did not
+    exist within the struct.  Returns the type dict associated with
+    that field otherwise.
+    '''
+    if not is_struct(struct_type_dict):
+        err_msg = '\nBehram error: get_struct_field_type requires '
+        err_msg += 'a struct type dict.\n'
+        print err_msg
+        assert(False)
+
+    struct_fields_dict = struct_type_dict[JSON_STRUCT_FIELDS_DICT]
+    return struct_fields_dict.get(field_name,None)
+
+
+def is_struct(dict_type):
+    _assert_if_not_dict(dict_type,'is_struct')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_STRUCT
+
 def is_true_false(dict_type):
     _assert_if_not_dict(dict_type,'is_true_false')
     return dict_type[JSON_TYPE_FIELD] == TYPE_BOOL
@@ -81,6 +107,7 @@ def is_empty_list(dict_type):
 def is_returned_tuple(dict_type):
     _assert_if_not_dict(dict_type,'is_returned_tuple')
     return dict_type[JSON_TYPE_FIELD] == TYPE_RETURNED_TUPLE
+
 
 
 def generate_returned_tuple_type(tuple_element_list):
