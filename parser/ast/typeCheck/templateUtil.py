@@ -29,6 +29,7 @@ JSON_TUPLE_TYPE_FIELD = 'Tuple'
 
 
 JSON_STRUCT_FIELDS_DICT = 'StructFields'
+JSON_STRUCT_FIELDS_NAME = 'StructName'
 
 def create_struct_type(struct_name,struct_field_tuples):
     '''
@@ -41,7 +42,8 @@ def create_struct_type(struct_name,struct_field_tuples):
     '''
     struct_type = {
         JSON_TYPE_FIELD: TYPE_STRUCT,
-        JSON_STRUCT_FIELDS_DICT: {}
+        JSON_STRUCT_FIELDS_DICT: {},
+        JSON_STRUCT_FIELDS_NAME: struct_name
         }
 
     for single_field in struct_field_tuples:
@@ -53,6 +55,14 @@ def create_struct_type(struct_name,struct_field_tuples):
 
     return struct_type
 
+def get_struct_name_from_type(struct_type_dict):
+    if not is_struct(struct_type_dict):
+        err_msg = '\nBehram error.  Attempting to get the struct name '
+        err_msg += 'for a type that is not a struct.'
+        print err_msg
+        assert(False)
+        
+    return struct_type_dict[JSON_STRUCT_FIELDS_NAME]
 
 def get_struct_field_type(field_name,struct_type_dict):
     '''

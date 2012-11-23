@@ -113,6 +113,10 @@ def getDefaultValueFromDeclNode(astDeclNode):
         returner = '_defaultFunction';
     elif templateUtil.isMapType(typeLabel):
         returner = '_WaldoMap({})';
+    elif templateUtil.is_struct(typeLabel):
+        # initialize a user-defined struct
+        returner = templateUtil.get_struct_name_from_type(typeLabel)
+        returner += '()'
     else:
         errMsg = '\nBehram error: unrecognized type name when writing ';
         errMsg += 'default value for node.\n';

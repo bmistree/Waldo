@@ -87,6 +87,20 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             print(idAnnotationType);
             assert(False);
 
+    elif astNode.label == AST_DOT_STATEMENT:
+        pre_dot_node = astNode.children[0]
+        post_dot_node = astNode.children[1]
+
+        returner += emit(endpointName,pre_dot_node,fdepDict,emitContext)
+        returner += '.'
+        if post_dot_node.label == AST_IDENTIFIER:
+            post_dot_name = post_dot_node.value
+            returner += post_dot_name
+        else:
+            # can have post_dot_node be an AST_DOT_STATEMENT as well.
+            returner += emit(endpointName,post_dot_node,fdepDict,emitContext)
+
+            
     elif astNode.label == AST_WHILE_STATEMENT:
         bool_cond_node = astNode.children[0]
         body_node = astNode.children[1]
