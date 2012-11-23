@@ -50,7 +50,8 @@ reserved = {
     'extAssign':'EXT_ASSIGN',
     'extCopy':'EXT_COPY',
     'break': 'BREAK',
-    'continue': 'CONTINUE'
+    'continue': 'CONTINUE',
+    'Struct': 'STRUCT',
     };
 
 
@@ -101,9 +102,7 @@ tokens = [
     "RIGHT_BRACKET",
     "CURLY_LEFT",
     "CURLY_RIGHT",
-
-    "DOT_REMOVE",
-    "DOT_APPEND",
+    
     "DOT",
     
     "NUMBER",
@@ -407,13 +406,6 @@ def t_MINUS(t):
     '\-';
     return mStateMachine.addToken(t);
 
-def t_DOT_APPEND(t):
-    '[.]append';
-    return mStateMachine.addToken(t);
-
-def t_DOT_REMOVE(t):
-    '[.]remove'
-    return mStateMachine.addToken(t);
 
 def t_DOT(t):
     '[.]';

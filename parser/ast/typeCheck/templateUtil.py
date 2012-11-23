@@ -25,13 +25,167 @@ JSON_LIST_ELEMENT_TYPE_FIELD = 'ElementType';
 
 JSON_MAP_FROM_TYPE_FIELD = 'From';
 JSON_MAP_TO_TYPE_FIELD = 'To';
+JSON_TUPLE_TYPE_FIELD = 'Tuple'
 
 
-def isValueType(typeLabel):
+JSON_STRUCT_FIELDS_DICT = 'StructFields'
+JSON_STRUCT_FIELDS_NAME = 'StructName'
+
+def create_struct_type(struct_name,struct_field_tuples):
+    '''
+    @param {String} struct_name --- The name of the user-defined
+    struct.
+
+    @param{Array} struct_field_tuples --- Each element of the array is
+    a two-tuple.  The first element is the name of the field and the
+    second is the type of that element field.  
+    '''
+    struct_type = {
+        JSON_TYPE_FIELD: TYPE_STRUCT,
+        JSON_STRUCT_FIELDS_DICT: {},
+        JSON_STRUCT_FIELDS_NAME: struct_name
+        }
+
+    for single_field in struct_field_tuples:
+        field_name = single_field[0]
+        field_type = single_field[1]
+
+        # add field type to fields dict
+        struct_type[JSON_STRUCT_FIELDS_DICT][field_name] = field_type
+
+    return struct_type
+
+def get_struct_name_from_type(struct_type_dict):
+    if not is_struct(struct_type_dict):
+        err_msg = '\nBehram error.  Attempting to get the struct name '
+        err_msg += 'for a type that is not a struct.'
+        print err_msg
+        assert(False)
+        
+    return struct_type_dict[JSON_STRUCT_FIELDS_NAME]
+
+def get_struct_field_type(field_name,struct_type_dict):
+    '''
+    @param{String} field_name --- The name of the field that we want
+    to know the type of in struct_type_dict
+    
+    @param{dict type} struct_type_dict --- Throws error if is not a struct
+    type.
+
+    @returns {None or type dict} --- Returns None if the field did not
+    exist within the struct.  Returns the type dict associated with
+    that field otherwise.
+    '''
+    if not is_struct(struct_type_dict):
+        err_msg = '\nBehram error: get_struct_field_type requires '
+        err_msg += 'a struct type dict.\n'
+        print err_msg
+        assert(False)
+
+    struct_fields_dict = struct_type_dict[JSON_STRUCT_FIELDS_DICT]
+    return struct_fields_dict.get(field_name,None)
+
+
+def is_struct(dict_type):
+    _assert_if_not_dict(dict_type,'is_struct')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_STRUCT
+
+def is_true_false(dict_type):
+    _assert_if_not_dict(dict_type,'is_true_false')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_BOOL
+
+def is_text(dict_type):
+    _assert_if_not_dict(dict_type,'is_text')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_STRING
+
+def is_number(dict_type):
+    _assert_if_not_dict(dict_type,'is_number')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_NUMBER
+
+def is_nothing_type(dict_type):
+    _assert_if_not_dict(dict_type,'is_nothing_type')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_NOTHING
+    
+def is_empty_map(dict_type):
+    _assert_if_not_dict(dict_type,'is_empty_map')
+    return dict_type[JSON_TYPE_FIELD] == EMPTY_MAP_SENTINEL
+
+def is_empty_list(dict_type):
+    _assert_if_not_dict(dict_type,'is_empty_list')
+    return dict_type[JSON_TYPE_FIELD] == EMPTY_LIST_SENTINEL
+
+def is_returned_tuple(dict_type):
+    _assert_if_not_dict(dict_type,'is_returned_tuple')
+    return dict_type[JSON_TYPE_FIELD] == TYPE_RETURNED_TUPLE
+
+
+
+def generate_returned_tuple_type(tuple_element_list):
+    '''
+    Each one of these should themselves be a type dict.
+    '''
+    to_return = {}
+    to_return[JSON_TYPE_FIELD] = TYPE_RETURNED_TUPLE
+    to_return[JSON_TUPLE_TYPE_FIELD] = []
+    for item in tuple_element_list:
+        to_return[JSON_TUPLE_TYPE_FIELD].append(item)
+    
+    return to_return
+    
+
+def _assert_if_not_dict(to_check,caller):
+    '''
+    Asserts false if to_check is not a dict.
+
+    caller should be a string, with the name of the function that
+    called the check.
+    '''
+    if not isinstance(to_check,dict):
+        err_msg = 'Berham error.  Passed in an incorrect '
+        err_msg += 'data type to _assert_if_not_dict in '
+        err_msg += caller + '.\n  Passed in: '
+        err_msg += repr(to_check)
+        err_msg += '\n\n'
+        print err_msg
+        assert(False)
+        
+
+def generate_type_as_dict(type_string):
+    '''
+    The .type fields of all nodes should be dicts with 'TYPE'
+    specified in them.
+
+    This takes one type and wraps it in another.
+    '''
+
+    return {
+        JSON_TYPE_FIELD: type_string
+        }
+
+
+def dict_type_to_str(dict_type):
+    '''
+    @param {dict} dict_type 
+    Used for printing error messages.
+    '''
+    if not isinstance(dict_type,dict):
+        err_msg = '\nBehram error when converting type to string. '
+        err_msg += 'Expected a dict.  But instead, got '
+        err_msg += repr(dict_type)
+        err_msg += '\n'
+        print err_msg
+        assert(False)
+
+    return '\n' + json.dumps(dict_type, sort_keys=True,indent=2) + '\n'
+
+
+def isValueType(type_field):
     '''
     Text, TrueFalse, and Number are all value types.  Everything else is not
     '''
-    return (typeLabel == TYPE_BOOL) or (typeLabel == TYPE_NUMBER) or (typeLabel == TYPE_STRING);
+
+    return is_true_false(type_field) or is_text(type_field) or is_number(type_field)
+
 
 def isFunctionType(typeLabel):
     '''
@@ -45,188 +199,110 @@ def isFunctionType(typeLabel):
 
     Returns true if it is a user-defined function type, false otherwise.
     '''
-    
-    if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
-        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_NOTHING) and
-        (typeLabel != EMPTY_LIST_SENTINEL) and (typeLabel != EMPTY_MAP_SENTINEL)):
-
-        jsonType = json.loads(typeLabel);
-        
-        if (jsonType.get(JSON_TYPE_FIELD,None) == None):
-            errMsg = '\nBehram error.  got a json object that did not have ';
-            errMsg += 'a type field.\n';
-            print(errMsg);
-            assert (False);
-            
-        if (jsonType[JSON_TYPE_FIELD] == TYPE_FUNCTION):
-            return True;
-
-    return False;
+    return typeLabel[JSON_TYPE_FIELD] == TYPE_FUNCTION
 
 
 def isListType(typeLabel):
     '''
     Automatically handles case of EMPTY_LIST_SENTINEL
     '''
-    if not isTemplatedType(typeLabel):
-        return False;
-
-
-    # can only be a list type if not templated if it's an empty
-    # list.
-    if typeLabel == EMPTY_LIST_SENTINEL:
-        return True;
-    elif typeLabel == EMPTY_MAP_SENTINEL:
-        return False;
+    if is_empty_list(typeLabel):
+        return True
     
-    jsonType = json.loads(typeLabel);
-        
-    if jsonType.get(JSON_TYPE_FIELD,None) == None:
-        errMsg = '\nBehram error.  got a json object that did not have ';
-        errMsg += 'a type field.\n';
-        print(errMsg);
-        assert (False);
-            
-    if jsonType[JSON_TYPE_FIELD] == TYPE_LIST:
-        return True;
+    return typeLabel[JSON_TYPE_FIELD] == TYPE_LIST
 
-    # either a map or a function.
-    return False;
 
-def getListValueType(typeLabel):
+def getListValueType(node_type):
     '''
-    @param {String} typeLabel -- an ast node's .type field.
+    @param {type dict} node_type -- an ast node's .type field.
     
     Note: presupposes that this is a list.  otherwise asserts out.
-    similarly, user must ensure that typeLabel is not
+    similarly, user must ensure that node_type is not
     EMPTY_LIST_SENTINEL.
     '''
-    if not isListType(typeLabel):
+    if not isListType(node_type):
         errMsg = '\nBehram error.  Asking for list value type ';
         errMsg += 'of non-list.\n';
         print(errMsg);
         assert(False);
 
-    if typeLabel == EMPTY_LIST_SENTINEL:
+    if is_empty_list(node_type):
         errMsg = '\nBehram error.  Cannot call getListValueType on ';
-        errMsg += 'an empty map.  Should have checked this condition ';
+        errMsg += 'an empty list.  Should have checked this condition ';
         errMsg += 'before calling into function.\n';
         print(errMsg);
         assert(False);
 
-    elemType = json.loads(typeLabel)[JSON_LIST_ELEMENT_TYPE_FIELD];
-    if (not isinstance(elemType,basestring)):
-        # list of lists for instance or list of maps or list of
-        # functions.
-        elemType = json.dumps(elemType);
-    return elemType;
+    return node_type[JSON_LIST_ELEMENT_TYPE_FIELD]
 
 
-def getMapIndexType(typeLabel):
+def getMapIndexType(node_type):
     '''
-    @param {String} typeLabel --- an ast node's .type field.
+    @param {type dict} node_type --- an ast node's .type field.
     
     Note: should not put in EMPTY_MAP_SENTINEL for typeLabel.  User
     should pre-check for this.
     '''
-    if not isMapType(typeLabel):
+    if not isMapType(node_type):
         print('\n\n');
         print('Behram error, requested to get index type from non-map\n');
         print('\n\n');
         assert(False);
 
-    if typeLabel == EMPTY_MAP_SENTINEL:
+    if is_empty_map(node_type):
         errMsg = '\nBehram error.  Cannot call getMapIndexType on ';
         errMsg += 'an empty map.  Should have checked this condition ';
         errMsg += 'before calling into function.\n';
         print(errMsg);
         assert(False);
-        
-    dictLabel = json.loads(typeLabel);
-    indType = dictLabel[JSON_MAP_FROM_TYPE_FIELD];
-    if (not isinstance(indType,basestring)):
-        indType = json.dumps(indType);
-    return indType;
+
+    return node_type[JSON_MAP_FROM_TYPE_FIELD]
 
 
-def getMapValueType(node):
-    typeLabel = node.type;
-    if not isMapType(typeLabel):
+def getMapValueType(node_type):
+    '''
+    @param {type dict} node_type
+    '''
+    # node_type = node.type;
+    if not isMapType(node_type):
         print('\n\n');
         print('Behram error, requested to get value type from non-map\n');
         print('\n\n');
         assert(False);
-        
-    if typeLabel == EMPTY_MAP_SENTINEL:
+
+    if is_empty_map(node_type):
         errMsg = '\nBehram error.  Cannot call getMapValueType on ';
         errMsg += 'an empty map.  Should have checked this condition ';
         errMsg += 'before calling into function.\n';
         print(errMsg);
         assert(False);
-        
-    dictLabel = json.loads(typeLabel);
-    valType = dictLabel[JSON_MAP_TO_TYPE_FIELD];
-    if (not isinstance(valType,basestring)):
-        valType = json.dumps(valType);
-    return valType;
+
+    return node_type[JSON_MAP_TO_TYPE_FIELD]
 
 
 def isMapType(typeLabel):
     '''
     Automatically handles case of EMPTY_MAP_SENTINEL
     '''
-    if not isTemplatedType(typeLabel):
-        return False;
-
-    # can only be a map if not templated if it's an empty
-    # map
-    if typeLabel == EMPTY_MAP_SENTINEL:
-        return True;
-    elif typeLabel == EMPTY_LIST_SENTINEL:
-        return False;
-
-    jsonType = json.loads(typeLabel);
-        
-    if jsonType.get(JSON_TYPE_FIELD,None) == None:
-        errMsg = '\nBehram error.  got a json object that did not have ';
-        errMsg += 'a type field.\n';
-        print(errMsg);
-        assert (False);
-            
-    if jsonType[JSON_TYPE_FIELD] == TYPE_MAP:
-        return True;
-
-    # either a list or a function.
-    return False;
-
+    if is_empty_map(typeLabel):
+        return True
+    
+    return typeLabel[JSON_TYPE_FIELD] == TYPE_MAP
 
 
 def isTemplatedType(typeLabel):
     '''
     @returns{bool} True if it's a function or list type, false otherwise.
     '''
-    if ((typeLabel != TYPE_BOOL) and (typeLabel != TYPE_NUMBER) and
-        (typeLabel != TYPE_STRING) and (typeLabel != TYPE_NOTHING) and
-        (not isinstance(typeLabel,list))):
-
-        return True;
-
-    return False;
-
+    return (isMapType(typeLabel) or
+            isListType(typeLabel) or
+            isFunctionType(typeLabel))
 
 
 def bothLists(a,b):
-    if (not isinstance(a,basestring)):
-        a = json.dumps(a);
-    if (not isinstance(b,basestring)):
-        b = json.dumps(b);        
     return isListType(a) and isListType(b);
 
 def bothMaps(a,b):
-    if (not isinstance(a,basestring)):
-        a = json.dumps(a);
-    if (not isinstance(b,basestring)):
-        b = json.dumps(b);        
     return isMapType(a) and isMapType(b);
 
 def moreSpecificListMapType(typeA,typeB):
@@ -256,21 +332,17 @@ def moreSpecificListMapType(typeA,typeB):
     could return either typeA or typeB.
     '''
 
-    if (typeA == EMPTY_LIST_SENTINEL) or (typeA == EMPTY_MAP_SENTINEL):
+    if is_empty_list(typeA) or is_empty_map(typeA):
         return typeB;
 
-    if (typeB == EMPTY_LIST_SENTINEL) or (typeB == EMPTY_MAP_SENTINEL):
+    if is_empty_list(typeB) or is_empty_map(typeB):
         return typeA;
-
-    dictA = json.loads(typeA);
-    dictB = json.loads(typeB);
-
 
     twoMaps = False;
     if bothLists(typeA,typeB):
         # grab the types of elements for each list.
-        valueTypeA = dictA[JSON_LIST_ELEMENT_TYPE_FIELD];
-        valueTypeB = dictB[JSON_LIST_ELEMENT_TYPE_FIELD];
+        valueTypeA = get_list_value_type(typeA)
+        valueTypeB = get_list_value_type(typeB)
 
         # can just set these to any non-sentinel value
         indexTypeA = '';
@@ -278,43 +350,34 @@ def moreSpecificListMapType(typeA,typeB):
         
     elif bothMaps(typeA,typeB):
         twoMaps = True;
-        valueTypeA = dictA[JSON_MAP_TO_TYPE_FIELD];
-        valueTypeB = dictB[JSON_MAP_TO_TYPE_FIELD];
+        valueTypeA = getMapValueType(typeA)
+        valueTypeB = getMapValueType(typeB)
 
-        indexTypeA = dictA[JSON_MAP_FROM_TYPE_FIELD];
-        indexTypeB = dictB[JSON_MAP_FROM_TYPE_FIELD];
+        indexTypeA = getMapIndexType(typeA)
+        indexTypeB = getMapIndexType(typeB)
     else:
         # otherwise, type mismatch: return one or the other.
         return typeA;
         
-    if (valueTypeA == EMPTY_LIST_SENTINEL) or (valueTypeA == EMPTY_MAP_SENTINEL):
+    if is_empty_list(valueTypeA) or is_empty_map(valueTypeA):
         # means that typeB is at least as specific
         return typeB;
 
-    if (valueTypeB == EMPTY_LIST_SENTINEL) or (valueTypeB == EMPTY_MAP_SENTINEL):
+    if is_empty_list(valueTypeB) or is_empty_map(valueTypeB):
         # means that typeA is at least as specific        
         return typeA;
 
     if indexTypeA != indexTypeB:
         # mismatch, return either
         return typeA;
-
-    elTypeA = valueTypeA;
-    if (not isinstance(valueTypeA,basestring)):
-        elTypeA = json.dumps(valueTypeA);
         
-    elTypeB = valueTypeB;
-    if (not isinstance(valueTypeB,basestring)):
-        elTypeB = json.dumps(valueTypeB);
-
-        
-    if ( ((not isListType(elTypeA) ) and
-          (not isMapType(elTypeA) ))
+    if ( ((not isListType(valueTypeA) ) and
+          (not isMapType(valueTypeA) ))
          
           or
          
-        ((not isListType(elTypeB) ) and
-          (not isMapType(elTypeB) ))):
+        ((not isListType(valueTypeB) ) and
+          (not isMapType(valueTypeB) ))):
         # if one or both are not lists or maps, that means that we've reached
         # the maximum comparison depth and we cannot get more
         # specific, so just return one or the other.
@@ -323,31 +386,31 @@ def moreSpecificListMapType(typeA,typeB):
     
     # each element itself is a list or a map
     recursionResult = moreSpecificListMapType(
-        json.dumps(valueTypeA),json.dumps(valueTypeB));
+        valueTypeA,valueTypeB)
 
 
     # must rebuild surrounding list type signature to match typeA or
     # typeB.
     if twoMaps:
-        jsonToReturn = buildMapTypeSignatureFromTypeName(indexTypeA,recursionResult);
+        to_return = buildMapTypeSignatureFromTypeName(indexTypeA,recursionResult);
     else:
-        jsonToReturn = buildListTypeSignatureFromTypeName(recursionResult);
+        to_return = buildListTypeSignatureFromTypeName(recursionResult);
         
-    return json.dumps(jsonToReturn);
+    return to_return
 
 
-
-def buildListTypeSignatureFromTypeName(typeName):
-    
-    if (isTemplatedType(typeName)):
-        if ((typeName != EMPTY_LIST_SENTINEL) and
-            (typeName != EMPTY_MAP_SENTINEL)):
-            typeName = json.loads(typeName);
-
+def buildListTypeSignatureFromTypeName(node_type):
+    '''
+    @param {type dict} node_type....or EMPTY_LIST/EMPTY_MAP
+    '''
     return {
         JSON_TYPE_FIELD: TYPE_LIST,
         JSON_LIST_ELEMENT_TYPE_FIELD: typeName
         };
+
+def create_empty_list_type():
+    return buildListTypeSignatureFromTypeName(EMPTY_LIST)
+
 
 def buildListTypeSignature(node, progText,typeStack):
     elementTypeNode = node.children[0];
@@ -357,46 +420,44 @@ def buildListTypeSignature(node, progText,typeStack):
 
 
 
-def buildMapTypeSignatureFromTypeNames(fromTypeName,toTypeName):
-    
-    if isTemplatedType(fromTypeName):
-        if ((fromTypeName != EMPTY_LIST_SENTINEL) and
-            (fromTypeName != EMPTY_MAP_SENTINEL)):
-            fromTypeName = json.loads(fromTypeName);
-
-    if isTemplatedType(toTypeName):
-        if ((toTypeName != EMPTY_LIST_SENTINEL) and
-            (toTypeName != EMPTY_MAP_SENTINEL)):
-            toTypeName = json.loads(toTypeName);
-        
-
+def buildMapTypeSignatureFromTypeNames(fromType,toType):
+    '''
+    @param {type dict} fromType
+    @param {type dict} toType
+    '''
     return {
         JSON_TYPE_FIELD: TYPE_MAP,
-        JSON_MAP_FROM_TYPE_FIELD: fromTypeName,
-        JSON_MAP_TO_TYPE_FIELD: toTypeName
+        JSON_MAP_FROM_TYPE_FIELD: fromType,
+        JSON_MAP_TO_TYPE_FIELD: toType
         };
 
-def getMapIndexType(typeLabel):
+def getMapIndexType(node_type):
     '''
-    If typeLabel is not for a map or for an empty map, assert out.
+    @param {type dict} node_type
+    
+    If node_type is not for a map or for an empty map, assert out.
     '''
-    if (not isMapType(typeLabel)) or (typeLabel == EMPTY_MAP_SENTINEL):
-        errMsg = '\nBehram error: trying to get the index for a non-map type.\n';
-        print(errMsg);
-        assert(False);
+    if not isMapType(node_type):
+        err_msg = '\nBehram error: trying to get the '
+        err_msg += 'index for a non-map type.\n'
+        print(err_msg)
+        assert(False)
 
-    jsoned = json.loads(typeLabel);    
-    toReturn = jsoned[JSON_MAP_FROM_TYPE_FIELD];
-    if (not isinstance(toReturn,basestring)):
-        toReturn = json.dumps(toReturn);
-    return toReturn;
+    if is_empty_map(node_type):
+        err_msg = '\nBehram error.  Trying to get index type for '
+        err_msg += 'empty map.\n'
+        print(err_msg)
+        assert(False)
+
+    return node_type[JSON_MAP_FROM_TYPE_FIELD];
+
 
 
 def buildMapTypeSignature(node,progText,typeStack):
     '''
     @returns 3-tuple: (a,b,c)
 
-    a: {json object} --- The actual type constructed
+    a: {type dict} --- The actual type constructed
     
     b: {String or None} --- None if no error.  If there is an error,
        this text gives the error message.
@@ -417,11 +478,14 @@ def buildMapTypeSignature(node,progText,typeStack):
         # you can only map from Text,TrueFale,or Number to another value.
         errMsg = '\nError declaring function.  A map must map from a TrueFalse, ';
         errMsg += 'Text, or Number to any other type.  You are mapping from ';
-        errMsg += 'a non-value type: ' + fromType + '.\n';
+        errMsg += 'a non-value type: ' + dict_type_to_str(fromType) + '.\n';
+
         errNodeList = [node,fromTypeNode];
 
-    toType = toTypeNode.type;
-    return buildMapTypeSignatureFromTypeNames(fromType,toType), errMsg,errNodeList;
+    toType = toTypeNode.type
+    return (buildMapTypeSignatureFromTypeNames(fromType,toType),
+            errMsg,
+            errNodeList)
 
 def buildFuncTypeSignature(node,progText,typeStack):
     '''
@@ -461,14 +525,6 @@ def buildFuncTypeSignature(node,progText,typeStack):
             
             typeNode.typeCheck(progText,typeStack);
 
-            # if (isTemplatedType(typeNode.type)):
-            #     inputTypes.append(json.loads(typeNode.type));
-            # else:
-            #     toAppend = {
-            #         JSON_TYPE_FIELD: typeNode.type
-            #         };
-            #     inputTypes.append(toAppend);
-
             toAppend = {
                 JSON_TYPE_FIELD: typeNode.type
                 };
@@ -479,12 +535,10 @@ def buildFuncTypeSignature(node,progText,typeStack):
     ##### HANDLE OUTPUT ARGS #####
     outArgNode = node.children[1];
     outArgNode.typeCheck(progText,typeStack);
-    if (isTemplatedType(outArgNode.type)):
-        returner[JSON_FUNC_RETURNS_FIELD] = json.loads(outArgNode.type);
-    else:
-        returner[JSON_FUNC_RETURNS_FIELD] = {
-            JSON_TYPE_FIELD: outArgNode.type
-            };
+    
+    returner[JSON_FUNC_RETURNS_FIELD] = {
+        JSON_TYPE_FIELD: outArgNode.type
+        };
         
     return returner;
 

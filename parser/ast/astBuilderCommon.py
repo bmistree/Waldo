@@ -90,8 +90,7 @@ def p_Jump(p):
         
 
 def p_SharedSection(p):
-    '''SharedSection : Empty
-                     | SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
+    '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
                      | SHARED CURLY_LEFT CURLY_RIGHT''';
 
     p[0] = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1));
@@ -127,6 +126,86 @@ def p_AnnotatedDeclaration(p):
         #have an initialization statement to perform
         p[0].addChild(p[6]);
 
+def p_StructSharedSection(p):
+    '''
+    StructSharedSection : StructSection SharedSection
+                        | StructSection
+                        | SharedSection
+                        | Empty
+    '''
+
+    p[0] = AstNode(AST_STRUCT_SHARED_SECTION,p.lineno(1),p.lexpos(1))
+    if len(p) == 3:
+        p[0].addChildren([p[1],p[2]])
+    elif len(p) == 2:
+
+        blank_struct = AstNode(AST_STRUCT_SECTION,p.lineno(1),p.lexpos(1))
+        blank_shared = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1))
+        
+        if isEmptyNode(p[1]):
+            # means that we have to fill in two blank
+            p[0].addChildren([blank_struct,blank_shared])
+        elif p[1].label == AST_STRUCT_SECTION:
+            p[0].addChildren([p[1],blank_shared])
+        elif p[1].label == AST_SHARED_SECTION:
+            p[0].addChildren([blank_struct,p[1]])
+        else:
+            err_msg = '\nBehram error.  Unexpected label.\n'
+            print(err_msg)
+            assert(False)
+    else:
+        err_msg = '\nBehram error.  More parts to struct '
+        err_msg += 'shared than expected.\n'
+        print (err_msg)
+        assert(False)
+
+        
+def p_StructSection(p):
+    '''
+    StructSection : Struct
+                  | StructSection Struct
+    '''
+    
+    p[0] = AstNode(AST_STRUCT_SECTION,p[1].lineNo,p[1].linePos)
+    if len(p) == 3:
+        p[0].addChildren(p[1].getChildren())
+        p[0].addChild(p[2])
+    elif len(p) == 2:
+        p[0].addChild(p[1])
+    else:
+        errPrint('\nError in StructSection.  Unexpected length to match.\n')
+    
+def p_Struct (p):
+    '''
+    Struct : STRUCT Identifier CURLY_LEFT StructBody CURLY_RIGHT
+    '''
+    p[0] = AstNode(AST_STRUCT_DECLARATION,p.lineno(1),p.lexpos(1))
+    struct_name = p[2]
+    struct_body = p[4]
+    p[0].addChildren([struct_name,struct_body])
+
+    
+def p_StructBody(p):
+    '''
+    StructBody : StructBody Declaration SEMI_COLON
+               | Declaration SEMI_COLON
+    '''
+    p[0] = AstNode(AST_STRUCT_BODY, p.lineno(1),p.lexpos(1))
+
+    if len(p) == 4:
+        struct_body_node = p[1]
+        decl_node = p[2]
+        p[0].addChildren(struct_body_node.getChildren())
+    elif len(p) == 3:
+        decl_node = p[1]
+    else:
+        err_msg = '\nBehram error.  Unexpected length in Struct Body.\n'
+        print (err_msg)
+        assert(False)
+
+    p[0].addChild(decl_node)
+    
+
 def p_Type(p):
     '''
     Type : NUMBER_TYPE
@@ -136,6 +215,8 @@ def p_Type(p):
          | FunctionType
          | ListType
          | MapType
+         | StructType
+
          
          | EXTERNAL NUMBER_TYPE
          | EXTERNAL STRING_TYPE
@@ -153,13 +234,20 @@ def p_Type(p):
     if isinstance(p[typeIndex],basestring):
         p[0].value = p[typeIndex];
     else:
-        # means that has function or list type
+        # means that has function, list type, or struct type
         p[0] = p[typeIndex];
 
     if len(p) == 3:
         p[0].external = True;
 
+def p_StructType(p):
+    '''
+    StructType : STRUCT Identifier
+    '''
+    p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_STRUCT)
+    p[0].addChild(p[2])
 
+    
 def p_ExtAssignForTuple(p):
     '''
     ExtAssignForTuple : EXT_ASSIGN HOLDER TO_OPERATOR Identifier
@@ -231,7 +319,6 @@ def p_FunctionTypeList(p):
     FunctionTypeList : Type
                      | FunctionTypeList COMMA Type
     '''
-
     p[0] = AstNode(AST_FUNCTION_TYPE_LIST,p[1].lineNo,p[1].linePos);
     if (len(p) == 4):
         p[0].addChildren(p[1].getChildren());
@@ -295,8 +382,7 @@ def p_NonBracketOperatableOn(p):
                               | KeysStatement
                               | LenStatement
                               | RangeStatement
-                              | AppendStatement
-                              | RemoveStatement
+                              | DotStatement
                               | ExtAssignForTuple
                               | ExtCopyForTuple
                               ''';
@@ -383,13 +469,6 @@ def p_DivideEqual(p):
     divideNode = AstNode(AST_DIVIDE,p[1].lineNo,p[1].linePos);
     divideNode.addChildren([to_assign_to,to_assign_with]);
     p[0].addChild(divideNode);
-
-    
-    
-    # p[0].addChild(p[1]);
-    # divideNode = AstNode(AST_DIVIDE,p[1].lineNo,p[1].linePos);
-    # divideNode.addChildren([p[1],p[3]]);
-    # p[0].addChild(divideNode);
 
     
 def p_OperatableOn(p):
@@ -840,22 +919,30 @@ def p_BooleanOperator(p):
     else:
         errPrint('\nIncorrect boolean operator: ' + p[1] + '\n');
         assert(False);
-    
 
-def p_AppendStatement(p):
+
+def p_DotStatement(p):
     '''
-    AppendStatement : OperatableOn DOT_APPEND LEFT_PAREN ReturnableExpression RIGHT_PAREN
+    DotStatement : OperatableOn DOT Identifier
     '''
-    p[0] = AstNode(AST_APPEND_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[4]]);
+    p[0] = AstNode(AST_DOT_STATEMENT,p.lineno(2),p.lexpos(2))
+    p[0].addChildren([p[1],p[3]])
+# lkjs;
+    
+# def p_AppendStatement(p):
+#     '''
+#     AppendStatement : OperatableOn DOT_APPEND LEFT_PAREN ReturnableExpression RIGHT_PAREN
+#     '''
+#     p[0] = AstNode(AST_APPEND_STATEMENT,p[1].lineNo,p[1].linePos);
+#     p[0].addChildren([p[1],p[4]]);
 
     
-def p_RemoveStatement(p):
-    '''
-    RemoveStatement : OperatableOn DOT_REMOVE LEFT_PAREN ReturnableExpression RIGHT_PAREN
-    '''
-    p[0] = AstNode(AST_REMOVE_STATEMENT,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[4]]);
+# def p_RemoveStatement(p):
+#     '''
+#     RemoveStatement : OperatableOn DOT_REMOVE LEFT_PAREN ReturnableExpression RIGHT_PAREN
+#     '''
+#     p[0] = AstNode(AST_REMOVE_STATEMENT,p[1].lineNo,p[1].linePos);
+#     p[0].addChildren([p[1],p[4]]);
 
     
 def p_AssignmentStatement(p):
@@ -921,11 +1008,6 @@ def p_ParenthesizedExpression(p):
     '''ParenthesizedExpression : NOT ReturnableExpression
                                | InExpression
     '''
-
-    # '''ParenthesizedExpression : NOT ReturnableExpression
-    #                            | InternalReturnableExpression
-    # '''
-
     
     if (len(p) == 3):
         p[0] = AstNode(AST_NOT_EXPRESSION, p.lineno(1),p.lexpos(1));
@@ -1039,9 +1121,13 @@ def p_FunctionDeclArgList(p):
 
 
 def p_FunctionCall(p):
-    '''FunctionCall : Identifier LEFT_PAREN FunctionArgList RIGHT_PAREN'''
+    '''
+    FunctionCall : OperatableOn LEFT_PAREN FunctionArgList RIGHT_PAREN
+    '''
+    # '''FunctionCall : Identifier LEFT_PAREN FunctionArgList RIGHT_PAREN'''
     p[0] = AstNode(AST_FUNCTION_CALL,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
+# lkjs;
 
     
 def p_FunctionArgList(p):

@@ -2,7 +2,10 @@
 
 import socket
 from connectionObject import ConnectionObject
-import json
+
+# import json
+
+import pickle
 import threading
 import inspect
 
@@ -155,8 +158,9 @@ class TCPConnectionObject(ConnectionObject):
             old_seq_dict = seq_field
 
             dict_to_convert['context']['seqGlobals'] = new_seq_dict
-                    
-        to_return =  json.dumps(dict_to_convert)
+
+        to_return = pickle.dumps(dict_to_convert)
+        # to_return =  json.dumps(dict_to_convert)
 
         if old_seq_dict != None:
             dict_to_convert['context']['seqGlobals'] = old_seq_dict
@@ -227,7 +231,8 @@ class TCPConnectionObject(ConnectionObject):
                     self.MSG_FOOTER+self.MSG_FOOTER, self.MSG_FOOTER)
 
                 # dispatch to endpoint
-                decapsulated_msg_dict = json.loads(potential_str)
+                # decapsulated_msg_dict = json.loads(potential_str)
+                decapsulated_msg_dict = pickle.loads(potential_str)
                 tcp_fire_event = TCPFireEvent(self,decapsulated_msg_dict)
                 tcp_fire_event.start()
 

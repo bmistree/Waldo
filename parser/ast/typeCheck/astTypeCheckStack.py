@@ -5,19 +5,13 @@ from parser.ast.astLabels import *
 
 from parser.ast.parserUtil import errPrint
 
-
 from traceLine import TraceLineManager;
 from traceLine import TypeCheckError;
-
-
-from templateUtil import isTemplatedType;
 
 from templateUtil import JSON_TYPE_FIELD;
 from templateUtil import JSON_FUNC_RETURNS_FIELD;
 from templateUtil import JSON_FUNC_IN_FIELD;
-from templateUtil import JSON_LIST_ELEMENT_TYPE_FIELD;
-
-import json;
+from templateUtil import dict_type_to_str
 
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
@@ -86,6 +80,10 @@ class TypeCheckContextStack(object):
         # rest of the code, you're not allowed to use and lhs_assign
         # statement.
         self.in_lhs_assign = False
+
+        # indices are the struct names.  values are the types of the
+        # struct with that name
+        self.struct_type_dict = {}
         
     def setRootNode(self,root):
         if self.rootNode != None:
@@ -134,6 +132,28 @@ class TypeCheckContextStack(object):
         return self.endpoint2;
 
 
+    def add_struct_type(self,struct_name,struct_type):
+        '''
+        @returns {None or String} --- String if there's an error (the
+        string is the error message).  None if there's no error.
+        '''
+        if struct_name in self.struct_type_dict:
+            err_msg = 'Error.  Already have a struct named '
+            err_msg += struct_name + '.'
+            return err_msg
+        
+        self.struct_type_dict[struct_name] = struct_type
+        # no error, return None
+        return None
+
+    def get_struct_type(self,struct_name):
+        '''
+        @returns{type dict or None} --- None if struct_name has not
+        been declared by user.  type dict if it has (where type dict
+        is the declared type of that node).
+        '''
+        return self.struct_type_dict.get(struct_name,None)
+        
     def addCurrentFunctionNode(self,node):
         '''
         Sets the current function we're in so that can check return
@@ -196,7 +216,7 @@ class TypeCheckContextStack(object):
         # the declared return type of this function
         function_returns_type_list = []
         for single_type in function_returns_type_node.children:
-            function_returns_type_list.append(single_type.value)
+            function_returns_type_list.append(single_type.type)
 
         funcName = self.currentFunctionNode.children[0].value;
 
@@ -213,21 +233,24 @@ class TypeCheckContextStack(object):
             declared_return_type = function_returns_type_list[return_index]
             actual_return_type = return_type_list[return_index]
 
-            
             if check_type_mismatch_func(
                 returnNode,declared_return_type,actual_return_type,self,''):
                 
                 err_msg = 'Incorrect return type in ' + funcName + '.  '
                 if len(return_type_list) == 1:
-                    err_msg += 'Expected type ' + declared_return_type
-                    err_msg += ', but actually returned type ' + str(actual_return_type)
+                    err_msg += 'Expected type '
+                    err_msg += dict_type_to_str(declared_return_type)
+                    err_msg += ', but actually returned type '
+                    err_msg += dict_type_to_str(actual_return_type)
                     err_msg += '.'
                 else:
                     err_msg += 'The ' + str(return_index + 1) + ' tuple return '
-                    err_msg += 'element expected a type of ' + declared_return_type
-                    err_msg += ', but actually returned type of ' + str(actual_return_type)
+                    err_msg += 'element expected a type of '
+                    err_msg += dict_type_to_str(declared_return_type)
+                    err_msg += ', but actually returned type of '
+                    err_msg += dict_type_to_str(actual_return_type)
                     err_msg += '.'
-                    
+
                 err_nodes = [returnNode, function_returns_type_node]
                 return TypeCheckError(err_nodes, err_msg)
 
@@ -523,46 +546,32 @@ class FuncContextElement():
         return self.lineNum;
 
 
-def createFuncMatchObjFromJsonStr(jsonStr,astNode):
+def createFuncMatchObjFromFuncTypeDict(func_type_dict,astNode):
     '''
-    @param {String} jsonStr
+    @param {type dict} func_type_dict --- 
     
-    Now have types for functions, such as:
+    Have types for functions, such as:
 
     Function (In: Number, TrueFalse; Returns: Text) someFunc;
 
     The nodes for these have types that are generated from
     buildFuncTypeSignature(node,progText,typeStack) in astNode.py.
 
-    The above would have a string-ified type of :
+    The above would have a dict type of :
     {
        Type: 'Function',
        In: [ { Type: 'Number'}, {Type: 'TrueFalse'} ],
        Returns: { Type: 'Text'}
     }
 
-    This is passed in as jsonStr.  We take this jsonStr, and turn it
-    into a FuncMatchObject.
+    We take this dict and turn it into a FuncMatchObject.
     '''
-    
-    typeDict = json.loads(jsonStr);
-    
-    argTypes = [];
-    for arg in typeDict[JSON_FUNC_IN_FIELD]:
-        aType = arg[JSON_TYPE_FIELD];
-        if (not isinstance(aType,basestring)):
-            
-            # means that the actual argument is a more-deeply nested
-            # function.  Instead of getting all the args for that
-            # function, can just keep as string for comparison.
-            aType = json.dumps(aType);
-            
-            
-        argTypes.append(aType);
 
-    returnType = typeDict[JSON_FUNC_RETURNS_FIELD];
-    if (not isinstance(returnType,basestring)):
-        returnType = json.dumps(returnType);
+    argTypes = [];
+    for arg in func_type_dict[JSON_FUNC_IN_FIELD]:
+        argTypes.append(arg[JSON_TYPE_FIELD])
+
+    returnType = func_type_dict[JSON_FUNC_RETURNS_FIELD];
         
     fce = FuncContextElement(returnType,argTypes,astNode,astNode.lineNo);
     return FuncMatchObject(fce);
@@ -578,7 +587,7 @@ class FuncMatchObject():
         '''
         return self.element.funcIdentifierType;
 
-    def createJsonType(self):
+    def createTypeDict(self):
         returner = {
             JSON_TYPE_FIELD:TYPE_FUNCTION
             };
@@ -587,9 +596,6 @@ class FuncMatchObject():
         inArgs = [];
         for item in self.element.funcArgTypes:
             toAppend = { JSON_TYPE_FIELD: item }
-            if (isTemplatedType(item)):
-                toAppend = json.loads(item);
-
             inArgs.append(toAppend);
 
         returner[JSON_FUNC_IN_FIELD] = inArgs;
@@ -598,8 +604,6 @@ class FuncMatchObject():
         returnType = {
             JSON_TYPE_FIELD: self.element.funcIdentifierType
             };
-        if (isTemplatedType(self.element.funcIdentifierType)):
-            returnType = json.loads(self.element.funcIdentifierType);
             
         returner[JSON_FUNC_RETURNS_FIELD] = returnType;
         return returner;

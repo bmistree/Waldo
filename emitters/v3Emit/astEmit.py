@@ -16,6 +16,8 @@ from uniformHeader import uniformHeader;
 from eventDependencies import specifyDependencies;
 from emitEndpoints import emitEndpoints;
 from onCompleteDict import specifyOnCompleteDict;
+from userStructs import emit_user_structs
+
 
 def astEmit(astRootNode,emitContext=None):
     '''
@@ -57,6 +59,9 @@ def astEmit(astRootNode,emitContext=None):
 
     # now emit the oncomplete dict
     returner += specifyOnCompleteDict(astRootNode);
+
+    # now emit the user's struct definitions
+    returner += emit_user_structs(astRootNode)
     
     return returner;
 

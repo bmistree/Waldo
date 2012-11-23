@@ -89,9 +89,23 @@ def emit(endpointName,astNode,fdepDict,emitContext):
 
     elif astNode.label == AST_BREAK:
         returner += 'break'
+        
     elif astNode.label == AST_CONTINUE:
         returner += 'continue'
-            
+        
+    elif astNode.label == AST_DOT_STATEMENT:
+        pre_dot_node = astNode.children[0]
+        post_dot_node = astNode.children[1]
+
+        returner += emit(endpointName,pre_dot_node,fdepDict,emitContext)
+        returner += '.'
+        if post_dot_node.label == AST_IDENTIFIER:
+            post_dot_name = post_dot_node.value
+            returner += post_dot_name
+        else:
+            # can have post_dot_node be an AST_DOT_STATEMENT as well.
+            returner += emit(endpointName,post_dot_node,fdepDict,emitContext)
+
     elif astNode.label == AST_WHILE_STATEMENT:
         bool_cond_node = astNode.children[0]
         body_node = astNode.children[1]
@@ -436,7 +450,8 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
 
             
             elif ((individual_assign_to_node.label == AST_BRACKET_STATEMENT) and
-                (individual_assign_to_node.children[0].type != TYPE_STRING)):
+                  (not TypeCheck.templateUtil.is_text(individual_assign_to_node.children[0].type))):
+
                 # inserting into map or list.  need to call insert
                 # directly on map/list structure.  note second condition
                 # is necessary because can have a bracket statement

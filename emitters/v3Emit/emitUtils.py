@@ -97,14 +97,15 @@ def getDefaultValueFromDeclNode(astDeclNode):
     '''
     # typeLabel = astTypeNode.label;
     typeLabel = astDeclNode.type;
+
     
-    if typeLabel == TYPE_BOOL:
+    if templateUtil.is_true_false(typeLabel):
         returner = 'False';
-    elif typeLabel == TYPE_NUMBER:
+    elif templateUtil.is_number(typeLabel):
         returner = '0';
-    elif typeLabel == TYPE_STRING:
+    elif templateUtil.is_text(typeLabel):
         returner = "''";
-    elif typeLabel == TYPE_NOTHING:
+    elif templateUtil.is_nothing_type(typeLabel):
         returner = 'None';
     elif templateUtil.isListType(typeLabel):
         returner = '_WaldoList([])';
@@ -112,6 +113,10 @@ def getDefaultValueFromDeclNode(astDeclNode):
         returner = '_defaultFunction';
     elif templateUtil.isMapType(typeLabel):
         returner = '_WaldoMap({})';
+    elif templateUtil.is_struct(typeLabel):
+        # initialize a user-defined struct
+        returner = templateUtil.get_struct_name_from_type(typeLabel)
+        returner += '()'
     else:
         errMsg = '\nBehram error: unrecognized type name when writing ';
         errMsg += 'default value for node.\n';
