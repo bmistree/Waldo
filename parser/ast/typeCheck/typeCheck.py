@@ -1863,7 +1863,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             to_assign_to_node.typeCheck(
                 progText,typeStack,avoidFunctionObjects)
             typeStack.in_lhs_assign = False
-            
+
             _check_single_assign(
                 to_assign_to_node,rhs,to_assign_to_counter,
                 progText,typeStack,avoidFunctionObjects)
@@ -2492,8 +2492,7 @@ def _check_single_assign(
         to_assign_to_var_name = to_assign_to_node.children[0].value
 
     unused,controlled_by = typeStack.getIdentifierType(to_assign_to_var_name);
-    if ((controlled_by != None) and (not is_nothing_type(controlled_by))):
-        
+    if (controlled_by != None) and (controlled_by != TYPE_NOTHING):
         if (typeStack.currentEndpointName != controlled_by):
             err_msg = 'Error when trying to assign to ' + to_assign_to_var_name
             err_msg += ' while in ' + typeStack.currentEndpointName + '\'s '
