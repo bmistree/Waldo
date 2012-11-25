@@ -927,22 +927,6 @@ def p_DotStatement(p):
     '''
     p[0] = AstNode(AST_DOT_STATEMENT,p.lineno(2),p.lexpos(2))
     p[0].addChildren([p[1],p[3]])
-# lkjs;
-    
-# def p_AppendStatement(p):
-#     '''
-#     AppendStatement : OperatableOn DOT_APPEND LEFT_PAREN ReturnableExpression RIGHT_PAREN
-#     '''
-#     p[0] = AstNode(AST_APPEND_STATEMENT,p[1].lineNo,p[1].linePos);
-#     p[0].addChildren([p[1],p[4]]);
-
-    
-# def p_RemoveStatement(p):
-#     '''
-#     RemoveStatement : OperatableOn DOT_REMOVE LEFT_PAREN ReturnableExpression RIGHT_PAREN
-#     '''
-#     p[0] = AstNode(AST_REMOVE_STATEMENT,p[1].lineNo,p[1].linePos);
-#     p[0].addChildren([p[1],p[4]]);
 
     
 def p_AssignmentStatement(p):
@@ -1124,10 +1108,8 @@ def p_FunctionCall(p):
     '''
     FunctionCall : OperatableOn LEFT_PAREN FunctionArgList RIGHT_PAREN
     '''
-    # '''FunctionCall : Identifier LEFT_PAREN FunctionArgList RIGHT_PAREN'''
     p[0] = AstNode(AST_FUNCTION_CALL,p[1].lineNo,p[1].linePos);
     p[0].addChildren([p[1],p[3]]);
-# lkjs;
 
     
 def p_FunctionArgList(p):
