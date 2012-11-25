@@ -827,7 +827,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorString = 'Print requires a Text, TrueFalse, or a Number ';
             errorString += 'to be passed in.  ';
             errorString += 'It seems that you passed in a ';
-            errorString += argument.type + '.';
+            errorString += dict_type_to_str(argument.type) + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
         node.type = generate_type_as_dict(TYPE_NOTHING)
