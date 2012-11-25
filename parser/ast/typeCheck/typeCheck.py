@@ -450,7 +450,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 pass;
             else:
                 elementValueType = getListValueType(toIterateNode.type);
-                
+
                 if checkTypeMismatch(
                     identifierNode,identifierNode.type,elementValueType,
                     typeStack,progText):
@@ -814,7 +814,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     errorString,[node,childNode],[node.lineNo,childNode.lineNo],progText);
 
         # type that assign should be list to numbers
-        node.type = buildListTypeSignatureFromTypeName(TYPE_NUMBER);
+        node.type = buildListTypeSignatureFromTypeName(
+            generate_type_as_dict(TYPE_NUMBER))
 
             
     elif node.label == AST_PRINT:
@@ -1641,7 +1642,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #targetted name.
         prevId = typeStack.getIdentifierElement(name);
         prevFunc = typeStack.getFuncIdentifierType(name);
-        if ((prevId != None) or (prevFunc != None)):
+        if (prevId != None) or (prevFunc != None):
             nodes =[node];
             lineNos = [currentLineNo];
             if (prevId != None):
@@ -1649,7 +1650,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 lineNos.append(prevId.lineNum);
             if (prevFunc != None):
                 nodes.append(prevFunc.element.astNode);
-                lineNos.append(prevId.element.lineNum);
+                lineNos.append(prevFunc.element.lineNum);
 
             errMsg = 'Error trying to name a variable "' + name;
             errMsg += '".  Already have a function or variable with ';

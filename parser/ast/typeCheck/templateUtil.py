@@ -405,7 +405,7 @@ def buildListTypeSignatureFromTypeName(node_type):
     '''
     return {
         JSON_TYPE_FIELD: TYPE_LIST,
-        JSON_LIST_ELEMENT_TYPE_FIELD: typeName
+        JSON_LIST_ELEMENT_TYPE_FIELD: node_type
         };
 
 def create_empty_list_type():
