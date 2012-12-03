@@ -76,7 +76,8 @@ class TCPConnectionObject(ConnectionObject):
 
     @staticmethod
     def accept(host_listen_on,port_listen_on,cb,
-               endpoint_constructor,reservation_manager,*args):
+               endpoint_constructor,reservation_manager,waldo_id,
+               endpoint_id_generator,*args):
         '''
         @param{String} host_listen_on --- The ip/host to listen for
         new connections on.
@@ -92,6 +93,12 @@ class TCPConnectionObject(ConnectionObject):
         @param{ReservationManager object} reservation_manager --- Gets
         passed in to endpoint's constructor.
 
+        @param{float} waldo_id ---
+
+        @param{function: in: ; returns: float) endpoint_id_generator
+        --- Calling this generates a unique id.  Each created endpoint
+        should have one.
+        
         @param{*args} --- Any other arguments to pass into the
         oncreate argument of the endpoint constructor.
 
@@ -108,7 +115,8 @@ class TCPConnectionObject(ConnectionObject):
             tcp_conn_obj = TCPConnectionObject(None,None,conn)
 
             created_endpoint = endpoint_constructor(
-                tcp_conn_obj,reservation_manager,*args)
+                tcp_conn_obj,reservation_manager,waldo_id,
+                endpoint_id_generator(),*args)
 
             if cb != None:
                 cb(created_endpoint)

@@ -1849,13 +1849,18 @@ class _Endpoint(object):
     def __init__ (self,connectionObj,globSharedReadVars,globSharedWriteVars,
                   lastIdAssigned,myPriority,theirPriority,context,
                   execFromToInternalFuncDict, prototypeEventsDict,endpointName,
-                  externalGlobals,reservationManager):
+                  externalGlobals,reservationManager,waldo_id,endpoint_id):
         '''
         @param {dict} externalGlobals --- used for reference counting
         reads and writes to external variables.  (ie, the variable
         named by the key).  <String:Bool>
-
+        
         @param {ReservationManager object} reservationManager
+
+        @param {float} waldo_id --- Unique per host.
+
+        @param {float} endpoint_id --- Unique per connection
+        
         '''
                   
 
@@ -1896,6 +1901,9 @@ class _Endpoint(object):
         self._myPriority = myPriority;
         self._theirPriority = theirPriority;
 
+        self._endpoint_id = endpoint_id
+        self._waldo_id = waldo_id
+        
         self._committedContext = context;
 
         self._endpointName = endpointName;

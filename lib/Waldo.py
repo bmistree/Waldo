@@ -13,6 +13,7 @@ _DEFAULT_TCP_ACCEPT_WALDO_HOST = '127.0.0.1'
 from reservationManager import ReservationManager
 import connObj
 import externalObjects as Externals
+import random
 
 class WaldoModuleExcep (Exception):
     def __init__(self,err_msg):
@@ -23,11 +24,14 @@ class WaldoModuleExcep (Exception):
 # used to synchronize all external variables
 _reservation_manager = None
 _initialized_called = False
+_waldo_id = None
 
 def initialize(**kwargs):
     global _reservation_manager
     _reservation_manager = ReservationManager()
 
+    global _waldo_id
+    _waldo_id = _generate_uuid()
     
     global _initialized_called
     if _initialized_called:
@@ -74,7 +78,11 @@ def connect(*args,**kwargs):
         host_name = kwargs.get('host',_DEFAULT_TCP_ACCEPT_WALDO_HOST)
 
         tcp_conn_obj = connObj.TCPConnectionObject(host_name,port,None)
-        new_obj = constructor(tcp_conn_obj,_reservation_manager,*args)
+        _endpoint_id = _generate_uuid()
+        
+        new_obj = constructor(
+            tcp_conn_obj,_reservation_manager,
+            _waldo_id,_endpoint_id,*args)
         
         return new_obj
         
@@ -82,7 +90,9 @@ def connect(*args,**kwargs):
     excep_msg += 'connection types may be added in the future.'
     raise WaldoModuleExcep(excep_msg)
 
-    
+def _generate_uuid():
+    # FIXME: may want a little more control over probability of uniqueness
+    return random.random()
     
 def accept(*args,**kwargs):
     '''
@@ -126,10 +136,12 @@ def accept(*args,**kwargs):
         port = kwargs.get('port',_DEFAULT_TCP_ACCEPT_WALDO_PORT)
         host_name = kwargs.get('host',_DEFAULT_TCP_ACCEPT_WALDO_HOST)
 
+
         # listen for incoming client connections on host_name:port_no
         connObj.TCPConnectionObject.accept(
             host_name,port,connected_callback,
-            constructor,_reservation_manager,*args)
+            constructor,_reservation_manager,_waldo_id,
+            _generate_uuid,*args)
     else:
         excep_msg = 'Waldo.accept only allows TCP connections.  Other '
         excep_msg += 'connection types may be added in the future.'

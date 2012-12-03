@@ -547,7 +547,7 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
 
 
 
-    initMethod = 'def __init__(self,_connectionObj,_reservationManager,';
+    initMethod = 'def __init__(self,_connectionObj,_reservationManager,_waldo_id,_endpoint_id,';
     for argName in onCreateArgumentNames:
         initMethod += argName + ',';
     initMethod += '):\n\n'
@@ -594,9 +594,9 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
 # used to resolve which side will back out its changes when
 # there is a conflict.  (Currently though, these are unused.)
 '''
-    initMethodBody += '_myPriority = ' + str(evenOddEventId) + ';\n';
-    initMethodBody += '_theirPriority = ' + str(otherEvenOdd) + ';\n\n';
-
+    initMethodBody += '_myPriority = ' + str(evenOddEventId) + '\n'
+    initMethodBody += '_theirPriority = ' + str(otherEvenOdd) + '\n'
+    
     # handle context
     initMethodBody += '_context = _Context(self._externalStore,\'%s\');\n' % endpointName;
 
@@ -655,7 +655,7 @@ _Endpoint.__init__(
     self,_connectionObj,_globSharedReadVars,_globSharedWriteVars,
     _lastIdAssigned,_myPriority,_theirPriority,_context,
     _execFromToInternalFuncDict,_prototypeEventsDict, '%s',
-    _externalGlobals, _reservationManager);
+    _externalGlobals, _reservationManager,_waldo_id,_endpoint_id);
 ''' % endpointName;
     
     initMethodBody += '\n\n';
