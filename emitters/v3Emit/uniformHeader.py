@@ -18,11 +18,12 @@ def uniformHeader():
     
     return r"""#!/usr/bin/env python
 
-import inspect as _inspect;
-import time as _time;
-import threading;
-import Queue;
-import numbers;
+import inspect as _inspect
+import time as _time
+import threading
+import Queue
+import numbers
+import random
 
 '''
 Designed message sequencing so that the sender of a message
@@ -175,10 +176,24 @@ class _ExtInterfaceCleanup(threading.Thread):
         # of externalObjects to decrease reference counts for and did
         # them as a batch rather than doing each successively.
         for extObj in self.externalsArray:
-            self.externalStore.changeRefCountById(self.endpointName,extObj.id,-1);
+            self.externalStore.changeRefCountById(self.endpointName,extObj.id,-1)
+            
         self.externalStore.gcCheckEmptyRefCounts();
 
-
+def _generate_transaction_priority(previous_priority=None):
+    '''
+    @param{float} previous_priority --- If the transaction was aborted, contains
+    the float id of the previous transaction
+    '''
+    
+    # FIXME: for now, generating transaction ids with no forethought
+    # to previous ids' value.  ids are used to determine which
+    # transaction wins in cases of potential deadlock (higher ids
+    # always win).  If want to add fairness, may want to increase
+    # value of transaction id each time it fails
+    
+    return random.random()
+    
         
 class _MsgSelf(threading.Thread):
     '''
@@ -996,7 +1011,8 @@ class _Event(object):
         same as above, except for conditional and global reads and
         writes,seqGlobals
 
-        @param {Endpoint) endpoint --- either Ping or Pong.
+        @param {Endpoint) endpoint --- either of the user-defined
+        endpoints subclassed from class _Endpoint
 
         @param{array} externalVarNames --- An array of all the
         (unique) variable identifiers for externals that this active
@@ -1046,9 +1062,8 @@ class _Event(object):
 
         return _ActiveEvent(
             self.eventName,self.defGlobReads,self.defGlobWrites,
-            self.seqGlobals,self.endpoint,self.externalVarNames);
-
-
+            self.seqGlobals,self.endpoint,self.externalVarNames,
+            self.endpoint._waldo_id,self.endpoint._endpoint_id);
     
     
 class _ActiveEventDictElement(object):
@@ -1140,6 +1155,16 @@ class _Message(object):
     # executing.  Use this name to add onComplete functions to a
     # context's onCompletesToFire array.
     SEQUENCE_NAME_FIELD = 'sequenceName';    
+
+
+    # Each transaction has its own priority 
+    PRIORITY_FIELD = 'priority'
+
+    # Which host initiated the transaction
+    EVENT_INITIATOR_WALDO_ID_FIELD = 'initiator_waldo_id_field'
+
+    # Which endpoint on a target host initiated the transaction
+    EVENT_INITIATOR_ENDPOINT_ID_FIELD = 'initiator_endpoint_id_field'
     
     @staticmethod
     def eventNotAcceptedMsg(eventId):
@@ -1197,7 +1222,10 @@ class _Message(object):
             _Message.CONTROL_FIELD: controlMsg,
             _Message.EVENT_ID_FIELD: activeEvent.id,
             _Message.EVENT_NAME_FIELD: activeEvent.eventName,
-            _Message.SEQUENCE_NAME_FIELD: sequenceName
+            _Message.SEQUENCE_NAME_FIELD: sequenceName,
+            _Message.PRIORITY_FIELD: activeEvent.priority,
+            _Message.EVENT_INITIATOR_WALDO_ID_FIELD: activeEvent.event_initiator_waldo_id,
+            _Message.EVENT_INITIATOR_ENDPOINT_ID_FIELD: activeEvent.event_initiator_endpoint_id,
             };
         return returner;
 
@@ -1206,7 +1234,7 @@ class _ActiveEvent(object):
 
     def __init__ (
         self,eventName,activeGlobReads,activeGlobWrites,
-        seqGlobals,endpoint,externalVarNames):
+        seqGlobals,endpoint,externalVarNames, waldo_id,endpoint_id):
         '''
         @param{Int} eventId --- Unique among all other active events.
 
@@ -1216,6 +1244,9 @@ class _ActiveEvent(object):
         shared and endpoint global references.  Can use these to
         increase their reference counts to ensure that they do not get
         removed from external store.
+
+
+        
         '''
         self.activeGlobReads = activeGlobReads;
         self.activeGlobWrites = activeGlobWrites;
@@ -1229,6 +1260,12 @@ class _ActiveEvent(object):
         self.endpoint = endpoint;
         self.id = self.endpoint._getNextActiveEventIdToAssign();
         self.active = False;
+
+        self.priority = _generate_transaction_priority(None)
+
+        # keep track of the initiator of the event.  the initiator 
+        self.event_initiator_waldo_id = waldo_id
+        self.event_initiator_endpoint_id = endpoint_id
 
         # @see setArgsArray
         self.argsArray=[];
@@ -1257,15 +1294,25 @@ class _ActiveEvent(object):
         self.externalVarNames = externalVarNames;
 
 
-    def setId(self,toSetTo):
+    def set_event_attributes_from_msg(
+        self,_id,_priority,_event_initiator_waldo_id,
+        _event_initiator_endpoint_id):
         '''
-        @param {int} toSetTo
+        @param {int} _id
+
+        @param {float}
+        _priority,_event_initiator_waldo_id,_event_initiator_endpoint_id
+
         
         Should only really be called from _msgReceive function so that
         can use the same ids across endpoints for the same event.
         '''
-        self.id = toSetTo;
-        
+        self.id = _id
+        self.priority = _priority
+        self.event_initiator_waldo_id = _event_initiator_waldo_id
+        self.event_initiator_endpoint_id = _event_initiator_endpoint_id
+
+
     def setToExecuteFrom(self,entryPointToExecFrom):
         '''
         @param {String} entryPointFunctionName --- The name of the
@@ -2358,6 +2405,10 @@ class _Endpoint(object):
         sequenceName = msg[_Message.SEQUENCE_NAME_FIELD];
         contextData = msg[_Message.CONTEXT_FIELD];        
 
+        priority = msg[_Message.PRIORITY_FIELD]
+        event_initiator_waldo_id = msg[_Message.EVENT_INITIATOR_WALDO_ID_FIELD]
+        event_initiator_endpoint_id = msg[_Message.EVENT_INITIATOR_ENDPOINT_ID_FIELD]
+
         # Should change all python lists and dicts in contextData back
         # to Waldo list and map objects, respectively
         def _dict_vals_to_waldo(to_convert):
@@ -2466,8 +2517,11 @@ class _Endpoint(object):
             self._lock();
 
             actEvent = self._prototypeEventsDict[eventName].generateActiveEvent();
-            actEvent.setId(eventId);
-            
+            actEvent.set_event_attributes_from_msg(
+                eventId,priority,event_initiator_waldo_id,
+                event_initiator_endpoint_id)
+
+
             # FIXME: seems as though it would be slower to create
             # a new context and then update it rather than passing
             # in the context that we were given (in its dictionary
