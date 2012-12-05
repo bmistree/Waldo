@@ -57,6 +57,25 @@ def p_TraceSection(p):
         p[0].addChildren(p[3].getChildren());
 
 
+def p_Garbage(p):
+    '''
+    Garbage : SINGLE_LINE_COMMENT
+            | NEWLINE
+            | TAB
+            | MULTI_LINE_COMMENT_BEGIN            
+            | MULTI_LINE_COMMENT_END
+            | SPACE
+            | ALL_ELSE
+    '''
+    # note that this rule should never actually be matched.  It's just
+    # included to avoid ply warnings caused by not having a rule to
+    # match these tokens.
+    err_msg = '\nBehram error: Should never actually attempt to '
+    err_msg += 'parse rules for any of these tokens.  Just have '
+    err_msg += 'a parsing rule here to avoid ply warnings.\n'
+    print err_msg
+    assert(False)
+    
 
 def p_TraceItem(p):
     'TraceItem : Identifier DOT Identifier'
@@ -385,6 +404,7 @@ def p_NonBracketOperatableOn(p):
                               | DotStatement
                               | ExtAssignForTuple
                               | ExtCopyForTuple
+                              | Garbage
                               ''';
     # note that ExtAssignForTuple and ExtCopyForTuple can only be
     # operatable on as the lhs of an assignment statement from a
