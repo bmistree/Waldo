@@ -1656,7 +1656,11 @@ class _ActiveEvent(object):
         else:
             externalsReserved = self.endpoint._reservationManager.acquire(
                 self.extsToRead,
-                self.extsToWrite);
+                self.extsToWrite,
+                self.priority,
+                self.event_initiator_waldo_id,
+                self.event_initiator_endpoint_id,
+                self.id)
 
         if not externalsReserved:
             return False,None;
@@ -2125,7 +2129,12 @@ class _Endpoint(object):
         self._reservationManager.release(
             extIdsRead,
             extIdsWrite,
-            writtenExternals);
+            writtenExternals,
+            activeEvent.priority,
+            activeEvent.event_initiator_waldo_id,
+            activeEvent.event_initiator_endpoint_id,
+            activeEvent.id)
+            
         contextToCommit.commit();
 
         # actually update the committed context's data
