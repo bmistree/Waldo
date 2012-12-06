@@ -140,6 +140,16 @@ class _OnComplete(threading.Thread):
     def fire(self):
         self.start();
 
+class _LockedRecord(object):
+    def __init__(
+        self,waldo_initiator_id,endpoint_initiator_id,priority,act_event_id):
+        
+        self.waldo_initiator_id = waldo_initiator_id
+        self.endpoint_initiator_id = endpoint_initiator_id
+        self.priority = priority
+        self.act_event_id = act_event_id 
+
+        
 class _ExtInterfaceCleanup(threading.Thread):
     '''
     If we begin an internal event by being called externally, we need
@@ -1540,16 +1550,16 @@ class _ActiveEvent(object):
             for actReadKey in self.activeGlobReads.keys():
 
                 if ((actReadKey in endpointGlobSharedWriteVars) and
-                    (endpointGlobSharedWriteVars[actReadKey] > 0)):
+                    (len(endpointGlobSharedWriteVars[actReadKey]) > 0)):
                     return False,None;
                         
             for actWriteKey in self.activeGlobWrites.keys():
 
                 if (((actWriteKey in endpointGlobSharedWriteVars) and
-                     (endpointGlobSharedWriteVars[actWriteKey] > 0)) or
+                     (len(endpointGlobSharedWriteVars[actWriteKey]) > 0)) or
 
                     ((actWriteKey in endpointGlobSharedReadVars) and
-                     (endpointGlobSharedReadVars[actWriteKey] > 0))):
+                     (len(endpointGlobSharedReadVars[actWriteKey]) > 0))):
 
                     return False,None;
 
@@ -1660,12 +1670,22 @@ class _ActiveEvent(object):
             # functioning appropriately to schedule reads/writes in
             # such a way that won't have conflicts.
             if actReadKey in endpointGlobSharedReadVars:
-                endpointGlobSharedReadVars[actReadKey] += 1;
+                locked_record = _LockedRecord(
+                    self.event_initiator_waldo_id,
+                    self.event_initiator_endpoint_id,
+                    self.priority,self.id)
+                    
+                endpointGlobSharedReadVars[actReadKey].append(locked_record)
 
         for actWriteKey in self.activeGlobWrites.keys():
             # @see note in above for loop.
             if actWriteKey in endpointGlobSharedWriteVars:
-                endpointGlobSharedWriteVars[actWriteKey] += 1;
+                locked_record = _LockedRecord(
+                    self.event_initiator_waldo_id,
+                    self.event_initiator_endpoint_id,
+                    self.priority,self.id)
+                    
+                endpointGlobSharedWriteVars[actWriteKey].append(locked_record)
 
 
         #### DEBUG
@@ -1727,18 +1747,57 @@ class _ActiveEvent(object):
             # check if in dict so that do not try to decrement
             # value for global variable this endpoint does not own.
             if globReadKey in self.endpoint._globSharedReadVars:
-                self.endpoint._globSharedReadVars[globReadKey] -= 1;
-                potentialTransition = (potentialTransition or
-                                       (self.endpoint._globSharedReadVars[globReadKey] == 0));
+
+                # removes the _LockedRecord from the list of records
+                # that are holding a read lock on this variable.
+            
+                read_lock_list = self.endpoint._globSharedReadVars[globReadKey]
+
+                to_remove_counter = None
+                for counter in range(0,len(read_lock_list)):
+                    item = read_lock_list[counter]
+                    if ((item.waldo_initiator_id == self.event_initiator_waldo_id) and
+                        (item.endpoint_initiator_id == self.event_initiator_endpoint_id) and
+                        (item.act_event_id == self.id)):
+                        to_remove_counter = counter
+                        break
+                if to_remove_counter != None:
+                    del read_lock_list[to_remove_counter]
+
+                    if len(read_lock_list) == 0:
+                        # means that something that we previously
+                        # could not acquire a lock for we can now.
+                        potentialTransition = True
+
 
         for globWriteKey in self.activeGlobWrites.keys():
             # check if in dict so that do not try to decrement
             # value for global variable this endpoint does not own.
             if globWriteKey in self.endpoint._globSharedWriteVars:
-                self.endpoint._globSharedWriteVars[globWriteKey] -= 1;
-            
-                potentialTransition = (potentialTransition or
-                                       (self.endpoint._globSharedWriteVars[globWriteKey] == 0));            
+
+                # removes the _LockedRecord from the list of records
+                # that are holding a write lock on this variable.
+                # (Note: in practice, this list can only ever have a
+                # single entry in it since two active events cannot
+                # write to the same variable at the same time.)
+                
+                write_lock_list = self.endpoint._globSharedWriteVars[globWriteKey]
+                to_remove_counter = None
+                for counter in range(0,len(write_lock_list)):
+                    item = write_lock_list[counter]
+                    if ((item.waldo_initiator_id == self.event_initiator_waldo_id) and
+                        (item.endpoint_initiator_id == self.event_initiator_endpoint_id) and
+                        (item.act_event_id == self.id)):
+                        to_remove_counter = counter
+                        break
+                if to_remove_counter != None:
+                    del write_lock_list[to_remove_counter]
+
+                    if len(write_lock_list) == 0:
+                        # means that something that we previously
+                        # could not acquire a lock for we can now.
+                        potentialTransition = True
+
         
         return potentialTransition;
 
@@ -2069,7 +2128,9 @@ class _Endpoint(object):
             writtenExternals);
         contextToCommit.commit();
 
+        # actually update the committed context's data
         self._committedContext.mergeContextIntoMe(contextToCommit);
+        # Removes read/write locks on global and shared variables.
         self._cancelActiveEvent(activeEvent.id);
 
 

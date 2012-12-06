@@ -561,9 +561,9 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     for sharedVarName in sharedVariableNames:
         # each starts at 0 because there is no outstanding event that
         # is using the variable.
-        globSharedVarsDict [ "'" + sharedVarName + "'"] = '0';
+        globSharedVarsDict [ "'" + sharedVarName + "'"] = '[]';
     for endpointVarName in endpointVariableNames:
-        globSharedVarsDict [ "'" + endpointVarName + "'"] = '0';
+        globSharedVarsDict [ "'" + endpointVarName + "'"] = '[]';
 
     initMethodBody += '''
 # keeps track of the number of outstanding events that
