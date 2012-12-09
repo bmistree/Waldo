@@ -1654,13 +1654,15 @@ class _ActiveEvent(object):
             # don't need to.
             externalsReserved = True;
         else:
-            externalsReserved = self.endpoint._reservationManager.acquire(
+            externals_acquired = self.endpoint._reservationManager.acquire(
                 self.extsToRead,
                 self.extsToWrite,
                 self.priority,
                 self.event_initiator_waldo_id,
                 self.event_initiator_endpoint_id,
                 self.id)
+
+            externalsReserved = externals_acquired.succeeded
 
         if not externalsReserved:
             return False,None;
