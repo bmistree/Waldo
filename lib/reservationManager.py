@@ -14,8 +14,87 @@ class _ExternalLockedRecord(object):
         self.priority = priority
         self.act_event_id = act_event_id
         self.external_id = external_id
+
+    def reentrant(
+        self,external_id,priority,waldo_initiator_id,
+        endpoint_initiator_id,event_id):
+        '''
+        Returns true if all _ExternalLockedRecord's elements are the
+        same as passed this object's fields
+        '''
+        if ((reentrant.priority == priority) and
+            (reentrant.waldo_initiator_id == waldo_initiator_id) and
+            (reentrant.endpoint_initiator_id == endpoint_initiator_id) and
+            (reentrant.act_event_id == event_id) and
+            (reentrant.external_id == external_id)):
+            return False
+        
+        return True
         
 
+        
+class _ReservationRequestResult(object):
+    def __init__(self,succeeded,overlapping_reads,overlapping_writes):
+        '''
+        @param{bool} succeeded --- True if could acquire the locks
+        requested, false otherwise.
+
+        @param {Array} overlapping_reads --- Each element is an
+        _ExternalLockedRecord containing information about who is
+        already holding a lock on the requested external that we were
+        trying to acquire an external read lock on .  These will need
+        to be transmitted
+
+        @param {dict} overlapping_writes --- @see overlapping_reads,
+        above.  Note that even if this contains entries, succeeded can
+        be true.  That is because with re-entrant requests, we may
+        have already requested a write lock on this resource.
+
+        '''
+        self.succeeded = succeeded
+        
+        #FIXME should probably use dicts of lists for these instead of
+        #arrays.  
+        self.overlapping_reads = overlapping_reads
+        self.overlapping_writes = overlapping_writes
+
+    def append_overlapping(
+        self,read,var_id,overlapping_array):
+        '''
+        @param{bool} read --- True if we're appending to
+        self.overlapping_reads, False if appending to
+        self.overlapping_writes.
+
+        @param {String} var_id --- ID used by
+
+        @param {Array} overlapping_array --- Each element is a
+        _LockedRecord (note: not an _ExternalLockedRecord).  @see
+        uniformHeader.py or emitted code for a description.
+
+        Runs through overlapping_array and creates a new
+        _ExternalLockedRecord that gets appended to either
+        self.overlapping_reads or self.overlapping_writes, depending
+        on the value of @param read.
+        '''
+        
+        to_append_to = self.overlapping_writes
+        if read:
+            to_append_to = self.overlapping_reads
+
+        to_append = []
+
+        # turn each LockedRecord in overlapping_array into an
+        # ExternalLockedRecord and append it to to_append_to
+        for locked_record in overlapping_array:
+            to_append_locked_record = ExternalLockedRecord(
+                locked_record.waldo_initiator_id,
+                locked_record.endpoint_initiator_id,
+                locked_record.priority,
+                locked_record.act_event_id,
+                locked_record.var_id)
+
+            to_append_to.append(to_append_locked_record)
+        
 
 class ReservationManager(object):
 
@@ -37,6 +116,10 @@ class ReservationManager(object):
         
         # FIXME: Maybe catch garbage collection of shared object so
         # know can remove it from map
+
+
+    def empty_reservation_request_result(self,succeeded=True):
+        return _ReservationRequestResult(succeeded,[],[])
 
         
     def acquire(
@@ -66,9 +149,13 @@ class ReservationManager(object):
         @param {int} event_id --- The id of the active event on the
         local endpoint that is trying to acquire the external.
 
-        @returns {Bool} --- true if could acquire (and did acquire).
-        false otherwise.  
+        @returns{_ReservationRequestResult} --- succeed is true if
+        could acquire (and did acquire); false otherwise.
         '''
+
+        overlapping_writes = []
+        overlapping_reads = []
+        lock_acquire_succeed = True
         self._lock()
 
         # check if will have any write conflicts
@@ -83,14 +170,23 @@ class ReservationManager(object):
                 assert(False);
             #### END DEBUG
 
-            if len(self._writeSet[writeId]) != 0:
-                self._unlock();
-                return False;
+            for write_lock_record in self._writeSet[writeId]:
+                overlapping_writes.append(write_lock_record)
+                if not write_lock_record.reentrant(
+                    writeId,priority,waldo_initiator_id,
+                    endpoint_initiator_id,event_id):
+                    lock_acquire_succeed = False
 
-            if len(self._readSet[writeId]) != 0:
-                self._unlock();
-                return False;
+                    
+            for read_lock_record in self._readSet[writeId]:
+                overlapping_writes.append(read_lock_record)
 
+                if not read_lock_record.reentrant(
+                    writeId,priority,waldo_initiator_id,
+                    endpoint_initiator_id):
+                    lock_acquire_succeed = False
+
+                    
         # check if will have any read conflicts
         for readId in readIdArray:
             #### DEBUG
@@ -99,11 +195,25 @@ class ReservationManager(object):
             if not readId in self._readSet:
                 assert(False);
             #### END DEBUG
-            
-            if len(self._writeSet[writeId]) != 0:
-                self._unlock();
-                return False;
 
+            for write_lock_record in self._writeSet[writeId]:
+                overlapping_reads.append(write_lock_record)
+                
+                if not write_lock_record.reentrant(readId,priority,
+                    waldo_initiator_id,endpoint_initiator_id,event_id):
+                    lock_acquire_succeed = False
+
+        # at this point, we know
+        require_return_obj = _ReservationRequestResult(
+            lock_acquire_succeed,overlapping_reads,overlapping_writes)
+
+        
+        if not lock_acquire_succeed:
+            # could not acquire the lock on requested resources.
+            self._unlock()
+            return require_return_obj
+
+        
         # no conflicts --- acquire the resources
         for readId in readIdArray:
 
@@ -113,18 +223,15 @@ class ReservationManager(object):
             
             self._readSet[readId].append(locked_record)
 
-
-            
         for writeId in writeIdArray:
             locked_record = _ExternalLockedRecord(
                 waldo_initiator_id,endpoint_initiator_id,priority,
                 event_id,writeId)
             self._writeSet[writeId].append(locked_record)
                 
-        self._unlock();
-        return True;
-
-    
+        self._unlock()
+        return require_return_obj
+        
     def release(
         self,readIdArray,writeIdArray,commitObjectArray,
         priority,waldo_initiator_id,endpoint_initiator_id,event_id):

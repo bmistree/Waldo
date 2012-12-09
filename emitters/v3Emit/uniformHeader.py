@@ -140,6 +140,41 @@ class _OnComplete(threading.Thread):
     def fire(self):
         self.start();
 
+class _RunnerAndHolder(threading.Thread):
+    '''
+    If a call to run and hold a resource has been accepted, then
+    create a _RunnerAndHolder thread, which actually executes what had
+    been requested to be run and held.  Note that we have already
+    reserved the resources (on our end) to run and hold the function,
+    so closure_to_execute does not have to as well.
+    '''
+    def __init__(
+        self,closure_to_execute,priority,waldo_initiator_id,
+        endpoint_initiator_id,*args):
+        '''
+        @param {closure} closure_to_execute --- The closure 
+        @param {float} priority ---
+        @param {float} waldo_initiator_id ---
+        @param {float} endpoint_initiator_id
+        
+        @param {*args} *args --- The arguments that get passed to the
+        closure to execute.
+        
+        '''
+        self.closure_to_execute = closure_to_execute
+        self.priority = priority
+        self.waldo_initiator_id = waldo_initiator_id
+        self.endpoint_initiator_id = endpoint_initiator_id
+        self.args = args
+        threading.Thread.__init__(self)
+
+    def run(self):
+        # actually run the function
+        self.closure_to_execute(
+            self.priority,self.waldo_initiator_id,
+            self.endpoint_initiator_id,*self.args)
+
+        
 class _LockedRecord(object):
     def __init__(
         self,waldo_initiator_id,endpoint_initiator_id,priority,act_event_id):
@@ -170,7 +205,7 @@ class _ExtInterfaceCleanup(threading.Thread):
     def __init__(self, externalsArray,externalStore,endpointName):
         '''
         @param {Array} externalsArray --- An array of external
-        (_Shared) objects.
+        (_External) objects.
 
         @param {ExternalStore object} --- externalStore
         '''
@@ -1175,6 +1210,18 @@ class _Message(object):
 
     # Which endpoint on a target host initiated the transaction
     EVENT_INITIATOR_ENDPOINT_ID_FIELD = 'initiator_endpoint_id_field'
+
+
+    # fields to use to return results of run and hold operations
+    RUN_AND_HOLD_NOT_ACCEPTED_SENTINEL = '__run_and_hold_n_accept__'
+    RUN_AND_HOLD_ACCEPTED_SENTINEL = '__run_and_hold_accept__'    
+    PRIORITY_FIELD = 'priority'
+    WALDO_INITIATOR_ID_FIELD = 'waldo_initiator_id'
+    ENDPOINT_INITIATOR_ID_FIELD = 'endpoint_initiator_id'
+    RESERVATION_REQUEST_RESULT_FIELD = 'reservation_request_result_field'
+
+
+    
     
     @staticmethod
     def eventNotAcceptedMsg(eventId):
@@ -1196,6 +1243,38 @@ class _Message(object):
 
         return returner;
 
+
+    @staticmethod
+    def run_and_hold_msg(
+        to_run,priority,waldo_initiator_id,endpoint_initiator_id,
+        reservation_request_result):
+        '''
+
+        @param {_ReservationRequestResult} reservation_request_result
+        --- @see reservationManager.py.  Contains the
+        overlapping_reads and overlapping_writes that caused the
+        run_and_hold request to fail.
+        
+        Constructs a message dictionary that can be sent to the other
+        endpoint telling it that its request to run and hold to_run
+        was not accepted.  
+        
+        '''
+
+        returner = {
+            _Message.PRIORITY_FIELD: priority,
+            _Message.WALDO_INITIATOR_ID_FIELD: waldo_initiator_id,
+            _Message.ENDPOINT_INITIATOR_ID_FIELD: endpoint_initiator_id,
+            _Message.RESERVATION_REQUEST_RESULT_FIELD: reservation_request_result
+            }
+
+        # to tell whether the message was accepted or not
+        if reservation_request_result.succeeded:
+            returner[_Message.CONTROL_FIELD] = _Message.RUN_AND_HOLD_ACCEPTED_SENTINEL
+        else:
+            returner[_Message.CONTROL_FIELD] = _Message.RUN_AND_HOLD_NOT_ACCEPTED_SENTINEL            
+        return returner
+        
     @staticmethod
     def eventReleaseMsg(context,activeEvent,sequenceName=None):
         '''
@@ -1503,158 +1582,138 @@ class _ActiveEvent(object):
                 self.endpoint._postponeActiveEvent(actEventKey);
 
 
-    def addEventToEndpointIfCan(self,argumentArray=None,force=False,newId=False):
+    def _find_external_reads_or_writes_dict(self,read,argument_array):
         '''
-        CALLED WITHIN ENDPOINT's LOCK.
+        @param{bool} read --- True if we are finding the externals
+        associated with reading.  False if we are finding externals
+        associated with writing.
 
-        @param {Array} argumentArray --- Each element is the argument
-        to the function.
+        @param {Array} argument_array --- Each element is the argument
+        to the function that is being executed.  Externals that are
+        passed through to a function as an argument are not named
+        using the same globally-unique string ids.  Instead, they take
+        on the index in the argument array that corresponds to them.  
         
-        @param{bool} force --- If true, this means that we should
-        postpone all other active events that demand the same
-        variables.
 
-        @param{bool} newId --- If true, then assign a new (globally
-        unique) id to this active event before trying to add it.
-        
-        @returns {bool,_Context} --- False,None if cannot add event.
-        True,context to use if can add event.
+        @returns{dict} --- indices are the externals' ids.  Values are
+        arbitrary bools.  
         '''
-        #### DEBUG
-        if self.active:
-            errMsg = '\nBehram error.  Trying to re-add event to endpoint.\n';
-            print(errMsg);
-            assert(False);
-        #### END DEBUG
-
-        # if an event touches any external objects, need to request
-        # the resource manager for permission to either write to it or
-        # read from it.
-        externalsToRead = {};
-        externalsToWrite = {};
-                
-        if newId:
-            self.id = self.endpoint._getNextActiveEventIdToAssign();
-
-        endpointGlobSharedReadVars = self.endpoint._globSharedReadVars;
-        endpointGlobSharedWriteVars = self.endpoint._globSharedWriteVars;
-
-        if force:
-            # by calling this, we guarantee that there will be no
-            # conflicts if we add this event.
-            self._postponeConflictingEvents();
-        else:
-            # we are not forcing adding this event, and must check if
-            # the event would pose any conflicts.  if it does, then do
-            # not proceed with adding the active event.
-            for actReadKey in self.activeGlobReads.keys():
-
-                if ((actReadKey in endpointGlobSharedWriteVars) and
-                    (len(endpointGlobSharedWriteVars[actReadKey]) > 0)):
-                    return False,None;
-                        
-            for actWriteKey in self.activeGlobWrites.keys():
-
-                if (((actWriteKey in endpointGlobSharedWriteVars) and
-                     (len(endpointGlobSharedWriteVars[actWriteKey]) > 0)) or
-
-                    ((actWriteKey in endpointGlobSharedReadVars) and
-                     (len(endpointGlobSharedReadVars[actWriteKey]) > 0))):
-
-                    return False,None;
-
-        # now check if can add externals
-        for actWriteKey in self.activeGlobWrites.keys():
+        externals_to_read_or_write = {}
+        active_glob_var_map = self.activeGlobWrites
+        if read:
+            active_glob_var_map = self.activeGlobReads
             
-            if self.endpoint._isExternalVarId(actWriteKey):
+        # for actWriteKey in self.activeGlobWrites.keys():
+        for actVarKey in active_glob_var_map.keys():
+            
+            if self.endpoint._isExternalVarId(actVarKey):
                 ##### get external id associated with external's key
 
                 # the ext_id will be the integer id of the shared
                 # data.  (ie, it won't be in its string-ified key form)
-                ext_id = self.endpoint._committedContext.endGlobals.get(actWriteKey,None)
+                ext_id = self.endpoint._committedContext.endGlobals.get(actVarKey,None)
                 if ext_id == None:
                     # means that the external variable that we are
-                    # writing to did not already contain an external
-                    # object to work with.  do not need to try to
-                    # acquire a lock on it
+                    # writing to/reading from did not already contain
+                    # an external object to work with.  do not need to
+                    # try to acquire a lock on it
                     continue
                 
-                externalsToWrite[ext_id] = True;
+                externals_to_read_or_write[ext_id] = True;
 
             # if it's not a write key for me, then it is either an
             # argument id (which can be used to index into the
             # argument array) or it is for the other endpoint.
             # below tests if it's an index into the argument
-            elif isinstance(actWriteKey,numbers.Number):
-
+            elif isinstance(actVarKey,numbers.Number):
                 #### DEBUG
-                if argumentArray == None:
+                if argument_array == None:
                     assert(False);
                 
-                if len(actWriteKey) > len(argumentArray):
+                if len(actVarKey) > len(argument_array):
                     assert(False);
                 #### END DEBUG
                     
-                extObj = argumentArray[actWriteKey];
+                extObj = argument_array[actVarKey];
 
                 #### DEBUG
-                if not isinstance(extObj,_Shared):
+                if not isinstance(extObj,_External):
                     assert(False);
                 #### END DEBUG
                     
-                externalsToWrite[extObj.id]= True;
+                externals_to_read_or_write[extObj.id]= True;
 
-        for actReadKey in self.activeGlobReads.keys():
-            if self.endpoint._isExternalVarId(actReadKey):
-                ##### get external id associated with external's key
+        return externals_to_read_or_write
 
-                # the ext_id will be the integer id of the shared
-                # data.  (ie, it won't be in its string-ified key form)
-                ext_id = self.endpoint._committedContext.endGlobals.get(actReadKey,None)
-                if ext_id == None:
-                    # means that the external variable that we are
-                    # writing to did not already contain an external
-                    # object to work with.  do not need to try to
-                    # acquire a lock on it.  note that this won't
-                    # necessarily cause an error, because we may write
-                    # something to this variable before trying to read
-                    # it again.
-                    continue
-                
-                externalsToRead[ext_id] = True;
+    
+    def request_resources_for_run_and_hold(self,force=False,argument_array=None):
+        '''
+        CALLED FROM WITHIN LOCK
+        
+        Attempts to grab resources necessary to run active event.
 
-            # if it's not a read key for me, then it is either an
-            # argument id (which can be used to index into the
-            # argument array) or it is for the other endpoint.
-            # below tests if it's an index into the argument
-            elif isinstance(actReadKey,numbers.Number):
+        @param {Array} argument_array --- Each element is the argument
+        to the function that is being executed.  Externals that are
+        passed through to a function as an argument are not named
+        using the same globally-unique string ids.  Instead, they take
+        on the index in the argument array that corresponds to them.  
 
-                #### DEBUG
-                if argumentArray == None:
-                    assert(False);
-                
-                if len(actReadKey) > len(argumentArray):
-                    assert(False);
-                #### END DEBUG
-                    
-                extObj = argumentArray[actReadKey];
+        
+        @returns {_ReservationRequestResult} --- @see
+        reservationManager.py.  It's succeeded field tells you whether
+        the resources were acquired or not.  
+        '''
+        # if an event touches any external objects, need to request
+        # the resource manager for permission to either write to it or
+        # read from it.
+        externalsToRead = self._find_external_reads_or_writes_dict(
+            True,argument_array)
+        externalsToWrite = self._find_external_reads_or_writes_dict(
+            False,argument_array)
+        
+        # start by attempting to gather external resources
+        res_req_result = self._try_add_externals(externalsToRead,externalsToWrite)
+        got_externals = res_req_result.succeeded
+        
+        if force and res_req_result.succeeded:
+            # by calling this, we guarantee that there will be no
+            # local conflicts if we add this event.
+            self._postponeConflictingEvents();
+        else:
+            # can modify res_req_result by reference
+            # want to tell other end of *all* conflicts, not just external
+            self._check_local_conflicts(res_req_result)
 
-                #### DEBUG
-                if not isinstance(extObj,_Shared):
-                    assert(False);
-                #### END DEBUG
-                    
-                externalsToRead[extObj.id]= True;
+        if not res_req_result.succeeded:
+            # we could not acquire some of the resources we needed.
+            # return that we could not acquire.
+            if got_externals:
+                # we could acquire the externals, but could not acquire
+                # locals.  Should release the externals that we acquired.
+                self._release_externals(externalsToRead,externalsToWrite)
 
-                
+            return res_req_result
+            
+        # we can acquire all the resources that we wanted.  actually
+        # acquire local resources
+        self._acquire_local()
+        return res_req_result
+
+    
+    def _try_add_externals(self,externalsToRead,externalsToWrite):
+        '''
+        @returns{_ReservationRequestResult object} --- succeeded field
+        tells us whether we were actually able to grab the resources.
+        '''
+        # now check if can add externals
         self.extsToRead = list(externalsToRead.keys());
         self.extsToWrite = list(externalsToWrite.keys());
         if (len(self.extsToRead) == 0) and (len(self.extsToWrite) == 0):
             # short-circuits acquiring lock in reservation manager if
             # don't need to.
-            externalsReserved = True;
+            res_req_result = self.endpoint._reservationManager.empty_reservation_request_result(True)
         else:
-            externalsReserved = self.endpoint._reservationManager.acquire(
+            res_req_result = self.endpoint._reservationManager.acquire(
                 self.extsToRead,
                 self.extsToWrite,
                 self.priority,
@@ -1662,8 +1721,57 @@ class _ActiveEvent(object):
                 self.event_initiator_endpoint_id,
                 self.id)
 
-        if not externalsReserved:
-            return False,None;
+        return res_req_result
+
+
+    def _check_local_conflicts(self,res_req_result):
+        '''
+        Check if local resources have read-write conflicts.  Returns
+        conflicts by modifying res_req_result.
+        '''
+        endpointGlobSharedReadVars = self.endpoint._globSharedReadVars;
+        endpointGlobSharedWriteVars = self.endpoint._globSharedWriteVars;
+
+        # we are not forcing adding this event, and must check if
+        # the event would pose any conflicts.  if it does, then do
+        # not proceed with adding the active event.
+        for actReadKey in self.activeGlobReads.keys():
+
+            if ((actReadKey in endpointGlobSharedWriteVars) and
+                (len(endpointGlobSharedWriteVars[actReadKey]) > 0)):
+
+                res_req_result.succeeded = False
+                res_req_result.append_overlapping(
+                    True, # append as read
+                    actReadKey,
+                    endpointGlobSharedWriteVars[actReadKey])
+
+        for actWriteKey in self.activeGlobWrites.keys():
+
+            if (((actWriteKey in endpointGlobSharedWriteVars) and
+                 (len(endpointGlobSharedWriteVars[actWriteKey]) > 0))
+
+                or
+
+                ((actWriteKey in endpointGlobSharedReadVars) and
+                 (len(endpointGlobSharedReadVars[actWriteKey]) > 0))):
+
+                res_req_result.succeeded = False
+                res_req_result.append_overlapping(
+                    False, #append as write
+                    actWriteKey,
+                    endpointGlobSharedWriteVars[actWriteKey])
+                 
+    
+    def _acquire_local(self):
+        '''
+        Assumes that there have been no conflicts when tried to lock
+        internal and external variables (ie, _check_local_conflicts
+        has turned up clean).  Actually tell endpoint that these
+        resources are being held.
+        '''
+        endpointGlobSharedReadVars = self.endpoint._globSharedReadVars;
+        endpointGlobSharedWriteVars = self.endpoint._globSharedWriteVars;
 
         # no conflict, can add event.
         for actReadKey in self.activeGlobReads.keys():
@@ -1691,6 +1799,38 @@ class _ActiveEvent(object):
                     
                 endpointGlobSharedWriteVars[actWriteKey].append(locked_record)
 
+
+    def addEventToEndpointIfCan(self,argument_array=None,force=False,newId=False):
+        '''
+        CALLED WITHIN ENDPOINT's LOCK
+        
+        @param {Array} argument_array --- Each element is the argument
+        to the function.
+        
+        @param{bool} force --- If true, this means that we should
+        postpone all other active events that demand the same
+        variables.
+
+        @param{bool} newId --- If true, then assign a new (globally
+        unique) id to this active event before trying to add it.
+        
+        @returns {bool,_Context} --- False,None if cannot add event.
+        True,context to use if can add event.
+        '''
+
+        if newId:
+            self.id = self.endpoint._getNextActiveEventIdToAssign();
+
+        res_req_result = self.request_resources_for_run_and_hold(
+            force,argument_array)
+
+        if not res_req_result.succeeded:
+            return False,None
+
+        
+        # we were able to acquire read/write locks on the resources.
+        # go ahead and add event to active event dict and create context
+        
 
         #### DEBUG
         if self.id in self.endpoint._activeEventDict:
@@ -1721,7 +1861,6 @@ class _ActiveEvent(object):
         eventContext.holdExternalReferences(self.externalVarNames);
             
         return True,eventContext;
-
 
         
     def cancelActiveEvent(self):
@@ -2035,6 +2174,125 @@ class _Endpoint(object):
         
     ##### helper functions #####
 
+    def _run_and_hold(
+        self,
+        to_run,
+        
+        priority,waldo_initiator_id,endpoint_initiator_id,
+
+
+        *args):
+        '''
+        @param{String} to_run --- The name of the public function to
+        attempt to run locally.
+
+        For re-entrantness
+        @param{float} priority
+        @param{float} waldo_initiator_id
+        @param{float} endpoint_initiator_id
+
+        @param *args --- The arguments to the public function that we
+        are calling.
+
+        @return _RunAndHold object --- sentinel that could not acquire
+        (and telling you who is actually holding the resources)
+        
+        Execute a function and hold onto the resources for a
+        transaction and hold onto the read/write locks for its
+        resources.  until 
+        '''
+
+
+        fixme_function_prefix = '_hold_func_prefix_' + self._endpointName
+
+        try:
+            to_execute = getattr(self,fixme_function_prefix + to_run)
+        except AttributeError as exception:
+            # FIXME: probably want to return a different, undefined
+            # method or something.
+            err_msg = '\nBehram error when calling ' + to_run
+            err_msg += '.  It does not exist on this endpoint.\n'
+            print err_msg
+            assert(False);
+
+        self._lock()
+        # at
+        res_request_result,active_event = self._acquire_run_and_hold_resources(
+            to_run,priority,waldo_initiator_id,endpoint_initiator_id)
+        
+        self._unlock()
+
+
+        # tell the other side whether run and hold request succeeded
+        # or failed
+        self._send_run_and_hold_result_msg(
+            to_run,priority,waldo_initiator_id,endpoint_initiator_id,
+            res_request_result)
+
+        if res_request_result.succeeded:
+            # we could lock all resources. go ahead and run the method
+            # on another thread (which assumes the required resources
+            # are already held)
+            run_and_hold = _RunnerAndHolder(
+                to_execute,priority,waldo_initiator_id,
+                endpoint_initiator_id,*args)
+            run_and_hold.start()
+
+    def _acquire_run_and_hold_resources(
+        self,to_run,priority,waldo_initiator_id,endpoint_initiator_id):
+        '''
+        Attempt to grab the resources required to run to_run as part
+        of a run_and_hold request.
+
+        CALLED FROM WITHIN LOCK
+
+        @returns (a,b) ---
+           {_ReservationRequestResult} a ---
+           
+           {_ActiveEvent or None} b --- None if cannot acquire
+           resources, otherwise, an active event, which we can later
+           schedule to run.
+        '''
+
+        # FIXME: must add to_run to self._prototypeEventsDict
+        # FIXME: must emit a special to_run
+        
+        #### DEBUG
+        if not (to_run in self._prototypeEventsDict):
+            err_msg = '\nBehram error.  Could not acquire resources '
+            err_msg += 'for run and hold because '
+            print err_msg
+            assert(False)
+        #### END DEBUG
+        
+        event_to_run_and_hold = self._prototypeEventsDict[to_run]
+        act_event = event_to_run_and_hold.generateActiveEvent()
+        reservation_request_result = act_event.request_resources_for_run_and_hold()
+
+        return reservation_request_result,act_event
+
+
+    def _send_run_and_hold_result_msg(
+        self,to_run,priority,waldo_initiator_id,
+        endpoint_initiator_id,reservation_request_result):
+        '''
+        Send a message to the partner endpoint telling it that we either:
+
+           a: accepted the request to run and hold and are running now
+              or
+           b: did not accept the request and are not running now
+
+        Can determine whether using a or b based on the succeeded flag
+        of reservation_request_result.
+
+        '''
+
+        msg_to_send = _Message.run_and_hold_msg(
+            to_run,priority,waldo_initiator_id,endpoint_initiator_id,
+            reservation_request_result)
+        self._writeMsg(msg_to_send)
+        
+    
     def _generateOnCompleteNameToLookup(self,sequenceName):
         '''
         For each sequence, we want to be able to lookup its oncomplete
