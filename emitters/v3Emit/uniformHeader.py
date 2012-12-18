@@ -1729,41 +1729,95 @@ class _ActiveEvent(object):
         '''
         Check if local resources have read-write conflicts.  Returns
         conflicts by modifying res_req_result.
+
+        Note that it is not considered a conflict if an event 
         '''
+
+        def filter_reentrant(to_filter):
+            '''
+            @param{Array} to_filter --- Each element is a
+            _LockedRecord object.
+
+            @returns{Array} --- Each element is a _LockedRecord
+            object.
+
+            Runs through to_filter and copies records that have
+            different priority, event_initiator_id, event_id, and waldo_id-s
+            compared to the current event's priority and ids (found in
+            self.priority, self.event_initiator_waldo_id,
+            self.event_initiator_endpoint_id, self.id)
+            '''
+            to_return = []
+
+            for record in to_filter:
+                if ((record.waldo_initiator_id == self.event_initiator_waldo_id) and
+                    (record.endpoint_initiator_id == self.event_initiator_endpoint_id) and
+                    (record.priority == self.priority) and
+                    (record.act_event_id == self.id)):
+                    continue
+
+                to_return.append(record)
+            
+            return to_return
+
+
+        
         endpointGlobSharedReadVars = self.endpoint._globSharedReadVars;
         endpointGlobSharedWriteVars = self.endpoint._globSharedWriteVars;
-
+        
         # we are not forcing adding this event, and must check if
         # the event would pose any conflicts.  if it does, then do
         # not proceed with adding the active event.
         for actReadKey in self.activeGlobReads.keys():
 
-            if ((actReadKey in endpointGlobSharedWriteVars) and
-                (len(endpointGlobSharedWriteVars[actReadKey]) > 0)):
 
-                res_req_result.succeeded = False
-                res_req_result.append_overlapping(
-                    True, # append as read
-                    actReadKey,
+            if actReadKey in endpointGlobSharedWriteVars:
+                # check that the overlap isn't from my own action that
+                # is now re-entering
+                reentrant_filtered = filter_reentrant(
                     endpointGlobSharedWriteVars[actReadKey])
+
+                if len(reentrant_filtered) > 0:
+                    res_req_result.succeeded = False
+                    res_req_result.append_overlapping(
+                        True, # append as read
+                        actReadKey,
+                        reentrant_filtered)
 
         for actWriteKey in self.activeGlobWrites.keys():
 
-            if (((actWriteKey in endpointGlobSharedWriteVars) and
-                 (len(endpointGlobSharedWriteVars[actWriteKey]) > 0))
 
-                or
+            if actWriteKey in endpointGlobSharedWriteVars:
+            
+                # check that the overlap isn't from my own action that
+                # is now re-entering
+                reentrant_filtered_writes = filter_reentrant(
+                    endpointGlobSharedWriteVars[actWriteKey])            
 
-                ((actWriteKey in endpointGlobSharedReadVars) and
-                 (len(endpointGlobSharedReadVars[actWriteKey]) > 0))):
+                if len(reentrant_filtered_writes) > 0:
+                    res_req_result.succeeded = False
+                    res_req_result.append_overlapping(
+                        False, #append as write
+                        actWriteKey,
+                        reentrant_filtered_writes)
 
-                res_req_result.succeeded = False
-                res_req_result.append_overlapping(
-                    False, #append as write
-                    actWriteKey,
-                    endpointGlobSharedWriteVars[actWriteKey])
-                 
-    
+
+            if actWriteKey in endpointGlobSharedReadVars:
+            
+                # check that the overlap isn't from my own action that
+                # is now re-entering
+                reentrant_filtered_reads = filter_reentrant(
+                    endpointGlobSharedReadVars[actWriteKey])
+                
+                if len(reentrant_filtered_reads) > 0:
+                    res_req_result.succeeded = False
+                    res_req_result.append_overlapping(
+                        False, #append as write
+                        actWriteKey,
+                        reentrant_filtered_reads)
+
+        
+        
     def _acquire_local(self):
         '''
         Assumes that there have been no conflicts when tried to lock
