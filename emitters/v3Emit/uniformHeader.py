@@ -1721,6 +1721,7 @@ class _ActiveEvent(object):
                 self.event_initiator_endpoint_id,
                 self.id)
 
+
         return res_req_result
 
 
