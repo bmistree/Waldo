@@ -24,6 +24,7 @@ import threading
 import Queue
 import numbers
 import random
+import pickle
 
 '''
 Designed message sequencing so that the sender of a message
@@ -121,6 +122,12 @@ def _deepCopy(srcDict,dstDict,fieldNamesToSkipCopy=None):
             continue;
         dstDict[srcKey] = srcDict[srcKey];
 
+
+def _value_deep_copy(to_copy):
+    to_return_str = pcikle.dumps(to_copy)
+    return pickle.loads(to_return_str)
+
+        
 class _OnComplete(threading.Thread):
     def __init__(self,function,onCompleteFuncKey,endpoint,context):
         self.function = function;
@@ -149,7 +156,7 @@ class _RunnerAndHolder(threading.Thread):
     so closure_to_execute does not have to as well.
     '''
     def __init__(
-        self,closure_to_execute,active_event,*args):
+        self,closure_to_execute,active_event,context,*args):
         '''
         @param {closure} closure_to_execute --- The closure 
         @param {_ActiveEvent} active_event ---
@@ -160,13 +167,14 @@ class _RunnerAndHolder(threading.Thread):
         '''
         self.closure_to_execute = closure_to_execute
         self.active_event = active_event
+        self.context = context
         self.args = args
         threading.Thread.__init__(self)
 
     def run(self):
         # actually run the function
         self.closure_to_execute(
-            self.active_event,*self.args)
+            self.active_event,self.context,*self.args)
 
         
 class _LockedRecord(object):
@@ -1360,7 +1368,8 @@ class _ActiveEvent(object):
         # Ie, if we are about to commit a context to the endpoint's
         # master committed context, need to ensure that the
         # _activeEvent's contextId is the same as this value.
-        self.contextId = 0;
+        self.contextId = _Context.INVALID_CONTEXT_ID + 1
+
 
 
         # each element of return queue has type _ReturnQueueElement.
@@ -1908,6 +1917,7 @@ class _ActiveEvent(object):
         eventContext.holdExternalReferences(self.externalVarNames);
             
         return True,eventContext;
+        
 
         
     def cancelActiveEvent(self):
@@ -2261,13 +2271,14 @@ class _Endpoint(object):
             assert(False);
 
 
+
         self._lock()
-        # at
-        res_request_result,active_event = self._acquire_run_and_hold_resources(
+        # attempt to acquire read/write locks on resources for this action
+        res_request_result,active_event,context = self._acquire_run_and_hold_resources(
             to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id)
-        
         self._unlock()
 
+        
 
         # tell the other side whether run and hold request succeeded
         # or failed
@@ -2280,8 +2291,9 @@ class _Endpoint(object):
             # on another thread (which assumes the required resources
             # are already held)
             run_and_hold = _RunnerAndHolder(
-                to_execute,active_event,*args)
+                to_execute,active_event,context, *args)
             run_and_hold.start()
+
 
     def _acquire_run_and_hold_resources(
         self,to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id):
@@ -2291,12 +2303,19 @@ class _Endpoint(object):
 
         CALLED FROM WITHIN LOCK
 
-        @returns (a,b) ---
+        @returns (a,b,c) ---
            {_ReservationRequestResult} a ---
            
            {_ActiveEvent or None} b --- None if cannot acquire
            resources, otherwise, an active event, which we can later
            schedule to run.
+
+           {_Context or None} c --- None if cannot acquire resources.
+           Otherwise, a context.  Note that if we've already created
+           an active event with the same initiator id, edpoint id, and
+           priority, then we re-use its context, potentially
+           copying-in data that it does not already have and that this
+           event needs.
         '''
 
         #### DEBUG
@@ -2311,7 +2330,77 @@ class _Endpoint(object):
         act_event = event_to_run_and_hold.generateActiveEvent()
         reservation_request_result = act_event.request_resources_for_run_and_hold()
 
-        return reservation_request_result,act_event
+
+        
+        # generate context
+        context_to_use = None
+        if reservation_request_result.succeeded:
+            context_to_use = self._generate_run_and_hold_context(
+                priority,waldo_initiator_id,endpoint_initiator_id,act_event)
+
+        return reservation_request_result,act_event,context_to_use
+
+
+    def _generate_run_and_hold_context(
+        self,priority,waldo_initiator_id,endpoint_initiator_id,act_event):
+        '''
+        @param{float} priority
+        @param{float} waldo_initiator_id
+        @param{float} endpoint_initiator_id
+        @param{ActiveEvent object} act_event
+
+        @returns{_Context object}
+        
+        Runs through the list of active event elements.  If any of the
+        active event elements have the same priority,
+        waldo_initiator_id, and endpoint_initiator_id, then grab its
+        context and add to it to include any data this event needs
+        that the other did not.
+        '''
+        context_to_use = None
+        matching_active_event = None
+        act_event_dict = self._activeEventDict
+        for act_event_element_key in act_event_dict.keys():
+            act_event_iter = act_event_dict[act_event_element_key].actEvent
+            ctx = act_event_dict[act_event_element_key].eventContext
+            
+
+            if ((act_event_element.priority == priority) and
+                (act_event_element.event_initiator_waldo_id == waldo_initiator_id) and
+                (act_event_element.event_initiator_endpoint_id == endpoint_initiator_id)):
+
+                matching_active_event = act_event_iter
+                context_to_use = ctx
+                break
+
+        if context_to_use == None:
+            # means that we didn't already have a context in our dict
+            # to use.  create a new one.  note that we do not need to
+            # advance our context id because we will only run this at
+            # the beginning (ie, there are no other contexts that we
+            # need to clear out).
+            context_to_use =  self._committedContext.copyForActiveEvent(
+                act_event,act_event.contextId)
+        else:
+
+            # need to grab the id of the contex that we'll be using.
+            # that way, this active event will be synchronized to
+            # reject the context's changes if they have been rolled
+            # back.
+            act_event.contextId = matching_active_event.contextId
+
+            # FIXME: Should not copy over sequence variables
+            dummy_context = self.committedContext.copyForActiveEvent(
+                act_event,act_event.contextId)
+
+
+            for index in dummy_context.keys():
+                if not (index in context_to_use):
+                    context_to_use[index] = _value_deep_copy(
+                        dummy_context[index])
+            
+        return context_to_use
+
 
 
     def _send_run_and_hold_result_msg(
