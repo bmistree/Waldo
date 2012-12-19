@@ -552,19 +552,19 @@ def _emit_run_and_hold(
     # handle function signature
     emitted_func_name = emitUtils.construct_hold_func_name(
         func_name,endpoint_name)
-    func_head = 'def %s(self,_active_event' % emitted_func_name
+    func_head = 'def %s(self,_active_event,_context,*args):\n' % emitted_func_name
 
+    # handle function body, which just calls internal method of public
+    # function.
+    func_body = 'return self.'
+    func_body += _convertSrcFuncNameToInternal(func_name)
+    func_body += '''(
+    _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,
+    _active_event,
+    _context,
+    *args )
 
-    for arg_name in func_arguments:
-        func_head += ',' + arg_name;
-
-    func_head += '):\n';
-
-
-    # handle function body
-    func_body = r"print('\nGot into function body for run and hold\n')"
-    func_body += '\n\n'
-
+'''
 
     # indent + return
     to_return += func_head + emitUtils.indentString(func_body,1);

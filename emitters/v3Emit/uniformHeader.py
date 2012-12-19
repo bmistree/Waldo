@@ -1327,10 +1327,8 @@ class _ActiveEvent(object):
         shared and endpoint global references.  Can use these to
         increase their reference counts to ensure that they do not get
         removed from external store.
-
-
-        
         '''
+        
         self.activeGlobReads = activeGlobReads;
         self.activeGlobWrites = activeGlobWrites;
 
