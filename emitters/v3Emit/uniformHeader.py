@@ -149,30 +149,24 @@ class _RunnerAndHolder(threading.Thread):
     so closure_to_execute does not have to as well.
     '''
     def __init__(
-        self,closure_to_execute,priority,waldo_initiator_id,
-        endpoint_initiator_id,*args):
+        self,closure_to_execute,active_event,*args):
         '''
         @param {closure} closure_to_execute --- The closure 
-        @param {float} priority ---
-        @param {float} waldo_initiator_id ---
-        @param {float} endpoint_initiator_id
-        
+        @param {_ActiveEvent} active_event ---
+
         @param {*args} *args --- The arguments that get passed to the
         closure to execute.
         
         '''
         self.closure_to_execute = closure_to_execute
-        self.priority = priority
-        self.waldo_initiator_id = waldo_initiator_id
-        self.endpoint_initiator_id = endpoint_initiator_id
+        self.active_event = active_event
         self.args = args
         threading.Thread.__init__(self)
 
     def run(self):
         # actually run the function
         self.closure_to_execute(
-            self.priority,self.waldo_initiator_id,
-            self.endpoint_initiator_id,*self.args)
+            self.active_event,*self.args)
 
         
 class _LockedRecord(object):
@@ -2232,10 +2226,7 @@ class _Endpoint(object):
     def _run_and_hold(
         self,
         to_run,
-        
         priority,waldo_initiator_id,endpoint_initiator_id,
-
-
         *args):
         '''
         @param{String} to_run --- The name of the public function to
@@ -2256,24 +2247,26 @@ class _Endpoint(object):
         transaction and hold onto the read/write locks for its
         resources.  until 
         '''
-
-
-        fixme_function_prefix = '_hold_func_prefix_' + self._endpointName
+        fixme_function_prefix = '""" + emitUtils.HOLD_FUNC_PREFIX + r"""' + self._endpointName + '_'       
+        to_run_internal_name = fixme_function_prefix + to_run
 
         try:
-            to_execute = getattr(self,fixme_function_prefix + to_run)
+            to_execute = getattr(self,to_run_internal_name)
         except AttributeError as exception:
             # FIXME: probably want to return a different, undefined
             # method or something.
             err_msg = '\nBehram error when calling ' + to_run
-            err_msg += '.  It does not exist on this endpoint.\n'
+            err_msg += '.  It does not exist on this endpoint.  '
+            err_msg += 'Trying to look it up with name '
+            err_msg += to_run_internal_name + '.\n'
             print err_msg
             assert(False);
+
 
         self._lock()
         # at
         res_request_result,active_event = self._acquire_run_and_hold_resources(
-            to_run,priority,waldo_initiator_id,endpoint_initiator_id)
+            to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id)
         
         self._unlock()
 
@@ -2289,12 +2282,11 @@ class _Endpoint(object):
             # on another thread (which assumes the required resources
             # are already held)
             run_and_hold = _RunnerAndHolder(
-                to_execute,priority,waldo_initiator_id,
-                endpoint_initiator_id,*args)
+                to_execute,active_event,*args)
             run_and_hold.start()
 
     def _acquire_run_and_hold_resources(
-        self,to_run,priority,waldo_initiator_id,endpoint_initiator_id):
+        self,to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id):
         '''
         Attempt to grab the resources required to run to_run as part
         of a run_and_hold request.
@@ -2309,18 +2301,15 @@ class _Endpoint(object):
            schedule to run.
         '''
 
-        # FIXME: must add to_run to self._prototypeEventsDict
-        # FIXME: must emit a special to_run
-        
         #### DEBUG
-        if not (to_run in self._prototypeEventsDict):
+        if not (to_run_internal_name in self._prototypeEventsDict):
             err_msg = '\nBehram error.  Could not acquire resources '
             err_msg += 'for run and hold because '
             print err_msg
             assert(False)
         #### END DEBUG
         
-        event_to_run_and_hold = self._prototypeEventsDict[to_run]
+        event_to_run_and_hold = self._prototypeEventsDict[to_run_internal_name]
         act_event = event_to_run_and_hold.generateActiveEvent()
         reservation_request_result = act_event.request_resources_for_run_and_hold()
 

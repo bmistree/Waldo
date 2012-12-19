@@ -512,11 +512,63 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_RESUME_POSTPONE:
     return;
 elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
     return [None];
+
 """;
         
     returner += emitUtils.indentString(funcBody,1);
+
+    #if we're emitting a public function, we must emit its twin run
+    #and hold function
+    returner += _emit_run_and_hold(
+        funcNode,endpointName,astRootNode,fdepDict,emitContext)
+    
     return returner;
     
+
+def _emit_run_and_hold(
+    func_node,endpoint_name,ast_root_node,fdep_ict,emit_context):
+    '''
+    @param {AstNode} funcNode --- Should be the root node of the
+    function we're trying to emit.  only valid labels are oncreate,
+    public, private, message send, message receive.
+    
+    @param {String} endpointName --- The name of the endpoint that
+    we're emitting this function for.
+    
+    @param {AstNode} astRootNode --- The root ast node of the entire
+    program.
+    '''
+
+    to_return = ''
+    if func_node.label != AST_PUBLIC_FUNCTION:
+        # only need to emit run and holds for public functions
+        return to_return
+
+    func_name_node = func_node.children[0]
+    func_name = func_name_node.value
+    func_arguments = _getArgumentNamesFromFuncNode(func_node);
+    
+
+    # handle function signature
+    emitted_func_name = emitUtils.construct_hold_func_name(
+        func_name,endpoint_name)
+    func_head = 'def %s(self,_active_event' % emitted_func_name
+
+
+    for arg_name in func_arguments:
+        func_head += ',' + arg_name;
+
+    func_head += '):\n';
+
+
+    # handle function body
+    func_body = r"print('\nGot into function body for run and hold\n')"
+    func_body += '\n\n'
+
+
+    # indent + return
+    to_return += func_head + emitUtils.indentString(func_body,1);
+    return to_return
 
     
 

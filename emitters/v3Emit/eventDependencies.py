@@ -46,6 +46,8 @@ _REFRESH_RECEIVE_KEY: _Event(
     for eventName in fdepDict.keys():
         fdep = fdepDict[eventName];
         returner += _emitIndividualEvent(eventName,fdep,fdepDict,1);
+        returner += _emit_individual_run_and_hold_event(
+            eventName,fdep,fdepDict,1)
         returner += '\n';
     
 
@@ -55,6 +57,26 @@ _REFRESH_RECEIVE_KEY: _Event(
     return returner;
 
 
+def _emit_individual_run_and_hold_event(
+    event_name,fdep,fdep_dict,amount_to_indent):
+    '''
+    Require to add special names for run and hold events.  They have
+    essentially the same data as regular events, but are named
+    slightly differently.  This is because external callers into Waldo
+    only know the external name of the public function that begins an
+    action rather than the internal keys that index into prototype
+    dict array.
+    '''
+
+    endpoint_name = fdep.endpointName
+    src_func_name = fdep.srcFuncName # the actual name of the public
+                                     # function that starts the event
+    event_dict_key = emitUtils.construct_hold_func_name(
+        src_func_name,endpoint_name)
+    
+    return _emitIndividualEvent(event_dict_key,fdep,fdep_dict,amount_to_indent)    
+    
+    
 def _emitIndividualEvent(eventName,fdep,fdepDict,amountToIndent):
     '''
     @returns {String}

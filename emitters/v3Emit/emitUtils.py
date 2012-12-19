@@ -18,6 +18,12 @@ _REFRESH_RECEIVE_KEY = '______REFRESH_RECEIVE_REQUEST_____';
 _REFRESH_SEND_FUNCTION_NAME = '_refresh';
 _REFRESH_RECEIVE_FUNCTION_NAME = '_Text';
 
+HOLD_FUNC_PREFIX = '_hold_func_prefix_'
+
+
+def construct_hold_func_name(func_name,endpoint_name):
+    return  HOLD_FUNC_PREFIX +  endpoint_name + '_' + func_name
+
 
 def indentString(string,indentAmount):
     '''
