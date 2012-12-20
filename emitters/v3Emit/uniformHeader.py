@@ -1216,11 +1216,13 @@ class _Message(object):
 
     # fields to use to return results of run and hold operations
     RUN_AND_HOLD_NOT_ACCEPTED_SENTINEL = '__run_and_hold_n_accept__'
-    RUN_AND_HOLD_ACCEPTED_SENTINEL = '__run_and_hold_accept__'    
-    PRIORITY_FIELD = 'priority'
+    RUN_AND_HOLD_ACCEPTED_SENTINEL = '__run_and_hold_accept__'
+    RESERVATION_REQUEST_RESULT_FIELD = 'reservation_request_result_field'
+    
+    # to keep track of who started the transaction
     WALDO_INITIATOR_ID_FIELD = 'waldo_initiator_id'
     ENDPOINT_INITIATOR_ID_FIELD = 'endpoint_initiator_id'
-    RESERVATION_REQUEST_RESULT_FIELD = 'reservation_request_result_field'
+
 
 
     
@@ -2829,45 +2831,48 @@ class _Endpoint(object):
             self);
 
 
-    def _msgReceive(self,msg):
+
+    def _unpack_and_process_message_not_accpeted_sentinel_msg(self,msg):
         '''
         @param {dict} msg --- @see _Message for list of fields and
         their meanings.
         
+        When we tried to initiate a non-run-and-hold style message,
+        the other side rejected our request.  Postpone the event that
+        tried to send the message and try scheduling another event.
         '''
-
-        # FIXME: Intended rule was supposed to be to postpone
-        # currently executing functions if the other side's
-        # priority was higher.  Right now, just saying that will
-        # not take on an event the other side requests if
-        # resources are not available, regardless of priority.
-
         ctrlMsg = msg[_Message.CONTROL_FIELD];
         eventId = msg[_Message.EVENT_ID_FIELD];
 
-        if ctrlMsg == _Message.NOT_ACCEPTED_SENTINEL:
-            # means that we need to postpone current outstanding event and 
-            self._lock();
-            self._postponeActiveEvent(eventId);
-            self._unlock();
-
-            # when we postponed one event, we may have made way
-            # for another event to execute.  similarly, may want
-            # to reschedule the event that we postponed.
-            self._tryNextEvent();
-            return;
-
+        #### DEBUG
+        if ctrlMsg != _Message.NOT_ACCEPTED_SENTINEL:
+            err_msg = '\nBehram error.  Should never call '
+            err_msg += '_process_message_not_accepted_sentinel '
+            err_msg += 'on a message that does not have the '
+            err_msg += 'correct control field.\n'
+            print(err_msg)
+            assert(False)
+        #### END DEBUG
             
-        # only guaranteed to get these data if it is not a message
-        # not accepted message.
-        eventName = msg[_Message.EVENT_NAME_FIELD];
-        sequenceName = msg[_Message.SEQUENCE_NAME_FIELD];
-        contextData = msg[_Message.CONTEXT_FIELD];        
+        # means that we need to postpone current outstanding event and 
+        self._lock();
+        self._postponeActiveEvent(eventId);
+        self._unlock();
 
-        priority = msg[_Message.PRIORITY_FIELD]
-        event_initiator_waldo_id = msg[_Message.EVENT_INITIATOR_WALDO_ID_FIELD]
-        event_initiator_endpoint_id = msg[_Message.EVENT_INITIATOR_ENDPOINT_ID_FIELD]
+        # when we postponed one event, we may have made way
+        # for another event to execute.  similarly, may want
+        # to reschedule the event that we postponed.
+        self._tryNextEvent();
 
+
+
+    def _update_context_data(self,contextData):
+        '''
+        @param {dict} contextData --- Should be a version of the
+        context object used on the other end of the connection.  Need
+        to convert it so that it uses Waldo lists and maps instead of
+        their serialized forms.
+        '''
         # Should change all python lists and dicts in contextData back
         # to Waldo list and map objects, respectively
         def _dict_vals_to_waldo(to_convert):
@@ -2903,25 +2908,92 @@ class _Endpoint(object):
         for key in contextData.keys():
             contextData[key] = _dict_vals_to_waldo(contextData[key])
 
+        return contextData
         
-        if ctrlMsg == _Message.RELEASE_EVENT_SENTINEL:
-            # means that we should commit the specified outstanding
-            # event and release read/write locks that the event was
-            # holding.
-            self._processReleaseEventSentinel(eventId,contextData);
-            self._tryNextEvent();
-            return;
 
-        if ctrlMsg == _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH:
-            # means that the message sequence that was called is
-            # finished.
-            self._processSequenceSentinelFinished(
-                eventId,contextData,sequenceName);
+    def _unpack_and_process_release_event_sentinel_msg(self,msg):
+        '''
+        @param {dict} msg --- @see _Message for list of fields and
+        their meanings.
 
-            # reception of this message cannot have changed what
-            # read/write locks were happening, so do not need to tryNext.
-            return;
+        Full transaction is complete: Commit incoming context data and
+        clean up outstanding context on receiver.
+        '''
+        ctrlMsg = msg[_Message.CONTROL_FIELD]
+        eventId = msg[_Message.EVENT_ID_FIELD]
+        
+        # only guaranteed to get these data if it is not a not
+        # accepted message.
+        eventName = msg[_Message.EVENT_NAME_FIELD]
+        sequenceName = msg[_Message.SEQUENCE_NAME_FIELD]
+        contextData = self._update_context_data(
+            msg[_Message.CONTEXT_FIELD])
 
+        # means that we should commit the specified outstanding
+        # event and release read/write locks that the event was
+        # holding.
+        self._processReleaseEventSentinel(eventId,contextData);
+        self._tryNextEvent();
+        return;
+
+
+    def _unpack_and_process_sequence_sentinel_finish_msg(self,msg):
+        '''
+        @see processSequenceSentinelFinished
+        
+        @param {dict} msg --- @see _Message for list of fields and
+        their meanings.
+        '''
+        ctrlMsg = msg[_Message.CONTROL_FIELD]
+        eventId = msg[_Message.EVENT_ID_FIELD]
+        
+        # only guaranteed to get these data if it is not a not
+        # accepted message.
+        eventName = msg[_Message.EVENT_NAME_FIELD]
+        sequenceName = msg[_Message.SEQUENCE_NAME_FIELD]
+        contextData = self._update_context_data(
+            msg[_Message.CONTEXT_FIELD])
+
+        
+        #### DEBUG
+        if ctrlMsg != _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH:
+            err_msg = '\nBehram error.  Should never call '
+            err_msg += '_process_sequence_sentinel_finish_msg '
+            err_msg += 'on a message that does not have the '
+            err_msg += 'correct control field.\n'            
+            print err_msg
+            assert(False)
+        #### END DEBUG
+
+
+        # means that the message sequence that was called is
+        # finished.
+        self._processSequenceSentinelFinished(
+            eventId,contextData,sequenceName);
+
+        # reception of this message cannot have changed what
+        # read/write locks were happening, so do not need to tryNext.
+        return
+
+    
+        
+    def _unpack_and_process_request_execution(self,msg):
+        '''
+        The other side has requested us to perform some action
+        locally.  Ie, none of other specified control fields.
+        '''
+        ctrlMsg = msg[_Message.CONTROL_FIELD]
+        eventId = msg[_Message.EVENT_ID_FIELD]
+        
+        # only guaranteed to get these data if it is not a not
+        # accepted message.
+        eventName = msg[_Message.EVENT_NAME_FIELD]
+        sequenceName = msg[_Message.SEQUENCE_NAME_FIELD]
+        contextData = self._update_context_data(
+            msg[_Message.CONTEXT_FIELD])
+        priority = msg[_Message.PRIORITY_FIELD]
+        event_initiator_waldo_id = msg[_Message.EVENT_INITIATOR_WALDO_ID_FIELD]
+        event_initiator_endpoint_id = msg[_Message.EVENT_INITIATOR_ENDPOINT_ID_FIELD]
 
         # FIXME: it may be okay in python not to take a lock here
         # when checking if the event exists in the active event
@@ -2971,7 +3043,6 @@ class _Endpoint(object):
                 assert(False);
             #### END DEBUG
 
-
             
             self._lock();
 
@@ -2995,14 +3066,14 @@ class _Endpoint(object):
             # are postponed.
             forceAddition = self._myPriority < self._theirPriority;
             eventAdded,eventContext = actEvent.addEventToEndpointIfCan(
-                None,forceAddition);
+                None,forceAddition)
 
-            self._unlock();
+            self._unlock()
 
 
             if not eventAdded:
                 # Case 1: reply back that we are not accepting the message
-                self._writeMsg ( _Message.eventNotAcceptedMsg(eventId)  );
+                self._writeMsg ( _Message.eventNotAcceptedMsg(eventId) )
                 return;
 
 
@@ -3015,7 +3086,7 @@ class _Endpoint(object):
 
 
         # tell the active event which function to execute from.
-        actEvent.setToExecuteFrom(ctrlMsg);
+        actEvent.setToExecuteFrom(ctrlMsg)
 
 
         # update the context that this active event should use to
@@ -3025,10 +3096,10 @@ class _Endpoint(object):
             # from the other side with a stable snapshot of endpoint
             # data.  to ensure snapshot is stable, must take lock.
             self._lock();
-            eventContext.updateEnvironmentData(contextData,self);
+            eventContext.updateEnvironmentData(contextData,self)
             self._unlock();
         else:
-            eventContext.updateEnvironmentData(contextData,self);
+            eventContext.updateEnvironmentData(contextData,self)
 
         # actually run the function on my side
         self._executeActive(
@@ -3037,6 +3108,37 @@ class _Endpoint(object):
             # specified so that internal message function does not
             # use return message queue, etc.
             _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE);
+
+        
+    def _msgReceive(self,msg):
+        '''
+        @param {dict} msg --- @see _Message for list of fields and
+        their meanings.
+        
+        '''
+
+        # FIXME: Intended rule was supposed to be to postpone
+        # currently executing functions if the other side's
+        # priority was higher.  Right now, just saying that will
+        # not take on an event the other side requests if
+        # resources are not available, regardless of priority.
+
+        ctrlMsg = msg[_Message.CONTROL_FIELD];
+        
+
+        if ctrlMsg == _Message.NOT_ACCEPTED_SENTINEL:
+            self._unpack_and_process_process_message_not_accepted_sentinel_msg(msg)
+        elif ctrlMsg == _Message.RELEASE_EVENT_SENTINEL:
+            self._unpack_and_process_release_event_sentinel_msg(msg)
+        elif ctrlMsg == _Message.MESSAGE_SEQUENCE_SENTINEL_FINISH:
+            self._unpack_and_process_sequence_sentinel_finish_msg(msg)
+        elif ctrlMsg == _Message.RUN_AND_HOLD_NOT_ACCEPTED_SENTINEL:
+            print '\n\nStill need to generate run and hold messages\n'
+        elif ctrlMsg == _Message.RUN_AND_HOLD_ACCEPTED_SENTINEL:
+            print '\n\nStill need to generate run and hold messages\n'
+        else:
+            self._unpack_and_process_request_execution(msg)
+
         
     def _iInitiated(self,actEventId):
         '''
