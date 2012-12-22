@@ -25,6 +25,7 @@ import Queue
 import numbers
 import random
 import pickle
+import itertools
 
 '''
 Designed message sequencing so that the sender of a message
@@ -127,7 +128,457 @@ def _value_deep_copy(to_copy):
     to_return_str = pcikle.dumps(to_copy)
     return pickle.loads(to_return_str)
 
+
+
+class _RunAndHoldLookupDict(object):
+    '''
+    Each run and hold event is uniquely addressed using a 3-tuple of
+    (priority, endpoint_initiator_id, waldo_initiator_id).  This class
+    provides a mechanism for storing and setting values in a
+    dictionary based on this three-tuple.
+
+    Note that htis dictionary is *not* thread safe.
+    '''
+    def __init__(self):
+
+        # goes from most-specific to least-specific
+        # outer-most dict:
+        #   index: priority
+        #   value: dict
+        #     index: endpoint_initiator_id
+        #     value: dict
+        #        index: waldo_initiator_id
+        #        value: whatever had been stored
+        self._internal_dict = {}
+
+    def __iter__(self):
+
+        # generate empty iterator, which we then use to collect
+        iter_to_return = {}.values()
+        for priority_key in self._internal_dict.keys():
+            endpoint_indexed_dict = self._internal_dict[priority_key]
+
+            for endpoint_key in endpoint_indexed_dict.keys():
+                waldo_indexed_dict = endpoint_indexed_dict[endpoint_key]
+            
+                iter_to_return = itertools.chain(
+                    iter_to_return,waldo_indexed_dict.values())
+
+        return iter_to_return
+
         
+    def exits(self,priority,endpoint_initiator_id,waldo_initiator_id):
+        '''
+        @returns {bool} --- Whether or not the 3-tuple appears in our
+        dictionary.
+        '''
+        if priority in self._internal_dict:
+            priority_dict = self._internal_dict
+            if endpoint_initiator_id in priority_dict:
+                endpoint_dict = priority_dict[endpoint_initiator_id]
+                if waldo_initiator_id in endpoint_dict:
+                    # the value existed!
+                    return True
+        return False
+
+    def get(self,priority,endpoint_initiator_id,waldo_initiator_id,*args):
+        '''
+        Similar to python's .get method on dicts, which can take a
+        default value to return if the value is not in dict, this
+        supports a 4th argument for what default value to use if do
+        not have value in dictionary.
+        '''
+            
+        if self.exits(priority,endpoint_initiator_id,waldo_initiator_id):
+            return self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id]
+
+        has_default = len(args) != 0
+        if has_default:
+            return args[0]
+
+        err_msg = '\nBehram error: when getting from a RunAndHoldLookup dict, '
+        err_msg += 'have a key error.\n'
+        print err_msg
+        assert(False)
+
+    def set(self,priority,endpoint_initiator_id,waldo_initiator_id,to_set_to):
+        '''
+        @param {anything} to_set_to --- Like a typical python dict,
+        RunAndHoldLookup dict does not impose any constraints on what
+        each element of the RunAndHoldLookup dict contains.  Can have
+        any type.
+        '''
+        if not (priority in self._internal_dict):
+            self._internal_dict[priority] = {}
+        if not (endpoint_initiator_id in self._internal_dict[priority]):
+            self._internal_dict[priority][endpoint_initiator_id] = {}
+            
+        self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id] = to_set_to
+
+    def remove(self,priority,endpoint_initiator_id,waldo_initiator_id):
+
+        #### DEBUG
+        if not (self.exists(priority, endpoint_initiator_id,waldo_initiator_id)):
+            err_msg = '\nBehram error: trying to remove from a '
+            err_msg += 'RunAndHoldLookup dict that does not contain '
+            err_msg += 'specified index values.\n'
+            print err_msg
+            assert(False)
+        #### END DEBUG
+
+        # actually remove the element
+        del self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id]
+
+        # if there are still intermediate dicts open that have nothing
+        # in them, delete them too: memory management
+        if len(self._internal_dict[priority][endpoint_initator_id]) == 0:
+            del self._internal_dict[priority][endpoint_inititiator_id]
+        if len(self._internal_dict[priority]) == 0:
+            del self._internal_dict[priority]
+            
+        
+class _RunAndHoldDictElement(object):
+
+    STATE_NONE = -1
+    STATE_RUNNING = 0
+    STATE_SENT_COMPLETE = 1
+    STATE_SENT_REVOKE = 2
+    
+        
+    def __init__(
+        self,act_event,res_req_result,endpoint):
+        '''
+        @param {_Endpoint object} endpoint --- The endpoint that holds
+        the run and hold dict element.
+        
+        # @param {_Endpoint object} controller --- The endpoint that
+        # requested us to perform run and hold.  If we were the endpoint
+        # that began the run and hold, then controller is the same as
+        # endpoint
+        '''
+        self.act_event = act_event
+        self.endpoint = endpoint
+
+        # the overlapping reads and writes contained in
+        # self.res_req_result should be consumed immediately: either
+        # in passing on the overlapping read and overlapping write
+        # information to the event initiator or (if we are the
+        # initiator) in deciding whether to retry or revoke.
+        self.res_req_result = res_req_result
+
+        
+        # If we are committing the event or backing it out, we must
+        # notify this list of other endpoints letting them know that
+        # they should do the same.
+        
+        # fixme: need to determine how to populate the
+        self.to_notify_of_commit_or_backout = []
+
+        
+
+        # this should be the endpoint object that requested us to
+        # perform a run and hold.  we notify this object of overlaps
+        # from our requests to others to run and hold.
+        
+        # # if we were the endpoint that began the run and hold, then 
+        # self.run_and_hold_controller = controller
+
+
+        # the state only really matters on the initiator.  by default,
+        # we set the state to be running.
+        self.state = STATE_RUNNING
+
+        
+    def revoke():
+        '''
+        SHOULD BE CALLED WITHIN ENDPOINT's LOCK
+
+        
+        When we revoke, we do different things depending on whether
+        the action began on us or someone else.  However, the first
+        two actions are the same:
+
+        Common
+          * Send a message to all to_notify_of_commit_or_backout to
+            backout
+          * Release all resources that our endpoint may be holding for
+            the action.
+
+        Following those, if we initiated the run_and_hold:
+          * Set a timer to retry the action.
+          * Set state to STATE_SENT_REVOKE
+
+        If we did not initiate the run_and_hold:
+          * Remove the dict element (this object) from
+            _RunAndHoldLoopDetector's run_and_hold_dict.
+
+        '''
+        
+
+        ## Common section
+
+        # notify all listening to back out
+        for endpoint in self.to_notify_of_commit_or_backout:
+            endpoint._notify_backout(
+                self.act_event.priority,
+                self.act_event.event_initiator_endpoint_id,
+                self.act_event.event_initiator_waldo_id)
+
+        
+        if self.i_initiated():
+            # will automatically re-schedule.
+            
+            # FIXME: provide additional argument so that can specify a
+            # time to wait before re-scheduling.
+            self.endpoint._postponeActiveEvent(
+                act_event.id)
+        else:
+            # release all resources being held by the action
+            self.endpoint._cancelActiveEvent(
+                act_event.id)    
+
+
+        # FIXME: see message below 
+        fixme_msg = '\nFIXME: When issuing a revoke, should remove '
+        fixme_msg += ' the run and hold dict element.  Not doing so '
+        fixme_msg += 'is a memory leak.\n'
+        print fixme_msg
+        
+        self.state = STATE_SENT_REVOKE
+
+
+    def forward_retry(self):
+        '''
+        SHOULD BE CALLED WITHIN ENDPOINT's LOCK
+
+        Forward retry message to all others that I asked to perform a
+        run_and_hold for me.
+        '''
+
+        # FIXME see below
+        fixme_msg = '\n\nFIXME: need to fill in endpoint notify_retry '
+        fixme_msg += 'code in RunAndHoldDictElement'
+        print fixme_msg
+        
+        for endpoint in self.to_notify_of_commit_or_backout:
+            endpoint._notify_retry(
+                self.act_event.priority,
+                self.act_event.event_initiator_endpoint_id,
+                self.act_event.event_initiator_waldo_id)
+
+
+    def forward_to_controller(
+        self,priority,endpoint_initiator_id,waldo_initiator_id,
+        overlapping_reads,overlapping_writes):
+
+        # FIXME see below
+        fixme_msg = '\n\nFIXME: need to fill in forward_to_controller '
+        fixme_msg += 'code in RunAndHoldDictElement'
+        print fixme_msg
+        
+        
+        
+
+    def forward_commit(self):
+        
+        # FIXME see below
+        fixme_msg = '\n\nFIXME: need to fill in notify_commit '
+        fixme_msg += 'code in RunAndHoldDictElement'
+        for endpoint in self.to_notify_of_commit_or_backout:
+            endpoint._notify_commit(
+                self.act_event.priority,
+                self.act_event.event_initiator_endpoint_id,
+                self.act_event.event_initiator_waldo_id)
+
+
+    def is_running(self):
+        return self.state == STATE_RUNNING
+        
+    def i_initiated(self):
+        '''
+        @returns {bool} --- True if the endpoint contained in
+        self.endpoint is the one that initiated the active event
+        that this element contains.
+        '''
+        if ((self.endpoint._endpoint_id == act_event.event_initator_endpoint_id) and
+            (self.endpoint._waldo_id == act_event.event_initiator_waldo_id)):
+            
+            return True
+
+        return False
+
+class _RunAndHoldLoopDetector(object):
+    '''
+    This keeps track of all the active events associated with a run
+    and hold request either that this endpoint initiated or that was
+    initiated by its partner endpoint.
+    '''
+    
+    def __init__(self,endpoint):
+        self.endpoint = endpoint
+
+        # indexed by priority,endpoint_initiator_id,
+        # waldo_initiator_id.  each value is a _RunAndHoldDictElement
+        self.run_and_hold_dict = _RunAndHoldLookupDict()
+
+    def add_run_and_hold(self,act_event,res_req_result):
+        '''
+        Called when requested by another endpoint to run_and_hold some
+        resources or when we initiate a run_and_hold and send it to
+        someone else.  When receive the run and hold request, message
+        still gets called even if we cannot acquire the resources (the
+        endpoint itself has to tell us to retry or release).
+
+        @param {_ActiveEvent object} act_event ---
+
+        @param {_ReservationRequestResult object} res_req_result ---
+        @see _ReservationRequestResult class in lib/reservationManager.py.
+        '''
+
+        priority = act_event.priority
+        endpoint_initiator_id = act_event.event_initiator_endpoint_id        
+        waldo_initiator_id = act_event.event_initiator_waldo_id
+
+        
+        #### DEBUG
+        if self.run_and_hold_dict.exists(
+            priority,endpoint_initiator_id,waldo_initiator_id):
+            err_msg = '\nBehram error in loop detector.  Got collision '
+            err_msg += 'in run_and_hold events.\n'
+            print err_msg
+            assert(False)
+        #### END DEBUG
+
+        dict_element = _RunAndHoldDictElement(
+            act_event,res_req_result,self.endpoint)
+
+
+        what_to_notify = self.check_conflict(dict_element)
+        #actually add to internal dict
+        self.run_and_hold_dict.set(
+            priority,endpoint_initiator_id,waldo_initiator_id,
+            dict_element)
+        # tell others that we have an overlap
+        self.endpoint._send_overlap_notifications(what_to_notify)
+
+
+
+    def deadlock_check():
+        '''
+        SHOULD BE CALLED WITHIN ENDPOINT's LOCK
+        
+        Very conservative deadlock check.  Check if anything that I am
+        trying to acquire conflicts with something that is already
+        acquired.  If it does, issue a request to all listening to
+        event to back out.
+
+        Checks:
+
+           * For all the items that I have, check any that began on
+             me.  For each that began on me, filter to the ones that
+             are currently running.  (We may have already told some to
+             commit or release their resources.)
+
+           * For each in a running state, go through its list of
+             rejections.  If any have a higher priority, then issue an
+             unlock request.  (And schedule a timer to retry, or maybe
+             a request to be notified when done with resource.)
+
+             If any have a lower priority, issue a retry.
+             
+        '''
+
+        for dict_element in self.run_and_hold_dict:
+            if not dict_element.i_initiated():
+                # if we haven't initiated the event, we cannot cancel
+                # it or complete it.
+                continue
+
+
+            if not dict_element.is_running():
+                # those elements that are not running (either completing
+                # or revoking) will sort themselves out.
+                continue
+
+            # a _ReservationRequestResult object.  Look through list
+            # of conflicts.  If there are any overlaps:
+            
+            #   * and any overlap has a higher priority, issue a
+            #     revoke command immediately, and schedule a retry
+            #     following it.
+            #   * and no overlaps have a higher priority, schedule a
+            #     retry and remove the overlaps with lower priority.
+            
+            res_req_result = dict_element.res_req_result
+
+            highest_priority_overlap = res_req_result.get_highest_priority_overlap()
+            if highest_priority_overlap == None:
+                # check if there are any overlaps.  if there are no
+                # overlaps, do not need to worry about revoking or
+                # completing action.
+                continue
+            
+
+            if highest_priority_overlap > dict_element.act_event.priority:
+                dict_element.revoke()
+            else:
+                dict_element.forward_retry()
+
+
+        
+    def add_variable_subscriptions(
+        self,priority,endpoint_initiator_id,waldo_initiator_id,
+        overlapping_reads,overlapping_writes):
+        '''
+        @param {float} priority ---
+        @param {float} endpoint_initiator_id
+        @param {float} waldo_initiator_id
+
+        @param {Array} overlapping_reads --- Each element is an
+        _ExternalLockedRecord object containing information about who is
+        already holding a lock on the requested external that we were
+        trying to acquire a read lock on.
+
+        @param {Array} overlapping_writes --- Each element is an
+        _ExternalLockedRecord object containing information about who is
+        already holding a lock on the requested external that we were
+        trying to acquire a write lock on.
+        '''
+        dict_element = self.run_and_hold_dict.get(
+            priority,endpoint_initiator_id,waldo_initiator_id,
+            None)
+
+        if dict_element == None:
+            # this run_and_hold command did not exist.  Note that this
+            # is not an error because of the order that we
+            # release/commit things, we may get updates on variables
+            # even after we removed our locks on them.  Can just
+            # ignore the variables though.
+            return
+
+
+        if dict_element.i_initiated():
+
+            if dict_element.is_running():
+                dict_element.res_req_result.append_overlapping_external_locked_records(
+                    True,overlapping_reads)
+                dict_element.res_req_result.append_overlapping_external_locked_records(
+                    False,overlapping_writes)
+
+                # FIXME: should not need to perform global deadlock
+                # check.  Should only need to check deadlock on this
+                # one element.
+                self.deadlock_check()
+
+        else:
+            # must forward the reservation locks onwards to those
+            # interested
+            dict_element.forward_to_controller(
+                priority,endpoint_initiator_id,waldo_initiator_id,
+                overlapping_reads,overlapping_writes)
+
+
+    
 class _OnComplete(threading.Thread):
     def __init__(self,function,onCompleteFuncKey,endpoint,context):
         self.function = function;
@@ -3109,7 +3560,6 @@ class _Endpoint(object):
             # use return message queue, etc.
             _Endpoint._FUNCTION_ARGUMENT_CONTROL_FROM_MESSAGE);
 
-        
     def _msgReceive(self,msg):
         '''
         @param {dict} msg --- @see _Message for list of fields and
@@ -3135,11 +3585,35 @@ class _Endpoint(object):
         elif ctrlMsg == _Message.RUN_AND_HOLD_NOT_ACCEPTED_SENTINEL:
             print '\n\nStill need to generate run and hold messages\n'
         elif ctrlMsg == _Message.RUN_AND_HOLD_ACCEPTED_SENTINEL:
-            print '\n\nStill need to generate run and hold messages\n'
+            self._unpack_and_process_run_and_hold_accepted_sentinel_msg(msg)
         else:
             self._unpack_and_process_request_execution(msg)
 
-        
+
+
+    def _unpack_and_process_run_and_hold_accepted_sentinel_msg(self,msg):
+        '''
+        @param {dict} msg --- @see _Message for list of fields and
+        their meanings.
+        '''
+        ctrl_msg = msg[_Message.CONTROL_FIELD];
+        #### DEBUG
+        if ctrl_msg != _Message.RUN_AND_HOLD_ACCEPTED_SENTINEL:
+            err_msg = '\nBehram error.  Should never call '
+            err_msg += '_process_run_and_hold_accepted_sentinel_msg '
+            err_msg += 'on a message that does not have the '
+            err_msg += 'correct control field.\n'            
+            print err_msg
+            assert(False)
+        #### END DEBUG
+
+        # FIXME: see below
+        fixme_msg = '\nFIXME: still must process accepted run and '
+        fixme_msg += 'hold message.\n'
+        print fixme_msg
+
+
+
     def _iInitiated(self,actEventId):
         '''
         @param{int} eventId --- usaully the id field of an
