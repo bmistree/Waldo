@@ -385,6 +385,9 @@ class _WaldoListMapObj(object):
                 elif isinstance(to_add,list):
                     to_add = _copied_list(to_add)
 
+                else:
+                    to_add = _value_deep_copy(to_add)                    
+                    
                 new_dict[key] = to_add
             return new_dict
 
@@ -406,13 +409,14 @@ class _WaldoListMapObj(object):
                 elif isinstance(to_add,list):
                     to_add = _copied_list(to_add)
 
+                else:
+                    # FIXME: be careful not copying external objects
+                    to_add = _value_deep_copy(to_add)                    
                     
                 new_array.append(to_add)
 
             return new_array
 
-        
-        # FIXME: Actually need to perform deep copy of data out.
         if isinstance(self.val,list):
             return _copied_list(self.val)
         return _copied_dict(self.val)
