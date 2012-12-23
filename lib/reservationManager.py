@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import threading;
-
+import threading
+import itertools
 
 class _ExternalLockedRecord(object):
     # FIXME: This is a duplicate of what's emitted in the uniformHeader.py file
@@ -58,6 +58,51 @@ class _ReservationRequestResult(object):
         self.overlapping_reads = overlapping_reads
         self.overlapping_writes = overlapping_writes
 
+    def overlaps_exist(self):
+        '''
+        @returns{bool} --- True if there are any overlaps.  False
+        otherwise.
+        '''
+        return ((len(self.overlapping_reads) != 0) or
+                (len(self.overlapping_writes) != 0))
+
+
+    def get_highest_priority_overlap(self):
+        '''
+        @returns {float, None} --- The highest priority of any of the
+        overlaps contained (or None if no overlaps)
+        '''
+        to_return = None
+
+        all_overlaps_iter = itertools.chain(
+            iter(self.overlapping_reads),
+            iter(self.overlapping_writes))
+        
+        for overlap in all_overlaps_iter:
+            if ((to_return == None) or
+                (to_return < o_read.priority)):
+                to_return = o_read.priority
+
+        return to_return
+
+    def append_overlapping_external_locked_records(
+        self,read,overlapping_array):
+        '''
+        @param {bool} read --- True if appending a read overlap.
+        False if appending a write overlap.
+
+        @param {Array} overlapping_array --- Unlike overlapping_array
+        in the append_overlapping function, this array has elements of
+        ExternalLockedRecords, so that we can directly just append
+        them to our existing array.
+        '''
+        to_append_to = self.overlapping_writes
+        if read:
+            to_append_to = self.overlapping_reads
+
+            
+        to_append_to.append(overlapping_array)
+        
     def append_overlapping(
         self,read,var_id,overlapping_array):
         '''
@@ -76,10 +121,6 @@ class _ReservationRequestResult(object):
         self.overlapping_reads or self.overlapping_writes, depending
         on the value of @param read.
         '''
-        
-        to_append_to = self.overlapping_writes
-        if read:
-            to_append_to = self.overlapping_reads
 
         to_append = []
 
@@ -93,7 +134,10 @@ class _ReservationRequestResult(object):
                 locked_record.act_event_id,
                 locked_record.var_id)
 
-            to_append_to.append(to_append_locked_record)
+            to_append.append(to_append_locked_record)
+
+        self.append_overlapping_external_locked_records(
+            read,to_append)
         
 
 class ReservationManager(object):
