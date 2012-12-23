@@ -217,6 +217,7 @@ def p_Type(p):
          | MapType
          | StructType
 
+         | ENDPOINT 
          
          | EXTERNAL NUMBER_TYPE
          | EXTERNAL STRING_TYPE

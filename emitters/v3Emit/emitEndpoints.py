@@ -650,7 +650,7 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     initMethodBody += '_theirPriority = ' + str(otherEvenOdd) + '\n'
     
     # handle context
-    initMethodBody += '_context = _Context(self._externalStore,\'%s\');\n' % endpointName;
+    initMethodBody += '_context = _Context(self._externalStore,\'%s\',self);\n' % endpointName;
 
     # create a prototype events dict for this endpoint to copy active
     # events from.
