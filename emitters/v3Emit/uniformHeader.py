@@ -128,6 +128,98 @@ def _value_deep_copy(to_copy):
     to_return_str = pcikle.dumps(to_copy)
     return pickle.loads(to_return_str)
 
+class _EndpointDict(object):
+    def __init__(self):
+        # _internal_dict:
+        #    indices: endpoint id
+        #    values: dict
+        #       indices: waldo id
+        #       values: anything want to store
+        self._internal_dict = {}
+
+        self._mutex = threading.RLock();
+
+    def lock(self):
+        self._mutex.acquire()
+    def unlock(self):
+        self._mutex.release()
+
+        
+    def set(self,endpoint_id,waldo_id,to_set_to):
+        if not (endpoint_id in self._internal_dict):
+            self._internal_dict[endpoint_id] = {}
+        waldo_dict = self._internal_dict[endpoint_id]
+        waldo_dict[waldo_id] = to_set_to
+
+    def exits(self,endpoint_id,waldo_id):
+        '''
+        @returns {bool} --- Whether or not the 2-tuple appears in our
+        dictionary.
+        '''
+        if endpoint_id in self._internal_dict:
+            endpoint_dict = self._internal_dict[endpoint_id]
+            if waldo_id in endpoint_dict:
+                # the value existed!
+                return True
+        return False
+
+    def clear(self):
+        '''
+        Remove all values stored
+        '''
+        self._internal_dict = {}
+
+        
+    def get(self,endpoint_id,waldo_id,*args):
+        '''
+        Similar to python's .get method on dicts, which can take a
+        default value to return if the value is not in dict, this
+        supports a 3rd argument for what default value to use if do
+        not have value in dictionary.
+        '''
+            
+        if self.exits(priority,endpoint_id,waldo_id):
+            return self._internal_dict[endpoint_id][waldo_id]
+
+        has_default = len(args) != 0
+        if has_default:
+            return args[0]
+
+        err_msg = '\nBehram error: when getting from a Endpoint dict, '
+        err_msg += 'have a key error.\n'
+        print err_msg
+        assert(False)
+
+
+    def __iter__(self):
+        # generate empty iterator, which we then use to collect
+        iter_to_return = {}.values()
+        for endpoint_key in self._internal_dict.keys():
+            waldo_indexed_dict = self._internal_dict[endpoint_key]
+            iter_to_return = itertools.chain(
+                iter_to_return,waldo_indexed_dict.values())
+
+        return iter_to_return
+
+
+    def remove(self,endpoint_id,waldo_id):
+
+        #### DEBUG
+        if not (self.exists(endpoint_id,waldo_id)):
+            err_msg = '\nBehram error: trying to remove from a '
+            err_msg += '_Endpoint dict that does not contain '
+            err_msg += 'specified index values.\n'
+            print err_msg
+            assert(False)
+        #### END DEBUG
+
+        # actually remove the element
+        del self._internal_dict[endpoint_id][waldo_id]
+
+        # if there are still intermediate dicts open that have nothing
+        # in them, delete them too: memory management
+        if len(self._internal_dict[endpoint_id]) == 0:
+            del self._internal_dict[endpoint_id]
 
 
 class _RunAndHoldLookupDict(object):
@@ -165,6 +257,21 @@ class _RunAndHoldLookupDict(object):
                     iter_to_return,waldo_indexed_dict.values())
 
         return iter_to_return
+
+    def remove_if_exists(
+        self,priority, event_initiator_endpoint_id, event_initiator_waldo_id):
+
+        # FIXME: as used, am I sure that only one thread of control
+        # will access this so that exists check is consistent with remove 
+        
+        if self.exists(
+            priority,event_initiator_endpoint_id,
+            event_initiator_waldo_id):
+            
+            self.remove(
+                priority,event_initiator_endpoint_id,
+                event_initiator_waldo_id)
+
 
         
     def exits(self,priority,endpoint_initiator_id,waldo_initiator_id):
@@ -271,15 +378,12 @@ class _RunAndHoldDictElement(object):
         # notify this list of other endpoints letting them know that
         # they should do the same.
         
-        # fixme: need to determine how to populate the
-        self.to_notify_of_commit_or_backout = []
-
-        
+        # # fixme: need to determine how to populate the
+        self.endpoint_to_notify_or_commit_to = _EndpointDict()
 
         # this should be the endpoint object that requested us to
         # perform a run and hold.  we notify this object of overlaps
         # from our requests to others to run and hold.
-        
         # # if we were the endpoint that began the run and hold, then 
         # self.run_and_hold_controller = controller
 
@@ -288,43 +392,72 @@ class _RunAndHoldDictElement(object):
         # we set the state to be running.
         self.state = STATE_RUNNING
 
+    def add_run_and_hold_on_endpoint(
+        self,endpoint_obj,context_id):
+        '''
+        Any time we issue a run_and_hold request to an endpoint, we
+        should
+
+        @param {int} context_id --- the id of the context requesting
+        to add an endpoint object to notify.  Note that
+
+        Can ignore messages if context id is already out of date.
+
+        Called outside of endpoint lock.  But we must acquire endpoint
+        lock before calling.  This way, we can ensure that we do not
+        send a message from an outdated context.  (FIXME: may want to
+        consider using sequence numbers instead.)
         
+        '''
+        self.endpoint_to_notify_of_commit_or_backout.lock()
+        self.endpoint_to_notify_or_commit_to.set(
+            endpoint_obj._endpoint_id,
+            endpoint_obj._waldo_id,
+            endpoint_obj)
+        self.endpoint_to_notify_of_commit_or_backout.unlock()
+
+
+        # FIXME: may want to consider returning whether the context
+        # and active event have matching ids so can short-circuit
+        # execution of wasted context.
+        
+        
+    def notify_backout():
+        '''
+        When a context is postponed or canceled, it calls this
+        '''
+        # FIXME: could we just make a copy of the endpoint objects
+        # while in lock and then iterate afterwards on copy?
+        self.endpoint_to_notify_of_commit_or_backout.lock()
+
+
+        # notify all listening to back out
+        for endpoint in self.endpoint_to_notify_of_commit_or_backout:
+            endpoint._notify_backout(
+                self.act_event.priority,
+                self.act_event.event_initiator_endpoint_id,
+                self.act_event.event_initiator_waldo_id)
+
+        self.endpoint_to_notify_of_commit_or_backout.unlock()
+
     def revoke():
         '''
-        SHOULD BE CALLED WITHIN ENDPOINT's LOCK
+        Gets called *only* when we detect a loop.  and backout.
+        Cancels context.  The context's cancellation causes
+        notifications of releases to be sent.
 
-        
-        When we revoke, we do different things depending on whether
-        the action began on us or someone else.  However, the first
-        two actions are the same:
-
-        Common
-          * Send a message to all to_notify_of_commit_or_backout to
-            backout
-          * Release all resources that our endpoint may be holding for
-            the action.
-
-        Following those, if we initiated the run_and_hold:
+        If we initiated the run_and_hold:
           * Set a timer to retry the action.
           * Set state to STATE_SENT_REVOKE
 
         If we did not initiate the run_and_hold:
           * Remove the dict element (this object) from
             _RunAndHoldLoopDetector's run_and_hold_dict.
-
+            Done through call to cancelActiveEvent.
         '''
-        
-
         ## Common section
 
-        # notify all listening to back out
-        for endpoint in self.to_notify_of_commit_or_backout:
-            endpoint._notify_backout(
-                self.act_event.priority,
-                self.act_event.event_initiator_endpoint_id,
-                self.act_event.event_initiator_waldo_id)
-
-        
+        # either postponing or cancelling will handle the notification
         if self.i_initiated():
             # will automatically re-schedule.
             
@@ -343,7 +476,6 @@ class _RunAndHoldDictElement(object):
         fixme_msg += ' the run and hold dict element.  Not doing so '
         fixme_msg += 'is a memory leak.\n'
         print fixme_msg
-        
         self.state = STATE_SENT_REVOKE
 
 
@@ -359,36 +491,44 @@ class _RunAndHoldDictElement(object):
         fixme_msg = '\n\nFIXME: need to fill in endpoint notify_retry '
         fixme_msg += 'code in RunAndHoldDictElement'
         print fixme_msg
-        
-        for endpoint in self.to_notify_of_commit_or_backout:
+
+        self.endpoint_to_notify_of_commit_or_backout.lock()
+        for endpoint in self.endpoint_to_notify_of_commit_or_backout:
             endpoint._notify_retry(
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
-
+            
+        self.endpoint_to_notify_of_commit_or_backout.unlock()
 
     def forward_to_controller(
         self,priority,endpoint_initiator_id,waldo_initiator_id,
         overlapping_reads,overlapping_writes):
 
+        self.endpoint_to_notify_of_commit_or_backout.lock()
         # FIXME see below
         fixme_msg = '\n\nFIXME: need to fill in forward_to_controller '
         fixme_msg += 'code in RunAndHoldDictElement'
         print fixme_msg
-        
+        self.endpoint_to_notify_of_commit_or_backout.unlock()
         
         
 
     def forward_commit(self):
-        
+
+        self.endpoint_to_notify_of_commit_or_backout.lock()
         # FIXME see below
         fixme_msg = '\n\nFIXME: need to fill in notify_commit '
         fixme_msg += 'code in RunAndHoldDictElement'
-        for endpoint in self.to_notify_of_commit_or_backout:
+        for endpoint in self.endpoint_to_notify_of_commit_or_backout:
             endpoint._notify_commit(
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
+
+        self.endpoint_to_notify_of_commit_or_backout.unlock()
+
+        
 
 
     def is_running(self):
@@ -421,6 +561,18 @@ class _RunAndHoldLoopDetector(object):
         # waldo_initiator_id.  each value is a _RunAndHoldDictElement
         self.run_and_hold_dict = _RunAndHoldLookupDict()
 
+    def remove_if_exists(
+        self,priority,event_initiator_endpoint_id,
+        event_initiator_waldo_id):
+        '''
+        If this event exists within loop detector dictionary, remove
+        it.
+        '''
+        self.run_and_hold_dict.remove_if_exists(
+            priority, event_initiator_endpoint_id,
+            event_initiator_waldo_id)
+
+        
     def add_run_and_hold(self,act_event,res_req_result):
         '''
         Called when requested by another endpoint to run_and_hold some
@@ -1184,6 +1336,20 @@ class _Context(object):
         self.heldExternalReferences = [];
         self.endpointName = endpointName;
 
+        self.endpoint_to_notify_or_commit_to = _EndpointDict()
+
+        
+    def add_endpoint_object_to_notify(self,endpoint_obj):
+        '''
+        Any time we issue a run_and_hold request to an endpoint, we should 
+        '''
+
+        self.endpoint_to_notify_or_commit_to.set(
+            endpoint_obj._endpoint_id,
+            endpoint_obj._waldo_id,
+            endpoint_obj)
+
+        
     def notateWritten(self,extId):
         '''
         @param{unique int} --- extId
@@ -2379,6 +2545,8 @@ class _ActiveEvent(object):
         
     def cancelActiveEvent(self):
         '''
+        CALLED FROM WITHIN ENDPOINT LOCK
+        
         @returns {Bool} --- True if canceling this active event may
         lead to events' being able to fire (eg. it was the only event
         performing a write on a variable that waiting events needed to
@@ -2685,6 +2853,7 @@ class _Endpoint(object):
         self._externalGlobals = externalGlobals;
         self._reservationManager = reservationManager;
 
+        self._loop_detector = _RunAndHoldLoopDetector()
         
     ##### helper functions #####
 
@@ -2921,6 +3090,8 @@ class _Endpoint(object):
 
     def _cancelActiveEvent(self,activeEventId):
         '''
+        SHOULD ONLY BE CALLED FROM WITHIN ENDPOINT LOCK
+        
         @param {int} activeEventId ---
 
         Removes the active event's holds on shared and global
@@ -2939,7 +3110,12 @@ class _Endpoint(object):
         # The actual active event handles all the cleanup with
         # reference counters to the global/shared reads and writes.
         activeEvent = self._activeEventDict[activeEventId].actEvent;
+        self._loop_detector.remove_if_exists(
+            activeEvent.priority,
+            activeEvent.event_initiator_endpoint_id,
+            activeEvent.event_initiator_waldo_id)
         return activeEvent.cancelActiveEvent();
+
 
     def _isExternalVarId(self,varId):
         return varId in self._externalGlobals;
