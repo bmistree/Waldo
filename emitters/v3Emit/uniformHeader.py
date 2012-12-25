@@ -783,8 +783,6 @@ class _OnComplete(threading.Thread):
     def fire(self):
         self.start();
 
-
-        
 class _RunnerAndHolder(threading.Thread):
     '''
     If a call to run and hold a resource has been accepted, then
@@ -794,7 +792,8 @@ class _RunnerAndHolder(threading.Thread):
     so closure_to_execute does not have to as well.
     '''
     def __init__(
-        self,closure_to_execute,active_event,context,*args):
+        self,threadsafe_queue,closure_to_execute,
+        active_event,context,*args):
         '''
         @param {closure} closure_to_execute --- The closure 
         @param {_ActiveEvent} active_event ---
@@ -803,6 +802,7 @@ class _RunnerAndHolder(threading.Thread):
         closure to execute.
         
         '''
+        self.threadsafe_queue = threadsafe_queue
         self.closure_to_execute = closure_to_execute
         self.active_event = active_event
         self.context = context
@@ -811,8 +811,47 @@ class _RunnerAndHolder(threading.Thread):
 
     def run(self):
         # actually run the function
-        self.closure_to_execute(
-            self.active_event,self.context,*self.args)
+        to_return = self.closure_to_execute(
+                self.active_event,self.context,*self.args)
+
+        self.threadsafe_queue.put(_RunAndHoldResult(to_return))
+
+class _RunAndHoldResult(object):
+    R_AND_H_RESULT = 'run_and_hold_result'
+    def __init__(self,result):
+        self.result = result
+    def _type(self):
+        return R_AND_H_RESULT
+
+        
+# class _RunnerAndHolder(threading.Thread):
+#     '''
+#     If a call to run and hold a resource has been accepted, then
+#     create a _RunnerAndHolder thread, which actually executes what had
+#     been requested to be run and held.  Note that we have already
+#     reserved the resources (on our end) to run and hold the function,
+#     so closure_to_execute does not have to as well.
+#     '''
+#     def __init__(
+#         self,closure_to_execute,active_event,context,*args):
+#         '''
+#         @param {closure} closure_to_execute --- The closure 
+#         @param {_ActiveEvent} active_event ---
+
+#         @param {*args} *args --- The arguments that get passed to the
+#         closure to execute.
+        
+#         '''
+#         self.closure_to_execute = closure_to_execute
+#         self.active_event = active_event
+#         self.context = context
+#         self.args = args
+#         threading.Thread.__init__(self)
+
+#     def run(self):
+#         # actually run the function
+#         self.closure_to_execute(
+#             self.active_event,self.context,*self.args)
 
         
 class _LockedRecord(object):
@@ -2887,6 +2926,53 @@ class _Endpoint(object):
         
     ##### helper functions #####
 
+    def _run_and_hold_local(
+        self,threadsafe_queue,to_run,context_id,priority,waldo_initiator_id,
+        endpoint_initiator_id,*args):
+        lkjs;
+
+        fixme_function_prefix = '_hold_func_prefix_' + self._endpointName + '_'       
+        to_run_internal_name = fixme_function_prefix + to_run
+
+        try:
+            to_execute = getattr(self,to_run_internal_name)
+        except AttributeError as exception:
+            # FIXME: probably want to return a different, undefined
+            # method or something.
+            err_msg = '\nBehram error when calling ' + to_run
+            err_msg += '.  It does not exist on this endpoint.  '
+            err_msg += 'Trying to look it up with name '
+            err_msg += to_run_internal_name + '.\n'
+            print err_msg
+            assert(False);
+
+
+        self._lock()
+        # attempt to acquire read/write locks on resources for this action
+        res_request_result,active_event,context = self._acquire_run_and_hold_resources(
+            to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id)
+        self._unlock()
+
+
+        threadsafe_queue.put(res_request_result)
+        
+
+        # tell the other side whether run and hold request succeeded
+        # or failed
+        self._send_run_and_hold_result_msg(
+            to_run,priority,waldo_initiator_id,endpoint_initiator_id,
+            res_request_result)
+
+        if res_request_result.succeeded:
+            # we could lock all resources. go ahead and run the method
+            # on another thread (which assumes the required resources
+            # are already held)
+            run_and_hold = _RunnerAndHolder(
+                threadsafe_queue,
+                to_execute,active_event,context, *args)
+            run_and_hold.start()
+
+    
     def _run_and_hold(
         self,
         to_run,
