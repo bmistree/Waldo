@@ -151,7 +151,7 @@ class _EndpointDict(object):
         waldo_dict = self._internal_dict[endpoint_id]
         waldo_dict[waldo_id] = to_set_to
 
-    def exits(self,endpoint_id,waldo_id):
+    def exists(self,endpoint_id,waldo_id):
         '''
         @returns {bool} --- Whether or not the 2-tuple appears in our
         dictionary.
@@ -178,7 +178,7 @@ class _EndpointDict(object):
         not have value in dictionary.
         '''
             
-        if self.exits(priority,endpoint_id,waldo_id):
+        if self.exists(priority,endpoint_id,waldo_id):
             return self._internal_dict[endpoint_id][waldo_id]
 
         has_default = len(args) != 0
@@ -224,12 +224,12 @@ class _EndpointDict(object):
 
 class _RunAndHoldLookupDict(object):
     '''
-    Each run and hold event is uniquely addressed using a 3-tuple of
-    (priority, endpoint_initiator_id, waldo_initiator_id).  This class
-    provides a mechanism for storing and setting values in a
-    dictionary based on this three-tuple.
+    Each run and hold event is uniquely addressed using a 4-tuple of
+    (priority, endpoint_initiator_id, waldo_initiator_id,context_id).
+    This class provides a mechanism for storing and setting values in
+    a dictionary based on this three-tuple.
 
-    Note that htis dictionary is *not* thread safe.
+    Note that this dictionary is *not* thread safe.
     '''
     def __init__(self):
 
@@ -240,7 +240,9 @@ class _RunAndHoldLookupDict(object):
         #     index: endpoint_initiator_id
         #     value: dict
         #        index: waldo_initiator_id
-        #        value: whatever had been stored
+        #        value: dict
+        #          index: context_id
+        #          value: whatever had been stored
         self._internal_dict = {}
 
     def __iter__(self):
@@ -252,29 +254,38 @@ class _RunAndHoldLookupDict(object):
 
             for endpoint_key in endpoint_indexed_dict.keys():
                 waldo_indexed_dict = endpoint_indexed_dict[endpoint_key]
-            
-                iter_to_return = itertools.chain(
-                    iter_to_return,waldo_indexed_dict.values())
+
+                for context_id_key in waldo_indexed_dict:
+                    context_id_indexed_dict = waldo_indexed_dict[context_id_key]
+                    iter_to_return = itertools.chain(
+                        iter_to_return,context_id_indexed_dict.values())
 
         return iter_to_return
 
     def remove_if_exists(
-        self,priority, event_initiator_endpoint_id, event_initiator_waldo_id):
+        self,context_id,priority, event_initiator_endpoint_id,
+        event_initiator_waldo_id):
+        '''
+        @returns {_RunAndHoldDictElement or None} --- None if there
+        was no element of that name.  Otherwise, the removed element
+        '''
 
         # FIXME: as used, am I sure that only one thread of control
         # will access this so that exists check is consistent with remove 
         
         if self.exists(
-            priority,event_initiator_endpoint_id,
+            context_id,priority,event_initiator_endpoint_id,
             event_initiator_waldo_id):
             
-            self.remove(
-                priority,event_initiator_endpoint_id,
+            return self.remove(
+                context_id,priority,event_initiator_endpoint_id,
                 event_initiator_waldo_id)
 
+        return None
 
         
-    def exits(self,priority,endpoint_initiator_id,waldo_initiator_id):
+    def exists(
+        self,context_id,priority,endpoint_initiator_id,waldo_initiator_id):
         '''
         @returns {bool} --- Whether or not the 3-tuple appears in our
         dictionary.
@@ -284,11 +295,14 @@ class _RunAndHoldLookupDict(object):
             if endpoint_initiator_id in priority_dict:
                 endpoint_dict = priority_dict[endpoint_initiator_id]
                 if waldo_initiator_id in endpoint_dict:
-                    # the value existed!
-                    return True
+                    waldo_dict = endpoint_dict[waldo_initiator_id]
+                    if context_id in waldo_dict:
+                        # the value existed
+                        return True
+
         return False
 
-    def get(self,priority,endpoint_initiator_id,waldo_initiator_id,*args):
+    def get(self,context_id,priority,endpoint_initiator_id,waldo_initiator_id,*args):
         '''
         Similar to python's .get method on dicts, which can take a
         default value to return if the value is not in dict, this
@@ -296,8 +310,8 @@ class _RunAndHoldLookupDict(object):
         not have value in dictionary.
         '''
             
-        if self.exits(priority,endpoint_initiator_id,waldo_initiator_id):
-            return self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id]
+        if self.exists(context_id,priority,endpoint_initiator_id,waldo_initiator_id):
+            return self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id][context_id]
 
         has_default = len(args) != 0
         if has_default:
@@ -308,7 +322,7 @@ class _RunAndHoldLookupDict(object):
         print err_msg
         assert(False)
 
-    def set(self,priority,endpoint_initiator_id,waldo_initiator_id,to_set_to):
+    def set(self,context_id,priority,endpoint_initiator_id,waldo_initiator_id,to_set_to):
         '''
         @param {anything} to_set_to --- Like a typical python dict,
         RunAndHoldLookup dict does not impose any constraints on what
@@ -319,13 +333,21 @@ class _RunAndHoldLookupDict(object):
             self._internal_dict[priority] = {}
         if not (endpoint_initiator_id in self._internal_dict[priority]):
             self._internal_dict[priority][endpoint_initiator_id] = {}
+        if not (context_id in self._internal_dict[priority][endpoint_initiator_id]):
+            self._internal_dit[priority][endpoint_initiator_id][waldo_inititiator_id] = {}
+                
             
-        self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id] = to_set_to
+        self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id][context_id] = to_set_to
 
-    def remove(self,priority,endpoint_initiator_id,waldo_initiator_id):
+    def remove(
+        self,context_id,priority,endpoint_initiator_id,waldo_initiator_id):
+        '''
+        @returns {_RunAndHoldDictElement } --- The
+        runAndHoldDictElement that was removed.
+        '''
 
         #### DEBUG
-        if not (self.exists(priority, endpoint_initiator_id,waldo_initiator_id)):
+        if not (self.exists(context_id,priority, endpoint_initiator_id,waldo_initiator_id)):
             err_msg = '\nBehram error: trying to remove from a '
             err_msg += 'RunAndHoldLookup dict that does not contain '
             err_msg += 'specified index values.\n'
@@ -334,15 +356,21 @@ class _RunAndHoldLookupDict(object):
         #### END DEBUG
 
         # actually remove the element
-        del self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id]
+        to_return = self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id][context_id]
+        del self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id][context_id]
 
         # if there are still intermediate dicts open that have nothing
         # in them, delete them too: memory management
+        if len(self._internal_dict[priority][endpoint_initator_id][waldo_initiator_id]) == 0:
+            del self._internal_dict[priority][endpoint_inititiator_id][waldo_initiator_id]
         if len(self._internal_dict[priority][endpoint_initator_id]) == 0:
             del self._internal_dict[priority][endpoint_inititiator_id]
         if len(self._internal_dict[priority]) == 0:
             del self._internal_dict[priority]
-            
+
+        return to_return
+
+       
         
 class _RunAndHoldDictElement(object):
 
@@ -350,10 +378,11 @@ class _RunAndHoldDictElement(object):
     STATE_RUNNING = 0
     STATE_SENT_COMPLETE = 1
     STATE_SENT_REVOKE = 2
+
     
         
     def __init__(
-        self,act_event,res_req_result,endpoint):
+        self,context_id,act_event,res_req_result,endpoint):
         '''
         @param {_Endpoint object} endpoint --- The endpoint that holds
         the run and hold dict element.
@@ -363,6 +392,7 @@ class _RunAndHoldDictElement(object):
         # that began the run and hold, then controller is the same as
         # endpoint
         '''
+        self.context_id = context_id
         self.act_event = act_event
         self.endpoint = endpoint
 
@@ -562,18 +592,22 @@ class _RunAndHoldLoopDetector(object):
         self.run_and_hold_dict = _RunAndHoldLookupDict()
 
     def remove_if_exists(
-        self,priority,event_initiator_endpoint_id,
+        self,context_id,priority,event_initiator_endpoint_id,
         event_initiator_waldo_id):
         '''
         If this event exists within loop detector dictionary, remove
         it.
+
+        @returns{_RunAndHoldDictElement or None} --- None if no match
+        in run_and_hold_dict.  Otherwise, the dict element that was
+        deleted.
         '''
-        self.run_and_hold_dict.remove_if_exists(
-            priority, event_initiator_endpoint_id,
+        return self.run_and_hold_dict.remove_if_exists(
+            context_id,priority, event_initiator_endpoint_id,
             event_initiator_waldo_id)
 
         
-    def add_run_and_hold(self,act_event,res_req_result):
+    def add_run_and_hold(self,context_id,act_event,res_req_result):
         '''
         Called when requested by another endpoint to run_and_hold some
         resources or when we initiate a run_and_hold and send it to
@@ -594,7 +628,7 @@ class _RunAndHoldLoopDetector(object):
         
         #### DEBUG
         if self.run_and_hold_dict.exists(
-            priority,endpoint_initiator_id,waldo_initiator_id):
+            context_id,priority,endpoint_initiator_id,waldo_initiator_id):
             err_msg = '\nBehram error in loop detector.  Got collision '
             err_msg += 'in run_and_hold events.\n'
             print err_msg
@@ -602,13 +636,13 @@ class _RunAndHoldLoopDetector(object):
         #### END DEBUG
 
         dict_element = _RunAndHoldDictElement(
-            act_event,res_req_result,self.endpoint)
+            context_id,act_event,res_req_result,self.endpoint)
 
 
         what_to_notify = self.check_conflict(dict_element)
         #actually add to internal dict
         self.run_and_hold_dict.set(
-            priority,endpoint_initiator_id,waldo_initiator_id,
+            context_id,priority,endpoint_initiator_id,waldo_initiator_id,
             dict_element)
         # tell others that we have an overlap
         self.endpoint._send_overlap_notifications(what_to_notify)
@@ -676,10 +710,8 @@ class _RunAndHoldLoopDetector(object):
             else:
                 dict_element.forward_retry()
 
-
-        
     def add_variable_subscriptions(
-        self,priority,endpoint_initiator_id,waldo_initiator_id,
+        self,context_id,priority,endpoint_initiator_id,waldo_initiator_id,
         overlapping_reads,overlapping_writes):
         '''
         @param {float} priority ---
@@ -697,6 +729,7 @@ class _RunAndHoldLoopDetector(object):
         trying to acquire a write lock on.
         '''
         dict_element = self.run_and_hold_dict.get(
+            context_id,
             priority,endpoint_initiator_id,waldo_initiator_id,
             None)
 
@@ -726,9 +759,9 @@ class _RunAndHoldLoopDetector(object):
             # must forward the reservation locks onwards to those
             # interested
             dict_element.forward_to_controller(
+                context_id,
                 priority,endpoint_initiator_id,waldo_initiator_id,
                 overlapping_reads,overlapping_writes)
-
 
     
 class _OnComplete(threading.Thread):
@@ -750,6 +783,8 @@ class _OnComplete(threading.Thread):
     def fire(self):
         self.start();
 
+
+        
 class _RunnerAndHolder(threading.Thread):
     '''
     If a call to run and hold a resource has been accepted, then
@@ -1281,7 +1316,7 @@ class _Context(object):
     # Guarantee that no context can have this id.
     INVALID_CONTEXT_ID = -1;
 
-    def __init__(self,extStore,endpointName):
+    def __init__(self,extStore,endpointName,endpoint):
         # actively executing events that start message sequences block
         # until those message sequences are complete before
         # continuing.  to communicate to those active events that the
@@ -1298,6 +1333,8 @@ class _Context(object):
         self.shareds = {};
         self.endGlobals = {};
         self.seqGlobals = None;
+
+        self.endpoint = endpoint
         
         self.id = None;
 
@@ -1336,19 +1373,10 @@ class _Context(object):
         self.heldExternalReferences = [];
         self.endpointName = endpointName;
 
-        self.endpoint_to_notify_or_commit_to = _EndpointDict()
-
-        
-    def add_endpoint_object_to_notify(self,endpoint_obj):
-        '''
-        Any time we issue a run_and_hold request to an endpoint, we should 
-        '''
-
-        self.endpoint_to_notify_or_commit_to.set(
-            endpoint_obj._endpoint_id,
-            endpoint_obj._waldo_id,
-            endpoint_obj)
-
+        # wait for reponses to run and hold messages by reading from
+        # this queue.  If the run and hold got revoked in the interim,
+        # then this queue will read the value None.
+        self.run_and_hold_queue = Queue.Queue()
         
     def notateWritten(self,extId):
         '''
@@ -1447,7 +1475,9 @@ class _Context(object):
         the active event object all the data that activeEvent is known
         to read from/write to.
         '''
-        returner = _Context(self.externalStore,self.endpointName);        
+        returner = _Context(
+            self.externalStore,self.endpointName,activeEvent.endpoint)
+        
         for readKey in activeEvent.activeGlobReads.keys():
             if readKey in self.shareds:
                 returner.shareds[readKey] = self.shareds[readKey];
@@ -2853,7 +2883,7 @@ class _Endpoint(object):
         self._externalGlobals = externalGlobals;
         self._reservationManager = reservationManager;
 
-        self._loop_detector = _RunAndHoldLoopDetector()
+        self._loop_detector = _RunAndHoldLoopDetector(self)
         
     ##### helper functions #####
 
@@ -3109,12 +3139,24 @@ class _Endpoint(object):
 
         # The actual active event handles all the cleanup with
         # reference counters to the global/shared reads and writes.
-        activeEvent = self._activeEventDict[activeEventId].actEvent;
-        self._loop_detector.remove_if_exists(
-            activeEvent.priority,
-            activeEvent.event_initiator_endpoint_id,
-            activeEvent.event_initiator_waldo_id)
-        return activeEvent.cancelActiveEvent();
+        active_event_element = self._activeEventDict[activeEventId]
+        active_event = active_event_element.actEvent
+        current_context = active_event_element.eventContext
+
+        # putting a value in return queue of None tells the waiting
+        # context to abort waiting for a run-and-hold and end.
+        current_context.run_and_hold_queue.put(None)
+
+        dict_element = self._loop_detector.remove_if_exists(
+            current_context.id,
+            active_event.priority,
+            active_event.event_initiator_endpoint_id,
+            active_event.event_initiator_waldo_id)
+
+        if dict_element != None:
+            dict_element.notify_backout()
+
+        return active_event.cancelActiveEvent();
 
 
     def _isExternalVarId(self,varId):
