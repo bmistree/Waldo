@@ -2929,7 +2929,6 @@ class _Endpoint(object):
     def _run_and_hold_local(
         self,threadsafe_queue,to_run,context_id,priority,waldo_initiator_id,
         endpoint_initiator_id,*args):
-        lkjs;
 
         fixme_function_prefix = '_hold_func_prefix_' + self._endpointName + '_'       
         to_run_internal_name = fixme_function_prefix + to_run
