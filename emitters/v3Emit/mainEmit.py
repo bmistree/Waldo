@@ -849,6 +849,34 @@ def _getBinaryOperatorLabelDict():
     return binaryOperatorLabels;
 
 
+def emit_endpoint_function_call(
+    endpoint_name,func_call_node,fdep_dict,emit_context):
+    
+    func_dot_name_node = func_call_node.children[0]
+    
+    func_arg_list_node = func_call_node.children[1]
+
+    left_of_dot_name_node = func_dot_name_node.children[0]
+    left_of_dot_name = emit(
+        endpoint_name,left_of_dot_name_node,fdep_dict,emit_context)
+
+    right_of_dot_name_node = func_dot_name_node.children[1]
+
+    fixme_msg = '\nFIXME: must finish writing emit_endpoint_function_call '
+    fixme_msg += 'in mainEmity.py.\n'
+    print fixme_msg
+    print left_of_dot_name
+    return left_of_dot_name
+    
+
+def is_endpoint_function_call(func_call_node):
+    func_name_node = func_call_node.children[0]
+    # FIXME: currently, the only way to test if it's a function call
+    # on an endpoint object is if the func name is a dot statement
+    if func_name_node.label == AST_DOT_STATEMENT:
+        return True
+    return False
+
 
 def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     '''
@@ -869,7 +897,12 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     funcName = funcNameNode.value;
     funcArgListNode = funcCallNode.children[1];
 
-    
+    # testing for if it's an endpoint function call
+    if is_endpoint_function_call(funcCallNode):
+        returner += emit_endpoint_function_call(
+            endpointName,funcCallNode,fdepDict,emitContext)
+        return returner
+
     if funcNameNode.sliceAnnotationName != None:
         # means that this is a function object that we are making call
         # on....use its reference either as a shared, arg, global, etc.
@@ -1047,7 +1080,7 @@ def _isMessageSend(funcName,endpointName,fdepDict):
         # should always be able to find the function if have performed
         # type checking correctly.
         errMsg = '\nBehram error: unable to find function in fdepDict when ';
-        errMsg += 'checking if it is a message send.  Abortin.\n';
+        errMsg += 'checking if it is a message send.  Aborting.\n';
         print(errMsg);
         assert(False);
 

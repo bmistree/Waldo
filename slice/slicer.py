@@ -103,7 +103,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         # be added as function arguments.
         typeStack.pushContext(
             TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT,fDep);
-        declArgsNode = node.children[funcDeclArgsIndex];
+        declArgsNode = node.children[funcDeclArgsIndex]
         slicer(declArgsNode,functionDeps,typeStack);
 
         # when go through function body, need to change label as of
@@ -223,8 +223,20 @@ def slicer(node,functionDeps=None,typeStack=None):
 
         
     elif node.label == AST_FUNCTION_CALL:
-        funcCallNameNode = node.children[0];
-        funcCallName = funcCallNameNode.value;
+        funcCallNameNode = node.children[0]
+        funcCallName = funcCallNameNode.value
+
+        func_on_endpoint_object = False
+        if funcCallNameNode.label == AST_DOT_STATEMENT:
+            func_on_endpoint_object = True
+            # need to annotate the endpoint passed in.  (We do the
+            # same thing in the AST_IDENTIFIER section, but that won't
+            # get called this way because the function call sidesteps
+            # going through the identifier calls
+            pre_dot_node = funcCallNameNode.children[0]
+            identifier_name = pre_dot_node.value            
+            typeStack.annotateNode(pre_dot_node,identifier_name)
+
         funcArgListNode = node.children[1];
         
         # an aray of arrays....each element array contains the reads
@@ -239,18 +251,32 @@ def slicer(node,functionDeps=None,typeStack=None):
             
             funcArgReads.append(argumentReads);
 
-        idExists = typeStack.getIdentifier(funcCallName);
-        if idExists == None:
-            # means that we are making a function call to an existing
-            # function, not to a function object.
-            typeStack.addFuncCall(
-                typeStack.hashFuncName(funcCallName),funcArgReads);
-        else:
-            # means that this is a function call being made on a
-            # function object.  annotate the func call node
-            typeStack.addFuncObjectCall(idExists) # idExists is an ntt
-            typeStack.annotateNode(funcCallNameNode,funcCallName);
+        if func_on_endpoint_object:
+            # the function is being called off of an endpoint object:
+            # ie, endpt.func(), rather than being called from a
+            # function object or from being called just as a function,
+            # eg., some_func()
+            fixme_msg = '\nIgnoring call of function on endpoint object '
+            fixme_msg += 'in slicer.py.  Should fix eventually.\n'
+            print fixme_msg
 
+        else:
+            # the function call is either on a function object or a
+            # function that was defined on a locally defined function
+            # object.
+            idExists = typeStack.getIdentifier(funcCallName);
+            if idExists == None:
+                # means that we are making a function call to an existing
+                # function, not to a function object.
+                typeStack.addFuncCall(
+                    typeStack.hashFuncName(funcCallName),funcArgReads)
+            else:
+                # means that this is a function call being made on a
+                # function object.  annotate the func call node
+                typeStack.addFuncObjectCall(idExists) # idExists is an ntt
+                typeStack.annotateNode(funcCallNameNode,funcCallName)
+
+            
 
     elif node.label == AST_ASSIGNMENT_STATEMENT:
 
@@ -362,6 +388,7 @@ def slicer(node,functionDeps=None,typeStack=None):
             typeNode = child.children[0];
             nameNode = child.children[1];
             argName = nameNode.value;
+
             ntt = typeStack.addIdentifier(argName,
                                           isMutable(typeNode),
                                           typeNode,

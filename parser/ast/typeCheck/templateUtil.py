@@ -86,6 +86,11 @@ def get_struct_field_type(field_name,struct_type_dict):
     return struct_fields_dict.get(field_name,None)
 
 
+def is_endpoint(dict_type):
+    _assert_if_not_dict(dict_type,'is_endpoint')
+    to_return = dict_type[JSON_TYPE_FIELD] == TYPE_ENDPOINT
+    return to_return
+
 def is_struct(dict_type):
     _assert_if_not_dict(dict_type,'is_struct')
     return dict_type[JSON_TYPE_FIELD] == TYPE_STRUCT
@@ -199,8 +204,13 @@ def isFunctionType(typeLabel):
 
     Returns true if it is a user-defined function type, false otherwise.
     '''
-    return typeLabel[JSON_TYPE_FIELD] == TYPE_FUNCTION
+    return (is_basic_function_type(typeLabel) or
+            is_endpoint_function_type(typeLabel))
 
+def is_basic_function_type(typeLabel):
+    return typeLabel[JSON_TYPE_FIELD] == TYPE_FUNCTION
+def is_endpoint_function_type(typeLabel):
+    return typeLabel[JSON_TYPE_FIELD] == TYPE_ENDPOINT_FUNCTION_CALL
 
 def isListType(typeLabel):
     '''
@@ -486,6 +496,18 @@ def buildMapTypeSignature(node,progText,typeStack):
     return (buildMapTypeSignatureFromTypeNames(fromType,toType),
             errMsg,
             errNodeList)
+
+
+def build_endpoint_func_type_signature(node,prog_text,type_stack):
+    ### FIXME: need to support type checking for more complicated
+    ### endpoint function calls
+    to_return = {};
+    to_return[JSON_TYPE_FIELD] = TYPE_ENDPOINT_FUNCTION_CALL
+    to_return[JSON_FUNC_IN_FIELD] = []
+    to_return[JSON_FUNC_RETURNS_FIELD] = {
+        JSON_TYPE_FIELD: TYPE_NOTHING
+        }
+    return to_return
 
 def buildFuncTypeSignature(node,progText,typeStack):
     '''

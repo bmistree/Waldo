@@ -927,6 +927,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         pre_dot_node.typeCheck(progText,typeStack,avoidFunctionObjects)
 
+        
         # do not type check post_dot_node.  For a.b, b will not be in
         # scope.  only fully-qualified a.b will be.
         # post_dot_node.typeCheck(progText,typeStack,avoidFunctionObjects)
@@ -986,7 +987,16 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 err_msg += post_dot_node_name + ' for you to access.'
                 errorFunction(
                     err_msg,[pre_dot_node],[pre_dot_node.lineNo],progText)
-                
+
+        elif is_endpoint(pre_dot_node.type):
+            # FIXME: temporarily assigning result of endpoint node
+            # function
+            fixme_msg = '\nFIXME: require type checking for '
+            fixme_msg += 'endpoint function call.\n'
+            print fixme_msg
+            node.type = build_endpoint_func_type_signature(
+                pre_dot_node,progText,typeStack)
+            
         else:
             err_msg = 'Error, when calling a.b, a must be a '
             err_msg += 'struct, list, map, or text type.  Instead, you '
@@ -1084,7 +1094,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg = '\nError trying to call function object.  ';
                 errMsg += 'Can only call function object in onComplete ';
                 errMsg += 'section.\n';
-                errorFunction(errMsg,[node],[node.lineNo],progText);
+                errMsg = '\nWARNING in typeCheck.py.  ' + errMsg
+                print errMsg
+                # errorFunction(errMsg,[node],[node.lineNo],progText);
 
 
             if func_match_obj.element.astNode.label == AST_ONCREATE_FUNCTION:
