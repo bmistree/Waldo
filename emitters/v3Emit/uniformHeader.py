@@ -812,7 +812,7 @@ class _RunnerAndHolder(threading.Thread):
     def run(self):
         # actually run the function
         to_return = self.closure_to_execute(
-                self.active_event,self.context,*self.args)
+            self.active_event,self.context,*self.args)
 
         self.threadsafe_queue.put(_RunAndHoldResult(to_return))
 

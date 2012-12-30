@@ -853,7 +853,6 @@ def emit_endpoint_function_call(
     endpoint_name,func_call_node,fdep_dict,emit_context):
     
     func_dot_name_node = func_call_node.children[0]
-    
     func_arg_list_node = func_call_node.children[1]
 
     left_of_dot_name_node = func_dot_name_node.children[0]
@@ -865,8 +864,55 @@ def emit_endpoint_function_call(
     fixme_msg = '\nFIXME: must finish writing emit_endpoint_function_call '
     fixme_msg += 'in mainEmity.py.\n'
     print fixme_msg
-    print left_of_dot_name
-    return left_of_dot_name
+
+
+    to_return = '_threadsafe_queue = Queue.Queue()\n'
+    to_return += left_of_dot_name + '._run_and_hold_local('
+    to_return += '''
+    _threadsafe_queue,"''' + left_of_dot_name + '".trim(),_context.id,'
+    to_return += '''
+    _actEvent.endpoint._waldo_id,
+    _actEvent.endpoint._endpoint_id,
+'''
+
+
+    # emit arguments for function
+    for arg_node in func_arg_list_node.children:
+        # means that the function wasn't a function object being
+        # called
+
+        # need to know whether we need the value of the external or
+        # the external object itself so that call to emit argument
+        # knows what to do
+
+        fixme_msg = '\nFIXME: must know type signature of endpoint '
+        fixme_msg += 'function being called so can determine whether '
+        fixme_msg += 'to emit external reference or the value of the '
+        fixme_msg += 'external.\n'
+        print fixme_msg
+        emit_context.external_arg_in_func_call = True
+        # emitContext.external_arg_in_func_call = (type_node.external != None)
+        to_return += '    ' + emit(endpoint_name,arg_node,fdep_dict,emit_context)
+        to_return += ','
+        emit_context.external_arg_in_func_call = False # just reset to False 
+
+    to_return += ')\n'
+    to_return += r'''
+
+# check whether our run and hold request was able to proceed.  
+_run_and_hold_res_req_result = _threadsafe_queue.get()
+if not _run_and_hold_res_req_result.succeed:
+    fixme_msg = '\nBehram fixme: received a run_and_hold request '
+    fixme_msg += 'result that our request had not succeeded.  '
+    fixme_msg += 'Must add it to the run and hold manager.\n'
+    # means that we could not acquire the resources that we
+    # wanted in the run and hold request.
+self.endpoint._loop_detector.add_run_and_hold(
+    _context.id,_actEvent,_run_and_hold_res_req_result)
+
+'''
+# lkjs;
+    return to_return
     
 
 def is_endpoint_function_call(func_call_node):
