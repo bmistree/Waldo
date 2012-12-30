@@ -334,7 +334,7 @@ class _RunAndHoldLookupDict(object):
         if not (endpoint_initiator_id in self._internal_dict[priority]):
             self._internal_dict[priority][endpoint_initiator_id] = {}
         if not (context_id in self._internal_dict[priority][endpoint_initiator_id]):
-            self._internal_dit[priority][endpoint_initiator_id][waldo_inititiator_id] = {}
+            self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id] = {}
                 
             
         self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id][context_id] = to_set_to
@@ -420,7 +420,7 @@ class _RunAndHoldDictElement(object):
 
         # the state only really matters on the initiator.  by default,
         # we set the state to be running.
-        self.state = STATE_RUNNING
+        self.state = self.STATE_RUNNING
 
     def add_run_and_hold_on_endpoint(
         self,endpoint_obj,context_id):
@@ -506,7 +506,7 @@ class _RunAndHoldDictElement(object):
         fixme_msg += ' the run and hold dict element.  Not doing so '
         fixme_msg += 'is a memory leak.\n'
         print fixme_msg
-        self.state = STATE_SENT_REVOKE
+        self.state = self.STATE_SENT_REVOKE
 
 
     def forward_retry(self):
@@ -562,7 +562,7 @@ class _RunAndHoldDictElement(object):
 
 
     def is_running(self):
-        return self.state == STATE_RUNNING
+        return self.state == self.STATE_RUNNING
         
     def i_initiated(self):
         '''
@@ -606,14 +606,15 @@ class _RunAndHoldLoopDetector(object):
             context_id,priority, event_initiator_endpoint_id,
             event_initiator_waldo_id)
 
-        
+
     def add_run_and_hold(self,context_id,act_event,res_req_result):
         '''
         Called when requested by another endpoint to run_and_hold some
         resources or when we initiate a run_and_hold and send it to
         someone else.  When receive the run and hold request, message
         still gets called even if we cannot acquire the resources (the
-        endpoint itself has to tell us to retry or release).
+        endpoint that initiated the run and hold request itself has to
+        tell us to retry or release).
 
         @param {_ActiveEvent object} act_event ---
 
@@ -638,16 +639,11 @@ class _RunAndHoldLoopDetector(object):
         dict_element = _RunAndHoldDictElement(
             context_id,act_event,res_req_result,self.endpoint)
 
-
-        what_to_notify = self.check_conflict(dict_element)
         #actually add to internal dict
         self.run_and_hold_dict.set(
             context_id,priority,endpoint_initiator_id,waldo_initiator_id,
             dict_element)
-        # tell others that we have an overlap
-        self.endpoint._send_overlap_notifications(what_to_notify)
-
-
+            
 
     def deadlock_check():
         '''
@@ -812,7 +808,7 @@ class _RunnerAndHolder(threading.Thread):
     def run(self):
         # actually run the function
         to_return = self.closure_to_execute(
-                self.active_event,self.context,*self.args)
+            self.active_event,self.context,*self.args)
 
         self.threadsafe_queue.put(_RunAndHoldResult(to_return))
 
@@ -2391,6 +2387,18 @@ class _ActiveEvent(object):
         # acquire local resources
         self._acquire_local()
         return res_req_result
+
+    def _release_externals(self,externals_to_read,externals_to_write):
+        '''
+        '''
+        self.endpoint._reservationManager.release(
+            externals_to_read,
+            externals_to_write,
+            [],
+            self.priority,
+            self.event_initiator_waldo_id,
+            self.event_initiator_endpoint_id,
+            self.id)
 
     
     def _try_add_externals(self,externalsToRead,externalsToWrite):
