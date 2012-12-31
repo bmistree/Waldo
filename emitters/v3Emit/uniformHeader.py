@@ -334,7 +334,7 @@ class _RunAndHoldLookupDict(object):
         if not (endpoint_initiator_id in self._internal_dict[priority]):
             self._internal_dict[priority][endpoint_initiator_id] = {}
         if not (context_id in self._internal_dict[priority][endpoint_initiator_id]):
-            self._internal_dit[priority][endpoint_initiator_id][waldo_inititiator_id] = {}
+            self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id] = {}
                 
             
         self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id][context_id] = to_set_to
@@ -606,14 +606,15 @@ class _RunAndHoldLoopDetector(object):
             context_id,priority, event_initiator_endpoint_id,
             event_initiator_waldo_id)
 
-        
+
     def add_run_and_hold(self,context_id,act_event,res_req_result):
         '''
         Called when requested by another endpoint to run_and_hold some
         resources or when we initiate a run_and_hold and send it to
         someone else.  When receive the run and hold request, message
         still gets called even if we cannot acquire the resources (the
-        endpoint itself has to tell us to retry or release).
+        endpoint that initiated the run and hold request itself has to
+        tell us to retry or release).
 
         @param {_ActiveEvent object} act_event ---
 
@@ -638,16 +639,11 @@ class _RunAndHoldLoopDetector(object):
         dict_element = _RunAndHoldDictElement(
             context_id,act_event,res_req_result,self.endpoint)
 
-
-        what_to_notify = self.check_conflict(dict_element)
         #actually add to internal dict
         self.run_and_hold_dict.set(
             context_id,priority,endpoint_initiator_id,waldo_initiator_id,
             dict_element)
-        # tell others that we have an overlap
-        self.endpoint._send_overlap_notifications(what_to_notify)
-
-
+            
 
     def deadlock_check():
         '''
