@@ -420,7 +420,7 @@ class _RunAndHoldDictElement(object):
 
         # the state only really matters on the initiator.  by default,
         # we set the state to be running.
-        self.state = STATE_RUNNING
+        self.state = self.STATE_RUNNING
 
     def add_run_and_hold_on_endpoint(
         self,endpoint_obj,context_id):
@@ -506,7 +506,7 @@ class _RunAndHoldDictElement(object):
         fixme_msg += ' the run and hold dict element.  Not doing so '
         fixme_msg += 'is a memory leak.\n'
         print fixme_msg
-        self.state = STATE_SENT_REVOKE
+        self.state = self.STATE_SENT_REVOKE
 
 
     def forward_retry(self):
@@ -562,7 +562,7 @@ class _RunAndHoldDictElement(object):
 
 
     def is_running(self):
-        return self.state == STATE_RUNNING
+        return self.state == self.STATE_RUNNING
         
     def i_initiated(self):
         '''

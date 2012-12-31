@@ -860,7 +860,8 @@ def emit_endpoint_function_call(
         endpoint_name,left_of_dot_name_node,fdep_dict,emit_context)
 
     right_of_dot_name_node = func_dot_name_node.children[1]
-
+    right_of_dot_name = right_of_dot_name_node.value
+    
     fixme_msg = '\nFIXME: must finish writing emit_endpoint_function_call '
     fixme_msg += 'in mainEmity.py.\n'
     print fixme_msg
@@ -869,8 +870,9 @@ def emit_endpoint_function_call(
     to_return = '_threadsafe_queue = Queue.Queue()\n'
     to_return += left_of_dot_name + '._run_and_hold_local('
     to_return += '''
-    _threadsafe_queue,"''' + left_of_dot_name + '".trim(),_context.id,'
+    _threadsafe_queue,"''' + right_of_dot_name + '".strip(),_context.id,'
     to_return += '''
+    _actEvent.priority,
     _actEvent.endpoint._waldo_id,
     _actEvent.endpoint._endpoint_id,
 '''
@@ -901,13 +903,13 @@ def emit_endpoint_function_call(
 
 # check whether our run and hold request was able to proceed.  
 _run_and_hold_res_req_result = _threadsafe_queue.get()
-if not _run_and_hold_res_req_result.succeed:
+if not _run_and_hold_res_req_result.succeeded:
     fixme_msg = '\nBehram fixme: received a run_and_hold request '
     fixme_msg += 'result that our request had not succeeded.  '
     fixme_msg += 'Must add it to the run and hold manager.\n'
     # means that we could not acquire the resources that we
     # wanted in the run and hold request.
-self.endpoint._loop_detector.add_run_and_hold(
+self._loop_detector.add_run_and_hold(
     _context.id,_actEvent,_run_and_hold_res_req_result)
 
 '''
