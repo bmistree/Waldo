@@ -2388,6 +2388,18 @@ class _ActiveEvent(object):
         self._acquire_local()
         return res_req_result
 
+    def _release_externals(self,externals_to_read,externals_to_write):
+        '''
+        '''
+        self.endpoint._reservationManager.release(
+            externals_to_read,
+            externals_to_write,
+            [],
+            self.priority,
+            self.event_initiator_waldo_id,
+            self.event_initiator_endpoint_id,
+            self.id)
+
     
     def _try_add_externals(self,externalsToRead,externalsToWrite):
         '''

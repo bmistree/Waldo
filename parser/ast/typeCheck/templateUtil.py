@@ -31,6 +31,13 @@ JSON_TUPLE_TYPE_FIELD = 'Tuple'
 JSON_STRUCT_FIELDS_DICT = 'StructFields'
 JSON_STRUCT_FIELDS_NAME = 'StructName'
 
+# There is no real wildcard type in Waldo.  This is just used to make
+# adding features easier.  For instance, with calling functions on
+# endpoint objects, instead of having to type check the endpoint that
+# we're using, we can just assign into an endpoint function.
+WILDCARD_TYPE = 'Wildcard'
+
+
 def create_struct_type(struct_name,struct_field_tuples):
     '''
     @param {String} struct_name --- The name of the user-defined
@@ -54,6 +61,17 @@ def create_struct_type(struct_name,struct_field_tuples):
         struct_type[JSON_STRUCT_FIELDS_DICT][field_name] = field_type
 
     return struct_type
+
+
+def is_wildcard_type(type_dict):
+    return type_dict[JSON_TYPE_FIELD] == WILDCARD_TYPE
+
+def create_wildcard_type():
+    to_return = {
+        JSON_TYPE_FIELD: WILDCARD_TYPE
+        }
+    return to_return
+    
 
 def get_struct_name_from_type(struct_type_dict):
     if not is_struct(struct_type_dict):
@@ -504,9 +522,8 @@ def build_endpoint_func_type_signature(node,prog_text,type_stack):
     to_return = {};
     to_return[JSON_TYPE_FIELD] = TYPE_ENDPOINT_FUNCTION_CALL
     to_return[JSON_FUNC_IN_FIELD] = []
-    to_return[JSON_FUNC_RETURNS_FIELD] = {
-        JSON_TYPE_FIELD: TYPE_NOTHING
-        }
+    to_return[JSON_FUNC_RETURNS_FIELD] =  create_wildcard_type()
+
     return to_return
 
 def buildFuncTypeSignature(node,progText,typeStack):

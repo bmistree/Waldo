@@ -498,6 +498,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                           progText);
 
         if is_empty_list(toAppendToNode.type):
+            if is_wildcard_type(toAppendNode.type):
+                # FIXME: cannot determine what to do for the case
+                # where we're appending a wild card to an empty list.
+                warn_msg = '\nBehram error: for a list, appended a wildcard.\n'
+                print (warn_msg)
             node.type = buildListTypeSignatureFromTypeName(toAppendNode.type);
         else:
             node.type = toAppendToNode.type;
@@ -2013,8 +2018,16 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
        * unknown list and map types.  For instance, if rhsType was
          produced from [], and lhsType was List(element: Number),
          would not produce error.
-       
+
+    Note: no type mismatch if rhsType is a wildcard.
     '''
+
+    if is_wildcard_type(rhsType):
+        warn_msg = '\nBehram warn: using wildcard type for development '
+        warn_msg += 'code while type checking.\n'
+        print warn_msg
+        return False
+    
     errorTrue = False;
     if (lhsType != rhsType):
         errorTrue = True;
@@ -2446,6 +2459,7 @@ def _check_single_assign(
         err_line_nos = [to_assign_to_node.lineNo]
         
         errorFunction(err_msg,err_nodes,err_line_nos,progText)
+        
     elif to_assign_to_node.label == AST_BRACKET_STATEMENT:
         # check that the root of the bracket statement is an
         # identifier
@@ -2476,7 +2490,9 @@ def _check_single_assign(
             err_line_nos = [to_assign_to_node.lineNo]
             errorFunction(err_msg,err_nodes,err_line_nos,progText)
 
-        rhs_type = rhs_type[to_assign_to_index]
+            
+        if not is_wildcard_type(rhs_type):
+            rhs_type = rhs_type[to_assign_to_index]
 
     if checkTypeMismatch(to_assign_to_node,lhs_type,rhs_type,typeStack,progText):
         err_msg = 'Error in assignment statement.  '

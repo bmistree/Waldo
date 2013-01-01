@@ -408,12 +408,34 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             endpointName,to_assign_from_node,fdepDict,emitContext)
 
         is_rhs_func_call = False
-        if to_assign_from_node.label == AST_FUNCTION_CALL:
+
+        # if to_assign_from_node.label == AST_ENDPOINT_FUNCTION_CALL:
+        if TypeCheck.templateUtil.is_wildcard_type(to_assign_from_node.type):
+            # FIXME: check above should check if call is an endpoint
+            # function call, not if have wildcard type.  Right now,
+            # wildcard type is a placeholder for endpoint function
+            # call though.
+            is_rhs_func_call = True
+            # must put result in
+            returner += rhs_emitted
+            returner += r'''
+_r_and_h_result = _threadsafe_queue.get()
+if _r_and_h_result == None:
+    # FIXME: are there any circumstances in which we will
+    # get None back?
+    fixme_msg = '\nBehram fixme: must fill in code for '
+    fixme_msg += 'case of revoking from threadsafe queue\n'
+    print fixme_msg
+    # postponing execution because other side had nothing to return.
+    raise _PostponeException()
+else:
+    _tmp_return_array = _r_and_h_result.result
+'''
+        elif to_assign_from_node.label == AST_FUNCTION_CALL:
             returner += '_tmp_return_array = '
             returner += rhs_emitted
             returner += '\n'
             is_rhs_func_call = True
-
 
         for assign_to_counter in range(0,len(to_assign_to_tuple_node.children)):
 
@@ -486,6 +508,7 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
                 returner += ')'
                 
             else:
+                # not a bracket statement assignment
                 returner += emit(
                     endpointName,individual_assign_to_node,fdepDict,emitContext)
                 returner += ' = ';
@@ -495,7 +518,6 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
                     returner += rhs_emitted
             returner += '\n'
         
-
             
     elif astNode.label == AST_PRINT:
         toPrintNode = astNode.children[0];
@@ -538,6 +560,12 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
             if len(astNode.children) == 3:
                 # includes initialization information
                 initializationNode = astNode.children[2];
+                # FIXME: need to handle initiatlizations from function calls properly
+                if initializationNode.label == AST_FUNCTION_CALL:
+                    fixme_msg = '\nBehram fixme: must handle declarations '
+                    fixme_msg += 'initialized with endpoint function calls '
+                    fixme_msg += 'properly.\n'
+                    print fixme_msg
                 returner += ' = ';
                 returner += emit(endpointName,initializationNode,fdepDict,emitContext);
             else:
@@ -695,7 +723,7 @@ else:
     _ext_obj = %s
 
 if _ext_obj == None:
-    # FIXME: runtime error lkjs;
+    # FIXME: runtime error 
     err_msg = 'Runtime error.  Trying to copy to %s before '
     err_msg += 'it was assigned to.  Aborting.'
     print(err_msg)
@@ -746,7 +774,7 @@ if self._isExternalVarId(_ext_from_var_id):
 
     # would equal none if trying to assign from an external
     # that had not already been written to.
-    # FIXME runtime error lkjs;
+    # FIXME runtime error
     err_msg = 'Runtime error.  Trying to assign from external '
     err_msg += '%s before %s had ever been assigned to.  Aborting.'
     print(err_msg)
@@ -866,7 +894,6 @@ def emit_endpoint_function_call(
     fixme_msg += 'in mainEmity.py.\n'
     print fixme_msg
 
-
     to_return = '_threadsafe_queue = Queue.Queue()\n'
     to_return += left_of_dot_name + '._run_and_hold_local('
     to_return += '''
@@ -913,7 +940,7 @@ self._loop_detector.add_run_and_hold(
     _context.id,_actEvent,_run_and_hold_res_req_result)
 
 '''
-# lkjs;
+
     return to_return
     
 

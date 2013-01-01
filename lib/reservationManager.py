@@ -127,12 +127,12 @@ class _ReservationRequestResult(object):
         # turn each LockedRecord in overlapping_array into an
         # ExternalLockedRecord and append it to to_append_to
         for locked_record in overlapping_array:
-            to_append_locked_record = ExternalLockedRecord(
+            to_append_locked_record = _ExternalLockedRecord(
                 locked_record.waldo_initiator_id,
                 locked_record.endpoint_initiator_id,
                 locked_record.priority,
                 locked_record.act_event_id,
-                locked_record.var_id)
+                var_id)
 
             to_append.append(to_append_locked_record)
 
