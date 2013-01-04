@@ -421,8 +421,6 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             returner += r'''
 _r_and_h_result = _threadsafe_queue.get()
 if _r_and_h_result == None:
-    # FIXME: are there any circumstances in which we will
-    # get None back?
     fixme_msg = '\nBehram fixme: must fill in code for '
     fixme_msg += 'case of revoking from threadsafe queue\n'
     print fixme_msg
@@ -895,6 +893,7 @@ def emit_endpoint_function_call(
     print fixme_msg
 
     to_return = '_threadsafe_queue = Queue.Queue()\n'
+    to_return += '_context.run_and_hold_queues.append(_threadsafe_queue)\n'
     to_return += left_of_dot_name + '._run_and_hold_local('
     to_return += '''
     _threadsafe_queue,"''' + right_of_dot_name + '".strip(),_context.id,'
@@ -930,14 +929,26 @@ def emit_endpoint_function_call(
 
 # check whether our run and hold request was able to proceed.  
 _run_and_hold_res_req_result = _threadsafe_queue.get()
+if _run_and_hold_res_req_result == None:
+    # could have been cancelled between the time that we
+    # issued the run_and_hold request and
+    fixme_msg = '\nBehram fixme: must fill in code for '
+    fixme_msg += 'case of revoking from threadsafe queue\n'
+    print fixme_msg
+    raise _PostponeException()
+
 if not _run_and_hold_res_req_result.succeeded:
     fixme_msg = '\nBehram fixme: received a run_and_hold request '
     fixme_msg += 'result that our request had not succeeded.  '
     fixme_msg += 'Must add it to the run and hold manager.\n'
     # means that we could not acquire the resources that we
     # wanted in the run and hold request.
+self._process_run_and_hold_result(
+    _run_and_hold_res_req_result,_actEvent,_context)
+
 self._loop_detector.add_run_and_hold(
     _context.id,_actEvent,_run_and_hold_res_req_result)
+
 
 '''
 
