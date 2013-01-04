@@ -1410,8 +1410,9 @@ class _Context(object):
 
         # wait for reponses to run and hold messages by reading from
         # this queue.  If the run and hold got revoked in the interim,
-        # then this queue will read the value None.
-        self.run_and_hold_queue = Queue.Queue()
+        # then we will write None to every threadsafe queue in this
+        # array.
+        self.run_and_hold_queues = []
         
     def notateWritten(self,extId):
         '''
@@ -3236,9 +3237,11 @@ class _Endpoint(object):
         active_event = active_event_element.actEvent
         current_context = active_event_element.eventContext
 
-        # putting a value in return queue of None tells the waiting
-        # context to abort waiting for a run-and-hold and end.
-        current_context.run_and_hold_queue.put(None)
+
+        for r_and_h_queue in current_context.run_and_hold_queues:
+            # putting a value in return queue of None tells the waiting
+            # context to abort waiting for a run-and-hold and end.
+            r_and_h_queue.put(None)
 
         dict_element = self._loop_detector.remove_if_exists(
             current_context.id,
