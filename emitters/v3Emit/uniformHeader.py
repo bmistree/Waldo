@@ -396,13 +396,14 @@ class _RunAndHoldDictElement(object):
         self.act_event = act_event
         self.endpoint = endpoint
 
-        # the overlapping reads and writes contained in
-        # self.res_req_result should be consumed immediately: either
-        # in passing on the overlapping read and overlapping write
-        # information to the event initiator or (if we are the
-        # initiator) in deciding whether to retry or revoke.
+        # these should only contain the fully-qualified variables that
+        # we currently hold locks on for events that we initiated.  it
+        # should not contain results for variables that we were unable
+        # to grab locks for.  it should not contain variables that
+        # were locked from an active event that was initiated from
+        # another endpoint.
         self.res_req_result = res_req_result
-
+        
         
         # If we are committing the event or backing it out, we must
         # notify this list of other endpoints letting them know that
@@ -422,6 +423,32 @@ class _RunAndHoldDictElement(object):
         # we set the state to be running.
         self.state = self.STATE_RUNNING
 
+    def add_read_writes(self,res_req_results):
+        '''
+        FIXME: CALLED WITHIN ENDPOINT LOCK
+        
+        Assumes that res_req_results has succeeded and add its
+        overlapping reads and writes to res_req_results.
+        '''
+        
+        #### DEBUG
+        if not res_req_results.succeeded:
+            err_msg = '\nBehram error: expectation of add_read_writes function '
+            err_msg += 'is that you only add res_req_result overlapping_reads '
+            err_msg += 'and overlapping_writes if it has succeeded.\n'
+            print err_msg
+            assert (False)
+        #### END DEBUG
+            
+        overlapping_reads = res_req_results.overlapping_reads
+        overlapping_writes = res_req_results.overlapping_writes
+
+        self.res_req_result.append_overlapping_external_locked_records(
+            True,overlapping_reads)
+        self.res_req_result.append_overlapping_external_locked_records(
+            False,overlapping_writes)
+
+        
     def add_run_and_hold_on_endpoint(
         self,endpoint_obj,context_id):
         '''
@@ -607,6 +634,70 @@ class _RunAndHoldLoopDetector(object):
             event_initiator_waldo_id)
 
 
+    def append_result_or_add_if_dne(
+        context_id,act_event,run_and_hold_res_req_result):
+        '''
+        lkjs;
+        FIXME:
+        MUST BE CALLED WITHIN ENDPOINT LOCK
+        
+        @param {int} context_id --- The id of the local context that
+        we are using to issue this run and hold request.
+
+        @param {_ActiveEvent object} act_event --- The active event
+        object that issued the run and hold request (but not
+        necessarilly the root event).
+
+        @param{_ReservationRequestResult object}
+        run_and_hold_res_req_result
+
+        If have an entry in run_and_hold_dict that matches the
+        context_id, priority, and initiator ids, append the write/read
+        locks to the existing run and hold dict element.  Otherwise,
+        create a new dict element and insert it into dict.
+
+        DOES NOT FORWARD THE RES_REQUEST_RESULT ON TO THE INITIATOR OF
+        THE CALL.
+        
+        '''
+        priority = act_event.priority
+        endpoint_initiator_id = act_event.event_initiator_endpoint_id        
+        waldo_initiator_id = act_event.event_initiator_waldo_id
+        
+
+        dict_element = self.run_and_hold_dict.get(
+            context_id,priority,endpoint_initiator_id,
+            waldo_initiator_id,None)
+
+        if dict_element == None:
+            # did not already have a corresponding dict element: must
+            # be first endpoint function call on this
+            # context-endpoint-waldo user.  Create a new dict element
+            # for it.
+            new_dict_element = _RunAndHoldDictElement(
+                context_id,act_event,run_and_hold_res_req_result,
+                self.endpoint)
+
+            # actually add to internal dict
+            self.run_and_hold_dict.set(
+                context_id,priority,endpoint_initiator_id,waldo_initiator_id,
+                new_dict_element)
+
+        else:
+            # already had a corresponding dict element: just add the
+            # res_req_result overlapping reads and overlapping writes
+            # to the existing dict element
+            if dict_element.i_initiated():
+                dict_element.add_read_writes(res_req_results)
+            else:
+                # must forward the reservation locks onwards to those
+                # interested
+                dict_element.forward_to_controller(
+                    context_id,
+                    priority,endpoint_initiator_id,waldo_initiator_id,
+                    overlapping_reads,overlapping_writes)
+
+        
     def add_run_and_hold(self,context_id,act_event,res_req_result):
         '''
         Called when requested by another endpoint to run_and_hold some
@@ -639,11 +730,11 @@ class _RunAndHoldLoopDetector(object):
         dict_element = _RunAndHoldDictElement(
             context_id,act_event,res_req_result,self.endpoint)
 
-        #actually add to internal dict
+        # actually add to internal dict
         self.run_and_hold_dict.set(
             context_id,priority,endpoint_initiator_id,waldo_initiator_id,
             dict_element)
-            
+
 
     def deadlock_check():
         '''
@@ -706,58 +797,6 @@ class _RunAndHoldLoopDetector(object):
             else:
                 dict_element.forward_retry()
 
-    def add_variable_subscriptions(
-        self,context_id,priority,endpoint_initiator_id,waldo_initiator_id,
-        overlapping_reads,overlapping_writes):
-        '''
-        @param {float} priority ---
-        @param {float} endpoint_initiator_id
-        @param {float} waldo_initiator_id
-
-        @param {Array} overlapping_reads --- Each element is an
-        _ExternalLockedRecord object containing information about who is
-        already holding a lock on the requested external that we were
-        trying to acquire a read lock on.
-
-        @param {Array} overlapping_writes --- Each element is an
-        _ExternalLockedRecord object containing information about who is
-        already holding a lock on the requested external that we were
-        trying to acquire a write lock on.
-        '''
-        dict_element = self.run_and_hold_dict.get(
-            context_id,
-            priority,endpoint_initiator_id,waldo_initiator_id,
-            None)
-
-        if dict_element == None:
-            # this run_and_hold command did not exist.  Note that this
-            # is not an error because of the order that we
-            # release/commit things, we may get updates on variables
-            # even after we removed our locks on them.  Can just
-            # ignore the variables though.
-            return
-
-
-        if dict_element.i_initiated():
-
-            if dict_element.is_running():
-                dict_element.res_req_result.append_overlapping_external_locked_records(
-                    True,overlapping_reads)
-                dict_element.res_req_result.append_overlapping_external_locked_records(
-                    False,overlapping_writes)
-
-                # FIXME: should not need to perform global deadlock
-                # check.  Should only need to check deadlock on this
-                # one element.
-                self.deadlock_check()
-
-        else:
-            # must forward the reservation locks onwards to those
-            # interested
-            dict_element.forward_to_controller(
-                context_id,
-                priority,endpoint_initiator_id,waldo_initiator_id,
-                overlapping_reads,overlapping_writes)
 
     
 class _OnComplete(threading.Thread):
@@ -3043,6 +3082,70 @@ class _Endpoint(object):
             run_and_hold = _RunnerAndHolder(
                 to_execute,active_event,context, *args)
             run_and_hold.start()
+
+    def _process_run_and_hold_result(
+        run_and_hold_res_req_result,act_event,context):
+        '''
+        This gets called when we receive a run and hold result request
+        from performing a function call on an endpoint.  At this
+        point, the run and hold request may have succeeded or failed.
+
+        @param {_ReservationRequestResult} run_and_hold_res_req_result
+        --- The result of a function call on a foreign endpoint.  May
+        be the
+        
+        @param {_ActiveEvent object} act_event --- The active event
+        object that made the request on the endpoint object.
+        
+        @param {_Context object} context --- The context that made the
+        endpoint function call that.
+
+            1: if it is a response to a run and hold request that we
+               generated, then we check through the req_res failed
+               message.  If all the reasons that it failed were from
+               lower priority events, then go ahead and retry.
+
+            2: if it is a response to a run and hold request that we
+               initiated, and and our priority is lower than one of
+               the reasons that we failed, then notify all that we
+               have already talked to to release resources and
+               reschedule.
+
+            3: if it is a response to a run and hold request that
+               another endpoint's event initiated, then just forward
+               on the resource failure and do nothing.
+
+               FIXME: lkjs; how do we re-try?
+
+            4: if the request succeeded, then we just add the held
+            resources
+               
+        '''
+
+        if run_and_hold_res_req_result.succeeded:
+            # FIXME: unclear if truly need lock here or not.
+            # Performing operation on internal dict of loop_detector.
+            self._lock()
+            self._loop_detector.append_result_or_add_if_dne(
+                context.id,act_event,run_and_hold_res_req_result)
+            self._unlock()
+
+            # no need to perform deadlock check here because could not
+            # have interfered with any other known event.  We cannot
+            # interfere if we have succeeded (we'd always be able to
+            # make progress).  Only interfere when fail.
+
+            if we did not initiate the event, then we need to forward on the results to the endpoint that did initiate it.
+            
+            lkjs;
+            
+            return
+        
+        # run and hold request failed.  
+        
+lkjs;        
+
+
 
 
     def _acquire_run_and_hold_resources(

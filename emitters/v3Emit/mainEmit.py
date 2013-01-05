@@ -943,8 +943,12 @@ if not _run_and_hold_res_req_result.succeeded:
     fixme_msg += 'Must add it to the run and hold manager.\n'
     # means that we could not acquire the resources that we
     # wanted in the run and hold request.
+self._process_run_and_hold_result(
+    _run_and_hold_res_req_result,_actEvent,_context)
+
 self._loop_detector.add_run_and_hold(
     _context.id,_actEvent,_run_and_hold_res_req_result)
+
 
 '''
 

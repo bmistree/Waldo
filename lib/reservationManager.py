@@ -32,9 +32,9 @@ class _ExternalLockedRecord(object):
         return True
         
 
-        
 class _ReservationRequestResult(object):
-    def __init__(self,succeeded,overlapping_reads,overlapping_writes):
+    def __init__(
+        self,succeeded,overlapping_reads,overlapping_writes):
         '''
         @param{bool} succeeded --- True if could acquire the locks
         requested, false otherwise.
@@ -58,6 +58,8 @@ class _ReservationRequestResult(object):
         self.overlapping_reads = overlapping_reads
         self.overlapping_writes = overlapping_writes
 
+lkjs;
+        
     def overlaps_exist(self):
         '''
         @returns{bool} --- True if there are any overlaps.  False
