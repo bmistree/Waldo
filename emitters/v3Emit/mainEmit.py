@@ -892,7 +892,14 @@ def emit_endpoint_function_call(
     fixme_msg += 'in mainEmity.py.\n'
     print fixme_msg
 
-    to_return = '_threadsafe_queue = Queue.Queue()\n'
+    to_return = '# endpoint that we issue run and hold on puts the \n'
+    to_return += '# result of the operation in _threadsafe_queue, \n'
+    to_return += '# wrapped as a _RunAndHoldResult object.\n'
+    to_return += '# Note, if we read None from the queue, that \n'
+    to_return += '# means that we revoked the run and hold call \n'
+    to_return += '# and that we should therefore backout.\n'
+    
+    to_return += '_threadsafe_queue = Queue.Queue()\n'
     to_return += '_context.run_and_hold_queues.append(_threadsafe_queue)\n'
     to_return += left_of_dot_name + '._run_and_hold_local('
     to_return += '''
