@@ -222,6 +222,51 @@ class _EndpointDict(object):
             del self._internal_dict[endpoint_id]
 
 
+class _RunAndHoldQueueServiceLoop(threading.Thread):
+    '''
+    Reads elements from endpoint's run_and_hold_queue and sorts out
+    whether need to retry or revoke run and hold requests as a
+    a result.
+    '''
+    def __init__(self,endpoint):
+        self.endpoint = endpoint
+        threading.Thread.__init__(self)
+        self.daemon = True
+        
+    def run(self):
+        '''
+        attempt to read _RunAndHoldRequestResult objects from the
+        endpoint's run_and_hold_queue.  These tell us whether our
+        events' run and hold requests were able to lock the
+        resources necessary on foreign endpoints to continue.
+        '''
+        while True:
+            run_and_hold_request_result = self.endpoint._run_and_hold_queue.get()
+
+            context_id = run_and_hold_request_result.requesting_context_id
+            priority = run_and_hold_request_result.priority
+            waldo_initiator_id = run_and_hold_request_result.waldo_initiator_id
+            endpoint_initiator_id = run_and_hold_request_result.endpoint_initiator_id
+
+            self.endpoint._lock()
+
+            dict_element = self._loop_detector.get(
+                context_id,priority,endpoint_initiator_id,
+                waldo_initiator_id)
+
+            if dict_element == None:
+                # means that this is a response to an event that must
+                # have finished or been revoked and therefore removed
+                # from the loop detector dict.  Skip.
+                pass
+            else:
+                act_event = dict_element.act_event
+                self.endpoint._process_run_and_hold_request(
+                    run_and_hold_request_result,act_event)
+
+            self.endpoint._unlock()
+
+            
 class _RunAndHoldLookupDict(object):
     '''
     Each run and hold event is uniquely addressed using a 4-tuple of
@@ -558,17 +603,33 @@ class _RunAndHoldDictElement(object):
             
         self.endpoint_to_notify_of_commit_or_backout.unlock()
 
-    def forward_to_controller(
-        self,priority,endpoint_initiator_id,waldo_initiator_id,
-        overlapping_reads,overlapping_writes):
 
+    def forward_reservation_result_to_controller(
+        self,run_and_hold_request_result):
+        '''
+        Forwards on all run and hold requests that resulted from an
+        early endpoint function call that we did not initiate.  We
+        must forward both successes and failures so that root endpoint
+        has enough information to back out.  (Root must know of all
+        resources it is currently holding as well as resources it
+        tried and failed to hold.)
+        '''
+
+        #### DEBUG
+        if self.i_initiated():
+            err_msg = '\nBehram error: should not forward reservation '
+            err_msg += 'request result when we are the root endpoint '
+            err_msg += 'that began the foreign endpoint function call.\n'
+            print err_msg
+            assert(False)
+        #### END DEBUG
+        
         self.endpoint_to_notify_of_commit_or_backout.lock()
         # FIXME see below
         fixme_msg = '\n\nFIXME: need to fill in forward_to_controller '
         fixme_msg += 'code in RunAndHoldDictElement'
         print fixme_msg
         self.endpoint_to_notify_of_commit_or_backout.unlock()
-        
         
 
     def forward_commit(self):
@@ -634,11 +695,24 @@ class _RunAndHoldLoopDetector(object):
             event_initiator_waldo_id)
 
 
+    def get(
+        self,context_id,priority,event_initiator_endpoint_id,
+        event_initiator_waldo_id):
+        '''
+        @returns {_RunAndHoldDictElement object or None} --- None if
+        do not have a dict element indexed by arguments to function.
+        Otherwise, returns dict element
+        '''
+        
+        return self.run_and_hold_dict.get(
+            context_id,priority,endpoint_initiator_id,
+            waldo_initiator_id,None) # None is the default value to
+                                     # return if do not have element
+                                     # in dict.
+            
     def append_result_or_add_if_dne(
         context_id,act_event,run_and_hold_res_req_result):
         '''
-        lkjs;
-        FIXME:
         MUST BE CALLED WITHIN ENDPOINT LOCK
         
         @param {int} context_id --- The id of the local context that
@@ -651,11 +725,16 @@ class _RunAndHoldLoopDetector(object):
         @param{_ReservationRequestResult object}
         run_and_hold_res_req_result
 
+
         If have an entry in run_and_hold_dict that matches the
         context_id, priority, and initiator ids, append the write/read
         locks to the existing run and hold dict element.  Otherwise,
         create a new dict element and insert it into dict.
 
+        @returns{_RunAndHoldDictElement object} --- The dict element
+        that we added to our dictionary.  Can later call things, such
+        as forward results on it.
+        
         DOES NOT FORWARD THE RES_REQUEST_RESULT ON TO THE INITIATOR OF
         THE CALL.
         
@@ -690,12 +769,11 @@ class _RunAndHoldLoopDetector(object):
             if dict_element.i_initiated():
                 dict_element.add_read_writes(res_req_results)
             else:
-                # must forward the reservation locks onwards to those
-                # interested
-                dict_element.forward_to_controller(
-                    context_id,
-                    priority,endpoint_initiator_id,waldo_initiator_id,
-                    overlapping_reads,overlapping_writes)
+                # Note: caller is responsible for forwarding results
+                # of reservation lock requests if we did not initiate.
+                pass
+
+        return dict_element
 
         
     def add_run_and_hold(self,context_id,act_event,res_req_result):
@@ -734,68 +812,6 @@ class _RunAndHoldLoopDetector(object):
         self.run_and_hold_dict.set(
             context_id,priority,endpoint_initiator_id,waldo_initiator_id,
             dict_element)
-
-
-    def deadlock_check():
-        '''
-        SHOULD BE CALLED WITHIN ENDPOINT's LOCK
-        
-        Very conservative deadlock check.  Check if anything that I am
-        trying to acquire conflicts with something that is already
-        acquired.  If it does, issue a request to all listening to
-        event to back out.
-
-        Checks:
-
-           * For all the items that I have, check any that began on
-             me.  For each that began on me, filter to the ones that
-             are currently running.  (We may have already told some to
-             commit or release their resources.)
-
-           * For each in a running state, go through its list of
-             rejections.  If any have a higher priority, then issue an
-             unlock request.  (And schedule a timer to retry, or maybe
-             a request to be notified when done with resource.)
-
-             If any have a lower priority, issue a retry.
-             
-        '''
-
-        for dict_element in self.run_and_hold_dict:
-            if not dict_element.i_initiated():
-                # if we haven't initiated the event, we cannot cancel
-                # it or complete it.
-                continue
-
-
-            if not dict_element.is_running():
-                # those elements that are not running (either completing
-                # or revoking) will sort themselves out.
-                continue
-
-            # a _ReservationRequestResult object.  Look through list
-            # of conflicts.  If there are any overlaps:
-            
-            #   * and any overlap has a higher priority, issue a
-            #     revoke command immediately, and schedule a retry
-            #     following it.
-            #   * and no overlaps have a higher priority, schedule a
-            #     retry and remove the overlaps with lower priority.
-            
-            res_req_result = dict_element.res_req_result
-
-            highest_priority_overlap = res_req_result.get_highest_priority_overlap()
-            if highest_priority_overlap == None:
-                # check if there are any overlaps.  if there are no
-                # overlaps, do not need to worry about revoking or
-                # completing action.
-                continue
-            
-
-            if highest_priority_overlap > dict_element.act_event.priority:
-                dict_element.revoke()
-            else:
-                dict_element.forward_retry()
 
 
     
@@ -858,6 +874,32 @@ class _RunAndHoldResult(object):
     def _type(self):
         return R_AND_H_RESULT
 
+class _RunAndHoldRequestResult(object):
+    '''
+    Each RunAndHoldRequestResult is put into an endpoint's
+    _run_and_hold_queue, which it is passed when we call _run_and_hold
+    on that endpoint.
+
+    It is then read from _RunAndHoldQueueService loop, which will call
+    _process_run_and_hold_result with it as an argument.
+
+    This object just tells the calling endpoint whether the run and
+    hold request was able to lock all the resources that are necessary
+    for the run and hold request to proceed.  
+    '''
+
+
+    def __init__(
+        self,reservation_request_result,
+        waldo_initiator_id,endpoint_initiator_id,priority,
+        requesting_context_id):
+
+        self.reservation_request_result = reservation_request_result
+        self.priority = priority
+        self.waldo_initiator_id = waldo_initiator_id
+        self.endpoint_initiator_id = endpoint_initiator_id
+        self.requesting_context_id = requesting_context_id
+        
         
 # class _RunnerAndHolder(threading.Thread):
 #     '''
@@ -2971,9 +3013,44 @@ class _Endpoint(object):
         self._reservationManager = reservationManager;
 
         self._loop_detector = _RunAndHoldLoopDetector(self)
+
+        # we have a threadsafe queue, r_and_h_threadsafe_queue.  when
+        # we issue a run and hold request, then whether the endpoint
+        # we issued the request to was able to lock relevant resources
+        # or it wasn't gets put into this queue.  we pass the queue as
+        # part of a run and hold request.  similarly, we start an
+        # external thread to read from this queue and process
+        # responses from it.
+        # other endpoints should put 
+        self._run_and_hold_queue = Queue.Queue()
+        
+        # note, do not need endpoint to hold reference to service_loop.
+        # will stop automatically when exit.
+        service_loop = _RunAndHoldQueueServiceLoop(self)
+        service_loop.start()
+
         
     ##### helper functions #####
 
+    def _i_initiated_run_and_hold(
+        self, run_and_hold_request_result):
+        '''
+        @param {_RunAndHoldRequestResult object}
+        run_and_hold_request_result --- Want to see if this is a
+        result to a run and hold request that was rooted on this
+        endpoint.
+        
+        @returns {bool} --- True if this endpoint was the root of the
+        run and hold request.  False otherwise.
+        '''
+
+        if ((run_and_hold_request_result.waldo_initiator_id == self._waldo_id) and
+            (run_and_hold_request_result.endpoint_initiator_id == self._endpoint_id)):
+            return True
+
+        return False
+    
+    
     def _run_and_hold_local(
         self,threadsafe_queue,to_run,context_id,priority,waldo_initiator_id,
         endpoint_initiator_id,*args):
@@ -3083,68 +3160,141 @@ class _Endpoint(object):
                 to_execute,active_event,context, *args)
             run_and_hold.start()
 
+
     def _process_run_and_hold_result(
-        run_and_hold_res_req_result,act_event,context):
+        run_and_hold_req_result,act_event):
         '''
         This gets called when we receive a run and hold result request
         from performing a function call on an endpoint.  At this
         point, the run and hold request may have succeeded or failed.
 
-        @param {_ReservationRequestResult} run_and_hold_res_req_result
-        --- The result of a function call on a foreign endpoint.  May
-        be the
+        @param {_RunAndHoldRequestResult object}
+        run_and_hold_req_result --- The result of a function call on a
+        foreign endpoint.  
         
         @param {_ActiveEvent object} act_event --- The active event
         object that made the request on the endpoint object.
         
-        @param {_Context object} context --- The context that made the
-        endpoint function call that.
 
-            1: if it is a response to a run and hold request that we
-               generated, then we check through the req_res failed
-               message.  If all the reasons that it failed were from
-               lower priority events, then go ahead and retry.
+        What to do:
+            0: If we were the root of the run and hold request chain
+               and the request succeeded, then just append the result
+               to the loop detector.
 
-            2: if it is a response to a run and hold request that we
-               initiated, and and our priority is lower than one of
-               the reasons that we failed, then notify all that we
-               have already talked to to release resources and
-               reschedule.
+            1: If we were the root of the run and hold request chain
+               and the result failed, then:
 
-            3: if it is a response to a run and hold request that
+               a: If our priority is lower than one of the reasons
+                  that we failed, then notify all that we have already
+                  talked to to release resources and reschedule.
+
+               
+               b: If all the reasons that it failed were from
+                  lower priority events, then go ahead and retry.
+
+
+            2: if it is a response to a run and hold request that
                another endpoint's event initiated, then just forward
                on the resource failure and do nothing.
 
-               FIXME: lkjs; how do we re-try?
-
-            4: if the request succeeded, then we just add the held
-            resources
-               
         '''
 
-        if run_and_hold_res_req_result.succeeded:
-            # FIXME: unclear if truly need lock here or not.
-            # Performing operation on internal dict of loop_detector.
+        reservation_request_result = run_and_hold_req_result.reservation_request_result
+        priority = run_and_hold_req_result.priority
+        waldo_initiator_id = run_and_hold_req_result.waldo_initiator_id
+        endpoint_initiator_id = run_and_hold_req_result.endpoint_initiator_id
+        requesting_context_id = run_and_hold_req_result.requesting_context_id
+        
+        if self._i_initiated_run_and_hold(run_and_hold_req_result):
+            # means that this endpoint was the root of the run and
+            # hold request.
+
+            if reservation_request_result.succeeded:
+                # CASE 0 from the comments at the top of the function
+
+                # FIXME: unclear if truly need lock here or not.
+                # Performing operation on internal dict of loop_detector.
+                self._lock()
+                dict_element = self._loop_detector.append_result_or_add_if_dne(
+                    requesting_context_id,act_event,run_and_hold_res_req_result)
+                self._unlock()
+            else:
+                # CASE 1 from the comments at the top of the function
+
+                highest_priority_overlap = reservation_request_result.get_highest_priority_overlap()
+                #### DEBUG
+                if highest_priority_overlap == None:
+                    err_msg = '\nBehram error: if there are no overlaps, then '
+                    err_msg += 'why did the request not succeed?\n'
+                    print err_msg
+                    assert(False)
+                #### END DEBUG
+
+                # FIXME: unsure if actually need to take locks here
+                # for loop detectors
+                self._lock()
+
+
+                dict_element = self._loop_detector.get(
+                    requesting_context_id,priority,endpoint_initiator_id,
+                    waldo_initiator_id)
+
+                if dict_element == None:
+                    # Ignore message: must have come after revoke was sent
+                    pass
+                else:
+                    # the endpoint that forwarded the run and hold
+                    # reservation request result should already be in
+                    # dict element's list of
+                    # endpoint_to_notify_or_commit_to Endpoint dict.
+                    # therefore, should just be able to call revoke or
+                    # forward_retry directly.
+                    if highest_priority_overlap > dict_element.act_event.priority:
+                        # CASE 1a from the comments at the top of the function
+
+                        # FIXME: when revoke, not removing the dict
+                        # element from the loop detector's run and
+                        # hold dict.  This is because the running
+                        # context may try to execute a run and hold
+                        # and if the dict element is not there, then
+                        # it will create a new one and proceed.  Need
+                        # a safe way to garbage collect run and hold
+                        # dict elements.
+                        dict_element.revoke()
+
+                    else:
+                        # CASE 1b from the comments at the top of the function
+                        dict_element.forward_retry()
+
+                self._unlock()
+        else:
+            # CASE 2 from the comments at the top of the function
+            
+            # FIXME: unsure if actually need to take locks here
+            # for loop detectors
             self._lock()
-            self._loop_detector.append_result_or_add_if_dne(
-                context.id,act_event,run_and_hold_res_req_result)
+
+
+            dict_element = self._loop_detector.get(
+                requesting_context_id,priority,endpoint_initiator_id,
+                waldo_initiator_id)
+            
+            if dict_element == None:
+                # Ignore: may be receiving a response for an event
+                # that was already revoked.
+                pass
+            else:
+                # must forward the run and hold request on to the
+                # controller.  The controller will forward it on to
+                # its controller, which will forward on to its
+                # controller ... until the root initiator of the event
+                # receives the forwarded response.  This root
+                # initiator then can decide whether to retry or
+                # whether to release
+                dict_element.forward_reservation_result_to_controller(
+                    run_and_hold_req_result)
+
             self._unlock()
-
-            # no need to perform deadlock check here because could not
-            # have interfered with any other known event.  We cannot
-            # interfere if we have succeeded (we'd always be able to
-            # make progress).  Only interfere when fail.
-
-            if we did not initiate the event, then we need to forward on the results to the endpoint that did initiate it.
-            
-            lkjs;
-            
-            return
-        
-        # run and hold request failed.  
-        
-lkjs;        
-
 
 
 
