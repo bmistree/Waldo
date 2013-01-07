@@ -640,9 +640,13 @@ class _RunAndHoldDictElement(object):
 
     def forward_commit(self):
         self.endpoint_to_notify_or_commit_to.lock()
+        
+        self.state = self.STATE_SENT_COMPLETE
+        
         # FIXME see below
         fixme_msg = '\n\nFIXME: need to fill in notify_commit '
         fixme_msg += 'code in RunAndHoldDictElement'
+        print fixme_msg
         for endpoint in self.endpoint_to_notify_or_commit_to:
             endpoint._notify_commit(
                 self.act_event.priority,
@@ -650,6 +654,7 @@ class _RunAndHoldDictElement(object):
                 self.act_event.event_initiator_waldo_id)
 
         self.endpoint_to_notify_or_commit_to.unlock()
+
 
     def is_running(self):
         return self.state == self.STATE_RUNNING
@@ -3602,6 +3607,22 @@ class _Endpoint(object):
         self._committedContext.mergeContextIntoMe(contextToCommit);
         # Removes read/write locks on global and shared variables.
         self._cancelActiveEvent(activeEvent.id);
+
+        # if part of this sequence was any run and hold sequence, then
+        # tell the other endpoints to commit their run and holds-es as
+        # well.
+        dict_element = self._loop_detector.remove_if_exists(
+            contextToCommit.id,activeEvent.priority,
+            activeEvent.event_initiator_endpoint_id,
+            activeEvent.event_initiator_waldo_id)
+
+        if dict_element != None:
+            # we had issued a run and hold request when we executed
+            # this context go and notify all other endpoints that were
+            # part of this commit that they can also release their
+            # resources.
+            dict_element.forward_commit()
+
 
 
     def _executeActive(self,execEvent,execContext,callType):
