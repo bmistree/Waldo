@@ -429,6 +429,9 @@ class _RunAndHoldDictElement(object):
     def __init__(
         self,context_id,act_event,res_req_result,endpoint):
         '''
+        @param {int} context_id --- The id of the context that is
+        processing this event.
+        
         @param {_Endpoint object} endpoint --- The endpoint that holds
         the run and hold dict element.
 
@@ -656,10 +659,11 @@ class _RunAndHoldDictElement(object):
         
         # FIXME see below
         fixme_msg = '\n\nFIXME: need to fill in notify_commit '
-        fixme_msg += 'code in RunAndHoldDictElement'
+        fixme_msg += 'code in RunAndHoldDictElement\n\n'
         print fixme_msg
         for endpoint in self.endpoint_to_notify_or_commit_to:
-            endpoint._notify_commit(
+            endpoint._notify_run_and_hold_commit(
+                self.context_id,
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
@@ -1899,11 +1903,17 @@ class _Event(object):
                       self.condGlobReads,self.condGlobWrites,self.seqGlobals,
                       self.externalVarNames,endpoint);
         
-        
-    def generateActiveEvent(self):
+    def generateActiveEvent(self,run_and_hold_parent_context_id):
         '''
         MUST BE CALLED WITHIN LOCK
-        
+
+        @param{int or None} run_and_hold_parent_context_id --- If this
+        event was occasioned by a run and hold request from another
+        endpoint, then this will be the integer id of the context on
+        the calling endpoint.  (Note: not the id of the context of the
+        root endpoint, but instead the parent context.)  Otherwise, it
+        is None.
+
         The reason this must be called within lock is that it has to
         assess whether the conditional variable taints will actually
         get written to/read from.        
@@ -1920,7 +1930,8 @@ class _Event(object):
         return _ActiveEvent(
             self.eventName,self.defGlobReads,self.defGlobWrites,
             self.seqGlobals,self.endpoint,self.externalVarNames,
-            self.endpoint._waldo_id,self.endpoint._endpoint_id);
+            self.endpoint._waldo_id,self.endpoint._endpoint_id,
+            run_and_hold_parent_context_id)        
     
     
 class _ActiveEventDictElement(object):
@@ -2137,7 +2148,8 @@ class _ActiveEvent(object):
 
     def __init__ (
         self,eventName,activeGlobReads,activeGlobWrites,
-        seqGlobals,endpoint,externalVarNames, waldo_id,endpoint_id):
+        seqGlobals,endpoint,externalVarNames, waldo_id,endpoint_id,
+        run_and_hold_parent_context_id):
         '''
         @param{Int} eventId --- Unique among all other active events.
 
@@ -2147,7 +2159,13 @@ class _ActiveEvent(object):
         shared and endpoint global references.  Can use these to
         increase their reference counts to ensure that they do not get
         removed from external store.
+
+        @param {int or None} run_and_hold_parent_context_id --- See
+        the comment right above assigning it to
+        self.run_and_hold_parent_context_id for usage.
+        
         '''
+
         
         self.activeGlobReads = activeGlobReads;
         self.activeGlobWrites = activeGlobWrites;
@@ -2167,6 +2185,13 @@ class _ActiveEvent(object):
         # keep track of the initiator of the event.  the initiator 
         self.event_initiator_waldo_id = waldo_id
         self.event_initiator_endpoint_id = endpoint_id
+
+        # If this event was occasioned by a run and hold request from
+        # another endpoint, then this will be the integer id of the
+        # context on the calling endpoint.  (Note: not the id of the
+        # context of the root endpoint, but instead the parent
+        # context.)  Otherwise, it is None.
+        self.run_and_hold_parent_context_id = run_and_hold_parent_context_id
 
         # @see setArgsArray
         self.argsArray=[];
@@ -3092,12 +3117,18 @@ class _Endpoint(object):
 
         return False
     
-
     def _run_and_hold_local(
         self,return_queue,reservation_request_result_queue,
-        to_run,context_id,priority,waldo_initiator_id,
+        to_run,parent_context_id,priority,waldo_initiator_id,
         endpoint_initiator_id,*args):
         '''
+
+        @param {Int} parent_context_id --- The id of the context on
+        the calling endpoint that occasioned this run and hold
+        request.  Whenever send back reservation request results, must
+        include this in the message so can demultiplex who the
+        reservation request result is for.
+        
         @param {Queue.Queue} return_queue --- Created on other endpoint for each
         run_and_hold call.  When the run and hold request completes, put the
         result into this queue (wrapped in a _RunAndHoldResult object).
@@ -3134,15 +3165,17 @@ class _Endpoint(object):
         # attempt to acquire read/write locks on resources for this
         # action.  put results in reservation_request_result_queue so
         # that service loop on other endpoint can read result.
+
         res_request_result,active_event,context = self._acquire_run_and_hold_resources(
-            to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id)
+            to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id,
+            parent_context_id)
 
         # wraps the reservation request result with ancillary
         # information necessary for other side to determine which
         # request this is a response for.
         run_and_hold_request_result = _RunAndHoldRequestResult(
             res_request_result,waldo_initiator_id,endpoint_initiator_id,
-            priority,context_id)
+            priority,parent_context_id)
         
         reservation_request_result_queue.put(run_and_hold_request_result)
         self._unlock()
@@ -3370,9 +3403,9 @@ class _Endpoint(object):
             self._unlock()
 
 
-
     def _acquire_run_and_hold_resources(
-        self,to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id):
+        self,to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id,
+        run_and_hold_parent_context_id):
         '''
         Attempt to grab the resources required to run to_run as part
         of a run_and_hold request.
@@ -3401,12 +3434,12 @@ class _Endpoint(object):
             print err_msg
             assert(False)
         #### END DEBUG
-        
+            
+
         event_to_run_and_hold = self._prototypeEventsDict[to_run_internal_name]
-        act_event = event_to_run_and_hold.generateActiveEvent()
+        act_event = event_to_run_and_hold.generateActiveEvent(
+            run_and_hold_parent_context_id)
         reservation_request_result = act_event.request_resources_for_run_and_hold()
-
-
         
         # generate context
         context_to_use = None
