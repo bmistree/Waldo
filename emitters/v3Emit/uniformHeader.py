@@ -261,7 +261,7 @@ class _RunAndHoldQueueServiceLoop(threading.Thread):
                 pass
             else:
                 act_event = dict_element.act_event
-                self.endpoint._process_run_and_hold_request(
+                self.endpoint._process_run_and_hold_request_result(
                     run_and_hold_request_result,act_event)
 
             self.endpoint._unlock()
@@ -406,10 +406,10 @@ class _RunAndHoldLookupDict(object):
 
         # if there are still intermediate dicts open that have nothing
         # in them, delete them too: memory management
-        if len(self._internal_dict[priority][endpoint_initator_id][waldo_initiator_id]) == 0:
-            del self._internal_dict[priority][endpoint_inititiator_id][waldo_initiator_id]
-        if len(self._internal_dict[priority][endpoint_initator_id]) == 0:
-            del self._internal_dict[priority][endpoint_inititiator_id]
+        if len(self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id]) == 0:
+            del self._internal_dict[priority][endpoint_initiator_id][waldo_initiator_id]
+        if len(self._internal_dict[priority][endpoint_initiator_id]) == 0:
+            del self._internal_dict[priority][endpoint_initiator_id]
         if len(self._internal_dict[priority]) == 0:
             del self._internal_dict[priority]
 
@@ -541,7 +541,7 @@ class _RunAndHoldDictElement(object):
 
 
         
-    def notify_backout():
+    def notify_backout(self):
         '''
         When a context is postponed or canceled, it calls this
         '''
@@ -559,7 +559,7 @@ class _RunAndHoldDictElement(object):
         self.endpoint_to_notify_or_commit_to.unlock()            
 
 
-    def revoke():
+    def revoke(self):
         '''
         Gets called *only* when we detect a loop.  and backout.
         Cancels context.  The context's cancellation causes
@@ -676,13 +676,15 @@ class _RunAndHoldDictElement(object):
         self.endpoint is the one that initiated the active event
         that this element contains.
         '''
-        if ((self.endpoint._endpoint_id == act_event.event_initator_endpoint_id) and
-            (self.endpoint._waldo_id == act_event.event_initiator_waldo_id)):
+        if ((self.endpoint._endpoint_id == self.act_event.event_initiator_endpoint_id) and
+            (self.endpoint._waldo_id == self.act_event.event_initiator_waldo_id)):
             
             return True
 
         return False
 
+
+        
 class _RunAndHoldLoopDetector(object):
     '''
     This keeps track of all the active events associated with a run
@@ -736,7 +738,7 @@ class _RunAndHoldLoopDetector(object):
                                      # in dict.
             
     def append_result_or_add_if_dne(
-        context_id,act_event,run_and_hold_res_req_result):
+        self,context_id,act_event,run_and_hold_res_req_result):
         '''
         MUST BE CALLED WITHIN ENDPOINT LOCK
         
@@ -792,7 +794,7 @@ class _RunAndHoldLoopDetector(object):
             # res_req_result overlapping reads and overlapping writes
             # to the existing dict element
             if dict_element.i_initiated():
-                dict_element.add_read_writes(res_req_results)
+                dict_element.add_read_writes(run_and_hold_res_req_result)            
             else:
                 # Note: caller is responsible for forwarding results
                 # of reservation lock requests if we did not initiate.
@@ -3227,8 +3229,8 @@ class _Endpoint(object):
             run_and_hold.start()
 
 
-    def _process_run_and_hold_result(
-        run_and_hold_req_result,act_event):
+    def _process_run_and_hold_request_result(
+        self,run_and_hold_req_result,act_event):
         '''
         This gets called when we receive a run and hold result request
         from performing a function call on an endpoint.  At this
@@ -3287,7 +3289,7 @@ class _Endpoint(object):
 
                 self._lock()
                 dict_element = self._loop_detector.append_result_or_add_if_dne(
-                    requesting_context_id,act_event,run_and_hold_res_req_result)
+                    requesting_context_id,act_event,reservation_request_result)
                 self._unlock()
             else:
                 # CASE 1 from the comments at the top of the function
@@ -3567,14 +3569,18 @@ class _Endpoint(object):
             # context to abort waiting for a run-and-hold and end.
             r_and_h_queue.put(None)
 
-        dict_element = self._loop_detector.remove_if_exists(
-            current_context.id,
-            active_event.priority,
-            active_event.event_initiator_endpoint_id,
-            active_event.event_initiator_waldo_id)
 
-        if dict_element != None:
-            dict_element.notify_backout()
+        fixme_msg = '\nBehram warn: may need to add code for backing '
+        fixme_msg += 'out partials.\n'
+        print fixme_msg
+        # dict_element = self._loop_detector.remove_if_exists(
+        #     current_context.id,
+        #     active_event.priority,
+        #     active_event.event_initiator_endpoint_id,
+        #     active_event.event_initiator_waldo_id)
+
+        # if dict_element != None:
+        #     dict_element.notify_backout()
 
         return active_event.cancelActiveEvent();
 
