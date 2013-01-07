@@ -454,7 +454,7 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
     self._lock(); # locking at this point, because call to
                   # generateActiveEvent, uses the committed dict.
 
-    _actEvent = self._prototypeEventsDict['""" + functionEventKey + r"""'].generateActiveEvent();
+    _actEvent = self._prototypeEventsDict['""" + functionEventKey + r"""'].generateActiveEvent(None)
     _actEvent.setToExecuteFrom('""" + functionEventKey + r"""'); # when postponed, will return to here
     _actEvent.setArgsArray(_functionArgs);
 
