@@ -901,10 +901,53 @@ def emit_endpoint_function_call(
     
     to_return += '_threadsafe_queue = Queue.Queue()\n'
     to_return += '_context.run_and_hold_queues.append(_threadsafe_queue)\n'
+
+
+
+    to_return += '''
+self._lock()
+# add run and hold request to loop detector here
+
+_waldo_initiator_id = _actEvent.event_initiator_waldo_id
+_endpoint_initiator_id = _actEvent.event_initiator_endpoint_id
+_priority = _actEvent.priority
+
+if not self._loop_detector.exists(
+    _context.id,_priority,_endpoint_initiator_id,
+    _waldo_initiator_id):
+
+    # create a dict element in loop detector.  access this
+    # element later when receive reservation request results.
+    # for now, creating a dummy reservation request result for
+    # dict element.
+    _dummy_reservation_request_result =(
+        self._reservationManager.empty_reservation_request_result(True))
+
+    _dict_element = self._loop_detector.add_run_and_hold(
+        _context.id,_actEvent,_dummy_reservation_request_result)
+else:
+    _dict_element = self._loop_detector.get(
+        _context.id,_priority,_endpoint_initiator_id,
+        _waldo_initiator_id)
+
+'''
+
+    to_return +=  (
+        '_dict_element.add_run_and_hold_on_endpoint(%s)\n' %
+        left_of_dot_name
+        )
+    to_return += 'self._unlock()\n'
+    
     to_return += left_of_dot_name + '._run_and_hold_local('
     to_return += '''
-    _threadsafe_queue,"''' + right_of_dot_name + '".strip(),_context.id,'
+    _threadsafe_queue, # will read result of the run and hold
+                       # operation from this queue.
+    self._run_and_hold_queue, # other side puts its
+                              # reservation request result
+                              # object in this queue.
+    "''' + right_of_dot_name + '".strip(),'
     to_return += '''
+    _context.id,
     _actEvent.priority,
     _actEvent.endpoint._waldo_id,
     _actEvent.endpoint._endpoint_id,
@@ -932,33 +975,6 @@ def emit_endpoint_function_call(
         emit_context.external_arg_in_func_call = False # just reset to False 
 
     to_return += ')\n'
-    to_return += r'''
-
-# check whether our run and hold request was able to proceed.  
-_run_and_hold_res_req_result = _threadsafe_queue.get()
-if _run_and_hold_res_req_result == None:
-    # could have been cancelled between the time that we
-    # issued the run_and_hold request and
-    fixme_msg = '\nBehram fixme: must fill in code for '
-    fixme_msg += 'case of revoking from threadsafe queue\n'
-    print fixme_msg
-    raise _PostponeException()
-
-if not _run_and_hold_res_req_result.succeeded:
-    fixme_msg = '\nBehram fixme: received a run_and_hold request '
-    fixme_msg += 'result that our request had not succeeded.  '
-    fixme_msg += 'Must add it to the run and hold manager.\n'
-    # means that we could not acquire the resources that we
-    # wanted in the run and hold request.
-self._process_run_and_hold_result(
-    _run_and_hold_res_req_result,_actEvent,_context)
-
-self._loop_detector.add_run_and_hold(
-    _context.id,_actEvent,_run_and_hold_res_req_result)
-
-
-'''
-
     return to_return
     
 

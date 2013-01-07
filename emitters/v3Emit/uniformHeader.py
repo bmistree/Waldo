@@ -144,12 +144,12 @@ class _EndpointDict(object):
     def unlock(self):
         self._mutex.release()
 
-        
     def set(self,endpoint_id,waldo_id,to_set_to):
         if not (endpoint_id in self._internal_dict):
             self._internal_dict[endpoint_id] = {}
         waldo_dict = self._internal_dict[endpoint_id]
         waldo_dict[waldo_id] = to_set_to
+        return to_set_to
 
     def exists(self,endpoint_id,waldo_id):
         '''
@@ -250,7 +250,7 @@ class _RunAndHoldQueueServiceLoop(threading.Thread):
 
             self.endpoint._lock()
 
-            dict_element = self._loop_detector.get(
+            dict_element = self.endpoint._loop_detector.get(
                 context_id,priority,endpoint_initiator_id,
                 waldo_initiator_id)
 
@@ -431,11 +431,11 @@ class _RunAndHoldDictElement(object):
         '''
         @param {_Endpoint object} endpoint --- The endpoint that holds
         the run and hold dict element.
-        
-        # @param {_Endpoint object} controller --- The endpoint that
-        # requested us to perform run and hold.  If we were the endpoint
-        # that began the run and hold, then controller is the same as
-        # endpoint
+
+        @param {_ReservationRequestResult object } res_req_result ---
+        Contains a list of all the variable read/write locks that this
+        run and hold call is holding onto.
+
         '''
         self.context_id = context_id
         self.act_event = act_event
@@ -493,36 +493,42 @@ class _RunAndHoldDictElement(object):
         self.res_req_result.append_overlapping_external_locked_records(
             False,overlapping_writes)
 
-        
+
     def add_run_and_hold_on_endpoint(
-        self,endpoint_obj,context_id):
+        self,endpoint_obj):
         '''
+        CALLED WITHIN ENDPOINT LOCK (but may not need to be).
+        
         Any time we issue a run_and_hold request to an endpoint, we
         should
 
-        @param {int} context_id --- the id of the context requesting
-        to add an endpoint object to notify.  Note that
+        Called inside of endpoint lock.  FIXME: may not be strictly
+        necessary to call within endpoint lock.
 
-        Can ignore messages if context id is already out of date.
 
-        Called outside of endpoint lock.  But we must acquire endpoint
-        lock before calling.  This way, we can ensure that we do not
-        send a message from an outdated context.  (FIXME: may want to
-        consider using sequence numbers instead.)
-        
+        @returns{_RunAndHoldDictElement object} --- What was set
         '''
-        self.endpoint_to_notify_of_commit_or_backout.lock()
-        self.endpoint_to_notify_or_commit_to.set(
+        # FIXME: currently unnecessary to have separate lock on
+        # endpoint_to_notify_or_commit_to because we are
+        # taking an endpoint lock before calling.
+
+        # self.endpoint_to_notify_of_commit_or_backout.lock()
+        self.endpoint_to_notify_or_commit_to.lock()
+
+        to_return = self.endpoint_to_notify_or_commit_to.set(
             endpoint_obj._endpoint_id,
             endpoint_obj._waldo_id,
             endpoint_obj)
-        self.endpoint_to_notify_of_commit_or_backout.unlock()
 
+        self.endpoint_to_notify_or_commit_to.unlock()
 
         # FIXME: may want to consider returning whether the context
         # and active event have matching ids so can short-circuit
         # execution of wasted context.
-        
+
+        return to_return
+
+
         
     def notify_backout():
         '''
@@ -530,17 +536,17 @@ class _RunAndHoldDictElement(object):
         '''
         # FIXME: could we just make a copy of the endpoint objects
         # while in lock and then iterate afterwards on copy?
-        self.endpoint_to_notify_of_commit_or_backout.lock()
-
+        self.endpoint_to_notify_or_commit_to.lock()
 
         # notify all listening to back out
-        for endpoint in self.endpoint_to_notify_of_commit_or_backout:
+        for endpoint in self.endpoint_to_notify_or_commit_to:
             endpoint._notify_backout(
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
 
-        self.endpoint_to_notify_of_commit_or_backout.unlock()
+        self.endpoint_to_notify_or_commit_to.unlock()            
+
 
     def revoke():
         '''
@@ -594,14 +600,15 @@ class _RunAndHoldDictElement(object):
         fixme_msg += 'code in RunAndHoldDictElement'
         print fixme_msg
 
-        self.endpoint_to_notify_of_commit_or_backout.lock()
-        for endpoint in self.endpoint_to_notify_of_commit_or_backout:
+        self.endpoint_to_notify_or_commit_to.lock()        
+
+        for endpoint in self.endpoint_to_notify_or_commit_to:
             endpoint._notify_retry(
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
-            
-        self.endpoint_to_notify_of_commit_or_backout.unlock()
+
+        self.endpoint_to_notify_or_commit_to.unlock()
 
 
     def forward_reservation_result_to_controller(
@@ -623,31 +630,26 @@ class _RunAndHoldDictElement(object):
             print err_msg
             assert(False)
         #### END DEBUG
-        
-        self.endpoint_to_notify_of_commit_or_backout.lock()
+
+        self.endpoint_to_notify_or_commit_to.lock()
         # FIXME see below
         fixme_msg = '\n\nFIXME: need to fill in forward_to_controller '
         fixme_msg += 'code in RunAndHoldDictElement'
         print fixme_msg
-        self.endpoint_to_notify_of_commit_or_backout.unlock()
-        
+        self.endpoint_to_notify_or_commit_to.unlock()        
 
     def forward_commit(self):
-
-        self.endpoint_to_notify_of_commit_or_backout.lock()
+        self.endpoint_to_notify_or_commit_to.lock()
         # FIXME see below
         fixme_msg = '\n\nFIXME: need to fill in notify_commit '
         fixme_msg += 'code in RunAndHoldDictElement'
-        for endpoint in self.endpoint_to_notify_of_commit_or_backout:
+        for endpoint in self.endpoint_to_notify_or_commit_to:
             endpoint._notify_commit(
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
 
-        self.endpoint_to_notify_of_commit_or_backout.unlock()
-
-        
-
+        self.endpoint_to_notify_or_commit_to.unlock()
 
     def is_running(self):
         return self.state == self.STATE_RUNNING
@@ -696,8 +698,8 @@ class _RunAndHoldLoopDetector(object):
 
 
     def get(
-        self,context_id,priority,event_initiator_endpoint_id,
-        event_initiator_waldo_id):
+        self,context_id,priority,endpoint_initiator_id,
+        waldo_initiator_id):            
         '''
         @returns {_RunAndHoldDictElement object or None} --- None if
         do not have a dict element indexed by arguments to function.
@@ -775,6 +777,14 @@ class _RunAndHoldLoopDetector(object):
 
         return dict_element
 
+    def exists(
+        self,context_id,priority,endpoint_initiator_id,
+        waldo_initiator_id):
+
+        return self.run_and_hold_dict.exists(
+            context_id,priority,endpoint_initiator_id,waldo_initiator_id)
+
+        
         
     def add_run_and_hold(self,context_id,act_event,res_req_result):
         '''
@@ -813,6 +823,7 @@ class _RunAndHoldLoopDetector(object):
             context_id,priority,endpoint_initiator_id,waldo_initiator_id,
             dict_element)
 
+        return dict_element
 
     
 class _OnComplete(threading.Thread):
@@ -834,6 +845,7 @@ class _OnComplete(threading.Thread):
     def fire(self):
         self.start();
 
+
 class _RunnerAndHolder(threading.Thread):
     '''
     If a call to run and hold a resource has been accepted, then
@@ -843,9 +855,13 @@ class _RunnerAndHolder(threading.Thread):
     so closure_to_execute does not have to as well.
     '''
     def __init__(
-        self,threadsafe_queue,closure_to_execute,
+        self,return_queue,closure_to_execute,
         active_event,context,*args):
         '''
+        @param {Queue.Queue} return_queue --- Passed by the calling endpoint.
+        Put the result of the operation into return_queue, from which the other
+        side reads it.
+        
         @param {closure} closure_to_execute --- The closure 
         @param {_ActiveEvent} active_event ---
 
@@ -853,7 +869,7 @@ class _RunnerAndHolder(threading.Thread):
         closure to execute.
         
         '''
-        self.threadsafe_queue = threadsafe_queue
+        self.return_queue = return_queue
         self.closure_to_execute = closure_to_execute
         self.active_event = active_event
         self.context = context
@@ -865,8 +881,9 @@ class _RunnerAndHolder(threading.Thread):
         to_return = self.closure_to_execute(
             self.active_event,self.context,*self.args)
 
-        self.threadsafe_queue.put(_RunAndHoldResult(to_return))
+        self.return_queue.put(_RunAndHoldResult(to_return))
 
+        
 class _RunAndHoldResult(object):
     R_AND_H_RESULT = 'run_and_hold_result'
     def __init__(self,result):
@@ -3050,11 +3067,28 @@ class _Endpoint(object):
 
         return False
     
-    
-    def _run_and_hold_local(
-        self,threadsafe_queue,to_run,context_id,priority,waldo_initiator_id,
-        endpoint_initiator_id,*args):
 
+    def _run_and_hold_local(
+        self,return_queue,reservation_request_result_queue,
+        to_run,context_id,priority,waldo_initiator_id,
+        endpoint_initiator_id,*args):
+        '''
+        @param {Queue.Queue} return_queue --- Created on other endpoint for each
+        run_and_hold call.  When the run and hold request completes, put the
+        result into this queue (wrapped in a _RunAndHoldResult object).
+
+        @param {Queue.Queue} reservation_request_result_queue --- The
+        _run_and_hold_queue on the endpoint that is issuing the
+        _run_and_hold_local call.  When we attempt to process the run
+        and hold call, we try to acquire read and write locks on the
+        variables that it touches.  We put the results of attempting
+        to acquire those resources into this queue.  If we were unable
+        to acquire the resources, the root of the run and hold request
+        can then tell us whether to retry or back out.
+        
+        '''
+        
+        
         fixme_function_prefix = '_hold_func_prefix_' + self._endpointName + '_'       
         to_run_internal_name = fixme_function_prefix + to_run
 
@@ -3070,29 +3104,38 @@ class _Endpoint(object):
             print err_msg
             assert(False);
 
-
         self._lock()
-        # attempt to acquire read/write locks on resources for this action
+        
+        # attempt to acquire read/write locks on resources for this
+        # action.  put results in reservation_request_result_queue so
+        # that service loop on other endpoint can read result.
         res_request_result,active_event,context = self._acquire_run_and_hold_resources(
             to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id)
+
+        # wraps the reservation request result with ancillary
+        # information necessary for other side to determine which
+        # request this is a response for.
+        run_and_hold_request_result = _RunAndHoldRequestResult(
+            res_request_result,waldo_initiator_id,endpoint_initiator_id,
+            priority,context_id)
+        
+        reservation_request_result_queue.put(run_and_hold_request_result)
         self._unlock()
 
-
-        threadsafe_queue.put(res_request_result)
-        
-
         # tell the other side whether run and hold request succeeded
-        # or failed
-        self._send_run_and_hold_result_msg(
-            to_run,priority,waldo_initiator_id,endpoint_initiator_id,
-            res_request_result)
+        # or failed commented for now because unclear if actually
+        # should ever send run and hold messages over the wire
+        # ... probably should, but still unclear how.
+        # self._send_run_and_hold_result_msg(
+        #     to_run,priority,waldo_initiator_id,endpoint_initiator_id,
+        #     res_request_result)
 
         if res_request_result.succeeded:
             # we could lock all resources. go ahead and run the method
             # on another thread (which assumes the required resources
             # are already held)
             run_and_hold = _RunnerAndHolder(
-                threadsafe_queue,
+                return_queue,
                 to_execute,active_event,context, *args)
             run_and_hold.start()
 
@@ -3214,6 +3257,11 @@ class _Endpoint(object):
 
                 # FIXME: unclear if truly need lock here or not.
                 # Performing operation on internal dict of loop_detector.
+
+                # FIXME: probably shouldn't add the event if it does
+                # not exist.  if it does not exist, probably menas
+                # that the run and hold has been revoked or completed.
+
                 self._lock()
                 dict_element = self._loop_detector.append_result_or_add_if_dne(
                     requesting_context_id,act_event,run_and_hold_res_req_result)
