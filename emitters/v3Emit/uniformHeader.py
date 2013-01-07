@@ -336,7 +336,7 @@ class _RunAndHoldLookupDict(object):
         dictionary.
         '''
         if priority in self._internal_dict:
-            priority_dict = self._internal_dict
+            priority_dict = self._internal_dict[priority]
             if endpoint_initiator_id in priority_dict:
                 endpoint_dict = priority_dict[endpoint_initiator_id]
                 if waldo_initiator_id in endpoint_dict:
@@ -468,6 +468,17 @@ class _RunAndHoldDictElement(object):
         # we set the state to be running.
         self.state = self.STATE_RUNNING
 
+    def debug_print(self):
+        print_msg = '\nThis is context id: ' + str(self.context_id) + '.\n'
+        print_msg += 'This is active event priority: '
+        print_msg += str(self.act_event.priority) + '.\n'
+        print_msg += 'This is endpoint initiator id: '
+        print_msg += str(self.act_event.event_initiator_endpoint_id) + '\n'
+        print_msg += 'This is waldo initiator id: '
+        print_msg += str(self.act_event.event_initiator_waldo_id) + '\n'
+        print print_msg
+
+        
     def add_read_writes(self,res_req_results):
         '''
         FIXME: CALLED WITHIN ENDPOINT LOCK
@@ -701,6 +712,13 @@ class _RunAndHoldLoopDetector(object):
             context_id,priority, event_initiator_endpoint_id,
             event_initiator_waldo_id)
 
+            
+    def debug_print(self):
+
+        print '\n *** Printing all elements in run and hold dict: '
+        for dict_element in self.run_and_hold_dict:
+            dict_element.debug_print()
+        print '\n\n'
 
     def get(
         self,context_id,priority,endpoint_initiator_id,
