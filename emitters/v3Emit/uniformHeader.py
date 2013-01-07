@@ -664,13 +664,17 @@ class _RunAndHoldDictElement(object):
             assert(False)
         #### END DEBUG
 
-        self.endpoint_to_notify_or_commit_to.lock()
-        # FIXME see below
-        fixme_msg = '\n\nFIXME: need to fill in forward_to_controller '
-        fixme_msg += 'code in RunAndHoldDictElement'
-        print fixme_msg
-        self.endpoint_to_notify_or_commit_to.unlock()        
+        if self.act_event.reservation-request_result_queue == None:
+            # means that this was the root initiator of the run and
+            # hold request.  can just ignroe forwarding the request
+            # because we're the root endpoint and there's no one to
+            # forward it to.
+            pass
+        else:
+            self.act_event.reservation_request_result_queue.put(
+                run_and_hold_request_result)
 
+        
     def forward_commit(self):
         self.endpoint_to_notify_or_commit_to.lock()
         
@@ -2178,9 +2182,7 @@ class _ActiveEvent(object):
         @param {int or None} run_and_hold_parent_context_id --- See
         the comment right above assigning it to
         self.run_and_hold_parent_context_id for usage.
-        
         '''
-
         
         self.activeGlobReads = activeGlobReads;
         self.activeGlobWrites = activeGlobWrites;
@@ -2235,6 +2237,20 @@ class _ActiveEvent(object):
         self.extsToWrite = [];
         self.externalVarNames = externalVarNames;
 
+        # If this active event was occasioned by a run and hold
+        # request, then we should forward all reservation request
+        # results back to root endpoint through this queue.
+        self.reservation_request_result_queue = None
+
+        
+    def set_run_and_hold_request_result_forward_queue(
+        self,reservation_request_result_queue):
+        '''
+        @see comment above self.reservation_request_result_queue in
+        __init__
+        '''
+        self.reservation_request_result_queue = reservation_request_result_queue
+        
 
     def set_event_attributes_from_msg(
         self,_id,_priority,_event_initiator_waldo_id,
@@ -3238,7 +3254,6 @@ class _Endpoint(object):
         
         '''
         
-        
         fixme_function_prefix = '_hold_func_prefix_' + self._endpointName + '_'       
         to_run_internal_name = fixme_function_prefix + to_run
 
@@ -3274,6 +3289,9 @@ class _Endpoint(object):
         reservation_request_result_queue.put(run_and_hold_request_result)
         self._unlock()
 
+        active_event.set_run_and_hold_request_result_forward_queue(
+            reservation_request_result_queue)
+        
         # tell the other side whether run and hold request succeeded
         # or failed commented for now because unclear if actually
         # should ever send run and hold messages over the wire
@@ -3498,8 +3516,8 @@ class _Endpoint(object):
 
 
     def _acquire_run_and_hold_resources(
-        self,to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id,
-        run_and_hold_parent_context_id):
+        self,to_run_internal_name,priority,waldo_initiator_id,
+        endpoint_initiator_id,run_and_hold_parent_context_id):
         '''
         Attempt to grab the resources required to run to_run as part
         of a run_and_hold request.
