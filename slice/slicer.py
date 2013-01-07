@@ -251,14 +251,22 @@ def slicer(node,functionDeps=None,typeStack=None):
             
             funcArgReads.append(argumentReads);
 
+
         if func_on_endpoint_object:
             # the function is being called off of an endpoint object:
             # ie, endpt.func(), rather than being called from a
             # function object or from being called just as a function,
             # eg., some_func()
-            fixme_msg = '\nIgnoring call of function on endpoint object '
-            fixme_msg += 'in slicer.py.  Should fix eventually.\n'
-            print fixme_msg
+
+            # BIG FIXME:
+            # notate the endpoint that the function is being called on
+            # as a write.  and all function arguments passed to it as
+            # a dependent read.  This is probably not the best thing
+            # to do long term.  Better to import and use type
+            # checking.
+            ntt = typeStack.getIdentifier(identifier_name)
+            typeStack.addToVarReadSet(ntt)
+            typeStack.addReadsToVarReadSet(ntt,funcArgReads)
 
         else:
             # the function call is either on a function object or a
