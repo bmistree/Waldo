@@ -266,6 +266,25 @@ class _RunAndHoldQueueServiceLoop(threading.Thread):
 
             self.endpoint._unlock()
 
+class _RunAndHoldCommitThread(threading.Thread):
+    def __init__(
+        self,parent_context_id,priority,endpoint_initiator_id,
+        waldo_initiator_id,endpoint):
+
+        self.parent_context_id = parent_context_id
+        self.priority = priority
+        self.endpoint_initiator_id = endpoint_initiator_id
+        self.waldo_initiator_id = waldo_initiator_id
+        self.endpoint = endpoint
+        
+        threading.Thread.__init__(self)
+
+    def run(self):
+
+        self.endpoint._internal_run_and_hold_commit_and_forward(
+            self.parent_context_id,self.priority,
+            self.endpoint_initiator_id,self.waldo_initiator_id)
+            
             
 class _RunAndHoldLookupDict(object):
     '''
@@ -656,11 +675,7 @@ class _RunAndHoldDictElement(object):
         self.endpoint_to_notify_or_commit_to.lock()
         
         self.state = self.STATE_SENT_COMPLETE
-        
-        # FIXME see below
-        fixme_msg = '\n\nFIXME: need to fill in notify_commit '
-        fixme_msg += 'code in RunAndHoldDictElement\n\n'
-        print fixme_msg
+
         for endpoint in self.endpoint_to_notify_or_commit_to:
             endpoint._notify_run_and_hold_commit(
                 self.context_id,
@@ -3116,7 +3131,86 @@ class _Endpoint(object):
             return True
 
         return False
-    
+
+    def _notify_run_and_hold_commit(
+        self,parent_context_id,priority,endpoint_initiator_id,
+        waldo_initiator_id):
+        '''
+        @param {int} parent_context_id --- The id of the parent
+        context that called for the run and hold.
+        
+        Called from an external endpoint when we are told that the
+        work that we have done with our current run and hold operation
+        can be committed on this endpoint.
+
+        Should a) forward the run and hold commit message and b)
+        commit the context.
+
+        Does so by spinning up a new thread so that does not block the
+        caller.
+        '''
+        run_and_hold_commit_thread = _RunAndHoldCommitThread(
+            parent_context_id,priority,endpoint_initiator_id,
+            waldo_initiator_id,self)
+        run_and_hold_commit_thread.start()
+
+    def _internal_run_and_hold_commit_and_forward(
+        self,parent_context_id,priority,
+        endpoint_initiator_id,waldo_initiator_id):
+        '''
+        When a run and hold's calling endpoint tells you it is time to
+        commit the changes made by the run and hold, then we receive a
+        _notify_run_and_hold_commit call.  This spins up a separate
+        thread, which calls this function.  We spin up a separate
+        thread so that we do not block the calling endpoint while we
+        actually perform the commit.
+
+        This function:
+
+             Commits the context that we had been using for the run
+             and hold. When committing, will also forward notification
+             to other endpoints that I called run and hold on.
+        '''
+        self._lock()
+
+
+        # 1: find context to commit
+        
+        matching_active_event = None
+        context_to_commit = None
+        act_event_dict = self._activeEventDict
+        for act_event_element_key in act_event_dict.keys():
+            act_event = act_event_dict[act_event_element_key].actEvent
+            ctx = act_event_dict[act_event_element_key].eventContext
+
+            if ((act_event.priority == priority) and
+                (act_event.event_initiator_waldo_id == waldo_initiator_id) and
+                (act_event.event_initiator_endpoint_id == endpoint_initiator_id) and
+                (act_event.run_and_hold_parent_context_id == parent_context_id)):
+
+                matching_active_event = act_event
+                context_to_commit = ctx
+                break
+
+        self._unlock()
+            
+        if matching_active_event == None:
+            # could be an error, or could be due to a loop in the run
+            # and hold graph.  ie, one endpoint got issued run and
+            # hold requests by more than one caller.  we committed
+            # after the commit request of the first run and hold, and
+            # therefore do not need to commit again.
+            pass
+        else:
+            # actually commit the context and active event will also
+            # remove the active event from endpoint's active event
+            # dict and forward the commit onwards.
+            matching_active_event.setCompleted(
+                None, # nothing to return out of the set completed
+                      # function...should have already returned
+                context_to_commit)
+
+        
     def _run_and_hold_local(
         self,return_queue,reservation_request_result_queue,
         to_run,parent_context_id,priority,waldo_initiator_id,
@@ -3466,11 +3560,12 @@ class _Endpoint(object):
         context and add to it to include any data this event needs
         that the other did not.
         '''
+
         context_to_use = None
         matching_active_event = None
         act_event_dict = self._activeEventDict
         for act_event_element_key in act_event_dict.keys():
-            act_event_iter = act_event_dict[act_event_element_key].actEvent
+            act_event_element = act_event_dict[act_event_element_key].actEvent
             ctx = act_event_dict[act_event_element_key].eventContext
             
 
@@ -3478,9 +3573,10 @@ class _Endpoint(object):
                 (act_event_element.event_initiator_waldo_id == waldo_initiator_id) and
                 (act_event_element.event_initiator_endpoint_id == endpoint_initiator_id)):
 
-                matching_active_event = act_event_iter
+                matching_active_event = act_event_element
                 context_to_use = ctx
                 break
+
 
         if context_to_use == None:
             # means that we didn't already have a context in our dict
