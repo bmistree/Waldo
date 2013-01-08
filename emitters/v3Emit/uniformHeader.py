@@ -605,7 +605,7 @@ class _RunAndHoldDictElement(object):
             # FIXME: provide additional argument so that can specify a
             # time to wait before re-scheduling.
             self.endpoint._postponeActiveEvent(
-                act_event.id)
+                self.act_event.id)
         else:
             # release all resources being held by the action
             self.endpoint._cancelActiveEvent(

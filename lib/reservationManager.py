@@ -54,7 +54,7 @@ class _ReservationRequestResult(object):
         self.succeeded = succeeded
         
         #FIXME should probably use dicts of lists for these instead of
-        #arrays.  
+        #arrays.
         self.overlapping_reads = overlapping_reads
         self.overlapping_writes = overlapping_writes
 
@@ -81,11 +81,13 @@ class _ReservationRequestResult(object):
         
         for overlap in all_overlaps_iter:
             if ((to_return == None) or
-                (to_return < o_read.priority)):
-                to_return = o_read.priority
+                (to_return < overlap.priority)):
+                
+                to_return = overlap.priority
 
         return to_return
 
+    
     def append_overlapping_external_locked_records(
         self,read,overlapping_array):
         '''
@@ -101,8 +103,8 @@ class _ReservationRequestResult(object):
         if read:
             to_append_to = self.overlapping_reads
 
-            
-        to_append_to.append(overlapping_array)
+        to_append_to += overlapping_array
+
         
     def append_overlapping(
         self,read,var_id,overlapping_array):
