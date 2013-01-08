@@ -664,7 +664,7 @@ class _RunAndHoldDictElement(object):
             assert(False)
         #### END DEBUG
 
-        if self.act_event.reservation-request_result_queue == None:
+        if self.act_event.reservation_request_result_queue == None:
             # means that this was the root initiator of the run and
             # hold request.  can just ignroe forwarding the request
             # because we're the root endpoint and there's no one to
@@ -3625,10 +3625,34 @@ class _Endpoint(object):
                 act_event,act_event.contextId)
 
 
-            for index in dummy_context.keys():
-                if not (index in context_to_use):
-                    context_to_use[index] = _value_deep_copy(
-                        dummy_context[index])
+            # copy over the shareds
+            for index in dummy_context.shareds.keys():
+                if not (index in context_to_use.shareds):
+                    context_to_use.shareds[index] = _value_deep_copy(
+                        dummy_context.shareds[index])
+                    
+            # copy over the end globals
+            for index in dummy_context.endGlobals.keys():
+                if not (index in context_to_use.endGlobals):
+                    context_to_use.endGlobals[index] = _value_deep_copy(
+                        dummy_context.endGlobals[index])
+                    
+            # copy over the seq globals
+            if dummy_context.seqGlobals != None:
+                # FIXME: see below
+                warn_msg = '\nBehram FIXME: warning copying over sequence '
+                warn_msg += 'global variables for run and hold when re-using '
+                warn_msg += 'context.\n'
+                print warn_msg
+                
+                for index in dummy_context.seqGlobals.keys():
+                    if context_to_use.seqGlobals == None:
+                        context_to_use.seqGlobals = {}
+
+                    if not (index in context_to_use.seqGlobals):
+                        context_to_use.seqGlobals[index] = _value_deep_copy(
+                            dummy_context.seqGlobals[index])
+
             
         return context_to_use
 
