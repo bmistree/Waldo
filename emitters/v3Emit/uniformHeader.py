@@ -966,36 +966,6 @@ class _RunAndHoldRequestResult(object):
         self.requesting_context_id = requesting_context_id
         
         
-# class _RunnerAndHolder(threading.Thread):
-#     '''
-#     If a call to run and hold a resource has been accepted, then
-#     create a _RunnerAndHolder thread, which actually executes what had
-#     been requested to be run and held.  Note that we have already
-#     reserved the resources (on our end) to run and hold the function,
-#     so closure_to_execute does not have to as well.
-#     '''
-#     def __init__(
-#         self,closure_to_execute,active_event,context,*args):
-#         '''
-#         @param {closure} closure_to_execute --- The closure 
-#         @param {_ActiveEvent} active_event ---
-
-#         @param {*args} *args --- The arguments that get passed to the
-#         closure to execute.
-        
-#         '''
-#         self.closure_to_execute = closure_to_execute
-#         self.active_event = active_event
-#         self.context = context
-#         self.args = args
-#         threading.Thread.__init__(self)
-
-#     def run(self):
-#         # actually run the function
-#         self.closure_to_execute(
-#             self.active_event,self.context,*self.args)
-
-        
 class _LockedRecord(object):
     def __init__(
         self,waldo_initiator_id,endpoint_initiator_id,priority,act_event_id):
@@ -1519,6 +1489,20 @@ class _Context(object):
         
         self.id = None;
 
+        # re-entrant run and hold requests may cause multiple active
+        # events to share the same contexts.  it simplifies logic to
+        # reuse the same code for canceling an active event.  This
+        # logic however, attempts to commit and merge context data
+        # each time.  To ensure that a context is only merged and
+        # committed once, we keep track of whether a context has
+        # already been committed or merged and return early in the
+        # mergeIntoMe and commit functions if it has.
+        self.committed = False
+        self.merged_into_me = False
+        self.fired_on_completes = False
+        self.release_message_sent = False
+
+        
         # for active events, we need to know whether to send a release
         # event sentinel to the other side.
         # The conditions under which we do this are:
@@ -1641,6 +1625,12 @@ class _Context(object):
         Should only call this function on each endpoint's committed
         context.
         '''
+
+        if otherContext.merged_into_me:
+            return
+
+        otherContext.merged_into_me = True        
+        
         _deepCopy(otherContext.shareds,self.shareds);
         _deepCopy(otherContext.endGlobals,self.endGlobals);
 
@@ -1773,6 +1763,12 @@ class _Context(object):
 
 
     def commit(self):
+
+        if self.committed:
+            return
+
+        self.committed = True
+
         for key in self.refCounts.keys():
             amountToChangeBy = self.refCounts[key];
 
@@ -1868,8 +1864,24 @@ class _Context(object):
         
         Runs through array of oncomplete functions to fire and does so.
         '''
+        if self.fired_on_completes:
+            return
+        self.fired_on_completes = True
+
+        
         for onCompleteToFire in self.onCompletesToFire:
             onCompleteToFire.fire();
+
+    def send_event_release_message(self,active_event):
+        if self.release_message_sent:
+            return
+        self.release_message_sent = True
+        
+        if not self.messageSent:
+            return
+
+        active_event.endpoint._writeMsg(
+            _Message.eventReleaseMsg(self,active_event))
 
 
         
@@ -2346,15 +2358,11 @@ class _ActiveEvent(object):
         #   1: release the read/write locks on the variables that it
         #      had been holding
         #   2: update itself with the most recent context.
-        if context.messageSent:
-            self.endpoint._writeMsg (
-                _Message.eventReleaseMsg(context,self)  );
-
+        context.send_event_release_message(self)
         # after committing a context, check whether it had any
         # oncomplete functions that we should call
         context.fireOnCompletes();
 
-                
         return True;
 
 
@@ -3190,9 +3198,16 @@ class _Endpoint(object):
 
 
         # 1: find context to commit
-        
-        matching_active_event = None
-        context_to_commit = None
+
+        # note because we may have a reentrant run and hold request,
+        # we may have several active events per initiator
+        # id/priority/context id tuple.  We want to ensure that they
+        # all release their locks on variables.  Therefore, we run
+        # through all elements in active event dict (for now...FIXME:
+        # this is very inefficient), and cancel all active events that
+        # are associated.
+        matching_active_events = []
+        contexts_to_commit = []
         act_event_dict = self._activeEventDict
         for act_event_element_key in act_event_dict.keys():
             act_event = act_event_dict[act_event_element_key].actEvent
@@ -3203,27 +3218,24 @@ class _Endpoint(object):
                 (act_event.event_initiator_endpoint_id == endpoint_initiator_id) and
                 (act_event.run_and_hold_parent_context_id == parent_context_id)):
 
-                matching_active_event = act_event
-                context_to_commit = ctx
-                break
+                matching_active_events.append(act_event)
+                contexts_to_commit.append(ctx)
 
         self._unlock()
+
+        for counter in range(0,len(matching_active_events)):
+            matching_active_event = matching_active_events[counter]
+            context_to_commit = contexts_to_commit[counter]
             
-        if matching_active_event == None:
-            # could be an error, or could be due to a loop in the run
-            # and hold graph.  ie, one endpoint got issued run and
-            # hold requests by more than one caller.  we committed
-            # after the commit request of the first run and hold, and
-            # therefore do not need to commit again.
-            pass
-        else:
-            # actually commit the context and active event will also
-            # remove the active event from endpoint's active event
-            # dict and forward the commit onwards.
+            # actually commit the context (if it hasn't been already)
+            # and active event will also remove the active event from
+            # endpoint's active event dict and forward the commit
+            # onwards (if it hasn't been forwarded already)
             matching_active_event.setCompleted(
                 None, # nothing to return out of the set completed
                       # function...should have already returned
                 context_to_commit)
+
 
         
     def _run_and_hold_local(
