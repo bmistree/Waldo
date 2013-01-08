@@ -418,8 +418,9 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             is_rhs_func_call = True
             # must put result in
             returner += rhs_emitted
+            emit
             returner += r'''
-_r_and_h_result = _threadsafe_queue.get()
+_r_and_h_result = _threadsafe_queue_result
 if _r_and_h_result == None:
     fixme_msg = '\nBehram fixme: must fill in code for '
     fixme_msg += 'case of revoking from threadsafe queue\n'
@@ -429,6 +430,7 @@ if _r_and_h_result == None:
 else:
     _tmp_return_array = _r_and_h_result.result
 '''
+
         elif to_assign_from_node.label == AST_FUNCTION_CALL:
             returner += '_tmp_return_array = '
             returner += rhs_emitted
@@ -875,6 +877,7 @@ def _getBinaryOperatorLabelDict():
     return binaryOperatorLabels;
 
 
+
 def emit_endpoint_function_call(
     endpoint_name,func_call_node,fdep_dict,emit_context):
     
@@ -975,6 +978,8 @@ else:
         emit_context.external_arg_in_func_call = False # just reset to False 
 
     to_return += ')\n'
+    to_return += '_threadsafe_queue_result = _threadsafe_queue.get()\n'
+    
     return to_return
     
 
