@@ -285,7 +285,6 @@ class EmitContext(object):
 
         self.suppress_get_on_external = False
 
-
         
         # We need to know whether we want to pass in the value
         # associated with an external or the external object itself.
