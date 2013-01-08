@@ -949,8 +949,8 @@ else:
     to_return += '''
     _context.id,
     _actEvent.priority,
-    _actEvent.endpoint._waldo_id,
-    _actEvent.endpoint._endpoint_id,
+    _actEvent.event_initiator_waldo_id,
+    _actEvent.event_initiator_endpoint_id,
 '''
 
 

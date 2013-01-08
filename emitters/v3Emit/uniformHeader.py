@@ -2633,8 +2633,7 @@ class _ActiveEvent(object):
             for record in to_filter:
                 if ((record.waldo_initiator_id == self.event_initiator_waldo_id) and
                     (record.endpoint_initiator_id == self.event_initiator_endpoint_id) and
-                    (record.priority == self.priority) and
-                    (record.act_event_id == self.id)):
+                    (record.priority == self.priority)):
                     continue
 
                 to_return.append(record)
@@ -3551,8 +3550,15 @@ class _Endpoint(object):
         event_to_run_and_hold = self._prototypeEventsDict[to_run_internal_name]
         act_event = event_to_run_and_hold.generateActiveEvent(
             run_and_hold_parent_context_id)
+
+        # set the attributes of the active event correctly so will
+        # correctly re-use context.
+        act_event.set_event_attributes_from_msg(
+            act_event.id,priority,waldo_initiator_id,endpoint_initiator_id)
+
         reservation_request_result = act_event.request_resources_for_run_and_hold()
-        
+
+
         # generate context
         context_to_use = None
         if reservation_request_result.succeeded:
@@ -3565,6 +3571,8 @@ class _Endpoint(object):
     def _generate_run_and_hold_context(
         self,priority,waldo_initiator_id,endpoint_initiator_id,act_event):
         '''
+        CALLED FROM WITHIN LOCK
+
         @param{float} priority
         @param{float} waldo_initiator_id
         @param{float} endpoint_initiator_id
@@ -3613,7 +3621,7 @@ class _Endpoint(object):
             act_event.contextId = matching_active_event.contextId
 
             # FIXME: Should not copy over sequence variables
-            dummy_context = self.committedContext.copyForActiveEvent(
+            dummy_context = self._committedContext.copyForActiveEvent(
                 act_event,act_event.contextId)
 
 
