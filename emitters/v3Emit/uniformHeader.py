@@ -3344,68 +3344,6 @@ class _Endpoint(object):
             run_and_hold.start()
 
     
-    def _run_and_hold(
-        self,
-        to_run,
-        priority,waldo_initiator_id,endpoint_initiator_id,
-        *args):
-        '''
-        @param{String} to_run --- The name of the public function to
-        attempt to run locally.
-
-        For re-entrantness
-        @param{float} priority
-        @param{float} waldo_initiator_id
-        @param{float} endpoint_initiator_id
-
-        @param *args --- The arguments to the public function that we
-        are calling.
-
-        @return _RunAndHold object --- sentinel that could not acquire
-        (and telling you who is actually holding the resources)
-        
-        Execute a function and hold onto the resources for a
-        transaction and hold onto the read/write locks for its
-        resources.  until 
-        '''
-        fixme_function_prefix = '""" + emitUtils.HOLD_FUNC_PREFIX + r"""' + self._endpointName + '_'       
-        to_run_internal_name = fixme_function_prefix + to_run
-
-        try:
-            to_execute = getattr(self,to_run_internal_name)
-        except AttributeError as exception:
-            # FIXME: probably want to return a different, undefined
-            # method or something.
-            err_msg = '\nBehram error when calling ' + to_run
-            err_msg += '.  It does not exist on this endpoint.  '
-            err_msg += 'Trying to look it up with name '
-            err_msg += to_run_internal_name + '.\n'
-            print err_msg
-            assert(False);
-
-
-
-        self._lock()
-        # attempt to acquire read/write locks on resources for this action
-        res_request_result,active_event,context = self._acquire_run_and_hold_resources(
-            to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id)
-        self._unlock()
-
-        
-
-        # tell the other side whether run and hold request succeeded
-        # or failed
-        self._send_run_and_hold_result_msg(
-            to_run,priority,waldo_initiator_id,endpoint_initiator_id,
-            res_request_result)
-
-        if res_request_result.succeeded:
-            # we could lock all resources. go ahead and run the method
-            # on another thread (which assumes the required resources
-            # are already held)
-            run_and_hold = _RunnerAndHolder(
-                to_execute,active_event,context, *args)
-            run_and_hold.start()
 
 
     def _process_run_and_hold_request_result(
