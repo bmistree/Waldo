@@ -280,11 +280,12 @@ class _RunAndHoldCommitThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-
-        self.endpoint._internal_run_and_hold_commit_and_forward(
+        self.endpoint._all_active_event_commit_and_forward(
             self.parent_context_id,self.priority,
-            self.endpoint_initiator_id,self.waldo_initiator_id)
-            
+            self.endpoint_initiator_id,self.waldo_initiator_id,
+            None # nothing to return: should have already been
+                 # returned through run and hold queues
+            )
             
 class _RunAndHoldLookupDict(object):
     '''
@@ -2313,8 +2314,23 @@ class _ActiveEvent(object):
         self.toExecFrom = entryPointToExecFrom;
 
 
-        
+
     def setCompleted(self,returnVal,context):
+        '''
+        NOT CALLED FROM WITHIN LOCK.  Parts of it will grab an
+        endpoint's lock.
+
+        Ensures that all active events with priority, parent context ids,
+        etc. are committed and release their resources.
+        '''
+        self.endpoint._all_active_event_commit_and_forward(
+            self.run_and_hold_parent_context_id,
+            self.priority,self.event_initiator_endpoint_id,
+            self.event_initiator_waldo_id,returnVal)
+        
+        
+
+    def _single_active_event_set_completed(self,returnVal,context):
         '''
         NOT CALLED FROM WITHIN LOCK.  It assumes the endpoint's lock.
         @raises _PostponeException
@@ -2842,21 +2858,21 @@ class _ActiveEvent(object):
             
                 read_lock_list = self.endpoint._globSharedReadVars[globReadKey]
 
-                to_remove_counter = None
+                to_remove_counter_list = []
                 for counter in range(0,len(read_lock_list)):
                     item = read_lock_list[counter]
                     if ((item.waldo_initiator_id == self.event_initiator_waldo_id) and
                         (item.endpoint_initiator_id == self.event_initiator_endpoint_id) and
                         (item.act_event_id == self.id)):
-                        to_remove_counter = counter
-                        break
-                if to_remove_counter != None:
+                        to_remove_counter_list.append(counter)
+
+                for to_remove_counter in reversed(to_remove_counter_list):
                     del read_lock_list[to_remove_counter]
 
-                    if len(read_lock_list) == 0:
-                        # means that something that we previously
-                        # could not acquire a lock for we can now.
-                        potentialTransition = True
+                if len(read_lock_list) == 0:
+                    # means that something that we previously
+                    # could not acquire a lock for we can now.
+                    potentialTransition = True
 
 
         for globWriteKey in self.activeGlobWrites.keys():
@@ -2869,23 +2885,23 @@ class _ActiveEvent(object):
                 # (Note: in practice, this list can only ever have a
                 # single entry in it since two active events cannot
                 # write to the same variable at the same time.)
-                
+
                 write_lock_list = self.endpoint._globSharedWriteVars[globWriteKey]
-                to_remove_counter = None
+                to_remove_counter_list = []
                 for counter in range(0,len(write_lock_list)):
                     item = write_lock_list[counter]
                     if ((item.waldo_initiator_id == self.event_initiator_waldo_id) and
                         (item.endpoint_initiator_id == self.event_initiator_endpoint_id) and
                         (item.act_event_id == self.id)):
-                        to_remove_counter = counter
-                        break
-                if to_remove_counter != None:
+                        to_remove_counter_list.append( counter)
+
+                for to_remove_counter in reversed(to_remove_counter_list):
                     del write_lock_list[to_remove_counter]
 
-                    if len(write_lock_list) == 0:
-                        # means that something that we previously
-                        # could not acquire a lock for we can now.
-                        potentialTransition = True
+                if len(write_lock_list) == 0:
+                    # means that something that we previously
+                    # could not acquire a lock for we can now.
+                    potentialTransition = True
 
         
         return potentialTransition;
@@ -3177,9 +3193,10 @@ class _Endpoint(object):
             waldo_initiator_id,self)
         run_and_hold_commit_thread.start()
 
-    def _internal_run_and_hold_commit_and_forward(
+        
+    def _all_active_event_commit_and_forward(
         self,parent_context_id,priority,
-        endpoint_initiator_id,waldo_initiator_id):
+        endpoint_initiator_id,waldo_initiator_id,return_val):
         '''
         When a run and hold's calling endpoint tells you it is time to
         commit the changes made by the run and hold, then we receive a
@@ -3231,9 +3248,8 @@ class _Endpoint(object):
             # and active event will also remove the active event from
             # endpoint's active event dict and forward the commit
             # onwards (if it hasn't been forwarded already)
-            matching_active_event.setCompleted(
-                None, # nothing to return out of the set completed
-                      # function...should have already returned
+            matching_active_event._single_active_event_set_completed(
+                return_val, 
                 context_to_commit)
 
 
@@ -3296,7 +3312,14 @@ class _Endpoint(object):
         run_and_hold_request_result = _RunAndHoldRequestResult(
             res_request_result,waldo_initiator_id,endpoint_initiator_id,
             priority,parent_context_id)
-        
+            
+        if res_request_result.succeeded:
+            # go ahead and add run and to active event dict, because
+            # it's going to run.
+            self._activeEventDict[active_event.id] = _ActiveEventDictElement(
+                active_event,context)
+            active_event.active = True
+            
         reservation_request_result_queue.put(run_and_hold_request_result)
         self._unlock()
 
