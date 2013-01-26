@@ -88,14 +88,14 @@ def p_MessageSequenceSection(p):
             p[0].addChild(kid);
             
 
-
+# lkjs;
 def p_MessageSequence(p):
     '''
-    MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT MessageSequenceGlobalSection MessageSequenceFunctions CURLY_RIGHT
-    MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT MessageSequenceFunctions CURLY_RIGHT
+    MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN MessageSequenceReturns CURLY_LEFT MessageSequenceGlobalSection MessageSequenceFunctions CURLY_RIGHT
+    MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN MessageSequenceReturns CURLY_LEFT MessageSequenceFunctions CURLY_RIGHT
     '''
     # syntax:
-    #    Sequence <some name> (<some arguments>)
+    #    Sequence <some name> (<some arguments>) returns Text msg, TrueFalse succeeded...
     #    {
     #        <some sequence globals> (optional)
     #        <some sequence functions>
@@ -114,17 +114,35 @@ def p_MessageSequence(p):
     p[0] = AstNode(AST_MESSAGE_SEQUENCE,p[2].lineNo,p[2].linePos);
     seq_args = p[4]
     seq_name = p[2]
+    seq_returns = p[5]
     p[0].addChildren([seq_name,seq_args])
 
     
+    
     # default to empty message sequence globals section if not defined
     seq_globs = AstNode(AST_MESSAGE_SEQUENCE_GLOBALS,p[2].lineNo,p[2].linePos);
-    seq_functions = p[7]
-    if len(p) == 10:
-        seq_globs = p[7]
-        seq_functions= p[8];
+    seq_functions = p[8]
+    if len(p) == 11:
+        seq_globs = p[8]
+        seq_functions= p[9];
 
     p[0].addChildren([seq_globs,seq_functions]);
+    p[0].addChildren([seq_returns])
+
+
+def p_MessageSequenceReturns(p):
+    '''
+    MessageSequenceReturns : Empty
+                           | RETURNS FunctionDeclArgList
+    '''
+    if len(p) == 2:
+        # means that we are empty, create an empty function decl
+        # arglist and use it for child
+        p[0] = AstNode(AST_FUNCTION_DECL_ARGLIST,p[1].lineNo,p[1].linePos)
+    else:
+        p[0] = p[2]
+        
+# lkjs;
 
     
 def p_MessageSequenceGlobalSection(p):
