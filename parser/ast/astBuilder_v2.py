@@ -114,10 +114,9 @@ def p_MessageSequence(p):
     p[0] = AstNode(AST_MESSAGE_SEQUENCE,p[2].lineNo,p[2].linePos);
     seq_args = p[4]
     seq_name = p[2]
-    seq_returns = p[5]
+    seq_returns = p[6]
     p[0].addChildren([seq_name,seq_args])
 
-    
     
     # default to empty message sequence globals section if not defined
     seq_globs = AstNode(AST_MESSAGE_SEQUENCE_GLOBALS,p[2].lineNo,p[2].linePos);
