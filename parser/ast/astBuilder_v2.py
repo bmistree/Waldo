@@ -88,14 +88,14 @@ def p_MessageSequenceSection(p):
             p[0].addChild(kid);
             
 
-# lkjs;
+
 def p_MessageSequence(p):
     '''
     MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN MessageSequenceReturns CURLY_LEFT MessageSequenceGlobalSection MessageSequenceFunctions CURLY_RIGHT
     MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN MessageSequenceReturns CURLY_LEFT MessageSequenceFunctions CURLY_RIGHT
     '''
     # syntax:
-    #    Sequence <some name> (<some arguments>) returns Text msg, TrueFalse succeeded...
+    #    Sequence <some name> (<some arguments>) returns Text msg, TrueFalse succeeded (returns optional)
     #    {
     #        <some sequence globals> (optional)
     #        <some sequence functions>
@@ -106,7 +106,8 @@ def p_MessageSequence(p):
     #   FunctionDeclArgList: <some arguments>
     #   SEQUENCE GLOBALS: <some sequence globals>
     #   MessageSequenceFunctions: <some sequence functions>
-
+    #   return statements
+    
     # note that canonicalize moves FunctionDeclArgList from child of
     # AST_MESSAGE_SEQUENCE to child of the first message send
     # function.
@@ -141,7 +142,7 @@ def p_MessageSequenceReturns(p):
     else:
         p[0] = p[2]
         
-# lkjs;
+
 
     
 def p_MessageSequenceGlobalSection(p):
@@ -178,9 +179,12 @@ def p_MessageSendSequenceFunction(p):
     #    Identifier: <endpoint name>
     #    Identifier: <function name>
     #    FunctionBody: <function body>
-
+    
     # note: canonicalize inserts a FunctionDeclArgList as a child for
     # this between function name and endpoint body
+
+    # note, note: canonicalize also inserts a functiondeclarglist with
+    # return types at the end
     
     p[0] = AstNode(AST_MESSAGE_SEND_SEQUENCE_FUNCTION,p[1].lineNo,p[1].linePos);
     endpoint_name = p[1]
