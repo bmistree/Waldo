@@ -1960,13 +1960,6 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
 
         funcNameIndex = 1;
 
-        debug_msg = '\n\nBehram debug.  Have a sequence send function with '
-        debug_msg += 'the following return type: ' + repr(returnType)
-        debug_msg += '\n\n'
-        print debug_msg
-        
-        
-
     elif node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # does not take any arguments
         argDeclIndex = None;
