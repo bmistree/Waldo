@@ -27,7 +27,9 @@ def preprocess(astNode,progText):
           the FunctionDeclArgList-s that appear as children meant to
           return values.  Reformats each of these to be regular
           variable declarations in the messsage sequence global
-          section.  And then, remove the functiondeclarglist
+          section.  Remove the functiondeclarglist from the sequence
+          node and add it to the sequence send node so that can still
+          use it for type checking.
     
     '''
     
@@ -41,8 +43,8 @@ def move_sequence_function_return_types (ast_node):
     '''
     The last child of a sequence function contains a
     FunctionDeclArgList of nodes.  Each node names a separate, global
-    variable that the message sequence returns.  Remove the
-    FunctionDeclArgList and translate them so that they appear as
+    variable that the message sequence returns.  Translate the 
+    FunctionDeclArgList so that they appear as
     declared variables in the message sequence global section.
     '''
     msg_sequences_node = ast_node.children[6]
@@ -53,13 +55,13 @@ def move_sequence_function_return_types (ast_node):
         # should be a function decl arg list
         msg_seq_return_node = msg_seq_node.children[-1]
         del msg_seq_node.children[-1]
+        
 
         # note that using 1 here, while the actual parsing file has it
         # in the 2 index.  This is because in
         # move_sequence_function_args, we are actually deleting the
         # node that had been in index 1
         msg_seq_globs_node = msg_seq_node.children[1]
-
         #### DEBUG
         if msg_seq_globs_node.label != AST_MESSAGE_SEQUENCE_GLOBALS:
             err_msg = '\nBehram error in canonicalize.  Expecting '
@@ -67,6 +69,27 @@ def move_sequence_function_return_types (ast_node):
             print err_msg
             assert(False)
         #### END DEBUG
+
+        msg_seq_funcs_node = msg_seq_node.children[2]
+        #### DEBUG
+        if msg_seq_funcs_node.label != AST_MESSAGE_SEQUENCE_FUNCTIONS:
+            err_msg = '\nBehram error in canonicalize.  Expecting message '
+            err_msg += 'sequence functions label.\n'
+            print err_msg
+            assert (False)
+        #### END DEBUG
+
+        msg_send_func_node = msg_seq_funcs_node.children[0]
+        #### DEBUG
+        if msg_send_func_node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+            err_msg = '\nBehram error in canonicalize.  Expecting send message '
+            err_msg += 'sequence function label.\n'
+            print err_msg
+            assert (False)
+        #### END DEBUG
+
+        msg_send_func_node.addChild(msg_seq_return_node)
+        
         
         # translate each element that we are returning to append to
         # global section
