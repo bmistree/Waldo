@@ -13,7 +13,7 @@ def preprocess(astNode,progText):
     that it is ready for type checking, slicing, and emitting.
     (Shouldn't really need the intermediate stage from parsing to type
     checking, but having this makes it easier to prototype fast
-    changes to syntax.
+    changes to syntax.)
 
     Big changes:
 
@@ -21,6 +21,9 @@ def preprocess(astNode,progText):
           the FunctionDeclArgList-s that appear as children under each
           to appear instead as children of each sequence's respective
           message send sequence function.
+
+        * Run through all definitions of message sequences and move
+          the FunctionDeclArgList-s that appear as children under 
     
     '''
     
