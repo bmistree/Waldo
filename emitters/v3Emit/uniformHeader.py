@@ -105,6 +105,32 @@ _REFRESH_RECEIVE_FUNCTION_NAME = '%s';
        emitUtils._REFRESH_SEND_FUNCTION_NAME,
        emitUtils._REFRESH_RECEIVE_FUNCTION_NAME) + r"""
 
+
+class _RetryAbortLoopServicer(threading.Thread):
+    RETRY = 'retry'
+    ABORT = 'abort'
+    
+    '''
+    Reads from threadsafe_queue.  Each item read is a 4-tuple: <a,b,c,d>.
+
+      a {String} --- either RETRY or ABORT
+      b {float}  --- priority
+      c {float}  --- endpoint initiator id
+      d {float}  --- waldo initiator id
+
+    Looks up the event and either aborts the event (forwarding on the
+    abort message) or it 
+    '''
+    def __init__(self,threadsafe_queue,endpoint):
+        self.threadsafe_queue = threadsafe_queue
+        self.endpoint = endpoint
+        threading.Thread.__init__(self)
+        self.daemon = True
+        
+    def run(self):
+        print '\nGot into run of retryabortloopservicer\n'
+
+
 class _RestartEventThread(threading.Thread):
     def __init__(self,endpoint):
         self.endpoint = endpoint
@@ -649,7 +675,9 @@ class _RunAndHoldDictElement(object):
         self.endpoint_to_notify_or_commit_to.lock()        
 
         for endpoint in self.endpoint_to_notify_or_commit_to:
-            endpoint._notify_retry(
+            # this is the endpoint that we issued our run and holds
+            # on...not the endpoint we issued them from.
+            endpoint._notify_run_and_hold_retry(
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
@@ -3216,6 +3244,9 @@ class _Endpoint(object):
         service_loop = _RunAndHoldQueueServiceLoop(self)
         service_loop.start()
 
+        self._run_and_hold_retry_abort_loop = Queue.Queue()
+        retry_abort_loop_service = _RetryAbortLoopServicer(
+            self._run_and_hold_retry_abort_loop,self)
         
     ##### helper functions #####
 
@@ -3236,7 +3267,26 @@ class _Endpoint(object):
             return True
 
         return False
+        
+    def _notify_run_and_hold_retry(
+        self,priority,endpoint_initiator_id,waldo_initiator_id):
+        '''
+        @param{float} priority ---
+        @param{float} endpoint_initiator_id ---
+        @param{float} waldo_initiator_id ---
 
+        This gets called whenever a run and hold 
+        '''
+
+        self._run_and_hold_retry_abort_loop.put(
+            (_RetryAbortLoopServicer.RETRY,
+             priority,endpoint_initiator_id,waldo_initiator_id))
+        # 1 forward the retry on.
+        
+        # 2 actually retry...
+        print '\nMust finish the notify_run_and_hold_retry method.\n'
+
+        
     def _notify_run_and_hold_commit(
         self,parent_context_id,priority,endpoint_initiator_id,
         waldo_initiator_id):
