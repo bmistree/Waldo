@@ -223,9 +223,77 @@ class _RetryAbortLoopServicer(threading.Thread):
                 (active_event.event_initiator_waldo_id == waldo_initiator_id) and
                 (active_event.event_initiator_endpoint_id == endpoint_initiator_id))
 
-    
+
     def process_abort_cmd(self,cmd_tuple):
-        print '\nBehram error: still must process abort cmd tuples.\n'
+        '''
+        1: end any active event that is running that was initiated
+        because of the run and hold request represented in cmd_tuple.
+
+        2: Remove any failed events that we had been waiting on.
+        
+        3: forward on the abort command
+        '''
+        context_id = cmd_tuple[1]
+        priority = cmd_tuple[2]
+        endpoint_initiator_id = cmd_tuple[3]
+        waldo_initiator_id = cmd_tuple[4]
+
+        
+        self.endpoint._lock()
+        ### PART 1 from method comment above: end any active event
+        ### that had been using....
+
+        act_event_dict = self.endpoint._activeEventDict
+        for act_event_element in act_event_dict.values():
+            act_event = act_event_element.actEvent
+            context = act_event_element.eventContext
+
+            if self.act_event_match(
+                act_event,parent_context_id,priority,endpoint_initiator_id,
+                waldo_initiator_id):
+
+                act_event.cancelActiveEvent()
+
+        
+        ### PART 2 from comment above: remove any failed events that
+        ### we had been waiting on
+        failed_run_and_holds = self.endpoint._failed_run_and_holds
+
+        # warning: the size of failed_run_and_holds may change in this
+        # loop because calls to _run_and_hold_local may append to it.
+        # for this reason, getting indices to check over early.  I did
+        # a test, and I don't think this is strictly necessary, but
+        # can't be too safe.
+        indices_to_del_from_failed = []
+        indices_to_check_over = range(0,len(failed_run_and_holds))
+        for act_event_index in indices_to_check_over:
+            act_event = failed_run_and_holds[act_event_index]
+
+            if self.act_event_match(
+                act_event,context_id,priority,endpoint_initiator_id,
+                waldo_initiator_id):
+                
+                indices_to_del_from_failed.append(act_event_index)
+
+        for to_del_index in reversed(indices_to_del_from_failed):
+            del failed_run_and_holds[to_del_index]
+
+        ### PART 3 from method comment above: forward backout to all
+        ### other endpoints and remove dict element from loop
+        ### detector.
+        dict_element = self.endpoint._loop_detector.get(
+            context_id,priority,endpoint_initiator_id,
+            waldo_initiator_id)
+
+        if dict_element != None:
+            dict_element.notify_backout()
+
+            
+            self.endpoint._loop_detector.remove_if_exists(
+                context_id,priority,endpoint_initiator_id,
+                waldo_initiator_id)
+
+        self.endpoint._unlock()
 
 
 class _RestartEventThread(threading.Thread):
@@ -698,7 +766,6 @@ class _RunAndHoldDictElement(object):
         return to_return
 
 
-        
     def notify_backout(self):
         '''
         When a context is postponed or canceled, it calls this
@@ -709,7 +776,8 @@ class _RunAndHoldDictElement(object):
 
         # notify all listening to back out
         for endpoint in self.endpoint_to_notify_or_commit_to:
-            endpoint._notify_backout(
+            endpoint._notify_run_and_hold_backout(
+                self.context_id,                
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
@@ -720,8 +788,8 @@ class _RunAndHoldDictElement(object):
     def revoke(self):
         '''
         Gets called *only* when we detect a loop.  and backout.
-        Cancels context.  The context's cancellation causes
-        notifications of releases to be sent.
+        Cancels context.  We also start notifications of backouts to
+        be sent if we initiated the run and hold.
 
         If we initiated the run_and_hold:
           * Set a timer to retry the action.
@@ -742,11 +810,13 @@ class _RunAndHoldDictElement(object):
             # time to wait before re-scheduling.
             self.endpoint._postponeActiveEvent(
                 self.act_event.id)
+
+            self.notify_backout()
+            
         else:
             # release all resources being held by the action
             self.endpoint._cancelActiveEvent(
                 act_event.id)    
-
 
         # FIXME: see message below 
         fixme_msg = '\nFIXME: When issuing a revoke, should remove '
@@ -763,12 +833,6 @@ class _RunAndHoldDictElement(object):
         Forward retry message to all others that I asked to perform a
         run_and_hold for me.
         '''
-
-        # FIXME see below
-        fixme_msg = '\n\nFIXME: need to fill in endpoint notify_retry '
-        fixme_msg += 'code in RunAndHoldDictElement'
-        print fixme_msg
-
         self.endpoint_to_notify_or_commit_to.lock()        
 
         for endpoint in self.endpoint_to_notify_or_commit_to:
@@ -3375,6 +3439,29 @@ class _Endpoint(object):
 
         return False
 
+    def _notify_run_and_hold_backout(
+        self,parent_context_id,priority,endpoint_initiator_id,
+        waldo_initiator_id):
+        '''
+        @param{int} parent_context_id
+        @param{float} priority ---
+        @param{float} endpoint_initiator_id ---
+        @param{float} waldo_initiator_id ---
+
+        This gets called whenever we are asked to abort a currently
+        executing run and hold call.
+        
+        It puts an element in the run_and_hold_retry_abort loop.  When
+        that element is read, it kills any active events that ran as a
+        result of that run and hold call.  It also forwards the
+        backout request further back.
+        '''
+
+        self._run_and_hold_retry_abort_loop.put(
+            (_RetryAbortLoopServicer.ABORT,
+             parent_context_id,
+             priority,endpoint_initiator_id,waldo_initiator_id))             
+        
     def _notify_run_and_hold_retry(
         self,parent_context_id,priority,endpoint_initiator_id,
         waldo_initiator_id):
@@ -3412,6 +3499,9 @@ class _Endpoint(object):
         Does so by spinning up a new thread so that does not block the
         caller.
         '''
+        # FIXME: this should probably eventaully use the same code
+        # path as _notify_run_and_hold_retry (ie, thrgouh the
+        # run_and_hold_retry_abort_loop).
         run_and_hold_commit_thread = _RunAndHoldCommitThread(
             parent_context_id,priority,endpoint_initiator_id,
             waldo_initiator_id,self)
