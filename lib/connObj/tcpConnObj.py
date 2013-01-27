@@ -76,7 +76,8 @@ class TCPConnectionObject(ConnectionObject):
 
     @staticmethod
     def accept(host_listen_on,port_listen_on,cb,
-               endpoint_constructor,reservation_manager,waldo_id,
+               endpoint_constructor,waldo_timeout_excep,
+               reservation_manager, waldo_id,
                endpoint_id_generator,*args):
         '''
         @param{String} host_listen_on --- The ip/host to listen for
@@ -90,6 +91,9 @@ class TCPConnectionObject(ConnectionObject):
         manager object, and any additional arguments specified in its
         oncreate method.
 
+        @param{Exception} waldo_timeout_excep --- The exception to
+        throw when one endpoint times out.
+        
         @param{ReservationManager object} reservation_manager --- Gets
         passed in to endpoint's constructor.
 
@@ -115,6 +119,7 @@ class TCPConnectionObject(ConnectionObject):
             tcp_conn_obj = TCPConnectionObject(None,None,conn)
 
             created_endpoint = endpoint_constructor(
+                waldo_timeout_excep,
                 tcp_conn_obj,reservation_manager,waldo_id,
                 endpoint_id_generator(),*args)
 

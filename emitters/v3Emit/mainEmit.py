@@ -1153,8 +1153,6 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             first = False
 
 
-
-
             # want to return the actual list or map in the callback
             # rather than the _WaldoList or _WaldoMap
             if (TypeCheck.templateUtil.isMapType(arg_node.type) or

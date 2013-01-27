@@ -21,6 +21,12 @@ class WaldoModuleExcep (Exception):
     def __str__(self):
         return repr(self.value)
 
+class WaldoTimeoutExcep (Exception):
+    def __init__(self,err_msg):
+        self.value = err_msg
+    def __str__(self):
+        return repr(self.value)
+    
 # used to synchronize all external variables
 _reservation_manager = None
 _initialized_called = False
@@ -81,6 +87,7 @@ def connect(*args,**kwargs):
         _endpoint_id = _generate_uuid()
         
         new_obj = constructor(
+            WaldoTimeoutExcep,
             tcp_conn_obj,_reservation_manager,
             _waldo_id,_endpoint_id,*args)
         
@@ -140,7 +147,7 @@ def accept(*args,**kwargs):
         # listen for incoming client connections on host_name:port_no
         connObj.TCPConnectionObject.accept(
             host_name,port,connected_callback,
-            constructor,_reservation_manager,_waldo_id,
+            constructor,WaldoTimeoutExcep,_reservation_manager,_waldo_id,
             _generate_uuid,*args)
     else:
         excep_msg = 'Waldo.accept only allows TCP connections.  Other '
