@@ -20,6 +20,8 @@ _REFRESH_RECEIVE_FUNCTION_NAME = '_Text';
 
 HOLD_FUNC_PREFIX = '_hold_func_prefix_'
 
+TIMEOUT_PARAMETER = 10
+
 
 def construct_hold_func_name(func_name,endpoint_name):
     return  HOLD_FUNC_PREFIX +  endpoint_name + '_' + func_name

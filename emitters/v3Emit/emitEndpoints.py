@@ -479,7 +479,11 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
     # now block until we know that the event has been
     # completed....can block by waiting on thread safe return
     # queue.
-    _returnQueueElement = _actEvent.returnQueue.get();
+    try:
+        _returnQueueElement = _actEvent.returnQueue.get(
+            True,""" + str(emitUtils.TIMEOUT_PARAMETER) + r""")
+    except Queue.Empty:
+        raise self._waldo_timeout_excep('Timed out') 
     return _returnQueueElement.returnVal;
 
 
@@ -599,13 +603,13 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
 
 
 
-    initMethod = 'def __init__(self,_connectionObj,_reservationManager,_waldo_id,_endpoint_id,';
+    initMethod = 'def __init__(self,_waldo_timeout_excep,_connectionObj,_reservationManager,_waldo_id,_endpoint_id,';
     for argName in onCreateArgumentNames:
         initMethod += argName + ',';
     initMethod += '):\n\n'
     
     initMethodBody = '';
-    
+
     # create glob shared read vars dict: keeps track of number of
     # running events that are using one of the endpoint global or
     # shared variables for a read operation.
@@ -707,7 +711,8 @@ _Endpoint.__init__(
     self,_connectionObj,_globSharedReadVars,_globSharedWriteVars,
     _lastIdAssigned,_myPriority,_theirPriority,_context,
     _execFromToInternalFuncDict,_prototypeEventsDict, '%s',
-    _externalGlobals, _reservationManager,_waldo_id,_endpoint_id);
+    _externalGlobals, _reservationManager,_waldo_id,_endpoint_id,
+    _waldo_timeout_excep);
 ''' % endpointName;
     
     initMethodBody += '\n\n';
@@ -939,9 +944,6 @@ class _MessageFuncNodeShared(object):
         emitContext.msgSequenceNode = self.msgSeqNode;
         emitContext.msgSeqFuncNode = self.msgFuncNode;
 
-# lkjs;
-# # probably will want to put the var names for return types into emitContext here;
-# lkjs;
         
         if self.msgFuncNode.label== AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
             return self._emitSend(endpointName,astRootNode,fdepDict,emitContext);

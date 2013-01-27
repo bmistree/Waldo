@@ -3096,7 +3096,8 @@ class _Endpoint(object):
     def __init__ (self,connectionObj,globSharedReadVars,globSharedWriteVars,
                   lastIdAssigned,myPriority,theirPriority,context,
                   execFromToInternalFuncDict, prototypeEventsDict,endpointName,
-                  externalGlobals,reservationManager,waldo_id,endpoint_id):
+                  externalGlobals,reservationManager,waldo_id,endpoint_id,
+                  waldo_timeout_excep):
         '''
         @param {dict} externalGlobals --- used for reference counting
         reads and writes to external variables.  (ie, the variable
@@ -3108,7 +3109,11 @@ class _Endpoint(object):
 
         @param {float} endpoint_id --- Unique per connection
         
+        @param {Exception} waldo_timeout_excep --- WaldoTimeoutExcep:
+        supposed to be raised when an operation times out.
+        
         '''
+        self._waldo_timeout_excep = waldo_timeout_excep
                   
 
         # <_ActiveEvent.id:_ActiveEventDictElement (which contains
