@@ -418,7 +418,7 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             is_rhs_func_call = True
             # must put result in
             returner += rhs_emitted
-            emit
+
             returner += r'''
 _r_and_h_result = _threadsafe_queue_result
 if _r_and_h_result == None:
@@ -432,11 +432,32 @@ else:
 '''
 
         elif to_assign_from_node.label == AST_FUNCTION_CALL:
-            returner += '_tmp_return_array = '
-            returner += rhs_emitted
-            returner += '\n'
-            is_rhs_func_call = True
 
+            # FIXME: it's really ugly that I'm doing things this way
+            # with a really ugly, hidden _tmp_return_array.
+            
+            # two cases:
+            #   1: If assigning from a public/private function call,
+            #      then we need to specify the tmp_return_array here.
+            #   2: If we are executing a sequence send function call,
+            #      then we know the sequence send code will take care
+            #      of populating _tmp_return_array for us, and we do
+            #      not need to do anything.
+            is_rhs_func_call = True
+            
+            func_name_node = to_assign_from_node.children[0]
+            func_name = func_name_node.value
+            
+            if not _isMessageSend(func_name,endpointName,fdepDict):
+                # case 1
+                returner += '_tmp_return_array = '
+                returner += rhs_emitted
+                returner += '\n'
+            else:
+                # case 2
+                returner += rhs_emitted + '\n'
+
+            
         for assign_to_counter in range(0,len(to_assign_to_tuple_node.children)):
 
             individual_assign_to_node = to_assign_to_tuple_node.children[assign_to_counter]
@@ -1033,6 +1054,21 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             returner += "\n# locks it is holding for event's variables, and also ";
             returner += "\n# to commit final context.\n";
             returner += '_context.messageSent = True;\n';
+
+            returner += '\n# To allow message send functions to \n'
+            returner += '# return, we must tell the message send function \n'
+            returner += '# which variables we are interested in receiving.\n'
+            returner += '# we load these into _context\'s waiting_returns_list.\n'
+            returner += '# @see signalMessageSequenceComplete.\n'
+            msg_send_return_names = _get_msg_send_func_returns(
+                funcName,endpointName,fdepDict)
+            
+            returner += '_context.waiting_returns_list = ['
+            for item_to_return in msg_send_return_names:
+                returner += '"' + item_to_return +  '",'
+            returner += ']'
+            returner += '\n'
+
             
             if emitContext.collisionFlag:
                 # we are trying to induce a collision for debugging
@@ -1156,7 +1192,12 @@ def _messageSendBlockingCode():
     return """
 # wait on message reception notification from other side
 # and check if we had to postpone the event
-_msgReceivedContextId = _context.msgReceivedQueue.get();
+# wait on message reception notification from other side
+# and check if we had to postpone the event
+_tupler = _context.msgReceivedQueue.get();
+_msgReceivedContextId = _tupler[0]
+_tmp_return_array = _tupler[1]
+
 if _msgReceivedContextId != _context.id:
     raise _PostponeException(); # event postponed
 
@@ -1182,7 +1223,32 @@ def _findFunctionDepFromFDepDict(func_name,endpoint_name,fdep_dict):
 
     return None
 
-    
+
+def _get_msg_send_func_returns(func_name,endpoint_name,fdep_dict):
+    '''
+    @param {str} func_name --- The name of the message send function
+    name that we are trying to determine the returners for.
+
+    @returns{list<string>}
+
+    For the message send function named func_name, returns a list of
+    names for variables that the sequence initiated by the call to the
+    message send function is supposed to return.
+    '''
+
+    #### DEBUG
+    if not _isMessageSend(func_name,endpoint_name,fdep_dict):
+        err_msg = '\nBehram error: cannot determine the msg send '
+        err_msg += 'return type for a function that is not a msg '
+        err_msg += 'send.\n'
+        print err_msg
+        assert(False)
+    #### END DEBUG
+        
+    fdep = _findFunctionDepFromFDepDict(
+        func_name,endpoint_name,fdep_dict)
+    return fdep.msg_send_returns
+
 
 def _isMessageSend(funcName,endpointName,fdepDict):
     '''
@@ -1198,8 +1264,7 @@ def _isMessageSend(funcName,endpointName,fdepDict):
         print(errMsg);
         assert(False);
 
-    # check if the node is labeled as
-    # a message sequence node.
+    # check if the node is labeled as a message sequence node.
     return fdep.funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
 
 

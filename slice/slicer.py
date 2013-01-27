@@ -418,7 +418,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         msgBodyNode = node.children[3];
         for childNode in msgBodyNode.children:
             slicer(childNode,functionDeps,typeStack);
-
+            
     elif node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # sliceMsgSeqSecNode already handles adding a function dep and
         # context.  so do not need to do that here.
@@ -561,6 +561,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             
             # does not matter which type stack annotates the node
             typeStack1.annotateNode(identifierNode,identifierName);
+            
 
 
         # now grab any arguments to first function and insert them as
@@ -583,6 +584,25 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             # does not matter which type stack annotates the node
             typeStack2.annotateNode(identifierNode,identifierName);
 
+        return_node_names = []
+        first_func_return_nodes = firstFuncNode.children[4]
+        for decl_arg_node in first_func_return_nodes.children:
+            type_node = decl_arg_node.children[0]
+            is_mute = isMutable(typeNode)
+            
+            id_name_node = decl_arg_node.children[1]
+            id_name = id_name_node.value
+            new_ntt = typeStack1.addIdentifier(
+                id_name, is_mute, type_node,
+                TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)
+
+            typeStack2.addIdentifierAsNtt(new_ntt)
+            typeStack2.annotateNode(id_name_node,id_name)
+            return_node_names.append(
+                id_name_node.sliceAnnotationName)
+            
+
+            
         # want to ensure that the first function has all the
         # read/write dependencies.  Need to know which type stack to
         # use for it.
@@ -638,6 +658,10 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
 
             typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL,fDep);
             if funcIndex == 0:
+                # for the msg send function, needs to know the
+                # annotation names of nodes it might return.  
+                fDep.msg_send_returns = return_node_names
+                
                 # special case the first function so that it contains
                 # all the initializations of sequence globals
                 for declGlobNode in msgSeqGlobalsNode.children:
