@@ -938,6 +938,10 @@ class _MessageFuncNodeShared(object):
         # determine where to jump to.
         emitContext.msgSequenceNode = self.msgSeqNode;
         emitContext.msgSeqFuncNode = self.msgFuncNode;
+
+# lkjs;
+# # probably will want to put the var names for return types into emitContext here;
+# lkjs;
         
         if self.msgFuncNode.label== AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
             return self._emitSend(endpointName,astRootNode,fdepDict,emitContext);
@@ -1118,7 +1122,7 @@ if _context == None:
         return returner;
 
 
-    
+
     def _emitSend(self,endpointName,astRootNode,fdepDict,emitContext):
         '''
         Should only be called when seqGlobalNode is a message send
