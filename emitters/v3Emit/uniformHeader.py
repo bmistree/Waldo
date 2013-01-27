@@ -1806,7 +1806,6 @@ class _Context(object):
 
         self.heldExternalReferences = [];
         
-            
     def signalMessageSequenceComplete(
         self,contextId,onCompleteFunctionToAppendToContext,
         onCompleteKey,endpoint):
@@ -1815,6 +1814,18 @@ class _Context(object):
         context that we should be using.  If the executing code is
         using a context with this same id, it continues.  Otherwise,
         it abandons execution immediately. 
+
+
+        Note: self.waiting_returns_list has type {list} --- Each element is a string
+        representing the connection-unique name of a sequence global
+        that we want to return from our context id.  We put each of
+        these variables in a return array that gets passed, with
+        contextId into msgReceiveQueue.
+        
+        eg. self.waiting_returns_list might be ['kj__a'].  Then we look up
+        'kj__a' in our seqGlobals. and pass its value back through
+        when putting.
+
         
         When the other side completes a message sequence that is part
         of a function, or when this side finishes a message sequence,
@@ -1831,12 +1842,37 @@ class _Context(object):
             self.addOnComplete(
                 onCompleteFunctionToAppendToContext,
                 onCompleteKey,endpoint);        
+
+
+        to_return_array = []
+        for seq_glob_name in self.waiting_returns_list:
+            #### DEBUG
+            if self.seqGlobals == None:
+                err_msg = '\nBehram error: trying to return '
+                err_msg += 'a sequence global when had none '
+                err_msg += 'part of context.\n'
+                print err_msg
+                assert(False)
+
+
+            if seq_glob_name not in self.seqGlobals:
+                err_msg = '\nBehram error: trying to return '
+                err_msg += 'a sequence global that did not '
+                err_msg += 'exist in context.\n'
+                print err_msg
+                assert (False)
+            #### END DEBUG
+
+            to_return_array.append(
+                self.seqGlobals[seq_glob_name])
         
+            
         # execution thread that had been blocking on reading queue now
         # can continue.  depending on result of this read, it keeps
         # executing or raises a _PostponeException that the caller
         # catches.
-        self.msgReceivedQueue.put(contextId);
+        self.msgReceivedQueue.put(
+            (contextId,to_return_array));
 
 
     def addOnComplete(self,funcToExec,onCompleteFuncKey,endpoint):
@@ -4018,7 +4054,7 @@ class _Endpoint(object):
         # its execution.
         actEventContext.signalMessageSequenceComplete(
             actEventContext.id,onCompleteFunctionToAppendToContext,
-            onCompleteKey,self);
+            onCompleteKey,self)
 
 
     def _writeMsgSelf(self,msgDictionary):
@@ -4313,7 +4349,7 @@ class _Endpoint(object):
             
             self._lock();
 
-            actEvent = self._prototypeEventsDict[eventName].generateActiveEvent();
+            actEvent = self._prototypeEventsDict[eventName].generateActiveEvent(None);
             actEvent.set_event_attributes_from_msg(
                 eventId,priority,event_initiator_waldo_id,
                 event_initiator_endpoint_id)
