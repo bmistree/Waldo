@@ -106,21 +106,24 @@ _REFRESH_RECEIVE_FUNCTION_NAME = '%s';
        emitUtils._REFRESH_RECEIVE_FUNCTION_NAME) + r"""
 
 
+
 class _RetryAbortLoopServicer(threading.Thread):
     RETRY = 'retry'
     ABORT = 'abort'
-    
     '''
-    Reads from threadsafe_queue.  Each item read is a 4-tuple: <a,b,c,d>.
+    Reads from threadsafe_queue.  Each item read is a 5-tuple: <a,b,c,d,e>.
 
       a {String} --- either RETRY or ABORT
-      b {float}  --- priority
-      c {float}  --- endpoint initiator id
-      d {float}  --- waldo initiator id
+      b {float}  --- context id
+      c {float}  --- priority
+      d {float}  --- endpoint initiator id
+      e {float}  --- waldo initiator id
 
     Looks up the event and either aborts the event (forwarding on the
-    abort message) or it 
-    '''
+    abort message) or it retries the event if the event previously did
+    not succeed or forwards the event on if it did.
+    '''    
+
     def __init__(self,threadsafe_queue,endpoint):
         self.threadsafe_queue = threadsafe_queue
         self.endpoint = endpoint
@@ -128,7 +131,101 @@ class _RetryAbortLoopServicer(threading.Thread):
         self.daemon = True
         
     def run(self):
-        print '\nGot into run of retryabortloopservicer\n'
+
+        while True:
+            cmd_tuple = self.threadsafe_queue.get()
+
+            cmd = cmd_tuple[0]
+            if cmd == self.RETRY:
+                self.process_retry_cmd(cmd_tuple)
+            elif cmd == self.ABORT:
+                self.process_abort_cmd(cmd_tuple)
+            #### DEBUG                
+            else:
+
+                err_msg = '\nBehram error: unknown command tuple '
+                err_msg += 'passed into retry abort loop servicers.\n'
+                print err_msg
+                assert(False)
+            #### END DEBUG
+
+    def process_retry_cmd(self,cmd_tuple):
+        '''
+        1: If command did not succeed here, then retry it.
+
+        2: Tell everyone else to retry too
+        '''
+        context_id = cmd_tuple[1]
+        priority = cmd_tuple[2]
+        endpoint_initiator_id = cmd_tuple[3]
+        waldo_initiator_id = cmd_tuple[4]
+        
+        # to determine if event had been running, lookup in runandholddict
+        self.endpoint._lock()
+
+        ### PART 1 from comments above: retry any command that did not
+        ### succeed here.
+        
+        failed_run_and_holds = self.endpoint._failed_run_and_holds
+
+        # warning: the size of failed_run_and_holds may change in this
+        # loop because calls to _run_and_hold_local may append to it.
+        # for this reason, getting indices to check over early.  I did
+        # a test, and I don't think this is strictly necessary, but
+        # can't be too safe.
+        indices_to_del_from_failed = []
+        indices_to_check_over = range(0,len(failed_run_and_holds))
+        for act_event_index in indices_to_check_over:
+            act_event = failed_run_and_holds[act_event_index]
+
+            if self.act_event_match(
+                act_event,context_id,priority,endpoint_initiator_id,
+                waldo_initiator_id):
+
+                # re-entrantness of endpoint locks means that it is
+                # okay to run this from here.
+                self.endpoint._run_and_hold_local(
+                    act_event.return_queue,act_event.reservation_result_request_queue,
+                    act_event.to_run,act_event.parent_context_id,act_event.priority,
+                    act_event.event_initiator_waldo_id,
+                    act_event.event_initiator_endpoint_id,
+                    *act_event.args)
+                
+                indices_to_del_from_failed.append(act_event_index)
+
+        for to_del_index in reversed(indices_to_del_from_failed):
+            del failed_run_and_holds[to_del_index]
+
+
+        ### PART 2 from comments above: tell everyone else to retry too.
+        ### get dict element and tell it to forward....
+        dict_element = self.endpoint._loop_detector.get(
+            context_id,priority,endpoint_initiator_id,
+            waldo_initiator_id)
+
+        if dict_element != None:
+            dict_element.forward_retry()
+
+        self.endpoint._unlock()            
+
+
+    def act_event_match(
+        self,active_event,parent_context_id,priority,endpoint_initiator_id,
+        waldo_initiator_id):
+        '''
+        @returns{Bool} --- True if the active event, active_event, has
+        the same parent_context_id, priority, endpoint_initiator_id,
+        and waldo_initiator_id as the other arguments passed in.
+        '''
+
+        return ((active_event.parent_context_id == parent_context_id) and
+                (active_event.priority == priority) and
+                (active_event.event_initiator_waldo_id == waldo_initiator_id) and
+                (active_event.event_initiator_endpoint_id == endpoint_initiator_id))
+
+    
+    def process_abort_cmd(self,cmd_tuple):
+        print '\nBehram error: still must process abort cmd tuples.\n'
 
 
 class _RestartEventThread(threading.Thread):
@@ -678,6 +775,7 @@ class _RunAndHoldDictElement(object):
             # this is the endpoint that we issued our run and holds
             # on...not the endpoint we issued them from.
             endpoint._notify_run_and_hold_retry(
+                self.context_id,
                 self.act_event.priority,
                 self.act_event.event_initiator_endpoint_id,
                 self.act_event.event_initiator_waldo_id)
@@ -3247,7 +3345,16 @@ class _Endpoint(object):
         self._run_and_hold_retry_abort_loop = Queue.Queue()
         retry_abort_loop_service = _RetryAbortLoopServicer(
             self._run_and_hold_retry_abort_loop,self)
-        
+        retry_abort_loop_service.start()
+            
+        # when someone requests a run and hold from us and we can't
+        # schedule it (because someone else is holding the resources,
+        # then append it to this list.  When we get a request to
+        # retry, remove the request from this list and retry it.  when
+        # we get an abort, remove the request from this list with no
+        # retry.
+        self._failed_run_and_holds = []
+
     ##### helper functions #####
 
     def _i_initiated_run_and_hold(
@@ -3267,25 +3374,26 @@ class _Endpoint(object):
             return True
 
         return False
-        
+
     def _notify_run_and_hold_retry(
-        self,priority,endpoint_initiator_id,waldo_initiator_id):
+        self,parent_context_id,priority,endpoint_initiator_id,
+        waldo_initiator_id):
         '''
         @param{float} priority ---
         @param{float} endpoint_initiator_id ---
         @param{float} waldo_initiator_id ---
 
-        This gets called whenever a run and hold 
+        This gets called whenever we are asked to retry a run and hold
+        call.  It puts an element in the run_and_hold_retry_abort
+        loop.  When that element is read, it tries to reschedule any
+        paused events and forwards on the run and hold request to
+        endpoints it called a run and hold on.
         '''
 
         self._run_and_hold_retry_abort_loop.put(
             (_RetryAbortLoopServicer.RETRY,
+             parent_context_id,
              priority,endpoint_initiator_id,waldo_initiator_id))
-        # 1 forward the retry on.
-        
-        # 2 actually retry...
-        print '\nMust finish the notify_run_and_hold_retry method.\n'
-
         
     def _notify_run_and_hold_commit(
         self,parent_context_id,priority,endpoint_initiator_id,
@@ -3422,6 +3530,16 @@ class _Endpoint(object):
             to_run_internal_name,priority,waldo_initiator_id,endpoint_initiator_id,
             parent_context_id)
 
+        ### FIXME: it is gross to do this here... it is necessary to
+        ### keep track of all information necessary to retry the event
+        ### in the case that process_retry_cmd is called.
+        active_event.return_queue = return_queue
+        active_event.reservation_result_request_queue = reservation_request_result_queue
+        active_event.to_run = to_run
+        active_event.parent_context_id = parent_context_id
+        active_event.args = args
+
+
         # wraps the reservation request result with ancillary
         # information necessary for other side to determine which
         # request this is a response for.
@@ -3435,7 +3553,10 @@ class _Endpoint(object):
             self._activeEventDict[active_event.id] = _ActiveEventDictElement(
                 active_event,context)
             active_event.active = True
-            
+        else:
+            self._failed_run_and_holds.append(active_event)            
+
+
         reservation_request_result_queue.put(run_and_hold_request_result)
         self._unlock()
 
@@ -3459,7 +3580,7 @@ class _Endpoint(object):
                 to_execute,active_event,context, *args)
             run_and_hold.start()
 
-    
+        return res_request_result.succeeded
 
 
     def _process_run_and_hold_request_result(
