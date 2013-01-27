@@ -105,6 +105,18 @@ _REFRESH_RECEIVE_FUNCTION_NAME = '%s';
        emitUtils._REFRESH_SEND_FUNCTION_NAME,
        emitUtils._REFRESH_RECEIVE_FUNCTION_NAME) + r"""
 
+class _RestartEventThread(threading.Thread):
+    def __init__(self,endpoint):
+        self.endpoint = endpoint
+        threading.Thread.__init__(self)
+        self.daemon = True
+    def run(self):
+        # FIXME: make this programmable.  It is the time to wait before retrying
+        # when a run and hold was blocked.
+        _time.sleep(.1)
+        self.endpoint._tryNextEvent()
+    
+
 def _deepCopy(srcDict,dstDict,fieldNamesToSkipCopy=None):
     '''
     @param {dict} fieldNamesToSkipCopy --- If not None, then if a key
@@ -1440,7 +1452,11 @@ class _ExecuteActiveEventThread(threading.Thread):
             self.endpoint._reservationManager.release(
                 self.extsToRead,
                 self.extsToWrite,
-                []);
+                [],
+                self.toExecEvent.priority,
+                self.toExecEvent.event_initiator_waldo_id,
+                self.toExecEvent.event_initiator_endpoint_id,
+                self.toExecEvent.id)
 
             
 class _PostponeException(Exception):
@@ -3501,6 +3517,13 @@ class _Endpoint(object):
                         # a safe way to garbage collect run and hold
                         # dict elements.
                         dict_element.revoke()
+                        
+                        # wait some time and then try to restart the event.
+                        # FIXME: this is gross.  is there a way to make it event
+                        # based, or at least not hardcode the time to wait?
+                        restart_event_thread = _RestartEventThread(self)
+                        restart_event_thread.start()
+                        
 
                     else:
                         # CASE 1b from the comments at the top of the function
@@ -3734,6 +3757,11 @@ class _Endpoint(object):
         actEvent = actEventDictObj.actEvent;
         actEventContext = actEventDictObj.eventContext;
 
+        # this way, when revoke an active event, queues waiting on
+        # values from that event get read from and restarted.
+        for r_and_h_queue in actEventContext.run_and_hold_queues:
+            r_and_h_queue.put(None)
+        
         # note that this function will take care of removing the
         # active event from active event dict as well as releasing
         # locks on read/write variables.

@@ -1000,7 +1000,15 @@ else:
 
     to_return += ')\n'
     to_return += '_threadsafe_queue_result = _threadsafe_queue.get()\n'
-    
+    to_return += r'''
+if _threadsafe_queue_result == None:
+    fixme_msg = '\nBehram fixme: must fill in code for '
+    fixme_msg += 'case of revoking from threadsafe queue\n'
+    print fixme_msg
+    # postponing execution because other side had nothing to return.
+    raise _PostponeException()
+'''
+
     return to_return
     
 
