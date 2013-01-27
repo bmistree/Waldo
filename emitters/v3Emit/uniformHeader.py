@@ -1544,6 +1544,15 @@ class _Context(object):
         # then we will write None to every threadsafe queue in this
         # array.
         self.run_and_hold_queues = []
+
+        # this collects return statements from message send sequence
+        # steps.  any time we call a sequence, we first put the names
+        # of sequence globals that we want returned to us in to this
+        # list.  when the sequence returns, the context runs through
+        # this list and grabs the named sequence globals from itself
+        # when returning
+        self.waiting_returns_list = []
+        
         
     def notateWritten(self,extId):
         '''
