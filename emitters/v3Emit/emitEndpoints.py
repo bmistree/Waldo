@@ -458,7 +458,7 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
     _actEvent.setToExecuteFrom('""" + functionEventKey + r"""'); # when postponed, will return to here
     _actEvent.setArgsArray(_functionArgs);
 
-    _eventAdded,_context = _actEvent.addEventToEndpointIfCan();
+    _eventAdded,_context,_res_req_results = _actEvent.addEventToEndpointIfCan();
 
     if not _eventAdded:
         # conflict with globals/shareds .... insert event into
