@@ -8,7 +8,7 @@ IDENTIFIER_TOKEN = "IDENTIFIER";
 reserved = {
     'Endpoint' : 'ENDPOINT',
     'Sequences': 'TRACES',
-    'Shared': 'SHARED',
+    'Peered': 'SHARED',
     'Function': 'FUNCTION',
     'List': 'LIST',
     'Map': 'MAP',
