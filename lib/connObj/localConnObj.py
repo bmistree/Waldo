@@ -40,7 +40,7 @@ class LocalConnectionObject(ConnectionObject):
     SIM_HOW_LONG_TO_DELAY = .005;
     
     def __init__(self):
-        print('\nBehram error: probably should have some locks around somewhere\n');
+        # print('\nBehram error: probably should have some locks around somewhere\n');
         self.endpoint1 = None;
         self.endpoint2 = None;
 

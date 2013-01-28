@@ -3,7 +3,7 @@
 
 CONNECTION_TYPE_TCP = 0
 # not yet supported
-# CONNECTION_TYPE_LOCAL = 1
+CONNECTION_TYPE_LOCAL = 1
 # CONNECTION_TYPE_NO_CONNECTION = 2
 
 
@@ -77,14 +77,14 @@ def connect(*args,**kwargs):
     connection_obj_type = kwargs.get('connection_type',CONNECTION_TYPE_TCP)
     constructor = kwargs['constructor']
     connected_callback = kwargs.get('connected_callback',None)
-    
+    _endpoint_id = _generate_uuid()    
     
     if connection_obj_type == CONNECTION_TYPE_TCP:
         port = kwargs.get('port',_DEFAULT_TCP_ACCEPT_WALDO_PORT)
         host_name = kwargs.get('host',_DEFAULT_TCP_ACCEPT_WALDO_HOST)
 
         tcp_conn_obj = connObj.TCPConnectionObject(host_name,port,None)
-        _endpoint_id = _generate_uuid()
+
         
         new_obj = constructor(
             WaldoTimeoutExcep,
@@ -92,7 +92,16 @@ def connect(*args,**kwargs):
             _waldo_id,_endpoint_id,*args)
         
         return new_obj
+    
+    elif connection_obj_type == CONNECTION_TYPE_LOCAL:
+        new_obj = constructor(
+            WaldoTimeoutExcep,
+            connObj.LocalConnectionObject(),_reservation_manager,
+            _waldo_id,_endpoint_id, *args)
+        return new_obj
         
+
+    
     excep_msg = 'Waldo.connect only allows TCP connections.  Other '
     excep_msg += 'connection types may be added in the future.'
     raise WaldoModuleExcep(excep_msg)

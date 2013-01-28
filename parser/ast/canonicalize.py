@@ -139,7 +139,6 @@ def move_sequence_function_args(ast_node):
             assert(False)
         # end debug
             
-        
         # remove func_args_node from msg sequence
         del msg_seq_node.children[1]
 
