@@ -22,15 +22,15 @@ class _ExternalLockedRecord(object):
         Returns true if all _ExternalLockedRecord's elements are the
         same as passed this object's fields
         '''
-        if ((reentrant.priority == priority) and
-            (reentrant.waldo_initiator_id == waldo_initiator_id) and
-            (reentrant.endpoint_initiator_id == endpoint_initiator_id) and
-            (reentrant.act_event_id == event_id) and
-            (reentrant.external_id == external_id)):
+        if ((self.priority == priority) and
+            (self.waldo_initiator_id == waldo_initiator_id) and
+            (self.endpoint_initiator_id == endpoint_initiator_id) and
+            (self.act_event_id == event_id) and
+            (self.external_id == external_id)):
             return False
         
         return True
-        
+    
 
 class _ReservationRequestResult(object):
     def __init__(
