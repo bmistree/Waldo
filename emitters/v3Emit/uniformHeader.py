@@ -4092,17 +4092,9 @@ class _Endpoint(object):
             r_and_h_queue.put(None)
 
 
+        # Potential fixme: 
         fixme_msg = '\nBehram warn: may need to add code for backing '
         fixme_msg += 'out partials.\n'
-        print fixme_msg
-        # dict_element = self._loop_detector.remove_if_exists(
-        #     current_context.id,
-        #     active_event.priority,
-        #     active_event.event_initiator_endpoint_id,
-        #     active_event.event_initiator_waldo_id)
-
-        # if dict_element != None:
-        #     dict_element.notify_backout()
 
         return active_event.cancelActiveEvent();
 
