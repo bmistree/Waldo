@@ -1117,7 +1117,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             #set my type as that returned by the function
             node.type = func_match_obj.getReturnType();
-
+            
             #####check the argument types passed into the function
             funcArgList = func_arg_list_node.children;
             allArgTypes = [];
@@ -1125,16 +1125,18 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 s.typeCheck(progText,typeStack,avoidFunctionObjects);
                 allArgTypes.append(s.type);
 
-            argError = func_match_obj.argMatchError(allArgTypes,node);
+            argError = None
+            if not is_wildcard_type(node.type):
+                argError = func_match_obj.argMatchError(allArgTypes,node);
 
-            if (argError != None):
+            if argError != None:
                 #means that the types of the arguments passed into the
                 #function do not match the arguments that the function
                 #is declared with.
 
                 argError.checkValid(); # just for debugging
 
-                if (argError.errorType == FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH):
+                if argError.errorType == FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH:
                     #means that expected a different number of
                     #arguments than what we called it with.
                     # FIXE: unclear if func_name will have relevant value
@@ -1423,17 +1425,19 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             return;
 
         if not is_true_false(rhs.type):
-            errMsg = '\nError whe checking ' + expressionType + '. ';
+            errMsg = '\nError when checking ' + expressionType + '. ';
             errMsg += 'Right-hand side expression must be '
-            errMsg += dict_type_to_str(TYPE_BOOL)
+            errMsg += dict_type_to_str(
+                generate_type_as_dict(TYPE_BOOL))            
             errMsg += '.  Instead, has type '
             errMsg += dict_type_to_str(rhs.type) + '\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
-        if (lhs.type != TYPE_BOOL):
-            errMsg = '\nError whe checking ' + expressionType + '. ';
+        if not is_true_false(lhs.type):
+            errMsg = '\nError when checking ' + expressionType + '. ';
             errMsg += 'Left-hand side expression must be '
-            errMsg += dict_type_to_str(TYPE_BOOL)
+            errMsg += dict_type_to_str(
+                generate_type_as_dict(TYPE_BOOL))
             errMsg += '.  Instead, has type '
             errMsg += dict_type_to_str(lhs.type) + '\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
