@@ -139,6 +139,11 @@ class FunctionDeps(object):
 
     def addFuncReads(self,reads):
         for read in reads:
+            ### FIXME: this is gross: for some reason on bank code
+            ### getting a read that is a list.  instead of debugging
+            ### it for now, taking easy way out...
+            if isinstance(read,list):
+                read = read[0]            
             self.mReadSet[read.id] = read;
             
     def jsonize(self,funcDepsDict):
@@ -756,6 +761,11 @@ class VarReadSet(object):
         @param {array of ntt-s} reads.
         '''
         for read in reads:
+            ### FIXME: this is gross: for some reason on bank code
+            ### getting a read that is a list.  instead of debugging
+            ### it for now, taking easy way out...
+            if isinstance(read,list):
+                read = read[0]
             self.mReads[read.id] = read;
 
 
