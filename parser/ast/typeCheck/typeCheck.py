@@ -1140,9 +1140,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     # FIXE: unclear if func_name will have relevant value
                     errMsg = '\nError calling function "' + func_name + '".  ';
                     errMsg += func_name + ' requires '
-                    errMsg += dict_type_to_str(argError.expected)
+                    errMsg += str(argError.expected)
                     errMsg += ' arguments.  Instead, you provided '
-                    errMsg += dict_type_to_str(argError.provided)
+                    errMsg += str(argError.provided)
                     errMsg += '.\n';
 
                     errorFunction(errMsg,argError.astNodes,argError.lineNos,progText); 
