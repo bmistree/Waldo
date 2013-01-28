@@ -408,13 +408,53 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             endpointName,to_assign_from_node,fdepDict,emitContext)
 
         is_rhs_func_call = False
-        if to_assign_from_node.label == AST_FUNCTION_CALL:
-            returner += '_tmp_return_array = '
-            returner += rhs_emitted
-            returner += '\n'
+
+        # if to_assign_from_node.label == AST_ENDPOINT_FUNCTION_CALL:
+        if TypeCheck.templateUtil.is_wildcard_type(to_assign_from_node.type):
+            # FIXME: check above should check if call is an endpoint
+            # function call, not if have wildcard type.  Right now,
+            # wildcard type is a placeholder for endpoint function
+            # call though.
             is_rhs_func_call = True
+            # must put result in
+            returner += rhs_emitted
 
+            returner += r'''
+_r_and_h_result = _threadsafe_queue_result
+if _r_and_h_result == None:
+    # postponing execution because other side had nothing to return.
+    raise _PostponeException()
+else:
+    _tmp_return_array = _r_and_h_result.result
+'''
 
+        elif to_assign_from_node.label == AST_FUNCTION_CALL:
+
+            # FIXME: it's really ugly that I'm doing things this way
+            # with a really ugly, hidden _tmp_return_array.
+            
+            # two cases:
+            #   1: If assigning from a public/private function call,
+            #      then we need to specify the tmp_return_array here.
+            #   2: If we are executing a sequence send function call,
+            #      then we know the sequence send code will take care
+            #      of populating _tmp_return_array for us, and we do
+            #      not need to do anything.
+            is_rhs_func_call = True
+            
+            func_name_node = to_assign_from_node.children[0]
+            func_name = func_name_node.value
+            
+            if not _isMessageSend(func_name,endpointName,fdepDict):
+                # case 1
+                returner += '_tmp_return_array = '
+                returner += rhs_emitted
+                returner += '\n'
+            else:
+                # case 2
+                returner += rhs_emitted + '\n'
+
+            
         for assign_to_counter in range(0,len(to_assign_to_tuple_node.children)):
 
             individual_assign_to_node = to_assign_to_tuple_node.children[assign_to_counter]
@@ -486,6 +526,7 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
                 returner += ')'
                 
             else:
+                # not a bracket statement assignment
                 returner += emit(
                     endpointName,individual_assign_to_node,fdepDict,emitContext)
                 returner += ' = ';
@@ -495,7 +536,6 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
                     returner += rhs_emitted
             returner += '\n'
         
-
             
     elif astNode.label == AST_PRINT:
         toPrintNode = astNode.children[0];
@@ -538,6 +578,12 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
             if len(astNode.children) == 3:
                 # includes initialization information
                 initializationNode = astNode.children[2];
+                # FIXME: need to handle initiatlizations from function calls properly
+                if initializationNode.label == AST_FUNCTION_CALL:
+                    fixme_msg = '\nBehram fixme: must handle declarations '
+                    fixme_msg += 'initialized with endpoint function calls '
+                    fixme_msg += 'properly.\n'
+                    print fixme_msg
                 returner += ' = ';
                 returner += emit(endpointName,initializationNode,fdepDict,emitContext);
             else:
@@ -695,7 +741,7 @@ else:
     _ext_obj = %s
 
 if _ext_obj == None:
-    # FIXME: runtime error lkjs;
+    # FIXME: runtime error 
     err_msg = 'Runtime error.  Trying to copy to %s before '
     err_msg += 'it was assigned to.  Aborting.'
     print(err_msg)
@@ -746,7 +792,7 @@ if self._isExternalVarId(_ext_from_var_id):
 
     # would equal none if trying to assign from an external
     # that had not already been written to.
-    # FIXME runtime error lkjs;
+    # FIXME runtime error
     err_msg = 'Runtime error.  Trying to assign from external '
     err_msg += '%s before %s had ever been assigned to.  Aborting.'
     print(err_msg)
@@ -850,6 +896,124 @@ def _getBinaryOperatorLabelDict():
 
 
 
+def emit_endpoint_function_call(
+    endpoint_name,func_call_node,fdep_dict,emit_context):
+    
+    func_dot_name_node = func_call_node.children[0]
+    func_arg_list_node = func_call_node.children[1]
+
+    left_of_dot_name_node = func_dot_name_node.children[0]
+    left_of_dot_name = emit(
+        endpoint_name,left_of_dot_name_node,fdep_dict,emit_context)
+
+    right_of_dot_name_node = func_dot_name_node.children[1]
+    right_of_dot_name = right_of_dot_name_node.value
+
+    to_return = '# endpoint that we issue run and hold on puts the \n'
+    to_return += '# result of the operation in _threadsafe_queue, \n'
+    to_return += '# wrapped as a _RunAndHoldResult object.\n'
+    to_return += '# Note, if we read None from the queue, that \n'
+    to_return += '# means that we revoked the run and hold call \n'
+    to_return += '# and that we should therefore backout.\n'
+    
+    to_return += '_threadsafe_queue = Queue.Queue()\n'
+    to_return += '_context.run_and_hold_queues.append(_threadsafe_queue)\n'
+
+
+
+    to_return += '''
+self._lock()
+# add run and hold request to loop detector here
+
+_waldo_initiator_id = _actEvent.event_initiator_waldo_id
+_endpoint_initiator_id = _actEvent.event_initiator_endpoint_id
+_priority = _actEvent.priority
+
+if not self._loop_detector.exists(
+    _context.id,_priority,_endpoint_initiator_id,
+    _waldo_initiator_id):
+
+    # create a dict element in loop detector.  access this
+    # element later when receive reservation request results.
+    # for now, creating a dummy reservation request result for
+    # dict element.
+    _dummy_reservation_request_result =(
+        self._reservationManager.empty_reservation_request_result(True))
+
+    _dict_element = self._loop_detector.add_run_and_hold(
+        _context.id,_actEvent,_dummy_reservation_request_result)
+else:
+    _dict_element = self._loop_detector.get(
+        _context.id,_priority,_endpoint_initiator_id,
+        _waldo_initiator_id)
+
+'''
+
+    to_return +=  (
+        '_dict_element.add_run_and_hold_on_endpoint(%s)\n' %
+        left_of_dot_name
+        )
+    to_return += 'self._unlock()\n'
+    
+    to_return += left_of_dot_name + '._run_and_hold_local('
+    to_return += '''
+    _threadsafe_queue, # will read result of the run and hold
+                       # operation from this queue.
+    self._run_and_hold_queue, # other side puts its
+                              # reservation request result
+                              # object in this queue.
+    "''' + right_of_dot_name + '".strip(),'
+    to_return += '''
+    _context.id,
+    _actEvent.priority,
+    _actEvent.event_initiator_waldo_id,
+    _actEvent.event_initiator_endpoint_id,
+'''
+
+
+    # emit arguments for function
+    for arg_node in func_arg_list_node.children:
+        # means that the function wasn't a function object being
+        # called
+
+        # need to know whether we need the value of the external or
+        # the external object itself so that call to emit argument
+        # knows what to do
+
+        fixme_msg = '\nFIXME: must know type signature of endpoint '
+        fixme_msg += 'function being called so can determine whether '
+        fixme_msg += 'to emit external reference or the value of the '
+        fixme_msg += 'external.\n'
+        print fixme_msg
+        emit_context.external_arg_in_func_call = True
+        # emitContext.external_arg_in_func_call = (type_node.external != None)
+        to_return += '    ' + emit(endpoint_name,arg_node,fdep_dict,emit_context)
+        to_return += ','
+        emit_context.external_arg_in_func_call = False # just reset to False 
+
+    to_return += ')\n'
+    to_return += '_threadsafe_queue_result = _threadsafe_queue.get()\n'
+    to_return += r'''
+if _threadsafe_queue_result == None:
+    fixme_msg = '\nBehram fixme: must fill in code for '
+    fixme_msg += 'case of revoking from threadsafe queue\n'
+    print fixme_msg
+    # postponing execution because other side had nothing to return.
+    raise _PostponeException()
+'''
+
+    return to_return
+    
+
+def is_endpoint_function_call(func_call_node):
+    func_name_node = func_call_node.children[0]
+    # FIXME: currently, the only way to test if it's a function call
+    # on an endpoint object is if the func name is a dot statement
+    if func_name_node.label == AST_DOT_STATEMENT:
+        return True
+    return False
+
+
 def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     '''
     @param{AstNode} funcCallNode --- Should have label
@@ -869,7 +1033,12 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
     funcName = funcNameNode.value;
     funcArgListNode = funcCallNode.children[1];
 
-    
+    # testing for if it's an endpoint function call
+    if is_endpoint_function_call(funcCallNode):
+        returner += emit_endpoint_function_call(
+            endpointName,funcCallNode,fdepDict,emitContext)
+        return returner
+
     if funcNameNode.sliceAnnotationName != None:
         # means that this is a function object that we are making call
         # on....use its reference either as a shared, arg, global, etc.
@@ -886,6 +1055,21 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             returner += "\n# locks it is holding for event's variables, and also ";
             returner += "\n# to commit final context.\n";
             returner += '_context.messageSent = True;\n';
+
+            returner += '\n# To allow message send functions to \n'
+            returner += '# return, we must tell the message send function \n'
+            returner += '# which variables we are interested in receiving.\n'
+            returner += '# we load these into _context\'s waiting_returns_list.\n'
+            returner += '# @see signalMessageSequenceComplete.\n'
+            msg_send_return_names = _get_msg_send_func_returns(
+                funcName,endpointName,fdepDict)
+            
+            returner += '_context.waiting_returns_list = ['
+            for item_to_return in msg_send_return_names:
+                returner += '"' + item_to_return +  '",'
+            returner += ']'
+            returner += '\n'
+
             
             if emitContext.collisionFlag:
                 # we are trying to induce a collision for debugging
@@ -970,8 +1154,6 @@ def _emitFunctionCall(endpointName,funcCallNode,fdepDict,emitContext):
             first = False
 
 
-
-
             # want to return the actual list or map in the callback
             # rather than the _WaldoList or _WaldoMap
             if (TypeCheck.templateUtil.isMapType(arg_node.type) or
@@ -1009,7 +1191,12 @@ def _messageSendBlockingCode():
     return """
 # wait on message reception notification from other side
 # and check if we had to postpone the event
-_msgReceivedContextId = _context.msgReceivedQueue.get();
+# wait on message reception notification from other side
+# and check if we had to postpone the event
+_tupler = _context.msgReceivedQueue.get();
+_msgReceivedContextId = _tupler[0]
+_tmp_return_array = _tupler[1]
+
 if _msgReceivedContextId != _context.id:
     raise _PostponeException(); # event postponed
 
@@ -1035,7 +1222,32 @@ def _findFunctionDepFromFDepDict(func_name,endpoint_name,fdep_dict):
 
     return None
 
-    
+
+def _get_msg_send_func_returns(func_name,endpoint_name,fdep_dict):
+    '''
+    @param {str} func_name --- The name of the message send function
+    name that we are trying to determine the returners for.
+
+    @returns{list<string>}
+
+    For the message send function named func_name, returns a list of
+    names for variables that the sequence initiated by the call to the
+    message send function is supposed to return.
+    '''
+
+    #### DEBUG
+    if not _isMessageSend(func_name,endpoint_name,fdep_dict):
+        err_msg = '\nBehram error: cannot determine the msg send '
+        err_msg += 'return type for a function that is not a msg '
+        err_msg += 'send.\n'
+        print err_msg
+        assert(False)
+    #### END DEBUG
+        
+    fdep = _findFunctionDepFromFDepDict(
+        func_name,endpoint_name,fdep_dict)
+    return fdep.msg_send_returns
+
 
 def _isMessageSend(funcName,endpointName,fdepDict):
     '''
@@ -1047,12 +1259,11 @@ def _isMessageSend(funcName,endpointName,fdepDict):
         # should always be able to find the function if have performed
         # type checking correctly.
         errMsg = '\nBehram error: unable to find function in fdepDict when ';
-        errMsg += 'checking if it is a message send.  Abortin.\n';
+        errMsg += 'checking if it is a message send.  Aborting.\n';
         print(errMsg);
         assert(False);
 
-    # check if the node is labeled as
-    # a message sequence node.
+    # check if the node is labeled as a message sequence node.
     return fdep.funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
 
 

@@ -69,6 +69,12 @@ class FunctionDeps(object):
 
         self.isOnComplete = isOnComplete;
 
+        # FIXME: the below is ugly.
+        # message send functions are now able to return values.  to
+        # accomodate this, store the names of the global values that
+        # the sequence is supposed to return in msg_send_returns.
+        self.msg_send_returns = []
+        
         
     def addReturnStatement(self,ntt):
         self.returnStatements[ntt.id] = ntt;

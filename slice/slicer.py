@@ -103,7 +103,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         # be added as function arguments.
         typeStack.pushContext(
             TypeStack.IDENTIFIER_TYPE_FUNCTION_ARGUMENT,fDep);
-        declArgsNode = node.children[funcDeclArgsIndex];
+        declArgsNode = node.children[funcDeclArgsIndex]
         slicer(declArgsNode,functionDeps,typeStack);
 
         # when go through function body, need to change label as of
@@ -223,8 +223,20 @@ def slicer(node,functionDeps=None,typeStack=None):
 
         
     elif node.label == AST_FUNCTION_CALL:
-        funcCallNameNode = node.children[0];
-        funcCallName = funcCallNameNode.value;
+        funcCallNameNode = node.children[0]
+        funcCallName = funcCallNameNode.value
+
+        func_on_endpoint_object = False
+        if funcCallNameNode.label == AST_DOT_STATEMENT:
+            func_on_endpoint_object = True
+            # need to annotate the endpoint passed in.  (We do the
+            # same thing in the AST_IDENTIFIER section, but that won't
+            # get called this way because the function call sidesteps
+            # going through the identifier calls
+            pre_dot_node = funcCallNameNode.children[0]
+            identifier_name = pre_dot_node.value            
+            typeStack.annotateNode(pre_dot_node,identifier_name)
+
         funcArgListNode = node.children[1];
         
         # an aray of arrays....each element array contains the reads
@@ -239,18 +251,40 @@ def slicer(node,functionDeps=None,typeStack=None):
             
             funcArgReads.append(argumentReads);
 
-        idExists = typeStack.getIdentifier(funcCallName);
-        if idExists == None:
-            # means that we are making a function call to an existing
-            # function, not to a function object.
-            typeStack.addFuncCall(
-                typeStack.hashFuncName(funcCallName),funcArgReads);
-        else:
-            # means that this is a function call being made on a
-            # function object.  annotate the func call node
-            typeStack.addFuncObjectCall(idExists) # idExists is an ntt
-            typeStack.annotateNode(funcCallNameNode,funcCallName);
 
+        if func_on_endpoint_object:
+            # the function is being called off of an endpoint object:
+            # ie, endpt.func(), rather than being called from a
+            # function object or from being called just as a function,
+            # eg., some_func()
+
+            # BIG FIXME:
+            # notate the endpoint that the function is being called on
+            # as a write.  and all function arguments passed to it as
+            # a dependent read.  This is probably not the best thing
+            # to do long term.  Better to import and use type
+            # checking.
+            ntt = typeStack.getIdentifier(identifier_name)
+            typeStack.addToVarReadSet(ntt)
+            typeStack.addReadsToVarReadSet(ntt,funcArgReads)
+
+        else:
+            # the function call is either on a function object or a
+            # function that was defined on a locally defined function
+            # object.
+            idExists = typeStack.getIdentifier(funcCallName);
+            if idExists == None:
+                # means that we are making a function call to an existing
+                # function, not to a function object.
+                typeStack.addFuncCall(
+                    typeStack.hashFuncName(funcCallName),funcArgReads)
+            else:
+                # means that this is a function call being made on a
+                # function object.  annotate the func call node
+                typeStack.addFuncObjectCall(idExists) # idExists is an ntt
+                typeStack.annotateNode(funcCallNameNode,funcCallName)
+
+            
 
     elif node.label == AST_ASSIGNMENT_STATEMENT:
 
@@ -362,6 +396,7 @@ def slicer(node,functionDeps=None,typeStack=None):
             typeNode = child.children[0];
             nameNode = child.children[1];
             argName = nameNode.value;
+
             ntt = typeStack.addIdentifier(argName,
                                           isMutable(typeNode),
                                           typeNode,
@@ -383,7 +418,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         msgBodyNode = node.children[3];
         for childNode in msgBodyNode.children:
             slicer(childNode,functionDeps,typeStack);
-
+            
     elif node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # sliceMsgSeqSecNode already handles adding a function dep and
         # context.  so do not need to do that here.
@@ -526,6 +561,7 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             
             # does not matter which type stack annotates the node
             typeStack1.annotateNode(identifierNode,identifierName);
+            
 
 
         # now grab any arguments to first function and insert them as
@@ -548,6 +584,25 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
             # does not matter which type stack annotates the node
             typeStack2.annotateNode(identifierNode,identifierName);
 
+        return_node_names = []
+        first_func_return_nodes = firstFuncNode.children[4]
+        for decl_arg_node in first_func_return_nodes.children:
+            type_node = decl_arg_node.children[0]
+            is_mute = isMutable(typeNode)
+            
+            id_name_node = decl_arg_node.children[1]
+            id_name = id_name_node.value
+            new_ntt = typeStack1.addIdentifier(
+                id_name, is_mute, type_node,
+                TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT)
+
+            typeStack2.addIdentifierAsNtt(new_ntt)
+            typeStack2.annotateNode(id_name_node,id_name)
+            return_node_names.append(
+                id_name_node.sliceAnnotationName)
+            
+
+            
         # want to ensure that the first function has all the
         # read/write dependencies.  Need to know which type stack to
         # use for it.
@@ -603,6 +658,10 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
 
             typeStack.pushContext(TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL,fDep);
             if funcIndex == 0:
+                # for the msg send function, needs to know the
+                # annotation names of nodes it might return.  
+                fDep.msg_send_returns = return_node_names
+                
                 # special case the first function so that it contains
                 # all the initializations of sequence globals
                 for declGlobNode in msgSeqGlobalsNode.children:

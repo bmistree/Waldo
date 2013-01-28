@@ -18,6 +18,14 @@ _REFRESH_RECEIVE_KEY = '______REFRESH_RECEIVE_REQUEST_____';
 _REFRESH_SEND_FUNCTION_NAME = '_refresh';
 _REFRESH_RECEIVE_FUNCTION_NAME = '_Text';
 
+HOLD_FUNC_PREFIX = '_hold_func_prefix_'
+
+TIMEOUT_PARAMETER = 10
+
+
+def construct_hold_func_name(func_name,endpoint_name):
+    return  HOLD_FUNC_PREFIX +  endpoint_name + '_' + func_name
+
 
 def indentString(string,indentAmount):
     '''
@@ -117,7 +125,20 @@ def getDefaultValueFromDeclNode(astDeclNode):
         # initialize a user-defined struct
         returner = templateUtil.get_struct_name_from_type(typeLabel)
         returner += '()'
+    elif templateUtil.is_endpoint(typeLabel):
+        
+        # FIXME: see below.  Should use a proper initializer for
+        # endpoint object.
+        # warn_msg = '\nBehram warn: in emitUtils.py, emitting a default '
+        # warn_msg += 'value of None for Endpoint type.\n'
+        # print warn_msg
+        returner = 'None'
     else:
+
+        print '\n\n'
+        print typeLabel 
+        print '\n\n'
+        
         errMsg = '\nBehram error: unrecognized type name when writing ';
         errMsg += 'default value for node.\n';
         print(errMsg);
@@ -268,7 +289,6 @@ class EmitContext(object):
         self.msgSeqFuncNode = None;
 
         self.suppress_get_on_external = False
-
 
         
         # We need to know whether we want to pass in the value

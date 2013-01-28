@@ -148,6 +148,7 @@ class TypeStack(object):
             errMsg += 'without and endpoint name.\n';
             print(errMsg);
             assert(False);
+
         return self.mEndpointName + '_-_-_' + funcName;
 
     def onCompleteHashFuncName(

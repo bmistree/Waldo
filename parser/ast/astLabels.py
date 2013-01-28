@@ -134,6 +134,7 @@ TYPE_FUNCTION = 'Function';
 TYPE_LIST = 'List';
 TYPE_MAP = 'Map';
 TYPE_STRUCT = 'Struct'
+TYPE_ENDPOINT = 'Endpoint'
 
 TYPE_RETURNED_TUPLE = 'Tuple'
 
@@ -154,3 +155,5 @@ AST_MESSAGE_SEND_SEQUENCE_FUNCTION = 'MessageSendSequenceFunction';
 AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTIONS = 'MessageReceiveSequenceFunctions';
 AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION = 'MessageReceiveSequenceFunction';
 
+# endpoint function call
+TYPE_ENDPOINT_FUNCTION_CALL = 'EndpointFunctionCall'

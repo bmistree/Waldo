@@ -454,11 +454,11 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
     self._lock(); # locking at this point, because call to
                   # generateActiveEvent, uses the committed dict.
 
-    _actEvent = self._prototypeEventsDict['""" + functionEventKey + r"""'].generateActiveEvent();
+    _actEvent = self._prototypeEventsDict['""" + functionEventKey + r"""'].generateActiveEvent(None)
     _actEvent.setToExecuteFrom('""" + functionEventKey + r"""'); # when postponed, will return to here
     _actEvent.setArgsArray(_functionArgs);
 
-    _eventAdded,_context = _actEvent.addEventToEndpointIfCan();
+    _eventAdded,_context,_res_req_results = _actEvent.addEventToEndpointIfCan();
 
     if not _eventAdded:
         # conflict with globals/shareds .... insert event into
@@ -479,7 +479,11 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_FIRST_FROM_EXTERNAL:
     # now block until we know that the event has been
     # completed....can block by waiting on thread safe return
     # queue.
-    _returnQueueElement = _actEvent.returnQueue.get();
+    try:
+        _returnQueueElement = _actEvent.returnQueue.get(
+            True,""" + str(emitUtils.TIMEOUT_PARAMETER) + r""")
+    except Queue.Empty:
+        raise self._waldo_timeout_excep('Timed out') 
     return _returnQueueElement.returnVal;
 
 
@@ -512,11 +516,63 @@ if _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_RESUME_POSTPONE:
     return;
 elif _callType == _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED:
     return [None];
+
 """;
         
     returner += emitUtils.indentString(funcBody,1);
+
+    #if we're emitting a public function, we must emit its twin run
+    #and hold function
+    returner += _emit_run_and_hold(
+        funcNode,endpointName,astRootNode,fdepDict,emitContext)
+    
     return returner;
     
+
+def _emit_run_and_hold(
+    func_node,endpoint_name,ast_root_node,fdep_ict,emit_context):
+    '''
+    @param {AstNode} funcNode --- Should be the root node of the
+    function we're trying to emit.  only valid labels are oncreate,
+    public, private, message send, message receive.
+    
+    @param {String} endpointName --- The name of the endpoint that
+    we're emitting this function for.
+    
+    @param {AstNode} astRootNode --- The root ast node of the entire
+    program.
+    '''
+
+    to_return = ''
+    if func_node.label != AST_PUBLIC_FUNCTION:
+        # only need to emit run and holds for public functions
+        return to_return
+
+    func_name_node = func_node.children[0]
+    func_name = func_name_node.value
+    func_arguments = _getArgumentNamesFromFuncNode(func_node);
+    
+
+    # handle function signature
+    emitted_func_name = emitUtils.construct_hold_func_name(
+        func_name,endpoint_name)
+    func_head = 'def %s(self,_active_event,_context,*args):\n' % emitted_func_name
+
+    # handle function body, which just calls internal method of public
+    # function.
+    func_body = 'return self.'
+    func_body += _convertSrcFuncNameToInternal(func_name)
+    func_body += '''(
+    _Endpoint._FUNCTION_ARGUMENT_CONTROL_INTERNALLY_CALLED,
+    _active_event,
+    _context,
+    *args )
+
+'''
+
+    # indent + return
+    to_return += func_head + emitUtils.indentString(func_body,1);
+    return to_return
 
     
 
@@ -547,13 +603,13 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
 
 
 
-    initMethod = 'def __init__(self,_connectionObj,_reservationManager,';
+    initMethod = 'def __init__(self,_waldo_timeout_excep,_connectionObj,_reservationManager,_waldo_id,_endpoint_id,';
     for argName in onCreateArgumentNames:
         initMethod += argName + ',';
     initMethod += '):\n\n'
     
     initMethodBody = '';
-    
+
     # create glob shared read vars dict: keeps track of number of
     # running events that are using one of the endpoint global or
     # shared variables for a read operation.
@@ -561,9 +617,9 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
     for sharedVarName in sharedVariableNames:
         # each starts at 0 because there is no outstanding event that
         # is using the variable.
-        globSharedVarsDict [ "'" + sharedVarName + "'"] = '0';
+        globSharedVarsDict [ "'" + sharedVarName + "'"] = '[]';
     for endpointVarName in endpointVariableNames:
-        globSharedVarsDict [ "'" + endpointVarName + "'"] = '0';
+        globSharedVarsDict [ "'" + endpointVarName + "'"] = '[]';
 
     initMethodBody += '''
 # keeps track of the number of outstanding events that
@@ -594,11 +650,11 @@ def _emitInit(endpointName,astRootNode,fdepDict,whichEndpoint,emitContext):
 # used to resolve which side will back out its changes when
 # there is a conflict.  (Currently though, these are unused.)
 '''
-    initMethodBody += '_myPriority = ' + str(evenOddEventId) + ';\n';
-    initMethodBody += '_theirPriority = ' + str(otherEvenOdd) + ';\n\n';
-
+    initMethodBody += '_myPriority = ' + str(evenOddEventId) + '\n'
+    initMethodBody += '_theirPriority = ' + str(otherEvenOdd) + '\n'
+    
     # handle context
-    initMethodBody += '_context = _Context(self._externalStore,\'%s\');\n' % endpointName;
+    initMethodBody += '_context = _Context(self._externalStore,\'%s\',self);\n' % endpointName;
 
     # create a prototype events dict for this endpoint to copy active
     # events from.
@@ -655,7 +711,8 @@ _Endpoint.__init__(
     self,_connectionObj,_globSharedReadVars,_globSharedWriteVars,
     _lastIdAssigned,_myPriority,_theirPriority,_context,
     _execFromToInternalFuncDict,_prototypeEventsDict, '%s',
-    _externalGlobals, _reservationManager);
+    _externalGlobals, _reservationManager,_waldo_id,_endpoint_id,
+    _waldo_timeout_excep);
 ''' % endpointName;
     
     initMethodBody += '\n\n';
@@ -886,6 +943,7 @@ class _MessageFuncNodeShared(object):
         # determine where to jump to.
         emitContext.msgSequenceNode = self.msgSeqNode;
         emitContext.msgSeqFuncNode = self.msgFuncNode;
+
         
         if self.msgFuncNode.label== AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
             return self._emitSend(endpointName,astRootNode,fdepDict,emitContext);
@@ -1066,7 +1124,7 @@ if _context == None:
         return returner;
 
 
-    
+
     def _emitSend(self,endpointName,astRootNode,fdepDict,emitContext):
         '''
         Should only be called when seqGlobalNode is a message send

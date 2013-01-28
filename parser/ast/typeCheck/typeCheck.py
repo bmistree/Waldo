@@ -498,6 +498,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                           progText);
 
         if is_empty_list(toAppendToNode.type):
+            if is_wildcard_type(toAppendNode.type):
+                # FIXME: cannot determine what to do for the case
+                # where we're appending a wild card to an empty list.
+                warn_msg = '\nBehram error: for a list, appended a wildcard.\n'
+                print (warn_msg)
             node.type = buildListTypeSignatureFromTypeName(toAppendNode.type);
         else:
             node.type = toAppendToNode.type;
@@ -927,6 +932,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         pre_dot_node.typeCheck(progText,typeStack,avoidFunctionObjects)
 
+        
         # do not type check post_dot_node.  For a.b, b will not be in
         # scope.  only fully-qualified a.b will be.
         # post_dot_node.typeCheck(progText,typeStack,avoidFunctionObjects)
@@ -986,7 +992,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 err_msg += post_dot_node_name + ' for you to access.'
                 errorFunction(
                     err_msg,[pre_dot_node],[pre_dot_node.lineNo],progText)
-                
+
+        elif is_endpoint(pre_dot_node.type):
+            # FIXME: temporarily assigning result of endpoint node
+            # function.  Require type checking for endpoint function
+            # call
+
+            node.type = build_endpoint_func_type_signature(
+                pre_dot_node,progText,typeStack)
+            
         else:
             err_msg = 'Error, when calling a.b, a must be a '
             err_msg += 'struct, list, map, or text type.  Instead, you '
@@ -1002,7 +1016,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # second pattern: <struct var>.func_name(<args>)
         # unsupported: func_call()() (ie, a function returns a func,
         # which we then call
-        
+
         func_name_node = node.children[0]
         func_name_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         node.lineNo = func_name_node.lineNo
@@ -1081,11 +1095,18 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             # rule that can only call passed-in functions in
             # oncomplete section.
             if is_function_object and (not typeStack.inOnComplete):
-                errMsg = '\nError trying to call function object.  ';
-                errMsg += 'Can only call function object in onComplete ';
-                errMsg += 'section.\n';
-                errorFunction(errMsg,[node],[node.lineNo],progText);
-
+                # FIXME: should distinguish calling external functions
+                # from calling functions on endpoint objects here and
+                # re-enable the error below.
+                
+                # errMsg = '\nError trying to call function object.  ';
+                # errMsg += 'Can only call function object in onComplete ';
+                # errMsg += 'section.\n';
+                # errMsg = '\nWARNING in typeCheck.py.  ' + errMsg
+                # print errMsg
+                # errorFunction(errMsg,[node],[node.lineNo],progText);
+                pass
+                
 
             if func_match_obj.element.astNode.label == AST_ONCREATE_FUNCTION:
                 errMsg = '\nError trying to call OnCreate function.  ';
@@ -1675,7 +1696,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 typeCheckError.lineNos,progText)
 
             
-    elif(node.label == AST_IDENTIFIER):
+    elif node.label == AST_IDENTIFIER:
         name = node.value;
         typer,ctrldBy = typeStack.getIdentifierType(name);
         if (typer == None):
@@ -1902,22 +1923,47 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         assert(False)
 
 
-    if ((node.label == AST_PUBLIC_FUNCTION) or (node.label == AST_PRIVATE_FUNCTION)):
-        #get declared return type (only applicable for functions and public functions)
-        node.children[1].typeCheck(progText,typeStack,avoidFunctionObjects);
-        returnType = node.children[1].type;
+    if ((node.label == AST_PUBLIC_FUNCTION) or
+        (node.label == AST_PRIVATE_FUNCTION)):
+        
+        # get declared return type (only applicable for functions and
+        # public functions)
+        return_type_node = node.children[1]
+        return_type_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        returnType = return_type_node.type;
         argDeclIndex = 2;
         funcNameIndex = 0;
+        
     elif(node.label == AST_ONCREATE_FUNCTION):
         returnType = generate_returned_tuple_type(
             [ generate_type_as_dict(TYPE_NOTHING) ] )
         argDeclIndex = 1;
         funcNameIndex = 0;
+        
     elif node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
         argDeclIndex = 2;
-        returnType = generate_returned_tuple_type(
-            [ generate_type_as_dict(TYPE_NOTHING) ] )        
+
+        # return_type_node has label functiondeclarglist.  for each
+        # element, grab the return type and append it to a list to
+        # create an overall return type for calling the send message
+        # function.
+        return_type_node = node.children[4]
+        return_type_tuple_list = []
+        for func_decl_arg_node in return_type_node.children:
+            type_node = func_decl_arg_node.children[0]
+            type_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+            
+            return_type_tuple_list.append(
+                type_node.type)
+            
+        if len(return_type_tuple_list) == 0:
+            return_type_tuple_list.append(
+                generate_type_as_dict(TYPE_NOTHING) )
+        
+        returnType = return_type_tuple_list
+
         funcNameIndex = 1;
+
     elif node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # does not take any arguments
         argDeclIndex = None;
@@ -2001,8 +2047,16 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
        * unknown list and map types.  For instance, if rhsType was
          produced from [], and lhsType was List(element: Number),
          would not produce error.
-       
+
+    Note: no type mismatch if rhsType is a wildcard.
     '''
+
+    if is_wildcard_type(rhsType):
+        warn_msg = '\nBehram warn: using wildcard type for development '
+        warn_msg += 'code while type checking.\n'
+        print warn_msg
+        return False
+    
     errorTrue = False;
     if (lhsType != rhsType):
         errorTrue = True;
@@ -2434,6 +2488,7 @@ def _check_single_assign(
         err_line_nos = [to_assign_to_node.lineNo]
         
         errorFunction(err_msg,err_nodes,err_line_nos,progText)
+        
     elif to_assign_to_node.label == AST_BRACKET_STATEMENT:
         # check that the root of the bracket statement is an
         # identifier
@@ -2453,19 +2508,31 @@ def _check_single_assign(
     rhs_type = rhs_node.type
     
     if rhs_node.label == AST_FUNCTION_CALL:
+        
+        if not is_wildcard_type(rhs_type):
+            if isinstance(rhs_type, dict):
+                #### FIXME: ugly code because can't figure out whether
+                #### type of function call is {Type: [...]} or [..].
+                #### handling both cases in an ugly manner.
+                actual_type = rhs_type['Type']
+                if isinstance(actual_type,list):
+                    rhs_type = actual_type
 
-        if to_assign_to_index >= len(rhs_node.type):
-            err_msg = 'Error in assignment statement.  The function '
-            err_msg += 'call on the right only returns ' + len(rhs_node.type)
-            err_msg += ' element.  But you are trying to assign to at least '
-            err_msg += str(to_assign_to_index + 1) + ' elements.'
+        
+            if to_assign_to_index >= len(rhs_type):
+                err_msg = 'Error in assignment statement.  The function '
+                err_msg += 'call on the right only returns ' + len(rhs_node.type)
+                err_msg += ' element.  But you are trying to assign to at least '
+                err_msg += str(to_assign_to_index + 1) + ' elements.'
+
+                err_nodes = [to_assign_to_node]
+                err_line_nos = [to_assign_to_node.lineNo]
+                errorFunction(err_msg,err_nodes,err_line_nos,progText)
+
+
+            rhs_type = rhs_type[to_assign_to_index]
+
             
-            err_nodes = [to_assign_to_node]
-            err_line_nos = [to_assign_to_node.lineNo]
-            errorFunction(err_msg,err_nodes,err_line_nos,progText)
-
-        rhs_type = rhs_type[to_assign_to_index]
-
     if checkTypeMismatch(to_assign_to_node,lhs_type,rhs_type,typeStack,progText):
         err_msg = 'Error in assignment statement.  '
 
