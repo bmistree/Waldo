@@ -230,7 +230,8 @@ class ReservationManager(object):
 
                 if not read_lock_record.reentrant(
                     writeId,priority,waldo_initiator_id,
-                    endpoint_initiator_id):
+                    endpoint_initiator_id,event_id):
+                    
                     lock_acquire_succeed = False
 
                     
