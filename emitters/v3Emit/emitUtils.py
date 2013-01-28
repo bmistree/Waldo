@@ -126,9 +126,12 @@ def getDefaultValueFromDeclNode(astDeclNode):
         returner = templateUtil.get_struct_name_from_type(typeLabel)
         returner += '()'
     elif templateUtil.is_endpoint(typeLabel):
-        warn_msg = '\nBehram warn: in emitUtils.py, emitting a default '
-        warn_msg += 'value of None for Endpoint type.\n'
-        print warn_msg
+        
+        # FIXME: see below.  Should use a proper initializer for
+        # endpoint object.
+        # warn_msg = '\nBehram warn: in emitUtils.py, emitting a default '
+        # warn_msg += 'value of None for Endpoint type.\n'
+        # print warn_msg
         returner = 'None'
     else:
 

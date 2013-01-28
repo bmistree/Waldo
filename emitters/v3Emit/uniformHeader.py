@@ -876,7 +876,7 @@ class _RunAndHoldDictElement(object):
         fixme_msg = '\nFIXME: When issuing a revoke, should remove '
         fixme_msg += ' the run and hold dict element.  Not doing so '
         fixme_msg += 'is a memory leak.\n'
-        print fixme_msg
+        # print fixme_msg
         self.state = self.STATE_SENT_REVOKE
 
 
@@ -3999,11 +3999,8 @@ class _Endpoint(object):
                     
             # copy over the seq globals
             if dummy_context.seqGlobals != None:
-                # FIXME: see below
-                warn_msg = '\nBehram FIXME: warning copying over sequence '
-                warn_msg += 'global variables for run and hold when re-using '
-                warn_msg += 'context.\n'
-                print warn_msg
+                # FIXME: potentially copying over sequence variables
+                # for run and hold if reuse context.
                 
                 for index in dummy_context.seqGlobals.keys():
                     if context_to_use.seqGlobals == None:

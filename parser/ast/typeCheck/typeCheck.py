@@ -995,10 +995,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         elif is_endpoint(pre_dot_node.type):
             # FIXME: temporarily assigning result of endpoint node
-            # function
-            fixme_msg = '\nFIXME: require type checking for '
-            fixme_msg += 'endpoint function call.\n'
-            print fixme_msg
+            # function.  Require type checking for endpoint function
+            # call
+
             node.type = build_endpoint_func_type_signature(
                 pre_dot_node,progText,typeStack)
             
@@ -1096,13 +1095,18 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             # rule that can only call passed-in functions in
             # oncomplete section.
             if is_function_object and (not typeStack.inOnComplete):
-                errMsg = '\nError trying to call function object.  ';
-                errMsg += 'Can only call function object in onComplete ';
-                errMsg += 'section.\n';
-                errMsg = '\nWARNING in typeCheck.py.  ' + errMsg
-                print errMsg
+                # FIXME: should distinguish calling external functions
+                # from calling functions on endpoint objects here and
+                # re-enable the error below.
+                
+                # errMsg = '\nError trying to call function object.  ';
+                # errMsg += 'Can only call function object in onComplete ';
+                # errMsg += 'section.\n';
+                # errMsg = '\nWARNING in typeCheck.py.  ' + errMsg
+                # print errMsg
                 # errorFunction(errMsg,[node],[node.lineNo],progText);
-
+                pass
+                
 
             if func_match_obj.element.astNode.label == AST_ONCREATE_FUNCTION:
                 errMsg = '\nError trying to call OnCreate function.  ';

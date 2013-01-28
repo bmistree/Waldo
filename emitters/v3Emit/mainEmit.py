@@ -422,9 +422,6 @@ def emit(endpointName,astNode,fdepDict,emitContext):
             returner += r'''
 _r_and_h_result = _threadsafe_queue_result
 if _r_and_h_result == None:
-    fixme_msg = '\nBehram fixme: must fill in code for '
-    fixme_msg += 'case of revoking from threadsafe queue\n'
-    print fixme_msg
     # postponing execution because other side had nothing to return.
     raise _PostponeException()
 else:
@@ -911,10 +908,6 @@ def emit_endpoint_function_call(
 
     right_of_dot_name_node = func_dot_name_node.children[1]
     right_of_dot_name = right_of_dot_name_node.value
-    
-    fixme_msg = '\nFIXME: must finish writing emit_endpoint_function_call '
-    fixme_msg += 'in mainEmity.py.\n'
-    print fixme_msg
 
     to_return = '# endpoint that we issue run and hold on puts the \n'
     to_return += '# result of the operation in _threadsafe_queue, \n'
