@@ -4262,20 +4262,11 @@ class _Endpoint(object):
         locks for event with id eventId and commit all data in the
         context contextData.
         '''
-        #### DEBUG
-        self._checkHasActiveEvent(eventId,'_processReleaseEventSentinel');
-        #### END DEBUG
-            
         self._lock();
 
-        #### DEBUG
-        if (not (eventId in self._activeEventDict)):
-            errMsg = '\nBehram error: Should only be asked ';
-            errMsg += 'to process a release event for an event ';
-            errMsg += 'we already have.\n';
-            print(errMsg);
-            assert(False);
-        #### END DEBUG
+        if not (eventId in self._activeEventDict):
+            self._unlock()
+            return
 
         # get active element from dict
         actEventElement = self._activeEventDict[eventId];
@@ -4851,7 +4842,7 @@ class _Endpoint(object):
 
         active_event = active_event_element.actEvent
         
-        r_and_h_reqeust_result =  _RunAndHoldRequestResult(
+        r_and_h_request_result =  _RunAndHoldRequestResult(
             reservation_request_result,
             active_event.event_initiator_waldo_id,
             active_event.event_initiator_endpoint_id,
