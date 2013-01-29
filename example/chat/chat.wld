@@ -9,11 +9,10 @@ Sequences{
 }
 
 
-// no shared data
-Shared
+
+Peered
 {
     Chatter controls Text chatter_name;
-    
     // could also include profile, etc. info if
     // wanted to.
 }
