@@ -391,7 +391,7 @@ def _deepCopy(srcDict,dstDict,fieldNamesToSkipCopy=None):
 
 
 def _value_deep_copy(to_copy):
-    to_return_str = pcikle.dumps(to_copy)
+    to_return_str = pickle.dumps(to_copy)
     return pickle.loads(to_return_str)
 
 class _EndpointDict(object):
