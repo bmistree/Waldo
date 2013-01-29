@@ -106,6 +106,15 @@ _REFRESH_RECEIVE_FUNCTION_NAME = '%s';
        emitUtils._REFRESH_RECEIVE_FUNCTION_NAME) + r"""
 
 
+def _text_assign(original_str, index, new_val):
+    to_return = ''
+    for i in range(0,len(original_str)):
+        to_add = original_str[i]
+        if i == index:
+            to_add = new_val
+        to_return += to_add
+    return to_return
+       
 
 class _RetryAbortLoopServicer(threading.Thread):
     RETRY = 'retry'

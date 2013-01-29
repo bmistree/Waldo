@@ -524,6 +524,26 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
                 else:
                     returner += rhs_emitted
                 returner += ')'
+            elif individual_assign_to_node.label == AST_BRACKET_STATEMENT:
+                # means that it is a text assignment....strings in
+                # python are immutable
+                str_name_node = individual_assign_to_node.children[0]
+                str_bracket_node = individual_assign_to_node.children[1]
+
+                str_var_name = emit(
+                    endpointName,str_name_node,fdepDict,emitContext)
+                str_bracket_name = emit(
+                    endpointName,str_bracket_node,fdepDict,emitContext)
+                
+                returner += str_var_name  + ' = _text_assign( '
+                returner += str_var_name + ',' + str_bracket_name + ', '
+
+                if is_rhs_func_call:
+                    returner += '_tmp_return_array[' + str(assign_to_counter) + ']'
+                else:
+                    returner += rhs_emitted
+                
+                returner += ')\n'
                 
             else:
                 # not a bracket statement assignment
