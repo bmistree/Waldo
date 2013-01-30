@@ -588,8 +588,8 @@ def sliceMsgSeqSecNode(msgSeqSecNode,functionDeps,typeStack1,typeStack2):
         first_func_return_nodes = firstFuncNode.children[4]
         for decl_arg_node in first_func_return_nodes.children:
             type_node = decl_arg_node.children[0]
-            is_mute = isMutable(typeNode)
-            
+            is_mute = isMutable(type_node)
+
             id_name_node = decl_arg_node.children[1]
             id_name = id_name_node.value
             new_ntt = typeStack1.addIdentifier(
