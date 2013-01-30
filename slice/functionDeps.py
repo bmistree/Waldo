@@ -143,6 +143,8 @@ class FunctionDeps(object):
             ### getting a read that is a list.  instead of debugging
             ### it for now, taking easy way out...
             if isinstance(read,list):
+                if len(read) == 0:
+                    return
                 read = read[0]            
             self.mReadSet[read.id] = read;
             
@@ -765,7 +767,10 @@ class VarReadSet(object):
             ### getting a read that is a list.  instead of debugging
             ### it for now, taking easy way out...
             if isinstance(read,list):
+                if len(read) == 0:
+                    return
                 read = read[0]
+
             self.mReads[read.id] = read;
 
 
