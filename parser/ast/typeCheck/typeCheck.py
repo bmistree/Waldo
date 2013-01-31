@@ -1459,25 +1459,27 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         errSoFar = False;
-        if ((not is_number(lhs.type)) and (not is_text(lhs.type))):
+        if ((not is_number(lhs.type)) and (not is_text(lhs.type)) and
+            (not is_wildcard_type(lhs.type))):
             errMsg = '\nError with PLUS expression.  ';
             errMsg += 'Left-hand side should be a Number or a String.  Instead, ';
             if (lhs.type == None):
                 errMsg += 'could not infer type.\n';
             else:
-                errMsg += 'inferred type ' + lhs.type + '.\n';
+                errMsg += 'inferred type ' + dict_type_to_str(lhs.type) + '.\n';
 
             errorFunction(errMsg, [node],[node.lineNo],progText);
             errSoFar = True;
 
-        if ((not is_number(rhs.type)) and (not is_text(rhs.type))):
+        if ((not is_number(rhs.type)) and (not is_text(rhs.type)) and
+            (not is_wildcard_type(rhs.type))):
             errMsg = '\nError with PLUS expression.  ';
             errMsg += 'Right-hand side should be a Number or a String.  Instead, ';
             if (lhs.type == None):
                 errMsg += 'could not infer type.\n';
             else:
-                errMsg += 'inferred type ' + rhs.type + '.\n';
-
+                errMsg += 'inferred type ' + dict_type_to_str(rhs.type) + '.\n';
+                
             errorFunction(errMsg, [node],[node.lineNo],progText);
             errSoFar = True;
 
@@ -1486,7 +1488,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (errSoFar):
             return;
 
-        if (rhs.type != lhs.type):
+        if ((rhs.type != lhs.type) and (not is_wildcard_type(rhs.type)) and
+            (not is_wildcard_type(lhs.type))):
             errMsg = '\nError with PLUS expression.  Both the left- and ';
             errMsg += 'right-hand sides should have the same type.  Instead, ';
             errMsg += 'the left-hand side has type '
@@ -1532,7 +1535,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        if (not is_number(lhs.type)):
+        if ((not is_number(lhs.type)) and
+            (not is_wildcard_type(lhs.type))):
             errMsg = '\nError with ' + expressionType + ' expression.  ';
             errMsg += 'Left-hand side should be a Number.  Instead, ';
             if (lhs.type == None):
@@ -1542,7 +1546,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
-        if (not is_number(rhs.type)):
+        if ((not is_number(rhs.type)) and
+            (not is_wildcard_type(lhs.type))):
             errMsg = '\nError with ' + expressionType + ' expression.  ';
             errMsg += 'Right-hand side should be a Number.  Instead, ';
             if (lhs.type == None):
