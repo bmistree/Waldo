@@ -1824,6 +1824,10 @@ class _Context(object):
         # when returning
         self.waiting_returns_list = []
         
+        # This keeps track of the data that the other side sent in its
+        # last message.  This way, can only send changed values back
+        # across the network.
+        self._other_side_context_data = None
         
     def notateWritten(self,extId):
         '''
@@ -1980,7 +1984,7 @@ class _Context(object):
         # update data that are read/written by this event
         returner = {
             self.DNE_DICT_NAME_FIELD: activeEventObj.filterDoesNotExist(self.endGlobals),
-            self.SHARED_DICT_NAME_FIELD: activeEventObj.filterSharedsForMsg(self.shareds),
+            self.SHARED_DICT_NAME_FIELD: activeEventObj.filterSharedsForMsg(self.shareds,self),
             self.END_GLOBALS_DICT_NAME_FIELD: activeEventObj.filterEndGlobalsForMsg(self.endGlobals),
             self.SEQ_GLOBALS_DICT_NAME_FIELD: activeEventObj.filterSeqGlobalsForMsg(self.seqGlobals)
             };
@@ -2008,7 +2012,11 @@ class _Context(object):
         _deepCopy(contextMsgDict[self.END_GLOBALS_DICT_NAME_FIELD],self.endGlobals,dneDict);
         _deepCopy(contextMsgDict[self.SEQ_GLOBALS_DICT_NAME_FIELD],self.seqGlobals);
 
-
+        self._other_side_context_data = {
+            'shareds': contextMsgDict[self.SHARED_DICT_NAME_FIELD]
+            }
+        
+        
     def postpone(self):
         '''
         Gets called when postponing an event.  Note that because the
@@ -3284,8 +3292,7 @@ class _ActiveEvent(object):
         # actually evaluate the internal function.
         eval(obj);
 
-
-    def filterSharedsForMsg(self,sharedsDict):
+    def filterSharedsForMsg(self,sharedsDict,ctx):
         '''
         Next three functions are used by context to generate a message
         that then gets sent to other endpoint.  each one takes in the
@@ -3293,6 +3300,22 @@ class _ActiveEvent(object):
         respectively.  Then returns what should be transmitted to
         other side.
         '''
+
+        # only transmit diffs in context.  (for now, focused on lists,
+        # numbers, and bools.)
+        to_return = {}
+        if ctx._other_side_context_data != None:
+            for key in sharedsDict:
+                val = sharedsDict[key]
+                if (isinstance(val,numbers.Number) or
+                    isinstance(val,basestring) or
+                    isinstance(val,bool)):
+            
+                    if val == ctx._other_side_context_data['shareds'][key]:
+                        continue
+
+                to_return[key] = val
+                
         # FIXME:
         # only shareds that this endpoint can write to need to get sent
         # to the other side.

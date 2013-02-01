@@ -6,7 +6,7 @@ Endpoint Server;
 Sequences {
 }
 
-Shared {
+Peered {
 }
 
 Client {
