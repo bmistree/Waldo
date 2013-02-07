@@ -1,7 +1,7 @@
 import threading
 import util
 import pickle
-
+from abc import abstractmethod
         
 class _WaldoObj(object):
     '''
@@ -16,14 +16,14 @@ class _WaldoObj(object):
     # re-purposing the no one else can use the commit lock until....
 
     
-    def __init__(self,_type,init_val):
+    def __init__(self,_type,init_val,version_obj):
         self.uuid = util.generate_uuid()
         self.type = _type
-        self.version_num = 0
+        self.version_obj = version_obj
 
         self.val = init_val
         
-        # keys are integers.  values are dirty values of each object.
+        # keys are uuids.  values are dirty values of each object.
         self._dirty_map = {}
         self._mutex = threading.Lock()
 
@@ -50,7 +50,7 @@ class _WaldoObj(object):
         if invalid_listener.uuid not in self._dirty_map:
             # FIXME: may only want to make a copy of val on write
             to_add = _DirtyMapElement(
-                self.version_num,
+                self.version_obj.copy(),
                 self._deep_copy(),
                 invalid_listener)
             self._dirty_map[invalid_listener.uuid] = to_add
@@ -69,7 +69,7 @@ class _WaldoObj(object):
         self._lock()
         if invalid_listener.uuid not in self._dirty_map:
             to_add = _DirtyMapElement(
-                self.version_num,
+                self.version_obj.copy(),
                 new_val,
                 invalid_listener,
                 True # because we know that we've written to the value
@@ -100,8 +100,8 @@ class _WaldoObj(object):
                                'appropriate id.')
         #### END DEBUG
 
-        dirty_vnum = self._dirty_map[invalid_listener.uuid].version_num
-        return dirty_vnum == self.version_num
+        return not self.version_obj.conflicts(
+            self._dirty_map[invalid_listener.uuid].version_obj)
 
 
     
@@ -162,26 +162,30 @@ class _WaldoObj(object):
         dirty_map_elem  = self._dirty_map[invalid_listener.uuid]
         del self._dirty_map[invalid_listener.uuid]
 
-        if dirty_map_elem.has_been_written_to:
-            self.version_num += 1
-            self.val = dirty_map_elem.val
-            self._notify_all_dirty_invalid()
+        # will update version obj as well
+        dirty_map_elem.update_obj_val_and_version(self)
 
+        # determine who we need to send invalidation messages to
+        to_invalidate_list = []
+        for potentially_invalidate in list(self._dirty_map.values()):
+            if potentially_invalidate.version_obj.conflicts(
+                self.version_obj):
+                to_invalidate_list.append(potentially_invalidate)
+
+
+        # FIXME: May eventually want to send what the conflict was so
+        # can determine how much the invalidation listener actually
+        # needs to backout.
+        if len(to_invalidate_list) != 0:
+            dirty_notify_thread = _DirtyNotifyThread(
+                self,to_invalidate_list)
+            dirty_notify_thread.start()
+            
         self._unlock()
 
         
     def is_valid_type(self):
         return self.type in _WaldoObj.WALDO_TYPE_NAMES
-        
-
-    def _notify_all_dirty_invalid(self):
-        '''
-        Assumes already inside of lock
-        '''
-        to_notify_list = list(self._dirty_map.values())
-        if len(to_notify_list) != 0:
-            dirty_notify_thread = _DirtyNotifyThread(self,to_notify_list)
-            dirty_notify_thread.start()
         
         
     
@@ -228,26 +232,130 @@ class _DirtyMapElement(object):
     _DirtyMapElement.  
     '''
     
-    def __init__(self,version_num,val,invalidation_listener,has_written=False):
+    def __init__(self,version_obj,val,invalidation_listener,has_written=False):
         '''
-        @param {int} version_num --- The version of the Waldo object
-        that the dirty map element
+        @param {_WaldoObjVersion} version_obj --- The version of the
+        Waldo object that the dirty map element
 
         @param {Anything} val --- The dirty val that the invalidation
         listener is using.
 
         @param {_InvalidationListener} invalidation_listener --- 
         '''
-        self.version_num = version_num
+        self.version_obj = version_obj
         self.val = val
         self.invalidation_listener = invalidation_listener
 
-        # if true, means that the invalidation listener, at some
-        # point, wrote to this value instead of just read it.
-        self.has_been_written_to = has_written
 
     def set_has_been_written_to(self,new_val):
-        self.has_been_written_to = True
+        self.version_obj.has_been_written_to()
         self.val = new_val
-        
 
+    def update_obj_val_and_version(self,w_obj):
+        '''
+        @param {_WaldoObject} w_obj --- Take our version object and
+        determine if we need to update w_obj's val and version.  This
+        already assumes that DirtyMapElement has already had no commit
+        conflict and is in the process of committing.  Similarly, we
+        are already inside of w_obj's internal lock.
+        '''
+        self.version_obj.update_obj_val_and_version(w_obj,self.val)
+
+
+class _WaldoObjVersion(object):
+    '''
+    To keep track of whether an object is dirty, each WaldoObj holds a
+    _WaldoOjbVersion object.  Using its methods, can automatically
+    determine if an update from a dirtyElement will apply cleanly, or
+    need to be backed out.
+    '''
+    
+    @abstractmethod
+    def copy(self):
+        '''
+        Whenever we create a dirty element, we create a new
+        WaldoObjVersion.  This is used to check whether there might be
+        any conflicts when trying to commit an event, using the
+        conflicts method.
+        '''
+        pass
+
+    @abstractmethod
+    def update(self,dirty_version_obj):
+        '''
+        @param{_WaldoObjVersion} dirty_version_obj --- Commit the
+        version held by dirty_version_obj to self.  (Assumes already
+        has called conflicts to determine that there was no conflict
+        from applying the new version.)
+        '''
+        pass
+
+    @abstractmethod
+    def conflicts(self,dirty_version_obj):
+        '''
+        @param{_WaldoObjVersion} dirty_version_obj
+        
+        @returns {bool} --- True if the there would be a read-write
+        conflict from attempting to commit the event with
+        dirty_version_obj on top of this version obj.
+        '''
+        pass
+
+    @abstractmethod
+    def update_obj_val_and_version(self,w_obj,val):
+        '''
+        @param {_WaldoObject} w_obj --- Take our version object and
+        determine if we need to update w_obj's val and version.  This
+        already assumes that DirtyMapElement has already had no commit
+        conflict and is in the process of committing.  Similarly, we
+        are already inside of w_obj's internal lock.
+
+        @param {Anything} val --- What the dirtyelementobject thinks
+        the current value of the object should be.
+        '''
+        pass
+    
+    
+
+class _ValueTypeVersion(_WaldoObjVersion):
+    '''
+    The version type used for Waldo's value types: Numbers,
+    TrueFalses, Texts.
+    '''
+    def __init__(self,init_version_num=0):
+        self.version_num = init_version_num
+        self._has_been_written_to = False
+
+    def copy(self):
+        return _ValueTypeVersion(self.version_num)
+        
+    def has_been_written_to(self):
+        self.has_been_written_to = True
+        
+    def update(self,dirty_vtype_version_obj):
+        if dirty_vtype_version_obj.has_been_written_to:
+            self.version_num += 1
+        
+    def conflicts(self,dirty_vtype_version_obj):
+        '''
+        Will conflict if have different version numbers.
+        '''
+        return (dirty_vtype_version_obj.version_num !=
+                self.version_num)
+    
+    def update_obj_val_and_version(self,w_obj,val):
+        '''
+        @param {_WaldoObject} w_obj --- We know that w_obj must be one
+        of the value type objects at this point.  That means that if
+        we have written to our value, we increment w_obj's version
+        number and overwrite its value.  Otherwise, do nothing
+
+        @param {val}
+        '''
+
+        if not self.has_been_written_to:
+            return
+
+        w_obj.version_obj.update(self)
+        w_obj.val = val
+        
