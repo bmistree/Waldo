@@ -16,12 +16,13 @@ class _WaldoObj(object):
     # re-purposing the no one else can use the commit lock until....
 
     
-    def __init__(self,_type,init_val,version_obj):
+    def __init__(self,_type,init_val,version_obj,dirty_element_constructor):
         self.uuid = util.generate_uuid()
         self.type = _type
         self.version_obj = version_obj
 
         self.val = init_val
+        self.dirty_element_constructor = dirty_element_constructor
         
         # keys are uuids.  values are dirty values of each object.
         self._dirty_map = {}
@@ -49,7 +50,7 @@ class _WaldoObj(object):
         
         if invalid_listener.uuid not in self._dirty_map:
             # FIXME: may only want to make a copy of val on write
-            to_add = _DirtyMapElement(
+            to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
                 self._deep_copy(),
                 invalid_listener)
@@ -68,12 +69,10 @@ class _WaldoObj(object):
         '''
         self._lock()
         if invalid_listener.uuid not in self._dirty_map:
-            to_add = _DirtyMapElement(
+            to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
                 new_val,
-                invalid_listener,
-                True # because we know that we've written to the value
-                )
+                invalid_listener)
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
             
@@ -225,14 +224,16 @@ class _DirtyNotifyThread(threading.Thread):
             inv_listener = dirty_map_elem.invalidation_listener
             inv_listener.notify_invalidated(self.wld_obj)
 
-    
+
+
+            
 class _DirtyMapElement(object):
     '''
     Each _WaldoObj holds a dirty map.  Its elements are of type
     _DirtyMapElement.  
     '''
     
-    def __init__(self,version_obj,val,invalidation_listener,has_written=False):
+    def __init__(self,version_obj,val,invalidation_listener):
         '''
         @param {_WaldoObjVersion} version_obj --- The version of the
         Waldo object that the dirty map element
@@ -248,7 +249,7 @@ class _DirtyMapElement(object):
 
 
     def set_has_been_written_to(self,new_val):
-        self.version_obj.has_been_written_to()
+        self.version_obj.set_has_been_written_to()
         self.val = new_val
 
     def update_obj_val_and_version(self,w_obj):
@@ -260,6 +261,16 @@ class _DirtyMapElement(object):
         are already inside of w_obj's internal lock.
         '''
         self.version_obj.update_obj_val_and_version(w_obj,self.val)
+
+        
+class _ValueDirtyMapElement(_DirtyMapElement):
+    '''
+    For now: a precise duplicate of _DirtyMapElement.  Unclear if
+    should always be this way.
+    '''
+    pass
+
+            
 
 
 class _WaldoObjVersion(object):
@@ -324,12 +335,12 @@ class _ValueTypeVersion(_WaldoObjVersion):
     '''
     def __init__(self,init_version_num=0):
         self.version_num = init_version_num
-        self._has_been_written_to = False
+        self.has_been_written_to = False
 
     def copy(self):
         return _ValueTypeVersion(self.version_num)
         
-    def has_been_written_to(self):
+    def set_has_been_written_to(self):
         self.has_been_written_to = True
         
     def update(self,dirty_vtype_version_obj):

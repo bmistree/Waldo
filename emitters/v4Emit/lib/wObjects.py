@@ -1,6 +1,7 @@
 
 from waldoObjBase import _WaldoObj
 from waldoObjBase import _ValueTypeVersion
+from waldoObjBase import _ValueDirtyMapElement
 
 def initialize():
     '''
@@ -23,7 +24,7 @@ class WaldoNum(_WaldoObj):
     def __init__(self,init_val=0):
         _WaldoObj.__init__(
             self,WaldoNum.TYPE_WALDO_NUM,init_val,
-            _ValueTypeVersion())
+            _ValueTypeVersion(),_ValueDirtyMapElement)
 
     
 class WaldoText(_WaldoObj):
@@ -32,7 +33,7 @@ class WaldoText(_WaldoObj):
     def __init__(self,init_val=''):
         _WaldoObj.__init__(
             self,WaldoText.TYPE_WALDO_TEXT,init_val,
-            _ValueTypeVersion())
+            _ValueTypeVersion(),_ValueDirtyMapElement)
 
         
 class WaldoTrueFalse(_WaldoObj):
@@ -41,4 +42,4 @@ class WaldoTrueFalse(_WaldoObj):
     def __init__(self,init_val=False):
         _WaldoObj.__init__(
             self,WaldoTrueFalse.TYPE_WALDO_TRUE_FALSE,init_val,
-            _ValueTypeVersion())
+            _ValueTypeVersion(),_ValueDirtyMapElement)
