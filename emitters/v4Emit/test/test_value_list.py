@@ -1,0 +1,132 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+sys.path.append(
+    os.path.join('../lib/'))
+
+import wObjects
+import commitManager
+import invalidationListener
+
+'''
+Tests a basic value map to ensure that can and cannot perform certain
+operations concurrently and that operations are committed.
+'''
+
+
+class BasicTestInvalidationListener(invalidationListener._InvalidationListener):
+    def notify_invalidated(self,wld_obj):
+        pass
+    
+
+def create_two_events(commit_manager):
+    evt1 = BasicTestInvalidationListener(commit_manager)
+    evt2 = BasicTestInvalidationListener(commit_manager)
+    return evt1,evt2
+        
+def run_test():
+    wObjects.initialize()
+    commit_manager = commitManager._CommitManager()
+    wlist = wObjects.WaldoValueList([1,2,3])
+    
+    evt1,evt2 = create_two_events(commit_manager)
+
+    # testing to ensure that can perform reads simultaneously
+    if wlist.get_val_on_key(evt1,0) != 1:
+        print '\nerr: expected 1\n'
+        return False
+
+    if wlist.get_val_on_key(evt2,0) != 1:
+        print '\nerr: expected 3\n'
+        return False
+
+    if not evt1.hold_can_commit():
+        print '\nerr: should be able to commit\n'
+        return False
+    evt1.complete_commit()
+    
+    if not evt2.hold_can_commit():
+        print '\nerr: should be able to commit 2 reads\n'
+        return False
+    evt2.complete_commit()
+
+    # testing to ensure that cannot simultaneously commit a read and a
+    # write to the same cell.
+    evt1,evt2 = create_two_events(commit_manager)
+    if wlist.get_val_on_key(evt1,1) != 2:
+        print '\nerr: expected 2\n'
+        return False
+    wlist.write_val_on_key(evt2,1,5)
+    if not evt1.hold_can_commit():
+        print '\nerr: should be able read 5\n'
+        return False
+    evt1.complete_commit()
+
+    if evt2.hold_can_commit():
+        print '\nerr: should not be able to read after having written 5\n'
+        return False
+    evt2.backout_commit(True)
+
+    # testing to ensure can write to one element and write to another
+    # element
+    evt1,evt2 = create_two_events(commit_manager)
+    wlist.write_val_on_key(evt1,1,3)
+    wlist.write_val_on_key(evt2,2,4)
+    
+    if not evt1.hold_can_commit():
+        print '\nerr: should have been able to commit the write 3\n'
+        return False
+    evt1.complete_commit()
+    if not evt2.hold_can_commit():
+        print '\nerr: should have been able to commit the write 4\n'
+        return False
+    evt2.complete_commit()
+
+    # check to ensure that the correct values were written in above
+    # steps + check to ensure that deletion of an element prevents
+    # committing to it.
+    evt1,evt2 = create_two_events(commit_manager)
+    if wlist.get_val_on_key(evt2,1) != 3:
+        print '\nshould have gotten 3 from prev commit\n'
+        return False
+    if wlist.get_val_on_key(evt2,2) != 4:
+        print '\nshould have gotten 4 from prev commit\n'
+        return False
+
+    wlist.del_key_called(evt1,1)
+    if not evt1.hold_can_commit():
+        print '\nerr: should have been able to commit del'
+        return False
+    evt1.complete_commit()
+
+    if evt2.hold_can_commit():
+        print '\nerr: should not have been able to hold print commit '
+        return False
+    evt2.backout_commit(True)
+
+    # check to ensure last delete was correct and that we cannot call
+    # keys and append simultaneoulsy.
+    evt1,evt2 = create_two_events(commit_manager)
+    length = wlist.get_len(evt1)
+    if length != 2:
+        print '\nerr: expecting length of 2 after delete\n'
+        return False
+    
+    wlist.append_val(evt2,5)
+    if not evt1.hold_can_commit():
+        print '\nerr: should have been able to commit length\n'
+        return False
+    evt1.complete_commit()
+
+    if evt2.hold_can_commit():
+        print '\nerr: should not have been able to commit append\n'
+        return False
+    evt2.backout_commit(True)
+
+        
+if __name__ == '__main__':
+    run_test()
+
+
