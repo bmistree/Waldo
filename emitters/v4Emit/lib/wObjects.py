@@ -3,6 +3,11 @@ from waldoObjBase import _WaldoObj
 from waldoObjBase import _ValueTypeVersion
 from waldoObjBase import _ValueDirtyMapElement
 
+from waldoContainerBase import _WaldoValueContainer
+from waldoContainerBase import _ContainerValueTypeVersion
+from waldoContainerBase import _ValueContainerDirtyMapElement
+
+
 def initialize():
     '''
     Add separate type names to overall Waldo object.
@@ -11,8 +16,9 @@ def initialize():
     _WaldoObj.WALDO_TYPE_NAMES[
         WaldoTrueFalse.TYPE_WALDO_TRUE_FALSE] = True
     _WaldoObj.WALDO_TYPE_NAMES[WaldoText.TYPE_WALDO_TEXT] = True
+    _WaldoObj.WALDO_TYPE_NAMES[WaldoValueMap.TYPE_WALDO_VALUE_MAP] = True    
     # _WaldoObj.WALDO_TYPE_NAMES[WaldoList.TYPE_WALDO_LIST] = True
-    # _WaldoObj.WALDO_TYPE_NAMES[WaldoMap.TYPE_WALDO_MAP] = True
+
 
         
 
@@ -43,3 +49,14 @@ class WaldoTrueFalse(_WaldoObj):
         _WaldoObj.__init__(
             self,WaldoTrueFalse.TYPE_WALDO_TRUE_FALSE,init_val,
             _ValueTypeVersion(),_ValueDirtyMapElement)
+
+class WaldoValueMap(_WaldoValueContainer):
+    TYPE_WALDO_VALUE_MAP = 'value map'
+    
+    def __init__(self,init_val=None):
+        if init_val == None:
+            init_val = {}
+            
+        _WaldoValueContainer.__init__(
+            self,WaldoValueMap.TYPE_WALDO_VALUE_MAP,init_val,
+            _ContainerValueTypeVersion(),_ValueContainerDirtyMapElement)
