@@ -129,7 +129,6 @@ class _ValueContainerDirtyMapElement(waldoObjBase._DirtyMapElement):
         self.version_obj.add_key(key)
         self.val[key] = new_val
 
-
     def del_key(self,key):
         self.version_obj.del_key(key)        
         del self.val[key]
@@ -145,11 +144,9 @@ class _ValueContainerDirtyMapElement(waldoObjBase._DirtyMapElement):
         self.version_obj.get_keys()
         return self.val.keys()
 
-
     def contains_key(self,key):
         self.version_obj.contains_key(key)        
         return key in self.val 
-    
         
     def set_has_been_written_to(self,new_val):
         util.logger_assert('In _DirtyMapContainerElement, should never get ' +
@@ -192,21 +189,34 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
         # FIXME: probably do not want to overwrite the entire val each
         # time.  could just apply deltas instead.
 
-        # FIXME: will only work for maps right now, which permit
-        # direct indexing.
-        
-        # FIXME: Check to ensure that for lists when remove something
-        # from the middle all other values areupdated.
 
-        for field_to_update in fields_to_update.keys():
+        if isinstance(val,dict):
+            for field_to_update in fields_to_update.keys():
+                if field_to_update not in val:
+                    # to handle deletions for maps
+                    del w_obj.val[field_to_update]
+                else:
+                    w_obj.val[field_to_update] = val[field_to_update]
 
-            if field_to_update not in val:
-                # to handle deletions
-                del w_obj.val[field_to_update]
-            else:
+                    
+        elif isinstance(val,list):
+            if len(w_obj.val) > len(val):
+                del w_obj.val[len(val):]
+            elif len(w_obj.val) < len(val):
+                num_elements_to_append = len(val) - len(w_obj.val)
+                w_obj.val += [None]*num_elements_to_append
+
+            for field_to_update in fields_to_update.keys():
+                if field_to_update not in val:
+                    # skip this because it means we deleted something
+                    # off of val that no longer exists.  it's okay to
+                    # ignore deleting it here because of the above
+                    # if/elif checks that ensure both lists are the
+                    # same size.
+                    continue
+
                 w_obj.val[field_to_update] = val[field_to_update]
-
-        
+            
 
     def copy(self):
         '''
@@ -423,8 +433,8 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
                 require_update_map[key] = True
                 
             original_map[key] = new_commit_time
-        
 
+            
     def update(self,dirty_version_obj):
         '''
         Called on official version object.  Already guaranteed that
@@ -481,14 +491,11 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
     def add_key(self,key_added):
         self.added_keys[key_added] = self.commit_num
 
-
     def del_key(self,key_deleted):
         self.deleted_keys[key_deleted] = self.commit_num
 
-
     def get_len(self):
         self.len_called = self.commit_num
-
 
     def get_keys(self):
         '''
@@ -496,11 +503,9 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
         '''
         self.keys_called = self.commit_num
 
-
     def contains_key(self,contains_key):
         self.contains_keys[called_contain_on_key] = self.commit_num
     
-        
     def set_has_been_written_to(self,new_val):
         util.logger_assert('In _DirtyMapContainerElement, should never get ' +
                            'a call to set_has_been_written_to.')

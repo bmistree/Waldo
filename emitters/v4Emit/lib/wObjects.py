@@ -7,6 +7,10 @@ from waldoContainerBase import _WaldoValueContainer
 from waldoContainerBase import _ContainerValueTypeVersion
 from waldoContainerBase import _ValueContainerDirtyMapElement
 
+from waldoListBase import _WaldoValueList
+from waldoListBase import _ListValueTypeVersion
+from waldoListBase import _ValueListDirtyMapElement
+
 
 def initialize():
     '''
@@ -17,7 +21,7 @@ def initialize():
         WaldoTrueFalse.TYPE_WALDO_TRUE_FALSE] = True
     _WaldoObj.WALDO_TYPE_NAMES[WaldoText.TYPE_WALDO_TEXT] = True
     _WaldoObj.WALDO_TYPE_NAMES[WaldoValueMap.TYPE_WALDO_VALUE_MAP] = True    
-    # _WaldoObj.WALDO_TYPE_NAMES[WaldoList.TYPE_WALDO_LIST] = True
+    _WaldoObj.WALDO_TYPE_NAMES[WaldoValueList.TYPE_WALDO_VALUE_LIST] = True
 
 
         
@@ -60,3 +64,16 @@ class WaldoValueMap(_WaldoValueContainer):
         _WaldoValueContainer.__init__(
             self,WaldoValueMap.TYPE_WALDO_VALUE_MAP,init_val,
             _ContainerValueTypeVersion(),_ValueContainerDirtyMapElement)
+
+
+class WaldoValueList(_WaldoValueList):
+    TYPE_WALDO_VALUE_LIST = 'value list'
+    
+    def __init__(self,init_val=None):
+        if init_val == None:
+            init_val = {}
+            
+        _WaldoValueContainer.__init__(
+            self,WaldoValueList.TYPE_WALDO_VALUE_LIST,init_val,
+            _ListValueTypeVersion(),_ValueListDirtyMapElement)
+        
