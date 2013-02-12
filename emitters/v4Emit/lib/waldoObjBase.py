@@ -40,7 +40,7 @@ class _WaldoObj(object):
         # FIXME: using this approach, one object cannot hold a
         # reference to another object, eg., structs with maps, etc.
         return pickle.loads(pickle.dumps(self.val))
-        
+
         
     def get_val(self,invalid_listener):
         '''
@@ -52,7 +52,7 @@ class _WaldoObj(object):
             # FIXME: may only want to make a copy of val on write
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
-                self._deep_copy(),
+                self.val,
                 invalid_listener)
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)

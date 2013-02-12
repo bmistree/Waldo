@@ -2,7 +2,8 @@ import waldoContainerBase
 import util
 
 class _WaldoValueList(waldoContainerBase._WaldoValueContainer):
-
+    TYPE_WALDO_INTERNAL_LIST = 'internal_list'
+    
     def add_key(self,invalid_listener,key,new_val):
         util.logger_assert(
             'Cannot call add_key on a list')
@@ -14,7 +15,12 @@ class _WaldoValueList(waldoContainerBase._WaldoValueContainer):
     def contains_key(self,invalid_listener, key):
         util.logger_assert(
             'Cannot call contains_key on list')
-        
+
+
+    def _print_values(self):
+        print '\n\n'
+        print self.val
+        print '\n\n'
         
     def append_val(self,invalid_listener,new_val):
         '''
