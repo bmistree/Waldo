@@ -15,15 +15,13 @@ class _WaldoValueContainer(waldoObjBase._WaldoObj):
         waldoObjBase._WaldoObj.__init__(
             self,_type,init_val,version_obj,dirty_element_constructor)
 
-
-    # FIXME: need to handle get_val and write_val calls
     def get_val(self,invalid_listener):
         util.logger_assert(
-            'In WaldoValueContainer, unimplemented get_val call.')
+            'In WaldoValueContainer, get_val disallowed.')
 
     def write_val(self,invalid_listener,new_val):
         util.logger_assert(
-            'In WaldoValueContainer, unimplemented write_val call.')
+            'In WaldoValueContainer, write_val disallowed.')
 
     def add_key(self,invalid_listener,key_added,new_val):
         self._lock()
@@ -188,8 +186,7 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
         fields_to_update = w_obj.version_obj.update(self)
         # FIXME: probably do not want to overwrite the entire val each
         # time.  could just apply deltas instead.
-
-
+        
         if isinstance(val,dict):
             for field_to_update in fields_to_update.keys():
                 if field_to_update not in val:
@@ -207,7 +204,8 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
                 w_obj.val += [None]*num_elements_to_append
 
             for field_to_update in fields_to_update.keys():
-                if field_to_update not in val:
+
+                if field_to_update >= len(val):
                     # skip this because it means we deleted something
                     # off of val that no longer exists.  it's okay to
                     # ignore deleting it here because of the above
@@ -445,7 +443,7 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
         
         '''
         self.commit_num += 1
-
+        
         updated_fields = {}
         _ContainerValueTypeVersion._test_and_overwrite(
             self.contains_keys,dirty_version_obj.contains_keys,
@@ -473,7 +471,7 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
             if ((self.keys_called == None) or
                 (dirty_version_obj.keys_called > self.keys_called)):
                 self.keys_called = dirty_version_obj.keys_called
-
+        
         return updated_fields
 
     # FIXME: will infinitely grow key monitoring maps using this
