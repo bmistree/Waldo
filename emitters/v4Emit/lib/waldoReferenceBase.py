@@ -28,13 +28,34 @@ class _ReferenceBase(object):
     def _unlock(self):
         self._mutex.release()
 
-    def _deep_copy(self):
+    def _non_waldo_copy(self):
         '''
-        Deep copy val and return it
+        When we are establishing dirty map elements, we make a copy of
+        our committed value so that changes do not polute the
+        committed val.  (For instance, if val is a python list, we do
+        not want an invalidation listener's deletion of elements to be
+        visible until the invalidation listener has been committed.)
+
+        However, if val holds an object derived from _ReferenceBase,
+        then we just want to return that object itself (because we
+        know that it can handle delaying exposing side effects until
+        commit).
+
+        self.val can only contain value types or lists of
+        values/_ReferenceBases or dicts of values/_ReferenceBases.  
         '''
-        # FIXME: using this approach, one object cannot hold a
-        # reference to another object, eg., structs with maps, etc.
-        return pickle.loads(pickle.dumps(self.val))
+        copied_val = self.val
+        
+        if isinstance(self.val,dict):
+            copied_val = {}
+            for key in self.val.keys():
+                copied_val[key] = self.val[key]
+        elif isinstance(self.val,list):
+            copied_val = []
+            for element in self.val:
+                copied_val.append(element)
+
+        return copied_val
 
         
     def get_val(self,invalid_listener):

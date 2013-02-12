@@ -62,7 +62,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         return keys
 
 
-    def contains_key_called(self,contains_key):
+    def contains_key_called(self,invalid_listener,contains_key):
         self._lock()
         self._add_invalid_listener(invalid_listener)
 
@@ -95,10 +95,11 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         ASSUMES ALREADY WITHIN LOCK
         '''
         if invalid_listener.uuid not in self._dirty_map:
+            
             # FIXME: may only want to make a copy of val on write
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
-                self._deep_copy(),
+                self._non_waldo_copy(),
                 invalid_listener)
             
             self._dirty_map[invalid_listener.uuid] = to_add
@@ -502,8 +503,8 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         self.keys_called = self.commit_num
 
     def contains_key(self,contains_key):
-        self.contains_keys[called_contain_on_key] = self.commit_num
-    
+        self.contains_keys[contains_key] = self.commit_num
+        
     def set_has_been_written_to(self,new_val):
         util.logger_assert('In _DirtyMapContainerElement, should never get ' +
                            'a call to set_has_been_written_to.')
