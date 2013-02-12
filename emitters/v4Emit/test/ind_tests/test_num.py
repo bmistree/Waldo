@@ -35,7 +35,7 @@ def setup():
     
     return evt1,evt2,evt3,number
     
-def run():
+def run_test():
     evt1,evt2,evt3,number = setup()
 
     if number.get_val(evt1) != INITIAL_NUMBER:
@@ -89,6 +89,6 @@ def run():
         
 
 if __name__ == '__main__':
-    run()
+    run_test()
 
 

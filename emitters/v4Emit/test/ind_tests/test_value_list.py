@@ -136,6 +136,8 @@ def run_test():
         return False
     evt2.backout_commit(True)
 
+    return True
+    
         
 if __name__ == '__main__':
     run_test()
