@@ -4,7 +4,7 @@ import os
 import sys
 
 sys.path.append(
-    os.path.join('../lib/'))
+    os.path.join('../../lib/'))
 
 import wVariables
 import commitManager

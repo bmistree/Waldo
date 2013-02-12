@@ -4,7 +4,7 @@ import os
 import sys
 
 sys.path.append(
-    os.path.join('../lib/'))
+    os.path.join('../../lib/'))
 
 import wVariables
 import commitManager
@@ -27,24 +27,30 @@ def create_two_events(commit_manager):
     return evt1,evt2
         
 def run_test():
+    # initialize and populate list to be [1,2,3]
     commit_manager = commitManager._CommitManager()
-    wmap = wVariables.WaldoMapVariable()
-
+    wlist = wVariables.WaldoListVariable()
     evt1,evt2 = create_two_events(commit_manager)
-    wmap.get_val(evt1).add_key(evt1,'a',1)
-    wmap.get_val(evt1).add_key(evt1,'b',2)
+    wlist.get_val(evt1).append_val(evt1,1)
+    wlist.get_val(evt1).append_val(evt1,2)
+    wlist.get_val(evt1).append_val(evt1,3)    
     evt1.hold_can_commit()
     evt1.complete_commit()
     
+    
     evt1,evt2 = create_two_events(commit_manager)
-
-    # # testing to ensure that can perform reads simultaneously
-    if wmap.get_val(evt1).get_val_on_key(evt1,'a') != 1:
+    # wlist.get_val(evt1)._print_values()
+    
+    # testing to ensure that can perform reads simultaneously
+    if wlist.get_val(evt1).get_val_on_key(evt1,0) != 1:
         print '\nerr: expected 1\n'
+        print wlist.get_val(evt1).get_val_on_key(evt1,0)
+        print wlist.get_val(evt1)
+        print '\n\n'
         return False
 
-    if wmap.get_val(evt2).get_val_on_key(evt2,'a') != 1:
-        print '\nerr: expected 1\n'
+    if wlist.get_val(evt2).get_val_on_key(evt2,0) != 1:
+        print '\nerr: expected 3\n'
         return False
 
     if not evt1.hold_can_commit():
@@ -55,18 +61,17 @@ def run_test():
     if not evt2.hold_can_commit():
         print '\nerr: should be able to commit 2 reads\n'
         return False
-    else:
-        evt2.backout_commit(True)
+    evt2.complete_commit()
 
     # testing to ensure that cannot simultaneously commit a read and a
     # write to the same cell.
     evt1,evt2 = create_two_events(commit_manager)
-    if wmap.get_val(evt1).get_val_on_key(evt1,'b') != 2:
+    if wlist.get_val(evt1).get_val_on_key(evt1,1) != 2:
         print '\nerr: expected 2\n'
         return False
-    wmap.get_val(evt2).write_val_on_key(evt2,'b',5)
+    wlist.get_val(evt2).write_val_on_key(evt2,1,5)
     if not evt1.hold_can_commit():
-        print '\nerr: should be able to commit 5\n'
+        print '\nerr: should be able read 5\n'
         return False
     evt1.complete_commit()
 
@@ -78,15 +83,15 @@ def run_test():
     # testing to ensure can write to one element and write to another
     # element
     evt1,evt2 = create_two_events(commit_manager)
-    wmap.get_val(evt1).write_val_on_key(evt1,'a',3)
-    wmap.get_val(evt2).write_val_on_key(evt2,'b',1)
+    wlist.get_val(evt1).write_val_on_key(evt1,1,3)
+    wlist.get_val(evt2).write_val_on_key(evt2,2,4)
     
     if not evt1.hold_can_commit():
         print '\nerr: should have been able to commit the write 3\n'
         return False
     evt1.complete_commit()
     if not evt2.hold_can_commit():
-        print '\nerr: should have been able to commit the write 1\n'
+        print '\nerr: should have been able to commit the write 4\n'
         return False
     evt2.complete_commit()
 
@@ -94,14 +99,14 @@ def run_test():
     # steps + check to ensure that deletion of an element prevents
     # committing to it.
     evt1,evt2 = create_two_events(commit_manager)
-    if wmap.get_val(evt2).get_val_on_key(evt2,'a') != 3:
+    if wlist.get_val(evt2).get_val_on_key(evt2,1) != 3:
         print '\nshould have gotten 3 from prev commit\n'
         return False
-    if wmap.get_val(evt2).get_val_on_key(evt2,'b') != 1:
-        print '\nshould have gotten 1 from prev commit\n'
+    if wlist.get_val(evt2).get_val_on_key(evt2,2) != 4:
+        print '\nshould have gotten 4 from prev commit\n'
         return False
 
-    wmap.get_val(evt1).del_key_called(evt1,'b')
+    wlist.get_val(evt1).del_key_called(evt1,1)
     if not evt1.hold_can_commit():
         print '\nerr: should have been able to commit del'
         return False
@@ -115,17 +120,14 @@ def run_test():
     # check to ensure last delete was correct and that we cannot call
     # keys and append simultaneoulsy.
     evt1,evt2 = create_two_events(commit_manager)
-    keys = list(wmap.get_val(evt1).get_keys(evt1))
-    if 'a' not in keys:
-        print '\nerr: expecting key a\n'
+    length = wlist.get_val(evt1).get_len(evt1)
+    if length != 2:
+        print '\nerr: expecting length of 2 after delete\n'
         return False
-    if 'b' in keys:
-        print '\nerr: not expecting key b\n'
-        return False
-
-    wmap.get_val(evt2).add_key(evt2,'m',3)
+    
+    wlist.get_val(evt2).append_val(evt2,5)
     if not evt1.hold_can_commit():
-        print '\nerr: should have been able to commit keys\n'
+        print '\nerr: should have been able to commit length\n'
         return False
     evt1.complete_commit()
 
@@ -135,7 +137,6 @@ def run_test():
     evt2.backout_commit(True)
 
         
-
 if __name__ == '__main__':
     run_test()
 
