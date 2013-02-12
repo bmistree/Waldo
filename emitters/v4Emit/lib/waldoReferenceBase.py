@@ -3,22 +3,17 @@ import util
 import pickle
 from abc import abstractmethod
         
-class _WaldoObj(object):
+class _ReferenceBase(object):
     '''
-    All Waldo objects (numbers, texts, etc.) are subtypes of this
-    basic object.
+    Whenever we have a reference, ie a variable, map, list, struct, it
+    derives from this.
     '''
-    
-    # gets populated in initialize method of wObjects.py
-    WALDO_TYPE_NAMES = {}
-
     # FIXME: maybe create a separate commit lock instead of
     # re-purposing the no one else can use the commit lock until....
 
     
-    def __init__(self,_type,init_val,version_obj,dirty_element_constructor):
+    def __init__(self,init_val,version_obj,dirty_element_constructor):
         self.uuid = util.generate_uuid()
-        self.type = _type
         self.version_obj = version_obj
 
         self.val = init_val
@@ -182,20 +177,6 @@ class _WaldoObj(object):
             
         self._unlock()
 
-        
-    def is_valid_type(self):
-        return self.type in _WaldoObj.WALDO_TYPE_NAMES
-        
-        
-    
-    def serialized(self):
-        #### DEBUG
-        if not self.is_valid_type(self.type):
-            util.logger_assert('Invalid type name of object.')
-        #### END DEBUG
-
-            
-        return pickle.dumps(self)
 
 
 class _DirtyNotifyThread(threading.Thread):
@@ -263,17 +244,8 @@ class _DirtyMapElement(object):
         self.version_obj.update_obj_val_and_version(w_obj,self.val)
 
         
-class _ValueDirtyMapElement(_DirtyMapElement):
-    '''
-    For now: a precise duplicate of _DirtyMapElement.  Unclear if
-    should always be this way.
-    '''
-    pass
 
-            
-
-
-class _WaldoObjVersion(object):
+class _ReferenceVersion(object):
     '''
     To keep track of whether an object is dirty, each WaldoObj holds a
     _WaldoOjbVersion object.  Using its methods, can automatically
@@ -328,45 +300,3 @@ class _WaldoObjVersion(object):
     
     
 
-class _ValueTypeVersion(_WaldoObjVersion):
-    '''
-    The version type used for Waldo's value types: Numbers,
-    TrueFalses, Texts.
-    '''
-    def __init__(self,init_version_num=0):
-        self.version_num = init_version_num
-        self.has_been_written_to = False
-
-    def copy(self):
-        return _ValueTypeVersion(self.version_num)
-        
-    def set_has_been_written_to(self):
-        self.has_been_written_to = True
-        
-    def update(self,dirty_vtype_version_obj):
-        if dirty_vtype_version_obj.has_been_written_to:
-            self.version_num += 1
-        
-    def conflicts(self,dirty_vtype_version_obj):
-        '''
-        Will conflict if have different version numbers.
-        '''
-        return (dirty_vtype_version_obj.version_num !=
-                self.version_num)
-    
-    def update_obj_val_and_version(self,w_obj,val):
-        '''
-        @param {_WaldoObject} w_obj --- We know that w_obj must be one
-        of the value type objects at this point.  That means that if
-        we have written to our value, we increment w_obj's version
-        number and overwrite its value.  Otherwise, do nothing
-
-        @param {val}
-        '''
-
-        if not self.has_been_written_to:
-            return
-
-        w_obj.version_obj.update(self)
-        w_obj.val = val
-        

@@ -1,8 +1,12 @@
-import waldoContainerBase
+import waldoReferenceContainerBase
 import util
 
-class _WaldoValueList(waldoContainerBase._WaldoValueContainer):
-    TYPE_WALDO_INTERNAL_LIST = 'internal_list'
+class InternalList(waldoReferenceContainerBase._ReferenceContainer):
+
+    def __init__(self,init_val):
+        waldoReferenceContainerBase._ReferenceContainer.__init__(
+            self,init_val,_InternalListVersion(),
+            _InternalListDirtyMapElement)
     
     def add_key(self,invalid_listener,key,new_val):
         util.logger_assert(
@@ -15,12 +19,6 @@ class _WaldoValueList(waldoContainerBase._WaldoValueContainer):
     def contains_key(self,invalid_listener, key):
         util.logger_assert(
             'Cannot call contains_key on list')
-
-
-    def _print_values(self):
-        print '\n\n'
-        print self.val
-        print '\n\n'
         
     def append_val(self,invalid_listener,new_val):
         '''
@@ -34,7 +32,8 @@ class _WaldoValueList(waldoContainerBase._WaldoValueContainer):
         self._unlock()
     
 
-class _ValueListDirtyMapElement(waldoContainerBase._ValueContainerDirtyMapElement):    
+class _InternalListDirtyMapElement(
+    waldoReferenceContainerBase._ReferenceContainerDirtyMapElement):    
 
     def add_key(self,key,new_val):
         util.logger_assert(
@@ -50,17 +49,18 @@ class _ValueListDirtyMapElement(waldoContainerBase._ValueContainerDirtyMapElemen
         self.val.append(new_val)
 
         
-class _ListValueTypeVersion(waldoContainerBase._ContainerValueTypeVersion):
-
+class _InternalListVersion(
+    waldoReferenceContainerBase._ReferenceContainerVersion):
+    
     def del_key(self,to_del):
         util.logger_assert(
             'Cannot call del_key on list.  Use del_key_list instead.')
 
     def copy(self):
         '''
-        @see _ContainerValueTypeVersion.copy
+        @see _ReferenceContainerVersion.copy
         '''
-        copy = _ListValueTypeVersion()
+        copy = _InternalListVersion()
         copy.commit_num = self.commit_num
         return copy
 

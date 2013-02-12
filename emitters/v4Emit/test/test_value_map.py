@@ -6,7 +6,7 @@ import sys
 sys.path.append(
     os.path.join('../lib/'))
 
-import wObjects
+import wVariables
 import commitManager
 import invalidationListener
 
@@ -27,9 +27,8 @@ def create_two_events(commit_manager):
     return evt1,evt2
         
 def run_test():
-    wObjects.initialize()
     commit_manager = commitManager._CommitManager()
-    wmap = wObjects.WaldoMap()
+    wmap = wVariables.WaldoMapVariable()
 
     evt1,evt2 = create_two_events(commit_manager)
     wmap.get_val(evt1).add_key(evt1,'a',1)

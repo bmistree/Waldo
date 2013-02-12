@@ -1,9 +1,9 @@
-import waldoObjBase
+import waldoReferenceBase
 import util
 from abc import abstractmethod
 import itertools
 
-class _WaldoValueContainer(waldoObjBase._WaldoObj):
+class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     '''
     All Waldo objects inherit from _WaldoObj.  However, non-value
     Waldo objects (maps, lists, user structs), should all inherit from
@@ -11,9 +11,9 @@ class _WaldoValueContainer(waldoObjBase._WaldoObj):
     to additional _WaldoObjs, and therefore needs to dirty those as
     well and update those simultaneously when updating _WaldoContainer.
     '''
-    def __init__(self,_type,init_val,version_obj,dirty_element_constructor):
-        waldoObjBase._WaldoObj.__init__(
-            self,_type,init_val,version_obj,dirty_element_constructor)
+    def __init__(self,init_val,version_obj,dirty_element_constructor):
+        waldoReferenceBase._ReferenceBase.__init__(
+            self,init_val,version_obj,dirty_element_constructor)
 
     def get_val(self,invalid_listener):
         util.logger_assert(
@@ -105,13 +105,13 @@ class _WaldoValueContainer(waldoObjBase._WaldoObj):
             invalid_listener.add_touch(self)
         
 
-class _ValueContainerDirtyMapElement(waldoObjBase._DirtyMapElement):
+class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
 
     def __init__(self,*args):
         '''
         For args, @see waldoObjBase._DirtyMapElement.
         '''
-        waldoObjBase._DirtyMapElement.__init__(self,*args)
+        waldoReferenceBase._DirtyMapElement.__init__(self,*args)
 
     def get_val_on_key(self,key):
         self.version_obj.get_val_on_key(key)
@@ -150,8 +150,8 @@ class _ValueContainerDirtyMapElement(waldoObjBase._DirtyMapElement):
         util.logger_assert('In _DirtyMapContainerElement, should never get ' +
                            'a call to set_has_been_written_to.')
 
-        
-class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
+
+class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
     def __init__(self):
         '''
@@ -228,7 +228,7 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
         their vnums so that we know what they're making modifications
         on top of.
         '''
-        copy = _ContainerValueTypeVersion()
+        copy = _ReferenceContainerVersion()
         copy.commit_num = self.commit_num
         return copy
         
@@ -445,19 +445,19 @@ class _ContainerValueTypeVersion(waldoObjBase._WaldoObjVersion):
         self.commit_num += 1
         
         updated_fields = {}
-        _ContainerValueTypeVersion._test_and_overwrite(
+        _ReferenceContainerVersion._test_and_overwrite(
             self.contains_keys,dirty_version_obj.contains_keys,
             updated_fields)
-        _ContainerValueTypeVersion._test_and_overwrite(
+        _ReferenceContainerVersion._test_and_overwrite(
             self.read_values_keys,dirty_version_obj.read_values_keys,
             updated_fields)
-        _ContainerValueTypeVersion._test_and_overwrite(
+        _ReferenceContainerVersion._test_and_overwrite(
             self.written_values_keys,dirty_version_obj.written_values_keys,
             updated_fields)
-        _ContainerValueTypeVersion._test_and_overwrite(
+        _ReferenceContainerVersion._test_and_overwrite(
             self.added_keys,dirty_version_obj.added_keys,
             updated_fields)
-        _ContainerValueTypeVersion._test_and_overwrite(
+        _ReferenceContainerVersion._test_and_overwrite(
             self.deleted_keys,dirty_version_obj.deleted_keys,
             updated_fields)
         

@@ -6,7 +6,7 @@ import sys
 sys.path.append(
     os.path.join('../lib/'))
 
-import wObjects
+import wVariables
 import commitManager
 import invalidationListener
 import time
@@ -22,13 +22,12 @@ class PrintTestInvalidationListener(invalidationListener._InvalidationListener):
         
 
 def setup():
-    wObjects.initialize()
     commit_manager = commitManager._CommitManager()
     evt1 = PrintTestInvalidationListener(commit_manager)
     evt2 = PrintTestInvalidationListener(commit_manager)
-    number = wObjects.WaldoNum(31)
-    text = wObjects.WaldoText('ab')
-    tf = wObjects.WaldoText(True)
+    number = wVariables.WaldoNumVariable(31)
+    text = wVariables.WaldoTextVariable('ab')
+    tf = wVariables.WaldoTrueFalseVariable(True)
 
     return evt1,evt2,number,text,tf
     
