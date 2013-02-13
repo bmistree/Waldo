@@ -8,8 +8,15 @@ waldo_uuid_lib_abs_path = os.path.join(
     current_dir, 'waldo_uuid',
     'waldo_foreign.so')
 
-
-wuuid_lib = ctypes.CDLL(waldo_uuid_lib_abs_path)
+wuuid_lib = None
+if os.path.exists(waldo_uuid_lib_abs_path):
+    wuuid_lib = ctypes.CDLL(waldo_uuid_lib_abs_path)
+else:
+    warn_msg = '\nWaldo warning: Cannot find shared object file '
+    warn_msg += 'for generating uuids.  For now, using Python\'s '
+    warn_msg += 'uuid module to generate uuids.  To fix, make '
+    warn_msg += 'inside of emitters/v4Emit/lib/waldo_uuid.\n'
+    print warn_msg
 
 
 class WaldoFFUUID(object):
@@ -68,6 +75,8 @@ class WaldoFFUUID(object):
     
     
 def generate_uuid():
+    if wuuid_lib == None:
+        return generate_py_uuid()
     return generate_foreign_function_uuid()
 
 def generate_foreign_function_uuid():
