@@ -27,11 +27,13 @@ class WaldoFFUUID(object):
         self.high_order_bits = high_order_bits
         self.low_order_bits = low_order_bits
 
+        self._hash = hash((self.high_order_bits,self.low_order_bits))
+        
     def __str__(self):
         return str(self.high_order_bits) + str(self.low_order_bits)
     
     def __hash__(self):
-        return hash((self.high_order_bits,self.low_order_bits))
+        return self._hash
 
     def __eq__(self,other):
         return ((self.high_order_bits == other.high_order_bits) and
