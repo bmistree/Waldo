@@ -67,16 +67,16 @@ def run_test():
     # visible to the other.
     evt1,evt2 = create_two_events(commit_manager)
     el3_list.get_val(evt1).del_key_called(evt1,2)
+
     master_list.get_val(evt2).get_val_on_key(evt2,0).get_val(evt2).del_key_called(evt2,0)
 
     if not evt1.hold_can_commit():
         print '\nErr: should be able to hold commit 1\n'
         return False
+    evt1.complete_commit()    
     if not evt2.hold_can_commit():
         print '\nErr: should be able to hold commit 2\n'
         return False
-    
-    evt1.complete_commit()
     evt2.complete_commit()
 
     # now check that the changes were actually applied 

@@ -30,7 +30,7 @@ def setup():
     commit_manager = commitManager._CommitManager()
     evt1 = PrintTestInvalidationListener(commit_manager)
     evt2 = PrintTestInvalidationListener(commit_manager)
-    number = wVariables.WaldoNumVariable(INITIAL_NUMBER)
+    number = wVariables.WaldoNumVariable(False,INITIAL_NUMBER)
     evt3 = PrintTestInvalidationListener(commit_manager)
     
     return evt1,evt2,evt3,number
@@ -64,7 +64,9 @@ def run_test():
 
     evt1.complete_commit()
 
-    time.sleep(1)
+    # wait some small amount of time to ensure that the invalidation
+    # notification was passed forward.
+    time.sleep(.1)
 
     if not evt2.notified_invalidated:
         err_msg = '\nerr: should have been notified of invalidation'

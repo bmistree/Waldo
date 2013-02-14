@@ -2,9 +2,9 @@ import waldoReferenceBase
 
 
 class _ReferenceValue(waldoReferenceBase._ReferenceBase):
-    def __init__(self,init_val):
+    def __init__(self,peered,init_val):
         waldoReferenceBase._ReferenceBase.__init__(
-            self,init_val,_ReferenceValueVersion(),
+            self,peered,init_val,_ReferenceValueVersion(),
             _ReferenceValueDirtyMapElement)
                                                         
     

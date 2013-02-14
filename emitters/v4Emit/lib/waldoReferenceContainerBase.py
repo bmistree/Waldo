@@ -11,9 +11,9 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     to additional _WaldoObjs, and therefore needs to dirty those as
     well and update those simultaneously when updating _WaldoContainer.
     '''
-    def __init__(self,init_val,version_obj,dirty_element_constructor):
+    def __init__(self,peered,init_val,version_obj,dirty_element_constructor):
         waldoReferenceBase._ReferenceBase.__init__(
-            self,init_val,version_obj,dirty_element_constructor)
+            self,peered,init_val,version_obj,dirty_element_constructor)
 
     def get_val(self,invalid_listener):
         util.logger_assert(
@@ -27,7 +27,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_elem = self._dirty_map[invalid_listener.uuid]
-        dirty_elem.add_key(key_added,new_val)
+        dirty_elem.add_key(key_added,new_val,invalid_listener,self.peered)
         self._unlock()
 
 
@@ -39,7 +39,29 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         dirty_elem.del_key(key_deleted)
         self._unlock()
 
+    @abstractmethod
+    def copy_if_peered(self):
+        '''
+        Peered data only get copied in and out via value instead of by
+        reference.  This is to ensure that one endpoint cannot
+        directly operate on another endpoint's references.  This
+        method returns a copy of self if self is not peered.
+        Otherwise, it returns a deep copy of itself.
 
+        We only need a copy_if_peered method for ReferenceContainers
+        because non-ReferenceContainers will automatically return
+        copied values (Numbers, Texts, TrueFalses) when we get their
+        values.
+        '''
+        pass
+
+    @abstractmethod
+    def copy(self,invalid_listener,peered):
+        '''
+        Returns a deep copy of this object.  
+        '''
+
+    
     def get_len(self,invalid_listener):
         self._lock()
         self._add_invalid_listener(invalid_listener)
@@ -124,10 +146,32 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         self.version_obj.write_val_on_key(key)
         self.val[key] = new_val
 
-    def add_key(self,key,new_val):
+    def add_key(self,key,new_val,invalid_listener,peered):
         self.version_obj.add_key(key)
+        # if we are peered, then we want to assign into ourselves a
+        # copy of the object, not the object itself.  This will only
+        # be a problem for container types.  Non-container types
+        # already have the semantics that they will be copied on read.
+        # (And we throw an error if a peered variable has a container
+        # with externals inside of it.)
+        if peered:
+            if isinstance(
+                new_val,waldoReferenceContainerBase._ReferenceContainer):
+                new_val = new_val.copy(invalid_listener,True)
+
+            elif isinstance(
+                new_val,waldoReferenceBase._ReferenceBase):
+                new_val = new_val.get_val(invalid_listener)
+                
+                # need to check again in case it's a
+                # WaldoVariableList/Map that we are adding.
+                if isinstance(
+                    new_val,waldoReferenceContainerBase._ReferenceContainer):
+                    new_val = new_val.copy(invalid_listener,peered)
+
         self.val[key] = new_val
 
+        
     def del_key(self,key):
         self.version_obj.del_key(key)        
         del self.val[key]

@@ -1,6 +1,5 @@
 import threading
 import util
-import pickle
 from abc import abstractmethod
         
 class _ReferenceBase(object):
@@ -12,10 +11,11 @@ class _ReferenceBase(object):
     # re-purposing the no one else can use the commit lock until....
 
     
-    def __init__(self,init_val,version_obj,dirty_element_constructor):
+    def __init__(self,peered,init_val,version_obj,dirty_element_constructor):
         self.uuid = util.generate_uuid()
         self.version_obj = version_obj
-
+        self.peered = peered
+        
         self.val = init_val
         self.dirty_element_constructor = dirty_element_constructor
         
