@@ -57,25 +57,59 @@ class _ReferenceBase(object):
 
         return copied_val
 
+
+    def update_version_and_val(
+        self,invalid_listener,version_obj,val):
+        '''
+        @param {_ReferenceVersion} version_obj 
+        @param {Anything} val
         
-    def get_val(self,invalid_listener):
+        If we are a peered variable, then when the other side makes a
+        change, we want to update the dirty version of our object and
+        resume from there.  To do this, just overwrite the dirty
+        element's version_obj + val.
         '''
-        Requests a copy of the internal 
-        '''
+
+        # FIXME: eventually, want to transmit deltas instead of the
+        # full val and version_obj.  
+        if not self.peered:
+            util.logger_assert(
+                'Should not be updating value and version for a ' +
+                'non-peered data item.')
+        
         self._lock()
+        self._add_invalid_listener(invalid_listener)
+        dirty_element = self._dirty_map[invalid_listener.uuid]
+        dirty_element.set_version_obj_and_val(version_obj,val)
         
+        self._unlock()
+
+        
+    def _add_invalid_listener(self,invalid_listener):
+        '''
+        ASSUMES ALREADY WITHIN LOCK
+        '''
         if invalid_listener.uuid not in self._dirty_map:
+            
             # FIXME: may only want to make a copy of val on write
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
                 self.val,
                 invalid_listener)
+            
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
+
+
             
+    def get_val(self,invalid_listener):
+        '''
+        Requests a copy of the internal 
+        '''
+        self._lock()
+        self._add_invalid_listener(invalid_listener)
         dirty_val = self._dirty_map[invalid_listener.uuid].val
         self._unlock()
-        
         return dirty_val
 
 
@@ -84,14 +118,7 @@ class _ReferenceBase(object):
         Writes to a copy of internal val, dirtying it
         '''
         self._lock()
-        if invalid_listener.uuid not in self._dirty_map:
-            to_add = self.dirty_element_constructor(
-                self.version_obj.copy(),
-                new_val,
-                invalid_listener)
-            self._dirty_map[invalid_listener.uuid] = to_add
-            invalid_listener.add_touch(self)
-            
+        self._add_invalid_listener(invalid_listener)
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
         self._unlock()
         
@@ -227,7 +254,6 @@ class _DirtyNotifyThread(threading.Thread):
             inv_listener.notify_invalidated(self.wld_obj)
 
 
-
             
 class _DirtyMapElement(object):
     '''
@@ -249,6 +275,12 @@ class _DirtyMapElement(object):
         self.val = val
         self.invalidation_listener = invalidation_listener
 
+    def set_version_obj_and_val(self,version_obj,val):
+        '''
+        @see update_version_and_val in _ReferenceBase.
+        '''
+        self.version_obj = version_obj
+        self.val = val
 
     def set_has_been_written_to(self,new_val):
         self.version_obj.set_has_been_written_to()
