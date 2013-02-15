@@ -13,7 +13,7 @@ import ind_tests.test_num
 import ind_tests.test_value_list
 import ind_tests.test_value_map
 import ind_tests.test_peered_nested_map_list
-
+import ind_tests.test_serialized_deserialized_num
 
 TO_RUN = [
     ('Nested list', ind_tests.test_nested_list.run_test),
@@ -22,6 +22,10 @@ TO_RUN = [
     ('Map of values', ind_tests.test_value_map.run_test),
     ('Map of values', ind_tests.test_value_map.run_test),
     ('Nested peered list', ind_tests.test_peered_nested_map_list.run_test),
+    
+    ('Serialization of single number',
+     ind_tests.test_serialized_deserialized_num.run_test),
+    
     ]
 
 def run_all():
