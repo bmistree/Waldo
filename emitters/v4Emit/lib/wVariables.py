@@ -10,7 +10,16 @@ class WaldoNumVariable(_ReferenceValue):
     @staticmethod
     def var_type():
         return 'WaldoNumVariable'
-        
+
+    def is_value_type(self):
+        return True
+
+    
+    def copy(self,invalid_listener,peered):
+        return WaldoNumVariable(
+            peered,self.get_val(invalid_listener))
+                                
+    
     
 class WaldoTextVariable(_ReferenceValue):
     def __init__(self,peered=False,init_val=''):
@@ -20,6 +29,14 @@ class WaldoTextVariable(_ReferenceValue):
     def var_type():
         return 'WaldoTextVariable'
 
+    def is_value_type(self):
+        return True
+
+    def copy(self,invalid_listener,peered):
+        return WaldoTextVariable(
+            peered,self.get_val(invalid_listener))
+
+    
         
 class WaldoTrueFalseVariable(_ReferenceValue):
     def __init__(self,peered=False,init_val=False):
@@ -28,7 +45,15 @@ class WaldoTrueFalseVariable(_ReferenceValue):
     @staticmethod
     def var_type():
         return 'WaldoTrueFalseVariable'
-        
+
+    def is_value_type(self):
+        return True
+
+    def copy(self,invalid_listener,peered):
+        return WaldoTrueFalseVariable(
+            peered,self.get_val(invalid_listener))
+
+    
 
 ### CONTAINER TYPES        
 class WaldoMapVariable(_ReferenceValue):
@@ -42,6 +67,15 @@ class WaldoMapVariable(_ReferenceValue):
     def var_type():
         return 'WaldoMapVariable'
 
+    def is_value_type(self):
+        return False
+
+    def copy(self,invalid_listener,peered):
+        return WaldoMapVariable(
+            peered,
+            self.get_val(invalid_listener).copy(invalid_listener,peered))
+
+    
         
 class WaldoListVariable(_ReferenceValue):
     def __init__(self,peered=False,init_val=None):
@@ -54,5 +88,11 @@ class WaldoListVariable(_ReferenceValue):
     def var_type():
         return 'WaldoListVariable'
 
+    def is_value_type(self):
+        return False
 
+    def copy(self,invalid_listener,peered):
+        return WaldoListVariable(
+            peered,
+            self.get_val(invalid_listener).copy(invalid_listener,peered))
 

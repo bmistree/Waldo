@@ -85,7 +85,7 @@ def run_test():
     # itself.  For non-peered data, where we do not pass back
     # references from list, struct, and maps.  We pass back copies of
     # them.
-    peered_list.get_val(evt2).get_val_on_key(evt2,0).write_val_on_key(evt2,'b',15)
+    peered_list.get_val(evt2).get_val_on_key(evt2,0).get_val(evt2).write_val_on_key(evt2,'b',15)
 
     
     if not evt1.hold_can_commit():
@@ -109,7 +109,7 @@ def run_test():
         print err_msg
         return False
 
-    if peered_list.get_val(evt2).get_val_on_key(evt2,0).get_val_on_key(evt2,'b') != 15:
+    if peered_list.get_val(evt2).get_val_on_key(evt2,0).get_val(evt2).get_val_on_key(evt2,'b') != 15:
         err_msg = '\nErr: should have gotten an update from '
         err_msg += 'previous commit.\n'
         print err_msg
@@ -131,9 +131,9 @@ def run_test():
     evt1,evt2 = create_two_events(commit_manager)
 
     # read
-    peered_list.get_val(evt1).get_val_on_key(evt1,0).get_val_on_key(evt1,'b')
+    peered_list.get_val(evt1).get_val_on_key(evt1,0).get_val(evt1).get_val_on_key(evt1,'b')
     # write
-    peered_list.get_val(evt2).get_val_on_key(evt2,0).write_val_on_key(evt2,'b',22)
+    peered_list.get_val(evt2).get_val_on_key(evt2,0).get_val(evt2).write_val_on_key(evt2,'b',22)
 
 
     if not evt1.hold_can_commit():

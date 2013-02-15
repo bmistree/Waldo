@@ -55,12 +55,6 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         '''
         pass
 
-    @abstractmethod
-    def copy(self,invalid_listener,peered):
-        '''
-        Returns a deep copy of this object.  
-        '''
-
     
     def get_len(self,invalid_listener):
         self._lock()
@@ -139,7 +133,10 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
     def get_val_on_key(self,key):
         self.version_obj.get_val_on_key(key)
         return self.val[key]
-
+    
+    def is_value_type(self):
+        return False
+    
     # when go to non-value containers, then will probably need to add
     # touches when write value on key.
     def write_val_on_key(self,key,new_val):
@@ -161,13 +158,18 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
 
             elif isinstance(
                 new_val,waldoReferenceBase._ReferenceBase):
-                new_val = new_val.get_val(invalid_listener)
+
+                if new_val.is_value_type():
+                    new_val = new_val.get_val(invalid_listener)
+                else:
+                    new_val = new_val.copy(invalid_listener,True)
+
                 
-                # need to check again in case it's a
-                # WaldoVariableList/Map that we are adding.
-                if isinstance(
-                    new_val,waldoReferenceContainerBase._ReferenceContainer):
-                    new_val = new_val.copy(invalid_listener,peered)
+                # # need to check again in case it's a
+                # # WaldoVariableList/Map that we are adding.
+                # if isinstance(
+                #     new_val,waldoReferenceContainerBase._ReferenceContainer):
+                #     new_val = new_val.copy(invalid_listener,peered)
 
         self.val[key] = new_val
 

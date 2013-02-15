@@ -20,7 +20,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
     @staticmethod
     def var_type():
         return 'internal list'
-        
+    
     def contains_key(self,invalid_listener, key):
         util.logger_assert(
             'Cannot call contains_key on list')
@@ -76,14 +76,18 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
 
             elif isinstance(
                 to_copy,waldoReferenceBase._ReferenceBase):
-                to_copy = to_copy.get_val(invalid_listener)
+
+                if to_copy.is_value_type():
+                    to_copy = to_copy.get_val(invalid_listener)
+                else:
+                    to_copy = to_copy.copy(invalid_listener,peered)
                 
             new_internal_val.append(to_copy)
             
         if self_to_copy:
             self._unlock()
 
-        return InternalList(False,new_internal_val)
+        return InternalList(peered,new_internal_val)
 
 
 class _InternalListDirtyMapElement(
@@ -114,14 +118,12 @@ class _InternalListDirtyMapElement(
 
             elif isinstance(
                 new_val,waldoReferenceBase._ReferenceBase):
-                new_val = new_val.get_val(invalid_listener)
-
-                # need to check again in case it's a
-                # WaldoVariableList/Map that we are appending.
-                if isinstance(
-                    new_val,waldoReferenceContainerBase._ReferenceContainer):
-                    new_val = new_val.copy(invalid_listener,peered)
                 
+                if new_val.is_value_type():
+                    new_val = new_val.get_val(invalid_listener)
+                else:
+                    new_val = new_val.copy(invalid_listener,True)
+
         self.val.append(new_val)
 
         

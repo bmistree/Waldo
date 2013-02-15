@@ -6,7 +6,6 @@ class _ReferenceValue(waldoReferenceBase._ReferenceBase):
         waldoReferenceBase._ReferenceBase.__init__(
             self,peered,init_val,_ReferenceValueVersion(),
             _ReferenceValueDirtyMapElement)
-                                                        
     
 
 class _ReferenceValueDirtyMapElement(waldoReferenceBase._DirtyMapElement):

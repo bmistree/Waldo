@@ -38,6 +38,24 @@ class _ReferenceBase(object):
         '''
         util.logger_assert(
             'var_type is pure virtual in _ReferenceBase.')
+
+    @abstractmethod
+    def copy(self,invalid_listener,peered):
+        '''
+        Returns a deep copy of this object.  
+        '''
+        util.logger_assert(
+            'copy is pure virtual in _ReferenceBase.')
+
+    @abstractmethod
+    def is_value_type(self):
+        '''
+        @returns {bool} --- True if the reference base points at a
+        value type (Text, Bool, Number).  False otherwise.
+        '''
+        util.logger_assert(
+            'is_value_type is pure virtual in _ReferenceBase.')
+        
         
     def serializable_var_map_for_network(
         self,var_name,invalid_listener):
@@ -180,8 +198,6 @@ class _ReferenceBase(object):
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
 
-
-            
     def get_val(self,invalid_listener):
         '''
         Requests a copy of the internal 
@@ -191,7 +207,7 @@ class _ReferenceBase(object):
         dirty_val = self._dirty_map[invalid_listener.uuid].val
         self._unlock()
         return dirty_val
-
+    
 
     def write_val(self,invalid_listener,new_val):
         '''

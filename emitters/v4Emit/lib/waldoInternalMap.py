@@ -22,6 +22,9 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         return 'internal map'
     
     def copy(self,invalid_listener,peered):
+        '''
+        Returns a deep copy of the object.
+        '''
         # will be used as initial_val when constructing copied
         # InternalMap that we return.
         new_internal_val = {}
@@ -46,14 +49,18 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
                 to_copy = to_copy.copy(invalid_listener,peered)
             elif isinstance(
                 to_copy,waldoReferenceBase._ReferenceBase):
-                to_copy = to_copy.get_val(invalid_listener)
+
+                if to_copy.is_value_type():
+                    to_copy = to_copy.get_val(invalid_listener)
+                else:
+                    to_copy = to_copy.copy(invalid_listener,peered)
                 
             new_internal_val[key] = to_copy
             
         if self_to_copy:
             self._unlock()
 
-        return InternalMap(False,new_internal_val)
+        return InternalMap(peered,new_internal_val)
         
             
 class _InternalMapDirtyMapElement(
