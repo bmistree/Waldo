@@ -17,6 +17,10 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
 
         return self.copy(invalid_listener,False)
 
+    @staticmethod
+    def var_type():
+        return 'internal map'
+    
     def copy(self,invalid_listener,peered):
         # will be used as initial_val when constructing copied
         # InternalMap that we return.

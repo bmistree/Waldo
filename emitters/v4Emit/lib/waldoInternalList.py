@@ -17,6 +17,10 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         util.logger_assert(
             'Cannot call get_keys on a list')
         
+    @staticmethod
+    def var_type():
+        return 'internal list'
+        
     def contains_key(self,invalid_listener, key):
         util.logger_assert(
             'Cannot call contains_key on list')

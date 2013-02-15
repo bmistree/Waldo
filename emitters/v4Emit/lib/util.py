@@ -2,6 +2,32 @@ import uuid
 import ctypes
 import os
 import inspect
+from collections import namedtuple
+
+
+_SerializationHelperNamedTuple = namedtuple(
+        'SerializationHelperNamedTuple',
+        ['var_name', 'var_type','var_data','version_obj_data'])
+
+def _generate_serialization_named_tuple(
+    var_name,var_type,var_data,version_obj_data):
+    '''
+    @param {String} var_name ---
+    
+    @param {String} var_type --- Must be an key in
+    waldoNetworkSerializer.ReferenceTypeConstructorDict.
+
+    @param {} version_obj_data --- Either the actual python value of
+    the variable or another SerializationHelperNamedTuple in the case
+    that the data are pointing at additional name
+    SerializationHelperNamedTuples.
+    '''
+    tup = _SerializationHelperNamedTuple(
+        var_name,var_type,var_data,version_obj_data)
+
+    return tup
+
+
 
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) 
 waldo_uuid_lib_abs_path = os.path.join(

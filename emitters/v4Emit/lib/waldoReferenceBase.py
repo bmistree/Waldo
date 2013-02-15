@@ -1,7 +1,9 @@
 import threading
 import util
 from abc import abstractmethod
-        
+import pickle
+
+
 class _ReferenceBase(object):
     '''
     Whenever we have a reference, ie a variable, map, list, struct, it
@@ -28,6 +30,84 @@ class _ReferenceBase(object):
     def _unlock(self):
         self._mutex.release()
 
+    @staticmethod
+    def var_type():
+        '''
+        @returns {String} --- Each subtype of _ReferenceBase has a
+        unique name.
+        '''
+        util.logger_assert(
+            'var_type is pure virtual in _ReferenceBase.')
+        
+    def serializable_var_map_for_network(
+        self,var_name,invalid_listener):
+        '''
+        The runtime automatically synchronizes data between both
+        endpoints.  When one side has updated a peered variable, the
+        other side needs to attempt to apply those changes before
+        doing further work.  This method grabs the val and version
+        object of the dirty element associated with invalid_listener.
+        Using these data, plus var_name, it constructs a named tuple
+        for serialization.  (@see
+        util._generate_serialization_named_tuple)
+
+        Note: if the val of this object is another Reference object,
+        then we recursively keep generating named tuples and embed
+        them in the one we return.
+
+        Note: we only serialize peered data.  No other data gets sent
+        over the network; therefore, it should not be serialized.
+
+        @param {String} var_name --- Both sides of the connection need
+        to agree on a common name for the variable being serialized.
+        This is to ensure that when the data are received by the other
+        side we know which variable to put them into.  This value is
+        only really necessary for the outermost wrapping of the named
+        type tuple, but we pass it through anyways.
+
+        '''
+
+        # FIXME: eventually want to do serialize deltas of variables
+        # and version objects instead of full things.
+        
+        #### DEBUG
+        if not self.peered:
+            util.logger_assert(
+                'Should not be serializing a non-peered data item.')
+        #### END DEBUG
+
+            
+        self._lock()
+        self._add_invalid_listener(invalid_listener)
+        dirty_element = self._dirty_map[invalid_listener.uuid]
+        self._unlock()
+
+
+        # a val can either point to a waldo reference, a python value,
+        # or a list/map of waldo references or a list/map of python
+        # values.
+        var_data = dirty_element.val
+        if isinstance(var_data,_ReferenceBase):
+            var_data = dirty_element.val.serializable_var_map_for_network(
+                var_name,invalid_listener)
+        elif isinstance(var_data,list) or isinstance(var_data,dict):
+            keys = range(0,len(var_data))
+            if isinstance(var_data,dict):
+                keys = var_data.keys()
+            
+            for index in keys:
+                if isinstance(var_data,_ReferenceBase):
+                    var_data[index] = var_data[index].serializable_var_map_for_network(
+                        var_name,invalid_listener)
+
+        version_obj_data = dirty_element.version_obj.serializable_for_network_data()
+
+        to_return = util._generate_serialization_named_tuple(
+            var_name,self.var_type(),var_data,version_obj_data)
+        return to_return
+
+    
+    
     def _non_waldo_copy(self):
         '''
         When we are establishing dirty map elements, we make a copy of
@@ -275,6 +355,7 @@ class _DirtyMapElement(object):
         self.val = val
         self.invalidation_listener = invalidation_listener
 
+        
     def set_version_obj_and_val(self,version_obj,val):
         '''
         @see update_version_and_val in _ReferenceBase.
@@ -350,6 +431,29 @@ class _ReferenceVersion(object):
         the current value of the object should be.
         '''
         pass
-    
-    
 
+
+    def serializable_for_network_data(self):
+        '''
+        The dirty map's version object must be serialized and passed
+        to the partner endpoint for deserialization so that the
+        partner endpoint knows which fields were changed on
+        serializer's side.
+        '''
+
+        # FIXME: Lots of overhead in pickling entire class instead of
+        # just the necessary data.
+        return pickle.dumps(self)
+
+    @staticmethod
+    def deserialize_version_obj_from_network_data(
+        version_network_data):
+        '''
+        @param {Currently string} version_network_data --- The result
+        of a call to serilizable_for_network_data on a version object.
+        '''
+        return pickle.loads(version_network_data)
+        
+
+    
+    
