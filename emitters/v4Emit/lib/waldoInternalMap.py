@@ -34,7 +34,7 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         self_to_copy = True
         if invalid_listener.uuid in self._dirty_map:
             self_to_copy = False
-            val_to_copy = self.dirty_map[invalid_listener.uuid].val
+            val_to_copy = self._dirty_map[invalid_listener.uuid].val
             
         # if copying from internal: stay within the lock so that
         # nothing else can write to internal while we are.

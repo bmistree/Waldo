@@ -145,7 +145,7 @@ def deserialize_peered_object_into_variable(
         
         if not version_obj.has_been_written_to:
             # case 3a above
-            nested_reference = waldo_reference.get_dirty_element_val(
+            nested_reference = waldo_reference.get_val(
                 invalidation_listener)
 
             deserialize_peered_object_into_variable(

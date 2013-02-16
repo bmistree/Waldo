@@ -153,7 +153,7 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         # with externals inside of it.)
         if peered:
             if isinstance(
-                new_val,waldoReferenceContainerBase._ReferenceContainer):
+                new_val,_ReferenceContainer):
                 new_val = new_val.copy(invalid_listener,True)
 
             elif isinstance(

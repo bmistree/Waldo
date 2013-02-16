@@ -14,6 +14,7 @@ import ind_tests.test_value_list
 import ind_tests.test_value_map
 import ind_tests.test_peered_nested_map_list
 import ind_tests.test_serialized_deserialized_num
+import ind_tests.test_serialized_deserialized_nested_map
 
 TO_RUN = [
     ('Nested list', ind_tests.test_nested_list.run_test),
@@ -25,6 +26,9 @@ TO_RUN = [
     
     ('Serialization of single number',
      ind_tests.test_serialized_deserialized_num.run_test),
+
+    ('Serialization of a nested map',
+     ind_tests.test_serialized_deserialized_nested_map.run_test),
     
     ]
 
