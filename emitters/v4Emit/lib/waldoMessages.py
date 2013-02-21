@@ -1,9 +1,6 @@
 import util
 from abc import abstractmethod
 
-_Message.SUBTYPE_MAP[
-    _PartnerRequestSequenceBlockMessage.MSG_TYPE] = _PartnertnerRequestSequenceBlockMessage
-
 
 # FIXME: probably could do better from using a named tuple for messages.
 class _Message(object):
@@ -45,13 +42,13 @@ class _Message(object):
             'serialize in _Message is purely virtual')
 
     @staticmethod
-    def map_to_msg(self,msg_map):
+    def map_to_msg(msg_map):
         '''
         @returns {Subclass of _Message}
         '''
 
         #### DEBUG
-        if MESSAGE_TYPE_FIELD not in msg_map:
+        if _Message.MESSAGE_TYPE_FIELD not in msg_map:
             util.logger_assert(
                 'Error: received a map that had no message type field.  '  +
                 'Do not know which _Message subclass to use to convert it ' +
@@ -75,7 +72,7 @@ class _PartnerRequestSequenceBlockMessage(_Message):
     
     def __init__(
         self,event_uuid,name_of_block_requesting,reply_with_uuid,reply_to_uuid,
-        sequence_local_var_store_deltas,global_var_store_deltas):
+        global_var_store_deltas,sequence_local_var_store_deltas):
         '''
         For params, @see
         waldoEndpoint._send_partner_message_sequence_block_request.
@@ -105,7 +102,7 @@ class _PartnerRequestSequenceBlockMessage(_Message):
     def msg_to_map(self):
         return {
             _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
-            _Message.EVENT_UUID_FIELD: self.event,
+            _Message.EVENT_UUID_FIELD: self.event_uuid,
 
             self.NAME_OF_BLOCK_REQUESTING_FIELD: self.name_of_block_requesting,
             self.REPLY_WITH_UUID_FIELD: self.reply_with_uuid,
@@ -121,7 +118,10 @@ class _PartnerRequestSequenceBlockMessage(_Message):
             msg_map[_PartnerRequestSequenceBlockMessage.NAME_OF_BLOCK_REQUESTING_FIELD],
             msg_map[_PartnerRequestSequenceBlockMessage.REPLY_WITH_UUID_FIELD],
             msg_map[_PartnerRequestSequenceBlockMessage.REPLY_TO_UUID_FIELD],
-            msg_map[_PartnerRequestSequenceBlockMessage.SEQUENCE_LOCAL_VAR_STORE_DELTAS_FIELD],
-            msg_map[_PartnerRequestSequenceBlockMessage.PEERED_VAR_STORE_DELTAS_FIELD])
+            msg_map[_PartnerRequestSequenceBlockMessage.PEERED_VAR_STORE_DELTAS_FIELD],
+            msg_map[_PartnerRequestSequenceBlockMessage.SEQUENCE_LOCAL_VAR_STORE_DELTAS_FIELD])
 
     
+
+_Message.SUBTYPE_MAP[
+    _PartnerRequestSequenceBlockMessage.MSG_TYPE] = _PartnerRequestSequenceBlockMessage

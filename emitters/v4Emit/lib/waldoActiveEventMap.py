@@ -3,23 +3,24 @@ from waldoActiveEvent import EndpointCalledActiveEvent
 from waldoActiveEvent import RootActiveEvent
 import threading
 
-class ActiveEventMap(object):
+class _ActiveEventMap(object):
     '''
     Keeps track of all activeevent-s on an endpoint
     '''
 
-    def __init__(self,commit_manager):
+    def __init__(self,commit_manager,local_endpoint):
         
         self.map = {}
         self._mutex = threading.Lock()
         self.commit_manager = commit_manager
+        self.local_endpoint = local_endpoint
         
     def create_root_event(self):
         '''
         Generates a new active event for events that were begun on
         this endpoint and returns it.
         '''
-        new_event = RootActiveEvent(self.commit_manager)
+        new_event = RootActiveEvent(self.commit_manager,self.local_endpoint)
         self._lock()
         self._insert_event_into_map(new_event)
         self._unlock()
@@ -34,9 +35,8 @@ class ActiveEventMap(object):
         self._lock()
         if uuid not in self.map:
             new_event = PartnerActiveEvent(
-                self.commit_manager,uuid)
+                self.commit_manager,uuid,self.local_endpoint)
             self._insert_event_into_map(new_event)
-
         event = self.map[uuid]
         self._unlock()
         return event
@@ -52,7 +52,8 @@ class ActiveEventMap(object):
 
         if uuid not in self.map:
             event = EndpointCalledActiveEvent(
-                self.commit_manager,endpoint,uuid)
+                self.commit_manager,uuid,self.local_endpoint,
+                endpoint,)
             self._insert_event_into_map(event)
         event = self.map[uuid]
         self._unlock()

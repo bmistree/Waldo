@@ -47,10 +47,10 @@ class _SequenceMessageCallResult(object):
         execute in the sequence.  If it is None, then it means that
         there is no more to execute in the sequence.
 
-        @param {String} sequence_local_var_store_deltas --- Should be
-        able to put this string directly into a _VariableStore object
+        @param {dict} sequence_local_var_store_deltas --- Should be
+        able to put this map directly into a _VariableStore object
         to update each of an event's pieces of peered data.  @see
-        wladoVariableStore._VariableStore.
+        waldoVariableStore._VariableStore.incorporate_deltas
         
         We must update the event context with the new
         reply_with_msg_field when complete.

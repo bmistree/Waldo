@@ -26,9 +26,21 @@ def partner_endpoint_msg_call_func_name(func_name):
 
 
 
-_SerializationHelperNamedTuple = namedtuple(
-        'SerializationHelperNamedTuple',
-        ['var_name', 'var_type','var_data','version_obj_data'])
+# FIXME: Lower overhead to using named tuple, however, when I try to,
+# I get a pickling error: "pickle.PicklingError: Can't pickle <class
+# 'util.SerializationHelperNamedTuple'>: it's not found as
+# util.SerializationHelperNamedTuple", which I should fix.
+# _SerializationHelperNamedTuple = namedtuple(
+#         'SerializationHelperNamedTuple',
+#         ['var_name', 'var_type','var_data','version_obj_data'])
+
+class _SerializationHelperNamedTuple(object):
+    def __init__(self,var_name,var_type,var_data,version_obj_data):
+        self.var_name = var_name
+        self.var_type = var_type
+        self.var_data = var_data
+        self.version_obj_data = version_obj_data
+
 
 def _generate_serialization_named_tuple(
     var_name,var_type,var_data,version_obj_data):
@@ -83,6 +95,10 @@ class WaldoFFUUID(object):
         return self._hash
 
     def __eq__(self,other):
+
+        if other == None:
+            return False
+        
         return ((self.high_order_bits == other.high_order_bits) and
                 (self.low_order_bits == other.low_order_bits))
 

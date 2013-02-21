@@ -2,7 +2,9 @@ import threading
 import Queue
 import util
 import waldoServiceActions
-
+import pickle
+import waldoActiveEventMap
+import waldoMessages
 
 class _EndpointServiceThread(threading.Thread):
     def __init__(self,endpoint):
@@ -45,7 +47,7 @@ class _EndpointServiceThread(threading.Thread):
         self.threadsafe_queue.put(req_backout_action)
         
 
-    def _endpoint_call(
+    def endpoint_call(
         self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
         '''
         @param{_Endpoint object} endpoint_making_call --- The endpoint
@@ -72,6 +74,17 @@ class _EndpointServiceThread(threading.Thread):
             self.endpoint,endpoint_making_call,event_uuid,func_name,
             result_queue,*args)
         self.threadsafe_queue.put(req_backout_action)
+
+    def partner_request_message_sequence_block(self,msg):
+        '''
+        @param {_PartnerRequestSequenceBlockMessage} msg --- Contains
+        all the information for the request partner made.
+        '''
+        partner_request_sequence_block_action = (
+            waldoServiceActions._PartnerMessageRequestSequenceBlockAction(
+                self.endpoint,msg))
+            
+        self.threadsafe_queue.put(partner_request_sequence_block_action)
 
         
     def request_commit(self,uuid,requesting_endpoint):
@@ -111,14 +124,18 @@ class _Endpoint(object):
         add or remove any peered or endpoint global variables.  Will
         only make calls on them.
         '''
-        self._act_event_map = _ActiveEventMap(commit_manager)
-        self._endpoint_service_thread = _EndpointServiceThread(self)
+        self._act_event_map = waldoActiveEventMap._ActiveEventMap(commit_manager,self)
         self._conn_obj = conn_obj
 
         # whenever we create a new _ExecutingEvent, we point it at
         # this variable store so that it knows where it can retrieve
         # variables.
         self._global_var_store = global_var_store
+
+        self._commit_manager = commit_manager
+
+        self._endpoint_service_thread = _EndpointServiceThread(self)
+        self._endpoint_service_thread.start()
         
     def _request_commit(self,uuid,requesting_endpoint):
         '''
@@ -133,6 +150,35 @@ class _Endpoint(object):
         '''
         self._endpoint_service_thread.request_backout(
             uuid,requesting_endpoint)
+
+
+    def _receive_msg_from_partner(self,string_msg):
+        '''
+        Called by the connection object.
+
+        @param {String} string_msg --- A raw byte string sent from
+        partner.  Should be able to deserialize it, convert it into a
+        message, and dispatch it as an event.
+
+        Can receive a variety of messages from partner: request to
+        execute a sequence block, request to commit a change to a
+        peered variable, request to backout an event, etc.  In this
+        function, we dispatch depending on message we receive.
+        '''
+        
+        msg_map = pickle.loads(string_msg)
+        msg = waldoMessages._Message.map_to_msg(msg_map)
+        
+        if isinstance(msg,waldoMessages._PartnerRequestSequenceBlockMessage):
+            self._endpoint_service_thread.partner_request_message_sequence_block(
+                msg)
+        else:
+            #### DEBUG
+            util.logger_assert(
+                'Do not know how to convert message to event action ' +
+                'in _receive_msg_from_partner.')
+            #### END DEBUG
+        
 
     def _endpoint_call(
         self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
@@ -194,14 +240,14 @@ class _Endpoint(object):
             invalidation_listener)
         sequence_local_deltas = sequence_local_store.generate_deltas(
             invalidation_listener)
-
         
         msg_to_send = waldoMessages._PartnerRequestSequenceBlockMessage(
             event_uuid,block_name,reply_with_uuid,reply_to_uuid,
             glob_deltas,sequence_local_deltas)
 
         msg_map = msg_to_send.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map))
+
+        self._conn_obj.write(pickle.dumps(msg_map),self)
 
         
     def _forward_commit_request_partner(self,active_event):
@@ -214,6 +260,7 @@ class _Endpoint(object):
             'Call to unfinished _forward_commit_request_partner in ' +
             '_Endpoint.')
 
+        
         
     def _forward_backout_request_partner(self,active_event):
         '''

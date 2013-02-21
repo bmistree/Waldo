@@ -65,11 +65,13 @@ class _ActiveEvent(_InvalidationListener):
         '''
         @param {Endpoint object} local_endpoint --- The local endpoint
         the event is running on.
+
+        @param {UUID or None} uuid --- If None, will generate a new
+        one.
         '''
         _InvalidationListener.__init__(
             self,commit_manager,uuid)
 
-        
         self.local_endpoint = local_endpoint
         
         # If we hit any sequences that have oncomplete handlers, we
@@ -222,9 +224,11 @@ class _ActiveEvent(_InvalidationListener):
             # put result queue in map so that can demultiplex messages
             # from partner to determine which result queue is finished
             reply_with_uuid = util.generate_uuid()
+
+            
             self.message_listening_queues_map[
                 reply_with_uuid] = result_queue
-
+            
             # here, the local endpoint uses the connection object to
             # actually send the message.
             self.local_endpoint._send_partner_message_sequence_block_request(
@@ -394,17 +398,18 @@ class _ActiveEvent(_InvalidationListener):
             # ("maybe" because we also may want to throw a Waldo error
             # for this instead of just asserting out.)
             if not hasattr(
-                self.local_endpoint,to_exec_next_internal_name):
+                self.local_endpoint,block_to_exec_internal_name):
                 util.logger_assert(
                     'Error in _ActiveEvent.  Received a request to ' +
                     'perform an unknown sequence step.')
             #### END MAYBE DEBUG
                            
-            to_exec = getattr(self.local_endpoint,to_exec_next_internal_name)
+            to_exec = getattr(self.local_endpoint,block_to_exec_internal_name)
 
             ### SET UP CONTEXT FOR EXECUTING
             seq_local_var_store = waldoVariableStore._VariableStore()
-            seq_lcoal_var_store.incorporate_deltas(
+
+            seq_local_var_store.incorporate_deltas(
                 self,msg.sequence_local_var_store_deltas)
             
             evt_ctx = waldoExecutingEvent._ExecutingEventContext(
@@ -414,15 +419,15 @@ class _ActiveEvent(_InvalidationListener):
                 seq_local_var_store)
 
             
-            evt_ctx.set_to_reply_with(reply_with_field)
+            evt_ctx.set_to_reply_with(reply_with_uuid)
 
             ### ACTUALLY START EXECUTION CONTEXT THREAD
             # FIXME: may be faster if move this outside of the lock.
             # Probably not much faster though.
             exec_event = waldoExecutingEvent._ExecutingEvent(
-                to_exec,act_event,evt_ctx)
+                to_exec,self,evt_ctx)
             exec_event.start()
-            
+
         else:
             #### DEBUG
             if reply_to_uuid not in self.message_listening_queues_map:
@@ -434,7 +439,8 @@ class _ActiveEvent(_InvalidationListener):
             # unblock waiting listening queue.
             self.message_listening_queues_map[reply_to_uuid].put(
                 waldoCallResults._SequenceMessageCallResult(
-                    reply_with_field,to_exec_next_name_field,
+                    reply_with_uuid,
+                    name_of_block_to_exec_next,
                     # as soon as read from the listening message
                     # queue, populate sequence local data from context
                     # using sequence_local_var_store_deltas.
@@ -503,8 +509,8 @@ class _ActiveEvent(_InvalidationListener):
             
         
 class RootActiveEvent(_ActiveEvent):
-    def __init__(self,commit_manager):
-        ActiveEvent.__init__(self,commit_manager,None)
+    def __init__(self,commit_manager,local_endpoint):
+        _ActiveEvent.__init__(self,commit_manager,None,local_endpoint)
 
     def request_commit(self):
         '''
@@ -524,8 +530,8 @@ class RootActiveEvent(_ActiveEvent):
         return False
                     
 class PartnerActiveEvent(_ActiveEvent):
-    def __init__(self,commit_manager,uuid):
-        _ActiveEvent.__init__(self,commit_manager,uuid)
+    def __init__(self,commit_manager,uuid,local_endpoint):
+        _ActiveEvent.__init__(self,commit_manager,uuid,local_endpoint)
 
         # we received a message, which caused us to create this event.
         # That means that we must check with our partner before we can

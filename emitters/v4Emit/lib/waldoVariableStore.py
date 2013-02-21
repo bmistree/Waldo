@@ -91,6 +91,15 @@ class _VariableStore(object):
         return self._name_to_var_map.get(unique_name,None)
 
 
+    def _debug_print_all_vars(self):
+        '''
+        Runs through internal map and prints all keys to stdout
+        '''
+        print '\nPrinting all in variable store'
+        for key in self._name_to_var_map.keys():
+            print key
+        print '\n'            
+        
     def generate_deltas(self,invalidation_listener):
         '''
         Create a map with an entry for each piece of peered data that
@@ -113,7 +122,7 @@ class _VariableStore(object):
             if waldo_variable.modified(invalidation_listener):
                 changed_map[key] = waldo_variable.serializable_var_tuple_for_network(
                     key,invalidation_listener)
-            
+
         return changed_map
     
 
@@ -128,7 +137,6 @@ class _VariableStore(object):
         gennerated from util._generate_serialization_named_tuple for
         each waldo variable.
         '''
-
         # if it is sequence local data, it could be that we have no
         # entries in our name_to_var_map and must write in the changes
         # from the other side.
@@ -137,10 +145,10 @@ class _VariableStore(object):
                 # need to create a new variable of the same type.
                 # then, need to apply that variable's changes.
                 new_var = waldoNetworkSerializer.create_new_variable_wrapper_from_serialized(
-                    delta_map[keys])
+                    delta_map[key])
                 self._name_to_var_map[key] = new_var
 
             waldoNetworkSerializer.deserialize_peered_object_into_variable(
                 delta_map[key],invalidation_listener,
-                self._name_to_var_map[key]
-        
+                self._name_to_var_map[key])
+

@@ -16,8 +16,8 @@ class _Action(object):
         
 class _PartnerMessageRequestSequenceBlockAction(_Action):
     '''
-    Corresponds to case when partner endpoint requests local endpoint
-    to execute a block sequence.
+    Corresponds to case when partner endpoint receives a request for
+    local endpoint to execute a block sequence.
     '''
 
     def __init__(self,local_endpoint,partner_request_block_msg):
@@ -39,7 +39,7 @@ class _PartnerMessageRequestSequenceBlockAction(_Action):
         
         evt = self.local_endpoint._act_event_map.get_or_create_partner_event(
             event_uuid)
-
+        
         evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
 
     
@@ -78,11 +78,11 @@ class _RequestBackoutAction(_Action):
             # event map.
              return
 
-         skip_partner = False
-         if self.requesting_endpoint == util.PARTNER_ENDPOINT_SENTINEL:
-             skip_partner = True
+        skip_partner = False
+        if self.requesting_endpoint == util.PARTNER_ENDPOINT_SENTINEL:
+            skip_partner = True
 
-         evt.forward_backout_request_and_backout_self(skip_partner)
+        evt.forward_backout_request_and_backout_self(skip_partner)
 
         
 
