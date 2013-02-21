@@ -15,7 +15,7 @@ import ind_tests.test_value_map
 import ind_tests.test_peered_nested_map_list
 import ind_tests.test_serialized_deserialized_num
 import ind_tests.test_serialized_deserialized_nested_map
-import ind_tests.test_single_request_block_between_endpoints
+import ind_tests.test_single_request_block_between_endpoints_sequence_local_data
 
 
 TO_RUN = [
@@ -33,7 +33,7 @@ TO_RUN = [
      ind_tests.test_serialized_deserialized_nested_map.run_test),
 
     ('Test update of sequence local data no commit',
-     ind_tests.test_single_request_block_between_endpoints.run_test)
+     ind_tests.test_single_request_block_between_endpoints_sequence_local_data.run_test)
     
     ]
 
