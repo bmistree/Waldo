@@ -30,7 +30,7 @@ def setup():
     commit_manager = commitManager._CommitManager()
     evt1 = PrintTestInvalidationListener(commit_manager)
     evt2 = PrintTestInvalidationListener(commit_manager)
-    number = wVariables.WaldoNumVariable(False,INITIAL_NUMBER)
+    number = wVariables.WaldoNumVariable('some_name',False,INITIAL_NUMBER)
     evt3 = PrintTestInvalidationListener(commit_manager)
     
     return evt1,evt2,evt3,number

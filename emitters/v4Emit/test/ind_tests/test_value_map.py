@@ -28,7 +28,7 @@ def create_two_events(commit_manager):
         
 def run_test():
     commit_manager = commitManager._CommitManager()
-    wmap = wVariables.WaldoMapVariable()
+    wmap = wVariables.WaldoMapVariable('some map')
 
     evt1,evt2 = create_two_events(commit_manager)
     wmap.get_val(evt1).add_key(evt1,'a',1)

@@ -42,6 +42,8 @@ class _ReferenceValueVersion(waldoReferenceBase._ReferenceVersion):
         return (dirty_vtype_version_obj.version_num !=
                 self.version_num)
 
+    def modified(self,invalidation_listener):
+        return self.has_been_written_to
     
     def update_obj_val_and_version(self,w_obj,val):
         '''

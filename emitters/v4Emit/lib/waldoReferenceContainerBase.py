@@ -136,7 +136,7 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
     
     def is_value_type(self):
         return False
-    
+
     # when go to non-value containers, then will probably need to add
     # touches when write value on key.
     def write_val_on_key(self,key,new_val):
@@ -221,6 +221,17 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         self.added_keys ={}
         self.deleted_keys = {}
 
+    def modified(self,invalidation_listener):
+        '''
+        @returns {bool} true if has been modified; false otherwise
+        '''
+        if ((len(self.written_values_keys) != 0) or
+            (len(self.added_keys) != 0) or (len(self.deleted_keys) != 0)):
+            return True
+        
+        return False
+
+        
     def update_obj_val_and_version(self,w_obj,val):
         '''
         @param {_WaldoObject} w_obj --- We know that w_obj must be one

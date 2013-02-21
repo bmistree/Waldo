@@ -38,7 +38,7 @@ def create_list(commit_manager,to_populate_with):
     the list that we return.  This can be a list of value types, or a
     list of Waldo's internal lists.
     '''
-    new_list = wVariables.WaldoListVariable()
+    new_list = wVariables.WaldoListVariable('some name')
     evt1,evt2 = create_two_events(commit_manager)
     for element in to_populate_with:
         new_list.get_val(evt1).append_val(evt1,element)

@@ -5,6 +5,27 @@ import inspect
 from collections import namedtuple
 
 
+PARTNER_ENDPOINT_SENTINEL = -1
+
+
+def endpoint_call_func_name(func_name):
+    '''
+    Takes in the name of the function that another endpoint has
+    requested to be called.  Adds a prefix to distinguish the function
+    as being called from an endpoint function call rather than from
+    external code.
+    '''
+    return '_endpoint_func_call_prefix__waldo__' + func_name
+
+def partner_endpoint_msg_call_func_name(func_name):
+    '''
+    @see endpoint_call_func_name, except as a result of partner
+    sending a message in a message sequence.
+    '''
+    return '_partner_endpoint_msg_func_call_prefix__waldo__' + func_name
+
+
+
 _SerializationHelperNamedTuple = namedtuple(
         'SerializationHelperNamedTuple',
         ['var_name', 'var_type','var_data','version_obj_data'])

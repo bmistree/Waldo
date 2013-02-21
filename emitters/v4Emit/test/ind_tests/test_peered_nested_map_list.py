@@ -34,7 +34,7 @@ def create_map(commit_manager,to_populate_with):
     @param {map} to_populate_with --- Each element gets inserted into
     the map that we return.
     '''
-    new_map = wVariables.WaldoMapVariable()
+    new_map = wVariables.WaldoMapVariable('some map')
     evt1,evt2 = create_two_events(commit_manager)
     for key in to_populate_with:
         element = to_populate_with[key]
@@ -50,7 +50,7 @@ def create_peered_list(commit_manager,to_populate_with):
     @param {list} to_populate_with --- Runs through the entire list
     appending them to a peered Waldo list that this returns.
     '''
-    new_list = wVariables.WaldoListVariable(True)
+    new_list = wVariables.WaldoListVariable('some list',True)
     evt1,evt2 = create_two_events(commit_manager)
     for element in to_populate_with:
         new_list.get_val(evt1).append_val(evt1,element)

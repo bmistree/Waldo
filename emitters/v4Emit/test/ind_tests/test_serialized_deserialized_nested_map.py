@@ -23,13 +23,13 @@ class BasicInvalidationListener(invalidationListener._InvalidationListener):
 class SingleSide(object):
     def __init__(self):
         # both sides start at 1
-        self.map = wVariables.WaldoMapVariable(True)
+        self.map = wVariables.WaldoMapVariable('some map',True)
         self.commit_manager = commitManager._CommitManager()
     def new_event(self):
         return BasicInvalidationListener(self.commit_manager)
 
 def create_waldo_list(single_side_obj,to_put_inside,evt=None):
-    wlist = wVariables.WaldoListVariable(False)
+    wlist = wVariables.WaldoListVariable('some list',False)
 
     if evt == None:
         evt = single_side_obj.new_event()
@@ -58,7 +58,7 @@ def run_test():
     #  { 1: [7,8,9], 2: [4,5,6] }
     
     
-    serializabled = lhs.map.serializable_var_map_for_network(
+    serializabled = lhs.map.serializable_var_tuple_for_network(
         'some_name',evt)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
@@ -99,7 +99,7 @@ def run_test():
 
     lhs.map.get_val(lhs_event).get_val_on_key(lhs_event,2).get_val(lhs_event).write_val_on_key(lhs_event,0,20)
     
-    serializabled = lhs.map.serializable_var_map_for_network(
+    serializabled = lhs.map.serializable_var_tuple_for_network(
         'some_name',lhs_event)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
@@ -139,14 +139,14 @@ def run_test():
     lhs.map.get_val(lhs_event1).get_val_on_key(lhs_event1,1).get_val(lhs_event1).write_val_on_key(lhs_event1,2,66)
     rhs.map.get_val(rhs_event1).get_val_on_key(rhs_event1,2).get_val(rhs_event1).del_key_called(rhs_event1,2)
     
-    serializabled = lhs.map.serializable_var_map_for_network(
+    serializabled = lhs.map.serializable_var_tuple_for_network(
         'some_name',lhs_event1)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
         serializabled,rhs_event2,rhs.map)
 
 
-    serializabled = rhs.map.serializable_var_map_for_network(
+    serializabled = rhs.map.serializable_var_tuple_for_network(
         'some_name',rhs_event1)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(

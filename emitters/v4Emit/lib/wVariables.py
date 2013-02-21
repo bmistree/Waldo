@@ -1,12 +1,34 @@
 from waldoReferenceValue import _ReferenceValue
 from waldoInternalList import InternalList
 from waldoInternalMap import InternalMap
+from abc import abstractmethod
+import util
 
-### VALUE TYPES
-class WaldoNumVariable(_ReferenceValue):
-    def __init__(self,peered=False,init_val=0):
+
+class _WaldoVariable(_ReferenceValue):
+    def __init__(self,name,peered,init_val):
+        self.name = name
         _ReferenceValue.__init__(self,peered,init_val)
 
+    @abstractmethod
+    def is_value_type(self):
+        util.logger_assert(
+            'Cannot call pure virtual method is_value_type ' +
+            'on _WaldoVariable.')
+
+    @staticmethod
+    def var_type():
+        util.logger_assert(
+            'Cannot call pure virtual method var_type ' +
+            'on _WaldoVariable.')        
+        
+
+
+### VALUE TYPES
+class WaldoNumVariable(_WaldoVariable):
+    def __init__(self,name,peered=False,init_val=0):
+        _WaldoVariable.__init__(self,name,peered,init_val)
+        
     @staticmethod
     def var_type():
         return 'WaldoNumVariable'
@@ -17,13 +39,13 @@ class WaldoNumVariable(_ReferenceValue):
     
     def copy(self,invalid_listener,peered):
         return WaldoNumVariable(
-            peered,self.get_val(invalid_listener))
+            self.name,peered,self.get_val(invalid_listener))
                                 
     
     
-class WaldoTextVariable(_ReferenceValue):
-    def __init__(self,peered=False,init_val=''):
-        _ReferenceValue.__init__(self,peered,init_val)        
+class WaldoTextVariable(_WaldoVariable):
+    def __init__(self,name,peered=False,init_val=''):
+        _WaldoVariable.__init__(self,name,peered,init_val)        
 
     @staticmethod
     def var_type():
@@ -34,14 +56,14 @@ class WaldoTextVariable(_ReferenceValue):
 
     def copy(self,invalid_listener,peered):
         return WaldoTextVariable(
-            peered,self.get_val(invalid_listener))
+            self.name,peered,self.get_val(invalid_listener))
 
     
         
-class WaldoTrueFalseVariable(_ReferenceValue):
-    def __init__(self,peered=False,init_val=False):
-        _ReferenceValue.__init__(self,peered,init_val)
-
+class WaldoTrueFalseVariable(_WaldoVariable):
+    def __init__(self,name,peered=False,init_val=False):
+        _WaldoVariable.__init__(self,name,peered,init_val)
+        
     @staticmethod
     def var_type():
         return 'WaldoTrueFalseVariable'
@@ -51,18 +73,19 @@ class WaldoTrueFalseVariable(_ReferenceValue):
 
     def copy(self,invalid_listener,peered):
         return WaldoTrueFalseVariable(
-            peered,self.get_val(invalid_listener))
+            self.name,peered,self.get_val(invalid_listener))
 
     
 
 ### CONTAINER TYPES        
-class WaldoMapVariable(_ReferenceValue):
-    def __init__(self,peered=False,init_val=None):
+class WaldoMapVariable(_WaldoVariable):
+    def __init__(self,name,peered=False,init_val=None):
         if init_val == None:
             init_val = InternalMap(peered,{})
+            
+        _WaldoVariable.__init__(self,name,peered,init_val)
 
-        _ReferenceValue.__init__(self,peered,init_val)
-
+        
     @staticmethod
     def var_type():
         return 'WaldoMapVariable'
@@ -72,17 +95,16 @@ class WaldoMapVariable(_ReferenceValue):
 
     def copy(self,invalid_listener,peered):
         return WaldoMapVariable(
-            peered,
+            self.name,peered,
             self.get_val(invalid_listener).copy(invalid_listener,peered))
 
-    
         
-class WaldoListVariable(_ReferenceValue):
-    def __init__(self,peered=False,init_val=None):
+class WaldoListVariable(_WaldoVariable):
+    def __init__(self,name,peered=False,init_val=None):
         if init_val == None:
             init_val = InternalList(peered,[])
 
-        _ReferenceValue.__init__(self,peered,init_val)
+        _WaldoVariable.__init__(self,name,peered,init_val)
     
     @staticmethod
     def var_type():
@@ -93,6 +115,6 @@ class WaldoListVariable(_ReferenceValue):
 
     def copy(self,invalid_listener,peered):
         return WaldoListVariable(
-            peered,
+            peered,self.name,
             self.get_val(invalid_listener).copy(invalid_listener,peered))
 

@@ -30,7 +30,7 @@ NUM_ITERATIONS = 100000
     
 def run_test():
     commit_manager = commitManager._CommitManager()
-    number = wVariables.WaldoNumVariable(22)
+    number = wVariables.WaldoNumVariable('some num',22)
 
     start = time.time()
     for i in range(0,NUM_ITERATIONS):

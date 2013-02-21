@@ -29,7 +29,7 @@ def create_two_events(commit_manager):
 def run_test():
     # initialize and populate list to be [1,2,3]
     commit_manager = commitManager._CommitManager()
-    wlist = wVariables.WaldoListVariable()
+    wlist = wVariables.WaldoListVariable('some list')
     evt1,evt2 = create_two_events(commit_manager)
     wlist.get_val(evt1).append_val(evt1,1)
     wlist.get_val(evt1).append_val(evt1,2)

@@ -27,6 +27,36 @@ ReferenceTypeConstructorDict = {
     }
 
 
+def create_new_variable_wrapper_from_serialized(
+    serial_obj_named_tuple):
+    '''
+    @param {collections.namedtuple} serial_obj_named_tuple --- @see
+    util._generate_serialization_named_tuple.  Should have elements
+    var_name, var_type,var_data, version_obj_data.    
+
+    When we are deserializing sequence local objects from messages
+    sent from partner endpoint, we may not already have a
+    waldoVariable to deserialize the variable into using
+    deserialize_peered_object_into_variable.  In this case, we should
+    first create a new _WaldoVariable to serialize into.
+
+    This function takes a serial_obj_named_tuple, and returns a new
+    variable with corresponding type to its var_type
+    '''
+    var_name = serial_obj_named_tuple.var_name
+    var_type = serial_obj_named_tuple.var_type
+    #### DEBUG: Testing whether got a valid type
+    if var_type not in ReferenceTypeConstructorDict:
+        util.logger_assert(
+            'Error when in waldoNetworkSerializer.create_new_variable_' +
+            'wrapper_from_serialized.  ' +
+            'Unknown Waldo type requested for deserialization.')
+    #### END DEBUG
+
+    var_constructor = ReferenceTypeConstructorDict[var_type]
+    return var_constructor(var_name,True)
+    
+
 def deserialize_peered_object_into_variable(
     serial_obj_named_tuple,invalidation_listener,waldo_reference):
     '''
@@ -49,6 +79,7 @@ def deserialize_peered_object_into_variable(
     
     '''
 
+    # FIXME: probably do not need "var_name"
     var_name = serial_obj_named_tuple.var_name
 
     serial_vobj = serial_obj_named_tuple.version_obj_data
@@ -167,7 +198,6 @@ def deserialize_peered_object_into_variable(
             
         return
 
-    
     # CASE 4 above: list/map of SerializationHelperNamedTuple-s
     
     # TODO: see fixme note below.  Challenge is that we may not know
@@ -213,8 +243,7 @@ def new_obj_from_serialized(
         nested_obj = new_obj_from_serialized(
             var_data,invalidation_listener)
 
-        new_obj = var_constructor(
-            True,nested_obj)
+        new_obj = var_constructor(var_name,True,nested_obj)
         
     else:
         if (isinstance(var_data,dict) and
@@ -224,7 +253,7 @@ def new_obj_from_serialized(
 
             new_obj = {}
             for key in var_data.keys():
-                new_obj[key] = var_constructor(True,var_data[key])
+                new_obj[key] = var_constructor(var_name,True,var_data[key])
 
         elif (isinstance(var_data,list) and
               (len(var_data) != 0) and
@@ -233,11 +262,10 @@ def new_obj_from_serialized(
 
             new_obj = []
             for key in range(0,len(var_data)):
-                new_obj.append(var_constructor(True,var_data[key]))
+                new_obj.append(var_constructor(var_name,True,var_data[key]))
 
         else:
-            new_obj = var_constructor(
-                True,var_data)
+            new_obj = var_constructor(var_name,True,var_data)
 
     # do not need to copy in version object because creating a new
     # object, which means that no other events were able to perform

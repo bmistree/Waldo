@@ -25,7 +25,7 @@ class BasicInvalidationListener(invalidationListener._InvalidationListener):
 class SingleSide(object):
     def __init__(self):
         # both sides start at 1
-        self.number = wVariables.WaldoNumVariable(True,1)
+        self.number = wVariables.WaldoNumVariable('some num',True,1)
         self.commit_manager = commitManager._CommitManager()
     def new_event(self):
         return BasicInvalidationListener(self.commit_manager)
@@ -42,7 +42,7 @@ def run_test():
     # make a change to lhs' number and try to update rhs' number.
     # ensure they can both commit the change.
     lhs.number.write_val(lhs_event,2)
-    serializabled = lhs.number.serializable_var_map_for_network(
+    serializabled = lhs.number.serializable_var_tuple_for_network(
         'some_name',lhs_event)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(

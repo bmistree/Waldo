@@ -30,6 +30,26 @@ class _ReferenceBase(object):
     def _unlock(self):
         self._mutex.release()
 
+    def is_peered(self):
+        return self.peered
+
+    def modified(self,invalidation_listener):
+        '''
+        Have we changed this variable?
+        
+        @returns {bool} --- True if have modified the variable.  False
+        otherwise.
+        '''
+        self._lock()
+        dirty_elem = self._dirty_map.get(invalidation_listener.uuid,None)
+        self._unlock()
+
+        modified = False
+        if dirty_elem != None:
+            modified = dirty_elem.modified(invalidation_listener)
+            
+        return modified
+        
     @staticmethod
     def var_type():
         '''
@@ -57,7 +77,7 @@ class _ReferenceBase(object):
             'is_value_type is pure virtual in _ReferenceBase.')
         
         
-    def serializable_var_map_for_network(
+    def serializable_var_tuple_for_network(
         self,var_name,invalid_listener):
         '''
         The runtime automatically synchronizes data between both
@@ -83,6 +103,8 @@ class _ReferenceBase(object):
         only really necessary for the outermost wrapping of the named
         type tuple, but we pass it through anyways.
 
+        @returns serializable_named_tuple
+        
         '''
 
         # FIXME: eventually want to do serialize deltas of variables
@@ -106,7 +128,7 @@ class _ReferenceBase(object):
         # values.
         var_data = dirty_element.val
         if isinstance(var_data,_ReferenceBase):
-            var_data = dirty_element.val.serializable_var_map_for_network(
+            var_data = dirty_element.val.serializable_var_tuple_for_network(
                 var_name,invalid_listener)
         elif isinstance(var_data,list) or isinstance(var_data,dict):
             keys = range(0,len(var_data))
@@ -115,7 +137,7 @@ class _ReferenceBase(object):
             
             for index in keys:
                 if isinstance(var_data,_ReferenceBase):
-                    var_data[index] = var_data[index].serializable_var_map_for_network(
+                    var_data[index] = var_data[index].serializable_var_tuple_for_network(
                         var_name,invalid_listener)
 
         version_obj_data = dirty_element.version_obj.serializable_for_network_data()
@@ -393,7 +415,51 @@ class _DirtyMapElement(object):
         '''
         self.version_obj.update_obj_val_and_version(w_obj,self.val)
 
+    def modified(self,invalidation_listener):
+        '''
+        @returns {bool} true if has been modified; false otherwise
+        '''
+        # in the case of lists of lists, maps of lists, maps of maps,
+        # etc., it is not enough to check that the current version
+        # object has not been modified.  This is because a version
+        # object only keeps track of one level of the tree of
+        # lists/maps.  If data below this level have been modified,
+        # then must check with lower levels.  Eg, a = Map(from:
+        # number; to: Map(from: number; to:number)); a = {1: {2:
+        # 3}}. <commit> a[1][2] = 4.  After the commit, a's version
+        # object shows no modification.  That is why we must check a's
+        # submaps for modification.
         
+        if self.version_obj.modified(invalidation_listener):
+            return True
+
+        # check if sub-object was modified
+        if isinstance(self.val,waldoReferenceBase._ReferenceBase):
+            if self.val.modified(invalidation_listener):
+                return True
+
+        elif ((isinstance(self.val,list) or isinstance(self.val,dict)) and
+            (len(self.val) != 0)):
+
+            keys = range(0,len(self.val))
+            if isinstance(self.val,dict):
+                keys = list(self.val.keys())
+
+            # iterate through all subobjects in list/map to see if
+            # they were modified.
+            for key in keys:
+                item = self.val[keys]
+
+                if isinstance(self.val,waldoReferenceBase._ReferenceBase):
+                    if item.modified(invalidation_listener):
+                        return True
+                else:
+                    # means that subobjects are not waldo references.
+                    # if we aren't modified, they aren't.
+                    return False
+                
+        return False
+
 
 class _ReferenceVersion(object):
     '''
@@ -448,6 +514,14 @@ class _ReferenceVersion(object):
         '''
         pass
 
+    @abstractmethod
+    def modified(self,invalidation_listener):
+        '''
+        Returns True if the object has been modified, False otherwise.
+        '''
+        util.logger_assert(
+            'modified is pure virtual in _ReferenceVersion class.')
+        
 
     def serializable_for_network_data(self):
         '''

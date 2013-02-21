@@ -20,6 +20,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
     @staticmethod
     def var_type():
         return 'internal list'
+
     
     def contains_key(self,invalid_listener, key):
         util.logger_assert(
