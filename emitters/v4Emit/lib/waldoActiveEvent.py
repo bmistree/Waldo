@@ -60,6 +60,17 @@ class _ActiveEvent(_InvalidationListener):
     # forwarded the request on.
     STATE_BACKOUT_REQUEST = 3
 
+    # A very temporary state.  After completing, we remove the event
+    # from the endpoint's active event map.  However, before removing,
+    # we may have received another request to complete the commit (in
+    # the case of having loops in the endpoint call graph).  In these
+    # cases, we may have already read the active event from the
+    # active_event_map.  To prevent a second commit in this case,
+    # enter STATE_COMPLETED_COMMIT and check for being in
+    # STATE_COMPLETED_COMMIT before completing the commit the second
+    # time.  @see complete_commit_and_forward_complete_msg
+    STATE_COMPLETED_COMMIT = 4
+    
     
     def __init__(self,commit_manager,uuid,local_endpoint):
         '''
@@ -160,9 +171,12 @@ class _ActiveEvent(_InvalidationListener):
     def in_request_backout_phase(self):
         return self._state == _ActiveEvent.STATE_BACKOUT_REQUEST
 
+    def in_state_completed_commit_phase(self):
+        return self._state == _ActiveEvent.STATE_COMPLETED_COMMIT
+    
     def set_request_commit_holding_locks_phase(self):
         #### DEBUG
-        if self._state != _ActiveEvent.STATE_RUNNING:
+        if not self.in_running_phase():
             util.logger_assert(
                 'Cannot move into request commit phase if ' +
                 'not in running sate.')
@@ -174,8 +188,20 @@ class _ActiveEvent(_InvalidationListener):
         
     def set_request_backout_phase(self):
         self._state = _ActiveEvent.STATE_BACKOUT_REQUEST
+        
+    def set_state_completed_commit_phase(self):
+        #### DEBUG
+        # can only transition into completed commit phase from holding
+        # locks phase.
+        if not self.in_commit_request_holding_locks_phase():
+            util.logger_assert(
+                'Can only transition into completed commit phase ' +
+                'from holding locks phase.')
+        #### END DEBUG
 
-
+        self._state = _ActiveEvent.STATE_COMPLETED_COMMIT
+        
+        
         
     def must_check_partner(self):
         '''
@@ -244,6 +270,42 @@ class _ActiveEvent(_InvalidationListener):
         self._unlock()
         return partner_call_requested
 
+
+    def complete_commit_and_forward_complete_msg(self,skip_partner=False):
+        '''
+        @param {bool} skip_partner --- True if we should not forward
+        the complete request on to our partner (because our partner
+        was the one who sent it to us in the first place).
+        
+        Removes self as an active event from local endpoint's active
+        event map.  Completes the commit, and forwards the complete
+        request on to others
+        '''
+        self._lock()
+
+        if not self.in_state_completed_commit_phase():
+            self.set_state_completed_commit_phase()
+
+            ##### remove event from active event map
+            self.local_endpoint._act_event_map.remove_event(self.uuid)
+            
+            ##### notify other endpoints
+
+            #   notify endpoints we've made endpoint calls on
+            for endpoint_uuid in self.subscribed_to.keys():
+                subscribed_to_element = self.subscribed_to[endpoint_uuid]
+                endpoint = subscribed_to_element.endpoint_object
+                endpoint._receive_request_complete_commit(self.uuid)
+
+            #   notify our partner endpoint
+            if ((not skip_partner) and self.must_check_partner()):
+                self.local_endpoint._forward_complete_commit_request_partner(self)
+                
+            ##### actually complete the commit
+            self.complete_commit()
+        
+        self._unlock()
+
     
     def issue_endpoint_object_call(
         self,endpooint_calling,func_name,result_queue,*args):
@@ -294,7 +356,7 @@ class _ActiveEvent(_InvalidationListener):
 
             # perform the actual endpoint function call.  note that this
             # does not block until it completes.  It just schedules the 
-            endpoint_calling._endpoint_call(
+            endpoint_calling._recevieve_endpoint_call(
                 self.endpoint,self.uuid,func_name,result_queue,
                 *args)
 
@@ -337,7 +399,7 @@ class _ActiveEvent(_InvalidationListener):
             # first: notify the associated endpoint that it should
             # also backout.
             endpoint = subscribed_to_element.endpoint_object
-            endpoint._request_backout(self.uuid)
+            endpoint._receieve_request_backout(self.uuid)
 
             # second: we may still be waiting for a response to our
             # endpoint call.  put a sentinel in that tells us to stop
@@ -464,7 +526,16 @@ class _ActiveEvent(_InvalidationListener):
         Go through all endpoints that this ActiveEvent made endpoint
         calls on while processing and tell them to try committing
         their changes.
+
+        @returns {bool} --- False if know that the commit cannot
+        proceed (ie, has a conflict with something that has already
+        committed).  True otherwise.  (Note: True does not guarantee
+        that we'll be able to commit.  A dependent endpoint may not be
+        able to commit its data.  Or, we may have already been told to
+        commit.  It just means that the commit *may* still be proceeding.)
         '''
+        cannot_commit = False
+
         self._lock()
         if not self.in_running_phase():
             # there was a cycle in endpoint calls.  Ignore to avoid
@@ -474,11 +545,12 @@ class _ActiveEvent(_InvalidationListener):
             # FIXME: can get deadlock from multiple events trying to
             # commit at same time.
             if self.is_invalidated:
-                self.set_request_commit_not_holding_locks_phase()                
+                self.set_request_commit_not_holding_locks_phase()
+                cannot_commit = True
                 self.backout_commit(False)
             else:
                 self.set_request_commit_holding_locks_phase()
-                                
+
                 if self.hold_can_commit():
                     # we know that the data that we are trying to
                     # commit has not been modified out from under us;
@@ -487,22 +559,24 @@ class _ActiveEvent(_InvalidationListener):
 
                     for endpoint_uuid in self.subscribed_to.keys():
                         endpoint = self.subscribed_to[endpoint_uuid]
-                        endpoint._request_commit(self.uuid)
+                        endpoint._receive_request_commit(
+                            self.uuid,self.local_endpoint)
 
                     if ((not skip_partner) and self.must_check_partner()):
                         self.local_endpoint._forward_commit_request_partner(self)
-                    else:
-                        # instantly backout if another change happened
-                        self.backout_commit(not self.is_invalidated)
+                        
                 else:
                     # if we know that data have been modified before our
                     # commit, then we do not need to keep forwarding on the
                     # commit request.
                     self.backout_commit(True)
+                    cannot_commit = True
                     self.set_request_commit_not_holding_locks_phase()                
                     
         self._unlock()
 
+        return (not cannot_commit)
+        
 
 # FIXME: are there any cases where we need to flush threadsafe queues
 # when completing a commit?
@@ -515,20 +589,19 @@ class RootActiveEvent(_ActiveEvent):
     def request_commit(self):
         '''
         Only the root event can begin the entire commit phase.
-
-        @returns {bool} --- True if we were able to 
         '''
         # if we know that data have been modified before our commit,
         # then
-        forward_commit_request_and_try_holding_commit_on_myself()
-        
-        if self.hold_can_commit():
-            self.forward_commit_request()
-            return True
+        self.forward_commit_request_and_try_holding_commit_on_myself()
 
-        self.backout_commit(True)
-        return False
-                    
+    def request_complete_commit(self):
+        '''
+        Should automatically happen.  Completes its commit and
+        forwards a message to all others to complete their commits.
+        '''
+        self.complete_commit_and_forward_complete_msg()
+
+        
 class PartnerActiveEvent(_ActiveEvent):
     def __init__(self,commit_manager,uuid,local_endpoint):
         _ActiveEvent.__init__(self,commit_manager,uuid,local_endpoint)

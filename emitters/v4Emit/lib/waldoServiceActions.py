@@ -1,6 +1,6 @@
 import util
 import waldoCallResults
-
+import threading
 
 class _Action(object):
     '''
@@ -14,7 +14,7 @@ class _Action(object):
             'Error.  Action\'s run method is pure virtual.')
 
         
-class _PartnerMessageRequestSequenceBlockAction(_Action):
+class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
     '''
     Corresponds to case when partner endpoint receives a request for
     local endpoint to execute a block sequence.
@@ -39,11 +39,87 @@ class _PartnerMessageRequestSequenceBlockAction(_Action):
         
         evt = self.local_endpoint._act_event_map.get_or_create_partner_event(
             event_uuid)
+
+        # FIXME: may eventually want to move this into its own thread
+        # a la PartnerRequestCommitAction
         
         evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
 
-    
-class _RequestBackoutAction(_Action):
+        
+class _ReceivePartnerRequestCommitAction(_Action,threading.Thread):
+    '''
+    The local endpoint's partner has requested the local endpoint to
+    begin the first phase of committing changes (note: not complete
+    committing the changes, just begin the first phase) for an event.
+    '''
+    def __init__(self,local_endpoint,event_uuid):
+        self.local_endpoint = local_endpoint
+        self.event_uuid = event_uuid
+
+        threading.Thread.__init__(self)
+        self.daemon = True
+
+    def run(self):
+        evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
+        
+        #### DEBUG
+        if evt == None:
+            util.logger_assert(
+                'Requested committing an event that does not exist')
+        #### END DEBUG
+
+        evt.forward_commit_request_and_try_holding_commit_on_myself(
+            True)        
+
+    def service(self):
+        self.start()
+
+        
+class _ReceiveRequestCompleteCommitAction(_Action,threading.Thread):
+    '''
+    Another endpoint (either on the same host as I am or my
+    partner) asked me to complete the second phase of the commit
+    for an event with uuid event_uuid.
+
+    @see waldoEndpoint._EndpointServiceThread.request_complete_commit
+    '''
+    def __init__(self,local_endpoint,event_uuid,request_from_partner):
+        '''
+        For params, @see
+        waldoEndpoint._EndpointServiceThread.request_complete_commit
+        '''
+        self.local_endpoint = local_endpoint
+        self.event_uuid = event_uuid
+        self.request_from_partner = request_from_partner
+        threading.Thread.__init__(self)
+        self.daemon = True
+        
+        
+    def run(self):
+        '''
+        1.  Grab the endpoint from active event map (if it exists)
+        
+        2.  Call its complete_commit_and_forward_complete_msg method.  
+        '''
+        evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
+        
+        if evt == None:
+            # event may not exist, for instance if got multiple
+            # complete commit messages because of loops in endpoint
+            # call graph.
+            return
+
+        # if the request to complete the commit was from our partner,
+        # then we can skip sending a request to our partner to
+        # complete the commit.
+        evt.complete_commit_and_forward_complete_msg(self.request_from_partner)
+        
+    def service(self):
+        # just start the thread
+        self.start()
+        
+        
+class _ReceiveRequestBackoutAction(_Action):
     '''
     We were requested to backout an event.  Check if we have the
     event, back it out if can, and forward the backout message to
@@ -82,11 +158,12 @@ class _RequestBackoutAction(_Action):
         if self.requesting_endpoint == util.PARTNER_ENDPOINT_SENTINEL:
             skip_partner = True
 
+        # FIXME: should probably be in a separate thread
         evt.forward_backout_request_and_backout_self(skip_partner)
 
         
 
-class _EndpointCallAction(_Action):
+class _ReceiveEndpointCallAction(_Action):
     '''
     Another endpoint has asked us to execute an action on our own
     endpoint as part of a global event.

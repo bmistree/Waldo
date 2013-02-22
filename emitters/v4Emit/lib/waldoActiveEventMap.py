@@ -25,6 +25,12 @@ class _ActiveEventMap(object):
         self._insert_event_into_map(new_event)
         self._unlock()
         return new_event
+
+    def remove_event(self,event_uuid):
+        self._lock()
+        del self.map[event_uuid]
+        self._unlock()
+        
     
     def get_or_create_partner_event(self,uuid):
         '''

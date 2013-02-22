@@ -27,7 +27,7 @@ class _EndpointServiceThread(threading.Thread):
             service_action = self.threadsafe_queue.get()
             service_action.service()
 
-    def request_backout(self,uuid,requesting_endpoint):
+    def receive_request_backout(self,uuid,requesting_endpoint):
         '''
         @param {uuid} uuid --- The uuid of the _ActiveEvent that we
         want to backout.
@@ -42,12 +42,31 @@ class _EndpointServiceThread(threading.Thread):
         Called by another endpoint on this endpoint (not called by
         external non-Waldo code).
         '''
-        req_backout_action = waldoServiceActions._RequestBackoutAction(
+        req_backout_action = waldoServiceActions._ReceiveRequestBackoutAction(
             self.endpoint,uuid,requesting_endpoint)
         self.threadsafe_queue.put(req_backout_action)
         
 
-    def endpoint_call(
+    def receive_request_complete_commit(self,event_uuid,request_from_partner):
+        '''
+        Another endpoint (either on the same host as I am or my
+        partner) asked me to complete the second phase of the commit
+        for an event with uuid event_uuid.
+        
+        @param {uuid} event_uuid --- The uuid of the event we are
+        trying to commit.
+
+        @param {bool} request_from_partner --- True if the request to
+        complete the commit came from my partner, false otherwise (the
+        request came from an endpoint on the same host as I am)
+        '''
+        req_complete_commit_action = (
+            waldoServiceActions._ReceiveRequestCompleteCommitAction(
+                self.endpoint,event_uuid,request_from_partner))
+        
+        self.threadsafe_queue.put(req_complete_commit_action)
+
+    def receive_endpoint_call(
         self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
         '''
         @param{_Endpoint object} endpoint_making_call --- The endpoint
@@ -70,34 +89,50 @@ class _EndpointServiceThread(threading.Thread):
         Called by another endpoint on this endpoint (not called by
         external non-Waldo code).
         '''
-        endpt_call_action = waldoServiceActions._EndpointCallAction(
+        endpt_call_action = waldoServiceActions._ReceiveEndpointCallAction(
             self.endpoint,endpoint_making_call,event_uuid,func_name,
             result_queue,*args)
         self.threadsafe_queue.put(req_backout_action)
 
-    def partner_request_message_sequence_block(self,msg):
+    def receive_partner_request_commit(self,msg):
+        '''
+        @param {_PartnerCommitRequestMessage} msg
+        '''
+        partner_request_commit_action = (
+            waldoServiceActions._ReceivePartnerRequestCommitAction(
+                self.endpoint,msg.event_uuid))
+        self.threadsafe_queue.put(partner_request_commit_action)
+
+    def receive_partner_request_complete_commit(self,msg):
+        '''
+        @param {_PartnerCommitRequestMessage} msg
+        '''
+        partner_request_complete_commit_action = (
+            waldoServiceActions._ReceiveRequestCompleteCommitAction(
+                self.endpoint,msg.event_uuid,True))
+        self.threadsafe_queue.put(partner_request_complete_commit_action)
+
+        
+    def receive_partner_request_message_sequence_block(self,msg):
         '''
         @param {_PartnerRequestSequenceBlockMessage} msg --- Contains
         all the information for the request partner made.
         '''
         partner_request_sequence_block_action = (
-            waldoServiceActions._PartnerMessageRequestSequenceBlockAction(
+            waldoServiceActions._ReceivePartnerMessageRequestSequenceBlockAction(
                 self.endpoint,msg))
             
         self.threadsafe_queue.put(partner_request_sequence_block_action)
 
-        
-    def request_commit(self,uuid,requesting_endpoint):
+    def receive_request_commit_from_endpoint(self,uuid,requesting_endpoint):
         '''
         @param {uuid} uuid --- The uuid of the _ActiveEvent that we
         want to commit.
 
-        @param {either Endpoint object or
-        util.PARTNER_ENDPOINT_SENTINEL} requesting_endpoint ---
+        @param {Endponit object} requesting_endpoint --- 
         Endpoint object if was requested to commit by endpoint objects
         on this same host (from endpoint object calls).
-        util.PARTNER_ENDPOINT_SENTINEL if was requested to commit
-        by partner.
+
         
         Called by another endpoint on this endpoint (not called by
         external non-Waldo code).
@@ -105,12 +140,27 @@ class _EndpointServiceThread(threading.Thread):
         Forward the commit request to any other endpoints that were
         touched when the event was processed on this side.
         '''
-        # FIXME: still need a mechanism to report the variables that
-        # we're trying to request commit for....want to determine
-        # deadlock.
+
+        # the below code is copied from partner.  should use different
+        # version for local.
+        # partner_request_commit_action = (
+        #     waldoServiceActions._ReceivePartnerRequestCommitAction(
+        #         self.endpoint,msg.event_uuid))
+        # self.threadsafe_queue.put(partner_request_commit_action)
+
+        util.logger_assert(
+            'Must finish code for receive_request_commit in service thread')
 
 
 class _Endpoint(object):
+    '''
+    All methods that begin with _receive, are called by other
+    endpoints or from connection object's receiving a message from
+    partner endpoint.
+
+    All methods that begin with _forward or _send are called from
+    active events on this endpoint.
+    '''
     
     def __init__(self,commit_manager,conn_obj,global_var_store):
         '''
@@ -144,13 +194,33 @@ class _Endpoint(object):
         self._endpoint_service_thread.request_commit(
             uuid,requesting_endpoint)
 
-    def _request_backout(self,uuid,requesting_endpoint):
+    def _receive_request_backout(self,uuid,requesting_endpoint):
         '''
-        @see _EndpointServiceThread.request_backout
+        @see _EndpointServiceThread.receive_request_backout
         '''
-        self._endpoint_service_thread.request_backout(
+        self._endpoint_service_thread.receive_request_backout(
             uuid,requesting_endpoint)
 
+    def _receive_request_commit(self,uuid,requesting_endpoint):
+        '''
+        Called by another endpoint on the same host as this endpoint
+        to begin the first phase of the commit of the active event
+        with uuid "uuid."
+        '''
+        self._endpoint_service_thread.receive_request_commit_from_endpoint(
+            uuid,requesting_endpoint)
+        
+    def _receive_request_complete_commit(self,uuid):
+        '''
+        Called by another endpoint on the same host as this endpoint
+        to finish the second phase of the commit of active event with
+        uuid "uuid."
+        '''
+        self._endpoint_service_thread.receive_request_complete_commit(
+            uuid,
+            False # complete commit request was not from partner
+                  # endpoint.
+            )
 
     def _receive_msg_from_partner(self,string_msg):
         '''
@@ -170,17 +240,21 @@ class _Endpoint(object):
         msg = waldoMessages._Message.map_to_msg(msg_map)
         
         if isinstance(msg,waldoMessages._PartnerRequestSequenceBlockMessage):
-            self._endpoint_service_thread.partner_request_message_sequence_block(
+            self._endpoint_service_thread.receive_partner_request_message_sequence_block(
                 msg)
+        elif isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
+            self._endpoint_service_thread.receive_partner_request_commit(msg)
+        elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
+            self._endpoint_service_thread.receive_partner_request_complete_commit(msg)
         else:
             #### DEBUG
             util.logger_assert(
                 'Do not know how to convert message to event action ' +
                 'in _receive_msg_from_partner.')
             #### END DEBUG
-        
 
-    def _endpoint_call(
+            
+    def _receive_endpoint_call(
         self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
         '''
         For params, @see _EndpointServiceThread.endpoint_call
@@ -188,8 +262,7 @@ class _Endpoint(object):
         Non-blocking.  Requests the endpoint_service_thread to perform
         the endpoint function call listed as
         '''
-
-        self._endpoint_service_thread.endpoint_call(
+        self._endpoint_service_thread.receive_endpoint_call(
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
 
 
@@ -255,12 +328,24 @@ class _Endpoint(object):
         @param {_ActiveEvent} active_event --- Has the same uuid as
         the event we will forward a commit to our partner for.
         '''
-        # FIXME: fill this in ... use self._conn_obj
-        util.logger_assert(
-            'Call to unfinished _forward_commit_request_partner in ' +
-            '_Endpoint.')
+        # FIXME: may be a way to piggyback commit with final event in
+        # sequence.
 
+        msg = waldoMessages._PartnerCommitRequestMessage(active_event.uuid)
+        msg_map = msg.msg_to_map()
+        self._conn_obj.write(pickle.dumps(msg_map),self)
         
+
+    def _forward_complete_commit_request_partner(self,active_event):
+        '''
+        Active event on this endpoint has completed its commit and it
+        wants you to tell partner endpoint as well to complete its
+        commit.
+        '''
+        msg = waldoMessages._PartnerCompleteCommitRequestMessage(active_event.uuid)
+        msg_map = msg.msg_to_map()
+        self._conn_obj.write(pickle.dumps(msg_map),self)
+
         
     def _forward_backout_request_partner(self,active_event):
         '''
@@ -274,5 +359,3 @@ class _Endpoint(object):
         
         # FIXME: fill this in ... use self._conn_obj
 
-        # FIXME: when receive a backout request, must try to backout
-        # the event.
