@@ -3,16 +3,23 @@ import threading
 class _CommitManager(object):
     '''
     Challenge is to avoid deadlock when acquiring the locks of all
-    objects that we have touched.  To do so, all requests for locks on
-    Waldo objects go through a single manager.
-    '''
-    def __init__(self):
-        self._mutex = threading.Lock()
+    objects that we have touched.
 
-    def _lock(self):
-        self._mutex.acquire()
-    def _unlock(self):
-        self._mutex.release()
+    We can guarantee that will not get deadlock if all invalidation
+    listeners try to acquire locks on the resources that they have
+    modified in order of their uuids.  For example, consider two
+    invalidation listeners, A and B.
+
+    A's read/write set is {beta, alpha, gamma}
+    B's read/write set is {gamma, beta, alpha}
+
+    If, before acquiring locks, we order each's read/write set, and
+    attempt to acquire locks in sorted order, we can guarantee no
+    deadlock.
+
+    A acquires in order alpha, beta, gamma
+    B acquires in order alpha, beta, gamma
+    '''
 
     def hold_can_commit(self,invalid_listener):
         '''
@@ -20,39 +27,25 @@ class _CommitManager(object):
         invalid listener touched
 
         @param{_InvalidListener} invalid_listener --- Runs through all
-        state that the invalid listener touched.  Take locks the
-        commit manager (this way, the commit manager can ensure that
-        you don't get deadlock between two sides that are trying to
-        acquire the locks for two sets of objects simultaneously).
-        Then take locks on all the individual objects that we want to
-        commit to.
+        state that the invalid listener touched.  Take locks on all the
+        individual objects that we want to commit to.
         '''
-
-        # FIXME: this implementation has a lot of undesirable
-        # properties.  Most notably, if two invalid listeners try to
-        # commit to the same object simultaneously, then one holds the
-        # lock on that object.  When the other tries to acquire a lock
-        # on the same object, it waits for the first event's lock to
-        # be released.  However, while it is waiting, it holds the
-        # commit manager's lock and no other invalid_listener can use
-        # the commit manager.
-
-        
-        self._lock()
         can_commit = True
-        for touched_obj in invalid_listener.objs_touched.values():
-            # touched_obj is a subtype of _WaldoObject
+        sorted_touched_obj_ids = sorted(list(invalid_listener.objs_touched.keys()))
+        for obj_id in sorted_touched_obj_ids:
+            touched_obj = invalid_listener.objs_touched[obj_id]
+            # touched_obj is a subtype of _ReferenceBase
             
             # when make call to check_commit_hold_lock, means that we
             # are actually holding the lock on committing to this
             # object.  nothing else can commit to the object in the
             # meantime.
             can_commit = (touched_obj.check_commit_hold_lock(invalid_listener) and
-                          can_commit)
-        self._unlock()
+              can_commit)
 
         return can_commit
 
+                      
     def complete_commit(self, invalid_listener):
         '''
         Should only be called if hold_can_commit returned True.  Runs
@@ -72,7 +65,6 @@ class _CommitManager(object):
         invalid_listener is currently holding the locks on all the
         waldo objects that it has touched.
         '''
-        
         for touched_obj in invalid_listener.objs_touched.values():
             touched_obj.backout(
                 invalid_listener,currently_holding_object_locks)

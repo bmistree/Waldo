@@ -576,8 +576,8 @@ class _ActiveEvent(_InvalidationListener):
         self._unlock()
 
         return (not cannot_commit)
-        
 
+    
 # FIXME: are there any cases where we need to flush threadsafe queues
 # when completing a commit?
             
