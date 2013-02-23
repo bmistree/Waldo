@@ -66,6 +66,29 @@ class _EndpointServiceThread(threading.Thread):
         
         self.threadsafe_queue.put(req_complete_commit_action)
 
+    def receive_removed_subscriber(
+        self,event_uuid,removed_subscriber_event_uuid,resource_uuid):
+        '''
+        @see _receive_additional_subscriber
+        '''
+        rem_sub_act = waldoServiceActions._ReceiveSubscriberAction(
+            self,event_uuid,additional_subscriber_event_uuid,
+            resource_uuid,True)
+
+        self.threadsafe_queue.put(rem_sub_act)
+
+    def receive_additional_subscriber(
+        self,event_uuid,additional_subscriber_event_uuid,resource_uuid):
+        '''
+        @see _Endpoint._receive_additional_subscriber
+        '''
+        rcv_sub_act = waldoServiceActions._ReceiveSubscriberAction(
+            self,event_uuid,additional_subscriber_event_uuid,
+            resource_uuid,False)
+
+        self.threadsafe_queue.put(rcv_sub_act)
+
+        
     def receive_endpoint_call(
         self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
         '''
@@ -246,6 +269,14 @@ class _Endpoint(object):
             self._endpoint_service_thread.receive_partner_request_commit(msg)
         elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
             self._endpoint_service_thread.receive_partner_request_complete_commit(msg)
+            
+        elif isinstance(msg,waldoMessages._PartnerRemovedSubscriberMessage):
+            self._receive_removed_subscriber_message(
+                msg.event_uuid, msg.removed_subscriber_uuid,msg.resource_uuid)
+
+        elif isinstance(msg,waldoMessages._PartnerAdditionalSubscriberMessage):
+            self._receive_additional_subscriber_message(
+                msg.event_uuid, msg.additional_subscriber_uuid,msg.resource_uuid)
         else:
             #### DEBUG
             util.logger_assert(
@@ -253,7 +284,53 @@ class _Endpoint(object):
                 'in _receive_msg_from_partner.')
             #### END DEBUG
 
-            
+    def _notify_partner_removed_subscriber_message(
+        self,event_uuid,removed_subscriber_uuid,resource_uuid):
+        '''
+        Send a message to partner that a subscriber is no longer
+        holding a lock on a resource to commit it.
+        '''
+        msg = waldoMessages._PartnerRemovedSubscriberMessage(
+            event_uuid,removed_subscriber_uuid,resource_uuid)
+        self._conn_obj.write(pickle.dumps(msg),self)        
+
+        
+    def _notify_partner_of_additional_subscriber(
+        self,event_uuid,additional_subscriber_uuid,resource_uuid):
+        '''
+        Send a message to partner that a subscriber has just started
+        holding a lock on a resource to commit it.
+        '''
+        msg = waldoMessages._PartnerAdditionalSubscriberMessage(
+            event_uuid,additional_subscriber_uuid,resource_uuid)
+        self._conn_obj.write(pickle.dumps(msg),self)        
+        
+
+    def _receive_additional_subscriber(
+        self,event_uuid,subscriber_event_uuid,resource_uuid):
+        '''
+        @param {uuid} event_uuid --- The uuid of the event that also
+        exists on this endpoint that is trying to subscribe to a
+        resource (with uuid resource_uuid) that subscriber_event_uuid
+        is also subscribed for.
+
+        @param {uuid} subscriber_event_uuid --- UUID for an event that
+        is not necesarilly on this host that holds a subscription on
+        the same resource that we are trying to subscribe to.
+
+        @see notify_additional_subscriber (in _ActiveEvent.py)
+        '''
+        self._endpoint_service_thread.receive_additional_subscriber(
+            event_uuid,subscriber_event_uuid,resource_uuid)
+
+    def _recevie_removed_subscriber(
+        self,event_uuid,removed_subscriber_event_uuid,resource_uuid):
+        '''
+        @see _receive_additional_subscriber
+        '''
+        self._endpoint_service_thread.receive_removed_subscriber(
+            event_uuid,removed_subscriber_event_uuid,resource_uuid)
+
     def _receive_endpoint_call(
         self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
         '''

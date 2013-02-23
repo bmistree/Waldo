@@ -5,6 +5,7 @@ import waldoCallResults
 import waldoExecutingEvent
 import waldoVariableStore
 
+
 class _SubscribedToElement(object):
     '''
     @see add_result_queue.
@@ -512,6 +513,55 @@ class _ActiveEvent(_InvalidationListener):
             del self.message_listening_queues_map[reply_to_uuid]
             
         self._unlock()
+
+    def notify_removed_subscriber(
+        self,removed_subscriber_uuid,resource_uuid):
+        '''
+        @see notify_additional_subscriber, except for removals instead of
+        additions.
+        '''
+        util.logger_assert(
+            'notify_removed_subscriber is purely virtual in ' +
+            'base class _ActiveEvent.')
+
+    def notify_additional_subscriber(
+        self,additional_subscriber_uuid,resource_uuid):
+        '''
+        When we are asked to perform the first phase of a commit, we
+        subscribe for events simultaneously trying to commit to the
+        same resources. This is to detect and avoid deadlocks: if two
+        events are both listening for subscribers on different hosts
+        for the same piece of data, then there's a chance for
+        deadlock, and we must back one of the events out.  (In this
+        case, we backout the event that has the lower uuid.)
+
+        To determine if there is the potential for deadlock, each time
+        we try to acquire a lock for the first phase of a variable's
+        commit, subscribe for others doing the same, and forward these
+        subscribers ids and the resource id back to the root.  The
+        root can detect and backout commits as described in the
+        previous paragraph.
+        '''
+        util.logger_assert(
+            'notify_additional_subscriber is purely virtual in ' +
+            'base class _ActiveEvent.')
+        
+    def notify_existing_subscribers(
+        self,list_of_existing_subscriber_uuids,resource_uuid):
+        '''
+        @see notify_existing_subscriber
+        
+        @param {array} list_of_existing_subscriber_uuids --- Each
+        element is a uuid of an invalidation listener that is trying
+        to hold a commit lock on the Waldo reference with uuid
+        resource_uuid.
+        '''
+        
+        # FIXME: probably, eventually, want to create separate
+        # messages for each
+        for existing_subscriber_uuid in list_of_existing_subscriber_uuids:
+            self.notify_additional_subscriber(
+                existing_subscriber_uuid,resource_uuid)
         
         
     def forward_commit_request_and_try_holding_commit_on_myself(
@@ -594,6 +644,21 @@ class RootActiveEvent(_ActiveEvent):
         # then
         self.forward_commit_request_and_try_holding_commit_on_myself()
 
+        
+    def notify_additional_subscriber(
+        self,additional_subscriber_uuid,resource_uuid):
+        '''
+        @see notify_additional_subscriber in _ActiveEvent for a general
+        description.
+
+        This class is the root of the event, it must check that these
+        conflicts will not cause a deadlock.
+        '''
+        # FIXME: finish function
+        util.logger_assert(
+            'Still must finish writing notify additional ' +
+            'subscriber in RootActiveEvent')
+        
     def request_complete_commit(self):
         '''
         Should automatically happen.  Completes its commit and
@@ -601,6 +666,21 @@ class RootActiveEvent(_ActiveEvent):
         '''
         self.complete_commit_and_forward_complete_msg()
 
+
+    def notify_removed_subscriber(
+        self,removed_subscriber_uuid,resource_uuid):
+        '''
+        @see notify_additional_subscriber, except for removals instead of
+        additions.
+        '''
+        if not self.in_commit_request_holding_locks_phase():
+            return
+
+        # FIXME: finish function
+        util.logger_assert(
+            'Still must finish writing notify removed ' +
+            'subscriber in RootActiveEvent')
+                        
         
 class PartnerActiveEvent(_ActiveEvent):
     def __init__(self,commit_manager,uuid,local_endpoint):
@@ -610,7 +690,43 @@ class PartnerActiveEvent(_ActiveEvent):
         # That means that we must check with our partner before we can
         # commit/backout.
         self.message_sent = True
+
+    def notify_additional_subscriber(
+        self,additional_subscriber_uuid,resource_uuid):
+        '''
+        @see notify_additional_subscriber in _ActiveEvent for a general
+        description.
+
+        This event was initiated by the endpoint's partner.
+        Therefore, forward the resource subscriber on to partner.
+        '''
         
+        # FIXME: should use separate locking for state variables.
+        # This actually needs a lock around it (writes and reads are
+        # not atomic to the value)...but cannot use self._lock,
+        # becuase could get into this function by calling
+        # hold_can_commit, which holds the active event's global lock.
+        if not self.in_commit_request_holding_locks_phase():
+            # do not need to forward the notification on: we aren't
+            # actually holding the lock any more (could mean that we
+            # had a conflict and therefore backed out holding the lock).
+            return
+
+        self.local_endpoint._notify_partner_of_additional_subscriber(
+            self.uuid,additional_subscriber_uuid,resource_uuid)
+        
+    def notify_removed_subscriber(
+        self,removed_subscriber_uuid,resource_uuid):
+        '''
+        @see notify_additional_subscriber, except for removals instead of
+        additions.
+        '''
+        if not self.in_commit_request_holding_locks_phase():
+            return
+
+        self.local_endpoint._notify_partner_removed_subscriber(
+            self.uuid,removed_subscriber_uuid,resource_uuid)
+
         
 class EndpointCalledActiveEvent(_ActiveEvent):
     def __init__(
@@ -619,4 +735,41 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         
         _ActiveEvent.__init__(self,commit_manager,uuid,local_endpoint)
         self.subscriber = endpoint_making_call
-        
+
+    def notify_additional_subscriber(
+        self,additional_subscriber_uuid,resource_uuid):
+        '''
+        @see notify_additional_subscriber in _ActiveEvent for a general
+        description.
+
+        This event was initiated by an endpoint caller on the same
+        host as this event is currently on.  Forward, the subscription
+        on to it.
+        '''
+        # FIXME: should use separate locking for state variables.
+        # This actually needs a lock around it (writes and reads are
+        # not atomic to the value)...but cannot use self._lock,
+        # becuase could get into this function by calling
+        # hold_can_commit, which holds the active event's global lock.
+        if not self.in_commit_request_holding_locks_phase():
+            # do not need to forward the notification on: we aren't
+            # actually holding the lock any more (could mean that we
+            # had a conflict and therefore backed out holding the lock).
+            return
+
+        self.subscriber._receive_additional_subscriber(
+            self.uuid,additional_subscriber_uuid,resource_uuid)
+
+
+    def notify_removed_subscriber(
+        self,removed_subscriber_uuid,resource_uuid):
+        '''
+        @see notify_additional_subscriber, except for removals instead of
+        additions.
+        '''
+        if not self.in_commit_request_holding_locks_phase():
+            return
+
+        self.subscriber._receive_removed_subscriber(
+            self.uuid,removed_subscriber_uuid,resource_uuid)
+

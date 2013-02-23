@@ -45,6 +45,44 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
         
         evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
 
+
+class _ReceiveSubscriberAction(_Action,threading.Thread):
+    '''
+    To avoid deadlock in the first phase of commit, we forward the
+    uuids of any events that try to commit to the same resource
+    another event is.  In this case, it's a notification that the
+    other event has backed off trying to commit to the same resource.
+    '''
+
+    def __int__(
+        self,local_endpoint,event_uuid,subscriber_event_uuid,
+        resource_uuid, removed):
+        '''
+        @param {bool} removed --- True if the subscriber_event_uuid
+        was removed from listening to resoure, false otherwise.
+        '''
+
+        self.local_endpoint = local_endpoint
+        self.event_uuid = event_uuid
+        self.subscriber_event_uuid = subscriber_event_uuid
+        self.resource_uuid = resource_uuid
+        self.removed = removed
+        
+        threading.Thread.__init__(self)
+        
+    def service(self):
+        self.start()
+
+    def run(self):
+        evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
+
+        if self.removed:
+            evt.notify_removed_subscriber(
+                self.subscriber_event_uuid,self.resource_uuid)
+        else:
+            evt.notify_additional_subscriber(
+                self.subscriber_event_uuid,self.resource_uuid)
+    
         
 class _ReceivePartnerRequestCommitAction(_Action,threading.Thread):
     '''

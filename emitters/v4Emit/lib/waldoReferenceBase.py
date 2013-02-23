@@ -2,6 +2,7 @@ import threading
 import util
 from abc import abstractmethod
 import pickle
+import waldoNotificationMap
 
 
 class _ReferenceBase(object):
@@ -20,6 +21,9 @@ class _ReferenceBase(object):
         
         self.val = init_val
         self.dirty_element_constructor = dirty_element_constructor
+
+        self.notification_map = waldoNotificationMap._NotificationMap(
+            self.uuid)
         
         # keys are uuids.  values are dirty values of each object.
         self._dirty_map = {}
@@ -146,8 +150,7 @@ class _ReferenceBase(object):
             var_name,self.var_type(),var_data,version_obj_data)
         return to_return
 
-    
-    
+        
     def _non_waldo_copy(self):
         '''
         When we are establishing dirty map elements, we make a copy of
@@ -251,6 +254,8 @@ class _ReferenceBase(object):
         Note: takes lock on object, but does not release it.  Lock
         gets unreleased either within commit or release.
         '''
+        self.notification_map.add_invalidation_listener(invalid_listener)
+        
         self._lock()
 
         #### DEBUG
@@ -274,6 +279,8 @@ class _ReferenceBase(object):
         lock on the object.  We should release that commit lock
         afterwards.
         '''
+        self.notification_map.remove_invalidation_listener(invalid_listener)
+        
         if not release_lock_after:
             self._lock()
         
@@ -295,7 +302,7 @@ class _ReferenceBase(object):
         is committing the change.
         
         Assumes already inside of lock.  (Was presumably acquired in
-        check_commit_hold_lock.
+        check_commit_hold_lock.)
 
         Called when committing an invalid_listener's event.  
 
@@ -311,6 +318,8 @@ class _ReferenceBase(object):
         In either case, remove the dirty map element associated with
         invalid_listener and release the lock.
         '''
+        self.notification_map.remove_invalidation_listener(invalid_listener)
+        
         #### DEBUG
         if invalid_listener.uuid not in self._dirty_map:
             util.logger_assert('Aborted in commit.  ' +

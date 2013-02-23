@@ -56,7 +56,52 @@ class _InvalidationListener(object):
         '''
         pass
 
+    def notify_removed_subscriber(
+        self,removed_subscriber_uuid,resource_uuid):
+        '''
+        @see notify_additional_subscriber, except for removals instead of
+        additions.
+        '''
+        pass
     
+    def notify_additional_subscriber(
+        self,additional_subscriber_uuid,resource_uuid):
+        '''
+        When we are asked to perform the first phase of a commit, we
+        subscribe for events simultaneously trying to commit to the
+        same resources. This is to detect and avoid deadlocks: if two
+        events are both listening for subscribers on different hosts
+        for the same piece of data, then there's a chance for
+        deadlock, and we must back one of the events out.  (In this
+        case, we backout the event that has the lower uuid.)
+
+        To determine if there is the potential for deadlock, each time
+        we try to acquire a lock for the first phase of a variable's
+        commit, subscribe for others doing the same, and forward these
+        subscribers ids and the resource id back to the root.  The
+        root can detect and backout commits as described in the
+        previous paragraph.
+        '''
+        # InvalidationListeners that also want to prevent deadlocks
+        # during commit (eg., _ActiveEvents) must override this
+        # method.
+        pass
+        
+    def notify_existing_subscribers(
+        self,list_of_existing_subscriber_uuids,resource_uuid):
+        '''
+        @see notify_additional_subscriber
+        
+        @param {array} list_of_existing_subscriber_uuids --- Each
+        element is a uuid of an invalidation listener that is trying
+        to hold a commit lock on the Waldo reference with uuid
+        resource_uuid.
+        '''
+        # InvalidationListeners that also want to prevent deadlocks
+        # during commit (eg., _ActiveEvents) must override this
+        # method.
+        pass
+
     def add_touch(self,what_touched):
         '''
         @param {_WaldoObj} what_touched --- The object that was
@@ -65,7 +110,6 @@ class _InvalidationListener(object):
         InvalidationListener.
         '''
         self.objs_touched[what_touched.uuid] = what_touched
-
 
 
     ### Each of the next three functions for now are thin wrappers
