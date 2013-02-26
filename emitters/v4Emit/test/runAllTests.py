@@ -17,6 +17,7 @@ import ind_tests.test_serialized_deserialized_num
 import ind_tests.test_serialized_deserialized_nested_map
 import ind_tests.test_single_request_block_between_endpoints_sequence_local_data
 import ind_tests.test_single_request_block_between_endpoints_peered_data
+import ind_tests.test_reschedule_on_conflict
 
 TO_RUN = [
     ('Nested list', ind_tests.test_nested_list.run_test),
@@ -36,8 +37,10 @@ TO_RUN = [
      ind_tests.test_single_request_block_between_endpoints_sequence_local_data.run_test),
     
     ('Test update of peered data + commit',
-     ind_tests.test_single_request_block_between_endpoints_peered_data.run_test)
-    
+     ind_tests.test_single_request_block_between_endpoints_peered_data.run_test),
+
+    ('Test reschedule root on conflict',
+     ind_tests.test_reschedule_on_conflict.run_test),
     ]
 
 def run_all():
@@ -46,9 +49,9 @@ def run_all():
         test_name = to_run_tuple[0]
         test_method = to_run_tuple[1]
 
-        print '\nRunning test ' + test_name + '\n'
+        print '\nRunning test ' + test_name 
         succeeded = test_method()
-        print '\n........',
+        print '........',
         if succeeded:
             print 'SUCCESS'
         else:

@@ -34,7 +34,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
     def __init__(self,conn_obj):
         
         # all dummy endpoints will have the same _VariableStore
-        # Peered Number numero = 10;
+        # Peered Number numero = 100;
         # Peered Text some_str = 'test';
         # Peered List (elements: Text) text_list;
         self.glob_var_store = waldoVariableStore._VariableStore()
