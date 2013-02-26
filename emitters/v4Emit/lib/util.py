@@ -70,6 +70,9 @@ waldo_uuid_lib_abs_path = os.path.join(
 wuuid_lib = None
 if os.path.exists(waldo_uuid_lib_abs_path):
     wuuid_lib = ctypes.CDLL(waldo_uuid_lib_abs_path)
+    wuuid_lib.foreign_uuid_two_unsigned_longs.argtypes = [
+        ctypes.POINTER(ctypes.c_ulonglong),
+        ctypes.POINTER(ctypes.c_ulonglong)]
 else:
     warn_msg = '\nWaldo warning: Cannot find shared object file '
     warn_msg += 'for generating uuids.  For now, using Python\'s '
