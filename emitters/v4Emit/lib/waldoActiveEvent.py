@@ -5,6 +5,7 @@ import waldoCallResults
 import waldoExecutingEvent
 import waldoVariableStore
 from abc import abstractmethod
+import Queue
 
 #### DEBUG
 import pdb
@@ -41,7 +42,9 @@ class _SubscribedToElement(object):
         '''
         self.result_queues.append(result_queue)
 
-    
+
+# FIXME: never actually running oncompletes
+        
 class _ActiveEvent(_InvalidationListener):
 
     # when executing (or when it's finished executing but has not
@@ -150,8 +153,7 @@ class _ActiveEvent(_InvalidationListener):
         # (@see
         # waldoExecutingEvent._ExecutingEventContext.to_reply_with_uuid.)
         self.message_listening_queues_map = {}
-        
-        
+
         # used to lock subscribed_to and message_sent.  Essentially,
         # if we receive a request to backout, then we need to: notify
         # all those that we are subscribed to to back out as well and
@@ -209,7 +211,6 @@ class _ActiveEvent(_InvalidationListener):
         #### END DEBUG
 
         self._state = _ActiveEvent.STATE_COMPLETED_COMMIT
-        
         
         
     def must_check_partner(self):
@@ -398,6 +399,11 @@ class _ActiveEvent(_InvalidationListener):
         
         if self.in_request_backout_phase():
             return
+
+        ##### remove event from active event map
+        self.local_endpoint._act_event_map.remove_event_if_exists(
+            self.uuid)
+
         
         if not already_backed_out:
             let_go_of_commit_locks = False
@@ -405,7 +411,7 @@ class _ActiveEvent(_InvalidationListener):
                 let_go_of_commit_locks = True            
 
             self.backout_commit(let_go_of_commit_locks)
-        
+
         self.set_request_backout_phase()
         for endpoint_uuid in self.subscribed_to.keys():
             subscribed_to_element = self.subscribed_to[endpoint_uuid]
@@ -611,7 +617,11 @@ class _ActiveEvent(_InvalidationListener):
         if self.is_invalidated:
             self.set_request_commit_not_holding_locks_phase()
             cannot_commit = True
+            # FIXME: forward the backout message on to those that
+            # we are subscribed to?  If we do, then we can also
+            # remove the active event here....
             self.backout_commit(False)
+
         else:
             self.set_request_commit_holding_locks_phase()
             if self.hold_can_commit():
@@ -645,6 +655,10 @@ class _ActiveEvent(_InvalidationListener):
                 # if we know that data have been modified before our
                 # commit, then we do not need to keep forwarding on the
                 # commit request.
+                
+                # FIXME: forward the backout message on to those that
+                # we are subscribed to?  If we do, then we can also
+                # remove the active event here....
                 self.backout_commit(True)
                 cannot_commit = True
                 self.set_request_commit_not_holding_locks_phase()                
@@ -758,6 +772,7 @@ class _ActiveEvent(_InvalidationListener):
         
 class RootActiveEvent(_ActiveEvent):
     def __init__(self,commit_manager,local_endpoint):
+
         _ActiveEvent.__init__(self,commit_manager,None,local_endpoint)
 
         self.subscriber = None
@@ -768,6 +783,13 @@ class RootActiveEvent(_ActiveEvent):
         # can move on to second phase of commit.
         self.waiting_on_commit_map = {}
 
+
+        # The code that initiates a RootActiveEvent should block
+        # until the RootActiveEvent completes.  It does so by
+        # listening on a threadsafe queue for a result.  If the result
+        # is a backout result, then reschedules the event.
+        self.event_complete_queue = Queue.Queue()
+        
         
         # When an active event is asked to perform the first phase of
         # the commit, it:
@@ -899,11 +921,13 @@ class RootActiveEvent(_ActiveEvent):
     def reschedule(self):
         '''
         When root backs out, we must attempt to reschedule the event.
-        This function does so.
+        This function writes into 
         '''
-        # FIXME: actually fill this function in.
-        util.logger_assert(
-            'Must finish reschedule method of root active event.')
+        # FIXME: may eventually want to put some additional metadata
+        # in, for instance, the uuid of the event so that may increase
+        # event priority for next go around.
+        self.event_complete_queue.put(
+            waldoCallResults._RescheduleRootCallResult())
         
             
     def _request_complete_commit(self):
@@ -915,6 +939,12 @@ class RootActiveEvent(_ActiveEvent):
         '''
         self.complete_commit_and_forward_complete_msg()
 
+        # FIXME: putting a dummy value in to return to calling thread
+        # (None).  Must figure out actual value to use.
+        self.event_complete_queue.put(
+            waldoCallResults._CompleteRootCallResult(None))
+
+        
     def notify_additional_subscriber(
         self,additional_subscriber_uuid,resource_uuid):
         '''

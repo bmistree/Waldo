@@ -63,3 +63,14 @@ class _SequenceMessageCallResult(object):
         
 class _BackoutBeforeReceiveMessageResult(object):
     pass
+
+
+######### ROOT EVENT QUEUE CALL RESULTS ######
+# the requester of a root event listens on a threadsafe queue until
+# the event completes.  it listens for objects of these types.
+class _RescheduleRootCallResult(object):
+    pass
+
+class _CompleteRootCallResult(object):
+    def __init__(self,to_return):
+        self.to_return = to_return

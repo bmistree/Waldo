@@ -30,6 +30,12 @@ class _ActiveEventMap(object):
         self._lock()
         del self.map[event_uuid]
         self._unlock()
+
+    def remove_event_if_exists(self,event_uuid):
+        self._lock()
+        if event_uuid in self.map:
+            del self.map[event_uuid]
+        self._unlock()
         
     
     def get_or_create_partner_event(self,uuid):

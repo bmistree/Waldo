@@ -90,6 +90,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         # retrying the event.
         
         active_event.request_commit()
+        queue_elem = active_event.event_complete_queue.get()
         return var_value
         
         
@@ -167,8 +168,8 @@ def run_test():
     # now, attempt to commit change
     root_act_event_to_commit.request_commit()
     
-    # wait to ensure that commit may have finished
-    time.sleep(.2)
+    # block until event may have finished
+    queue_elem = root_act_event_to_commit.event_complete_queue.get()
     
     
     # check that changes on both sides' peered "numero" variable have
