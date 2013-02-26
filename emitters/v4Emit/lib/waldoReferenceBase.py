@@ -241,6 +241,8 @@ class _ReferenceBase(object):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
+        if self.peered:
+            invalid_listener.add_peered_modified()
         self._unlock()
         
 

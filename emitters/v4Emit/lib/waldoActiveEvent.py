@@ -4,7 +4,11 @@ import threading
 import waldoCallResults
 import waldoExecutingEvent
 import waldoVariableStore
+from abc import abstractmethod
 
+#### DEBUG
+import pdb
+#### END DEBUG
 
 class _SubscribedToElement(object):
     '''
@@ -71,6 +75,10 @@ class _ActiveEvent(_InvalidationListener):
     # STATE_COMPLETED_COMMIT before completing the commit the second
     # time.  @see complete_commit_and_forward_complete_msg
     STATE_COMPLETED_COMMIT = 4
+
+    # If our subscriber is our partner, then this is what
+    # self.subscriber will be equal to.
+    SUBSCRIBER_PARTNER_FLAG = -1
     
     
     def __init__(self,commit_manager,uuid,local_endpoint):
@@ -142,14 +150,14 @@ class _ActiveEvent(_InvalidationListener):
         # (@see
         # waldoExecutingEvent._ExecutingEventContext.to_reply_with_uuid.)
         self.message_listening_queues_map = {}
-
+        
         
         # used to lock subscribed_to and message_sent.  Essentially,
         # if we receive a request to backout, then we need to: notify
         # all those that we are subscribed to to back out as well and
         # lock the subscribed_to list so that no others can subscribe
         # after.  (Same with message_sent.)
-        self._mutex = threading.Lock()
+        self._mutex = threading.RLock()
 
     def _lock(self):
         self._mutex.acquire()
@@ -219,7 +227,7 @@ class _ActiveEvent(_InvalidationListener):
           
         @returns {bool}
         '''
-        return self.message_sent or self.peered_modified()
+        return self.message_sent or self.peered_modified
 
     def notify_invalidated(self,wld_obj):
         '''
@@ -372,10 +380,14 @@ class _ActiveEvent(_InvalidationListener):
         self._unlock()
         return endpoint_call_requested
 
-    def forward_backout_request_and_backout_self(self,skip_partner=False):
+    def forward_backout_request_and_backout_self(
+        self,skip_partner=False,already_backed_out=False):
         '''
         @param {bool} skip_partner --- @see forward_commit_request
 
+        @param {bool} already_backed_out --- Caller has already backed
+        out the commit.  No need to do so again inside of function.
+        
         When this is called, we want to disable all further additions
         to self.subscribed_to and self.message_sent.  (Ie, after we
         have requested to backout, we should not execute any further
@@ -387,11 +399,12 @@ class _ActiveEvent(_InvalidationListener):
         if self.in_request_backout_phase():
             return
         
-        let_go_of_commit_locks = False
-        if self.in_commit_request_holding_locks_phase():
-            let_go_of_commit_locks = True            
+        if not already_backed_out:
+            let_go_of_commit_locks = False
+            if self.in_commit_request_holding_locks_phase():
+                let_go_of_commit_locks = True            
 
-        self.backout_commit(let_go_of_commit_locks)
+            self.backout_commit(let_go_of_commit_locks)
         
         self.set_request_backout_phase()
         for endpoint_uuid in self.subscribed_to.keys():
@@ -563,7 +576,7 @@ class _ActiveEvent(_InvalidationListener):
             self.notify_additional_subscriber(
                 existing_subscriber_uuid,resource_uuid)
         
-        
+
     def forward_commit_request_and_try_holding_commit_on_myself(
         self,skip_partner=False):
         '''
@@ -584,49 +597,160 @@ class _ActiveEvent(_InvalidationListener):
         able to commit its data.  Or, we may have already been told to
         commit.  It just means that the commit *may* still be proceeding.)
         '''
-        cannot_commit = False
 
         self._lock()
+
         if not self.in_running_phase():
             # there was a cycle in endpoint calls.  Ignore to avoid
             # loops.
-            pass
+            self._unlock()
+            return True
+
+        who_forwarded_to = None
+        cannot_commit = False
+        if self.is_invalidated:
+            self.set_request_commit_not_holding_locks_phase()
+            cannot_commit = True
+            self.backout_commit(False)
         else:
-            # FIXME: can get deadlock from multiple events trying to
-            # commit at same time.
-            if self.is_invalidated:
-                self.set_request_commit_not_holding_locks_phase()
-                cannot_commit = True
-                self.backout_commit(False)
-            else:
-                self.set_request_commit_holding_locks_phase()
+            self.set_request_commit_holding_locks_phase()
+            if self.hold_can_commit():
+                # we know that the data that we are trying to
+                # commit has not been modified out from under us;
+                # go ahead and notify all others that they should
+                # also begin commit.
 
-                if self.hold_can_commit():
-                    # we know that the data that we are trying to
-                    # commit has not been modified out from under us;
-                    # go ahead and notify all others that they should
-                    # also begin commit.
-
-                    for endpoint_uuid in self.subscribed_to.keys():
-                        endpoint = self.subscribed_to[endpoint_uuid]
-                        endpoint._receive_request_commit(
-                            self.uuid,self.local_endpoint)
-
-                    if ((not skip_partner) and self.must_check_partner()):
-                        self.local_endpoint._forward_commit_request_partner(self)
-                        
-                else:
-                    # if we know that data have been modified before our
-                    # commit, then we do not need to keep forwarding on the
-                    # commit request.
-                    self.backout_commit(True)
-                    cannot_commit = True
-                    self.set_request_commit_not_holding_locks_phase()                
+                # when we can commit, we reply back to our subscriber
+                # with a set of all those endpoint uuids that we
+                # performed endpoint calls on (and therefore that we
+                # will forward our first phase commit request on to).
+                # When the root endpoint has a record of all of these
+                # endpoints' having responded affirmatively to the
+                # first phase commit request, it begins trying to
+                # complete the commit (second phase of commit).  If
+                # any of the endpoints respond negatively, the root
+                # backs out the full first phase and restarts.
+                who_forwarded_to = [] # a set of uuids
+                for endpoint_uuid in self.subscribed_to.keys():
+                    who_forwarded_to.append(endpoint_uuid)
+                    endpoint = self.subscribed_to[endpoint_uuid]
+                    endpoint._receive_request_commit(
+                        self.uuid,self.local_endpoint)
                     
+                if ((not skip_partner) and self.must_check_partner()):
+                    self.local_endpoint._forward_commit_request_partner(self)
+                    who_forwarded_to.append(self.local_endpoint._partner_uuid)
+
+            else:
+                # if we know that data have been modified before our
+                # commit, then we do not need to keep forwarding on the
+                # commit request.
+                self.backout_commit(True)
+                cannot_commit = True
+                self.set_request_commit_not_holding_locks_phase()                
+
+        if cannot_commit:
+            # means that this _ActiveEvent was invalidated.
+
+            if self.subscriber == None:
+                # this _ActiveEvent is the RootActiveEvent.  Forward
+                # to all to backout.  Reschedule.
+                self.forward_backout_request_and_backout_self(
+                    False,True)
+                self.reschedule()
+                
+            elif self.subscriber == _ActiveEvent.SUBSCRIBER_PARTNER_FLAG:
+                # Tell partner to back out (and forward that back out
+                # to root)
+                self.local_endpoint._forward_first_phase_commit_unsuccessful(
+                    self.uuid,self.local_endpoint._uuid)
+
+            else:
+                # this was an EndpointCalledActiveEvent, which means
+                # that we can call subscriber directly to forward the
+                # message.
+                self.subscriber._receive_first_phase_commit_unsuccessful(
+                    self.uuid,self.local_endpoint._uuid)
+                
+        else:
+            # @see comment above who_forwarded_to
+            if self.subscriber == None:
+                # means that we are a _RootActiveEvent.  The
+                # _RootActiveEvent can get here from its first call to
+                # begin committing.  Load the waiting_on_commit_map so that
+                # know when to proceed to second phase of commit.
+
+                # handles case of loops in the endpoint call graph.
+                self.add_waiting_on_first_phase(who_forwarded_to)
+                self.add_received_first_phase(
+                    self.local_endpoint._uuid)
+                
+            elif self.subscriber == _ActiveEvent.SUBSCRIBER_PARTNER_FLAG:
+                # Tell partner (our subscriber) that we were able to
+                # commit, and the root should wait for messages from
+                # the endpoint uuids in who_forwarded_to before
+                # transitioning to second state of commit.
+                self.local_endpoint._forward_first_phase_commit_successful(
+                    self.uuid,self.local_endpoint._uuid,who_forwarded_to)
+            else:
+                # this was an EndpointCalledActiveEvent, which means
+                # that we can just call the subscriber directly to
+                # receive the successful message.
+                self.subscriber._receive_first_phase_commit_successful(
+                    self.uuid,self.local_endpoint._uuid,who_forwarded_to)
+                
+
+        # FIXME: unclear if need to hold this lock up until here.  May
+        # be able to let go of it earlier.  Reason through whether it
+        # is incorrect for root condition to manage
+        # waiting_on_commit_map outside of lock.
         self._unlock()
 
         return (not cannot_commit)
 
+
+    @abstractmethod
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        Using two phase commit.  All committers must report to root
+        that they were successful in first phase of commit before root
+        can tell everyone to complete the commit (second phase).
+
+        In this case, received a message from endpoint that this
+        active event is subscribed to that endpoint with uuid
+        msg_originator_endpoint_uuid was able to commit.  If we have
+        not been told to backout, then forward this message on to the
+        root.  (Otherwise, no point in sending it further and doing
+        wasted work: can just drop it.)
+
+        Note: this gets overridden in each subclass --- in
+        RootActiveEvent, check whether or not to transition to
+        complete commit; in other two, determines how to forward
+        message (via network or endpoint).
+        '''
+        util.logger_assert(
+            'Call to purely virtual ' +
+            'receive_successful_first_phase_commit_msg in '  +
+            '_ActiveEvent.')
+
+
+    def receive_unsuccessful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid):        
+        '''
+        @see receive_successful_first_phase_commit_msg
+        
+        Should rollback event if we were completing it and forwards message
+        towards root.
+        '''
+        util.logger_assert(
+            'Call to purely virtual ' +
+            'receive_unsuccessful_first_phase_commit_msg in ' +
+            '_ActiveEvent.')
+
+
+        
     
 # FIXME: are there any cases where we need to flush threadsafe queues
 # when completing a commit?
@@ -636,6 +760,35 @@ class RootActiveEvent(_ActiveEvent):
     def __init__(self,commit_manager,local_endpoint):
         _ActiveEvent.__init__(self,commit_manager,None,local_endpoint)
 
+        self.subscriber = None
+
+        # from endpoint uuid to bool.  bool value is True if still
+        # waiting on the commit, false otherwise.  After we initiate
+        # first phase of commit and all values in this map are False,
+        # can move on to second phase of commit.
+        self.waiting_on_commit_map = {}
+
+        
+        # When an active event is asked to perform the first phase of
+        # the commit, it:
+        #   1) Tries to commit itself
+        #   2) If that is successful, it tells all the endpoints that
+        #      it is subscribed to (potentially including its partner)
+        #      to try committing as well.
+        #   3) To its subscriber, it sends back a list of uuids for
+        #      all the endpoints that it forwarded the first phase
+        #      message on to.
+        #   4) For any non-root active event that receives another
+        #      endpoint's message containing the endpoint uuids from
+        #      #3, forward on to subscriber.
+        #   5) The root keeps track of everyone that has sent in that
+        #      their first phases were successful and the outstanding
+        #      endpoints that they brought into the global event.
+        #      When all have responded affirmatively, can complete the
+        #      commit.
+
+
+        
     def request_commit(self):
         '''
         Only the root event can begin the entire commit phase.
@@ -644,7 +797,124 @@ class RootActiveEvent(_ActiveEvent):
         # then
         self.forward_commit_request_and_try_holding_commit_on_myself()
 
+
+    def receive_unsuccessful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid):
+        '''
+        @see receive_unsuccessful_first_phase_commit_msg in base class
+        '''
+        to_broadcast_backout = False
+        self._lock()
+        if self.in_commit_request_holding_locks_phase():
+            # okay to make calls because of re-entrantness
+            self.forward_backout_request_and_backout_self()
+        self._unlock()
         
+        # FIXME: still must automatically reschedule event.
+        util.logger_warn(
+            'When backing out event from root, still must automatically ' +
+            'reschedule event.')
+            
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        @see base class' receive_successful_first_phase_commit_msg
+        '''
+        self._lock()
+        # ordering of additions/changes to self.waiting_on_commit_map
+        # is important.  if flipped order, root could think that it
+        # was not waiting on any additional endpoints to confirm first
+        # phase commit completed and begin second phase of commit
+        # (even though children_event_endpoint contains uuids of more
+        # events that may not have completed first phase of commit.)
+        self.add_waiting_on_first_phase(children_event_endpoint_uuids)
+        self.add_received_first_phase(msg_originator_endpoint_uuid)
+        self._unlock()
+        
+    def add_waiting_on_first_phase(self,endpoint_uuid_array):
+        '''
+        ASSUMES ALREADY HOLDING LOCK
+        
+        @param {list} endpoint_uuid_array --- Each element is a uuid
+        for an endpoint.  We cannot transition into second phase of
+        two phase commit until every uuid element in the
+        endpoint_uuid_array has responded that it is clear to commit.
+        
+        Note: because of loops in the endpoint call graph, we may
+        receive endpoint uuids.  If the uuid already exists in the
+        map, we *should not* overwrite its value.  If we do, we might
+        lose track of an endpoint that has already responded that it
+        was clear to commit in its first phase.
+        '''
+        for uuid in endpoint_uuid_array:
+            if uuid not in self.waiting_on_commit_map:
+                self.waiting_on_commit_map[uuid] = True
+
+        
+    def add_received_first_phase(self,endpoint_uuid):
+        '''
+        ASSUMES ALREADY HOLDING LOCK
+
+        Tells us that endpoint with uuid endpoint_uuid has
+        completed the first phase of the commit with no conflicts.
+
+        waiting_on_commit_map keeps track of endpoints that have
+        and have not gone through the first phase of the commit.
+
+        (An endpoint has gone through the first phase of the
+        commit successfully if its uuid is a key in the map to
+        False.  The root does not know if an endpoint has
+        completed its first phase of the commit if the key in the
+        map points to true.)
+
+        As endpoints we are subscribed to attempt the first phase
+        of their commits, they forward back whether their attempt
+        to commit would conflict with existing commits or whether
+        they do not.  In the case that they do not, the endpoints
+        also forward back a list of additional endpoint uuids that
+        we must also wait for before completing commit.
+
+        Note: if at the end of this function all values are false,
+        we can begin completing the commit.
+        '''
+        if not self.in_commit_request_holding_locks_phase():
+            # may get duplicates for certain endpoints (eg, if there's
+            # a loop in the endpoint graph).  Duplicates might lead to
+            # getting additional first_phase_complete messages.  We do
+            # not need to process these and can return.
+            return
+        
+        self.waiting_on_commit_map[endpoint_uuid] = False
+
+        can_transition_to_complete_commit = True
+        for waiting_value in self.waiting_on_commit_map.values():
+            if waiting_value:
+                can_transition_to_complete_commit = False
+                break
+
+        if can_transition_to_complete_commit:
+            self._request_complete_commit()
+
+    def reschedule(self):
+        '''
+        When root backs out, we must attempt to reschedule the event.
+        This function does so.
+        '''
+        # FIXME: actually fill this function in.
+        util.logger_assert(
+            'Must finish reschedule method of root active event.')
+        
+            
+    def _request_complete_commit(self):
+        '''
+        Should automatically happen.  Completes its commit and
+        forwards a message to all others to complete their commits.
+
+        Can be called while holding locks or while not holding locks
+        '''
+        self.complete_commit_and_forward_complete_msg()
+
     def notify_additional_subscriber(
         self,additional_subscriber_uuid,resource_uuid):
         '''
@@ -654,18 +924,21 @@ class RootActiveEvent(_ActiveEvent):
         This class is the root of the event, it must check that these
         conflicts will not cause a deadlock.
         '''
-        # FIXME: finish function
-        util.logger_assert(
-            'Still must finish writing notify additional ' +
-            'subscriber in RootActiveEvent')
+                
+        # self._lock()
+        # if (self.in_request_backout_phase() or
+        #     self.in_state_completed_commit_phase()):
+        #     # do not do anything.  there cannot be deadlock because
+        #     # we're about to release our locks anyways.
+        #     pass
+        # else:
         
-    def request_complete_commit(self):
-        '''
-        Should automatically happen.  Completes its commit and
-        forwards a message to all others to complete their commits.
-        '''
-        self.complete_commit_and_forward_complete_msg()
-
+        # FIXME: finish this function
+        util.logger_warn(
+            'Must finish filling in notify_additional_subscriber method ' +
+            'for root active event to avoid deadlock during first phase ' +
+            'of commit.')
+        return
 
     def notify_removed_subscriber(
         self,removed_subscriber_uuid,resource_uuid):
@@ -673,13 +946,15 @@ class RootActiveEvent(_ActiveEvent):
         @see notify_additional_subscriber, except for removals instead of
         additions.
         '''
-        if not self.in_commit_request_holding_locks_phase():
-            return
-
-        # FIXME: finish function
-        util.logger_assert(
-            'Still must finish writing notify removed ' +
-            'subscriber in RootActiveEvent')
+                
+        # if not self.in_commit_request_holding_locks_phase():
+        #     return
+        # FIXME: finish this function
+        util.logger_warn(
+            'Must finish filling in notify_additional_subscriber method ' +
+            'for root active event to avoid deadlock during first phase ' +
+            'of commit.')
+        return
                         
         
 class PartnerActiveEvent(_ActiveEvent):
@@ -690,6 +965,8 @@ class PartnerActiveEvent(_ActiveEvent):
         # That means that we must check with our partner before we can
         # commit/backout.
         self.message_sent = True
+        self.subscriber = _ActiveEvent.SUBSCRIBER_PARTNER_FLAG
+
 
     def notify_additional_subscriber(
         self,additional_subscriber_uuid,resource_uuid):
@@ -727,6 +1004,42 @@ class PartnerActiveEvent(_ActiveEvent):
         self.local_endpoint._notify_partner_removed_subscriber(
             self.uuid,removed_subscriber_uuid,resource_uuid)
 
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        @see base class' receive_successful_first_phase_commit_msg
+        '''
+        self._lock()
+        if self.in_commit_request_holding_locks_phase():
+            # forward message towards root
+            self.subscriber._forward_first_phase_commit_successful(
+                self.uuid,msg_originator_endpoint_uuid,
+                children_event_endpoint_uuids)
+        self._unlock()
+
+    # FIXME: seems to be quite a bit of code duplication between
+    # EndpointCalledActiveEvent and PartnerCalledActiveEvent.  (For
+    # instance, this method and
+    # receive_usccessful_first_phase_commit_msg.)  Think about a way
+    # to reduce this.
+    def receive_unsuccessful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid):
+        '''
+        @see receive_unsuccessful_first_phase_commit_msg in base class
+        '''
+        to_forward = False
+        self._lock()
+        if self.in_commit_request_holding_locks_phase():
+            to_forward = True
+            self.backout_commit(True)
+            self.set_request_backout_phase()            
+        self._unlock()
+
+        if to_forward:
+            self.subscriber._forward_first_phase_commit_unsuccessful(
+                event_uuid,msg_originator_endpoint_uuid)
+
         
 class EndpointCalledActiveEvent(_ActiveEvent):
     def __init__(
@@ -736,6 +1049,22 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         _ActiveEvent.__init__(self,commit_manager,uuid,local_endpoint)
         self.subscriber = endpoint_making_call
 
+
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        @see base class' receive_successful_first_phase_commit_msg
+        '''
+        self._lock()
+        if self.in_commit_request_holding_locks_phase():
+            # forward message towards root
+            self.subscriber._receive_first_phase_commit_successful(
+                self.uuid,msg_originator_endpoint_uuid,
+                children_event_endpoint_uuids)
+        self._unlock()
+        
+        
     def notify_additional_subscriber(
         self,additional_subscriber_uuid,resource_uuid):
         '''
@@ -773,3 +1102,20 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         self.subscriber._receive_removed_subscriber(
             self.uuid,removed_subscriber_uuid,resource_uuid)
 
+
+    def receive_unsuccessful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid):
+        '''
+        @see receive_unsuccessful_first_phase_commit_msg in base class
+        '''
+        to_forward = False
+        self._lock()
+        if self.in_commit_request_holding_locks_phase():
+            to_forward = True
+            self.backout_commit(True)
+            self.set_request_backout_phase()            
+        self._unlock()
+
+        if to_forward:
+            self.subscriber._receive_first_phase_commit_unsuccessful(
+                event_uuid,msg_originator_endpoint_uuid)

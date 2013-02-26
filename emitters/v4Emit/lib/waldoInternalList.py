@@ -35,6 +35,8 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         self._add_invalid_listener(invalid_listener)
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_elem.append_val(new_val,invalid_listener,self.peered)
+        if self.peered:
+            invalid_listener.add_peered_modified()        
         self._unlock()
 
     def copy_if_peered(self,invalid_listener):

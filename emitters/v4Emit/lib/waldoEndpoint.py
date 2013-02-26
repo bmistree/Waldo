@@ -88,6 +88,36 @@ class _EndpointServiceThread(threading.Thread):
 
         self.threadsafe_queue.put(rcv_sub_act)
 
+    def receive_first_phase_commit_message(
+        self,event_uuid,msg_originator_endpoint_uuid,successful,
+        children_event_endpoint_uuids=None):
+        '''
+        @param {uuid} event_uuid --- The uuid of the event associated
+        with this message.  (Used to index into local endpoint's
+        active event map.)
+
+        @param {uuid} msg_originator_endpoint_uuid --- The endpoint
+        that tried to perform the first phase of the commit.  (Other
+        endpoints may have forwarded the result on to us.)
+
+        @param {bool} successful --- True if the endpoint with uuid
+        msg_originator_endpoint_uuid was able to hold locks for the
+        first phase of the commit and there were no conflicts.  False
+        if the event must be invalidated because another event
+        committed a conflict.
+
+        @param {None or list} children_event_endpoint_uuids --- None
+        if successful is False.  Otherwise, a set of uuids.  The root
+        endpoint should not transition from being in first phase of
+        commit to completing commit until it has received a first
+        phase successful message from endpoints with each of these
+        uuids.
+        '''
+        first_phase_commit_act = waldoServiceActions._ReceiveFirstPhaseCommitMessage(
+            self.endpoint,event_uuid,msg_originator_endpoint_uuid,successful,
+            children_event_endpoint_uuids)
+        
+        self.threadsafe_queue.put(first_phase_commit_act)
         
     def receive_endpoint_call(
         self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
@@ -199,7 +229,7 @@ class _Endpoint(object):
         '''
         self._act_event_map = waldoActiveEventMap._ActiveEventMap(commit_manager,self)
         self._conn_obj = conn_obj
-
+        
         # whenever we create a new _ExecutingEvent, we point it at
         # this variable store so that it knows where it can retrieve
         # variables.
@@ -209,6 +239,24 @@ class _Endpoint(object):
 
         self._endpoint_service_thread = _EndpointServiceThread(self)
         self._endpoint_service_thread.start()
+
+        # When go through first phase of commit, may need to forward
+        # partner's endpoint uuid back to the root, so the endpoint
+        # needs to keep track of its partner's uuid.  FIXME: right
+        # now, manually setting partner uuids in connection object.
+        # And not checking to ensure that the partner endpoint is set
+        # before doing additional work. should create a proper
+        # handshake instead.
+        self._partner_uuid = None
+
+        self._uuid = util.generate_uuid()
+        
+    def _set_partner_uuid(self,uuid):
+        '''
+        FIXME: @see note above _partner_uuid.
+        '''
+        self._partner_uuid = uuid
+
         
     def _request_commit(self,uuid,requesting_endpoint):
         '''
@@ -277,6 +325,16 @@ class _Endpoint(object):
         elif isinstance(msg,waldoMessages._PartnerAdditionalSubscriberMessage):
             self._receive_additional_subscriber_message(
                 msg.event_uuid, msg.additional_subscriber_uuid,msg.resource_uuid)
+
+        elif isinstance(msg,waldoMessages._PartnerFirstPhaseResultMessage):
+            if msg.successful:
+                self._receive_first_phase_commit_successful(
+                    msg.event_uuid,msg.sending_endpoint_uuid,
+                    msg.children_event_endpoint_uuids)
+            else:
+                self._receive_first_phase_commit_unsuccessful(
+                    msg.event_uuid,msg.sending_endpoint_uuid)
+            
         else:
             #### DEBUG
             util.logger_assert(
@@ -292,8 +350,45 @@ class _Endpoint(object):
         '''
         msg = waldoMessages._PartnerRemovedSubscriberMessage(
             event_uuid,removed_subscriber_uuid,resource_uuid)
-        self._conn_obj.write(pickle.dumps(msg),self)        
+        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
 
+    def _forward_first_phase_commit_unsuccessful(
+        self,event_uuid,endpoint_uuid):
+        '''
+        @param {uuid} event_uuid
+        @param {uuid} endpoint_uuid
+        
+        Partner endpoint is subscriber of event on this endpoint with
+        uuid event_uuid.  Send to partner a message that the first
+        phase of the commit was unsuccessful on endpoint with uuid
+        endpoint_uuid (and therefore, it and everything along the path
+        should roll back their commits).
+        '''
+        msg = waldoMessages._PartnerFirstPhaseResultMessage(
+            event_uuid,endpoint_uuid,False)
+        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+
+    def _forward_first_phase_commit_successful(
+        self,event_uuid,endpoint_uuid,children_event_endpoint_uuids):
+        '''
+        @param {uuid} event_uuid
+
+        @param {uuid} endpoint_uuid
+        
+        @param {array} children_event_endpoint_uuids --- 
+        
+        Partner endpoint is subscriber of event on this endpoint with
+        uuid event_uuid.  Send to partner a message that the first
+        phase of the commit was successful for the endpoint with uuid
+        endpoint_uuid, and that the root can go on to second phase of
+        commit when all endpoints with uuids in
+        children_event_endpoint_uuids have confirmed that they are
+        clear to commit.
+        '''
+        msg = waldoMessages._PartnerFirstPhaseResultMessage(
+            event_uuid,endpoint_uuid,True,
+            children_event_endpoint_uuids)
+        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
         
     def _notify_partner_of_additional_subscriber(
         self,event_uuid,additional_subscriber_uuid,resource_uuid):
@@ -303,9 +398,9 @@ class _Endpoint(object):
         '''
         msg = waldoMessages._PartnerAdditionalSubscriberMessage(
             event_uuid,additional_subscriber_uuid,resource_uuid)
-        self._conn_obj.write(pickle.dumps(msg),self)        
+        self._conn_obj.write(pickle.dumps(msg.mst_to_map()),self)
         
-
+        
     def _receive_additional_subscriber(
         self,event_uuid,subscriber_event_uuid,resource_uuid):
         '''
@@ -343,6 +438,36 @@ class _Endpoint(object):
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
 
 
+    def _receive_first_phase_commit_successful(
+        self,event_uuid,endpoint_uuid,children_event_endpoint_uuids):
+        '''
+        One of the endpoints, with uuid endpoint_uuid, that we are
+        subscribed to was able to complete first phase commit for
+        event with uuid event_uuid.
+
+        @param {uuid} event_uuid
+        
+        @param {uuid} endpoint_uuid --- The uuid of the endpoint that
+        was able to complete the first phase of the commit.  (Note:
+        this may not be the same uuid as that for the endpoint that
+        called _receive_first_phase_commit_successful on this
+        endpoint.  We only keep track of the endpoint that originally
+        committed.)
+        
+        Forward the message on to the root.  
+        '''
+        self._endpoint_service_thread.receive_first_phase_commit_message(
+            event_uuid,endpoint_uuid,True,children_event_endpoint_uuids)
+        
+
+    def _receive_first_phase_commit_unsuccessful(
+        self,event_uuid,endpoint_uuid):
+        '''
+        @see _receive_first_phase_commit_successful
+        '''
+        self._endpoint_service_thread.receive_first_phase_commit_message(
+            event_uuid,endpoint_uuid,False)
+        
     def _send_partner_message_sequence_block_request(
         self,block_name,event_uuid,reply_with_uuid,reply_to_uuid,
         invalidation_listener,sequence_local_store):

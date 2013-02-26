@@ -253,3 +253,43 @@ class _ReceiveEndpointCallAction(_Action):
             self.to_exec,act_event,evt_ctx,*self.args)
 
         exec_event.start()
+
+
+class _ReceiveFirstPhaseCommitMessage(_Action,threading.Thread):
+    '''
+    @see waldoEndpoint._EndpointServiceThread.receive_first_phase_commit_message
+    '''
+    def __init__(
+        self,local_endpoint,event_uuid,msg_originator_endpoint_uuid,successful,
+        children_event_endpoint_uuids):
+        '''
+        @see
+        waldoEndpoint._EndpointServiceThread.receive_first_phase_commit_message
+        '''
+        self.local_endpoint = local_endpoint
+        self.event_uuid = event_uuid
+        self.msg_originator_endpoint_uuid = msg_originator_endpoint_uuid
+        self.successful = successful
+        self.children_event_endpoint_uuids = children_event_endpoint_uuids
+
+        threading.Thread.__init__(self)
+        self.daemon = True
+        
+    def service(self):
+        self.start()
+
+    def run(self):
+        act_event = self.local_endpoint._act_event_map.get_event(
+            self.event_uuid)
+
+        if act_event == None:
+            return
+        
+        if self.successful:
+            act_event.receive_successful_first_phase_commit_msg(
+                self.event_uuid,self.msg_originator_endpoint_uuid,
+                self.children_event_endpoint_uuids)
+        else:
+            act_event.receive_unsuccessful_first_phase_commit_msg(
+                self.event_uuid,self.msg_originator_endpoint_uuid)
+

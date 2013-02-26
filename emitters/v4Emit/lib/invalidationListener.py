@@ -22,24 +22,12 @@ class _InvalidationListener(object):
         '''        
         self.objs_touched = {}
 
+        self.peered_modified = False
         if uuid == None:
             uuid = util.generate_uuid()
         self.uuid = uuid
         
         self.commit_manager = commit_manager
-
-        
-    def peered_modified(self):
-        '''
-        @returns{bool} --- True if one of the objects that we touched
-        was peered and we modified it.
-        '''
-        for obj_uuid in self.objs_touched.keys():
-            obj = self.objs_touched[obj_uuid]
-            if obj.is_peered() and obj.modified(self):
-                return True
-        
-        return False
         
         
     @abstractmethod
@@ -111,6 +99,9 @@ class _InvalidationListener(object):
         '''
         self.objs_touched[what_touched.uuid] = what_touched
 
+    def add_peered_modified(self):
+        self.peered_modified = True
+        
 
     ### Each of the next three functions for now are thin wrappers
     ### around commit_manager functions.

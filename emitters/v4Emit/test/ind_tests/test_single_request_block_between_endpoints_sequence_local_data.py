@@ -12,6 +12,7 @@ import Queue
 import waldoActiveEvent
 import waldoExecutingEvent
 import threading
+from test_util import DummyConnectionObj
 
 '''
 Testing:
@@ -31,35 +32,6 @@ THIS TEST DOES NOT CHECK WHETHER COMMITS WORK.
 # stores each new value of local var as go.  Should be ordered from
 # 100 to 0 if decremented correctly in order.
 array_of_values = []
-
-class DummyConnectionObj(threading.Thread):
-    def __init__(self):
-        self.queue = Queue.Queue()
-        self.endpoint1 = None
-        self.endpoint2 = None
-
-        threading.Thread.__init__(self)
-        self.daemon = True
-        
-    def register_endpoint (self, endpoint):
-        if self.endpoint1 == None:
-            self.endpoint1 = endpoint
-        else:
-            self.endpoint2 = endpoint
-
-    def write(self,msg,endpoint):
-        self.queue.put((msg,endpoint))
-
-
-    def run(self):
-
-        while True:
-            msg,msg_sender_endpt = self.queue.get()
-            msg_recvr_endpt = self.endpoint1
-            if msg_sender_endpt == self.endpoint1:
-                msg_recvr_endpt = self.endpoint2
-
-            msg_recvr_endpt._receive_msg_from_partner(msg)
             
         
 class DummyEndpoint(waldoEndpoint._Endpoint):

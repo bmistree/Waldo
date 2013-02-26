@@ -28,6 +28,8 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._add_invalid_listener(invalid_listener)
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_elem.add_key(key_added,new_val,invalid_listener,self.peered)
+        if self.peered:
+            invalid_listener.add_peered_modified()
         self._unlock()
 
 
@@ -37,6 +39,8 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_elem.del_key(key_deleted)
+        if self.peered:
+            invalid_listener.add_peered_modified()
         self._unlock()
 
     @abstractmethod
@@ -103,6 +107,8 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_elem.write_val_on_key(key,new_val)
+        if self.peered:
+            invalid_listener.add_peered_modified()        
         self._unlock()
         
     

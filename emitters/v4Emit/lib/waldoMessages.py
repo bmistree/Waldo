@@ -46,7 +46,6 @@ class _Message(object):
         '''
         @returns {Subclass of _Message}
         '''
-
         #### DEBUG
         if _Message.MESSAGE_TYPE_FIELD not in msg_map:
             util.logger_assert(
@@ -205,7 +204,74 @@ class _PartnerAdditionalSubscriberMessage(_Message):
             msg_map[_PartnerAdditionalSubscriberMessage.RESOURCE_UUID_FIELD]
             )
     
+class _PartnerFirstPhaseResultMessage(_Message):
+    '''
+    We use a two-phase commit process when committing events.  A root
+    event initiates the first phase of the commit.  When the
+    corresponding _ActiveEvents running on hosts throughout the
+    network attempt to perform the first phase of the commit, we must
+    send their results back to the root.  (So that the root can
+    determine when to backout or move on to the second phase of the
+    commit.)  
+
+    This message type is used to send the results of attempting the
+    first phase of the commit back to a partner.  The partner will
+    forward the message to its subscriber, which forwards to its
+    subscriber, etc., up until it gets all the way back to the root.
+
+    The first phase was either successful or not successful.
+    
+    If it was successful, we also pass back a list of endpoint uuids.
+    Each of these correspond to endpoints that the root must wait on
+    before transitioning to second phase of commit.
+    '''
+
+    MSG_TYPE = 'partner_first_phase_resutl_message'
+
+    SENDING_ENDPOINT_UUID_FIELD = 'sending_endpoint'
+    SUCCESSFUL_FIELD = 'successful'
+    CHILDREN_EVENT_ENDPOINT_UUIDS_FIELD = 'children_endpoint_uuids'
+    
+    def __init__(
+        self,event_uuid,sending_endpoint_uuid,successful,
+        children_event_endpoint_uuids=None):
+        '''
+        @param {uuid} event_uuid ---
+
+        @pararm {uuid} sending_endpoint_uuid --- The uuid of the
+        endpoint that originated the response message.
         
+        @param {bool} successful --- True if the message was
+        successful, False otherwise.
+        
+        @param {list or None} --- If None, means that the event was
+        not successful.
+        '''
+        self.event_uuid = event_uuid
+        self.sending_endpoint_uuid = sending_endpoint_uuid
+        self.successful = successful
+        self.children_event_endpoint_uuids = children_event_endpoint_uuids
+        
+
+    def msg_to_map(self):
+        return {
+            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
+            _Message.EVENT_UUID_FIELD: self.event_uuid,
+
+            self.SENDING_ENDPOINT_UUID_FIELD: self.sending_endpoint_uuid,
+            self.SUCCESSFUL_FIELD: self.successful,
+            
+            self.CHILDREN_EVENT_ENDPOINT_UUIDS_FIELD:
+                self.children_event_endpoint_uuids
+            }
+
+    @staticmethod
+    def map_to_msg(msg):
+        return _PartnerFirstPhaseResultMessage(
+            msg[_Message.EVENT_UUID_FIELD],
+            msg[_PartnerFirstPhaseResultMessage.SENDING_ENDPOINT_UUID_FIELD],
+            msg[_PartnerFirstPhaseResultMessage.SUCCESSFUL_FIELD],
+            msg[_PartnerFirstPhaseResultMessage.CHILDREN_EVENT_ENDPOINT_UUIDS_FIELD])
         
     
 _Message.SUBTYPE_MAP[
@@ -218,3 +284,5 @@ _Message.SUBTYPE_MAP[
     _PartnerRemovedSubscriberMessage.MSG_TYPE] = _PartnerRemovedSubscriberMessage
 _Message.SUBTYPE_MAP[
     _PartnerAdditionalSubscriberMessage.MSG_TYPE] = _PartnerAdditionalSubscriberMessage
+_Message.SUBTYPE_MAP[
+    _PartnerFirstPhaseResultMessage.MSG_TYPE] = _PartnerFirstPhaseResultMessage

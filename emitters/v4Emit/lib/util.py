@@ -167,4 +167,6 @@ def generate_py_uuid():
 def logger_assert(assert_msg):
     print 'Compiler error: ' + assert_msg
     assert(False)
-    
+
+def logger_warn(warn_msg):
+    print 'Compiler warn: ' + warn_msg
