@@ -64,6 +64,9 @@ class _SequenceMessageCallResult(object):
 class _BackoutBeforeReceiveMessageResult(object):
     pass
 
+class _ModifiedUpdatedMessageResult(object):
+    pass
+
 
 ######### ROOT EVENT QUEUE CALL RESULTS ######
 # the requester of a root event listens on a threadsafe queue until

@@ -18,6 +18,7 @@ import ind_tests.test_serialized_deserialized_nested_map
 import ind_tests.test_single_request_block_between_endpoints_sequence_local_data
 import ind_tests.test_single_request_block_between_endpoints_peered_data
 import ind_tests.test_reschedule_on_conflict
+import ind_tests.test_one_side_changes_peered
 
 TO_RUN = [
     ('Nested list', ind_tests.test_nested_list.run_test),
@@ -41,6 +42,10 @@ TO_RUN = [
 
     ('Test reschedule root on conflict',
      ind_tests.test_reschedule_on_conflict.run_test),
+
+    ('Test one side changes peered, does other see change?',
+     ind_tests.test_one_side_changes_peered.run_test),
+    
     ]
 
 def run_all():

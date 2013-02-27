@@ -273,6 +273,84 @@ class _PartnerFirstPhaseResultMessage(_Message):
             msg[_PartnerFirstPhaseResultMessage.SUCCESSFUL_FIELD],
             msg[_PartnerFirstPhaseResultMessage.CHILDREN_EVENT_ENDPOINT_UUIDS_FIELD])
         
+
+class _PartnerNotifyOfPeeredModified(_Message):
+    '''
+    @see waldoActiveEvent.wait_if_modified_peered    
+    '''
+    MSG_TYPE = 'partner_notify_of_peered_modified'
+
+    REPLY_WITH_UUID_FIELD = 'reply_with_uuid'
+    PEERED_DELTAS_FIELD = 'peered_deltas'
+
+    def __init__(
+        self,event_uuid,reply_with_uuid,peered_deltas):
+        self.event_uuid = event_uuid
+        self.reply_with_uuid = reply_with_uuid
+        self.peered_deltas = peered_deltas
+
+    def msg_to_map(self):
+        return {
+            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
+            _Message.EVENT_UUID_FIELD: self.event_uuid,
+
+            self.REPLY_WITH_UUID_FIELD: self.reply_with_uuid,
+            self.PEERED_DELTAS_FIELD: self.peered_deltas,
+            }
+
+    @staticmethod
+    def map_to_msg(msg):
+        return _PartnerNotifyOfPeeredModified(
+            msg[_Message.EVENT_UUID_FIELD],
+            msg[_PartnerNotifyOfPeeredModified.REPLY_WITH_UUID_FIELD],
+            msg[_PartnerNotifyOfPeeredModified.PEERED_DELTAS_FIELD])
+
+    
+class _PartnerNotifyOfPeeredModifiedResponse(_Message):
+    '''
+    This is a response message to _PartnerNotifyOfPeeredModified
+    
+    @see waldoActiveEvent.wait_if_modified_peered
+    '''
+    MSG_TYPE = 'partner_notify_of_peered_modified_resp'
+
+    REPLY_TO_UUID_FIELD = 'reply_to_uuid'
+    INVALIDATED_FIELD = 'invalidated'
+
+    
+    def __init__(self,event_uuid,reply_to_uuid,invalidated):
+        '''
+        @param {uuid} event_uuid
+
+        @param {uuid} reply_to_uuid --- Matches reply_with_uuid from
+        _PartnerNotifyOfPeeredModified.
+        
+        @param {bool} invalidated --- True if when notifying other
+        side of the changes to peered data, the other side cannot
+        apply changes because they have already been invalidated.
+        (Early exit condition.)
+        '''
+        self.event_uuid = event_uuid
+        self.reply_to_uuid = reply_to_uuid
+        self.invalidated = invalidated
+
+    def msg_to_map(self):
+        return {
+            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
+            _Message.EVENT_UUID_FIELD: self.event_uuid,
+
+            self.REPLY_TO_UUID_FIELD: self.reply_to_uuid,
+            self.INVALIDATED_FIELD: self.invalidated
+            }
+
+    @staticmethod
+    def map_to_msg(msg):
+        return _PartnerNotifyOfPeeredModifiedResponse(
+            msg[_Message.EVENT_UUID_FIELD],
+            msg[_PartnerNotifyOfPeeredModifiedResponse.REPLY_TO_UUID_FIELD],
+            msg[_PartnerNotifyOfPeeredModifiedResponse.INVALIDATED_FIELD])
+    
+
     
 _Message.SUBTYPE_MAP[
     _PartnerRequestSequenceBlockMessage.MSG_TYPE] = _PartnerRequestSequenceBlockMessage
@@ -286,3 +364,7 @@ _Message.SUBTYPE_MAP[
     _PartnerAdditionalSubscriberMessage.MSG_TYPE] = _PartnerAdditionalSubscriberMessage
 _Message.SUBTYPE_MAP[
     _PartnerFirstPhaseResultMessage.MSG_TYPE] = _PartnerFirstPhaseResultMessage
+_Message.SUBTYPE_MAP[
+    _PartnerNotifyOfPeeredModified.MSG_TYPE] = _PartnerNotifyOfPeeredModified
+_Message.SUBTYPE_MAP[
+    _PartnerNotifyOfPeeredModifiedResponse.MSG_TYPE] = _PartnerNotifyOfPeeredModifiedResponse

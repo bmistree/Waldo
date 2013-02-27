@@ -211,7 +211,7 @@ class _ActiveEvent(_InvalidationListener):
         #### END DEBUG
 
         self._state = _ActiveEvent.STATE_COMPLETED_COMMIT
-        
+
         
     def must_check_partner(self):
         '''
@@ -280,6 +280,121 @@ class _ActiveEvent(_InvalidationListener):
         self._unlock()
         return partner_call_requested
 
+
+    def generate_partner_modified_peered_response(self,msg):
+        '''
+        @param {waldoMessages._PartnerNotifyOfPeeredModified} msg
+
+        Should attempt to update peered and sequence global data
+        contained in message and reply with a partner modified peered
+        response.
+        '''
+        self.local_endpoint._global_var_store.incorporate_deltas(
+            self,msg.peered_deltas)
+
+        # FIXME: should check here whether the delta changes have
+        # already been invalidated.
+
+        # FIXME: ensure that I eally do not need locks around
+        # incorporate deltas.
+        
+        self.local_endpoint._notify_partner_peered_before_return_response(
+            self.uuid,msg.reply_with_uuid, False)
+        
+    
+    def receive_partner_modified_peered_response(self,resp_msg):
+        '''
+        @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse}
+        resp_msg
+        
+        @see wait_if_modified_peered.  Unlocks queue being waited on
+        in that function.
+        '''
+        self._lock()
+        queue_waiting_on =  (
+            self.message_listening_queues_map[resp_msg.reply_to_uuid])
+        del self.message_listening_queues_map[resp_msg.reply_to_uuid]
+        self._unlock()
+
+        if resp_msg.invalidated:
+            queue_waiting_on.put(
+                waldoCallResults._BackoutBeforeReceiveMessageResult())
+        else:
+            queue_waiting_on.put(
+                waldoCallResults._ModifiedUpdatedMessageResult())
+
+        
+    def wait_if_modified_peered(self):
+        '''
+        For certain topologies, can have a problem with updating
+        peered data:
+
+        root <------> root partner
+        a    <------> a partner
+        
+        root and a are on the same host.  root_partner and a_partner
+        are on the same host.  Could get into a situation in which do
+        not update partner data.  Specifically, if root updates peered
+        data and makes an endpoint call to a, which makes a message
+        call to a partner, which makes an endpoint call to root
+        partner, which modifies peered data, we need a mechanism for
+        root and root partner to exchange the peered data updates.  If
+        we wait until first phase of commit, then can get into trouble
+        because root locks its variables before knowing it also needs
+        to lock root partner's peered variables.  Which could lead to
+        deadlock.
+
+        To avoid this, after every endpoint call and root call, we
+        send a message to our partners with all updated data.  We then
+        wait until we recieve an ack of that message before returning
+        back to the endpoint that called us.
+
+        This function checks if we've modified any peered data.  If we
+        have, then it sends that message to partner and blocks,
+        waiting on a response from partner.
+
+        FIXME: there are (hopefully) better ways to do this.
+
+        FIXME: do I also need to update sequence local data (eg., for
+        oncompletes?)
+        
+        '''
+
+        must_send_update = False
+        self._lock()
+        
+        if self.peered_modified:
+            # FIXME: could probably be less conservative here.  For
+            # instance, it's more important to know if peered data
+            # have been modified after the last sequence message we
+            # sent to partner.
+            
+            # send update message 
+            must_send_update = True
+            glob_deltas = self.local_endpoint._global_var_store.generate_deltas(
+                self)
+        self._unlock()
+
+        if must_send_update:
+            # send update message and block until we receive a
+            # response
+            waiting_queue = Queue.Queue()
+            reply_with_uuid = util.generate_uuid()
+            self.message_listening_queues_map[
+                reply_with_uuid] = waiting_queue
+
+            self.local_endpoint._notify_partner_peered_before_return(
+                self.uuid,reply_with_uuid,glob_deltas)
+            
+            peered_mod_get = waiting_queue.get()
+            if isinstance(
+                peered_mod_get,waldoCallResults._BackoutBeforeReceiveMessageResult):
+                # means that the other side has already invalidated
+                # those changes to peered variables.  
+                return False
+
+        return True
+            
 
     def complete_commit_and_forward_complete_msg(self,skip_partner=False):
         '''
@@ -507,7 +622,16 @@ class _ActiveEvent(_InvalidationListener):
             # FIXME: may be faster if move this outside of the lock.
             # Probably not much faster though.
             exec_event = waldoExecutingEvent._ExecutingEvent(
-                to_exec,self,evt_ctx)
+                to_exec,self,evt_ctx,
+                None # using None here means that we do not need to
+                     # bother with waiting for modified peered-s to
+                     # update.
+                )
+
+            # FIXME: what happens if we reuse a message event when get
+            # a call from an endpoint?  Then, likely must wait for
+            # check on modifieds.
+            
             exec_event.start()
 
         else:
@@ -809,16 +933,17 @@ class RootActiveEvent(_ActiveEvent):
         #      When all have responded affirmatively, can complete the
         #      commit.
 
-
-        
     def request_commit(self):
         '''
         Only the root event can begin the entire commit phase.
         '''
         # if we know that data have been modified before our commit,
         # then
-        self.forward_commit_request_and_try_holding_commit_on_myself()
 
+        # FIXME: there may be instances where do not have to issue
+        # this call.
+        self.wait_if_modified_peered()
+        self.forward_commit_request_and_try_holding_commit_on_myself()
 
     def receive_unsuccessful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid):
@@ -1074,7 +1199,7 @@ class PartnerActiveEvent(_ActiveEvent):
 class EndpointCalledActiveEvent(_ActiveEvent):
     def __init__(
         self,commit_manager,uuid,local_endpoint,
-        endpoint_making_call):
+        endpoint_making_call,result_queue):
         
         _ActiveEvent.__init__(self,commit_manager,uuid,local_endpoint)
         self.subscriber = endpoint_making_call

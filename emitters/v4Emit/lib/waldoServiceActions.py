@@ -240,7 +240,8 @@ class _ReceiveEndpointCallAction(_Action):
 
     def service(self):
 
-        act_event = self.local_endpoint._act_event_map.get_or_create_endpoint_called_event(
+        act_evt_map = self.local_endpoint._act_event_map
+        act_event = act_evt_map.get_or_create_endpoint_called_event(
             self.endpoint_making_call,self.event_uuid)
         
         evt_ctx = waldoExecutingEvent._ExecutingEventContext(
@@ -250,9 +251,11 @@ class _ReceiveEndpointCallAction(_Action):
             waldoVariableStore._VaribaleStore() )
         
         exec_event = waldoExecutingEvent._ExecutingEvent(
-            self.to_exec,act_event,evt_ctx,*self.args)
+            self.to_exec,act_event,evt_ctx,self.result_queue,
+            *self.args)
 
         exec_event.start()
+
 
 
 class _ReceiveFirstPhaseCommitMessage(_Action,threading.Thread):
@@ -293,3 +296,45 @@ class _ReceiveFirstPhaseCommitMessage(_Action,threading.Thread):
             act_event.receive_unsuccessful_first_phase_commit_msg(
                 self.event_uuid,self.msg_originator_endpoint_uuid)
 
+
+class _ReceivePeeredModifiedMsg(_Action,threading.Thread):
+    def __init__(self,local_endpoint, msg):
+        '''
+        @param {waldoMessages._PartnerNotifyOfPeeredModified} msg
+        '''
+        self.local_endpoint = local_endpoint
+        self.msg = msg
+        threading.Thread.__init__(self)
+        self.daemon = True
+
+    def service(self):
+        self.start()
+
+    def run(self):
+        event_uuid = self.msg.event_uuid
+        event = self.local_endpoint._act_event_map.get_or_create_partner_event(event_uuid)
+        event.generate_partner_modified_peered_response(self.msg)
+
+
+class _ReceivePeeredModifiedResponseMsg(_Action,threading.Thread):
+    def __init__(self,local_endpoint, msg):
+        '''
+        @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse} msg
+        '''
+        self.local_endpoint = local_endpoint
+        self.msg = msg
+        threading.Thread.__init__(self)
+        self.daemon = True
+
+    def service(self):
+        self.start()
+
+    def run(self):
+        event_uuid = self.msg.event_uuid
+        event = self.local_endpoint._act_event_map.get_event(event_uuid)
+        
+        if event != None:
+            # (event could == None if we backed out the event before
+            # received response for message.)
+            event.receive_partner_modified_peered_response(self.msg)
+        

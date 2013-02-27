@@ -47,10 +47,9 @@ function, we create an active event to use to execute that function.
 We want to execute it in its own separate thread.  This class provides
 that separate thread and executes the function.
 '''
-
 class _ExecutingEvent(threading.Thread):
 
-    def __init__(self,to_exec,active_event,ctx,*to_exec_args):
+    def __init__(self,to_exec,active_event,ctx,result_queue,*to_exec_args):
         '''
         @param {Closure} to_exec --- The closure
 
@@ -58,6 +57,21 @@ class _ExecutingEvent(threading.Thread):
         object that to_exec should use for accessing endpoint data.
 
         @param {_ExecutingEventContext} ctx ---
+
+        @param {result_queue or None} --- This value should be
+        non-None for endpoint-call initiated events.  For endpoint
+        call events, we wait for the endpoint to check if any of the
+        peered data that it modifies also need to be modified on the
+        endpoint's partner (and wait for partner to respond).  (@see
+        discussion in waldoActiveEvent.wait_if_modified_peered.)  When
+        finished execution, put wrapped result in result_queue.  This
+        way the endpoint call that is waiting on the result can
+        receive it.  Can be Null only for events that were initiated
+        by messages (in which the modified peered data would already
+        have been updated).
+
+        FIXME: what if re-used a message-initiated event as an
+        endpoint initiated called event?
         
         @param {*args} to_exec_args ---- Any additional arguments that
         get passed to the closure to be executed.
@@ -67,12 +81,31 @@ class _ExecutingEvent(threading.Thread):
         self.active_event = active_event
         self.to_exec_args = to_exec_args
         self.ctx = ctx
+
+        self.result_queue = result_queue
         
         threading.Thread.__init__(self)
         self.daemon = True
         
 
     def run(self):
-        self.to_exec(self.active_event,self.ctx,*self.to_exec_args)
+        result = self.to_exec(self.active_event,self.ctx,*self.to_exec_args)
+
+        if self.result_queue == None:
+            return
+        
+        # check if the active event has touched any peered data.  if
+        # have, then send an update message to partner and wait for
+        # ack of message before returning.
+        completed = self.active_event.wait_if_modified_peered()
+
+        if not completed:
+            self.result_queue.put(
+                waldoCallResults._BackoutBeforeEndpointCallResult())
+
+        else:
+            self.result_queue.put(
+                waldoCallResults._EndpointCallResult(result))
+        
 
 

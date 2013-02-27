@@ -177,6 +177,23 @@ class _EndpointServiceThread(threading.Thread):
             
         self.threadsafe_queue.put(partner_request_sequence_block_action)
 
+    def receive_partner_notify_of_peered_modified_msg(self,msg):
+        '''
+        @param {waldoMessages._PartnerNotifyOfPeeredModified} msg
+        '''
+        action = waldoServiceActions._ReceivePeeredModifiedMsg(
+            self.endpoint,msg)
+        self.threadsafe_queue.put(action)
+
+    def receive_partner_notify_of_peered_modified_rsp_msg(self,msg):
+        '''
+        @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse} msg
+        '''
+        action = waldoServiceActions._ReceivePeeredModifiedResponseMsg(
+            self.endpoint,msg)
+        self.threadsafe_queue.put(action)        
+        
+        
     def receive_request_commit_from_endpoint(self,uuid,requesting_endpoint):
         '''
         @param {uuid} uuid --- The uuid of the _ActiveEvent that we
@@ -201,6 +218,8 @@ class _EndpointServiceThread(threading.Thread):
         #         self.endpoint,msg.event_uuid))
         # self.threadsafe_queue.put(partner_request_commit_action)
 
+        # FIXME: should finish function
+        # TODO: finish function
         util.logger_assert(
             'Must finish code for receive_request_commit in service thread')
 
@@ -325,7 +344,6 @@ class _Endpoint(object):
         elif isinstance(msg,waldoMessages._PartnerAdditionalSubscriberMessage):
             self._receive_additional_subscriber_message(
                 msg.event_uuid, msg.additional_subscriber_uuid,msg.resource_uuid)
-
         elif isinstance(msg,waldoMessages._PartnerFirstPhaseResultMessage):
             if msg.successful:
                 self._receive_first_phase_commit_successful(
@@ -334,7 +352,13 @@ class _Endpoint(object):
             else:
                 self._receive_first_phase_commit_unsuccessful(
                     msg.event_uuid,msg.sending_endpoint_uuid)
+
+        elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModified):
+            self._endpoint_service_thread.receive_partner_notify_of_peered_modified_msg(msg)
             
+        elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModifiedResponse):
+            self._endpoint_service_thread.receive_partner_notify_of_peered_modified_rsp_msg(msg)
+                
         else:
             #### DEBUG
             util.logger_assert(
@@ -534,6 +558,27 @@ class _Endpoint(object):
         # sequence.
 
         msg = waldoMessages._PartnerCommitRequestMessage(active_event.uuid)
+        msg_map = msg.msg_to_map()
+        self._conn_obj.write(pickle.dumps(msg_map),self)
+
+
+    def _notify_partner_peered_before_return(
+        self,event_uuid,reply_with_uuid,peered_deltas):
+        '''
+        @see waldoActiveEvent.wait_if_modified_peered
+        '''
+        msg = waldoMessages._PartnerNotifyOfPeeredModified(
+            event_uuid,reply_with_uuid,peered_deltas)
+        msg_map = msg.msg_to_map()
+        self._conn_obj.write(pickle.dumps(msg_map),self)
+        
+    def _notify_partner_peered_before_return_response(
+        self,event_uuid,reply_to_uuid,invalidated):
+        '''
+        @see waldoMessages._PartnerNotifyOfPeeredModifiedResponse
+        '''
+        msg = waldoMessages._PartnerNotifyOfPeeredModifiedResponse(
+            event_uuid,reply_to_uuid,invalidated)
         msg_map = msg.msg_to_map()
         self._conn_obj.write(pickle.dumps(msg_map),self)
         
