@@ -61,7 +61,9 @@ class _VariableStore(object):
     get the variable back for use.
     '''
     
-    def __init__(self):
+    def __init__(self,host_uuid):
+
+        self.host_uuid = host_uuid
         # string to _WaldoVariable
         self._name_to_var_map = {}
 
@@ -145,10 +147,10 @@ class _VariableStore(object):
                 # need to create a new variable of the same type.
                 # then, need to apply that variable's changes.
                 new_var = waldoNetworkSerializer.create_new_variable_wrapper_from_serialized(
-                    delta_map[key])
+                    self.host_uuid,delta_map[key])
                 self._name_to_var_map[key] = new_var
-
+                
             waldoNetworkSerializer.deserialize_peered_object_into_variable(
-                delta_map[key],invalidation_listener,
+                self.host_uuid,delta_map[key],invalidation_listener,
                 self._name_to_var_map[key])
 

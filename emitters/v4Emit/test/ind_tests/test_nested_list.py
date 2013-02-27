@@ -9,6 +9,7 @@ sys.path.append(
 import wVariables
 import commitManager
 import invalidationListener
+import util
 
 '''
 Puts lists inside of lists.  Want to ensure that if we write to list
@@ -21,6 +22,8 @@ elements separately, we'll:
      list and element lists so long as those do not affect each other.
      
 '''
+
+host_uuid = util.generate_uuid()
 
 class BasicTestInvalidationListener(invalidationListener._InvalidationListener):
     def notify_invalidated(self,wld_obj):
@@ -38,7 +41,7 @@ def create_list(commit_manager,to_populate_with):
     the list that we return.  This can be a list of value types, or a
     list of Waldo's internal lists.
     '''
-    new_list = wVariables.WaldoListVariable('some name')
+    new_list = wVariables.WaldoListVariable('some name',host_uuid)
     evt1,evt2 = create_two_events(commit_manager)
     for element in to_populate_with:
         new_list.get_val(evt1).append_val(evt1,element)

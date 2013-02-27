@@ -56,7 +56,7 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
 
     def __int__(
         self,local_endpoint,event_uuid,subscriber_event_uuid,
-        resource_uuid, removed):
+        host_uuid,resource_uuid, removed):
         '''
         @param {bool} removed --- True if the subscriber_event_uuid
         was removed from listening to resoure, false otherwise.
@@ -65,6 +65,7 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
         self.local_endpoint = local_endpoint
         self.event_uuid = event_uuid
         self.subscriber_event_uuid = subscriber_event_uuid
+        self.host_uuid = host_uuid
         self.resource_uuid = resource_uuid
         self.removed = removed
         
@@ -78,10 +79,12 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
 
         if self.removed:
             evt.notify_removed_subscriber(
-                self.subscriber_event_uuid,self.resource_uuid)
+                self.subscriber_event_uuid,self.host_uuid,
+                self.resource_uuid)
         else:
             evt.notify_additional_subscriber(
-                self.subscriber_event_uuid,self.resource_uuid)
+                self.subscriber_event_uuid,self.host_uuid,
+                self.resource_uuid)
     
         
 class _ReceivePartnerRequestCommitAction(_Action,threading.Thread):

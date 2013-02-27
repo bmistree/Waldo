@@ -11,9 +11,13 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     to additional _WaldoObjs, and therefore needs to dirty those as
     well and update those simultaneously when updating _WaldoContainer.
     '''
-    def __init__(self,peered,init_val,version_obj,dirty_element_constructor):
+    def __init__(
+        self,host_uuid,peered,init_val,version_obj,
+        dirty_element_constructor):
+        
         waldoReferenceBase._ReferenceBase.__init__(
-            self,peered,init_val,version_obj,dirty_element_constructor)
+            self,host_uuid,peered,init_val,version_obj,
+            dirty_element_constructor)
 
     def get_val(self,invalid_listener):
         util.logger_assert(

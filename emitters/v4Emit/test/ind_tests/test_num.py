@@ -10,6 +10,8 @@ import wVariables
 import commitManager
 import invalidationListener
 import time
+import util
+host_uuid = util.generate_uuid()
 
 class PrintTestInvalidationListener(invalidationListener._InvalidationListener):
 
@@ -30,7 +32,7 @@ def setup():
     commit_manager = commitManager._CommitManager()
     evt1 = PrintTestInvalidationListener(commit_manager)
     evt2 = PrintTestInvalidationListener(commit_manager)
-    number = wVariables.WaldoNumVariable('some_name',False,INITIAL_NUMBER)
+    number = wVariables.WaldoNumVariable('some_name',host_uuid,False,INITIAL_NUMBER)
     evt3 = PrintTestInvalidationListener(commit_manager)
     
     return evt1,evt2,evt3,number

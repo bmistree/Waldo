@@ -45,7 +45,7 @@ class _InvalidationListener(object):
         pass
 
     def notify_removed_subscriber(
-        self,removed_subscriber_uuid,resource_uuid):
+        self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber, except for removals instead of
         additions.
@@ -53,7 +53,7 @@ class _InvalidationListener(object):
         pass
     
     def notify_additional_subscriber(
-        self,additional_subscriber_uuid,resource_uuid):
+        self,additional_subscriber_uuid,host_uuid,resource_uuid):
         '''
         When we are asked to perform the first phase of a commit, we
         subscribe for events simultaneously trying to commit to the
@@ -76,7 +76,7 @@ class _InvalidationListener(object):
         pass
         
     def notify_existing_subscribers(
-        self,list_of_existing_subscriber_uuids,resource_uuid):
+        self,list_of_existing_subscriber_uuids,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber
         

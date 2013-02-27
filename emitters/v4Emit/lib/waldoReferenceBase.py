@@ -10,11 +10,15 @@ class _ReferenceBase(object):
     Whenever we have a reference, ie a variable, map, list, struct, it
     derives from this.
     '''
-    # FIXME: maybe create a separate commit lock instead of
+    # FIXME: maybe use a separate commit lock instead of
     # re-purposing the no one else can use the commit lock until....
 
     
-    def __init__(self,peered,init_val,version_obj,dirty_element_constructor):
+    def __init__(
+        self,host_uuid,peered,init_val,version_obj,
+        dirty_element_constructor):
+
+        self.host_uuid = host_uuid
         self.uuid = util.generate_uuid()
         self.version_obj = version_obj
         self.peered = peered
@@ -23,7 +27,7 @@ class _ReferenceBase(object):
         self.dirty_element_constructor = dirty_element_constructor
 
         self.notification_map = waldoNotificationMap._NotificationMap(
-            self.uuid)
+            self.uuid,self.host_uuid)
         
         # keys are uuids.  values are dirty values of each object.
         self._dirty_map = {}

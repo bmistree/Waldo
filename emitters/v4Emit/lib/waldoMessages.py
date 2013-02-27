@@ -151,12 +151,14 @@ class _PartnerCompleteCommitRequestMessage(_Message):
 class _PartnerRemovedSubscriberMessage(_Message):
     MSG_TYPE = 'partner_removed_subscriber_message'
     REMOVED_SUBSCRIBER_UUID_FIELD = 'removed_subscriber_uuid_field'
+    HOST_UUID_FIELD = 'host_uuid_field'    
     RESOURCE_UUID_FIELD = 'resource_uuid_field'
     
     def __init__(
-        self,event_uuid,removed_subscriber_uuid,resource_uuid):
+        self,event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid):
         _Message.__init__(self,event_uuid)
         self.removed_subscriber_uuid = removed_subscriber_uuid
+        self.host_uuid = host_uuid
         self.resource_uuid = resource_uuid
         
     def msg_to_map(self):
@@ -165,6 +167,7 @@ class _PartnerRemovedSubscriberMessage(_Message):
             _Message.EVENT_UUID_FIELD: self.event_uuid,
 
             self.REMOVED_SUBSCRIBER_UUID_FIELD: self.removed_subscriber_uuid,
+            self.HOST_UUID_FIELD: self.host_uuid,            
             self.RESOURCE_UUID_FIELD: self.resource_uuid,
             }
 
@@ -173,18 +176,21 @@ class _PartnerRemovedSubscriberMessage(_Message):
         return _PartnerRemovedSubscriberMessage(
             msg_map[_Message.EVENT_UUID_FIELD],
             msg_map[_PartnerRemovedSubscriberMessage.REMOVED_SUBSCRIBER_UUID_FIELD],
+            msg_map[_PartnerAdditionalSubscriberMessage.HOST_UUID_FIELD],            
             msg_map[_PartnerRemovedSubscriberMessage.RESOURCE_UUID_FIELD]
             )
 
 class _PartnerAdditionalSubscriberMessage(_Message):
     MSG_TYPE = 'partner_additional_subscriber_message'
     ADDITIONAL_SUBSCRIBER_UUID_FIELD = 'additional_subscriber_uuid_field'
+    HOST_UUID_FIELD = 'host_uuid_field'
     RESOURCE_UUID_FIELD = 'resource_uuid_field'
     
     def __init__(
-        self,event_uuid,additional_subscriber_uuid,resource_uuid):
+        self,event_uuid,additional_subscriber_uuid,host_uuid,resource_uuid):
         _Message.__init__(self,event_uuid)
         self.additional_subscriber_uuid = additional_subscriber_uuid
+        self.host_uuid = host_uuid
         self.resource_uuid = resource_uuid
         
     def msg_to_map(self):
@@ -193,6 +199,7 @@ class _PartnerAdditionalSubscriberMessage(_Message):
             _Message.EVENT_UUID_FIELD: self.event_uuid,
 
             self.ADDITIONAL_SUBSCRIBER_UUID_FIELD: self.additional_subscriber_uuid,
+            self.HOST_UUID_FIELD: self.host_uuid,
             self.RESOURCE_UUID_FIELD: self.resource_uuid
             }
 
@@ -201,6 +208,7 @@ class _PartnerAdditionalSubscriberMessage(_Message):
         return _PartnerAdditionalSubscriberMessage(
             msg_map[_Message.EVENT_UUID_FIELD],
             msg_map[_PartnerAdditionalSubscriberMessage.ADDITIONAL_SUBSCRIBER_UUID_FIELD],
+            msg_map[_PartnerAdditionalSubscriberMessage.HOST_UUID_FIELD],
             msg_map[_PartnerAdditionalSubscriberMessage.RESOURCE_UUID_FIELD]
             )
     

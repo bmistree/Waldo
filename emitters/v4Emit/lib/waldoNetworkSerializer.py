@@ -28,7 +28,7 @@ ReferenceTypeConstructorDict = {
 
 
 def create_new_variable_wrapper_from_serialized(
-    serial_obj_named_tuple):
+    host_uuid,serial_obj_named_tuple):
     '''
     @param {collections.namedtuple} serial_obj_named_tuple --- @see
     util._generate_serialization_named_tuple.  Should have elements
@@ -54,12 +54,14 @@ def create_new_variable_wrapper_from_serialized(
     #### END DEBUG
 
     var_constructor = ReferenceTypeConstructorDict[var_type]
-    return var_constructor(var_name,True)
+    return var_constructor(var_name,host_uuid,True)
     
 
 def deserialize_peered_object_into_variable(
-    serial_obj_named_tuple,invalidation_listener,waldo_reference):
+    host_uuid,serial_obj_named_tuple,invalidation_listener,waldo_reference):
     '''
+    @param {uuid} host_uuid --- The uuid of the host currently on.
+    
     @param {collections.namedtuple} serial_obj_named_tuple --- @see
     util._generate_serialization_named_tuple.  Should have elements
     var_name, var_type,var_data, version_obj_data.    
@@ -76,7 +78,6 @@ def deserialize_peered_object_into_variable(
 
     @returns {Nothing} --- Changes will be propagated through
     arguments.
-    
     '''
 
     # FIXME: probably do not need "var_name"
@@ -180,7 +181,7 @@ def deserialize_peered_object_into_variable(
                 invalidation_listener)
 
             deserialize_peered_object_into_variable(
-                var_data,invalidation_listener,nested_reference)
+                host_uuid,var_data,invalidation_listener,nested_reference)
         else:
             # case 3b above
             
@@ -191,7 +192,7 @@ def deserialize_peered_object_into_variable(
             # incur a performance penalty doing this.
 
             new_obj = new_obj_from_serialized(
-                var_data,invalidation_listener)
+                host_uuid,var_data,invalidation_listener)
 
             waldo_reference.update_version_and_val(
                 invalidation_listener,version_obj,new_obj)
@@ -206,10 +207,9 @@ def deserialize_peered_object_into_variable(
         'FIXME: have not handled the case of a list/map of named tuples ' +
         'when deserializing.')
     
-    
 
 def new_obj_from_serialized(
-    serial_obj_named_tuple,invalidation_listener):
+    host_uuid,serial_obj_named_tuple,invalidation_listener):
     '''
     @param {collections.namedtuple} serial_obj_named_tuple --- @see
     util._generate_serialization_named_tuple.  Should have elements
@@ -241,9 +241,9 @@ def new_obj_from_serialized(
 
     if isinstance(var_data,util._SerializationHelperNamedTuple):
         nested_obj = new_obj_from_serialized(
-            var_data,invalidation_listener)
+            host_uuid,var_data,invalidation_listener)
 
-        new_obj = var_constructor(var_name,True,nested_obj)
+        new_obj = var_constructor(var_name,host_uuid,True,nested_obj)
         
     else:
         if (isinstance(var_data,dict) and
@@ -253,7 +253,7 @@ def new_obj_from_serialized(
 
             new_obj = {}
             for key in var_data.keys():
-                new_obj[key] = var_constructor(var_name,True,var_data[key])
+                new_obj[key] = var_constructor(var_name,host_uuid,True,var_data[key])
 
         elif (isinstance(var_data,list) and
               (len(var_data) != 0) and
@@ -262,10 +262,10 @@ def new_obj_from_serialized(
 
             new_obj = []
             for key in range(0,len(var_data)):
-                new_obj.append(var_constructor(var_name,True,var_data[key]))
+                new_obj.append(var_constructor(var_name,host_uuid,True,var_data[key]))
 
         else:
-            new_obj = var_constructor(var_name,True,var_data)
+            new_obj = var_constructor(var_name,host_uuid,True,var_data)
 
     # do not need to copy in version object because creating a new
     # object, which means that no other events were able to perform

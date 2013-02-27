@@ -9,12 +9,14 @@ sys.path.append(
 import wVariables
 import commitManager
 import invalidationListener
+import util
 
 '''
 Tests a basic value map to ensure that can and cannot perform certain
 operations concurrently and that operations are committed.
 '''
 
+host_uuid = util.generate_uuid()
 
 class BasicTestInvalidationListener(invalidationListener._InvalidationListener):
     def notify_invalidated(self,wld_obj):
@@ -28,7 +30,7 @@ def create_two_events(commit_manager):
         
 def run_test():
     commit_manager = commitManager._CommitManager()
-    wmap = wVariables.WaldoMapVariable('some map')
+    wmap = wVariables.WaldoMapVariable('some map',host_uuid)
 
     evt1,evt2 = create_two_events(commit_manager)
     wmap.get_val(evt1).add_key(evt1,'a',1)

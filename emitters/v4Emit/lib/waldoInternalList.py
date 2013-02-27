@@ -4,9 +4,9 @@ import waldoReferenceBase
 
 class InternalList(waldoReferenceContainerBase._ReferenceContainer):
 
-    def __init__(self,peered,init_val):
+    def __init__(self,host_uuid,peered,init_val):
         waldoReferenceContainerBase._ReferenceContainer.__init__(
-            self,peered,init_val,_InternalListVersion(),
+            self,host_uuid,peered,init_val,_InternalListVersion(),
             _InternalListDirtyMapElement)
     
     def add_key(self,invalid_listener,key,new_val):
@@ -90,7 +90,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         if self_to_copy:
             self._unlock()
 
-        return InternalList(peered,new_internal_val)
+        return InternalList(self.host_uuid,peered,new_internal_val)
 
 
 class _InternalListDirtyMapElement(

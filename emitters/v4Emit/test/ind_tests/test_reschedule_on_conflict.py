@@ -26,17 +26,18 @@ signals that the event needs to be rescheduled.
 
 class DummyEndpoint(waldoEndpoint._Endpoint):
     def __init__(self,conn_obj):
-        
+
+        host_uuid = util.generate_uuid()
         # Endpoint global Number numero = 100;
-        self.glob_var_store = waldoVariableStore._VariableStore()
+        self.glob_var_store = waldoVariableStore._VariableStore(host_uuid)
         self.end_global_var_num_name = 'numero'
         self.glob_var_store.add_var(
             self.end_global_var_num_name,
             wVariables.WaldoNumVariable(
-                self.end_global_var_num_name,False,100))
+                self.end_global_var_num_name,host_uuid,False,100))
         
         waldoEndpoint._Endpoint.__init__(
-            self,commitManager._CommitManager(),
+            self,host_uuid,commitManager._CommitManager(),
             conn_obj,self.glob_var_store)
         
 
@@ -47,7 +48,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         context = waldoExecutingEvent._ExecutingEventContext(
             self.glob_var_store,
             # not using sequence local store
-            waldoVariableStore._VariableStore())        
+            waldoVariableStore._VariableStore(self._host_uuid))
 
         var = context.global_store.get_var_if_exists(
             self.end_global_var_num_name)
@@ -60,7 +61,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         context = waldoExecutingEvent._ExecutingEventContext(
             self.glob_var_store,
             # not using sequence local store
-            waldoVariableStore._VariableStore())        
+            waldoVariableStore._VariableStore(self._host_uuid))        
 
         var = context.global_store.get_var_if_exists(
             self.end_global_var_num_name)

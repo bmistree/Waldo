@@ -41,28 +41,31 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         # Peered Number numero = 10;
         # Peered Text some_str = 'test';
         # Peered List (elements: Text) text_list;
-        self.glob_var_store = waldoVariableStore._VariableStore()
+        host_uuid = util.generate_uuid()
+        self.glob_var_store = waldoVariableStore._VariableStore(host_uuid)
 
+        self.host_uuid = util.generate_uuid()
+        
         number_var_name = 'numero'
         self.glob_var_store.add_var(
             number_var_name,
             wVariables.WaldoNumVariable(
-                number_var_name,True,10))
+                number_var_name,self.host_uuid,True,10))
 
         str_var_name = 'some_str'
         self.glob_var_store.add_var(
             str_var_name,
             wVariables.WaldoTextVariable(
-                str_var_name,True,'test'))
+                str_var_name,self.host_uuid,True,'test'))
         
         list_var_name = 'text_list'
         self.glob_var_store.add_var(
             list_var_name,
             wVariables.WaldoTextVariable(
-                list_var_name,True))
+                list_var_name,self.host_uuid,True))
 
         waldoEndpoint._Endpoint.__init__(
-            self,commitManager._CommitManager(),
+            self,host_uuid,commitManager._CommitManager(),
             conn_obj,self.glob_var_store)
 
         # when dispatching to partner, we request the function name as
@@ -86,11 +89,11 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
             active_event = self._act_event_map.create_root_event()
 
             # create context
-            seq_local_store = waldoVariableStore._VariableStore()
+            seq_local_store = waldoVariableStore._VariableStore(self._host_uuid)
             seq_local_store.add_var(
                 seq_local_num_name,
                 wVariables.WaldoNumVariable(
-                    seq_local_num_name,True,100))
+                    seq_local_num_name,self.host_uuid,True,100))
 
             context = waldoExecutingEvent._ExecutingEventContext(
                 self.glob_var_store,seq_local_store)

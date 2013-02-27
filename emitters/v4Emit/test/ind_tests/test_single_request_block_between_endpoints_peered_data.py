@@ -37,28 +37,31 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         # Peered Number numero = 100;
         # Peered Text some_str = 'test';
         # Peered List (elements: Text) text_list;
-        self.glob_var_store = waldoVariableStore._VariableStore()
-
+        self.host_uuid = util.generate_uuid()        
+        self.glob_var_store = waldoVariableStore._VariableStore(self.host_uuid)
+        
         number_var_name = 'numero'
         self.glob_var_store.add_var(
             number_var_name,
             wVariables.WaldoNumVariable(
-                number_var_name,True,100))
+                number_var_name,self.host_uuid,
+                True,100))
 
         str_var_name = 'some_str'
         self.glob_var_store.add_var(
             str_var_name,
             wVariables.WaldoTextVariable(
-                str_var_name,True,'test'))
+                str_var_name,self.host_uuid,
+                True,'test'))
         
         list_var_name = 'text_list'
         self.glob_var_store.add_var(
             list_var_name,
             wVariables.WaldoTextVariable(
-                list_var_name,True))
+                list_var_name,self.host_uuid,True))
 
         waldoEndpoint._Endpoint.__init__(
-            self,commitManager._CommitManager(),
+            self,self.host_uuid,commitManager._CommitManager(),
             conn_obj,self.glob_var_store)
 
         # when dispatching to partner, we request the function name as
@@ -82,8 +85,8 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         context = waldoExecutingEvent._ExecutingEventContext(
             self.glob_var_store,
             # not using sequence local store
-            waldoVariableStore._VariableStore())        
-
+            waldoVariableStore._VariableStore(self._host_uuid))
+        
         peered_var = context.global_store.get_var_if_exists(peered_var_num_name)
         var_value = peered_var.get_val(active_event)
         # warning just assuming that commit goes through instead of
@@ -109,7 +112,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
             context = waldoExecutingEvent._ExecutingEventContext(
                 self.glob_var_store,
                 # not using sequence local store
-                waldoVariableStore._VariableStore())
+                waldoVariableStore._VariableStore(self._host_uuid))
 
         # Send messages back and forth to each other to decrement
         # peered local data seq_local_num.  Keep doing so until

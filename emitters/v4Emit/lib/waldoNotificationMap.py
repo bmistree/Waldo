@@ -41,16 +41,20 @@ class _NotificationMap(object):
            requests for locks.
     '''
 
-    def __init__(self,resource_uuid):
+    def __init__(self,resource_uuid,host_uuid):
         '''
         @param {uuid} resource_uuid --- The uuid of the resource that
         others are trying to subscribe to.
+
+        @param {uuid} host_uuid --- The uuid of the host that the
+        resource is held on.
         '''
         # maps from invalidation listener uuid to invalidation
         # listener.
         self.invalid_listener_map = {}
         self._mutex = threading.Lock()
         self.resource_uuid = resource_uuid
+        self.host_uuid = host_uuid
         
     def _lock(self):
         self._mutex.acquire()
@@ -75,7 +79,7 @@ class _NotificationMap(object):
         if len(to_notify) != 0:
             uuids_already_subscribed = [ already.uuid for already in to_notify ]
             invalid_listener.notify_existing_subscribers(
-                uuids_already_subscribed,self.resource_uuid)
+                uuids_already_subscribed,self.host_uuid,self.resource_uuid)
     
 
     def remove_invalidation_listener(self,invalid_listener):
@@ -90,6 +94,6 @@ class _NotificationMap(object):
         # unsubscribed to same variable.
         for already_subscribed in to_notify:
             already_subscribed.notify_removed_subscriber(
-                invalid_listener.uuid,self.resource_uuid)
+                invalid_listener.uuid,self.host_uuid,self.resource_uuid)
             
     

@@ -11,7 +11,7 @@ import commitManager
 import invalidationListener
 import time
 import waldoNetworkSerializer
-
+import util
 
 class BasicInvalidationListener(invalidationListener._InvalidationListener):
     def __init__(self,*args):
@@ -22,14 +22,17 @@ class BasicInvalidationListener(invalidationListener._InvalidationListener):
         
 class SingleSide(object):
     def __init__(self):
+        self.host_uuid = util.generate_uuid()
+        
         # both sides start at 1
-        self.map = wVariables.WaldoMapVariable('some map',True)
+        self.map = wVariables.WaldoMapVariable('some map',self.host_uuid,True)
         self.commit_manager = commitManager._CommitManager()
     def new_event(self):
         return BasicInvalidationListener(self.commit_manager)
 
 def create_waldo_list(single_side_obj,to_put_inside,evt=None):
-    wlist = wVariables.WaldoListVariable('some list',False)
+    wlist = wVariables.WaldoListVariable(
+        'some list',single_side_obj.host_uuid,False)
 
     if evt == None:
         evt = single_side_obj.new_event()
@@ -62,7 +65,7 @@ def run_test():
         'some_name',evt)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        serializabled,rhs_event,rhs.map)
+        rhs.host_uuid,serializabled,rhs_event,rhs.map)
 
     if not evt.hold_can_commit():
         print '\nError: should be able to commit lhs.\n'
@@ -103,7 +106,7 @@ def run_test():
         'some_name',lhs_event)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        serializabled,rhs_event2,rhs.map)
+        rhs.host_uuid,serializabled,rhs_event2,rhs.map)
     
     rhs.map.get_val(rhs_event1).del_key_called(rhs_event1,1)
     
@@ -143,14 +146,14 @@ def run_test():
         'some_name',lhs_event1)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        serializabled,rhs_event2,rhs.map)
+        rhs.host_uuid,serializabled,rhs_event2,rhs.map)
 
 
     serializabled = rhs.map.serializable_var_tuple_for_network(
         'some_name',rhs_event1)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        serializabled,lhs_event2,lhs.map)
+        lhs.host_uuid,serializabled,lhs_event2,lhs.map)
     
 
     if not lhs_event1.hold_can_commit():

@@ -6,10 +6,7 @@ import waldoExecutingEvent
 import waldoVariableStore
 from abc import abstractmethod
 import Queue
-
-#### DEBUG
-import pdb
-#### END DEBUG
+# import waldoDeadlockDetector
 
 class _SubscribedToElement(object):
     '''
@@ -604,7 +601,8 @@ class _ActiveEvent(_InvalidationListener):
             to_exec = getattr(self.local_endpoint,block_to_exec_internal_name)
 
             ### SET UP CONTEXT FOR EXECUTING
-            seq_local_var_store = waldoVariableStore._VariableStore()
+            seq_local_var_store = waldoVariableStore._VariableStore(
+                self.local_endpoint._host_uuid)
 
             seq_local_var_store.incorporate_deltas(
                 self,msg.sequence_local_var_store_deltas)
@@ -654,7 +652,7 @@ class _ActiveEvent(_InvalidationListener):
         self._unlock()
 
     def notify_removed_subscriber(
-        self,removed_subscriber_uuid,resource_uuid):
+        self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber, except for removals instead of
         additions.
@@ -664,7 +662,7 @@ class _ActiveEvent(_InvalidationListener):
             'base class _ActiveEvent.')
 
     def notify_additional_subscriber(
-        self,additional_subscriber_uuid,resource_uuid):
+        self,additional_subscriber_uuid,host_uuid,resource_uuid):
         '''
         When we are asked to perform the first phase of a commit, we
         subscribe for events simultaneously trying to commit to the
@@ -686,7 +684,7 @@ class _ActiveEvent(_InvalidationListener):
             'base class _ActiveEvent.')
         
     def notify_existing_subscribers(
-        self,list_of_existing_subscriber_uuids,resource_uuid):
+        self,list_of_existing_subscriber_uuids,host_uuid,resource_uuid):
         '''
         @see notify_existing_subscriber
         
@@ -700,7 +698,7 @@ class _ActiveEvent(_InvalidationListener):
         # messages for each
         for existing_subscriber_uuid in list_of_existing_subscriber_uuids:
             self.notify_additional_subscriber(
-                existing_subscriber_uuid,resource_uuid)
+                existing_subscriber_uuid,host_uuid,resource_uuid)
         
 
     def forward_commit_request_and_try_holding_commit_on_myself(
@@ -903,7 +901,8 @@ class RootActiveEvent(_ActiveEvent):
         # can move on to second phase of commit.
         self.waiting_on_commit_map = {}
 
-
+        # self.deadlock_detector = waldoDeadlockDetector._DeadlockDetector(self)
+        
         # The code that initiates a RootActiveEvent should block
         # until the RootActiveEvent completes.  It does so by
         # listening on a threadsafe queue for a result.  If the result
@@ -1067,7 +1066,7 @@ class RootActiveEvent(_ActiveEvent):
 
         
     def notify_additional_subscriber(
-        self,additional_subscriber_uuid,resource_uuid):
+        self,additional_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber in _ActiveEvent for a general
         description.
@@ -1092,7 +1091,7 @@ class RootActiveEvent(_ActiveEvent):
         return
 
     def notify_removed_subscriber(
-        self,removed_subscriber_uuid,resource_uuid):
+        self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber, except for removals instead of
         additions.

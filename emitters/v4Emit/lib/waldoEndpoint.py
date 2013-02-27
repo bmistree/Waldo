@@ -67,24 +67,25 @@ class _EndpointServiceThread(threading.Thread):
         self.threadsafe_queue.put(req_complete_commit_action)
 
     def receive_removed_subscriber(
-        self,event_uuid,removed_subscriber_event_uuid,resource_uuid):
+        self,event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid):
         '''
         @see _receive_additional_subscriber
         '''
         rem_sub_act = waldoServiceActions._ReceiveSubscriberAction(
             self,event_uuid,additional_subscriber_event_uuid,
-            resource_uuid,True)
+            host_uuid,resource_uuid,True)
 
         self.threadsafe_queue.put(rem_sub_act)
 
     def receive_additional_subscriber(
-        self,event_uuid,additional_subscriber_event_uuid,resource_uuid):
+        self,event_uuid,additional_subscriber_event_uuid,
+        host_uuid,resource_uuid):
         '''
         @see _Endpoint._receive_additional_subscriber
         '''
         rcv_sub_act = waldoServiceActions._ReceiveSubscriberAction(
             self,event_uuid,additional_subscriber_event_uuid,
-            resource_uuid,False)
+            host_uuid,resource_uuid,False)
 
         self.threadsafe_queue.put(rcv_sub_act)
 
@@ -233,9 +234,12 @@ class _Endpoint(object):
     All methods that begin with _forward or _send are called from
     active events on this endpoint.
     '''
-    
-    def __init__(self,commit_manager,conn_obj,global_var_store):
+
+    def __init__(self,host_uuid,commit_manager,conn_obj,global_var_store):
         '''
+        @param {uuid} host_uuid --- The uuid of the host this endpoint
+        lives on.
+        
         @param {_CommitManager} commit_manager
         
         @param {ConnectionObject} conn_obj --- Used to write messages
@@ -259,6 +263,8 @@ class _Endpoint(object):
         self._endpoint_service_thread = _EndpointServiceThread(self)
         self._endpoint_service_thread.start()
 
+        self._host_uuid = host_uuid
+        
         # When go through first phase of commit, may need to forward
         # partner's endpoint uuid back to the root, so the endpoint
         # needs to keep track of its partner's uuid.  FIXME: right
@@ -339,11 +345,14 @@ class _Endpoint(object):
             
         elif isinstance(msg,waldoMessages._PartnerRemovedSubscriberMessage):
             self._receive_removed_subscriber_message(
-                msg.event_uuid, msg.removed_subscriber_uuid,msg.resource_uuid)
+                msg.event_uuid, msg.removed_subscriber_uuid,
+                msg.host_uuid,msg.resource_uuid)
 
         elif isinstance(msg,waldoMessages._PartnerAdditionalSubscriberMessage):
             self._receive_additional_subscriber_message(
-                msg.event_uuid, msg.additional_subscriber_uuid,msg.resource_uuid)
+                msg.event_uuid, msg.additional_subscriber_uuid,
+                msg.host_uuid,msg.resource_uuid)
+
         elif isinstance(msg,waldoMessages._PartnerFirstPhaseResultMessage):
             if msg.successful:
                 self._receive_first_phase_commit_successful(

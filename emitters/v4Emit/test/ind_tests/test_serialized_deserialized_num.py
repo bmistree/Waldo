@@ -11,7 +11,7 @@ import commitManager
 import invalidationListener
 import time
 import waldoNetworkSerializer
-
+import util
 
 class BasicInvalidationListener(invalidationListener._InvalidationListener):
     def __init__(self,*args):
@@ -24,8 +24,10 @@ class BasicInvalidationListener(invalidationListener._InvalidationListener):
 
 class SingleSide(object):
     def __init__(self):
+        self.host_uuid = util.generate_uuid()
         # both sides start at 1
-        self.number = wVariables.WaldoNumVariable('some num',True,1)
+        self.number = wVariables.WaldoNumVariable(
+            'some num',self.host_uuid,True,1)
         self.commit_manager = commitManager._CommitManager()
     def new_event(self):
         return BasicInvalidationListener(self.commit_manager)
@@ -46,7 +48,7 @@ def run_test():
         'some_name',lhs_event)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        serializabled,rhs_event,rhs.number)
+        rhs.host_uuid,serializabled,rhs_event,rhs.number)
 
     if not lhs_event.hold_can_commit():
         print '\nError: should be able to commit lhs.\n'
