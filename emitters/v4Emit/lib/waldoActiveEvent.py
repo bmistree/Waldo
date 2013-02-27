@@ -628,10 +628,6 @@ class _ActiveEvent(_InvalidationListener):
                      # update.
                 )
 
-            # FIXME: what happens if we reuse a message event when get
-            # a call from an endpoint?  Then, likely must wait for
-            # check on modifieds.
-            
             exec_event.start()
 
         else:

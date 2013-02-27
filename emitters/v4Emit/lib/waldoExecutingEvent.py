@@ -69,9 +69,6 @@ class _ExecutingEvent(threading.Thread):
         receive it.  Can be Null only for events that were initiated
         by messages (in which the modified peered data would already
         have been updated).
-
-        FIXME: what if re-used a message-initiated event as an
-        endpoint initiated called event?
         
         @param {*args} to_exec_args ---- Any additional arguments that
         get passed to the closure to be executed.
