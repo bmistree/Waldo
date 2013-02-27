@@ -6,7 +6,7 @@ import waldoExecutingEvent
 import waldoVariableStore
 from abc import abstractmethod
 import Queue
-# import waldoDeadlockDetector
+import waldoDeadlockDetector
 
 class _SubscribedToElement(object):
     '''
@@ -499,7 +499,9 @@ class _ActiveEvent(_InvalidationListener):
         @param {bool} skip_partner --- @see forward_commit_request
 
         @param {bool} already_backed_out --- Caller has already backed
-        out the commit.  No need to do so again inside of function.
+        out the commit through commit manager, and is calling this
+        function primarily to forward the backout message.  No need to
+        do so again inside of function.
         
         When this is called, we want to disable all further additions
         to self.subscribed_to and self.message_sent.  (Ie, after we
@@ -540,7 +542,6 @@ class _ActiveEvent(_InvalidationListener):
             for res_queue in res_queues_array:
                 res_queue.put(
                     waldoCallResults._BackoutBeforeEndpointCallResult())
-
 
         for reply_with_uuid in self.message_listening_queues_map.keys():
             message_listening_queue.put(
@@ -613,7 +614,6 @@ class _ActiveEvent(_InvalidationListener):
                 self.local_endpoint._global_var_store,
                 seq_local_var_store)
 
-            
             evt_ctx.set_to_reply_with(reply_with_uuid)
 
             ### ACTUALLY START EXECUTION CONTEXT THREAD
@@ -654,8 +654,8 @@ class _ActiveEvent(_InvalidationListener):
     def notify_removed_subscriber(
         self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
-        @see notify_additional_subscriber, except for removals instead of
-        additions.
+        @see notify_additional_subscriber, except for removals instead
+        of additions.
         '''
         util.logger_assert(
             'notify_removed_subscriber is purely virtual in ' +
@@ -901,7 +901,7 @@ class RootActiveEvent(_ActiveEvent):
         # can move on to second phase of commit.
         self.waiting_on_commit_map = {}
 
-        # self.deadlock_detector = waldoDeadlockDetector._DeadlockDetector(self)
+        self.deadlock_detector = waldoDeadlockDetector._DeadlockDetector(self)
         
         # The code that initiates a RootActiveEvent should block
         # until the RootActiveEvent completes.  It does so by
@@ -1074,37 +1074,31 @@ class RootActiveEvent(_ActiveEvent):
         This class is the root of the event, it must check that these
         conflicts will not cause a deadlock.
         '''
-                
-        # self._lock()
-        # if (self.in_request_backout_phase() or
-        #     self.in_state_completed_commit_phase()):
-        #     # do not do anything.  there cannot be deadlock because
-        #     # we're about to release our locks anyways.
-        #     pass
-        # else:
-        
-        # FIXME: finish this function
-        util.logger_warn(
-            'Must finish filling in notify_additional_subscriber method ' +
-            'for root active event to avoid deadlock during first phase ' +
-            'of commit.')
-        return
+        self._lock()
+        if (self.in_request_backout_phase() or
+            self.in_state_completed_commit_phase()):
+            # do not do anything.  there cannot be deadlock because
+            # we're about to release our locks anyways.
+            pass
+        else:
+            potential_deadlock = self.deadlock_detector.add_subscriber(
+                additional_subscriber_uuid,host_uuid,resource_uuid)
+        self._unlock()
 
+        if potential_deadlock and (self.uuid < additional_subscriber_uuid):
+            # backout changes if this event's uuid is less than
+            # the additional subscriber's uuid.
+            self.forward_backout_request_and_backout_self()
+
+    
     def notify_removed_subscriber(
         self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber, except for removals instead of
         additions.
         '''
-                
-        # if not self.in_commit_request_holding_locks_phase():
-        #     return
-        # FIXME: finish this function
-        util.logger_warn(
-            'Must finish filling in notify_additional_subscriber method ' +
-            'for root active event to avoid deadlock during first phase ' +
-            'of commit.')
-        return
+        self.deadlock_detector.remove_subscriber(
+            removed_subscriber_uuid,host_uuid,resource_uuid)
                         
         
 class PartnerActiveEvent(_ActiveEvent):
