@@ -936,8 +936,8 @@ class RootActiveEvent(_ActiveEvent):
         # if we know that data have been modified before our commit,
         # then
 
-        # FIXME: there may be instances where do not have to issue
-        # this call.
+        # FIXME: there may be instances/topologies where do not have
+        # to issue this call.
         self.wait_if_modified_peered()
         self.forward_commit_request_and_try_holding_commit_on_myself()
 
@@ -952,11 +952,11 @@ class RootActiveEvent(_ActiveEvent):
             # okay to make calls because of re-entrantness
             self.forward_backout_request_and_backout_self()
         self._unlock()
-        
-        # FIXME: still must automatically reschedule event.
-        util.logger_warn(
-            'When backing out event from root, still must automatically ' +
-            'reschedule event.')
+
+        # FIXME: still must automatically reschedule event.... can
+        # just call self.reschedule, but should we wait for some time
+        # before doing so?
+        self.reschedule()
             
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
