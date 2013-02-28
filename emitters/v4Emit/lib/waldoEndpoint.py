@@ -148,15 +148,7 @@ class _EndpointServiceThread(threading.Thread):
             result_queue,*args)
         self.threadsafe_queue.put(req_backout_action)
 
-    def receive_partner_request_commit(self,msg):
-        '''
-        @param {_PartnerCommitRequestMessage} msg
-        '''
-        partner_request_commit_action = (
-            waldoServiceActions._ReceivePartnerRequestCommitAction(
-                self.endpoint,msg.event_uuid))
-        self.threadsafe_queue.put(partner_request_commit_action)
-
+        
     def receive_partner_request_complete_commit(self,msg):
         '''
         @param {_PartnerCommitRequestMessage} msg
@@ -193,17 +185,24 @@ class _EndpointServiceThread(threading.Thread):
         action = waldoServiceActions._ReceivePeeredModifiedResponseMsg(
             self.endpoint,msg)
         self.threadsafe_queue.put(action)        
-        
+
+    def receive_partner_request_commit(self,msg):
+        '''
+        @param {_PartnerCommitRequestMessage} msg
+        '''
+        partner_request_commit_action = (
+            waldoServiceActions._ReceiveRequestCommitAction(
+                self.endpoint,msg.event_uuid,True))
+        self.threadsafe_queue.put(partner_request_commit_action)
         
     def receive_request_commit_from_endpoint(self,uuid,requesting_endpoint):
         '''
         @param {uuid} uuid --- The uuid of the _ActiveEvent that we
         want to commit.
 
-        @param {Endponit object} requesting_endpoint --- 
+        @param {Endpoint object} requesting_endpoint --- 
         Endpoint object if was requested to commit by endpoint objects
         on this same host (from endpoint object calls).
-
         
         Called by another endpoint on this endpoint (not called by
         external non-Waldo code).
@@ -211,18 +210,10 @@ class _EndpointServiceThread(threading.Thread):
         Forward the commit request to any other endpoints that were
         touched when the event was processed on this side.
         '''
-
-        # the below code is copied from partner.  should use different
-        # version for local.
-        # partner_request_commit_action = (
-        #     waldoServiceActions._ReceivePartnerRequestCommitAction(
-        #         self.endpoint,msg.event_uuid))
-        # self.threadsafe_queue.put(partner_request_commit_action)
-
-        # FIXME: should finish function
-        # TODO: finish function
-        util.logger_assert(
-            'Must finish code for receive_request_commit in service thread')
+        endpoint_request_commit_action = (
+            waldoServiceActions._ReceiveRequestCommitAction(
+                self.endpoint,msg.event_uuid,False))
+        self.threadsafe_queue.put(endpoint_request_commit_action)
 
 
 class _Endpoint(object):
@@ -340,6 +331,8 @@ class _Endpoint(object):
                 msg)
         elif isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
             self._endpoint_service_thread.receive_partner_request_commit(msg)
+
+            
         elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
             self._endpoint_service_thread.receive_partner_request_complete_commit(msg)
         elif isinstance(msg,waldoMessages._PartnerBackoutCommitRequestMessage):

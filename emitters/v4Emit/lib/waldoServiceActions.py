@@ -87,16 +87,17 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
                 self.resource_uuid)
     
         
-class _ReceivePartnerRequestCommitAction(_Action,threading.Thread):
+class _ReceiveRequestCommitAction(_Action,threading.Thread):
     '''
     The local endpoint's partner has requested the local endpoint to
     begin the first phase of committing changes (note: not complete
     committing the changes, just begin the first phase) for an event.
     '''
-    def __init__(self,local_endpoint,event_uuid):
+    def __init__(self,local_endpoint,event_uuid,from_partner):
         self.local_endpoint = local_endpoint
         self.event_uuid = event_uuid
-
+        self.from_partner = from_partner
+        
         threading.Thread.__init__(self)
         self.daemon = True
 
@@ -110,7 +111,7 @@ class _ReceivePartnerRequestCommitAction(_Action,threading.Thread):
         #### END DEBUG
 
         evt.forward_commit_request_and_try_holding_commit_on_myself(
-            True)        
+            self.from_partner)        
 
     def service(self):
         self.start()
