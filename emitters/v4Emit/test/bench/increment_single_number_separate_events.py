@@ -7,11 +7,10 @@ sys.path.append(
     os.path.join('..','..','lib'))
 
 import wVariables
-
-import wVariables
 import commitManager
 import invalidationListener
 import time
+import util
 
 '''
 This test runs through and just determines how fast we can create
@@ -27,10 +26,12 @@ class BasicTestInvalidationListener(invalidationListener._InvalidationListener):
         pass
 
 NUM_ITERATIONS = 100000
-    
+
+
 def run_test():
+    host_uuid = util.generate_uuid()
     commit_manager = commitManager._CommitManager()
-    number = wVariables.WaldoNumVariable('some num',22)
+    number = wVariables.WaldoNumVariable('some num',host_uuid,22)
 
     start = time.time()
     for i in range(0,NUM_ITERATIONS):
