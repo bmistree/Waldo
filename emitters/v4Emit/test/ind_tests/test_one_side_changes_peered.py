@@ -16,7 +16,7 @@ import waldoActiveEvent
 import waldoExecutingEvent
 import threading
 import time
-from test_util import DummyConnectionObj
+import test_util
 import waldoCallResults
 
 
@@ -26,32 +26,18 @@ When one side writes to a peered variable, check to ensure the commit
 to that variable updates other side.
 '''
 
-class DummyEndpoint(waldoEndpoint._Endpoint):
-    def __init__(self,conn_obj):
-        
-        # Endpoint global Number numero = 100;
-        self._host_uuid = util.generate_uuid()
-        self.glob_var_store = waldoVariableStore._VariableStore(self._host_uuid)
-        self.end_global_var_num_name = 'numero'
-        self.glob_var_store.add_var(
-            self.end_global_var_num_name,
-            wVariables.WaldoNumVariable(
-                self.end_global_var_num_name,self._host_uuid,True,100))
-        
-        waldoEndpoint._Endpoint.__init__(
-            self,self._host_uuid,commitManager._CommitManager(),
-            conn_obj,self.glob_var_store)
+class DummyEndpoint(test_util.DummyEndpoint):
         
     def write_numero(self):
         active_event = self._act_event_map.create_root_event()
         # create context
         context = waldoExecutingEvent._ExecutingEventContext(
-            self.glob_var_store,
+            self._global_var_store,
             # not using sequence local store
             waldoVariableStore._VariableStore(self._host_uuid))
         
         var = context.global_store.get_var_if_exists(
-            self.end_global_var_num_name)
+            self.peered_number_var_name)
         var_value = var.get_val(active_event)
         var.write_val(active_event,var_value + 1)
         var_value = var.get_val(active_event)
@@ -62,7 +48,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
     
 def run_test():
     # setup
-    conn_obj = DummyConnectionObj()
+    conn_obj = test_util.DummyConnectionObj()
     end1 = DummyEndpoint(conn_obj)
     end2 = DummyEndpoint(conn_obj)
     conn_obj.register_endpoint(end1)

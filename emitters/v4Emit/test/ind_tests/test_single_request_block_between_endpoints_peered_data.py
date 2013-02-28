@@ -13,7 +13,7 @@ import waldoActiveEvent
 import waldoExecutingEvent
 import threading
 import time
-from test_util import DummyConnectionObj
+import test_util
 
 '''
 Testing:
@@ -30,39 +30,9 @@ Testing:
 array_of_values = []
             
         
-class DummyEndpoint(waldoEndpoint._Endpoint):
+class DummyEndpoint(test_util.DummyEndpoint):
     def __init__(self,conn_obj):
-        
-        # all dummy endpoints will have the same _VariableStore
-        # Peered Number numero = 100;
-        # Peered Text some_str = 'test';
-        # Peered List (elements: Text) text_list;
-        self.host_uuid = util.generate_uuid()        
-        self.glob_var_store = waldoVariableStore._VariableStore(self.host_uuid)
-        
-        number_var_name = 'numero'
-        self.glob_var_store.add_var(
-            number_var_name,
-            wVariables.WaldoNumVariable(
-                number_var_name,self.host_uuid,
-                True,100))
-
-        str_var_name = 'some_str'
-        self.glob_var_store.add_var(
-            str_var_name,
-            wVariables.WaldoTextVariable(
-                str_var_name,self.host_uuid,
-                True,'test'))
-        
-        list_var_name = 'text_list'
-        self.glob_var_store.add_var(
-            list_var_name,
-            wVariables.WaldoTextVariable(
-                list_var_name,self.host_uuid,True))
-
-        waldoEndpoint._Endpoint.__init__(
-            self,self.host_uuid,commitManager._CommitManager(),
-            conn_obj,self.glob_var_store)
+        test_util.DummyEndpoint.__init__(self,conn_obj)
 
         # when dispatching to partner, we request the function name as
         # it would appear in the Waldo source file.  However, the
@@ -78,16 +48,15 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         Create a new event that reads the value of the peered number
         'numero.'
         '''
-        peered_var_num_name = 'numero'
-        
         active_event = self._act_event_map.create_root_event()
         # create context
         context = waldoExecutingEvent._ExecutingEventContext(
-            self.glob_var_store,
+            self._global_var_store,
             # not using sequence local store
             waldoVariableStore._VariableStore(self._host_uuid))
         
-        peered_var = context.global_store.get_var_if_exists(peered_var_num_name)
+        peered_var = context.global_store.get_var_if_exists(
+            self.peered_number_var_name)
         var_value = peered_var.get_val(active_event)
         # warning just assuming that commit goes through instead of
         # retrying the event.
@@ -102,22 +71,21 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         The first time that this function is called, it has neither an
         active_event, nor a context.  We create them.
         '''
-        peered_var_num_name = 'numero'
-        
         if active_event == None:
             # create active event
             active_event = self._act_event_map.create_root_event()
 
             # create context
             context = waldoExecutingEvent._ExecutingEventContext(
-                self.glob_var_store,
+                self._global_var_store,
                 # not using sequence local store
                 waldoVariableStore._VariableStore(self._host_uuid))
 
         # Send messages back and forth to each other to decrement
         # peered local data seq_local_num.  Keep doing so until
         # numero is negative.
-        peered_var = context.global_store.get_var_if_exists(peered_var_num_name)
+        peered_var = context.global_store.get_var_if_exists(
+            self.peered_number_var_name)
         if peered_var.get_val(active_event) > 0: # keep sending messages until less than 0.
             peered_var.write_val(active_event,peered_var.get_val(active_event) - 1)
 
@@ -152,7 +120,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
                  
 def run_test():
     # setup
-    conn_obj = DummyConnectionObj()
+    conn_obj = test_util.DummyConnectionObj()
     end1 = DummyEndpoint(conn_obj)
     end2 = DummyEndpoint(conn_obj)
     conn_obj.register_endpoint(end1)

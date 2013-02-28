@@ -1,5 +1,16 @@
+import os
+import sys
+
+sys.path.append(
+    os.path.join('..','..','lib'))
+
+import util
 import threading
 import Queue
+import waldoEndpoint
+import waldoVariableStore
+import wVariables
+import commitManager
 
 class DummyConnectionObj(threading.Thread):
     def __init__(self):
@@ -33,3 +44,48 @@ class DummyConnectionObj(threading.Thread):
                 msg_recvr_endpt = self.endpoint2
 
             msg_recvr_endpt._receive_msg_from_partner(msg)
+
+
+
+class DummyEndpoint(waldoEndpoint._Endpoint):
+    def __init__(self,conn_obj):
+        
+        # all dummy endpoints will have the same _VariableStore
+        # Peered Number numero = 100;
+        # Peered Text some_str = 'test';
+        # Peered List (elements: Text) text_list;
+        host_uuid = util.generate_uuid()        
+        glob_var_store = waldoVariableStore._VariableStore(host_uuid)
+        
+        self.peered_number_var_name = 'numero'
+        glob_var_store.add_var(
+            self.peered_number_var_name,
+            wVariables.WaldoNumVariable(
+                self.peered_number_var_name,host_uuid,
+                True,100))
+
+        self.peered_str_var_name = 'some_str'
+        glob_var_store.add_var(
+            self.peered_str_var_name,
+            wVariables.WaldoTextVariable(
+                self.peered_str_var_name,host_uuid,
+                True,'test'))
+        
+        self.peered_list_var_name = 'text_list'
+        glob_var_store.add_var(
+            self.peered_list_var_name,
+            wVariables.WaldoTextVariable(
+                self.peered_list_var_name,host_uuid,True))
+
+        waldoEndpoint._Endpoint.__init__(
+            self,host_uuid,commitManager._CommitManager(),
+            conn_obj,glob_var_store)
+
+            
+            
+# class DummyHost(object):
+#     def __init__(self):
+#         self.host_uuid = util.generate_uuid()
+    
+#     def generate_dummy_endpoint(self):
+        

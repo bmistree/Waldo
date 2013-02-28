@@ -12,7 +12,7 @@ import Queue
 import waldoActiveEvent
 import waldoExecutingEvent
 import threading
-from test_util import DummyConnectionObj
+import test_util
 
 '''
 Testing:
@@ -34,40 +34,10 @@ THIS TEST DOES NOT CHECK WHETHER COMMITS WORK.
 array_of_values = []
             
         
-class DummyEndpoint(waldoEndpoint._Endpoint):
+class DummyEndpoint(test_util.DummyEndpoint):
     def __init__(self,conn_obj):
+        test_util.DummyEndpoint.__init__(self,conn_obj)
         
-        # all dummy endpoints will have the same _VariableStore
-        # Peered Number numero = 10;
-        # Peered Text some_str = 'test';
-        # Peered List (elements: Text) text_list;
-        host_uuid = util.generate_uuid()
-        self.glob_var_store = waldoVariableStore._VariableStore(host_uuid)
-
-        self.host_uuid = util.generate_uuid()
-        
-        number_var_name = 'numero'
-        self.glob_var_store.add_var(
-            number_var_name,
-            wVariables.WaldoNumVariable(
-                number_var_name,self.host_uuid,True,10))
-
-        str_var_name = 'some_str'
-        self.glob_var_store.add_var(
-            str_var_name,
-            wVariables.WaldoTextVariable(
-                str_var_name,self.host_uuid,True,'test'))
-        
-        list_var_name = 'text_list'
-        self.glob_var_store.add_var(
-            list_var_name,
-            wVariables.WaldoTextVariable(
-                list_var_name,self.host_uuid,True))
-
-        waldoEndpoint._Endpoint.__init__(
-            self,host_uuid,commitManager._CommitManager(),
-            conn_obj,self.glob_var_store)
-
         # when dispatching to partner, we request the function name as
         # it would appear in the Waldo source file.  However, the
         # compiler mangles it into another name.  The call below
@@ -93,10 +63,10 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
             seq_local_store.add_var(
                 seq_local_num_name,
                 wVariables.WaldoNumVariable(
-                    seq_local_num_name,self.host_uuid,True,100))
+                    seq_local_num_name,self._host_uuid,True,100))
 
             context = waldoExecutingEvent._ExecutingEventContext(
-                self.glob_var_store,seq_local_store)
+                self._global_var_store,seq_local_store)
 
 
         # Send messages back and forth to each other to decrement
@@ -144,7 +114,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
                  
 def run_test():
     # setup
-    conn_obj = DummyConnectionObj()
+    conn_obj = test_util.DummyConnectionObj()
     end1 = DummyEndpoint(conn_obj)
     end2 = DummyEndpoint(conn_obj)
     conn_obj.register_endpoint(end1)

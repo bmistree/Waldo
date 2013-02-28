@@ -16,7 +16,7 @@ import waldoActiveEvent
 import waldoExecutingEvent
 import threading
 import time
-from test_util import DummyConnectionObj
+import test_util
 import waldoCallResults
 
 '''
@@ -24,29 +24,27 @@ Check to ensure that when two root events conflict, the runtime
 signals that the event needs to be rescheduled.
 '''
 
-class DummyEndpoint(waldoEndpoint._Endpoint):
+class DummyEndpoint(test_util.DummyEndpoint):
     def __init__(self,conn_obj):
-
-        host_uuid = util.generate_uuid()
-        # Endpoint global Number numero = 100;
-        self.glob_var_store = waldoVariableStore._VariableStore(host_uuid)
-        self.end_global_var_num_name = 'numero'
-        self.glob_var_store.add_var(
+        test_util.DummyEndpoint.__init__(
+            self,conn_obj)
+        
+        # Endpoint global Number numeroer = 100;
+        self.end_global_var_num_name = 'numeroer'
+        self._global_var_store.add_var(
             self.end_global_var_num_name,
             wVariables.WaldoNumVariable(
-                self.end_global_var_num_name,host_uuid,False,100))
-        
-        waldoEndpoint._Endpoint.__init__(
-            self,host_uuid,commitManager._CommitManager(),
-            conn_obj,self.glob_var_store)
-        
+                self.end_global_var_num_name,
+                self._host_uuid,False,100))
 
+
+        
     def new_event_and_read_numero(self):
         
         active_event = self._act_event_map.create_root_event()
         # create context
         context = waldoExecutingEvent._ExecutingEventContext(
-            self.glob_var_store,
+            self._global_var_store,
             # not using sequence local store
             waldoVariableStore._VariableStore(self._host_uuid))
 
@@ -59,7 +57,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         active_event = self._act_event_map.create_root_event()
         # create context
         context = waldoExecutingEvent._ExecutingEventContext(
-            self.glob_var_store,
+            self._global_var_store,
             # not using sequence local store
             waldoVariableStore._VariableStore(self._host_uuid))        
 
@@ -74,7 +72,7 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
     
 def run_test():
     # setup
-    conn_obj = DummyConnectionObj()
+    conn_obj = test_util.DummyConnectionObj()
     end1 = DummyEndpoint(conn_obj)
     end2 = DummyEndpoint(conn_obj)
     conn_obj.register_endpoint(end1)
