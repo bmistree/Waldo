@@ -342,7 +342,8 @@ class _Endpoint(object):
             self._endpoint_service_thread.receive_partner_request_commit(msg)
         elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
             self._endpoint_service_thread.receive_partner_request_complete_commit(msg)
-            
+        elif isinstance(msg,waldoMessages._PartnerBackoutCommitRequestMessage):
+            self._receive_request_backout(msg.event_uuid,util.PARTNER_ENDPOINT_SENTINEL)
         elif isinstance(msg,waldoMessages._PartnerRemovedSubscriberMessage):
             self._receive_removed_subscriber_message(
                 msg.event_uuid, msg.removed_subscriber_uuid,
@@ -601,7 +602,6 @@ class _Endpoint(object):
         msg = waldoMessages._PartnerCompleteCommitRequestMessage(active_event.uuid)
         msg_map = msg.msg_to_map()
         self._conn_obj.write(pickle.dumps(msg_map),self)
-
         
     def _forward_backout_request_partner(self,active_event):
         '''
@@ -609,9 +609,7 @@ class _Endpoint(object):
         the event we will forward a backout request to our partner
         for.
         '''
-        util.logger_assert(
-            'Call to unfinished _forward_backout_request_partner in ' +
-            '_Endpoint.')
-        
-        # FIXME: fill this in ... use self._conn_obj
+        msg = waldoMessages._PartnerBackoutCommitRequestMessage(active_event.uuid)
+        msg_map = msg.msg_to_map()
+        self._conn_obj.write(pickle.dumps(msg_map),self)
 

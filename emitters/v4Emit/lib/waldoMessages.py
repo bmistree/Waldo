@@ -148,6 +148,21 @@ class _PartnerCompleteCommitRequestMessage(_Message):
             msg_map[_Message.EVENT_UUID_FIELD])
 
 
+class _PartnerBackoutCommitRequestMessage(_Message):
+    MSG_TYPE = 'partner_backout_commit_request_message'
+    def msg_to_map(self):
+        return {
+            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
+            _Message.EVENT_UUID_FIELD: self.event_uuid
+            }
+
+    @staticmethod
+    def map_to_msg(msg_map):
+        return _PartnerBackoutCommitRequestMessage(
+            msg_map[_Message.EVENT_UUID_FIELD])
+
+    
+
 class _PartnerRemovedSubscriberMessage(_Message):
     MSG_TYPE = 'partner_removed_subscriber_message'
     REMOVED_SUBSCRIBER_UUID_FIELD = 'removed_subscriber_uuid_field'
@@ -366,6 +381,8 @@ _Message.SUBTYPE_MAP[
     _PartnerCommitRequestMessage.MSG_TYPE] = _PartnerCommitRequestMessage
 _Message.SUBTYPE_MAP[
     _PartnerCompleteCommitRequestMessage.MSG_TYPE] = _PartnerCompleteCommitRequestMessage
+_Message.SUBTYPE_MAP[
+    _PartnerBackoutCommitRequestMessage.MSG_TYPE] = _PartnerBackoutCommitRequestMessage
 _Message.SUBTYPE_MAP[
     _PartnerRemovedSubscriberMessage.MSG_TYPE] = _PartnerRemovedSubscriberMessage
 _Message.SUBTYPE_MAP[
