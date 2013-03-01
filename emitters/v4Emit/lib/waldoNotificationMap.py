@@ -74,7 +74,7 @@ class _NotificationMap(object):
         # to same variable.
         for already_subscribed in to_notify:
             already_subscribed.notify_additional_subscriber(
-                invalid_listener.uuid,self.resource_uuid)
+                invalid_listener.uuid,self.host_uuid,self.resource_uuid)
 
         if len(to_notify) != 0:
             uuids_already_subscribed = [ already.uuid for already in to_notify ]

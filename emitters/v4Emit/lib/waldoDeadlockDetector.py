@@ -53,7 +53,7 @@ class _DeadlockDetector(object):
         @returns {bool} --- True if there is a potential for deadlock,
         False otherwise.
         '''
-        if _count_num_hosts(subscriber_uuid) > 1:
+        if self._count_num_hosts(subscriber_uuid) > 1:
             return True
         return False
 

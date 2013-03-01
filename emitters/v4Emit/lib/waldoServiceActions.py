@@ -16,7 +16,7 @@ class _Action(object):
             'Error.  Action\'s run method is pure virtual.')
 
         
-class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
+class _ReceivePartnerMessageRequestSequenceBlockAction(_Action,threading.Thread):
     '''
     Corresponds to case when partner endpoint receives a request for
     local endpoint to execute a block sequence.
@@ -34,18 +34,20 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
 
         self.local_endpoint = local_endpoint
         self.partner_request_block_msg = partner_request_block_msg
-        
 
-    def service(self):
+        threading.Thread.__init__(self)
+        self.daemon = True
+
+    def run(self):
         event_uuid = self.partner_request_block_msg.event_uuid
         
         evt = self.local_endpoint._act_event_map.get_or_create_partner_event(
             event_uuid)
-
-        # FIXME: may eventually want to move this into its own thread
-        # a la PartnerRequestCommitAction
         
         evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
+        
+    def service(self):
+        self.start()
 
 
 class _ReceiveSubscriberAction(_Action,threading.Thread):
@@ -56,9 +58,9 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
     other event has backed off trying to commit to the same resource.
     '''
 
-    def __int__(
+    def __init__(
         self,local_endpoint,event_uuid,subscriber_event_uuid,
-        host_uuid,resource_uuid, removed):
+        host_uuid,resource_uuid,removed):
         '''
         @param {bool} removed --- True if the subscriber_event_uuid
         was removed from listening to resoure, false otherwise.
@@ -70,8 +72,9 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
         self.host_uuid = host_uuid
         self.resource_uuid = resource_uuid
         self.removed = removed
-        
+
         threading.Thread.__init__(self)
+        self.daemon = True
         
     def service(self):
         self.start()
@@ -79,6 +82,11 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
     def run(self):
         evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
 
+        if evt == None:
+            # the event was already backed out or committed.  Do not
+            # need to keep forwarding info about it.
+            return
+        
         if self.removed:
             evt.notify_removed_subscriber(
                 self.subscriber_event_uuid,self.host_uuid,
@@ -207,7 +215,7 @@ class _ReceiveRequestBackoutAction(_Action):
 
         
 
-class _ReceiveEndpointCallAction(_Action):
+class _ReceiveEndpointCallAction(_Action,threading.Thread):
     '''
     Another endpoint has asked us to execute an action on our own
     endpoint as part of a global event.
@@ -245,11 +253,10 @@ class _ReceiveEndpointCallAction(_Action):
                 self.local_endpoint,
                 util.endpoint_call_func_name(self.func_name))
 
-    def service(self):
-
-        # FIXME: should almost definitely run this in a separate
-        # thread.
-        
+        threading.Thread.__init__(self)
+        self.daemon = True
+            
+    def run(self):
         act_evt_map = self.local_endpoint._act_event_map
         act_event = act_evt_map.get_or_create_endpoint_called_event(
             self.endpoint_making_call,self.event_uuid,self.result_queue)
@@ -266,6 +273,10 @@ class _ReceiveEndpointCallAction(_Action):
             *self.args)
 
         exec_event.start()
+
+        
+    def service(self):
+        self.start()
 
 
 

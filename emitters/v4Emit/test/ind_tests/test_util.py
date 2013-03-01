@@ -12,6 +12,7 @@ import waldoVariableStore
 import wVariables
 import commitManager
 
+
 class DummyConnectionObj(threading.Thread):
     def __init__(self):
         self.queue = Queue.Queue()
@@ -34,7 +35,6 @@ class DummyConnectionObj(threading.Thread):
     def write(self,msg,endpoint):
         self.queue.put((msg,endpoint))
 
-
     def run(self):
 
         while True:
@@ -44,8 +44,7 @@ class DummyConnectionObj(threading.Thread):
                 msg_recvr_endpt = self.endpoint2
 
             msg_recvr_endpt._receive_msg_from_partner(msg)
-
-
+                
 
 class DummyEndpoint(waldoEndpoint._Endpoint):
     def __init__(self,conn_obj,host_uuid = None):
@@ -91,11 +90,3 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
         self._global_var_store.add_var(
             waldo_num_var.name,
             waldo_num_var)
-        
-            
-# class DummyHost(object):
-#     def __init__(self):
-#         self.host_uuid = util.generate_uuid()
-    
-#     def generate_dummy_endpoint(self):
-        

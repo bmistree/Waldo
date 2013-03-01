@@ -67,12 +67,13 @@ class _EndpointServiceThread(threading.Thread):
         self.threadsafe_queue.put(req_complete_commit_action)
 
     def receive_removed_subscriber(
-        self,event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid):
+        self,event_uuid,removed_subscriber_event_uuid,
+        host_uuid,resource_uuid):
         '''
         @see _receive_additional_subscriber
         '''
         rem_sub_act = waldoServiceActions._ReceiveSubscriberAction(
-            self,event_uuid,additional_subscriber_event_uuid,
+            self.endpoint,event_uuid,removed_subscriber_event_uuid,
             host_uuid,resource_uuid,True)
 
         self.threadsafe_queue.put(rem_sub_act)
@@ -84,7 +85,7 @@ class _EndpointServiceThread(threading.Thread):
         @see _Endpoint._receive_additional_subscriber
         '''
         rcv_sub_act = waldoServiceActions._ReceiveSubscriberAction(
-            self,event_uuid,additional_subscriber_event_uuid,
+            self.endpoint,event_uuid,additional_subscriber_event_uuid,
             host_uuid,resource_uuid,False)
 
         self.threadsafe_queue.put(rcv_sub_act)
@@ -331,19 +332,18 @@ class _Endpoint(object):
                 msg)
         elif isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
             self._endpoint_service_thread.receive_partner_request_commit(msg)
-
             
         elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
             self._endpoint_service_thread.receive_partner_request_complete_commit(msg)
         elif isinstance(msg,waldoMessages._PartnerBackoutCommitRequestMessage):
             self._receive_request_backout(msg.event_uuid,util.PARTNER_ENDPOINT_SENTINEL)
         elif isinstance(msg,waldoMessages._PartnerRemovedSubscriberMessage):
-            self._receive_removed_subscriber_message(
+            self._receive_removed_subscriber(
                 msg.event_uuid, msg.removed_subscriber_uuid,
                 msg.host_uuid,msg.resource_uuid)
 
         elif isinstance(msg,waldoMessages._PartnerAdditionalSubscriberMessage):
-            self._receive_additional_subscriber_message(
+            self._receive_additional_subscriber(
                 msg.event_uuid, msg.additional_subscriber_uuid,
                 msg.host_uuid,msg.resource_uuid)
 
@@ -369,14 +369,14 @@ class _Endpoint(object):
                 'in _receive_msg_from_partner.')
             #### END DEBUG
 
-    def _notify_partner_removed_subscriber_message(
-        self,event_uuid,removed_subscriber_uuid,resource_uuid):
+    def _notify_partner_removed_subscriber(
+        self,event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
         Send a message to partner that a subscriber is no longer
         holding a lock on a resource to commit it.
         '''
         msg = waldoMessages._PartnerRemovedSubscriberMessage(
-            event_uuid,removed_subscriber_uuid,resource_uuid)
+            event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid)
         self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
 
     def _forward_first_phase_commit_unsuccessful(
@@ -418,18 +418,18 @@ class _Endpoint(object):
         self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
         
     def _notify_partner_of_additional_subscriber(
-        self,event_uuid,additional_subscriber_uuid,resource_uuid):
+        self,event_uuid,additional_subscriber_uuid,host_uuid,resource_uuid):
         '''
         Send a message to partner that a subscriber has just started
         holding a lock on a resource to commit it.
         '''
         msg = waldoMessages._PartnerAdditionalSubscriberMessage(
-            event_uuid,additional_subscriber_uuid,resource_uuid)
-        self._conn_obj.write(pickle.dumps(msg.mst_to_map()),self)
+            event_uuid,additional_subscriber_uuid,host_uuid,resource_uuid)
+        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
         
         
     def _receive_additional_subscriber(
-        self,event_uuid,subscriber_event_uuid,resource_uuid):
+        self,event_uuid,subscriber_event_uuid,host_uuid,resource_uuid):
         '''
         @param {uuid} event_uuid --- The uuid of the event that also
         exists on this endpoint that is trying to subscribe to a
@@ -443,15 +443,15 @@ class _Endpoint(object):
         @see notify_additional_subscriber (in _ActiveEvent.py)
         '''
         self._endpoint_service_thread.receive_additional_subscriber(
-            event_uuid,subscriber_event_uuid,resource_uuid)
+            event_uuid,subscriber_event_uuid,host_uuid,resource_uuid)
 
-    def _recevie_removed_subscriber(
-        self,event_uuid,removed_subscriber_event_uuid,resource_uuid):
+    def _receive_removed_subscriber(
+        self,event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid):
         '''
         @see _receive_additional_subscriber
         '''
         self._endpoint_service_thread.receive_removed_subscriber(
-            event_uuid,removed_subscriber_event_uuid,resource_uuid)
+            event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid)
 
     def _receive_endpoint_call(
         self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
@@ -504,10 +504,12 @@ class _Endpoint(object):
         endpoint requesting it to perform some message sequence
         action.
         
-        @param {String} block_name --- The name of the sequence block
-        we want to execute on the partner endpoint. (Note: this is how
-        that sequence block is named in the source Waldo file, not how
-        it is translated by the compiler into a function.
+        @param {String or None} block_name --- The name of the
+        sequence block we want to execute on the partner
+        endpoint. (Note: this is how that sequence block is named in
+        the source Waldo file, not how it is translated by the
+        compiler into a function.)  It can also be None if this is the
+        final message sequence block's execution.  
 
         @param {uuid} event_uuid --- The uuid of the requesting event.
 

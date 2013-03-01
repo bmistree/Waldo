@@ -65,7 +65,7 @@ class _ExecutingEvent(threading.Thread):
         discussion in waldoActiveEvent.wait_if_modified_peered.)  When
         finished execution, put wrapped result in result_queue.  This
         way the endpoint call that is waiting on the result can
-        receive it.  Can be Null only for events that were initiated
+        receive it.  Can be None only for events that were initiated
         by messages (in which the modified peered data would already
         have been updated).
         

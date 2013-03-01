@@ -241,6 +241,11 @@ class _ActiveEvent(_InvalidationListener):
     def issue_partner_sequence_block_call(
         self,ctx,func_name,result_queue):
         '''
+        @param {String or None} func_name --- When func_name is None,
+        then sending to the other side the message that we finished
+        performing the requested block.  In this case, we do not need
+        to add result_queue to waiting queues.
+        
         The local endpoint is requesting its partner to call some
         sequence block.
         
@@ -258,9 +263,12 @@ class _ActiveEvent(_InvalidationListener):
             # from partner to determine which result queue is finished
             reply_with_uuid = util.generate_uuid()
 
-            
-            self.message_listening_queues_map[
-                reply_with_uuid] = result_queue
+            if result_queue != None:
+                # may get None for result queue for the last message
+                # sequence block requested.  It does not need to await
+                # a response.
+                self.message_listening_queues_map[
+                    reply_with_uuid] = result_queue
             
             # here, the local endpoint uses the connection object to
             # actually send the message.
@@ -559,17 +567,22 @@ class _ActiveEvent(_InvalidationListener):
         '''
         reply_to_uuid = msg.reply_to_uuid
         reply_with_uuid = msg.reply_with_uuid
-        name_of_block_to_exec_next = msg.name_of_block_requesting
 
+        # can be None... if it is means that the other side wants us
+        # to decide what to do next (eg, the other side performed its
+        # last message sequence action)
+        name_of_block_to_exec_next = msg.name_of_block_requesting
+        
         # update peered data based on data contents of message.
         # (Note: still must update sequence local data from deltas
         # below.)
 
         # FIXME: pretty sure that do not need to incorporate deltas within
-        # lock 
+        # lock, but should check
         self.local_endpoint._global_var_store.incorporate_deltas(
             self,msg.global_var_store_deltas)
 
+        exec_event = None
         
         self._lock()
         if reply_to_uuid == None:
@@ -616,18 +629,17 @@ class _ActiveEvent(_InvalidationListener):
                 seq_local_var_store)
 
             evt_ctx.set_to_reply_with(reply_with_uuid)
-
-            ### ACTUALLY START EXECUTION CONTEXT THREAD
-            # FIXME: may be faster if move this outside of the lock.
-            # Probably not much faster though.
+            
+            # used to actually star execution of context thread at end
+            # of loop.  must start event outside of locks.  That way,
+            # if the exec event leads to and endpoint call, etc., we
+            # don't block waiting on its return.
             exec_event = waldoExecutingEvent._ExecutingEvent(
                 to_exec,self,evt_ctx,
                 None # using None here means that we do not need to
                      # bother with waiting for modified peered-s to
                      # update.
                 )
-
-            exec_event.start()
 
         else:
             #### DEBUG
@@ -652,6 +664,11 @@ class _ActiveEvent(_InvalidationListener):
             
         self._unlock()
 
+        if exec_event != None:
+            ### ACTUALLY START EXECUTION CONTEXT THREAD
+            exec_event.start()
+
+        
     def notify_removed_subscriber(
         self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
@@ -1116,7 +1133,7 @@ class PartnerActiveEvent(_ActiveEvent):
 
 
     def notify_additional_subscriber(
-        self,additional_subscriber_uuid,resource_uuid):
+        self,additional_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber in _ActiveEvent for a general
         description.
@@ -1137,10 +1154,10 @@ class PartnerActiveEvent(_ActiveEvent):
             return
 
         self.local_endpoint._notify_partner_of_additional_subscriber(
-            self.uuid,additional_subscriber_uuid,resource_uuid)
+            self.uuid,additional_subscriber_uuid,host_uuid,resource_uuid)
         
     def notify_removed_subscriber(
-        self,removed_subscriber_uuid,resource_uuid):
+        self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber, except for removals instead of
         additions.
@@ -1149,7 +1166,7 @@ class PartnerActiveEvent(_ActiveEvent):
             return
 
         self.local_endpoint._notify_partner_removed_subscriber(
-            self.uuid,removed_subscriber_uuid,resource_uuid)
+            self.uuid,removed_subscriber_uuid,host_uuid,resource_uuid)
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
@@ -1160,7 +1177,7 @@ class PartnerActiveEvent(_ActiveEvent):
         self._lock()
         if self.in_commit_request_holding_locks_phase():
             # forward message towards root
-            self.subscriber._forward_first_phase_commit_successful(
+            self.local_endpoint._forward_first_phase_commit_successful(
                 self.uuid,msg_originator_endpoint_uuid,
                 children_event_endpoint_uuids)
         self._unlock()
@@ -1213,7 +1230,7 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         
         
     def notify_additional_subscriber(
-        self,additional_subscriber_uuid,resource_uuid):
+        self,additional_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber in _ActiveEvent for a general
         description.
@@ -1234,11 +1251,11 @@ class EndpointCalledActiveEvent(_ActiveEvent):
             return
 
         self.subscriber._receive_additional_subscriber(
-            self.uuid,additional_subscriber_uuid,resource_uuid)
+            self.uuid,additional_subscriber_uuid,host_uuid,resource_uuid)
 
 
     def notify_removed_subscriber(
-        self,removed_subscriber_uuid,resource_uuid):
+        self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
         @see notify_additional_subscriber, except for removals instead of
         additions.
@@ -1247,7 +1264,7 @@ class EndpointCalledActiveEvent(_ActiveEvent):
             return
 
         self.subscriber._receive_removed_subscriber(
-            self.uuid,removed_subscriber_uuid,resource_uuid)
+            self.uuid,removed_subscriber_uuid,host_uuid,resource_uuid)
 
 
     def receive_unsuccessful_first_phase_commit_msg(

@@ -121,12 +121,13 @@ class _VariableStore(object):
         for key in self._name_to_var_map.keys():
             waldo_variable = self._name_to_var_map[key]
 
-            if waldo_variable.modified(invalidation_listener):
+            if (waldo_variable.is_peered() and
+                waldo_variable.modified(invalidation_listener)):
                 changed_map[key] = waldo_variable.serializable_var_tuple_for_network(
                     key,invalidation_listener)
 
         return changed_map
-    
+
 
     def incorporate_deltas(self,invalidation_listener,delta_map):
         '''
