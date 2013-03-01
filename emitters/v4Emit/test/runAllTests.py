@@ -65,8 +65,8 @@ def run_all():
             print 'SUCCESS'
         else:
             print 'FAILURE'
-        print '\n\n'
 
+    print '\n\n'
 
 if __name__ == '__main__':
     run_all()
