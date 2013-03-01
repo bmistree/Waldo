@@ -27,7 +27,7 @@ class _WaldoVariable(_ReferenceValue):
 ### VALUE TYPES
 class WaldoNumVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=0):
-        _WaldoVariable.__init__(self,host_uuid,name,peered,init_val)
+        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
         
     @staticmethod
     def var_type():
