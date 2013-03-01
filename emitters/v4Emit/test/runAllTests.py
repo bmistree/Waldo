@@ -19,6 +19,7 @@ import ind_tests.test_single_request_block_between_endpoints_sequence_local_data
 import ind_tests.test_single_request_block_between_endpoints_peered_data
 import ind_tests.test_reschedule_on_conflict
 import ind_tests.test_one_side_changes_peered
+import ind_tests.test_endpoint_calls
 
 TO_RUN = [
     ('Nested list', ind_tests.test_nested_list.run_test),
@@ -45,6 +46,9 @@ TO_RUN = [
 
     ('Test one side changes peered, does other see change?',
      ind_tests.test_one_side_changes_peered.run_test),
+
+    ('Test commit and backout for endpoint calls on external data',
+     ind_tests.test_endpoint_calls.run_test),
     
     ]
 

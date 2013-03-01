@@ -1,6 +1,8 @@
 import util
 import waldoCallResults
 import threading
+import waldoExecutingEvent
+import waldoVariableStore
 
 class _Action(object):
     '''
@@ -225,6 +227,7 @@ class _ReceiveEndpointCallAction(_Action):
         self.local_endpoint = local_endpoint
         self.endpoint_making_call = endpoint_making_call
         self.event_uuid = event_uuid
+        self.func_name = func_name
         self.result_queue = result_queue
         self.args = args
 
@@ -238,22 +241,26 @@ class _ReceiveEndpointCallAction(_Action):
                     func_name))
 
         else:
-            to_exec = getattr(
+            self.to_exec = getattr(
                 self.local_endpoint,
                 util.endpoint_call_func_name(self.func_name))
 
     def service(self):
 
+        # FIXME: should almost definitely run this in a separate
+        # thread.
+        
         act_evt_map = self.local_endpoint._act_event_map
         act_event = act_evt_map.get_or_create_endpoint_called_event(
-            self.endpoint_making_call,self.event_uuid)
+            self.endpoint_making_call,self.event_uuid,self.result_queue)
         
         evt_ctx = waldoExecutingEvent._ExecutingEventContext(
             self.local_endpoint._global_var_store,
             # should not have any sequence local data from an endpoint
             # call.
-            waldoVariableStore._VaribaleStore() )
-        
+            waldoVariableStore._VariableStore(
+                self.local_endpoint._host_uuid) )
+
         exec_event = waldoExecutingEvent._ExecutingEvent(
             self.to_exec,act_event,evt_ctx,self.result_queue,
             *self.args)

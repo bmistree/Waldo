@@ -12,7 +12,7 @@
 # _EndpointCallResult in, which contains the returned values.
 class _EndpointCallResult(object):
     def __init__(self,result_array):
-        self.result_array
+        self.result_array = result_array
         
 class _BackoutBeforeEndpointCallResult(object):
     pass

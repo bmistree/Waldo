@@ -146,7 +146,7 @@ class _EndpointServiceThread(threading.Thread):
         endpt_call_action = waldoServiceActions._ReceiveEndpointCallAction(
             self.endpoint,endpoint_making_call,event_uuid,func_name,
             result_queue,*args)
-        self.threadsafe_queue.put(req_backout_action)
+        self.threadsafe_queue.put(endpt_call_action)
 
         
     def receive_partner_request_complete_commit(self,msg):
@@ -212,10 +212,10 @@ class _EndpointServiceThread(threading.Thread):
         '''
         endpoint_request_commit_action = (
             waldoServiceActions._ReceiveRequestCommitAction(
-                self.endpoint,msg.event_uuid,False))
+                self.endpoint,uuid,False))
         self.threadsafe_queue.put(endpoint_request_commit_action)
 
-
+        
 class _Endpoint(object):
     '''
     All methods that begin with _receive, are called by other
@@ -459,7 +459,7 @@ class _Endpoint(object):
         For params, @see _EndpointServiceThread.endpoint_call
         
         Non-blocking.  Requests the endpoint_service_thread to perform
-        the endpoint function call listed as
+        the endpoint function call listed as func_name.
         '''
         self._endpoint_service_thread.receive_endpoint_call(
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
@@ -494,6 +494,7 @@ class _Endpoint(object):
         '''
         self._endpoint_service_thread.receive_first_phase_commit_message(
             event_uuid,endpoint_uuid,False)
+
         
     def _send_partner_message_sequence_block_request(
         self,block_name,event_uuid,reply_with_uuid,reply_to_uuid,

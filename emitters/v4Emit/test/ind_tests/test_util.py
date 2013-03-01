@@ -48,13 +48,15 @@ class DummyConnectionObj(threading.Thread):
 
 
 class DummyEndpoint(waldoEndpoint._Endpoint):
-    def __init__(self,conn_obj):
+    def __init__(self,conn_obj,host_uuid = None):
         
         # all dummy endpoints will have the same _VariableStore
         # Peered Number numero = 100;
         # Peered Text some_str = 'test';
         # Peered List (elements: Text) text_list;
-        host_uuid = util.generate_uuid()        
+        if host_uuid == None:
+            host_uuid = util.generate_uuid()
+            
         glob_var_store = waldoVariableStore._VariableStore(host_uuid)
         
         self.peered_number_var_name = 'numero'
@@ -81,7 +83,15 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
             self,host_uuid,commitManager._CommitManager(),
             conn_obj,glob_var_store)
 
-            
+
+    def add_number_var_to_var_store(self,waldo_num_var):
+        '''
+        To test that endpoint calls work ask both sides 
+        '''
+        self._global_var_store.add_var(
+            waldo_num_var.name,
+            waldo_num_var)
+        
             
 # class DummyHost(object):
 #     def __init__(self):

@@ -53,7 +53,7 @@ class _ActiveEventMap(object):
         self._unlock()
         return event
         
-    def get_or_create_endpoint_called_event(self,endpoint,uuid):
+    def get_or_create_endpoint_called_event(self,endpoint,uuid,result_queue):
         '''
         @param {Endpoint object} endpoint --- The endpoint that made
         the endpoint call onto us.
@@ -65,7 +65,8 @@ class _ActiveEventMap(object):
         if uuid not in self.map:
             event = EndpointCalledActiveEvent(
                 self.commit_manager,uuid,self.local_endpoint,
-                endpoint,)
+                endpoint,result_queue)
+
             self._insert_event_into_map(event)
         event = self.map[uuid]
         self._unlock()

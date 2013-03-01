@@ -237,7 +237,7 @@ class _ActiveEvent(_InvalidationListener):
         # FIXME: are reads and writes on bools atomic in Python?
         self.is_invalidated = True
         
-
+        
     def issue_partner_sequence_block_call(
         self,ctx,func_name,result_queue):
         '''
@@ -430,7 +430,7 @@ class _ActiveEvent(_InvalidationListener):
 
     
     def issue_endpoint_object_call(
-        self,endpooint_calling,func_name,result_queue,*args):
+        self,endpoint_calling,func_name,result_queue,*args):
         '''
         @param {Endpoint object} endpoint_calling --- The endpoint to
         execute the endpoint object call on.
@@ -478,18 +478,18 @@ class _ActiveEvent(_InvalidationListener):
 
             # perform the actual endpoint function call.  note that this
             # does not block until it completes.  It just schedules the 
-            endpoint_calling._recevieve_endpoint_call(
-                self.endpoint,self.uuid,func_name,result_queue,
+            endpoint_calling._receive_endpoint_call(
+                self.local_endpoint,self.uuid,func_name,result_queue,
                 *args)
 
             # add the endpoint to subscribed to
-            if endpoint_calling.uuid not in self.subscribed_to:
-                self.subscribed_to[endpoint_calling.uuid] = _SubscribedToElement(
+            if endpoint_calling._uuid not in self.subscribed_to:
+                self.subscribed_to[endpoint_calling._uuid] = _SubscribedToElement(
                     endpoint_calling,result_queue)
             else:
-                self.subscribed_to[endpoint_calling.uuid].add_result_queue(
+                self.subscribed_to[endpoint_calling._uuid].add_result_queue(
                     result_queue)
-            
+
         self._unlock()
         return endpoint_call_requested
 
@@ -533,8 +533,9 @@ class _ActiveEvent(_InvalidationListener):
             # first: notify the associated endpoint that it should
             # also backout.
             endpoint = subscribed_to_element.endpoint_object
-            endpoint._receieve_request_backout(self.uuid)
-
+            endpoint._receive_request_backout(
+                self.uuid,self.local_endpoint)
+            
             # second: we may still be waiting for a response to our
             # endpoint call.  put a sentinel in that tells us to stop
             # waiting and not to perform any more operations.
@@ -760,11 +761,13 @@ class _ActiveEvent(_InvalidationListener):
                 # backs out the full first phase and restarts.
                 who_forwarded_to = [] # a set of uuids
                 for endpoint_uuid in self.subscribed_to.keys():
+                    subscribed_to_element = self.subscribed_to[endpoint_uuid]
+                    endpoint = subscribed_to_element.endpoint_object
+                    
                     who_forwarded_to.append(endpoint_uuid)
-                    endpoint = self.subscribed_to[endpoint_uuid]
                     endpoint._receive_request_commit(
                         self.uuid,self.local_endpoint)
-                    
+
                 if ((not skip_partner) and self.must_check_partner()):
                     self.local_endpoint._forward_commit_request_partner(self)
                     who_forwarded_to.append(self.local_endpoint._partner_uuid)

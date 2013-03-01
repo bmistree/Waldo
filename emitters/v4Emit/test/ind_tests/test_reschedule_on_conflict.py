@@ -37,10 +37,7 @@ class DummyEndpoint(test_util.DummyEndpoint):
                 self.end_global_var_num_name,
                 self._host_uuid,False,100))
 
-
-        
     def new_event_and_read_numero(self):
-        
         active_event = self._act_event_map.create_root_event()
         # create context
         context = waldoExecutingEvent._ExecutingEventContext(
