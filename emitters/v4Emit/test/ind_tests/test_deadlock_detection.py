@@ -246,8 +246,17 @@ class TryCommit(threading.Thread):
     def run(self):
         self.act_event.request_commit()
         queue_elem = self.act_event.event_complete_queue.get()
-        
+
+
 def run_test():
+    # run 100 times to exercise different timings
+    for i in range(0,100):
+        if not basic_setup():
+            return False
+
+    return True
+        
+def basic_setup():
     # setup
     host1_uuid = util.generate_uuid()
     host2_uuid = util.generate_uuid()

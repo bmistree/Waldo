@@ -20,6 +20,7 @@ import ind_tests.test_single_request_block_between_endpoints_peered_data
 import ind_tests.test_reschedule_on_conflict
 import ind_tests.test_one_side_changes_peered
 import ind_tests.test_endpoint_calls
+import ind_tests.test_deadlock_detection
 
 TO_RUN = [
     ('Nested list', ind_tests.test_nested_list.run_test),
@@ -49,6 +50,9 @@ TO_RUN = [
 
     ('Test commit and backout for endpoint calls on external data',
      ind_tests.test_endpoint_calls.run_test),
+
+    ('Test deadlock detection and rollback',
+     ind_tests.test_deadlock_detection.run_test),
     
     ]
 
