@@ -543,11 +543,7 @@ class _ActiveEvent(_InvalidationListener):
             self.uuid)
 
         if not already_backed_out:
-            let_go_of_commit_locks = False
-            if self.in_commit_request_holding_locks_phase():
-                let_go_of_commit_locks = True            
-
-            self.backout_commit(let_go_of_commit_locks)
+            self.backout_commit()
 
         self.set_request_backout_phase()
         for endpoint_uuid in self.subscribed_to.keys():
@@ -772,7 +768,7 @@ class _ActiveEvent(_InvalidationListener):
             # FIXME: forward the backout message on to those that
             # we are subscribed to?  If we do, then we can also
             # remove the active event here....
-            self.backout_commit(False)
+            self.backout_commit()
 
         else:
             self.set_request_commit_holding_locks_phase()
@@ -813,7 +809,7 @@ class _ActiveEvent(_InvalidationListener):
                 # FIXME: forward the backout message on to those that
                 # we are subscribed to?  If we do, then we can also
                 # remove the active event here....
-                self.backout_commit(True)
+                self.backout_commit()
                 cannot_commit = True
                 self.set_request_commit_not_holding_locks_phase()                
 
@@ -918,12 +914,20 @@ class _ActiveEvent(_InvalidationListener):
 
         return True
 
-    def backout_commit(self,garbage):
+    def backout_commit(self):
         self.set_breakout()
         for obj_id in self.holding_locks_on:
             to_backout_obj = self.objs_touched[obj_id]
             to_backout_obj.backout(self,True)
 
+    def complete_commit(self):
+        '''
+        Should only be called if hold_can_commit returned True.  Runs
+        through all touched objects and completes their commits.
+        '''
+        for touched_obj in self.objs_touched.values():
+            touched_obj.complete_commit(self)
+            
     def set_breakout(self):
         self._breakout_mutex.acquire()
         self.breakout = True
@@ -1263,7 +1267,7 @@ class PartnerActiveEvent(_ActiveEvent):
         self._lock()
         if self.in_commit_request_holding_locks_phase():
             to_forward = True
-            self.backout_commit(True)
+            self.backout_commit()
             self.set_request_backout_phase()            
         self._unlock()
 
@@ -1374,7 +1378,7 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         self._lock()
         if self.in_commit_request_holding_locks_phase():
             to_forward = True
-            self.backout_commit(True)
+            self.backout_commit()
             self.set_request_backout_phase()            
         self._unlock()
 
