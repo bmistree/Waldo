@@ -7,6 +7,7 @@ import waldoVariableStore
 from abc import abstractmethod
 import Queue
 import waldoDeadlockDetector
+import time
 
 class _SubscribedToElement(object):
     '''
@@ -158,6 +159,20 @@ class _ActiveEvent(_InvalidationListener):
         # after.  (Same with message_sent.)
         self._mutex = threading.RLock()
 
+
+        # When in first phase of commit, run through every object that
+        # this event has touched, and try to hold a lock on it for
+        # commit.  Hold this lock until told to backout or told to
+        # complete commit.  To avoid deadlock, if there's contention
+        # for a lock, that this active event is trying to acquire,
+        # checks breakout.  If breakout is True, it means we've been
+        # told to backout and should release all the locks on objects
+        # that we have already acquired (object ids of these are
+        # contained in self.holding_locks_on)
+        self._breakout_mutex = threading.Lock()
+        self.holding_locks_on = []
+        self.breakout = False
+        
     def _lock(self):
         self._mutex.acquire()
     def _unlock(self):
@@ -236,6 +251,7 @@ class _ActiveEvent(_InvalidationListener):
         '''
         # FIXME: are reads and writes on bools atomic in Python?
         self.is_invalidated = True
+        self.set_breakout()
         
         
     def issue_partner_sequence_block_call(
@@ -280,7 +296,6 @@ class _ActiveEvent(_InvalidationListener):
                 # do not need to add global store, because
                 # self.local_endpoint already has a copy of it.
                 ctx.sequence_local_store)
-            
             
         self._unlock()
         return partner_call_requested
@@ -517,8 +532,9 @@ class _ActiveEvent(_InvalidationListener):
         endpoint object calls or request partner to do any additional
         work for this event.)
         '''
+        self.set_breakout()
+
         self._lock()
-        
         if self.in_request_backout_phase():
             return
 
@@ -526,7 +542,6 @@ class _ActiveEvent(_InvalidationListener):
         self.local_endpoint._act_event_map.remove_event_if_exists(
             self.uuid)
 
-        
         if not already_backed_out:
             let_go_of_commit_locks = False
             if self.in_commit_request_holding_locks_phase():
@@ -803,13 +818,11 @@ class _ActiveEvent(_InvalidationListener):
 
         if cannot_commit:
             # means that this _ActiveEvent was invalidated.
-
             if self.subscriber == None:
                 # this _ActiveEvent is the RootActiveEvent.  Forward
                 # to all to backout.  Reschedule.
                 self.forward_backout_request_and_backout_self(
                     False,True)
-                self.reschedule()
                 
             elif self.subscriber == _ActiveEvent.SUBSCRIBER_PARTNER_FLAG:
                 # Tell partner to back out (and forward that back out
@@ -902,8 +915,74 @@ class _ActiveEvent(_InvalidationListener):
             '_ActiveEvent.')
 
 
+    def hold_can_commit(self):
+        '''
+        ASSUMES ALREADY HOLDING LOCK
+
+        Returns True if can commit.  False if cannot commit, which can
+        happen for two reasons:
         
-    
+            1) The piece of data that we are trying to update has
+               already committed a conflicting event
+               
+            2) We received a notice to backout the event (eg., due to
+               deadlock or another node's trying to commit dirty
+               state)
+        '''
+        sorted_touched_obj_ids = sorted(list(self.objs_touched.keys()))
+
+        self.holding_locks_on = []
+        for obj_id in sorted_touched_obj_ids:
+            touched_obj = self.objs_touched[obj_id]
+
+            obj_can_commit = None
+
+            while obj_can_commit == None:
+                obj_can_commit = touched_obj.check_commit_hold_lock(self,False)
+
+                if obj_can_commit == False:
+                    # could not perform first phase of commit because
+                    # another event already has committed a conflict
+                    self.holding_locks_on.append(obj_id)
+                    return False
+                elif obj_can_commit == True:
+                    # could perform first phase of commit
+                    self.holding_locks_on.append(obj_id)
+                else:
+                    # obj_can_commit == None
+                    # we were not able to acquire the lock for this
+                    # object.  backoff for a bit.  Check that while we
+                    # were backed off, we were not told that we needed
+                    # to back out.
+
+                    # FIXME: make this time settable, or use some form
+                    # of backoff for checking.
+                    time.sleep(
+                        util.TIME_TO_SLEEP_BEFORE_ATTEMPT_TO_ACQUIRE_VAR_FIRST_PHASE_LOCK)
+                    if self.check_breakout():
+                        # while we tried to acquire the lock, someone
+                        # else told us to backout.  do so.
+                        return False
+
+        return True
+
+    def backout_commit(self,garbage):
+        self.set_breakout()
+        for obj_id in self.holding_locks_on:
+            to_backout_obj = self.objs_touched[obj_id]
+            to_backout_obj.backout(self,True)
+
+    def set_breakout(self):
+        self._breakout_mutex.acquire()
+        self.breakout = True
+        self._breakout_mutex.release()
+        
+    def check_breakout(self):
+        self._breakout_mutex.acquire()
+        to_return = self.breakout
+        self._breakout_mutex.release()
+        return to_return
+        
 # FIXME: are there any cases where we need to flush threadsafe queues
 # when completing a commit?
             
@@ -965,6 +1044,7 @@ class RootActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
+        self.set_breakout()
         to_broadcast_backout = False
         self._lock()
         if self.in_commit_request_holding_locks_phase():
@@ -972,11 +1052,14 @@ class RootActiveEvent(_ActiveEvent):
             self.forward_backout_request_and_backout_self()
         self._unlock()
 
-        # FIXME: still must automatically reschedule event.... can
-        # just call self.reschedule, but should we wait for some time
-        # before doing so?
+    def forward_backout_request_and_backout_self(
+        self,skip_partner=False,already_backed_out=False):
+        # whenever we backout, we must also reschedule
+        super(RootActiveEvent,self).forward_backout_request_and_backout_self(
+            skip_partner,already_backed_out)
         self.reschedule()
-            
+        
+        
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
         children_event_endpoint_uuids):
@@ -1105,11 +1188,13 @@ class RootActiveEvent(_ActiveEvent):
                 additional_subscriber_uuid,host_uuid,resource_uuid)
         self._unlock()
 
+        
         if potential_deadlock and (self.uuid < additional_subscriber_uuid):
             # backout changes if this event's uuid is less than
             # the additional subscriber's uuid.
             self.forward_backout_request_and_backout_self()
 
+            
     
     def notify_removed_subscriber(
         self,removed_subscriber_uuid,host_uuid,resource_uuid):
@@ -1192,6 +1277,7 @@ class PartnerActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
+        self.set_breakout()
         to_forward = False
         self._lock()
         if self.in_commit_request_holding_locks_phase():
@@ -1272,6 +1358,8 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
+        self.set_breakout()
+        
         to_forward = False
         self._lock()
         if self.in_commit_request_holding_locks_phase():

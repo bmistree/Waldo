@@ -7,6 +7,12 @@ from collections import namedtuple
 
 PARTNER_ENDPOINT_SENTINEL = -1
 
+# if we cannot acquire a lock for the first phase of a variable's
+# commit, then do not block on it.  Go to sleep for this amount of
+# time and then try to re-acquire the lock (if we haven't already been
+# told to back out).
+TIME_TO_SLEEP_BEFORE_ATTEMPT_TO_ACQUIRE_VAR_FIRST_PHASE_LOCK = .2
+
 
 def endpoint_call_func_name(func_name):
     '''

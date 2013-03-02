@@ -247,7 +247,6 @@ class TryCommit(threading.Thread):
     def run(self):
         self.act_event.request_commit()
         queue_elem = self.act_event.event_complete_queue.get()
-
         
 def run_test():
     # setup

@@ -33,8 +33,8 @@ class _ReferenceBase(object):
         self._dirty_map = {}
         self._mutex = threading.Lock()
 
-    def _lock(self):
-        self._mutex.acquire()
+    def _lock(self,blocking=True):
+        return self._mutex.acquire(blocking)
     def _unlock(self):
         self._mutex.release()
 
@@ -250,19 +250,25 @@ class _ReferenceBase(object):
         self._unlock()
         
 
-    def check_commit_hold_lock(self,invalid_listener):
+    def check_commit_hold_lock(self,invalid_listener,blocking=True):
         '''
-        @returns{bool} --- Returns True if the commit associated with
-        invalid_listener can go through (ie, no one else has committed
-        to this waldo object since we read/wrote our dirty values.
-        False otherwise.
+        @returns{bool or None} --- Returns True if the commit
+        associated with invalid_listener can go through (ie, no one
+        else has committed to this waldo object since we read/wrote
+        our dirty values.  False if acquired lock and got a read/write
+        conflict.  None if could not acquire lock.
 
-        Note: takes lock on object, but does not release it.  Lock
+        Note: if takes lock on object, but does not release it.  Lock
         gets unreleased either within commit or release.
         '''
         self.notification_map.add_invalidation_listener(invalid_listener)
         
-        self._lock()
+        acquired_lock = self._lock(blocking)
+
+        if not acquired_lock:
+            # FIXME: may be able to do an opportunistic conflicts
+            # check here.
+            return None
 
         #### DEBUG
         if invalid_listener.uuid not in self._dirty_map:
