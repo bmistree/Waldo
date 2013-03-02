@@ -11,7 +11,7 @@ class _InvalidationListener(object):
     invalidation message to all listeners.
     '''
 
-    def __init__(self,commit_manager,uuid=None):
+    def __init__(self,uuid=None):
         '''
         @param {_CommitManager} commit_manager --- When we either want
         to commit or backout the changes that the invalidation
@@ -26,8 +26,6 @@ class _InvalidationListener(object):
         if uuid == None:
             uuid = util.generate_uuid()
         self.uuid = uuid
-        
-        self.commit_manager = commit_manager
         
         
     @abstractmethod
@@ -103,28 +101,3 @@ class _InvalidationListener(object):
         self.peered_modified = True
         
 
-    ### Each of the next three functions for now are thin wrappers
-    ### around commit_manager functions.
-    def hold_can_commit(self):
-        '''
-        @see _CommitManager.hold_can_commit
-        '''
-        return self.commit_manager.hold_can_commit(self)
-        
-    def complete_commit(self):
-        '''
-        @see _CommitManager.complete_commit
-        '''        
-        self.commit_manager.complete_commit(self)
-
-    def backout_commit(self,currently_holding_object_locks):
-        '''
-        @param {bool} currently_holding_object_locks --- True if we
-        have previously called hold_can_commit (ie, we're holding
-        locks on variables), False otherwise.
-        
-        @see _CommitManager.backout_commit
-        '''        
-        self.commit_manager.backout_commit(
-            self,currently_holding_object_locks)
-        

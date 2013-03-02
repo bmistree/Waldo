@@ -7,34 +7,22 @@ sys.path.append(
     os.path.join('../../lib/'))
 
 import wVariables
-import commitManager
-import invalidationListener
 import time
 import util
+import test_util
 host_uuid = util.generate_uuid()
 
-class PrintTestInvalidationListener(invalidationListener._InvalidationListener):
 
-    def __init__(self,*args):
-        invalidationListener._InvalidationListener.__init__(self,*args)
-        self.notified_invalidated = False
-    
-    def notify_invalidated(self,wld_obj):
-        self.notified_invalidated = True
-        # notify_msg = '\nWarning: ' + str(self.uuid)
-        # notify_msg += ' got an invalidation for object '
-        # notify_msg += str(wld_obj.uuid) + '.\n'
-        # print notify_msg
-        
         
 INITIAL_NUMBER = 31
 def setup():
-    commit_manager = commitManager._CommitManager()
-    evt1 = PrintTestInvalidationListener(commit_manager)
-    evt2 = PrintTestInvalidationListener(commit_manager)
-    number = wVariables.WaldoNumVariable('some_name',host_uuid,False,INITIAL_NUMBER)
-    evt3 = PrintTestInvalidationListener(commit_manager)
+    dummy_endpoint = test_util.DummyEndpoint(None,host_uuid)
     
+    evt1 = dummy_endpoint._act_event_map.create_root_event()
+    evt2 = dummy_endpoint._act_event_map.create_root_event()
+    evt3 = dummy_endpoint._act_event_map.create_root_event()
+
+    number = wVariables.WaldoNumVariable('some_name',host_uuid,False,INITIAL_NUMBER)
     return evt1,evt2,evt3,number
     
 def run_test():
@@ -70,7 +58,7 @@ def run_test():
     # notification was passed forward.
     time.sleep(.1)
 
-    if not evt2.notified_invalidated:
+    if not evt2.is_invalidated:
         err_msg = '\nerr: should have been notified of invalidation'
         print err_msg
         return False
@@ -79,7 +67,7 @@ def run_test():
     if evt2.hold_can_commit():
         print '\nError: should have been unable to commit second event.\n'
         return False
-    evt2.backout_commit(True)
+    evt2.backout_commit()
 
     
     # check that final value is what evt1 committed

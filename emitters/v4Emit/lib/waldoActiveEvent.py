@@ -82,7 +82,7 @@ class _ActiveEvent(_InvalidationListener):
     SUBSCRIBER_PARTNER_FLAG = -1
     
     
-    def __init__(self,commit_manager,uuid,local_endpoint):
+    def __init__(self,uuid,local_endpoint):
         '''
         @param {Endpoint object} local_endpoint --- The local endpoint
         the event is running on.
@@ -91,7 +91,7 @@ class _ActiveEvent(_InvalidationListener):
         one.
         '''
         _InvalidationListener.__init__(
-            self,commit_manager,uuid)
+            self,uuid)
 
         self.local_endpoint = local_endpoint
         
@@ -876,6 +876,24 @@ class _ActiveEvent(_InvalidationListener):
             2) We received a notice to backout the event (eg., due to
                deadlock or another node's trying to commit dirty
                state)
+
+        Challenge is to avoid deadlock when acquiring the locks of all
+        objects that we have touched.
+
+        We can guarantee that will not get deadlock if all invalidation
+        listeners try to acquire locks on the resources that they have
+        modified in order of their uuids.  For example, consider two
+        invalidation listeners, A and B.
+
+        A's read/write set is {beta, alpha, gamma}
+        B's read/write set is {gamma, beta, alpha}
+
+        If, before acquiring locks, we order each's read/write set, and
+        attempt to acquire locks in sorted order, we can guarantee no
+        deadlock.
+
+        A acquires in order alpha, beta, gamma
+        B acquires in order alpha, beta, gamma
         '''
         sorted_touched_obj_ids = sorted(list(self.objs_touched.keys()))
 
@@ -944,9 +962,9 @@ class _ActiveEvent(_InvalidationListener):
             
         
 class RootActiveEvent(_ActiveEvent):
-    def __init__(self,commit_manager,local_endpoint):
+    def __init__(self,local_endpoint):
 
-        _ActiveEvent.__init__(self,commit_manager,None,local_endpoint)
+        _ActiveEvent.__init__(self,None,local_endpoint)
 
         self.subscriber = None
 
@@ -1192,8 +1210,8 @@ class RootActiveEvent(_ActiveEvent):
                         
         
 class PartnerActiveEvent(_ActiveEvent):
-    def __init__(self,commit_manager,uuid,local_endpoint):
-        _ActiveEvent.__init__(self,commit_manager,uuid,local_endpoint)
+    def __init__(self,uuid,local_endpoint):
+        _ActiveEvent.__init__(self,uuid,local_endpoint)
 
         # we received a message, which caused us to create this event.
         # That means that we must check with our partner before we can
@@ -1307,10 +1325,10 @@ class PartnerActiveEvent(_ActiveEvent):
     
 class EndpointCalledActiveEvent(_ActiveEvent):
     def __init__(
-        self,commit_manager,uuid,local_endpoint,
+        self,uuid,local_endpoint,
         endpoint_making_call,result_queue):
         
-        _ActiveEvent.__init__(self,commit_manager,uuid,local_endpoint)
+        _ActiveEvent.__init__(self,uuid,local_endpoint)
         self.subscriber = endpoint_making_call
 
 

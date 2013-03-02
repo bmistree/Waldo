@@ -5,7 +5,6 @@ sys.path.append(
     os.path.join('..','..','lib'))
 import wVariables
 import waldoEndpoint
-import commitManager
 import waldoVariableStore
 import util
 import Queue

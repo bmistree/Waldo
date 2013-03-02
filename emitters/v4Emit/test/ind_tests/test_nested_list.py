@@ -7,9 +7,8 @@ sys.path.append(
     os.path.join('../../lib/'))
 
 import wVariables
-import commitManager
-import invalidationListener
 import util
+import test_util
 
 '''
 Puts lists inside of lists.  Want to ensure that if we write to list
@@ -25,24 +24,20 @@ elements separately, we'll:
 
 host_uuid = util.generate_uuid()
 
-class BasicTestInvalidationListener(invalidationListener._InvalidationListener):
-    def notify_invalidated(self,wld_obj):
-        pass
-    
 
-def create_two_events(commit_manager):
-    evt1 = BasicTestInvalidationListener(commit_manager)
-    evt2 = BasicTestInvalidationListener(commit_manager)
+def create_two_events(dummy_endpoint):
+    evt1 = dummy_endpoint._act_event_map.create_root_event()
+    evt2 = dummy_endpoint._act_event_map.create_root_event()    
     return evt1,evt2
 
-def create_list(commit_manager,to_populate_with):
+def create_list(dummy_endpoint,to_populate_with):
     '''
     @param {list} to_populate_with --- Each element gets appended to
     the list that we return.  This can be a list of value types, or a
     list of Waldo's internal lists.
     '''
     new_list = wVariables.WaldoListVariable('some name',host_uuid)
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     for element in to_populate_with:
         new_list.get_val(evt1).append_val(evt1,element)
 
@@ -54,21 +49,21 @@ def create_list(commit_manager,to_populate_with):
     
 
 def run_test():
-    commit_manager = commitManager._CommitManager()
-
-    el1_list = create_list(commit_manager,[0,1,2])
-    el2_list = create_list(commit_manager,[3,4,5])
-    el3_list = create_list(commit_manager,[6,7,8])
+    dummy_endpoint = test_util.DummyEndpoint(None)
+    
+    el1_list = create_list(dummy_endpoint,[0,1,2])
+    el2_list = create_list(dummy_endpoint,[3,4,5])
+    el3_list = create_list(dummy_endpoint,[6,7,8])
 
     master_list = create_list(
-        commit_manager,[el1_list,el2_list,el3_list])
+        dummy_endpoint,[el1_list,el2_list,el3_list])
 
 
     # first: test that if we delete the last element of el3_list (via
     # el3_list) and delete the first element of el1_list (via master
     # list), both can commit.  then, check that both changes were
     # visible to the other.
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     el3_list.get_val(evt1).del_key_called(evt1,2)
 
     master_list.get_val(evt2).get_val_on_key(evt2,0).get_val(evt2).del_key_called(evt2,0)
@@ -83,7 +78,7 @@ def run_test():
     evt2.complete_commit()
 
     # now check that the changes were actually applied 
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     if master_list.get_val(evt1).get_val_on_key(evt1,2).get_val(evt1).contains_key_called(evt1,2):
         err_msg = '\nCould not see change made to last element of '
         err_msg += 'array made from master.\n'
@@ -109,7 +104,7 @@ def run_test():
 
     # try to perform an append operation on one list while performing
     # a len on it.  Should only be able to commit one.
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     master_list.get_val(evt1).get_val_on_key(evt1,0).get_val(evt1).append_val(evt1,55)
     el1_list.get_val(evt2).get_len(evt2)
 
@@ -123,7 +118,7 @@ def run_test():
         err_msg = '\nerr: should not be able to commit because of dual change\n'
         print err_msg
         return False
-    evt2.backout_commit(True)    
+    evt2.backout_commit()
 
 
     return True

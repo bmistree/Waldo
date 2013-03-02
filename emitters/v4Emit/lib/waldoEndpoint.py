@@ -227,12 +227,10 @@ class _Endpoint(object):
     active events on this endpoint.
     '''
 
-    def __init__(self,host_uuid,commit_manager,conn_obj,global_var_store):
+    def __init__(self,host_uuid,conn_obj,global_var_store):
         '''
         @param {uuid} host_uuid --- The uuid of the host this endpoint
         lives on.
-        
-        @param {_CommitManager} commit_manager
         
         @param {ConnectionObject} conn_obj --- Used to write messages
         to partner endpoint.
@@ -242,15 +240,13 @@ class _Endpoint(object):
         add or remove any peered or endpoint global variables.  Will
         only make calls on them.
         '''
-        self._act_event_map = waldoActiveEventMap._ActiveEventMap(commit_manager,self)
+        self._act_event_map = waldoActiveEventMap._ActiveEventMap(self)
         self._conn_obj = conn_obj
         
         # whenever we create a new _ExecutingEvent, we point it at
         # this variable store so that it knows where it can retrieve
         # variables.
         self._global_var_store = global_var_store
-
-        self._commit_manager = commit_manager
 
         self._endpoint_service_thread = _EndpointServiceThread(self)
         self._endpoint_service_thread.start()

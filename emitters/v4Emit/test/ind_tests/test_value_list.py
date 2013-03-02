@@ -7,10 +7,8 @@ sys.path.append(
     os.path.join('../../lib/'))
 
 import wVariables
-import commitManager
-import invalidationListener
 import util
-
+import test_util
 '''
 Tests a basic value map to ensure that can and cannot perform certain
 operations concurrently and that operations are committed.
@@ -18,21 +16,17 @@ operations concurrently and that operations are committed.
 
 host_uuid = util.generate_uuid()
 
-class BasicTestInvalidationListener(invalidationListener._InvalidationListener):
-    def notify_invalidated(self,wld_obj):
-        pass
-    
 
-def create_two_events(commit_manager):
-    evt1 = BasicTestInvalidationListener(commit_manager)
-    evt2 = BasicTestInvalidationListener(commit_manager)
+def create_two_events(dummy_endpoint):
+    evt1 = dummy_endpoint._act_event_map.create_root_event()
+    evt2 = dummy_endpoint._act_event_map.create_root_event()
     return evt1,evt2
         
 def run_test():
     # initialize and populate list to be [1,2,3]
-    commit_manager = commitManager._CommitManager()
+    dummy_endpoint = test_util.DummyEndpoint(None,host_uuid)
     wlist = wVariables.WaldoListVariable('some list',host_uuid)
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     wlist.get_val(evt1).append_val(evt1,1)
     wlist.get_val(evt1).append_val(evt1,2)
     wlist.get_val(evt1).append_val(evt1,3)    
@@ -40,7 +34,7 @@ def run_test():
     evt1.complete_commit()
     
     
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     # wlist.get_val(evt1)._print_values()
     
     # testing to ensure that can perform reads simultaneously
@@ -67,7 +61,7 @@ def run_test():
 
     # testing to ensure that cannot simultaneously commit a read and a
     # write to the same cell.
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     if wlist.get_val(evt1).get_val_on_key(evt1,1) != 2:
         print '\nerr: expected 2\n'
         return False
@@ -80,11 +74,11 @@ def run_test():
     if evt2.hold_can_commit():
         print '\nerr: should not be able to read after having written 5\n'
         return False
-    evt2.backout_commit(True)
+    evt2.backout_commit()
 
     # testing to ensure can write to one element and write to another
     # element
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     wlist.get_val(evt1).write_val_on_key(evt1,1,3)
     wlist.get_val(evt2).write_val_on_key(evt2,2,4)
     
@@ -100,7 +94,7 @@ def run_test():
     # check to ensure that the correct values were written in above
     # steps + check to ensure that deletion of an element prevents
     # committing to it.
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     if wlist.get_val(evt2).get_val_on_key(evt2,1) != 3:
         print '\nshould have gotten 3 from prev commit\n'
         return False
@@ -117,11 +111,11 @@ def run_test():
     if evt2.hold_can_commit():
         print '\nerr: should not have been able to hold print commit '
         return False
-    evt2.backout_commit(True)
+    evt2.backout_commit()
 
     # check to ensure last delete was correct and that we cannot call
     # keys and append simultaneoulsy.
-    evt1,evt2 = create_two_events(commit_manager)
+    evt1,evt2 = create_two_events(dummy_endpoint)
     length = wlist.get_val(evt1).get_len(evt1)
     if length != 2:
         print '\nerr: expecting length of 2 after delete\n'
@@ -136,7 +130,7 @@ def run_test():
     if evt2.hold_can_commit():
         print '\nerr: should not have been able to commit append\n'
         return False
-    evt2.backout_commit(True)
+    evt2.backout_commit()
 
     return True
     

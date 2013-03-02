@@ -7,30 +7,23 @@ sys.path.append(
     os.path.join('../../lib/'))
 
 import wVariables
-import commitManager
-import invalidationListener
 import time
 import waldoNetworkSerializer
 import util
-
-class BasicInvalidationListener(invalidationListener._InvalidationListener):
-    def __init__(self,*args):
-        invalidationListener._InvalidationListener.__init__(self,*args)
-        self.notified_invalidated = False
-    def notify_invalidated(self,wld_obj):
-        self.notified_invalidated = True
-        
+import test_util        
         
 
-class SingleSide(object):
+class SingleSide(test_util.DummyEndpoint):
     def __init__(self):
-        self.host_uuid = util.generate_uuid()
+        test_util.DummyEndpoint.__init__(self,None)
+
         # both sides start at 1
         self.number = wVariables.WaldoNumVariable(
-            'some num',self.host_uuid,True,1)
-        self.commit_manager = commitManager._CommitManager()
+            'some num',self._host_uuid,True,1)
+        
     def new_event(self):
-        return BasicInvalidationListener(self.commit_manager)
+        return self._act_event_map.create_root_event()        
+
     
 
 def run_test():
@@ -48,7 +41,7 @@ def run_test():
         'some_name',lhs_event)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        rhs.host_uuid,serializabled,rhs_event,rhs.number)
+        rhs._host_uuid,serializabled,rhs_event,rhs.number)
 
     if not lhs_event.hold_can_commit():
         print '\nError: should be able to commit lhs.\n'

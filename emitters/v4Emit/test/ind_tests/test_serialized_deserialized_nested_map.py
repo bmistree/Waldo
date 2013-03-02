@@ -7,32 +7,24 @@ sys.path.append(
     os.path.join('../../lib/'))
 
 import wVariables
-import commitManager
-import invalidationListener
 import time
 import waldoNetworkSerializer
 import util
+import test_util
 
-class BasicInvalidationListener(invalidationListener._InvalidationListener):
-    def __init__(self,*args):
-        invalidationListener._InvalidationListener.__init__(self,*args)
-        self.notified_invalidated = False
-    def notify_invalidated(self,wld_obj):
-        self.notified_invalidated = True
-        
-class SingleSide(object):
+class SingleSide(test_util.DummyEndpoint):
     def __init__(self):
-        self.host_uuid = util.generate_uuid()
-        
+        test_util.DummyEndpoint.__init__(self,None)
         # both sides start at 1
-        self.map = wVariables.WaldoMapVariable('some map',self.host_uuid,True)
-        self.commit_manager = commitManager._CommitManager()
-    def new_event(self):
-        return BasicInvalidationListener(self.commit_manager)
+        self.map = wVariables.WaldoMapVariable('some map',self._host_uuid,True)
 
+    def new_event(self):
+        return self._act_event_map.create_root_event()
+
+    
 def create_waldo_list(single_side_obj,to_put_inside,evt=None):
     wlist = wVariables.WaldoListVariable(
-        'some list',single_side_obj.host_uuid,False)
+        'some list',single_side_obj._host_uuid,False)
 
     if evt == None:
         evt = single_side_obj.new_event()
@@ -65,7 +57,7 @@ def run_test():
         'some_name',evt)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        rhs.host_uuid,serializabled,rhs_event,rhs.map)
+        rhs._host_uuid,serializabled,rhs_event,rhs.map)
 
     if not evt.hold_can_commit():
         print '\nError: should be able to commit lhs.\n'
@@ -106,7 +98,7 @@ def run_test():
         'some_name',lhs_event)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        rhs.host_uuid,serializabled,rhs_event2,rhs.map)
+        rhs._host_uuid,serializabled,rhs_event2,rhs.map)
     
     rhs.map.get_val(rhs_event1).del_key_called(rhs_event1,1)
     
@@ -124,7 +116,7 @@ def run_test():
     if rhs_event1.hold_can_commit():
         print '\nError rhs_evt1 and rhs_evt2 should conflict.\n'
         return False
-    rhs_event1.backout_commit(True)
+    rhs_event1.backout_commit()
         
 
     # now check that can do operations in parallel that do not affect
@@ -146,14 +138,14 @@ def run_test():
         'some_name',lhs_event1)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        rhs.host_uuid,serializabled,rhs_event2,rhs.map)
+        rhs._host_uuid,serializabled,rhs_event2,rhs.map)
 
 
     serializabled = rhs.map.serializable_var_tuple_for_network(
         'some_name',rhs_event1)
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
-        lhs.host_uuid,serializabled,lhs_event2,lhs.map)
+        lhs._host_uuid,serializabled,lhs_event2,lhs.map)
     
 
     if not lhs_event1.hold_can_commit():
