@@ -737,6 +737,8 @@ class _ActiveEvent(_InvalidationListener):
     def forward_commit_request_and_try_holding_commit_on_myself(
         self,skip_partner=False):
         '''
+        Note: gets extended in each base class.
+        
         @param {bool} skip_partner --- If our partner issued the
         commit request to us, then we do not need to forward the
         request onto it, ie, skip_partner will be True.  Otherwise,
@@ -754,14 +756,13 @@ class _ActiveEvent(_InvalidationListener):
         able to commit its data.  Or, we may have already been told to
         commit.  It just means that the commit *may* still be proceeding.)
         '''
-
         self._lock()
 
         if not self.in_running_phase():
             # there was a cycle in endpoint calls.  Ignore to avoid
             # loops.
             self._unlock()
-            return True
+            return True, True, None
 
         who_forwarded_to = None
         cannot_commit = False
@@ -816,62 +817,13 @@ class _ActiveEvent(_InvalidationListener):
                 cannot_commit = True
                 self.set_request_commit_not_holding_locks_phase()                
 
-        if cannot_commit:
-            # means that this _ActiveEvent was invalidated.
-            if self.subscriber == None:
-                # this _ActiveEvent is the RootActiveEvent.  Forward
-                # to all to backout.  Reschedule.
-                self.forward_backout_request_and_backout_self(
-                    False,True)
-                
-            elif self.subscriber == _ActiveEvent.SUBSCRIBER_PARTNER_FLAG:
-                # Tell partner to back out (and forward that back out
-                # to root)
-                self.local_endpoint._forward_first_phase_commit_unsuccessful(
-                    self.uuid,self.local_endpoint._uuid)
-
-            else:
-                # this was an EndpointCalledActiveEvent, which means
-                # that we can call subscriber directly to forward the
-                # message.
-                self.subscriber._receive_first_phase_commit_unsuccessful(
-                    self.uuid,self.local_endpoint._uuid)
-                
-        else:
-            # @see comment above who_forwarded_to
-            if self.subscriber == None:
-                # means that we are a _RootActiveEvent.  The
-                # _RootActiveEvent can get here from its first call to
-                # begin committing.  Load the waiting_on_commit_map so that
-                # know when to proceed to second phase of commit.
-
-                # handles case of loops in the endpoint call graph.
-                self.add_waiting_on_first_phase(who_forwarded_to)
-                self.add_received_first_phase(
-                    self.local_endpoint._uuid)
-                
-            elif self.subscriber == _ActiveEvent.SUBSCRIBER_PARTNER_FLAG:
-                # Tell partner (our subscriber) that we were able to
-                # commit, and the root should wait for messages from
-                # the endpoint uuids in who_forwarded_to before
-                # transitioning to second state of commit.
-                self.local_endpoint._forward_first_phase_commit_successful(
-                    self.uuid,self.local_endpoint._uuid,who_forwarded_to)
-            else:
-                # this was an EndpointCalledActiveEvent, which means
-                # that we can just call the subscriber directly to
-                # receive the successful message.
-                self.subscriber._receive_first_phase_commit_successful(
-                    self.uuid,self.local_endpoint._uuid,who_forwarded_to)
-                
-
         # FIXME: unclear if need to hold this lock up until here.  May
         # be able to let go of it earlier.  Reason through whether it
         # is incorrect for root condition to manage
         # waiting_on_commit_map outside of lock.
         self._unlock()
 
-        return (not cannot_commit)
+        return (not cannot_commit), False, who_forwarded_to
 
 
     @abstractmethod
@@ -1076,6 +1028,37 @@ class RootActiveEvent(_ActiveEvent):
         self.add_waiting_on_first_phase(children_event_endpoint_uuids)
         self.add_received_first_phase(msg_originator_endpoint_uuid)
         self._unlock()
+
+    def forward_commit_request_and_try_holding_commit_on_myself(
+        self,skip_partner=False):
+        self._lock()
+
+        can_commit, early_abort,who_forwarded_to = super(
+            RootActiveEvent,self).forward_commit_request_and_try_holding_commit_on_myself(
+            skip_partner)
+    
+        if not early_abort:
+
+            if can_commit:
+                # We are a _RootActiveEvent.  The _RootActiveEvent can
+                # get here from its first call to begin committing.
+                # Load the waiting_on_commit_map so that know when to
+                # proceed to second phase of commit.
+
+                # handles case of loops in the endpoint call graph.
+                self.add_waiting_on_first_phase(who_forwarded_to)
+                self.add_received_first_phase(
+                    self.local_endpoint._uuid)
+            else:
+                # active event was invalidated
+                # this _ActiveEvent is the RootActiveEvent.  Forward
+                # to all to backout and reschedule
+                self.forward_backout_request_and_backout_self(
+                    False,True)
+        
+        self._unlock()
+        return can_commit
+        
         
     def add_waiting_on_first_phase(self,endpoint_uuid_array):
         '''
@@ -1194,8 +1177,6 @@ class RootActiveEvent(_ActiveEvent):
             # the additional subscriber's uuid.
             self.forward_backout_request_and_backout_self()
 
-            
-    
     def notify_removed_subscriber(
         self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
@@ -1290,7 +1271,36 @@ class PartnerActiveEvent(_ActiveEvent):
             self.subscriber._forward_first_phase_commit_unsuccessful(
                 event_uuid,msg_originator_endpoint_uuid)
 
+
+    def forward_commit_request_and_try_holding_commit_on_myself(
+        self,skip_partner=False):
+        '''
+        @see _ActiveEvent.forward_commit_rquest_and_try_holding_commit_on_myself
+        '''
+        can_commit, early_abort,who_forwarded_to = super(
+            PartnerActiveEvent,self).forward_commit_request_and_try_holding_commit_on_myself(
+            skip_partner)
+    
+        if not early_abort:
+            if can_commit:
+                # Tell partner (our subscriber) that we were able to
+                # commit, and the root should wait for messages from
+                # the endpoint uuids in who_forwarded_to before
+                # transitioning to second state of commit.                
+                self.local_endpoint._forward_first_phase_commit_successful(
+                    self.uuid,self.local_endpoint._uuid,who_forwarded_to)
+
+            else:
+                # Tell partner to back out (and forward that back out
+                # to root)                
+                self.local_endpoint._forward_first_phase_commit_unsuccessful(
+                    self.uuid,self.local_endpoint._uuid)
+
+        return can_commit
         
+
+
+    
 class EndpointCalledActiveEvent(_ActiveEvent):
     def __init__(
         self,commit_manager,uuid,local_endpoint,
@@ -1371,3 +1381,26 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         if to_forward:
             self.subscriber._receive_first_phase_commit_unsuccessful(
                 event_uuid,msg_originator_endpoint_uuid)
+
+    def forward_commit_request_and_try_holding_commit_on_myself(
+        self,skip_partner=False):
+        '''
+        @see _ActiveEvent.forward_commit_rquest_and_try_holding_commit_on_myself
+        '''
+        can_commit, early_abort,who_forwarded_to = super(
+            EndpointCalledActiveEvent,self).forward_commit_request_and_try_holding_commit_on_myself(
+            skip_partner)
+    
+        if not early_abort:
+            if can_commit:
+                # this was an EndpointCalledActiveEvent, which means
+                # that we can just call the subscriber directly to
+                # receive the successful message.
+                self.subscriber._receive_first_phase_commit_successful(
+                    self.uuid,self.local_endpoint._uuid,who_forwarded_to)
+            else:
+                # this was an EndpointCalledActiveEvent, which means
+                # that we can call subscriber directly to forward the
+                # message.                
+                self.subscriber._receive_first_phase_commit_unsuccessful(
+                    self.uuid,self.local_endpoint._uuid)
