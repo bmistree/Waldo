@@ -24,9 +24,20 @@ def resetErrorEncountered(versionNum):
 
 import re
 import json
-from emitters.v3Emit import astEmit
+from emitters.v3Emit import astEmit as v2Emit
+from emitters.v4Emit.emitter import ast_emit as v4Emit
+
+
 from parser.ast.astBuilderCommon import WaldoParseException;
 from lexer.waldoLex import WaldoLexException
+
+
+def getEmitter(versionNum):
+    if versionNum == 2:
+        return v2Emit
+
+    return v4Emit
+        
 
 
 
@@ -76,9 +87,9 @@ def genAst(progText,outputErrsTo,versionNum):
     progText = stripWindowsLineEndings(progText);
     parser = getParser(progText,outputErrsTo,versionNum);
     astNode = parser.parse(progText);
-    if (versionNum == 1):
+    if versionNum == 1:
         pass;
-    elif(versionNum == 2):
+    elif (versionNum == 2) or (versionNum == 4): 
         if (not getErrorEncountered(versionNum)):
             canonicalize.preprocess(astNode,progText);
     else:
@@ -108,7 +119,7 @@ def compileText(progText,outputErrStream,versionNum):
         return None;
     
     resetErrorEncountered(versionNum);
-    emitText = astEmit.astEmit(astRootNode);
+    emitText = getEmitter(versionNum).astEmit(astRootNode)
     return emitText; # will be none if encountered an error during
                      # emit.  otherwise, file text.
 
@@ -157,7 +168,6 @@ def handleArgs(
     inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,
     typeCheckArg,emitArg,versionNum):
 
-    
     errOutputStream = sys.stderr;
 
     try:
@@ -201,7 +211,7 @@ def handleArgs(
                 errMsg = '\nType error: cancelling code emit\n';
                 print >> errOutputStream, errMsg;
             else:
-                emitText = astEmit.astEmit(astRootNode);
+                emitText = getEmitter(versionNum).astEmit(astRootNode)
                 if (emitText == None):
                     errMsg = '\nBehram error when requesting emission of ';
                     errMsg += 'source code from astHead.py.\n';
@@ -265,8 +275,6 @@ def printUsage():
     
     ''');
 
-
-
     
 if __name__ == '__main__':
 
@@ -302,8 +310,8 @@ if __name__ == '__main__':
             if (s + 1 < len(sys.argv)):
                 versionNum = int(sys.argv[s+1]);
                 skipNext = True;
-                if (versionNum != 1) and (versionNum != 2):
-                    print('\nI can only handle Waldo versions 1 or 2.\n');
+                if (versionNum != 1) and (versionNum != 2) and (versionNum != 4):
+                    print('\nI can only handle Waldo versions 1, 2, or 4.\n');
                     helpArg = True;
                 if versionNum == 1:
                     print('\nError.  Version 1 is no longer supported.\n');
