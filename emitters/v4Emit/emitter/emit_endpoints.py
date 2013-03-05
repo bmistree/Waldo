@@ -53,12 +53,12 @@ def emit_endpoint_body(
     # emit __init__
     endpoint_body_text = emit_endpoint_init(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
-    endpoint_body_text += '\n'
+    endpoint_body_text += '\n\n'
 
     # emit public and private functions
-    endpoint_body_text += '### USER DEFINED FUNCTIONS ###\n'
-
-    # FIXME: fill this section in
+    endpoint_body_text += '### USER DEFINED METHODS ###\n'
+    endpoint_body_text += emit_endpoint_publics_privates(
+        endpoint_name,ast_root,fdep_dict,emit_ctx)
     
     # emit sequence blocks
     endpoint_body_text += '### USER DEFINED SEQUENCE BLOCKS ###\n'
@@ -192,10 +192,137 @@ def create_wvariables_array(
 ''' % (var_store_name, var_name,variable_type_str,
        var_name,host_uuid_var_name,peered_str)
         
-
     return wvar_load_text
 
 
+def emit_endpoint_publics_privates(
+    endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    Returns a string containing the definitions of all the public and
+    private methods for endpoint named endpoint_name.
+    '''
+    endpoint_public_method_nodes = get_endpoint_public_method_nodes(
+        endpoint_name,ast_root)
+    endpoint_private_method_nodes = get_endpoint_private_method_nodes(
+        endpoint_name,ast_root)
+
+    method_defs = ''
+    for public_method_node in endpoint_public_method_nodes:
+        method_defs += emit_public_method_interface(
+            public_method_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        method_defs += '\n'
+
+        method_defs += emit_private_method_interface(
+            public_method_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        method_defs += '\n'
+
+    for private_method_node in endpoint_private_method_nodes:
+        method_defs += emit_private_method_interface(
+            private_method_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        method_defs += '\n'        
+    
+    return method_defs
+
+
+def emit_private_method_interface(
+    method_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    @param {AstNode} method_node --- Either a public method node or a
+    private method node.  (If it's a public method, then we emit the
+    internal method that gets called from the public interface of the
+    method.)
+    '''
+    # FIXME: must finish this function
+    return ''
+
+    
+    
+    
+def emit_public_method_interface(
+    public_method_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    @param {AstNode} public_method_node --- An AstNode with label
+    AST_PUBLIC_FUNCTION
+    '''
+    method_name_node = public_method_node.children[0]
+    method_name = method_name_node.value
+
+    method_arg_names = get_method_arg_names(public_method_node)
+    # turns the array of argnames above into a single string of csv
+    # arg names
+    comma_sep_arg_names = reduce (
+        lambda x, y : x + ',' + y,
+        method_arg_names,'')
+
+    public_header = '''
+def %s(self%s):
+''' % (method_name, comma_sep_arg_names)
+
+    # FIXME: must finish this function.
+    public_body = 'pass # FIXME: must fill in bodies of public functions\n'
+    
+    return public_header + emit_utils.indent_str(public_body)
+    
+    
+    
+
+def get_method_arg_names(method_node):
+    '''
+    @param {AstNode} method_node --- Either a public method node or a
+    private method node
+    
+    @returns {Array} --- Each element is a string with the name of the
+    method's argument.
+    '''
+    arg_names = []
+    
+    func_decl_arglist_node = method_node.children[2]
+    for func_decl_arg_node in func_decl_arglist_node.children:
+        arg_name_node = func_decl_arg_node.children[1]
+        arg_names.append(arg_name_node.value)
+    
+    return arg_names
+    
+
+    
+
+def get_endpoint_public_method_nodes(endpoint_name,ast_root):
+    '''
+    @returns{Array} --- Returns an array containing all the public
+    method nodes defined for the endpoint with name endpoint_name
+    '''
+    return _get_endpoint_method_nodes(
+        endpoint_name,ast_root,AST_PUBLIC_FUNCTION)
+
+def get_endpoint_private_method_nodes(endpoint_name,ast_root):
+    '''
+    @see get_endpoint_public_method_nodes, except for private methods
+    '''
+    return _get_endpoint_method_nodes(
+        endpoint_name,ast_root,AST_PRIVATE_FUNCTION)
+
+def _get_endpoint_method_nodes(endpoint_name,ast_root,label_looking_for):
+    '''
+    Returns all methods that have label label_looking_for (which will
+    either be AST_PUBLIC_FUNCTION or AST_PRIVATE_FUNCTION, depending
+    on whether we want to return an array of public or private nodes.
+
+    @see get_endpoint_public_method_nodes
+    '''
+    endpoint_node = get_endpoint_section_node(endpoint_name,ast_root)
+    endpoint_body_node = endpoint_node.children[1]
+    endpoint_method_sec_node = endpoint_body_node.children[1]
+
+    methods_array = []
+    for endpoint_method_node in endpoint_method_sec_node.children:
+        if endpoint_method_node.label == label_looking_for:
+            methods_array.append(endpoint_method_node)
+            
+    return methods_array
+    
+
+
+    
 def get_peered_decl_nodes(ast_root):
     '''
     @param {AstNode} ast_root
@@ -241,4 +368,13 @@ def get_endpoint_section_node(endpoint_name,ast_root):
     if end1_name == endpoint_name:
         return end1_sec_node
 
+    #### DEBUG
+    end2_name_node = end2_sec_node.children[0]
+    end2_name = end2_name_node.value
+    if end2_name != endpoint_name:
+        emit_utils.emit_assert(
+            'Cannot find endpoint named ' + endpoint_name)
+    #### END DEBUG
+    
     return end2_sec_node
+
