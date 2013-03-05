@@ -1,6 +1,8 @@
 import emit_utils 
 import parser.ast.typeCheck as TypeCheck
 from parser.ast.astLabels import *
+import emitters.v4Emit.lib.util as lib_util
+
 
 def emit_endpoints(ast_root,fdep_dict,emit_ctx):
     '''
@@ -228,15 +230,36 @@ def emit_private_method_interface(
     method_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''
     @param {AstNode} method_node --- Either a public method node or a
-    private method node.  (If it's a public method, then we emit the
+    private method node.  If it's a public method, then we emit the
     internal method that gets called from the public interface of the
-    method.)
+    method.  We emit private versions of public methods for two
+    reasons:
+
+       1: The public versions of the methods do some very basic
+          bookkeeping (copy args in, check for backout and retry,
+          etc.)
+
+       2: When issuing an endpoint call, endpoint call gets issued to
+          private part of function, which does most of the work.
     '''
     # FIXME: must finish this function
-    return ''
+    method_name_node = method_node.children[0]
+    src_method_name = method_name_node.value
+    internal_method_name = lib_util.endpoint_call_func_name(src_method_name)
 
+    method_arg_names = get_method_arg_names(method_node)
+    comma_sep_arg_names = reduce (
+        lambda x, y : x + ',' + y,
+        method_arg_names,'')
     
-    
+    private_header = '''
+def %s(self,_active_event,_context%s):
+''' % (internal_method_name, comma_sep_arg_names)
+
+    private_body = 'pass # FIXME: must fill in bodies of private functions\n'
+
+    return private_header + emit_utils.indent_str(private_body)
+        
     
 def emit_public_method_interface(
     public_method_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
