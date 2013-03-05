@@ -2,7 +2,7 @@ import emit_utils
 import parser.ast.typeCheck as TypeCheck
 from parser.ast.astLabels import *
 import emitters.v4Emit.lib.util as lib_util
-
+import emit_statement
 
 def emit_endpoints(ast_root,fdep_dict,emit_ctx):
     '''
@@ -241,7 +241,6 @@ def emit_private_method_interface(
        2: When issuing an endpoint call, endpoint call gets issued to
           private part of function, which does most of the work.
     '''
-    # FIXME: must finish this function
     method_name_node = method_node.children[0]
     src_method_name = method_name_node.value
     internal_method_name = lib_util.endpoint_call_func_name(src_method_name)
@@ -255,8 +254,20 @@ def emit_private_method_interface(
 def %s(self,_active_event,_context%s):
 ''' % (internal_method_name, comma_sep_arg_names)
 
-    private_body = 'pass # FIXME: must fill in bodies of private functions\n'
-
+    # actually emit body of function
+    private_body = ''
+    method_body_node = get_method_body_node_from_method_node(method_node)
+    emitted_something = False
+    for statement_node in method_body_node.children:
+        emitted_something = True
+        private_body += emit_statement.emit_statement(
+            statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        private_body += '\n'
+        
+    if not emitted_something:
+        # in case of empty functions
+        private_body += 'pass\n'
+    
     return private_header + emit_utils.indent_str(private_body)
         
     
@@ -307,10 +318,10 @@ def %s(self%s):
     public_body += '''
 while True:  # FIXME: currently using infinite retry 
     _root_event = self._act_event_map.create_root_event()
-    _ctx = context = waldoExecutingEvent._ExecutingEventContext(
+    _ctx = %s(
         self._global_var_store,
         # not using sequence local store
-        waldoVariableStore._VariableStore(self._host_uuid))
+        %s(self._host_uuid))
 
     # call internal function
     self.%s(_root_event,_ctx %s)
@@ -337,7 +348,9 @@ else:
         _to_return = %s(_to_return)
 
 return tuple(_to_return)
-''' % (internal_method_name,
+''' % (emit_utils.library_transform('ExecutingEventContext'),
+       emit_utils.library_transform('VariableStore'),
+       internal_method_name,
        comma_sep_arg_names,
        emit_utils.library_transform('CompleteRootCallResult'),
        str(list_return_non_external_positions),
@@ -366,6 +379,35 @@ def get_method_arg_names(method_node):
     
     return arg_names
     
+
+def get_method_body_node_from_method_node(method_node):
+    '''
+    @param {AstNode} method_node --- for private, public, oncreate,
+    message receive, and message send functions
+
+    @returns{AstNode} --- The ast node containing the function's body.
+    '''
+    method_node_index = None;
+    if method_node.label == AST_PUBLIC_FUNCTION:
+        method_node_index = 3;
+    elif method_node.label == AST_PRIVATE_FUNCTION:
+        method_node_index = 3;
+    elif method_node.label == AST_ONCREATE_FUNCTION:
+        method_node_index = 2;
+    elif method_node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        method_node_index = 3;
+    elif method_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        method_node_index = 2;
+    elif method_node.label == AST_ONCOMPLETE_FUNCTION:
+        method_node_index = 2;
+    else:
+        errMsg = '\nBehram error: cannot get funcbodynode from ';
+        errMsg += 'nodes that are not function nodes.\n';
+        print(errMsg);
+        assert(False);
+
+    return method_node.children[method_node_index];
+
 
 def get_endpoint_public_method_nodes(endpoint_name,ast_root):
     '''

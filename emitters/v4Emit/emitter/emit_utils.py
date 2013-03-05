@@ -29,9 +29,12 @@ def library_transform(name):
 
 
 def emit_assert(err_msg):
-    print ('\n\nEmit error: ' + err_msg + '\n\n')
+    print '\n\nEmit error: ' + err_msg + '\n\n'
     assert(False)
 
+def emit_warn(warn_msg):
+    print '\n\nEmit warn: ' + warn_msg + '\n\n'
+    
 def indent_str(string,amt_to_indent=1):
     '''
     @param {String} string -- Each line in this string we will insert
