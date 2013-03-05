@@ -49,7 +49,6 @@ def indent_str(string,amt_to_indent=1):
     for s in range(0,amt_to_indent):
         indenter += '    ';
 
-
     for s in range(0,len(split_on_newline)):
         if len(split_on_newline[s]) != 0:
             indented_string += indenter + split_on_newline[s]

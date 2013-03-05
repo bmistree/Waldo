@@ -64,7 +64,6 @@ def emit_endpoint_body(
     
     # emit sequence blocks
     endpoint_body_text += '### USER DEFINED SEQUENCE BLOCKS ###\n'
-    
     # FIXME: fill this section in
     
     return endpoint_body_text
@@ -88,7 +87,7 @@ def emit_endpoint_init(
     # actually initialize super class
     init_body += '''
 %s.__init__(self,_host_uuid,conn_obj,%s)
-''' % (emit_utils.library_transform('_Endpoint'), glob_var_store_name)
+''' % (emit_utils.library_transform('Endpoint'), glob_var_store_name)
     
     # FIXME: this is where would actually make call to onCreate
     
@@ -281,14 +280,73 @@ def emit_public_method_interface(
 def %s(self%s):
 ''' % (method_name, comma_sep_arg_names)
 
-    # FIXME: must finish this function.
-    public_body = 'pass # FIXME: must fill in bodies of public functions\n'
-    
+
+    public_body = ''
+    #### Deep copy non-external args
+    # non_ext_arg_names is an array of strings
+    non_ext_arg_names = get_non_external_arg_names_from_func_node(
+        public_method_node)
+    for non_ext_arg_name in non_ext_arg_names:
+        # translates to: non_extarg = <waldo import
+        # path>public_arg_copy_in(non_extarg)
+        public_body += '''
+%s = %s(%s))
+''' % (non_ext_arg_name,
+       # FIXME: create a public_arg_copy_in ... essentially, for any 
+       emit_utils.library_transform('public_arg_copy_in'),
+       non_ext_arg_name)
+
+
+    # Each element in this list is an index for a return parameter
+    # that should be de-waldo-ified before returning.
+    list_return_non_external_positions = (
+        get_non_external_return_positions_from_func_node(public_method_node))
+
+    #### create a root event + ctx for event, call internal, and reurn
+    internal_method_name = lib_util.endpoint_call_func_name(method_name)
+    public_body += '''
+while True:  # FIXME: currently using infinite retry 
+    _root_event = self._act_event_map.create_root_event()
+    _ctx = context = waldoExecutingEvent._ExecutingEventContext(
+        self._global_var_store,
+        # not using sequence local store
+        waldoVariableStore._VariableStore(self._host_uuid))
+
+    # call internal function
+    self.%s(_root_event,_ctx %s)
+    # try committing root event
+    _root_event.request_commit()
+    _commit_resp = _root_event.event_complete_queue.get()
+    if isinstance(_commit_resp,%s):
+        # means it isn't a backout message: we're done
+        break
+
+# _list_non_external_returns contains the numeric indices of all
+# items in _commit_resp.to_return tuple that should be returned as
+# an external
+_list_non_external_returns = %s
+if isinstance(_commit_resp.to_return,tuple):
+    _to_return = list(_commit_resp.to_return)
+    for _i in _list_non_external_returns:
+        _to_return[_i] = %s(_to_return[_i]) # de_waldoify_for_return
+else:
+    # we are returning a single value...check if even that single
+    # value was not supposed to be an external
+    _to_return = _commit_resp.to_return
+    if len(_list_non_external_returns) == 0:
+        _to_return = %s(_to_return)
+
+return tuple(_to_return)
+''' % (internal_method_name,
+       comma_sep_arg_names,
+       emit_utils.library_transform('CompleteRootCallResult'),
+       str(list_return_non_external_positions),
+       emit_utils.library_transform('de_waldoify_for_return'),
+       emit_utils.library_transform('de_waldoify_for_return'))
+
     return public_header + emit_utils.indent_str(public_body)
     
     
-    
-
 def get_method_arg_names(method_node):
     '''
     @param {AstNode} method_node --- Either a public method node or a
@@ -298,15 +356,15 @@ def get_method_arg_names(method_node):
     method's argument.
     '''
     arg_names = []
+
+    arg_node_index = get_arg_index_from_func_node_label(method_node.label)
     
-    func_decl_arglist_node = method_node.children[2]
+    func_decl_arglist_node = method_node.children[arg_node_index]
     for func_decl_arg_node in func_decl_arglist_node.children:
         arg_name_node = func_decl_arg_node.children[1]
         arg_names.append(arg_name_node.value)
     
     return arg_names
-    
-
     
 
 def get_endpoint_public_method_nodes(endpoint_name,ast_root):
@@ -344,8 +402,6 @@ def _get_endpoint_method_nodes(endpoint_name,ast_root,label_looking_for):
     return methods_array
     
 
-
-    
 def get_peered_decl_nodes(ast_root):
     '''
     @param {AstNode} ast_root
@@ -401,3 +457,78 @@ def get_endpoint_section_node(endpoint_name,ast_root):
     
     return end2_sec_node
 
+
+def get_non_external_arg_names_from_func_node(func_node):
+    '''
+    @param {AstNode} func_node --- for private, public, oncreate,
+    message receive, and message send functions.
+
+    @returns {Array} --- Each element is a string representing the
+    name of a non-external argument that the user passed in.
+    '''
+    arg_node_index = get_arg_index_from_func_node_label(func_node.label)
+
+    returner = []
+    func_decl_arg_list_node = func_node.children[arg_node_index]
+    for func_decl_arg_node in func_decl_arg_list_node.children:
+        if not func_decl_arg_node.external:
+            name_node = func_decl_arg_node.children[1]
+            returner.append(name_node.value)
+
+    return returner
+
+
+def get_non_external_return_positions_from_func_node(func_node):
+    '''
+    @returns {list} --- Each element is an integer corresponding to
+    the index in the return tuple of a return value that isn't external.
+
+    public function () returns Num, External Num, Num {}
+
+    We would return [0,2].
+    '''
+    return_type_node_index = get_return_type_index_from_func_node_label(
+        func_node.label)
+    return_type_node = func_node.children[return_type_node_index]
+
+    external_return_indices = []
+    
+    for return_counter in range(0,len(return_type_node.children)):
+        return_node = return_type_node.children[return_counter]
+        if not return_node.external:
+            external_return_indices.append(return_counter)
+    return external_return_indices
+
+
+def get_return_type_index_from_func_node_label(label):
+    return_node_index = None
+    if label == AST_PUBLIC_FUNCTION:
+        return_node_index = 1
+    elif label == AST_PRIVATE_FUNCTION:
+        return_node_index = 1
+    #### DEBUG
+    else:
+        emit_utils.emit_assert(
+            'Unknown label getting return typ for.')
+    #### END DEBUG
+        
+    return return_node_index
+    
+
+def get_arg_index_from_func_node_label(label):
+    arg_node_index = None
+    if label == AST_PUBLIC_FUNCTION:
+        arg_node_index = 2
+    elif label == AST_PRIVATE_FUNCTION:
+        arg_node_index = 2
+    elif label == AST_ONCREATE_FUNCTION:
+        arg_node_index = 1
+    elif label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        arg_node_index = 2
+    #### DEBUG
+    else:
+        emit_utils.emit_assert(
+            'Unrecognized label passed to ' +
+            'get_arg_index_from_func_node_label')
+    #### END DEBUG
+    return arg_node_index

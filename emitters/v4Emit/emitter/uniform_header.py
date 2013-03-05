@@ -11,5 +11,4 @@ def uniform_header():
 # Waldo emitted file
 import _waldo_libs
 
-
 '''.lstrip()
