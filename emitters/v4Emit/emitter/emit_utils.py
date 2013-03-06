@@ -137,4 +137,18 @@ def get_var_type_dict_from_decl(decl_node):
         
     type_node = decl_node.children[0]
     return type_node.type
-    
+
+
+def is_endpoint_function_call(func_call_node):
+    if is_function_call(func_call_node):
+        func_name_node = func_call_node.children[0]
+        # FIXME: currently, the only way to test if it's a function call
+        # on an endpoint object is if the func name is a dot statement
+        if func_name_node.label == AST_DOT_STATEMENT:
+            return True
+        
+    return False
+
+
+def is_function_call(func_call_node):
+    return func_call_node.label == AST_FUNCTION_CALL
