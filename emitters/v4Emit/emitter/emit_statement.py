@@ -124,7 +124,7 @@ def _emit_public_private_method_call(
     method_call_name_node = method_call_node.children[0]
     method_call_name = method_call_name_node.value
 
-    method_call_txt = 'self.%s(_active_event,_context,'
+    method_call_txt = 'self.%s(_active_event,_context,' % method_call_name
 
     method_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
         method_call_node)
@@ -148,12 +148,12 @@ def _emit_public_private_method_call(
 
     return method_call_txt + ')'
 
+
 def _emit_msg_seq_begin_call(
     msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
-    # FIXME: must fill in this function
-    emit_utils.emit_warn(
-        '_emit_msg_seq_begin_call still must be completed')
-    return ''
+    # Should look the same as a private call
+    return _emit_public_private_method_call(
+        msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
     
 def _emit_endpoint_method_call(
