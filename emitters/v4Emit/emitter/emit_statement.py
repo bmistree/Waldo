@@ -34,6 +34,55 @@ def emit_statement(
     elif emit_utils.is_method_call(statement_node):
         statement_txt += _emit_method_call(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    elif statement_node.label == AST_MAP:
+        variable_type_str = emit_utils.library_transform('WaldoMapVariable')
+
+        map_item_str = ''
+        for map_literal_item_node in statement_node.children:
+            map_item_str += emit_statement(
+                map_literal_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        
+        statement_txt = '''%s("garbage_name",
+    self._uuid,
+    False,
+    {%s})''' % (variable_type_str, map_item_str)
+
+
+    elif statement_node.label == AST_MAP_ITEM:
+        # individual entry of map literal
+        key_node = statement_node.children[0];
+        val_node = statement_node.children[1];
+
+        # keys of map can only be value types
+        key_txt = '_context.get_val_if_waldo(%s)' % emit_statement(
+            key_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        val_txt = '_context.get_val_if_waldo(%s)' % emit_statement(
+            val_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        statement_txt = key_txt + ': ' + val_txt + ',\n'
+
+        # FIXME: in map literal, do not know whether to get_val on
+        # values (ie, assign by reference or by value).  Probably will
+        # update the language so that only value statements can be put
+        # into a map literal.  same with string.
+
+
+    elif statement_node.label == AST_LIST:
+        variable_type_str = emit_utils.library_transform('WaldoListVariable')
+
+        list_item_str = ''
+        for list_literal_item_node in statement_node.children:
+            list_item_str += emit_statement(
+                list_literal_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+            list_item_str += ','
+
+        statement_txt = '''%s("garbage_name",
+    self._uuid,
+    False,
+    [%s])''' % (variable_type_str, list_item_str)
+        
         
     else:
         emit_utils.emit_warn(
