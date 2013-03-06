@@ -255,8 +255,8 @@ def %s(self,_active_event,_context%s):
 ''' % (internal_method_name, comma_sep_arg_names)
 
     # actually emit body of function
-    private_body = convert_args_to_waldo(method_arg_names)
-    
+    private_body = convert_args_to_waldo(method_node)
+
     method_body_node = get_method_body_node_from_method_node(method_node)
     emitted_something = False
     for statement_node in method_body_node.children:
@@ -272,26 +272,45 @@ def %s(self,_active_event,_context%s):
     return private_header + emit_utils.indent_str(private_body)
         
 
-def convert_args_to_waldo(method_arg_names):
+def convert_args_to_waldo(method_node):
     '''
-    @param {Array} method_arg_names --- Each element is a string
-    @returns {String}
-
     In many cases, am not passing WaldoObjects to arguments being
     called.  (Examples: when a programmer uses a non-reference type
     that is not external.)  Currently, the compiler's invariant
     however is that all variables should be Waldo objects.  As a
     result, for each argument passed in, we check if it is a Waldo
     object.  If it is not, we turn it into one, (depending on the type
-    it has)
+    it has).
+
+    Additionally, method caller always passes in the reference to a
+    Waldo object when the method is called with a variable.  For example,
+
+    a = 5;
+    some_method(a);
+
+    Actually passes the reference to a into the called function.  This
+    is fine if a is a reference type (list, map, user struct, function
+    object) or the signature of some_method takes in an external.
+    However, it is not okay for non-external value types.  These
+    should be passed by value.  For each non-external value type, tell
+    turn_into_waldo_var to force a copy of the variable.
     '''
     converted_args_string = ''
+    arg_node_index = get_arg_index_from_func_node_label(method_node.label)
+    func_decl_arglist_node = method_node.children[arg_node_index]
+    for func_decl_arg_node in func_decl_arglist_node.children:
+        arg_name_node = func_decl_arg_node.children[1]
+        arg_name = arg_name_node.value
 
-    # FIXME: need to add function to context: turn_into_waldo_var
-    
-    for arg_name in method_arg_names:
+        force_copy = 'True'
+        if (func_decl_arg_node.external or
+            emit_utils.is_reference_type(func_decl_arg_node)):
+            force_copy = 'False'
+
         converted_args_string += (
-            '_context.turn_into_waldo_var(' + arg_name + ')\n')
+            '_context.turn_into_waldo_var(' + arg_name +
+            ', %s)\n' % force_copy)
+        
     return converted_args_string
 
     

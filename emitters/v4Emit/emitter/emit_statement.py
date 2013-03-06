@@ -116,7 +116,6 @@ def _emit_endpoint_method_call(
     the backout on.
 
     Otherwise, ensure that the read queue element is in _queue_elem.
-    
     '''
     name_node = endpoint_method_call_node.children[0]
 
@@ -150,6 +149,9 @@ def _emit_endpoint_method_call(
                  '_threadsafe_queue,%s)\n' % method_arg_str )
 
     call_txt += '_queue_elem = _threadsafe_queue.get()\n'
+
+    # FIXME: may also want to check whether the error is just that the
+    # endpoint does not actually have a method with that name...
     call_txt += '''
 if not isinstance(_queue_elem,%s):
     raise %s()

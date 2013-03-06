@@ -1,4 +1,5 @@
 from parser.ast.astLabels import *
+import parser.ast.typeCheck as TypeCheck
 
 class EmitContext(object):
     pass
@@ -160,8 +161,8 @@ def is_method_call(node):
 def is_reference_type(node):
     # FIXME: should also add reference types for user structs as well
     # as functions
-    return ((TypeCheck.templateUtil.isListType(method_call_arg_node.type)) or 
-            (TypeCheck.templateUtil.isListType(method_call_arg_node.type)))
+    return ((TypeCheck.templateUtil.isListType(node.type)) or 
+            (TypeCheck.templateUtil.isListType(node.type)))
 
 def is_msg_seq_begin_call(node,endpoint_name,fdep_dict):
     '''
