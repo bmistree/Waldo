@@ -139,16 +139,69 @@ def get_var_type_dict_from_decl(decl_node):
     return type_node.type
 
 
-def is_endpoint_function_call(func_call_node):
-    if is_function_call(func_call_node):
-        func_name_node = func_call_node.children[0]
+def get_method_call_arg_list_node(method_call_node):
+    return method_call_node.children[1]
+
+def is_endpoint_method_call(node):
+    if is_method_call(node):
+        name_node = node.children[0]
         # FIXME: currently, the only way to test if it's a function call
         # on an endpoint object is if the func name is a dot statement
-        if func_name_node.label == AST_DOT_STATEMENT:
+        if name_node.label == AST_DOT_STATEMENT:
             return True
         
     return False
 
 
-def is_function_call(func_call_node):
-    return func_call_node.label == AST_FUNCTION_CALL
+def is_method_call(node):
+    return node.label == AST_FUNCTION_CALL
+
+
+def is_reference_type(node):
+    # FIXME: should also add reference types for user structs as well
+    # as functions
+    return ((TypeCheck.templateUtil.isListType(method_call_arg_node.type)) or 
+            (TypeCheck.templateUtil.isListType(method_call_arg_node.type)))
+
+def is_msg_seq_begin_call(node,endpoint_name,fdep_dict):
+    '''
+    @returns{Bool} --- True if this function is a message send, false
+    otherwise
+    '''
+    if not is_method_call(node):
+        return False
+
+    name_node = node.children[0]
+    if name_node.label != AST_IDENTIFIER:
+        return False
+
+    method_name = name_node.value
+
+    fdep = find_function_dep_from_fdep_dict(method_name,endpoint_name,fdep_dict)
+    if fdep == None:
+        emit_assert(
+            'Unable to find function in fdep_dict when checking ' +
+            'if it is a message send.')
+
+    # check if the node is labeled as a message sequence node.
+    return fdep.funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION;
+
+
+def find_function_dep_from_fdep_dict(func_name,endpoint_name,fdep_dict):
+    '''
+    @param {String} func_name --- The name of the function as declared
+    in the source.
+
+    @param {String} endpoint_name --- The name of the endpoint that
+    the function is associated with.
+    
+    @returns {FunctionDep object or None} --- Returns None if cannot find.
+    '''
+    for fdep_key in fdep_dict.keys():
+        fdep = fdep_dict[fdep_key]
+
+        if ((fdep.endpointName == endpoint_name) and
+            (fdep.srcFuncName == func_name)):
+            return fdep
+
+    return None

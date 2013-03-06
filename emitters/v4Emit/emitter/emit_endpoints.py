@@ -255,7 +255,8 @@ def %s(self,_active_event,_context%s):
 ''' % (internal_method_name, comma_sep_arg_names)
 
     # actually emit body of function
-    private_body = ''
+    private_body = convert_args_to_waldo(method_arg_names)
+    
     method_body_node = get_method_body_node_from_method_node(method_node)
     emitted_something = False
     for statement_node in method_body_node.children:
@@ -264,13 +265,37 @@ def %s(self,_active_event,_context%s):
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
         private_body += '\n'
         
-    if not emitted_something:
+    if private_body.strip() == '':
         # in case of empty functions
         private_body += 'pass\n'
     
     return private_header + emit_utils.indent_str(private_body)
         
+
+def convert_args_to_waldo(method_arg_names):
+    '''
+    @param {Array} method_arg_names --- Each element is a string
+    @returns {String}
+
+    In many cases, am not passing WaldoObjects to arguments being
+    called.  (Examples: when a programmer uses a non-reference type
+    that is not external.)  Currently, the compiler's invariant
+    however is that all variables should be Waldo objects.  As a
+    result, for each argument passed in, we check if it is a Waldo
+    object.  If it is not, we turn it into one, (depending on the type
+    it has)
+    '''
+    converted_args_string = ''
+
+    # FIXME: need to add function to context: turn_into_waldo_var
     
+    for arg_name in method_arg_names:
+        converted_args_string += (
+            '_context.turn_into_waldo_var(' + arg_name + ')\n')
+    return converted_args_string
+
+    
+
 def emit_public_method_interface(
     public_method_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''

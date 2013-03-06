@@ -21,13 +21,142 @@ def emit_statement(
     elif statement_node.label == AST_ASSIGNMENT_STATEMENT:
         statement_txt = _emit_assignment(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-            
+
+    elif statement_node.label == AST_BOOL:
+        statement_txt =  statement_node.value + ' '
+        
+    elif statement_node.label == AST_STRING:
+        statement_txt += "'"  + statement_node.value + "' "
+        
+    elif statement_node.label == AST_NUMBER:
+        statement_txt += statement_node.value + ' '
+
+    elif emit_utils.is_method_call(statement_node):
+        statement_txt += _emit_method_call(
+            statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        
     else:
         emit_utils.emit_warn(
             'Unknown label in emit statement ' + statement_node.label)
 
     return statement_txt
 
+
+
+def _emit_method_call(
+    method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    @param {AstNode} method_call_node
+    '''
+    if emit_utils.is_endpoint_method_call(method_call_node):
+        return _emit_endpoint_method_call(
+            method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    elif emit_utils.is_msg_seq_begin_call(method_call_node,endpoint_name,fdep_dict):
+        return _emit_msg_seq_begin_call(
+            method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    # FIXME: add code for function objects
+    
+    # standard public/private call
+    return _emit_public_private_method_call(
+        method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+def _emit_public_private_method_call(
+    method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    Programmer makes a call to one of the public or private methods
+    defined on endpoint from code within Waldo.
+
+    There is a chance that pass through Python literal values (eg, 3,
+    'hello') instead of waldo variables.  The first thing that should
+    happen in any method we call is that we should wrap these literals
+    again as Waldo variables.  @see emit_endpoints.convert_args_to_waldo
+    '''
+    method_call_name_node = method_call_node.children[0]
+    method_call_name = method_call_name_node.value
+
+    method_call_txt = 'self.%s(_active_event,_context,'
+
+    method_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
+        method_call_node)
+    
+    for method_call_arg_node in method_call_arg_list_node.children:
+        arg_txt = emit_statement(
+            method_call_arg_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        suffix = ','
+
+        # FIXME: incorrect check: actually want to know whether the
+        # function *expects* an external, not whether the var itself
+        # is external.  Simplest way to fix is in function to copy
+        # non-references if they are not supposed to be external.
+        if ((not method_call_arg_node.external) and
+            (not emit_utils.is_reference_type(method_call_arg_node))):
+            method_call_txt += '_context.get_val_if_waldo(' 
+            suffix = '),'
+
+        method_call_txt += arg_txt + suffix
+
+    return method_call_txt + ')'
+
+def _emit_msg_seq_begin_call(
+    msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    # FIXME: must fill in this function
+    emit_utils.emit_warn(
+        '_emit_msg_seq_begin_call still must be completed')
+    return ''
+
+    
+def _emit_endpoint_method_call(
+    endpoint_method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    Listens for result on threadsafe queue after making the call.  If
+    the queue results say that we should back out, then raise a
+    BackoutException.  ExecutingEvent code will catch it and forward
+    the backout on.
+
+    Otherwise, ensure that the read queue element is in _queue_elem.
+    
+    '''
+    name_node = endpoint_method_call_node.children[0]
+
+    #### DEBUG
+    if name_node.label != AST_DOT_STATEMENT:
+        emit_utils.emit_assert(
+            'When emitting endpoint method call got an ' +
+            'invalid call node.')
+    #### END DEBUG
+
+    endpoint_name_node = name_node.children[0]
+    method_name_node = name_node.children[1]
+    method_name = method_name_node.value
+
+    method_arg_str = ''
+    arg_list_node = emit_utils.get_method_call_arg_list_node(
+        endpoint_method_call_node)
+    for arg_node in arg_list_node.children:
+        method_arg_str += statement_emit(
+            arg_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        method_arg_str += ','
+    
+    call_txt = ('_threadsafe_queue = %s\n' %
+                emit_utils.library_transform('Queue.Queue()'))
+
+    emitted_endpoint_name = statement_emit(
+        endpoint_name_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
+    
+    call_txt += ('_active_event.issue_endpoint_object_call(' +
+                 emitted_endpoint_name + ',' + method_name + ',' +
+                 '_threadsafe_queue,%s)\n' % method_arg_str )
+
+    call_txt += '_queue_elem = _threadsafe_queue.get()\n'
+    call_txt += '''
+if not isinstance(_queue_elem,%s):
+    raise %s()
+''' % (emit_utils.library_transform('EndpointCallResult'),
+       emit_utils.library_transform('BackoutException'))
+    # FIXME: must add BackoutException to list of exceptions.
+    return call_txt
 
 
 
@@ -70,7 +199,7 @@ def _emit_assignment(
             intermediate_assign_txt += ','
 
 
-    if emit_utils.is_function_call(rhs_node):
+    if emit_utils.is_method_call(rhs_node):
         func_call_txt = emit_statement(
             rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
@@ -162,7 +291,6 @@ def _emit_second_level_assign(
             to_assign_to_txt += '.write_val(_active_event,'
             
         all_assignments_txt += to_assign_to_txt + to_assign_txt + ')\n'
-
                       
     return all_assignments_txt
     
@@ -203,6 +331,7 @@ def _emit_identifier(identifier_node):
             'Unknown annotation on identifier')
     #### END DEBUG
     return identifier_txt
+
 
 
 
