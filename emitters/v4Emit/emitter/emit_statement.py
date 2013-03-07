@@ -32,6 +32,20 @@ def emit_statement(
     elif statement_node.label == AST_NUMBER:
         statement_txt += statement_node.value + ' '
 
+    elif statement_node.label == AST_BRACKET_STATEMENT:
+        lhs_node = statement_node.children[0]
+        rhs_node = statement_node.children[1]
+
+        exterior_bracket_txt = emit_statement(
+            lhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        interior_bracket_txt = emit_statement(
+            rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        statement_txt = (
+            '%s.get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(%s))'
+            %  (exterior_bracket_txt, interior_bracket_txt))
+
+        
     elif emit_utils.is_method_call(statement_node):
         statement_txt += _emit_method_call(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
