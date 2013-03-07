@@ -32,6 +32,28 @@ def emit_statement(
     elif statement_node.label == AST_NUMBER:
         statement_txt += statement_node.value + ' '
 
+    elif statement_node.label == AST_RETURN_STATEMENT:
+
+        # @see emit_statement._emit_second_level_assign.  Each item
+        # returned should be the actual Waldo object.
+        # emit_statement._emit_second_level_assign can sort out what
+        # needs to be copied before being assigned and what needs to
+        # maintain its reference (via external)
+        ret_list_node = statement_node.children[0];
+
+        # all returend objects are returned as tuples
+        statement_txt = 'return ('
+
+        if len(ret_list_node.children) == 0:
+            statement_txt += 'None'
+
+        for ret_item_node in ret_list_node.children:
+            statement_txt += emit_statement(
+                ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+            statement_txt += ','
+
+        statement_txt += ')\n'
+            
     elif statement_node.label == AST_BRACKET_STATEMENT:
         lhs_node = statement_node.children[0]
         rhs_node = statement_node.children[1]
@@ -319,15 +341,15 @@ def _emit_assignment(
         func_call_txt = emit_statement(
             rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-        if emit_utils.is_endpoint_func_call(rhs_node):
+        if emit_utils.is_endpoint_method_call(rhs_node):
             # execute the function call before 
             intermediate_assign_txt = func_call_txt + '\n' + internmediate_assign_txt
             # emitting an endpoint function call stores values in
             # _queue_elem
             # FIXME: it sucks that _queue_elem is hard-coded
-            to_assign_text = '_queue_elem.to_return'
+            to_assign_txt = '_queue_elem.to_return'
         else:
-            to_assign_text = func_call_txt
+            to_assign_txt = func_call_txt
 
     else:
         to_assign_txt = emit_statement(
