@@ -179,3 +179,10 @@ def logger_assert(assert_msg):
 
 def logger_warn(warn_msg):
     print 'Compiler warn: ' + warn_msg
+
+
+class BackoutException(Exception):
+    # FIXME: not actually catching backout exception anywhere.
+    pass
+
+

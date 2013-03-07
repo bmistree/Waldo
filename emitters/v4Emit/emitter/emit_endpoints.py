@@ -287,14 +287,6 @@ def %s(self,_active_event,_context%s):
             # data.
             private_body = prefix
             
-
-    #### FIXME: can get rid of this when handle it
-    if emit_utils.is_message_sequence_node(method_node):
-        private_body += '''
-# FIXME: should perform declaration and initialization of sequence
-# local data here.
-'''
-    
     method_body_node = get_method_body_node_from_method_node(method_node)
     emitted_something = False
     for statement_node in method_body_node.children:
@@ -355,7 +347,7 @@ def convert_args_to_waldo(method_node,sequence_local=False):
 
             converted_args_string += (
                 '_context.turn_into_waldo_var(' + arg_name +
-                ',_active_event,self._uuid,%s)\n' % (force_copy)
+                ',_active_event,self._uuid,%s)\n' % (force_copy))
         else:
             converted_args_string += (
                 '_context.convert_for_seq_local(' + arg_name + ')\n')
@@ -390,16 +382,9 @@ def %s(self%s):
     # non_ext_arg_names is an array of strings
     non_ext_arg_names = get_non_external_arg_names_from_func_node(
         public_method_node)
-    for non_ext_arg_name in non_ext_arg_names:
-        # translates to: non_extarg = <waldo import
-        # path>public_arg_copy_in(non_extarg)
-        public_body += '''
-%s = %s(%s))
-''' % (non_ext_arg_name,
-       # FIXME: create a public_arg_copy_in ... essentially, for any 
-       emit_utils.library_transform('public_arg_copy_in'),
-       non_ext_arg_name)
-
+                
+    # do not need to copy arguments in: each function call does so on
+    # its own.
 
     # Each element in this list is an index for a return parameter
     # that should be de-waldo-ified before returning.

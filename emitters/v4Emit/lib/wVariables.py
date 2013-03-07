@@ -3,7 +3,8 @@ from waldoInternalList import InternalList
 from waldoInternalMap import InternalMap
 from abc import abstractmethod
 import util
-
+import waldoReferenceBase
+import numbers
 
 class _WaldoVariable(_ReferenceValue):
     def __init__(self,name,host_uuid,peered,init_val):
@@ -23,6 +24,12 @@ class _WaldoVariable(_ReferenceValue):
             'on _WaldoVariable.')        
         
 
+
+def de_waldoify_for_return(val):
+    # FIXME: actually write
+    return val
+
+        
 
 ### VALUE TYPES
 class WaldoNumVariable(_WaldoVariable):
