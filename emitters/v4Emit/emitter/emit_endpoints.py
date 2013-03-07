@@ -229,7 +229,7 @@ def emit_endpoint_publics_privates(
 
 def emit_private_method_interface(
     method_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-    name_mangler=lib_util.endpoint_call_func_name):
+    name_mangler=lib_util.endpoint_call_func_name,prefix=None):
     '''
     @param {AstNode} method_node --- Either a public method node or a
     private method node.  If it's a public method, then we emit the
@@ -251,6 +251,11 @@ def emit_private_method_interface(
     This function should translate the name of the function from the
     source to an internal function.
 
+    @param {String or None} prefix --- If we are emitting a message
+    send function, there are some initialization operations that it
+    must do.  Instead of copying the function arguments, we use the
+    string provided in prefix.
+    
     Also can be called to emit a message send or message receive
     function.
     '''
@@ -267,11 +272,20 @@ def emit_private_method_interface(
     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # message receives take no arguments
         method_arg_names = get_method_arg_names(method_node)
+
+    if method_node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        comma_sep_arg_names = reduce (
+            lambda x, y : x + ',' + y,
+            method_arg_names,'')
+    else:
+        # provide default values for all argument sequence local data.
+        # That way, jumps are easier (we do not have to match # of
+        # arguments when jumping).
+        comma_sep_arg_names = reduce (
+            lambda x, y : x + ',' + y + '=None',
+            method_arg_names,'')
+
         
-    comma_sep_arg_names = reduce (
-        lambda x, y : x + ',' + y,
-        method_arg_names,'')
-    
     private_header = '''
 def %s(self,_active_event,_context%s):
 ''' % (internal_method_name, comma_sep_arg_names)
@@ -280,7 +294,16 @@ def %s(self,_active_event,_context%s):
     # actually emit body of function
     private_body = ''
     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
-        private_body = convert_args_to_waldo(method_node)
+        if prefix == None:
+            private_body = convert_args_to_waldo(method_node)
+        else:
+            # we are in a message send function: this means that
+            # instead of copying in args, we must test if we've
+            # already been initialized (to handle jumps properly).
+            # Similarly, we must initialize other sequence global
+            # data.
+            private_body = prefix
+            
 
     #### FIXME: can get rid of this when handle it
     if emit_utils.is_message_sequence_node(method_node):
@@ -304,7 +327,7 @@ def %s(self,_active_event,_context%s):
     return private_header + emit_utils.indent_str(private_body)
         
 
-def convert_args_to_waldo(method_node):
+def convert_args_to_waldo(method_node,sequence_local=False):
     '''
     In many cases, am not passing WaldoObjects to arguments being
     called.  (Examples: when a programmer uses a non-reference type
@@ -326,6 +349,12 @@ def convert_args_to_waldo(method_node):
     However, it is not okay for non-external value types.  These
     should be passed by value.  For each non-external value type, tell
     turn_into_waldo_var to force a copy of the variable.
+
+
+    @param {bool} sequence_local --- If sequence_local is True, that
+    means that the data must be copied into a peered vriable,
+    regardless of whether or not they are a reference type.
+    
     '''
     converted_args_string = ''
     arg_node_index = get_arg_index_from_func_node_label(method_node.label)
@@ -334,15 +363,20 @@ def convert_args_to_waldo(method_node):
         arg_name_node = func_decl_arg_node.children[1]
         arg_name = arg_name_node.value
 
-        force_copy = 'True'
-        if (func_decl_arg_node.external or
-            emit_utils.is_reference_type(func_decl_arg_node)):
-            force_copy = 'False'
-        
-        converted_args_string += (
-            '_context.turn_into_waldo_var(' + arg_name +
-            ', %s)\n' % force_copy)
-        
+
+        if not sequence_local:
+            force_copy = 'True'
+            if (func_decl_arg_node.external or
+                emit_utils.is_reference_type(func_decl_arg_node)):
+                force_copy = 'False'
+
+            converted_args_string += (
+                '_context.turn_into_waldo_var(' + arg_name +
+                ', %s)\n' % force_copy)
+        else:
+            converted_args_string += (
+                '_context.convert_for_seq_local(' + arg_name + ')\n')
+            
     return converted_args_string
 
     
@@ -460,7 +494,7 @@ def emit_endpoint_message_receive_blocks(
         endpoint_name,ast_root)
 
     receive_block_node_txt = ''
-    for (message_receive_node, next_to_call_node) in message_receive_block_node_array:
+    for (message_receive_node, next_to_call_node, _) in message_receive_block_node_array:
         receive_block_node_txt += emit_message_receive(
             message_receive_node,next_to_call_node,
             endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -480,39 +514,38 @@ def emit_endpoint_message_send_blocks(
         endpoint_name,ast_root)
     
     send_block_node_txt = ''
-    for (message_send_node, next_to_call_node) in message_send_block_node_array:
+    for (message_send_node, next_to_call_node, seq_globals_node) in message_send_block_node_array:
         send_block_node_txt += emit_message_send(
-            message_send_node,next_to_call_node,endpoint_name,
-            ast_root,fdep_dict,emit_ctx)
+            message_send_node,next_to_call_node,seq_globals_node,
+            endpoint_name, ast_root,fdep_dict,emit_ctx)
 
     return send_block_node_txt
 
-
-def get_message_send_return_var_names(message_send_node):
-    '''
-    @returns {Array} --- Returns an array of strings, each is the
-    sequence local name of a sequence local data item that gets
-    returned.
-    '''
-    return_name_array = []
-
-    return_decl_arg_list_node = message_send_node.children[4]
-    for return_decl_node in return_decl_arg_list_node.children:
-        return_var_name_node = return_decl_node.children[1]
-        return_var_name = return_var_name_node.value
-
-        return_name_array.append(
-            return_var_name_node.sliceAnnotationName)
-
-    return return_name_array
-
     
 def emit_message_send(
-    message_send_node,next_to_call_node,endpoint_name,ast_root,
-    fdep_dict,emit_ctx):
+    message_send_node,next_to_call_node,seq_globals_node,
+    endpoint_name,ast_root, fdep_dict,emit_ctx):
+    '''
+    @param {AstNode} seq_globals_node --- Has label
+    AST_MESSAGE_SEQUENCE_GLOBALS....In message send, we initialize the
+    values of all sequence global variables.  Use this to do that.
+    '''
 
-    # FIXME: Inside of emit_message_send, also need to do declartion
-    # and initialization of sequence-local data.
+    method_arg_names = get_method_arg_names(message_send_node)
+    seq_local_init_prefix = '''
+if not _context.set_msg_send_initialized_bit_true():
+    # we must load all arguments into sequence local data and perform
+    # initialization on sequence local data....start by loading
+    # arguments into sequence local data
+'''
+    seq_local_init_prefix += emit_utils.indent_str(
+        convert_args_to_waldo(message_send_node,True))
+    seq_local_init_prefix += '\n'
+    # now emit the sequence global initializations and declarations
+    seq_local_init_prefix += emit_utils.indent_str(emit_statement.emit_statement(
+            seq_globals_node,endpoint_name,ast_root,fdep_dict,emit_ctx))
+    seq_local_init_prefix += '\n'
+
     
     # when message send ends, it must grab the sequence local data
     # requested to return.  To control for jumps, any time we jump, we
@@ -540,7 +573,7 @@ def emit_message_send(
     # issue on jump calls)
     msg_send_txt = emit_private_method_interface(
         message_send_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-        lib_util.partner_endpoint_msg_call_func_name)
+        lib_util.partner_endpoint_msg_call_func_name,seq_local_init_prefix)
 
     # issue call for what to call next
     msg_send_txt += '\n'
@@ -625,17 +658,35 @@ if _to_exec_next != None:
        )
 
                                    
+def get_message_send_return_var_names(message_send_node):
+    '''
+    @returns {Array} --- Returns an array of strings, each is the
+    sequence local name of a sequence local data item that gets
+    returned.
+    '''
+    return_name_array = []
+
+    return_decl_arg_list_node = message_send_node.children[4]
+    for return_decl_node in return_decl_arg_list_node.children:
+        return_var_name_node = return_decl_node.children[1]
+        return_var_name = return_var_name_node.value
+
+        return_name_array.append(
+            return_var_name_node.sliceAnnotationName)
+
+    return return_name_array
+
 
 def get_message_send_block_nodes(endpoint_name,ast_root):
     '''
-    @returns {Array of 2-tuples} --- @see _get_endpoint_sequnece_nodes
+    @returns {Array of 3-tuples} --- @see _get_endpoint_sequnece_nodes
     '''
     return _get_endpoint_sequence_nodes(
         endpoint_name,ast_root,AST_MESSAGE_SEND_SEQUENCE_FUNCTION)
 
 def get_message_receive_block_nodes(endpoint_name,ast_root):
     '''
-    @returns {Array of 2-tuples} --- @see _get_endpoint_sequnece_nodes
+    @returns {Array of 3-tuples} --- @see _get_endpoint_sequnece_nodes
     '''
     return _get_endpoint_sequence_nodes(
         endpoint_name,ast_root,AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)
@@ -649,8 +700,8 @@ def _get_endpoint_sequence_nodes(
     AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION.  Used to select whether to
     return send blocks or receive blocks.
     
-    @returns {Array of 2-tuples} --- Each element of the array has the
-    form (a,b),
+    @returns {Array of 3-tuples} --- Each element of the array has the
+    form (a,b,c),
 
        a: A message sequence node that on the endpoint with name
           endpoint_name.
@@ -658,6 +709,10 @@ def _get_endpoint_sequence_nodes(
        b: The message sequence node that a "falls through" into.  Will
           be on opposite endpoint of a.  Can also be None if a was end
           of sequence.
+
+       c: The sequence globals node associated with the entire message
+          sequence.  (Note: this is only really useful for message
+          send blocks....message receive blocks will likely ignore it.)
     '''
     endpoint_seq_node_array = []
     msg_seq_section_node = ast_root.children[6]
@@ -686,7 +741,7 @@ def _get_endpoint_sequence_nodes(
                     next_to_get_called_node = seq_funcs_node.children[counter + 1]
 
                 endpoint_seq_node_array.append(
-                    (msg_func_node,next_to_get_called_node))
+                    (msg_func_node,next_to_get_called_node,seq_globals_node))
           
     return endpoint_seq_node_array
 

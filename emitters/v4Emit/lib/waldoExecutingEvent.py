@@ -30,6 +30,8 @@ class _ExecutingEventContext(object):
 
         self.global_store = global_store
         self.sequence_local_store = sequence_local_store
+
+        self.msg_send_initialized_bit = False
         
         
     def set_to_reply_with (self,to_reply_with_uuid):
@@ -38,6 +40,31 @@ class _ExecutingEventContext(object):
         self.to_reply_with_uuid in __init__ method.
         '''
         self.to_reply_with_uuid = to_reply_with_uuid
+
+
+    def set_msg_send_initialized_bit_false(self):
+        '''
+        @see emitter.emit_statement._emit_msg_seq_begin_call
+
+        Essentially, it is difficult to keep track of whether we have
+        initialized sequence local data in the presence of jumps.
+        (What happens if we jump back into a message send function
+        that was already initializing data?)  Use this value to test
+        whether we need to initialize sequence local data or not.
+        '''
+        self.msg_send_initialized_bit = False
+        return True
+
+    def set_msg_send_initialized_bit_true(self):
+        '''
+        @see set_msg_send_initialized_bit_false
+
+        @returns {Bool} --- The previous state of the initialized bit.
+        Can use this to test whether to initialize sequence local data.
+        '''
+        prev_initialized_bit = self.msg_send_initialized_bit
+        self.msg_send_initialized_bit = True
+        return prev_initialized_bit
 
 
 '''

@@ -162,12 +162,51 @@ def _emit_public_private_method_call(
 
 def _emit_msg_seq_begin_call(
     msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
-    # Should look the same as a private call
-    return _emit_public_private_method_call(
-        msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-        lib_util.partner_endpoint_msg_call_func_name)
+    '''
+    Before beginning a message sequence call, we set context's
+    sequence initialized bit to False.  Inside of the message send
+    function, we check context's sequence initialized bit.  If it is
+    False, set it to True, and load all sequence local data into
+    variable store.  If it is False, it means that we were asked to
+    jump back to the send part of the sequence and that we should
+    therefore *not* reinitialize sequence local data.  
 
+    The way that we set the bit low before executing is a little
+    ungainly.  Essentially, we want to support assign-like semantics.
+
+    Assume the following Waldo expression
+
+    a = begin_msg()
+
+    By the time we get to this function (_emit_msg_seq_begin_call), we
+    have already emitted (approximately)
+
+    a =
+
+    If we just emitted
     
+    set_initialized_bit_false()
+    begin_msg()
+
+    Then a would be set to the result of set_bit.  Instead, we use the
+    ternary operator:
+
+    a = begin_msg() if _context.set_initialized_bit_false() else None
+
+    where we enusre that _context.set_initialized_bit_false always
+    returns True
+
+    Otherwise, the message call looks just like a private function.
+
+    NOTE: This assumes the rule that you cannot start one message
+    sequence from *within* another message sequence.
+    '''
+    return ('%s if _context.set_msg_send_initialized_bit_false() else None' %
+            _emit_public_private_method_call(
+            msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
+            lib_util.partner_endpoint_msg_call_func_name))
+
+
 def _emit_endpoint_method_call(
     endpoint_method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''
