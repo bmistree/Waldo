@@ -162,26 +162,9 @@ def create_wvariables_array(
                 'var that is not a declaration.')
         #### END DEBUG
 
-        # FIXME: still need to add entries for function, endpoint, and
-        # user struct types.
-            
-        if TypeCheck.templateUtil.is_number(var_type):
-            variable_type_str = emit_utils.library_transform('WaldoNumVariable')
-        elif TypeCheck.templateUtil.is_true_false(var_type):
-            variable_type_str = emit_utils.library_transform('WaldoTrueFalseVariable')
-        elif TypeCheck.templateUtil.is_text(var_type):
-            variable_type_str = emit_utils.library_transform('WaldoTextVariable')
-        elif TypeCheck.templateUtil.is_text(var_type):
-            variable_type_str = emit_utils.library_transform('WaldoTextVariable')
-        elif TypeCheck.templateUtil.isListType(var_type):
-            variable_type_str = emit_utils.library_transform('WaldoListVariable')
-        elif TypeCheck.templateUtil.isMapType(var_type):
-            variable_type_str = emit_utils.library_transform('WaldoMapVariable')
-        #### DEBUG
-        else:
-            emit_utils.emit_assert(
-                'Unknown type in create_wvariables_array')
-        #### END DEBUG
+
+        variable_type_str = emit_utils.get_var_type_txt_from_type_dict(
+            var_type)
             
         wvar_load_text += '''
 %s.add_var(

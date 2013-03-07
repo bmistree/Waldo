@@ -175,6 +175,33 @@ def is_endpoint_method_call(node):
     return False
 
 
+def get_var_type_txt_from_type_dict(var_type_dict):
+    '''
+    @param {dict} var_type_dict --- Gotten from an AstNode's .type field.
+    '''
+    # FIXME: still need to add entries for function, endpoint, and
+    # user struct types.
+    if TypeCheck.templateUtil.is_number(var_type_dict):
+        variable_type_str = library_transform('WaldoNumVariable')
+    elif TypeCheck.templateUtil.is_true_false(var_type_dict):
+        variable_type_str = library_transform('WaldoTrueFalseVariable')
+    elif TypeCheck.templateUtil.is_text(var_type_dict):
+        variable_type_str = library_transform('WaldoTextVariable')
+    elif TypeCheck.templateUtil.is_text(var_type_dict):
+        variable_type_str = library_transform('WaldoTextVariable')
+    elif TypeCheck.templateUtil.isListType(var_type_dict):
+        variable_type_str = library_transform('WaldoListVariable')
+    elif TypeCheck.templateUtil.isMapType(var_type_dict):
+        variable_type_str = library_transform('WaldoMapVariable')
+    #### DEBUG
+    else:
+        emit_assert(
+            'Unknown type in create_wvariables_array')
+    #### END DEBUG
+
+    return variable_type_str
+        
+
 def is_method_call(node):
     return node.label == AST_FUNCTION_CALL
 

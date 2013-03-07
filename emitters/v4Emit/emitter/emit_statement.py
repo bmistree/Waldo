@@ -32,6 +32,52 @@ def emit_statement(
     elif statement_node.label == AST_NUMBER:
         statement_txt += statement_node.value + ' '
 
+    elif statement_node.label == AST_DECLARATION:
+        # These should all be local variables (peered, endpoint
+        # global, and sequence global variables don't get emitted
+        # here).
+        
+        var_name_node = statement_node.children[1]
+        var_name_waldo_src = var_name_node.value
+        
+        # initialization is optional: declarations may not have any
+        # initializers
+        var_initializer_txt = ''
+        if len(statement_node.children) == 3:
+            var_initializer_node = statement_node.children[2]
+            var_initializer_txt = (
+                '_context.get_val_if_waldo(%s)' %
+                emit_statement(
+                    var_initializer_node,endpoint_name,ast_root,
+                    fdep_dict,emit_ctx))
+
+        # should contain something like WaldoNumVariable,
+        # WaldoTextVariable, etc.
+        var_type_txt = emit_utils.get_var_type_txt_from_type_dict(
+            emit_utils.get_var_type_dict_from_decl(statement_node))
+
+        # the name that the user used for the variable.
+        var_name_txt = emit_utils.get_var_name_from_decl(statement_node)
+
+        # Example of what statement_txt should look like:
+        
+        # op_successful = _waldo_libs.WaldoTrueFalseVariable(  # the type of waldo variable to create
+        #     '1__op_successful', # variable's name
+        #     _host_uuid, # host uuid var name
+        #     False,  # if peered, True, otherwise, False
+        #     True
+        # ))
+        statement_txt = '''%s = %s( # the type of waldo var to create
+    '%s', # var name
+    self._uuid, # host uuid
+    False, # not peered
+    %s) # initializer text''' % (
+            var_name_waldo_src,
+            emit_utils.library_transform(var_type_txt), var_name_txt,
+            var_initializer_txt)
+
+            
+            
     elif statement_node.label == AST_RETURN_STATEMENT:
 
         # @see emit_statement._emit_second_level_assign.  Each item
