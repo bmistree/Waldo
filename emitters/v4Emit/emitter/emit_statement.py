@@ -2,6 +2,7 @@ from parser.ast.astLabels import *
 from slice.typeStack import TypeStack
 import emit_utils
 import parser.ast.typeCheck as TypeCheck
+import emitters.v4Emit.lib.util as lib_util
 
 def emit_statement(
     statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
@@ -110,9 +111,18 @@ def _emit_method_call(
     return _emit_public_private_method_call(
         method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
+
 def _emit_public_private_method_call(
-    method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
+    name_mangler_func=lib_util.endpoint_call_func_name):
     '''
+    @param {Function} name_mangler_func --- Takes in a string and
+    returns a string.  The compiler uses different internal names for
+    functions than appear in the Waldo source text.  This is so that
+    users are less likely to accidentally call into unsafe functions.
+    This function should translate the name of the function from the
+    source to an internal function.
+    
     Programmer makes a call to one of the public or private methods
     defined on endpoint from code within Waldo.
 
@@ -124,7 +134,8 @@ def _emit_public_private_method_call(
     method_call_name_node = method_call_node.children[0]
     method_call_name = method_call_name_node.value
 
-    method_call_txt = 'self.%s(_active_event,_context,' % method_call_name
+    method_call_txt = 'self.%s(_active_event,_context,' % name_mangler_func(
+        method_call_name)
 
     method_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
         method_call_node)
@@ -153,7 +164,8 @@ def _emit_msg_seq_begin_call(
     msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     # Should look the same as a private call
     return _emit_public_private_method_call(
-        msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
+        lib_util.partner_endpoint_msg_call_func_name)
 
     
 def _emit_endpoint_method_call(
