@@ -1,6 +1,9 @@
 import threading
 import waldoCallResults
-
+import waldoReferenceBase
+import numbers
+import wVariables
+import util
 
 class _ExecutingEventContext(object):
     def __init__(self,global_store,sequence_local_store):
@@ -66,6 +69,122 @@ class _ExecutingEventContext(object):
         self.msg_send_initialized_bit = True
         return prev_initialized_bit
 
+
+    #### UTILITY FUNCTIONS  ####
+    # all of these could be static: they don't touch any internal
+    # state.
+    def get_val_if_waldo(self,val):
+        '''
+        @param {Anything} val --- If val is a waldo reference object,
+        call get_val on it.  Otherwise, return val itself.
+
+        Assume that we are emitting for 
+        a = b
+        and
+        a = 4
+
+        In the first case, we do not want to assign the reference of b
+        to a, we want to assign its value.  In the second case, we
+        want to assign the value of 4 to a.  We want to emit the
+        following for each:
+
+        a.write_val(_active_event,b.get_val(_active_event))
+        a.write_val(_active_event,4)
+
+        At compile time, we *do* have information on whether the rhs
+        of the expression is a literal or a WaldoReference object.
+        However, it's a pain to keep track of this information.
+        Therefore, the compiler just uses this function at *runtime.*
+        This function will either call get_val on the oject (if it's a
+        WaldoReference) or just pass it through otherwise.
+        '''
+        if isinstance(val,waldoReferenceBase._ReferenceBase):
+            return val.get_val()
+        return val
+
+    def turn_into_waldo_var(
+        self,val,force_copy,active_event, host_uuid,new_peered=False):
+        '''
+        @param {Anything} val
+
+        @param {bool} force_copy
+
+        @param {_ActiveEvent object} active_event
+        
+        @param {uuid} host_uuid
+
+        @param {bool} new_peered --- True if in the case that we have
+        to copy a value, the copy should be peered.  Used for loading
+        arguments into sequence local data when message send is
+        called.  @see convert_for_seq_local.
+        
+        @returns {WaldoVariable}
+
+        Used when copying arguments in to function.  Compiler's caller
+        can pass in Python literals or WaldoReference objects when it
+        emits a function call.  However, the emitted function
+        definition requires all arguments to be WaldoVariables.
+        Therefore, at the beginning of each emitted function, copy all
+        arguments in to WaldoVariables if they are not already.  
+
+        If val is not a WaldoReference, then based on its type, assign
+        it as the initial value of a Waldo Variable and return.
+
+        If val is a WaldoReference, then check force_copy.  force_copy
+        represents whether or not we want to make a copy of the
+        WaldoReference object.  (It would be True for instance if we
+        were passed in a WaldoNumber because numbers are passed by
+        value; it would be false if the arg was external or if we were
+        passed in a reference type.)
+
+        If it is false, then just return val.  Otherwise, make copy.
+        
+        '''
+        if (isinstance(val,waldoReferenceBase._ReferenceBase) and
+            (not force_copy)):
+            return val
+
+        if force_copy:
+            # means that it was a WaldoVariable: just call its copy
+            # method
+            return val.copy(active_event,new_peered)
+
+
+        # means that val was not a reference object.... turn it into one.
+        constructor = None
+        if isinstance(val,basestring):
+            constructor = wVariables.WaldoTextVariable
+        elif isinstance(val,numbers.Number):
+            constructor = wVariables.WaldoNumVariable
+        elif isinstance(val,bool):
+            constructor = wVariables.WaldoTrueFalseVariable
+        elif isinstance(val,dict):
+            constructor = wVariables.WaldoMapVariable
+        elif isinstance(val,list):
+            constructor = wVariables.WaldoListVariable
+        #### DEBUG
+        else:
+            util.logger_assert(
+                'Unknown object type to call turn_into_waldo_var on')
+        #### END DEBUG
+        
+        return constructor(
+            'garbage', # actual name of variable isn't important
+            host_uuid,
+            new_peered, # not peered
+            val # used as initial value
+            )
+
+    def convert_for_seq_local(self,val,active_event,host_uuid):
+        '''
+        Take whatever is in val and copy it into a sequence local
+        piece of data (ie, change peered to True).  Return the copy.
+
+        Used when loading arguments to message send into sequence
+        local data space.
+        '''
+        return self.turn_into_waldo_var(
+            val,True,active_event,host_uuid,True)
 
 '''
 When either external code or another endpoint asks us to execute a

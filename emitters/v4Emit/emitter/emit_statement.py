@@ -66,7 +66,7 @@ def emit_statement(
         #     _host_uuid, # host uuid var name
         #     False,  # if peered, True, otherwise, False
         #     True
-        # ))
+        # )
         statement_txt = '''%s = %s( # the type of waldo var to create
     '%s', # var name
     self._uuid, # host uuid
