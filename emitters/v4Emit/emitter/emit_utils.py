@@ -2,7 +2,22 @@ from parser.ast.astLabels import *
 import parser.ast.typeCheck as TypeCheck
 
 class EmitContext(object):
-    pass
+    def __init__(self):
+
+        # These are relevant when we are emitting code for message
+        # sequences.  Essentially, the semantics of jump statements is
+        # that after we jump, we do not continue to execute code below
+        # the jump (ie, we do not return to the point of call).  To
+        # allow for these semantics, immediately after a jump, we must
+        # return out of the emitted sequence function.  In the case
+        # where we are in an emitted message send sequence function,
+        # we don't just want to return, we also want to return the
+        # relevant return parameters.  As a result, we pass around a
+        # section of code corresponding to the return statement that
+        # we should use immediately after a jump.
+        self.in_message_send = False
+        self.message_seq_return_txt = ''
+
 
 
 def get_endpoint_names(ast_root):
@@ -60,7 +75,12 @@ def indent_str(string,amt_to_indent=1):
             indented_string += '\n'
 
     return indented_string
-    
+
+
+def is_message_sequence_node(node):
+    return ((node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION) or
+            (node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION))
+
 def get_var_name_from_annotated_decl(annotated_decl_node):
     '''
     @param {AstNode object} annotated_decl_node

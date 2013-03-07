@@ -64,6 +64,8 @@ def emit_endpoint_body(
     
     # emit sequence blocks
     endpoint_body_text += '### USER DEFINED SEQUENCE BLOCKS ###\n'
+    endpoint_body_text += emit_endpoint_message_sequence_blocks(
+        endpoint_name,ast_root,fdep_dict,emit_ctx)
     # FIXME: fill this section in
     
     return endpoint_body_text
@@ -226,7 +228,8 @@ def emit_endpoint_publics_privates(
 
 
 def emit_private_method_interface(
-    method_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    method_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
+    name_mangler=lib_util.endpoint_call_func_name):
     '''
     @param {AstNode} method_node --- Either a public method node or a
     private method node.  If it's a public method, then we emit the
@@ -240,8 +243,23 @@ def emit_private_method_interface(
 
        2: When issuing an endpoint call, endpoint call gets issued to
           private part of function, which does most of the work.
+
+    @param {Function} name_mangler --- Takes in a string and
+    returns a string.  The compiler uses different internal names for
+    functions than appear in the Waldo source text.  This is so that
+    users are less likely to accidentally call into unsafe functions.
+    This function should translate the name of the function from the
+    source to an internal function.
+
+    Also can be called to emit a message send or message receive
+    function.
     '''
-    method_name_node = method_node.children[0]
+
+    name_node_index = 0
+    if emit_utils.is_message_sequence_node(method_node):
+        name_node_index = 1
+    
+    method_name_node = method_node.children[name_node_index]
     src_method_name = method_name_node.value
     internal_method_name = lib_util.endpoint_call_func_name(src_method_name)
 
@@ -254,9 +272,17 @@ def emit_private_method_interface(
 def %s(self,_active_event,_context%s):
 ''' % (internal_method_name, comma_sep_arg_names)
 
+
     # actually emit body of function
     private_body = convert_args_to_waldo(method_node)
 
+    #### FIXME: can get rid of this when handle it
+    if emit_utils.is_message_sequence_node(method_node):
+        private_body += '''
+# FIXME: should perform declaration and initialization of sequence
+# local data here.
+'''
+    
     method_body_node = get_method_body_node_from_method_node(method_node)
     emitted_something = False
     for statement_node in method_body_node.children:
@@ -306,7 +332,7 @@ def convert_args_to_waldo(method_node):
         if (func_decl_arg_node.external or
             emit_utils.is_reference_type(func_decl_arg_node)):
             force_copy = 'False'
-
+        
         converted_args_string += (
             '_context.turn_into_waldo_var(' + arg_name +
             ', %s)\n' % force_copy)
@@ -403,7 +429,229 @@ return tuple(_to_return)
 
     return public_header + emit_utils.indent_str(public_body)
     
+
+def emit_endpoint_message_sequence_blocks(
+    endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    Emits all of the message sequence blocks for endpoint with name
+    endpoint_name
+    '''
+    emitted_txt = '\n### User-defined message send blocks ###\n'
+    emitted_txt += emit_endpoint_message_send_blocks(
+        endpoint_name,ast_root,fdep_dict,emit_ctx)
     
+    emitted_txt += '\n### User-defined message receive blocks ###\n'
+    # emitted_txt += emit_endpoint_message_receive_blocks(
+    #     endpoint_name,ast_root,fdep_dict,emit_ctx)
+    # emitted_txt += '\n'
+    return emitted_txt
+
+
+def emit_endpoint_message_send_blocks(
+    endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    A message_send function must return at the end the specified
+    sequence local parameters.
+    
+    @see emit_endpoint_message_sequence_blocks
+    '''
+    message_send_block_node_array = get_message_send_block_nodes(
+        endpoint_name,ast_root)
+    
+    send_block_node_txt = ''
+    for (message_send_node, next_to_call_node) in message_send_block_node_array:
+        send_block_node_txt += emit_message_send(
+            message_send_node,next_to_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    return send_block_node_txt
+
+
+def get_message_send_return_var_names(message_send_node):
+    '''
+    @returns {Array} --- Returns an array of strings, each is the
+    sequence local name of a sequence local data item that gets
+    returned.
+    '''
+    return_name_array = []
+
+    return_decl_arg_list_node = message_send_node.children[4]
+    for return_decl_node in return_decl_arg_list_node.children:
+        return_var_name_node = return_decl_node.children[1]
+        return_var_name = return_var_name_node.value
+
+        return_name_array.append(
+            return_var_name_node.sliceAnnotationName)
+
+    return return_name_array
+
+    
+def emit_message_send(
+    message_send_node,next_to_call_node,endpoint_name,ast_root,
+    fdep_dict,emit_ctx):
+
+    # FIXME: Inside of emit_message_send, also need to do declartion
+    # and initialization of sequence-local data.
+    
+    # when message send ends, it must grab the sequence local data
+    # requested to return.  To control for jumps, any time we jump, we
+    # take whatever text is in emit_ctx's message_seq_return_txt and
+    # insert it.  (For a message send function, this will return
+    # sequence local data.  For a message receive function, this will
+    # just be a return.)  This way, can insure that do not continue
+    # executing after jump.
+    return_var_name_nodes = get_message_send_return_var_names(
+        message_send_node)
+
+    msg_send_return_txt = '\nreturn '
+    for var_name_node in return_var_name_nodes:
+        msg_send_return_txt += (
+            '_context.sequence_local_store.get_var_if_exists("%s"),' %
+            var_name_node)
+
+        
+    emit_ctx.in_message_send = True
+    emit_ctx.message_seq_return_txt = msg_send_return_txt
+
+    # a message send function should look the same as a private
+    # internal method (if we name it a little differently...last arg
+    # takes care of this; and we keep track of the return statement to
+    # issue on jump calls)
+    msg_send_txt = emit_private_method_interface(
+        message_send_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
+        lib_util.partner_endpoint_msg_call_func_name)
+
+    # issue call for what to call next
+    msg_send_txt += '\n'
+    msg_send_txt += emit_utils.indent_str(
+        emit_message_node_what_to_call_next(next_to_call_node))
+
+    # takes care of fall-through return (ie, message send has
+    # completed)
+    msg_send_txt += emit_utils.indent_str(msg_send_return_txt)
+    msg_send_txt += '\n'
+    emit_ctx.in_message_send = False
+    emit_ctx.message_seq_return_txt = ''
+    return msg_send_txt
+
+
+def emit_message_node_what_to_call_next(next_to_call_node):
+    '''
+    @param {AstNode or None} next_to_call_node --- A message receive
+    node or None.  At the end of a message send or message receive
+    function, execution should "fall through" to the following message
+    receive block.  This function emits the code that handles this
+    logic.  Ie, it requests active event to issue a request to execute
+    a message sequence block.  (Note: if next_to_call_node is None,
+    then that means that we were at the end of a sequence and do not
+    have any other blocks to execute: return empty string.
+    '''
+
+    if next_to_call_node == None:
+        return ''
+    
+    next_message_name_node = next_to_call_node.children[1]
+    next_message_name = next_message_name_node.value
+
+    return '''
+_threadsafe_queue = %s
+_active_event.issue_partner_sequence_block_call(
+    _context,'%s',threadsafe_queue)
+_queue_elem = _threadsafe_queue.get()
+
+if isinstance(_queue_elem,%s):
+    raise %s
+
+_context.set_to_reply_with(_queue_elem.reply_with_msg_field)
+
+# apply changes to sequence variables.  (There shouldn't
+# be any, but it's worth getting in practice.)  Note: that
+# the system has already applied deltas for global data.
+_context.sequence_local_store.incorporate_deltas(
+    active_event,seq_msg_call_res.sequence_local_var_store_deltas)
+
+# send more messages
+_to_exec_next = seq_msg_call_res.to_exec_next_name_msg_field
+if _to_exec_next != None:
+    # means that we do not have any additional functions to exec
+    _to_exec = getattr(self,_to_exec_next)
+    _to_exec(_active_event,_context)
+
+''' % (emit_utils.library_transform('Queue.Queue()'),
+       next_message_name, # the name of the message receive func to
+                          # exec on other side in plain text
+       emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
+       emit_utils.library_transform('BackoutException()'),
+       )
+
+                                   
+
+def get_message_send_block_nodes(endpoint_name,ast_root):
+    '''
+    @returns {Array of 2-tuples} --- @see _get_endpoint_sequnece_nodes
+    '''
+    return _get_endpoint_sequence_nodes(
+        endpoint_name,ast_root,AST_MESSAGE_SEND_SEQUENCE_FUNCTION)
+
+
+def _get_endpoint_sequence_nodes(
+    endpoint_name,ast_root,label_to_filter_for):
+    '''
+    @param {AstLabel (string)} label_to_filter_for --- Either
+    AST_MESSAGE_SEND_SEQUENCE_FUNCTION or
+    AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION.  Used to select whether to
+    return send blocks or receive blocks.
+    
+    @returns {Array of 2-tuples} --- Each element of the array has the
+    form (a,b),
+
+       a: A message sequence node that on the endpoint with name
+          endpoint_name.
+
+       b: The message sequence node that a "falls through" into.  Will
+          be on opposite endpoint of a.  Can also be None if a was end
+          of sequence.
+    '''
+    endpoint_seq_node_array = []
+    msg_seq_section_node = ast_root.children[6]
+
+    for msg_seq_node in msg_seq_section_node.children:
+        msg_seq_name_node = msg_seq_node.children[0]
+        msg_seq_name = msg_seq_name_node.value
+        
+        seq_globals_node = msg_seq_node.children[1]
+        seq_funcs_node = msg_seq_node.children[2]
+
+        for counter in range(0, len(seq_funcs_node.children)):
+            msg_func_node = seq_funcs_node.children[counter]
+            
+            if msg_func_node.label != label_to_filter_for:
+                continue
+            
+            endpoint_id_node = msg_func_node.children[0]
+
+            if endpoint_id_node.value == endpoint_name:
+                # means that this function is one of this endpoint's
+                # functions
+                
+                next_to_get_called_node = None
+                if counter + 1 < len(seq_funcs_node.children):
+                    next_to_get_called_node = seq_funcs_node.children[counter + 1]
+
+                endpoint_seq_node_array.append(
+                    (msg_func_node,next_to_get_called_node))
+          
+    return endpoint_seq_node_array
+
+
+
+def get_message_receive_block_nodes(endpoint_name,ast_root):
+    '''
+    @returns an array of message receive block nodes
+    '''
+    return _get_endpoint_method_nodes(
+        endpoint_name,ast_root,AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)
+
+
 def get_method_arg_names(method_node):
     '''
     @param {AstNode} method_node --- Either a public method node or a

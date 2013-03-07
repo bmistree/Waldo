@@ -394,7 +394,3 @@ def _emit_identifier(identifier_node):
             'Unknown annotation on identifier')
     #### END DEBUG
     return identifier_txt
-
-
-
-

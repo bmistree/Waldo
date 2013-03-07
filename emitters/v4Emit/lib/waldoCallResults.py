@@ -65,6 +65,9 @@ class _BackoutBeforeReceiveMessageResult(object):
     pass
 
 class _ModifiedUpdatedMessageResult(object):
+    '''
+    @see waldoActiveEvent.wait_if_modified_peered
+    '''
     pass
 
 
