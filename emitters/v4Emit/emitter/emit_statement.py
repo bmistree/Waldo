@@ -384,13 +384,13 @@ def _emit_identifier(identifier_node):
         # get value from endpoint's global store
         identifier_txt = '_context.global_store.get_var_if_exists("%s")' % (
             id_annotation_name)
-    elif idAnnotationType in [TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL,
+    elif id_annotation_type in [TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL,
                               TypeStack.IDENTIFIER_TYPE_MSG_SEQ_GLOBAL_AND_FUNCTION_ARGUMENT]:
         identifier_txt = '_context.sequence_local_store.get_var_if_exists("%s")' %(
             id_annotation_name)
     #### DEBUG
     else:
         emit_utils.emit_assert(
-            'Unknown annotation on identifier')
+            'Unknown annotation on identifier ' + str(id_annotation_type))
     #### END DEBUG
     return identifier_txt

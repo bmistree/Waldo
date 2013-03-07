@@ -263,7 +263,11 @@ def emit_private_method_interface(
     src_method_name = method_name_node.value
     internal_method_name = lib_util.endpoint_call_func_name(src_method_name)
 
-    method_arg_names = get_method_arg_names(method_node)
+    method_arg_names = []
+    if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        # message receives take no arguments
+        method_arg_names = get_method_arg_names(method_node)
+        
     comma_sep_arg_names = reduce (
         lambda x, y : x + ',' + y,
         method_arg_names,'')
@@ -274,7 +278,9 @@ def %s(self,_active_event,_context%s):
 
 
     # actually emit body of function
-    private_body = convert_args_to_waldo(method_node)
+    private_body = ''
+    if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        private_body = convert_args_to_waldo(method_node)
 
     #### FIXME: can get rid of this when handle it
     if emit_utils.is_message_sequence_node(method_node):
@@ -441,11 +447,26 @@ def emit_endpoint_message_sequence_blocks(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
     
     emitted_txt += '\n### User-defined message receive blocks ###\n'
-    # emitted_txt += emit_endpoint_message_receive_blocks(
-    #     endpoint_name,ast_root,fdep_dict,emit_ctx)
-    # emitted_txt += '\n'
+    emitted_txt += emit_endpoint_message_receive_blocks(
+        endpoint_name,ast_root,fdep_dict,emit_ctx)
+    emitted_txt += '\n'
     return emitted_txt
 
+
+def emit_endpoint_message_receive_blocks(
+    endpoint_name,ast_root,fdep_dict,emit_ctx):
+
+    message_receive_block_node_array = get_message_receive_block_nodes(
+        endpoint_name,ast_root)
+
+    receive_block_node_txt = ''
+    for (message_receive_node, next_to_call_node) in message_receive_block_node_array:
+        receive_block_node_txt += emit_message_receive(
+            message_receive_node,next_to_call_node,
+            endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    return receive_block_node_txt
+    
 
 def emit_endpoint_message_send_blocks(
     endpoint_name,ast_root,fdep_dict,emit_ctx):
@@ -461,7 +482,8 @@ def emit_endpoint_message_send_blocks(
     send_block_node_txt = ''
     for (message_send_node, next_to_call_node) in message_send_block_node_array:
         send_block_node_txt += emit_message_send(
-            message_send_node,next_to_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+            message_send_node,next_to_call_node,endpoint_name,
+            ast_root,fdep_dict,emit_ctx)
 
     return send_block_node_txt
 
@@ -534,6 +556,25 @@ def emit_message_send(
     return msg_send_txt
 
 
+def emit_message_receive(
+    message_receive_node,next_to_call_node,endpoint_name,ast_root,
+    fdep_dict,emit_ctx):
+
+    emit_ctx.in_message_receive = True
+    emit_ctx.message_seq_return_txt = '\nreturn '
+
+    msg_receive_txt = emit_private_method_interface(
+        message_receive_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
+        lib_util.partner_endpoint_msg_call_func_name)
+    msg_receive_txt += '\n'
+    
+    emit_ctx.in_message_receive = False
+    emit_ctx.message_seq_return_txt = ''
+    
+    return msg_receive_txt
+    
+    
+
 def emit_message_node_what_to_call_next(next_to_call_node):
     '''
     @param {AstNode or None} next_to_call_node --- A message receive
@@ -592,6 +633,13 @@ def get_message_send_block_nodes(endpoint_name,ast_root):
     return _get_endpoint_sequence_nodes(
         endpoint_name,ast_root,AST_MESSAGE_SEND_SEQUENCE_FUNCTION)
 
+def get_message_receive_block_nodes(endpoint_name,ast_root):
+    '''
+    @returns {Array of 2-tuples} --- @see _get_endpoint_sequnece_nodes
+    '''
+    return _get_endpoint_sequence_nodes(
+        endpoint_name,ast_root,AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)
+
 
 def _get_endpoint_sequence_nodes(
     endpoint_name,ast_root,label_to_filter_for):
@@ -643,13 +691,6 @@ def _get_endpoint_sequence_nodes(
     return endpoint_seq_node_array
 
 
-
-def get_message_receive_block_nodes(endpoint_name,ast_root):
-    '''
-    @returns an array of message receive block nodes
-    '''
-    return _get_endpoint_method_nodes(
-        endpoint_name,ast_root,AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)
 
 
 def get_method_arg_names(method_node):
@@ -863,6 +904,6 @@ def get_arg_index_from_func_node_label(label):
     else:
         emit_utils.emit_assert(
             'Unrecognized label passed to ' +
-            'get_arg_index_from_func_node_label')
+            'get_arg_index_from_func_node_label.')
     #### END DEBUG
     return arg_node_index

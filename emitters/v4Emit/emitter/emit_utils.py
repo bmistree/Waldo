@@ -16,6 +16,7 @@ class EmitContext(object):
         # section of code corresponding to the return statement that
         # we should use immediately after a jump.
         self.in_message_send = False
+        self.in_message_receive = False
         self.message_seq_return_txt = ''
 
 
