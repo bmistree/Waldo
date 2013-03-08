@@ -251,7 +251,14 @@ def emit_private_method_interface(
     src_method_name = method_name_node.value
     internal_method_name = lib_util.endpoint_call_func_name(src_method_name)
 
-    method_arg_names = []
+    # When returning, check if it was a call from an outside-Waldo
+    # function into this function... if it was (ie,
+    # _returning_to_public_ext_array is not None), then we must
+    # de-waldo-ify the return values before returning.  The values of
+    # _returning_to_public_ext_array correspond to which return values
+    # should be returned as externals (ie, we do not de-waldo-ify
+    # them).
+    method_arg_names = ['_returning_to_public_ext_array=None']
     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # message receives take no arguments
         method_arg_names = get_method_arg_names(method_node)
@@ -267,7 +274,6 @@ def emit_private_method_interface(
         comma_sep_arg_names = reduce (
             lambda x, y : x + ',' + y + '=None',
             method_arg_names,'')
-
         
     private_header = '''
 def %s(self,_active_event,_context%s):
@@ -387,7 +393,10 @@ def %s(self%s):
     # its own.
 
     # Each element in this list is an index for a return parameter
-    # that should be de-waldo-ified before returning.
+    # that should be de-waldo-ified before returning.  We pass this
+    # argument to the internal function that the internal function
+    # knows which returns need to be de-waldo-ified before being
+    # returned and which do not.
     list_return_non_external_positions = (
         get_non_external_return_positions_from_func_node(public_method_node))
 
@@ -401,42 +410,29 @@ while True:  # FIXME: currently using infinite retry
         # not using sequence local store
         %s(self._host_uuid))
 
-    # call internal function
-    self.%s(_root_event,_ctx %s)
+    # call internal function... note True as last param tells internal
+    # version of function that it needs to de-waldo-ify all return
+    # arguments (while inside transaction) so that this method may
+    # return them....if it were false, might just get back refrences
+    # to Waldo variables, and de-waldo-ifying them outside of the
+    # transaction might return over-written/inconsistent values.
+    self.%s(_root_event,_ctx %s%s)
     # try committing root event
     _root_event.request_commit()
     _commit_resp = _root_event.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
-        break
+        return _commit_resp.to_return
 
-# _list_non_external_returns contains the numeric indices of all
-# items in _commit_resp.to_return tuple that should be returned as
-# an external
-_list_non_external_returns = %s
-if isinstance(_commit_resp.to_return,tuple):
-    _to_return = list(_commit_resp.to_return)
-    for _i in _list_non_external_returns:
-        _to_return[_i] = %s(_to_return[_i]) # de_waldoify_for_return
-else:
-    # we are returning a single value...check if even that single
-    # value was not supposed to be an external
-    _to_return = _commit_resp.to_return
-    if len(_list_non_external_returns) == 0:
-        _to_return = %s(_to_return)
-
-return tuple(_to_return)
 ''' % (emit_utils.library_transform('ExecutingEventContext'),
        emit_utils.library_transform('VariableStore'),
        internal_method_name,
        comma_sep_arg_names,
-       emit_utils.library_transform('CompleteRootCallResult'),
        str(list_return_non_external_positions),
-       emit_utils.library_transform('de_waldoify_for_return'),
-       emit_utils.library_transform('de_waldoify_for_return'))
+       emit_utils.library_transform('CompleteRootCallResult'))
 
     return public_header + emit_utils.indent_str(public_body)
-    
+
 
 def emit_endpoint_message_sequence_blocks(
     endpoint_name,ast_root,fdep_dict,emit_ctx):

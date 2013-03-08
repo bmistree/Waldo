@@ -79,26 +79,9 @@ def emit_statement(
             
             
     elif statement_node.label == AST_RETURN_STATEMENT:
+        statement_txt = _emit_return_statement(
+            statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-        # @see emit_statement._emit_second_level_assign.  Each item
-        # returned should be the actual Waldo object.
-        # emit_statement._emit_second_level_assign can sort out what
-        # needs to be copied before being assigned and what needs to
-        # maintain its reference (via external)
-        ret_list_node = statement_node.children[0];
-
-        # all returend objects are returned as tuples
-        statement_txt = 'return ('
-
-        if len(ret_list_node.children) == 0:
-            statement_txt += 'None'
-
-        for ret_item_node in ret_list_node.children:
-            statement_txt += emit_statement(
-                ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-            statement_txt += ','
-
-        statement_txt += ')\n'
             
     elif statement_node.label == AST_BRACKET_STATEMENT:
         lhs_node = statement_node.children[0]
@@ -170,8 +153,103 @@ def emit_statement(
     else:
         emit_utils.emit_warn(
             'Unknown label in emit statement ' + statement_node.label)
-
+        
     return statement_txt
+
+
+def _emit_return_statement(
+    return_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    Return statements get emitted into the internal versions of public
+    and private functions.  Each internal function has an argument,
+    _returning_to_public_ext_array (@see
+    emit_endpoints.emit_private_method_interface).  If the internal method 
+    is not == None, it means that the internal method was directly called by 
+
+    and anything that it returns will be passed directly back to
+    non-Waldo code, so we must de-waldoify return values.
+    Importantly, we should not de-waldo-ify externals.  Which values
+    are externals should be the values in
+    _returning_to_public_ext_array.
+    
+    '''
+    # @see emit_statement._emit_second_level_assign.  Each item
+    # returned should be the actual Waldo object.
+    # emit_statement._emit_second_level_assign can sort out what
+    # needs to be copied before being assigned and what needs to
+    # maintain its reference (via external)
+    ret_list_node = return_node.children[0]
+
+    # create de_waldo_ified text
+    de_waldoed_return_txt = _emit_de_waldoed_return(
+        return_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    non_de_waldoed_return_txt = _emit_non_de_waldoed_return(
+        return_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    # all returend objects are returned as tuples
+    return_txt = '''
+if _returning_to_public_ext_array != None:
+    # must de-waldo-ify objects before passing back
+    %s
+
+# otherwise, use regular return mechanism... do not de-waldo-ify
+%s
+''' % (de_waldoed_return_txt,non_de_waldoed_return_txt)
+
+    return return_txt
+    
+
+def _emit_non_de_waldoed_return(
+    return_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    
+    ret_list_node = return_node.children[0]
+    return_txt = 'return ('
+
+    if len(ret_list_node.children) == 0:
+        return_txt += 'None'
+
+    for ret_item_node in ret_list_node.children:
+        return_txt += emit_statement(
+            ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        return_txt += ','
+
+    return_txt += ')\n'
+    return return_txt
+
+
+def _emit_de_waldoed_return(
+    return_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    ret_list_node = return_node.children[0]    
+    return_txt = 'return ('
+
+    if len(ret_list_node.children) == 0:
+        return_txt += 'None'
+
+    for counter in range(0,len(ret_list_node.children)):
+        ret_item_node = ret_list_node.children[counter]
+
+        # the actual emission of the return value
+        item_emit =  emit_statement(
+            ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        # Example output of below: 
+        # a if 1 in _returning_to_public_ext_array else _context.de_waldoify(a)
+        #
+        # Ie, output the reference to the piece of data if we are
+        # supposed to return an external (index is in
+        # _returning_to_public_ext_array).  Otherwise, output a
+        # de_waldoified version of data.
+        ret_item_txt = (
+            '%s if %s in _returning_to_public_ext_array else %s' %
+            (item_emit, str(counter), '_context.de_waldoify(' + item_emit +
+             ',_active_event)'))
+        
+        return_txt += ret_item_txt + ','
+
+    return_txt += ')\n'
+    return return_txt
+
 
 
 
