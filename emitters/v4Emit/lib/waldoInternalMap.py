@@ -1,6 +1,6 @@
 import waldoReferenceContainerBase
 import waldoReferenceBase
-
+import waldoExecutingEvent
 
 class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
     def __init__(self,host_uuid,peered,init_val):
@@ -17,6 +17,24 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
 
         return self.copy(invalid_listener,False)
 
+    
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        keys = self.get_keys(invalid_listener)
+        to_return = {}
+
+        for key in keys:
+            key = waldoExecutingEvent.de_waldoify(key,invalid_listener)
+            val = waldoExecutingEvent.de_waldoify(
+                self.get_val_on_key(invalid_listener,key),invalid_listener)
+
+            to_return[key] = val
+            
+        return to_return
+
+    
     @staticmethod
     def var_type():
         return 'internal map'

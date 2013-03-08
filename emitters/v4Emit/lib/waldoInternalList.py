@@ -1,6 +1,7 @@
 import waldoReferenceContainerBase
 import util
 import waldoReferenceBase
+import waldoExecutingEvent
 
 class InternalList(waldoReferenceContainerBase._ReferenceContainer):
 
@@ -20,6 +21,23 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
     @staticmethod
     def var_type():
         return 'internal list'
+
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+
+        internal_len = self.get_len(invalid_listener)
+        to_return = []
+        for index in range(0, internal_len):
+            val = self.get_val_on_key(invalid_listener,index)
+            de_waldoed_val = waldoExecutingEvent.de_waldoify(
+                val, invalid_listener)
+            
+            to_return.append(de_waldoed_val)
+            
+        return to_return
 
     
     def contains_key(self,invalid_listener, key):

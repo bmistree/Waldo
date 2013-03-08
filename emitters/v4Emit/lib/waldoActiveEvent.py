@@ -1182,6 +1182,7 @@ class RootActiveEvent(_ActiveEvent):
         This class is the root of the event, it must check that these
         conflicts will not cause a deadlock.
         '''
+        potential_deadlock = False
         self._lock()
         if (self.in_request_backout_phase() or
             self.in_state_completed_commit_phase()):

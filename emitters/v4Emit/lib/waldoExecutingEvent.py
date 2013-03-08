@@ -186,6 +186,21 @@ class _ExecutingEventContext(object):
         return self.turn_into_waldo_var(
             val,True,active_event,host_uuid,True)
 
+
+    def de_waldoify(self,val,active_event):
+        return de_waldoify(val,active_event)
+
+def de_waldoify(val,active_event):
+    '''
+    When returning a value to non-Waldo code, need to convert the
+    value to a regular python type.  This function handles that.
+    '''
+    if isinstance(val,waldoReferenceBase._ReferenceBase):
+        return val.de_waldoify(active_event)
+    return val
+    
+    
+    
 '''
 When either external code or another endpoint asks us to execute a
 function, we create an active event to use to execute that function.

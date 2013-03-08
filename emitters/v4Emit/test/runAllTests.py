@@ -21,6 +21,7 @@ import ind_tests.test_reschedule_on_conflict
 import ind_tests.test_one_side_changes_peered
 import ind_tests.test_endpoint_calls
 import ind_tests.test_deadlock_detection
+import ind_tests.test_de_waldoified
 
 TO_RUN = [
     ('Nested list', ind_tests.test_nested_list.run_test),
@@ -29,6 +30,8 @@ TO_RUN = [
     ('Map of values', ind_tests.test_value_map.run_test),
     ('Map of values', ind_tests.test_value_map.run_test),
     ('Nested peered list', ind_tests.test_peered_nested_map_list.run_test),
+
+    ('Test de-waldo-ify', ind_tests.test_de_waldoified.run_test),
     
     ('Serialization of single number',
      ind_tests.test_serialized_deserialized_num.run_test),
@@ -50,7 +53,7 @@ TO_RUN = [
 
     ('Test commit and backout for endpoint calls on external data',
      ind_tests.test_endpoint_calls.run_test),
-
+    
     ('Test deadlock detection and rollback',
      ind_tests.test_deadlock_detection.run_test),
     

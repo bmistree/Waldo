@@ -7,8 +7,6 @@ sys.path.append(
     os.path.join('../../lib/'))
 
 import wVariables
-# import commitManager
-# import invalidationListener
 import util
 import test_util
 host_uuid = util.generate_uuid()

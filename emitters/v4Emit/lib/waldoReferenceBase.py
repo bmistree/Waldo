@@ -76,6 +76,18 @@ class _ReferenceBase(object):
             'copy is pure virtual in _ReferenceBase.')
 
     @abstractmethod
+    def de_waldoify(self,invalid_listener):
+        '''
+        Returns a Python-ized version of this object accessed by the
+        current invalid listener.  Eg., if it was a Waldo number that
+        wrapped 2, then it just returns 2.  Lists, maps and strings
+        are more complex.
+        '''
+        util.logger_assert(
+            'de_waldoify is pure virtual in _ReferenceBase.')
+
+        
+    @abstractmethod
     def is_value_type(self):
         '''
         @returns {bool} --- True if the reference base points at a

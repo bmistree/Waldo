@@ -47,7 +47,13 @@ class WaldoNumVariable(_WaldoVariable):
     def copy(self,invalid_listener,peered):
         return WaldoNumVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
-                                
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        return self.get_val(invalid_listener)
+    
     
     
 class WaldoTextVariable(_WaldoVariable):
@@ -64,6 +70,13 @@ class WaldoTextVariable(_WaldoVariable):
     def copy(self,invalid_listener,peered):
         return WaldoTextVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        return self.get_val(invalid_listener)
 
     
         
@@ -82,6 +95,13 @@ class WaldoTrueFalseVariable(_WaldoVariable):
         return WaldoTrueFalseVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        return self.get_val(invalid_listener)
+
+    
     
 
 ### CONTAINER TYPES        
@@ -105,7 +125,17 @@ class WaldoMapVariable(_WaldoVariable):
             self.name,self.host_uuid,peered,
             self.get_val(invalid_listener).copy(invalid_listener,peered))
 
-        
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        internal_val = self.get_val(invalid_listener)
+
+        if isinstance(internal_val,waldoReferenceBase._ReferenceBase):
+            return internal_val.de_waldoify(invalid_listener)
+        return internal_val
+
+    
 class WaldoListVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         if init_val == None:
@@ -124,4 +154,14 @@ class WaldoListVariable(_WaldoVariable):
         return WaldoListVariable(
             self.name,self.host_uuid,peered,
             self.get_val(invalid_listener).copy(invalid_listener,peered))
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        internal_val = self.get_val(invalid_listener)
+
+        if isinstance(internal_val,waldoReferenceBase._ReferenceBase):
+            return internal_val.de_waldoify(invalid_listener)
+        return internal_val
 
