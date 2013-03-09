@@ -12,6 +12,7 @@ from templateUtil import JSON_TYPE_FIELD;
 from templateUtil import JSON_FUNC_RETURNS_FIELD;
 from templateUtil import JSON_FUNC_IN_FIELD;
 from templateUtil import dict_type_to_str
+from templateUtil import get_type_array_from_func_call_returned_tuple_type
 
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
@@ -190,12 +191,21 @@ class TypeCheckContextStack(object):
             print(errMsg);
             assert(False);
 
-        
+
         return_tuple_node = returnNode.children[0]
         # list of the types that we're actually returning
         return_type_list = []
         for single_node in return_tuple_node.children:
-            return_type_list.append(single_node.type)
+
+            # takes care of case where we are returning a function
+            # call
+            if single_node.label == AST_FUNCTION_CALL:
+                func_returned_type_array = get_type_array_from_func_call_returned_tuple_type(
+                    single_node.type)
+                for ind_tuple_return_type in func_returned_type_array:
+                    return_type_list.append(ind_tuple_return_type)
+            else:
+                return_type_list.append(single_node.type)
 
             
         returnStatementType = returnNode.children[0].type;
@@ -228,6 +238,7 @@ class TypeCheckContextStack(object):
             err_nodes = [returnNode, function_returns_type_node]
             return TypeCheckError(err_nodes,err_msg)
 
+        
         for return_index in range(0,len(return_type_list)):
             
             declared_return_type = function_returns_type_list[return_index]
@@ -235,7 +246,7 @@ class TypeCheckContextStack(object):
 
             if check_type_mismatch_func(
                 returnNode,declared_return_type,actual_return_type,self,''):
-                
+
                 err_msg = 'Incorrect return type in ' + funcName + '.  '
                 if len(return_type_list) == 1:
                     err_msg += 'Expected type '

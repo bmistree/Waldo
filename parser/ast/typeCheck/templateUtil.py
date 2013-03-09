@@ -142,6 +142,25 @@ def is_returned_tuple(dict_type):
     return dict_type[JSON_TYPE_FIELD] == TYPE_RETURNED_TUPLE
 
 
+def get_type_array_from_func_call_returned_tuple_type(
+    func_call_return_type):
+    '''
+    @param {dict} func_call_return_type
+
+    A function call should have a .type field generated from
+    generate_returned_tuple_type that looks like this:
+
+    {
+      'Type': {
+          'Type': [ {'Type': 'Number'}, ...]
+          }
+    }
+      
+    This helper function just strips off the outermost map and returns
+    the array of return types when call a function.
+    '''
+    return func_call_return_type[JSON_TYPE_FIELD]
+    
 
 def generate_returned_tuple_type(tuple_element_list):
     '''
