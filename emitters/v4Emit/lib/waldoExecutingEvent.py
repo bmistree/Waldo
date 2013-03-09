@@ -35,8 +35,7 @@ class _ExecutingEventContext(object):
         self.sequence_local_store = sequence_local_store
 
         self.msg_send_initialized_bit = False
-        
-        
+
     def set_to_reply_with (self,to_reply_with_uuid):
         '''
         @param {uuid} to_reply_with_uuid --- @see comments above
@@ -73,7 +72,7 @@ class _ExecutingEventContext(object):
     #### UTILITY FUNCTIONS  ####
     # all of these could be static: they don't touch any internal
     # state.
-    def get_val_if_waldo(self,val):
+    def get_val_if_waldo(self,val,active_event):
         '''
         @param {Anything} val --- If val is a waldo reference object,
         call get_val on it.  Otherwise, return val itself.
@@ -99,7 +98,7 @@ class _ExecutingEventContext(object):
         WaldoReference) or just pass it through otherwise.
         '''
         if isinstance(val,waldoReferenceBase._ReferenceBase):
-            return val.get_val()
+            return val.get_val(active_event)
         return val
 
     def turn_into_waldo_var(
@@ -140,15 +139,14 @@ class _ExecutingEventContext(object):
         If it is false, then just return val.  Otherwise, make copy.
         
         '''
-        if (isinstance(val,waldoReferenceBase._ReferenceBase) and
-            (not force_copy)):
+
+        if isinstance(val,waldoReferenceBase._ReferenceBase):
+            if force_copy:
+                # means that it was a WaldoVariable: just call its copy
+                # method
+                return val.copy(active_event,new_peered)
+            # otherwise, just return val
             return val
-
-        if force_copy:
-            # means that it was a WaldoVariable: just call its copy
-            # method
-            return val.copy(active_event,new_peered)
-
 
         # means that val was not a reference object.... turn it into one.
         constructor = None

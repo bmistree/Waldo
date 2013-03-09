@@ -25,6 +25,27 @@ def emit_statement(
 
     elif statement_node.label == AST_BOOL:
         statement_txt =  statement_node.value + ' '
+
+    elif is_binary_operator_from_label(statement_node.label):
+        # checks for +,-,>, etc.
+
+        # FIXME: must be careful to check if both sides are
+        # lists... should wrap them in a Waldo list variable.
+        lhs_node = statement_node.children[0]
+        rhs_node = statement_node.children[1]
+
+        lhs_txt = emit_statement(
+            lhs_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
+        
+        rhs_txt = emit_statement(
+            rhs_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        bin_op_txt = get_binary_operator_from_label(statement_node.label)
+
+        statement_txt = (
+            '(_context.get_val_if_waldo(%s,_active_event) %s _context.get_val_if_waldo(%s,_active_event))'
+            % (lhs_txt, bin_op_txt, rhs_txt))
+        
         
     elif statement_node.label == AST_STRING:
         statement_txt += "'"  + statement_node.value + "' "
@@ -46,7 +67,7 @@ def emit_statement(
         if len(statement_node.children) == 3:
             var_initializer_node = statement_node.children[2]
             var_initializer_txt = (
-                '_context.get_val_if_waldo(%s)' %
+                '_context.get_val_if_waldo(%s,_active_event)' %
                 emit_statement(
                     var_initializer_node,endpoint_name,ast_root,
                     fdep_dict,emit_ctx))
@@ -93,7 +114,7 @@ def emit_statement(
             rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
         statement_txt = (
-            '%s.get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(%s))'
+            '%s.get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event))'
             %  (exterior_bracket_txt, interior_bracket_txt))
 
         
@@ -122,9 +143,9 @@ def emit_statement(
         val_node = statement_node.children[1];
 
         # keys of map can only be value types
-        key_txt = '_context.get_val_if_waldo(%s)' % emit_statement(
+        key_txt = '_context.get_val_if_waldo(%s,_active_event)' % emit_statement(
             key_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-        val_txt = '_context.get_val_if_waldo(%s)' % emit_statement(
+        val_txt = '_context.get_val_if_waldo(%s,_active_event)' % emit_statement(
             val_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
         statement_txt = key_txt + ': ' + val_txt + ',\n'
@@ -319,7 +340,7 @@ def _emit_public_private_method_call(
         if ((not method_call_arg_node.external) and
             (not emit_utils.is_reference_type(method_call_arg_node))):
             method_call_txt += '_context.get_val_if_waldo(' 
-            suffix = '),'
+            suffix = ',_active_event),'
 
         method_call_txt += arg_txt + suffix
 
@@ -522,7 +543,7 @@ def _emit_second_level_assign(
 
         to_assign_txt = '_tmp' + str(counter)
         if not ext_assign:
-            to_assign_txt = '_context.get_val_if_waldo(' + to_assign_txt + ')'
+            to_assign_txt = '_context.get_val_if_waldo(' + to_assign_txt + ',_active_event)'
             
         if lhs_node.label == AST_BRACKET_STATEMENT:
             # need to actually assign to a particular key, rather than the
@@ -562,7 +583,47 @@ def _emit_second_level_assign(
                       
     return all_assignments_txt
     
-    
+
+def is_binary_operator_from_label(node_label):
+    return node_label in get_binary_operator_label_dict()
+
+def get_binary_operator_from_label(node_label):
+    bin_op_dict =  get_binary_operator_label_dict()
+    operator = bin_op_dict.get(node_label,None);
+    if operator == None:
+        emit_utils.emit_assert(
+            'Requesting binary operator information for non-binary operator.')
+    return operator
+
+
+def get_binary_operator_label_dict():
+    '''
+    Helper function for _isBinaryOperatorLabel and
+    _getBinaryOperatorFromLabel
+    '''
+    binary_operator_labels = {
+        # arithmetic
+        AST_PLUS: '+',
+        AST_MINUS: '-',
+        AST_DIVIDE: '/',
+        AST_MULTIPLY: '*',
+
+        # boolean
+        AST_AND: 'and',
+        AST_OR: 'or',
+        
+        # comparison
+        AST_BOOL_EQUALS: '==',
+        AST_BOOL_NOT_EQUALS: '!=',
+        AST_GREATER_THAN: '>',
+        AST_GREATER_THAN_EQ: '>=',
+        AST_LESS_THAN: '<',
+        AST_LESS_THAN_EQ: '<='
+        }
+    return binary_operator_labels
+
+
+
 def _emit_identifier(identifier_node):
     '''
     @param {AstNode} identifier_node --- corresponds to node labeled

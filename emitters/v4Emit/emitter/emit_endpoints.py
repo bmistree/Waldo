@@ -265,7 +265,7 @@ def emit_private_method_interface(
     method_arg_names = ['_returning_to_public_ext_array=None']
     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # message receives take no arguments
-        method_arg_names += get_method_arg_names(method_node)
+        method_arg_names = get_method_arg_names(method_node) + method_arg_names
 
     if method_node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
         comma_sep_arg_names = reduce (
