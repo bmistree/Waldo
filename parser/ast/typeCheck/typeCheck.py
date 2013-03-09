@@ -1643,7 +1643,38 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if len(node.children) == 3:
             rhs = node.children[2];
             rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
-            rhsType = rhs.type;
+
+            if rhs.label == AST_FUNCTION_CALL:
+                # rhs will wrap the return type so that if the
+                # function call was supposed to return a number,
+                # calling .type on it produces:
+                # {
+                #   'Type': {
+                #       'Type': [ {'Type': 'Number'}]
+                #       }
+                # }
+                #
+                # We first need to unwrap this to just the middle
+                # type, Ie: [ {'Type': 'Number'}].  We check the
+                # length of this.  If it is greater than 1, it means
+                # that we cannot assign in in the course of the
+                # declaration and we throw an error.  Otherwise, use
+                # the internal type, {Type: Number} as rhsType
+
+                func_call_type_array = get_type_array_from_func_call_returned_tuple_type(
+                    rhs.type)
+
+                if len(func_call_type_array) != 1:
+                    err_msg = (
+                        'Error in declaration.  Function call produces ' +
+                        'more return values than can assign into in a ' +
+                        'declaration.')
+                    errorFunction(errMsg,[node],[currentLineNo],progtext)
+
+                rhsType = func_call_type_array[0]
+                    
+            else:
+                rhsType = rhs.type;
 
             if (checkTypeMismatch(rhs,declaredType,rhsType,typeStack,progText)):
                 errMsg = 'Type mismatch for variable named "' + name + '".';

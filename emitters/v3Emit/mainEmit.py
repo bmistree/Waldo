@@ -598,12 +598,6 @@ _waldo_secret_ext_assign_copy_from_func_tmp = _tmp_return_array['%s']
             if len(astNode.children) == 3:
                 # includes initialization information
                 initializationNode = astNode.children[2];
-                # FIXME: need to handle initiatlizations from function calls properly
-                if initializationNode.label == AST_FUNCTION_CALL:
-                    fixme_msg = '\nBehram fixme: must handle declarations '
-                    fixme_msg += 'initialized with endpoint function calls '
-                    fixme_msg += 'properly.\n'
-                    print fixme_msg
                 returner += ' = ';
                 returner += emit(endpointName,initializationNode,fdepDict,emitContext);
             else:
