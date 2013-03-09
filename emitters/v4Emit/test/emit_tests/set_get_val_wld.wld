@@ -1,0 +1,41 @@
+SetGetVal
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+    Number num = 0;
+    Text txt = '';
+
+    Public Function get_num() returns Number
+    {
+        return num;
+    }
+
+    Public Function increment_num() returns Number
+    {
+        num += 1;
+        return num;
+//        return get_num()
+    }
+    
+    Public Function get_txt() returns Text
+    {
+        return txt;
+    }
+
+
+    Public Function increment_txt(Text to_add) returns Text
+    {
+        txt += to_add;
+        return txt;        
+//        return get_txt();
+    }
+    
+}
