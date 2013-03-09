@@ -420,13 +420,13 @@ while True:  # FIXME: currently using infinite retry
     # return them....if it were false, might just get back refrences
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
-    self.%s(_root_event,_ctx %s,%s)
+    _to_return = self.%s(_root_event,_ctx %s,%s)
     # try committing root event
     _root_event.request_commit()
     _commit_resp = _root_event.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
-        return _commit_resp.to_return
+        return _to_return
 
 ''' % (emit_utils.library_transform('ExecutingEventContext'),
        emit_utils.library_transform('VariableStore'),

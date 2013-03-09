@@ -1167,10 +1167,8 @@ class RootActiveEvent(_ActiveEvent):
         '''
         self.complete_commit_and_forward_complete_msg()
 
-        # FIXME: putting a dummy value in to return to calling thread
-        # (None).  Must figure out actual value to use.
         self.event_complete_queue.put(
-            waldoCallResults._CompleteRootCallResult(None))
+            waldoCallResults._CompleteRootCallResult())
 
         
     def notify_additional_subscriber(

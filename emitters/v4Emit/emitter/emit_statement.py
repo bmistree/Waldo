@@ -209,10 +209,13 @@ def _emit_non_de_waldoed_return(
     if len(ret_list_node.children) == 0:
         return_txt += 'None'
 
-    for ret_item_node in ret_list_node.children:
+    for counter in range(0,len(ret_list_node.children)):
+        ret_item_node = ret_list_node.children[counter]
         return_txt += emit_statement(
             ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-        return_txt += ','
+        
+        if counter != len(ret_list_node.children) -1:        
+            return_txt += ','
 
     return_txt += ')\n'
     return return_txt
@@ -245,7 +248,10 @@ def _emit_de_waldoed_return(
             (item_emit, str(counter), '_context.de_waldoify(' + item_emit +
              ',_active_event)'))
         
-        return_txt += ret_item_txt + ','
+        return_txt += ret_item_txt
+        
+        if counter != len(ret_list_node.children) -1:
+            return_txt += ','
 
     return_txt += ')\n'
     return return_txt

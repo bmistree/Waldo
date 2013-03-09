@@ -78,5 +78,4 @@ class _RescheduleRootCallResult(object):
     pass
 
 class _CompleteRootCallResult(object):
-    def __init__(self,to_return):
-        self.to_return = to_return
+    pass
