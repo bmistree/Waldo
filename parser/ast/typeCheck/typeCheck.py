@@ -2530,7 +2530,7 @@ def _check_single_assign(
         
             if to_assign_to_index >= len(rhs_type):
                 err_msg = 'Error in assignment statement.  The function '
-                err_msg += 'call on the right only returns ' + len(rhs_node.type)
+                err_msg += 'call on the right only returns ' + str(len(rhs_node.type))
                 err_msg += ' element.  But you are trying to assign to at least '
                 err_msg += str(to_assign_to_index + 1) + ' elements.'
 
