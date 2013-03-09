@@ -38,7 +38,7 @@ def emit_single_endpoint(endpoint_name,ast_root,fdep_dict,emit_ctx):
     For all other params + return, @see emit_endpoints
     '''
     endpoint_header = 'class %s (%s):\n' % (
-        endpoint_name,emit_utils.library_transform('_Endpoint'))
+        endpoint_name,emit_utils.library_transform('Endpoint'))
 
     endpoint_body = emit_endpoint_body(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -88,7 +88,7 @@ def emit_endpoint_init(
 
     # actually initialize super class
     init_body += '''
-%s.__init__(self,_host_uuid,conn_obj,%s)
+%s.__init__(self,_host_uuid,_conn_obj,%s)
 ''' % (emit_utils.library_transform('Endpoint'), glob_var_store_name)
     
     # FIXME: this is where would actually make call to onCreate
@@ -112,7 +112,11 @@ def emit_endpoint_global_and_peered_variable_store(
         endpoint_name,ast_root)
     peered_decl_nodes = get_peered_decl_nodes(ast_root)
 
-    var_store_loading_text = create_wvariables_array(
+    var_store_loading_text = (
+        '%s = %s(_host_uuid)' %
+        (glob_var_store_tmp_name, emit_utils.library_transform('VariableStore')))
+    
+    var_store_loading_text += create_wvariables_array(
         glob_var_store_tmp_name,host_uuid_var_name,
         endpoint_global_decl_nodes,False)
     var_store_loading_text += create_wvariables_array(
@@ -261,7 +265,7 @@ def emit_private_method_interface(
     method_arg_names = ['_returning_to_public_ext_array=None']
     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # message receives take no arguments
-        method_arg_names = get_method_arg_names(method_node)
+        method_arg_names += get_method_arg_names(method_node)
 
     if method_node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
         comma_sep_arg_names = reduce (
@@ -397,8 +401,8 @@ def %s(self%s):
     # argument to the internal function that the internal function
     # knows which returns need to be de-waldo-ified before being
     # returned and which do not.
-    list_return_non_external_positions = (
-        get_non_external_return_positions_from_func_node(public_method_node))
+    list_return_external_positions = (
+        get_external_return_positions_from_func_node(public_method_node))
 
     #### create a root event + ctx for event, call internal, and reurn
     internal_method_name = lib_util.endpoint_call_func_name(method_name)
@@ -416,7 +420,7 @@ while True:  # FIXME: currently using infinite retry
     # return them....if it were false, might just get back refrences
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
-    self.%s(_root_event,_ctx %s%s)
+    self.%s(_root_event,_ctx %s,%s)
     # try committing root event
     _root_event.request_commit()
     _commit_resp = _root_event.event_complete_queue.get()
@@ -428,7 +432,7 @@ while True:  # FIXME: currently using infinite retry
        emit_utils.library_transform('VariableStore'),
        internal_method_name,
        comma_sep_arg_names,
-       str(list_return_non_external_positions),
+       str(list_return_external_positions),
        emit_utils.library_transform('CompleteRootCallResult'))
 
     return public_header + emit_utils.indent_str(public_body)
@@ -872,14 +876,14 @@ def get_non_external_arg_names_from_func_node(func_node):
     return returner
 
 
-def get_non_external_return_positions_from_func_node(func_node):
+def get_external_return_positions_from_func_node(func_node):
     '''
     @returns {list} --- Each element is an integer corresponding to
-    the index in the return tuple of a return value that isn't external.
+    the index in the return tuple of a return value that is external
 
     public function () returns Num, External Num, Num {}
 
-    We would return [0,2].
+    We would return [1].
     '''
     return_type_node_index = get_return_type_index_from_func_node_label(
         func_node.label)
@@ -889,7 +893,7 @@ def get_non_external_return_positions_from_func_node(func_node):
     
     for return_counter in range(0,len(return_type_node.children)):
         return_node = return_type_node.children[return_counter]
-        if not return_node.external:
+        if return_node.external:
             external_return_indices.append(return_counter)
     return external_return_indices
 
