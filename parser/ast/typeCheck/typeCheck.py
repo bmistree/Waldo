@@ -155,7 +155,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # the name of the field.  the second element is the type dict
         # for that field
         field_tuple_array = []
-
         
         for field_decl_node in struct_body.children:
             field_decl_node.typeCheck(progText,typeStack,avoidFunctionObjects)
@@ -224,7 +223,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         bool_cond.typeCheck(progText,typeStack,avoidFunctionObjects)
 
-        if not is_true_false(bool_cond.type):
+        un_function_called_type = unwrap_function_call_type_checker(
+            bool_cond.type,node,
+            ('Error in predicate of while loop: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        if not is_true_false(un_function_called_type):
             err_msg = 'Error in predicate of while loop.  Should have '
             err_msg += 'TrueFalse type.  Instead, has type '
             err_msg += dict_type_to_str( bool_cond.type )
@@ -330,33 +335,46 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         node.type = generate_type_as_dict(TYPE_NOTHING)
 
 
+        un_function_called_rm_from_type = unwrap_function_call_type_checker(
+            to_remove_from_node.type,node,
+            ('Error in specifying what to remove from: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        un_function_called_rm_ind_type = unwrap_function_call_type_checker(
+            to_remove_index.type,node,
+            ('Error in specifying which index to remove: function call ' +
+            'returns more than one value.'),
+            progText)
+        
+
         # most of the type checking is on the indices to ensure that
         # they remove the same type 
-        if isMapType(to_remove_from_node.type):
-            if is_empty_map(to_remove_from_node.type):
+        if isMapType(un_function_called_rm_from_type):
+            if is_empty_map(un_function_called_rm_from_type):
                 err_msg = 'Error in remove statement.  Cannot '
                 err_msg += 'call remove directly on an empty map.'
                 errorFunction(
                     err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
                     progText)
 
-            map_index_type = getMapIndexType(to_remove_from_node.type)
-            if map_index_type != to_remove_index.type:
+            map_index_type = getMapIndexType(un_function_called_rm_from_type)
+            if map_index_type != un_function_called_rm_ind_type:
                 err_msg = 'Error in remove statement.  Map\'s indices '
-                err_msg += 'have type ' + map_index_type + ', but '
+                err_msg += 'have type ' + dict_type_to_str(map_index_type) + ', but '
                 err_msg += 'you are asking to remove an index that has '
-                err_msg += 'type ' + to_remove_index.type + '.'
+                err_msg += 'type ' + dict_type_to_str(to_remove_index.type) + '.'
                 
                 errorFunction(
                     err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
                     progText)
                     
-        elif isListType(to_remove_from_node.type):
+        elif isListType(un_function_called_rm_from_type):
 
-            if not is_number(to_remove_index.type):
+            if not is_number(un_function_called_rm_ind_type):
                 err_msg = 'Error in remove statement.  To remove from List'
                 err_msg += ', you must pass a Number to '
-                err_msg += 'remove.  You passed a ' + to_remove_index.type
+                err_msg += 'remove.  You passed a ' + dict_type_to_str(to_remove_index.type)
                 err_msg += '.'
                 errorFunction(
                     err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
@@ -431,13 +449,26 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         toIterateNode = node.children[toIterateNodeIndex];
         toIterateNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        if isMapType(toIterateNode.type):
-            if is_empty_map(toIterateNode.type):
+        un_function_called_to_iter_type = unwrap_function_call_type_checker(
+            toIterateNode.type,node,
+            ('Error in specifying iterator: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        un_function_called_id_type = unwrap_function_call_type_checker(
+            identiferNode.type,node,
+            ('Error in specifying what to iterate over: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        if isMapType(un_function_called_to_iter_type):
+            if is_empty_map(un_function_called_to_iter_type):
                 pass;
             else:
-                indexType = getMapIndexType(toIterateNode.type);
+                indexType = getMapIndexType(un_function_called_to_iter_type);
                 
-                if checkTypeMismatch(identifierNode,identifierNode.type,indexType,typeStack,progText):
+                if checkTypeMismatch(
+                    identifierNode,un_function_called_id_type,indexType,typeStack,progText):
                     errMsg = 'Error assigning identifier in for loop.  ';
                     errMsg += identifierName + ' has type '
                     errMsg += dict_type_to_str(identifierNode.type)
@@ -445,14 +476,14 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     errMsg += dict_type_to_str(indexType) + '.';
                     errorFunction(errMsg,[identifierNode],[identifierNode.lineNo],progText);
 
-        elif isListType(toIterateNode.type):
-            if is_empty_list(toIterateNode.type):
+        elif isListType(un_function_called_to_iter_type):
+            if is_empty_list(un_function_called_to_iter_type):
                 pass;
             else:
-                elementValueType = getListValueType(toIterateNode.type);
+                elementValueType = getListValueType(un_function_called_to_iter_type)
 
                 if checkTypeMismatch(
-                    identifierNode,identifierNode.type,elementValueType,
+                    identifierNode,un_function_called_id_type,elementValueType,
                     typeStack,progText):
                     errMsg = 'Error assigning identifier in for loop.  ';
                     errMsg += identifierName + ' has type ' 
@@ -461,8 +492,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     errMsg += dict_type_to_str(elementValueType) + '.';
                     errorFunction(errMsg,[identifierNode],[identifierNode.lineNo],progText);
 
-        elif toIterateNode.type == AST_STRING:
-            if toIterateNode.type == AST_STRING:
+        elif un_function_called_to_iter_type == AST_STRING:
+            if un_function_called_to_iter_type == AST_STRING:
                 pass;
             else:
                 errMsg = 'Error assigning identifier in for loop.  ';
@@ -491,25 +522,40 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         toAppendToNode.typeCheck(progText,typeStack,avoidFunctionObjects);
         toAppendNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        if not isListType(toAppendToNode.type):
-            errMsg = 'Error append operation is only supported on lists.  ';
-            errMsg += 'You are calling append on ' + toAppendToNode.type + '.';
-            errorFunction(errMsg,[toAppendToNode],[toAppendToNode.lineNo],
-                          progText);
+        un_function_called_to_ap_to_type = unwrap_function_call_type_checker(
+            toIterateNode.type,node,
+            ('Error in append on what appending to side: function call ' +
+            'returns more than one value.'),
+            progText)
 
-        if is_empty_list(toAppendToNode.type):
-            if is_wildcard_type(toAppendNode.type):
+        un_function_called_to_ap_type = unwrap_function_call_type_checker(
+            toIterateNode.type,node,
+            ('Error in append on what appending: function call ' +
+            'returns more than one value.'),
+            progText)
+        
+
+        if not isListType(un_function_called_to_ap_to_type):
+            errMsg = 'Error append operation is only supported on lists.  ';
+            errMsg += 'You are calling append on '
+            errMsg += dict_type_to_str(toAppendToNode.type) + '.';
+            errorFunction(
+                errMsg,[toAppendToNode],[toAppendToNode.lineNo],
+                progText)
+        if is_empty_list(un_function_called_to_ap_to_type):
+            if is_wildcard_type(un_function_called_to_ap_to_type):
                 # FIXME: cannot determine what to do for the case
                 # where we're appending a wild card to an empty list.
                 warn_msg = '\nBehram error: for a list, appended a wildcard.\n'
                 print (warn_msg)
-            node.type = buildListTypeSignatureFromTypeName(toAppendNode.type);
+            node.type = buildListTypeSignatureFromTypeName(un_function_called_to_ap_to_type)
         else:
-            node.type = toAppendToNode.type;
+            node.type = un_function_called_to_ap_to_type
             # check that the elements of the list match what we're appending
-            listElemType = getListValueType(toAppendToNode.type);
-            if checkTypeMismatch(toAppendToNode,listElemType,toAppendNode.type,
-                                 typeStack,progText):
+            listElemType = getListValueType(un_function_called_to_ap_to_type)
+            if checkTypeMismatch(
+                toAppendToNode,listElemType,toAppendNode.type,
+                typeStack,progText):
                 errMsg = 'Type mismatch when trying to append element.  List ';
                 errMsg += 'appending to has type '
                 errMsg += dict_type_to_str(toAppendToNode.type) + ', and ';
@@ -527,20 +573,32 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         lhsNode.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhsNode.typeCheck(progText,typeStack,avoidFunctionObjects);
+
+        un_function_called_lhs_type = unwrap_function_call_type_checker(
+            lhsNode.type,node,
+            ('Error in in statement: function call ' +
+            'returns more than one value on left-hand-side.'),
+            progText)
         
-        if is_text(rhsNode.type):
-            if not is_text(lhsNode.type):
+        un_function_called_rhs_type = unwrap_function_call_type_checker(
+            rhsNode.type,node,
+            ('Error in in statement: function call ' +
+            'returns more than one value on right-hand-side.'),
+            progText)
+
+        if is_text(un_function_called_rhs_type):
+            if not is_text(un_function_called_lhs_type):
                 errMsg = 'Error with in statement.  Right-hand side of in ';
                 errMsg += 'statement has type Text, left-hand side should ';
                 errMsg += 'also be of type Text.  However, it is actually ';
-                errMsg += 'of type ' + lhsNode.type;
+                errMsg += 'of type ' + dict_type_to_str(lhsNode.type)
                 errorFunction(errMsg,[lhsNode],[lhsNode.lineNo],progText);
-        elif isMapType(rhsNode.type):
-            if is_empty_map(rhsNode.type):
+        elif isMapType(un_function_called_rhs_type):
+            if is_empty_map(un_function_called_rhs_type):
                 pass;
             else:
-                mapIndexType = getMapIndexType(rhsNode.type);
-                if mapIndexType != lhsNode.type:
+                mapIndexType = getMapIndexType(un_function_called_rhs_type)
+                if mapIndexType != un_function_called_lhs_type:
                     errMsg = 'Error with in statement.  Right-hand side of ';
                     errMsg += 'statement is a map type with indices ';
                     errMsg += dict_type_to_str(mapIndexType) + '.  The '
@@ -548,12 +606,12 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     errMsg += 'statement should have same type.  Instead, it ';
                     errMsg += 'has type ' + dict_type_to_str(lhsNode.type) + '.';
                     errorFunction(errMsg, [lhsNode],[lhsNode.lineNo],progText);
-        elif isListType(rhsNode.type):
-            if is_empty_list(rhsNode.type):
+        elif isListType(un_function_called_rhs_type):
+            if is_empty_list(un_function_called_rhs_type):
                 pass;
             else:
-                listElementType = getListValueType(rhsNode.type);
-                if listElementType != lhsNode.type:
+                listElementType = getListValueType(un_function_called_rhs_type)
+                if listElementType != un_function_called_lhs_type:
                     errMsg = 'Error with in statement.  Right-hand side of ';
                     errMsg += 'statement is a list type with indices ';
                     errMsg += dict_type_to_str(listElementType) + '.  '
@@ -614,8 +672,14 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         childNode = node.children[0];
         childNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
+        un_function_called_child_type = unwrap_function_call_type_checker(
+            childNode.type,node,
+            ('Error in not statement: function call ' +
+            'returns more than one value, so unsure what to "not".'),
+            progText)
+
         node.lineNo = childNode.lineNo;
-        if not is_true_false(childNode.type):
+        if not is_true_false(un_function_called_child_type):
             typeErrorMsg = 'Error in not expession.  You can only ';
             typeErrorMsg += 'apply not to a TrueFalse.';
             astLineNos = [node.lineNo];
@@ -662,24 +726,37 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         node.lineNo = index.lineNo;
 
-        if isMapType(toReadFrom.type):
+        un_function_to_read_from_type = unwrap_function_call_type_checker(
+            toReadFrom.type,node,
+            ('Error in bracket statement: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use to index into bracket.'),
+            progText)
+        un_function_index_type = unwrap_function_call_type_checker(
+            index.type,node,
+            ('Error in bracket statement: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for index into bracket.'),
+            progText)
+
+        
+        if isMapType(un_function_to_read_from_type):
             
             typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckMapBracket(
-                toReadFrom,index,typeStack,progText);
+                toReadFrom,index,typeStack,progText)
 
-        elif isListType(toReadFrom.type):
+        elif isListType(un_function_to_read_from_type):
             typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckListBracket(
-                toReadFrom,index,typeStack,progText);
-
-        elif is_text(toReadFrom.type):
+                toReadFrom,index,typeStack,progText)
+        elif is_text(un_function_to_read_from_type):
             typeError = False
-            if not is_number(index.type):
+            if not is_number(un_function_index_type):
                 typeError = True
                 typeErrorMsg = 'Error when reading a single character from a Text.  You '
                 typeErrorMsg += 'must use a number to index into the Text object.'
                 typeErrorNodes = [index]
 
-            statementType = toReadFrom.type
+            statementType = un_function_to_read_from_type
             
         else:
             typeError = True;
@@ -770,12 +847,21 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
     elif node.label == AST_LEN:
         argumentNode = node.children[0];
-        argumentNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-        if ((not is_text(argumentNode.type)) and (not isListType(argumentNode.type)) and
-            (not isMapType(argumentNode.type))):
+        argumentNode.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+        un_function_arg_node_type = unwrap_function_call_type_checker(
+            argumentNode.type,node,
+            ('Error in len statement: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to call len on.'),
+            progText)
+
+        if ((not is_text(un_function_arg_node_type)) and
+            (not isListType(un_function_arg_node_type)) and
+            (not isMapType(un_function_arg_node_type))):
             errorString = 'Error in calling len.  Can only call len on a ';
             errorString += 'list, map, or Text.  Instead, you passed in a ';
-            errorString += argument.type + '.';
+            errorString += dict_type_to_str(argument.type) + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
         node.type = generate_type_as_dict(TYPE_NUMBER)
@@ -809,12 +895,20 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         argNumber = 0;
         for childNode in node.children:
             argNumber += 1;
-            childNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-            if not is_number(childNode.type):
+            childNode.typeCheck(progText,typeStack,avoidFunctionObjects)
+
+            un_function_child_node_type = unwrap_function_call_type_checker(
+                childNode.type,node,
+                ('Error in range statement: function call ' +
+                'returns more than one value.  Cannot determine which ' +
+                 'to get range of.'),
+                progText)
+            
+            if not is_number(un_function_child_node_type):
                 errorString = 'Error in calling range.  Range requires all ';
                 errorString += 'of its arguments to be numbers.  Instead, the #';
                 errorString += str(argNumber) + ' argument you passed in to ';
-                errorString += 'range was of type ' + childNode.type + '.';
+                errorString += 'range was of type ' + dict_type_to_str(childNode.type) + '.';
                 errorFunction(
                     errorString,[node,childNode],[node.lineNo,childNode.lineNo],progText);
 
@@ -827,8 +921,16 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #check to ensure that it's passed a string
         argument = node.children[0];
         argument.typeCheck(progText,typeStack,avoidFunctionObjects);
-        if ((not is_text(argument.type)) and (not is_number(argument.type)) and
-            (not is_true_false(argument.type))):
+
+        un_function_arg_type = unwrap_function_call_type_checker(
+            argument.type,node,
+            ('Error in print statement: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to print.'),
+            progText)
+
+        if ((not is_text(un_function_arg_type)) and (not is_number(un_function_arg_type)) and
+            (not is_true_false(un_function_arg_type))):
             errorString = 'Print requires a Text, TrueFalse, or a Number ';
             errorString += 'to be passed in.  ';
             errorString += 'It seems that you passed in a ';
@@ -846,11 +948,19 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # can't handle it.
         argumentNode = node.children[0];
         argumentNode.typeCheck(progText,typeStack,avoidFunctionObjects);
-        if ((not is_text(argumentNode.type)) and (not is_number(argumentNode.type)) and
-            (not is_true_false(argumentNode.type))):
+
+        un_function_arg_node_type = unwrap_function_call_type_checker(
+            argumentNode.type,node,
+            ('Error in toText: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to call toText on.'),
+            progText)
+
+        if ((not is_text(un_function_arg_node_type)) and (not is_number(un_function_arg_node_type)) and
+            (not is_true_false(un_function_arg_node_type))):
             errorString = 'ToText requires a Text, TrueFalse, or a Number ';
             errorString += 'to be passed in.  It seems that you passed in a ';
-            errorString += argumentNode.type + '.';
+            errorString += dict_type_to_str(argumentNode.type) + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
         node.type = generate_type_as_dict(TYPE_STRING)
@@ -943,9 +1053,18 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 err_msg,[post_dot_node],[post_dot_node.lineNo],progText)
 
         post_dot_node_name = post_dot_node.value
-        if (isListType(pre_dot_node.type) or
-            isMapType(pre_dot_node.type) or
-            is_text(pre_dot_node.type)):
+
+        un_function_pre_dot_node_type = unwrap_function_call_type_checker(
+            pre_dot_node.type,node,
+            ('Error in dot statment: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to get field of.'),
+            progText)
+
+
+        if (isListType(un_function_pre_dot_node_type) or
+            isMapType(un_function_pre_dot_node_type) or
+            is_text(un_function_pre_dot_node_type)):
 
             node.type = generate_type_as_dict(TYPE_NOTHING)
             
@@ -977,12 +1096,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                               [post_dot_node.lineNo],
                               progText)
 
-                
-        elif is_struct(pre_dot_node.type):
+        elif is_struct(un_function_pre_dot_node_type):
             # from struct type, get the type of the field named by
             # post_dot_node_name
             node.type = get_struct_field_type(
-                post_dot_node_name,pre_dot_node.type)
+                post_dot_node_name,un_function_pre_dot_node_type)
 
             # field we are trying to call did not exist
             if node.type == None:
@@ -993,7 +1111,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errorFunction(
                     err_msg,[pre_dot_node],[pre_dot_node.lineNo],progText)
 
-        elif is_endpoint(pre_dot_node.type):
+        elif is_endpoint(un_function_pre_dot_node_type):
             # FIXME: temporarily assigning result of endpoint node
             # function.  Require type checking for endpoint function
             # call
@@ -1125,7 +1243,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 s.typeCheck(progText,typeStack,avoidFunctionObjects);
                 allArgTypes.append(s.type);
 
-            argError = None
+            argError = None            
             if not is_wildcard_type(node.type):
                 argError = func_match_obj.argMatchError(allArgTypes,node);
 
@@ -1353,13 +1471,22 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         boolCond = node.children[0];
         condBody = node.children[1];
 
-        boolCond.typeCheck(progText,typeStack,avoidFunctionObjects);
-        if (not is_true_false(boolCond.type)):
+        boolCond.typeCheck(progText,typeStack,avoidFunctionObjects)
+
+        un_function_bool_cond_node_type = unwrap_function_call_type_checker(
+            boolCond.type,node,
+            ('Error in condition of if/else if statment: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use in condition.'),
+            progText)
+     
+        if (not is_true_false(un_function_bool_cond_node_type)):
             errMsg = '\nError in If or ElseIf statement.  The condition ';
             errMsg += 'must evaluate to a TrueFalse type.  Instead, ';
 
             if (boolCond.type != None):
-                errMsg += 'it evaluated to a type of ' + boolCond.type;
+                errMsg += ('it evaluated to a type of ' +
+                           dict_type_to_str(boolCond.type))
             else:
                 errMsg += 'we could not infer the type';
 
@@ -1377,18 +1504,33 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         node.type = generate_type_as_dict(TYPE_BOOL)
         node.lineNo = lhs.lineNo;
-        if (lhs.type == None):
+
+        un_function_lhs_type = unwrap_function_call_type_checker(
+            lhs.type,node,
+            ('Error in equals/not equals statment: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for left hand side.'),
+            progText)
+
+        un_function_rhs_type = unwrap_function_call_type_checker(
+            rhs.type,node,
+            ('Error in equals/not equals statment: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for right hand side.'),
+            progText)
+
+        if un_function_lhs_type == None:
             errMsg = '\nError when checking equality. ';
             errMsg += 'Cannot infer type of left-hand side of expression.\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
             return;
-        if (rhs.type == None):
+        if un_function_rhs_type == None:
             errMsg = '\nError when checking equality. ';
             errMsg += 'Cannot infer type of right-hand side of expression.\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
             return;
 
-        if (rhs.type != lhs.type):
+        if un_function_rhs_type != un_function_lhs_type:
             errMsg = '\nError when checking equality.  Both left-hand side ';
             errMsg += 'of expression and right-hand side of expression should ';
             errMsg += 'have same type.  Instead, left-hand side has type ';
@@ -1403,9 +1545,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         #keep track of separate expression types to simplify
         #error-reporting.
-        expressionType = 'And';
+        expressionType = 'and';
         if (node.label == AST_OR):
-            expressionType = 'Or';
+            expressionType = 'or';
 
         lhs = node.children[0];
         rhs = node.children[1];
@@ -1413,18 +1555,32 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         node.type = generate_type_as_dict(TYPE_BOOL)
         node.lineNo = lhs.lineNo;
-        if (lhs.type == None):
+
+        un_function_lhs_type = unwrap_function_call_type_checker(
+            rhs.type,node,
+            ('Error in and/or statment: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for left hand side.'),
+            progText)
+
+        un_function_rhs_type = unwrap_function_call_type_checker(
+            rhs.type,node,
+            ('Error in and/or statment: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for right hand side.'),
+            progText)
+
+        if un_function_lhs_type == None:
             errMsg = '\nError when checking ' + expressionType + '. ';
             errMsg += 'Cannot infer type of left-hand side of expression.\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
             return;
-        if (rhs.type == None):
+        if un_function_rhs_type == None:
             errMsg = '\nError when checking ' + expressionType + '. ';
             errMsg += 'Cannot infer type of right-hand side of expression.\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
             return;
-
-        if not is_true_false(rhs.type):
+        if not is_true_false(un_function_rhs_type):
             errMsg = '\nError when checking ' + expressionType + '. ';
             errMsg += 'Right-hand side expression must be '
             errMsg += dict_type_to_str(
@@ -1432,8 +1588,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg += '.  Instead, has type '
             errMsg += dict_type_to_str(rhs.type) + '\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
-
-        if not is_true_false(lhs.type):
+        if not is_true_false(un_function_lhs_type):
             errMsg = '\nError when checking ' + expressionType + '. ';
             errMsg += 'Left-hand side expression must be '
             errMsg += dict_type_to_str(
@@ -1455,12 +1610,26 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs = node.children[1];
         node.lineNo = lhs.lineNo;
 
-        lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
-        rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
+        lhs.typeCheck(progText,typeStack,avoidFunctionObjects)
+        rhs.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+        un_function_lhs_type = unwrap_function_call_type_checker(
+            rhs.type,node,
+            ('Error in and/or statment: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for left hand side.'),
+            progText)
+
+        un_function_rhs_type = unwrap_function_call_type_checker(
+            rhs.type,node,
+            ('Error in and/or statment: function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for right hand side.'),
+            progText)
 
         errSoFar = False;
-        if ((not is_number(lhs.type)) and (not is_text(lhs.type)) and
-            (not is_wildcard_type(lhs.type))):
+        if ((not is_number(un_function_lhs_type)) and (not is_text(un_function_lhs_type)) and
+            (not is_wildcard_type(un_function_lhs_type))):
             errMsg = '\nError with PLUS expression.  ';
             errMsg += 'Left-hand side should be a Number or a String.  Instead, ';
             if (lhs.type == None):
@@ -1471,8 +1640,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(errMsg, [node],[node.lineNo],progText);
             errSoFar = True;
 
-        if ((not is_number(rhs.type)) and (not is_text(rhs.type)) and
-            (not is_wildcard_type(rhs.type))):
+        if ((not is_number(un_function_rhs_type)) and (not is_text(un_function_rhs_type)) and
+            (not is_wildcard_type(un_function_rhs_type))):
             errMsg = '\nError with PLUS expression.  ';
             errMsg += 'Right-hand side should be a Number or a String.  Instead, ';
             if (lhs.type == None):
@@ -1488,8 +1657,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         if (errSoFar):
             return;
 
-        if ((rhs.type != lhs.type) and (not is_wildcard_type(rhs.type)) and
-            (not is_wildcard_type(lhs.type))):
+        if ((un_function_rhs_type != un_function_lhs_type) and (not is_wildcard_type(un_function_rhs_type)) and
+            (not is_wildcard_type(un_function_lhs_type))):
             errMsg = '\nError with PLUS expression.  Both the left- and ';
             errMsg += 'right-hand sides should have the same type.  Instead, ';
             errMsg += 'the left-hand side has type '
@@ -1498,7 +1667,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg += dict_type_to_str(rhs.type) + '.\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
-        node.type = rhs.type;
+        node.type = un_function_rhs_type
 
 
     elif ((node.label == AST_MINUS) or (node.label == AST_MULTIPLY) or
@@ -1535,25 +1704,39 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        if ((not is_number(lhs.type)) and
-            (not is_wildcard_type(lhs.type))):
+        un_function_lhs_type = unwrap_function_call_type_checker(
+            lhs.type,node,
+            ('Error in ' + expressionType + ': function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for left hand side.'),
+            progText)
+
+        un_function_rhs_type = unwrap_function_call_type_checker(
+            rhs.type,node,
+            ('Error in ' + expressionType + ': function call ' +
+            'returns more than one value.  Cannot determine which ' +
+             'to use for right hand side.'),
+            progText)
+
+        if ((not is_number(un_function_lhs_type)) and
+            (not is_wildcard_type(un_function_lhs_type))):
             errMsg = '\nError with ' + expressionType + ' expression.  ';
             errMsg += 'Left-hand side should be a Number.  Instead, ';
             if (lhs.type == None):
                 errMsg += 'could not infer type.\n';
             else:
-                errMsg += 'inferred type ' + lhs.type + '.\n';
+                errMsg += 'inferred type ' + dict_type_to_str(lhs.type) + '.\n';
 
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
-        if ((not is_number(rhs.type)) and
-            (not is_wildcard_type(lhs.type))):
+        if ((not is_number(un_function_rhs_type)) and
+            (not is_wildcard_type(un_function_rhs_type))):
             errMsg = '\nError with ' + expressionType + ' expression.  ';
             errMsg += 'Right-hand side should be a Number.  Instead, ';
             if (lhs.type == None):
                 errMsg += 'could not infer type.\n';
             else:
-                errMsg += 'inferred type ' + rhs.type + '.\n';
+                errMsg += 'inferred type ' + dict_type_to_str(rhs.type) + '.\n';
 
             errorFunction(errMsg, [node],[node.lineNo],progText);
 
@@ -1562,7 +1745,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         node.lineNo = node.children[0].lineNo;
         node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects);
 
-        if not is_true_false(node.children[0].type):
+        un_function_called_type = unwrap_function_call_type_checker(
+            node.children[0].type,node,
+            ('Error in predicate of condition statement: function call ' +
+            'returns more than one value.'),
+            progText)
+        
+        if not is_true_false(un_function_called_type):
             errMsg = '\nError in predicate of condition statement.  Should have ';
             errMsg += 'TrueFalse type.  Instead, ';
             if (node.children[0].type != None):
@@ -1572,8 +1761,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg += '.\n';
             errorFunction(errMsg,[node],[node.lineNo],progText);
         else:
-            node.type = node.children[0].type;
+            node.type = generate_type_as_dict(TYPE_BOOL)
 
+            
     elif(node.label == AST_ELSE_IF_STATEMENTS):
         for s in node.children:
             s.typeCheck(progText,typeStack,avoidFunctionObjects);
@@ -2074,7 +2264,7 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
             errorFunction(traceError.errMsg,traceError.nodes,traceError.lineNos,progText);
             
 
-
+            
 def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
     '''
     @returns {Bool} True if should throw type mismatch error.  False
@@ -2088,14 +2278,45 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
          produced from [], and lhsType was List(element: Number),
          would not produce error.
 
+       * A function call has the following type dict structure:
+           {
+              Type: [
+                      {
+                          Type: Number
+                      },
+                      {
+                          Type: Text
+                      },
+                      ...
+                    ]
+           }
+         however, we want to be able to make calls, such as
+         
+         if (func_call())
+             <do something>
+
+         Therefore, if we are type checking with a checkTypeMismatch
+         statement, and the function call returns just a single
+         element in its tuple, we should type check *that* element.
+         Not entire list of elements.
+
     Note: no type mismatch if rhsType is a wildcard.
     '''
-
+    
     if is_wildcard_type(rhsType):
         warn_msg = '\nBehram warn: using wildcard type for development '
         warn_msg += 'code while type checking.\n'
         print warn_msg
         return False
+
+
+    lhsType,more_in_tuple = get_single_type_if_func_call_reg_type(lhsType)
+    if more_in_tuple:
+        return True
+        
+    rhsType,more_in_tuple = get_single_type_if_func_call_reg_type(rhsType)
+    if more_in_tuple:
+        return True
     
     errorTrue = False;
     if (lhsType != rhsType):
@@ -2482,7 +2703,21 @@ def addSequenceGlobals(msgSeqNode,progText,typeStack,currentEndpointName):
         argList.typeCheck(progText,typeStack,True);
 
 
+def unwrap_function_call_type_checker(type_dict,node,err_msg,prog_text):
+    # function calls have additional level of indirection in type
+    # dict.  however, we still want to treat function calls that
+    # return only a single value as though there types are just
+    # the types of that single value.  unwrapping the function
+    # call with the command at bottom takes care of this.
+    un_function_called_type, more_in_tuple = get_single_type_if_func_call_reg_type(
+        node.children[0].type)
 
+    if more_in_tuple:
+        errorFunction(err_msg,[node],[node.lineNo],prog_text)
+
+    return un_function_called_type
+
+        
 def _check_single_assign(
     to_assign_to_node,rhs_node,to_assign_to_index,
     progText,typeStack,avoidFunctionObjects):

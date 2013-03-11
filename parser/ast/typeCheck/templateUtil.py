@@ -141,6 +141,23 @@ def is_returned_tuple(dict_type):
     _assert_if_not_dict(dict_type,'is_returned_tuple')
     return dict_type[JSON_TYPE_FIELD] == TYPE_RETURNED_TUPLE
 
+def is_function_call_return_type_dict(type_dict):
+    '''
+    @returns {bool} True if this type dict corresponds to a function
+    call.  False otherwise.
+
+    A non-function call type dict has structure
+    {
+      Type: { Type: Number}
+    }
+    
+    Ie, types will either point at strings or maps.  In contrast,
+    function call return type dicts will have a type that points to an
+    array like that seen in the comment of @see
+    get_type_array_from_func_call_returned_tuple_type.
+    '''
+    return isinstance(type_dict[JSON_TYPE_FIELD], list)
+
 
 def get_type_array_from_func_call_returned_tuple_type(
     func_call_return_type):
@@ -160,6 +177,62 @@ def get_type_array_from_func_call_returned_tuple_type(
     the array of return types when call a function.
     '''
     return func_call_return_type[JSON_TYPE_FIELD]
+
+
+def get_single_type_if_func_call_reg_type(type_dict):
+    '''
+    A function call has the following type dict structure:
+       {
+          Type: [
+                  {
+                      Type: Number
+                  },
+                  {
+                      Type: Text
+                  },
+                  ...
+                ]
+       }
+       
+    however, we want to be able to make calls, such as
+
+    if (func_call())
+        <do something>
+
+    In this case, we don't want the entire tuple type-dict, but just
+    the first type that the function call returns.
+
+    This function takes in any type dict (of a function call or not).
+    It returns the tuple (a,b)
+
+        {type_dict} a: 
+        {bool} b: 
+    
+    If type_dict is the type dict for a non-function call, then:
+
+       a: type_dict
+       b: False
+
+    If type_dict is the type dict for a funciton call, then:
+       a: type_dict for first return type
+
+       b: True if there are more return types after, False otherwise.
+    '''
+    if not is_function_call_return_type_dict(type_dict):
+        return type_dict,False
+
+    type_dict_array = get_type_array_from_func_call_returned_tuple_type(
+        type_dict)
+
+    not_just_one_return_type_bool = True
+    if len(type_dict_array) == 1:
+        not_just_one_return_type_bool = False
+
+    # zero index should always exist.  Even if function returns void,
+    # type array should still contain None.  (I think.)
+    return type_dict_array[0], not_just_one_return_type_bool
+
+
     
 
 def generate_returned_tuple_type(tuple_element_list):
