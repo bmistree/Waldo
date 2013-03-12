@@ -622,7 +622,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         else:
             errMsg = 'Error with in statement.  Right-hand side of statement ';
             errMsg += 'must have type List, Map, or Text.  Instead, it has type ';
-            errMsg += dict_type_to_str(lhsNode.type) + '.';
+            errMsg += dict_type_to_str(rhsNode.type) + '.';
             errorFunction(errMsg,[lhsNode],[lhsNode.lineNo],progText);
             
     elif (node.label == AST_JUMP_COMPLETE) or (node.label == AST_JUMP):
@@ -2710,7 +2710,7 @@ def unwrap_function_call_type_checker(type_dict,node,err_msg,prog_text):
     # the types of that single value.  unwrapping the function
     # call with the command at bottom takes care of this.
     un_function_called_type, more_in_tuple = get_single_type_if_func_call_reg_type(
-        node.children[0].type)
+        type_dict)
 
     if more_in_tuple:
         errorFunction(err_msg,[node],[node.lineNo],prog_text)
