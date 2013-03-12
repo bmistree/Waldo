@@ -85,7 +85,28 @@ SingleSide
 
     Public Function in_map(Map(from: Number, to: Number) map_, Number key) returns TrueFalse
     {
+        // must use trailing underscore to avoid collision with
+        // Python's keyword 'map'
         return key in map_;
+    }
+
+    Public Function in_list(List(element: Text) list_, Text key) returns TrueFalse
+    {
+        return key in list_;
+    }
+
+
+    Public Function in_waldo_text(Text text, Text key) returns TrueFalse
+    {
+        return key in text;
+    }
+
+    // different from above, because 'static text' is not first
+    // wrapped in a Waldo variable.  In above function, text is
+    // wrapped in a Waldo variable.
+    Public Function in_static_text(Text key) returns TrueFalse
+    {
+        return key in 'static text';
     }
     
 }

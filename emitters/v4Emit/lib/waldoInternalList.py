@@ -39,6 +39,26 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             
         return to_return
 
+    def contains_val_called(self,invalid_listener,val):
+        '''
+        Run through internal list, check if any element in the list is
+        equal to val.  (Note == will only work with value types.)
+        '''
+        found = False
+        
+        self._lock()
+        self._add_invalid_listener(invalid_listener)
+        dirty_elem = self._dirty_map[invalid_listener.uuid]
+        # essentially, just iterate through each element of list
+        # looking for a matching val.
+        for i in range(0,dirty_elem.get_len()):
+            if dirty_elem.get_val_on_key(i) == val:
+                found=True
+                break
+        self._unlock()
+
+        return found
+        
     
     def contains_key(self,invalid_listener, key):
         util.logger_assert(

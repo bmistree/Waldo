@@ -188,6 +188,45 @@ class _ExecutingEventContext(object):
     def de_waldoify(self,val,active_event):
         return de_waldoify(val,active_event)
 
+
+    def handle_in_check(self,lhs,rhs,active_event):
+        '''
+        Call has form:
+            lhs in rhs
+        
+        rhs can have three basic types: it can be a list, a map, or a
+        string.  That means that it can either be a WaldoMapVariable,
+        a WaldoListVariable, a WaldoStringVariable, or a Python
+        string.
+
+        Instead of using static type inference at compile time to
+        determine, for sake of development, just doing dynamic check
+        to determine which type it is and do the in processing here.
+
+        FIXME: it is faster to do the static checks with type
+        inference, etc. at compile time rather than at run time.
+        '''
+        lhs_val = self.get_val_if_waldo(lhs,active_event)
+
+        # handles Python string case
+        if isinstance(rhs,basestring):
+            return lhs_val in rhs
+
+        elif isinstance(rhs,wVariables.WaldoTextVariable):
+            return lhs_val in rhs.get_val(active_event)
+
+        elif isinstance(rhs,wVariables.WaldoMapVariable):
+            return rhs.get_val(active_event).contains_key_called(
+                active_event,lhs_val)
+
+        elif isinstance(rhs,wVariables.WaldoListVariable):
+            return rhs.get_val(active_event).contains_val_called(
+                active_event,lhs_val)
+
+        util.emit_assert(
+            'Error when calling in: unknown right hand side of expression')
+        
+    
 def de_waldoify(val,active_event):
     '''
     When returning a value to non-Waldo code, need to convert the

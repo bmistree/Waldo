@@ -30,18 +30,57 @@ def run_test():
 
 
 def test_in(single_side):
+    # testing on map
     init_map = {
         1: 2,
         3: 4
         }
     if not single_side.in_map(init_map,1):
-        print '\nErr on in '
+        print '\nErr on map in '
         return False
 
     if single_side.in_map(init_map,4):
-        print '\nErr on in '
+        print '\nErr on map in '
         return False
 
+    # testing on list
+    init_list = ['a','b','c','d']
+    if not single_side.in_list(init_list,'c'):
+        print '\nErr on list in'
+        return False
+
+    if single_side.in_list(init_list,'cd'):
+        print '\nErr on list in'
+        return False
+
+    if single_side.in_list(init_list,'n'):
+        print '\nErr on list in'
+        return False
+
+    # testing on text
+    if not single_side.in_waldo_text('haystack','s'):
+        print '\nErr on text in'
+        return False
+
+    if not single_side.in_waldo_text('haystack','stack'):
+        print '\nErr on text in'
+        return False
+        
+    if single_side.in_waldo_text('haystack','m'):
+        print '\nErr on text in'
+        return False
+
+    if not single_side.in_static_text('static'):
+        print '\nErr on static text in'
+        return False
+    if not single_side.in_static_text('t'):
+        print '\nErr on static text in'
+        return False
+
+    if single_side.in_static_text('m'):
+        print '\nErr on static text in'
+        return False
+    
     
     return True
  
