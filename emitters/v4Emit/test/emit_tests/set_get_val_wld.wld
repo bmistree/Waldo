@@ -21,8 +21,7 @@ SingleSide
     Public Function increment_num() returns Number
     {
         num += 1;
-        return num;
-//        return get_num()
+        return get_num();
     }
     
     Public Function get_txt() returns Text
@@ -34,8 +33,7 @@ SingleSide
     Public Function increment_txt(Text to_add) returns Text
     {
         txt += to_add;
-        return txt;        
-//        return get_txt();
+        return get_txt();
     }
     
 }
