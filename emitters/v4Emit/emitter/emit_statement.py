@@ -28,7 +28,7 @@ def emit_statement(
 
     elif is_binary_operator_from_label(statement_node.label):
         # checks for +,-,>, etc.
-
+        
         # FIXME: must be careful to check if both sides are
         # lists... should wrap them in a Waldo list variable.
         lhs_node = statement_node.children[0]

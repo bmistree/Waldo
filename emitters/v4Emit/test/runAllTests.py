@@ -96,10 +96,15 @@ def run_emit_tests():
     call_make_in_emit_test_folder()
 
     import emit_tests.set_get_value_test
+    import emit_tests.binary_operator_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
-         emit_tests.set_get_value_test.run_test)
+         emit_tests.set_get_value_test.run_test),
+
+        ('Emit test binary operators',
+         emit_tests.binary_operator_tests.run_test)
+        
         ]
 
     run_tests(emit_tests_to_run)

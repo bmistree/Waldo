@@ -1,0 +1,85 @@
+SetGetVal
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+    
+    Public Function less_than(Number lhs,Number rhs) returns TrueFalse
+    {
+        return lhs < rhs;
+    }
+
+    Public Function less_than_eq(Number lhs,Number rhs) returns TrueFalse
+    {
+        return lhs <= rhs;
+    }
+
+    Public Function greater_than(Number lhs,Number rhs) returns TrueFalse
+    {
+        return lhs > rhs;
+    }
+
+    Public Function greater_than_eq(Number lhs,Number rhs) returns TrueFalse
+    {
+        return lhs >= rhs;
+    }
+
+    Public Function not_equal(Text lhs, Text rhs) returns TrueFalse
+    {
+        return lhs != rhs;
+    }
+
+    Public Function equal(Text lhs, Text rhs) returns TrueFalse
+    {
+        return lhs == rhs;
+    }
+
+    Public Function plus_num(Number lhs, Number rhs) returns Number
+    {
+        return lhs + rhs;
+    }
+
+    /* not allowed
+    Public Function plus_list(
+        List(element:Number) lhs, List(element:Number) rhs) returns List(element:Number)
+    {
+        return lhs + rhs;
+    }
+    */
+    Public Function plus_text(Text lhs, Text rhs) returns Text
+    {
+        return lhs + rhs;
+    }
+
+    Public Function minus(Number lhs, Number rhs) returns Number
+    {
+        return lhs - rhs;
+    }
+
+    Public Function mult(Number lhs, Number rhs) returns Number
+    {
+        return lhs*rhs;
+    }
+
+    Public Function div(Number lhs, Number rhs) returns Number
+    {
+        return lhs/rhs;
+    }
+
+    Public Function or_(TrueFalse lhs, TrueFalse rhs) returns TrueFalse
+    {
+        return lhs or rhs;
+    }
+
+    Public Function and_(TrueFalse lhs, TrueFalse rhs) returns TrueFalse
+    {
+        return lhs and rhs;
+    }
+}
