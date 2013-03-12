@@ -523,13 +523,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         toAppendNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
         un_function_called_to_ap_to_type = unwrap_function_call_type_checker(
-            toIterateNode.type,node,
+            toAppendToNode.type,node,
             ('Error in append on what appending to side: function call ' +
             'returns more than one value.'),
             progText)
 
         un_function_called_to_ap_type = unwrap_function_call_type_checker(
-            toIterateNode.type,node,
+            toAppendNode.type,node,
             ('Error in append on what appending: function call ' +
             'returns more than one value.'),
             progText)
