@@ -259,7 +259,12 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
             for field_to_update in fields_to_update.keys():
                 if field_to_update not in val:
                     # to handle deletions for maps
-                    del w_obj.val[field_to_update]
+                    if field_to_update in w_obj.val:
+                        # if just performed a contains call on a
+                        # missing entry, then we might have
+                        # field_to_update not be in w_obj.val.  In
+                        # that case, we cannot delete it.
+                        del w_obj.val[field_to_update]
                 else:
                     w_obj.val[field_to_update] = val[field_to_update]
 

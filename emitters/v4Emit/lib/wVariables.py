@@ -109,7 +109,10 @@ class WaldoMapVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         if init_val == None:
             init_val = InternalMap(host_uuid,peered,{})
-            
+        else:
+            if isinstance(init_val,dict):
+                init_val = InternalMap(host_uuid,peered,init_val)
+                
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
 
         
@@ -140,7 +143,10 @@ class WaldoListVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         if init_val == None:
             init_val = InternalList(host_uuid,peered,[])
-
+        else:
+            if isinstance(init_val,list):
+                init_val = InternalList(host_uuid,peered,init_val)
+            
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
     
     @staticmethod

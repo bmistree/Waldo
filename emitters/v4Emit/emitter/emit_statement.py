@@ -26,6 +26,20 @@ def emit_statement(
     elif statement_node.label == AST_BOOL:
         statement_txt =  statement_node.value + ' '
 
+    elif statement_node.label == AST_IN_STATEMENT:
+        lhs_node = statement_node.children[0]
+        rhs_node = statement_node.children[1]
+
+        rhs_txt = emit_statement(
+            rhs_node, endpoint_name, ast_root,fdep_dict,emit_ctx)
+        lhs_txt = emit_statement(
+            lhs_node, endpoint_name, ast_root,fdep_dict,emit_ctx)
+        
+        statement_txt = (
+            rhs_txt + '.get_val(_active_event).contains_key_called(' +
+            ('_active_event, _context.get_val_if_waldo(%s,_active_event))' %
+            lhs_txt))
+        
     elif is_binary_operator_from_label(statement_node.label):
         # checks for +,-,>, etc.
         

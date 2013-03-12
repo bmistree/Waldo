@@ -82,4 +82,10 @@ SingleSide
     {
         return lhs and rhs;
     }
+
+    Public Function in_map(Map(from: Number, to: Number) map_, Number key) returns TrueFalse
+    {
+        return key in map_;
+    }
+    
 }

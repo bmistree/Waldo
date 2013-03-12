@@ -356,6 +356,7 @@ def convert_args_to_waldo(method_node,sequence_local=False):
                 force_copy = 'False'
 
             converted_args_string += (
+                arg_name + ' = ' +
                 '_context.turn_into_waldo_var(' + arg_name +
                 ',_active_event,self._uuid,%s)\n' % (force_copy))
         else:

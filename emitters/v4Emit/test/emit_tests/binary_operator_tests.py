@@ -29,8 +29,20 @@ def run_test():
     return True
 
 
-def test_in(single_sid):
-    # FIXME: add in testing
+def test_in(single_side):
+    init_map = {
+        1: 2,
+        3: 4
+        }
+    if not single_side.in_map(init_map,1):
+        print '\nErr on in '
+        return False
+
+    if single_side.in_map(init_map,4):
+        print '\nErr on in '
+        return False
+
+    
     return True
  
 def test_other_plusses(single_side):
