@@ -82,14 +82,17 @@ def emit_endpoint_init(
 
     init_header = 'def __init__(self,_host_uuid,_conn_obj):\n'
 
-    # create endpoint and peered variable store
-    init_body,glob_var_store_name = emit_endpoint_global_and_peered_variable_store(
-        endpoint_name,'_host_uuid',ast_root,fdep_dict,emit_ctx)
 
     # actually initialize super class
-    init_body += '''
-%s.__init__(self,_host_uuid,_conn_obj,%s)
-''' % (emit_utils.library_transform('Endpoint'), glob_var_store_name)
+    init_body = '''
+%s.__init__(self,_host_uuid,_conn_obj,%s(_host_uuid))
+''' % (emit_utils.library_transform('Endpoint'),
+       emit_utils.library_transform('VariableStore'))
+
+
+    # create endpoint and peered variable store
+    init_body += emit_endpoint_global_and_peered_variable_store(
+        endpoint_name,'_host_uuid',ast_root,fdep_dict,emit_ctx)
     
     # FIXME: this is where would actually make call to onCreate
     
@@ -101,39 +104,38 @@ def emit_endpoint_global_and_peered_variable_store(
     '''
     For params, @see emit_single_endpoint
 
-    Returns a string that initializes the global variable store with
-    data for an endpoint + a string for the name of the glob var store
-    temporary variable.
+    Returns a string that initializes the global variable store
+    contained in self._global_var_store.
     '''
-
-    glob_var_store_tmp_name = '_glob_var_store'
     
     endpoint_global_decl_nodes = get_endpoint_global_decl_nodes(
         endpoint_name,ast_root)
     peered_decl_nodes = get_peered_decl_nodes(ast_root)
 
-    var_store_loading_text = (
-        '%s = %s(_host_uuid)' %
-        (glob_var_store_tmp_name, emit_utils.library_transform('VariableStore')))
+    var_store_loading_text = '_active_event = None'
+    var_store_loading_text += '''
+_context = %s(
+    self._global_var_store,
+    # not using sequence local store
+    _waldo_libs.VariableStore(self._host_uuid))
+''' % emit_utils.library_transform('ExecutingEventContext')
+
+    var_store_loading_text += create_wvariables_array(
+        host_uuid_var_name,endpoint_global_decl_nodes,False,
+        endpoint_name,ast_root,fdep_dict,emit_ctx)
     
     var_store_loading_text += create_wvariables_array(
-        glob_var_store_tmp_name,host_uuid_var_name,
-        endpoint_global_decl_nodes,False)
-    var_store_loading_text += create_wvariables_array(
-        glob_var_store_tmp_name,host_uuid_var_name,
-        peered_decl_nodes,True)
+        host_uuid_var_name,peered_decl_nodes,True,
+        endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-    return var_store_loading_text, glob_var_store_tmp_name
+    
+    return var_store_loading_text
 
 
 def create_wvariables_array(
-    var_store_name,host_uuid_var_name,decl_node_array,peered):
+    host_uuid_var_name,decl_node_array,peered,
+    endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''
-    @param {String} var_store_name --- The name of the variable that
-    contains the variable store that we are writing to.  (Eg.,
-    _glob_var_store if in __init__ of subclassed endpoint, or
-    self._global_var_store if in method of subclassed endpoint.)
-
     @param {String} host_uuid_var_name --- The name of the variable
     that contains the host uuid.
 
@@ -143,8 +145,6 @@ def create_wvariables_array(
     @param {bool} peered --- True if new variable is supposed to be
     peered, False otherwise.
     '''
-
-    # FIXME: for now, skipping initializers.
     wvar_load_text = ''
 
     peered_str = 'True' if peered else 'False'
@@ -152,13 +152,15 @@ def create_wvariables_array(
     for decl_node in decl_node_array:
 
         # check if annotated declaration or just declaration
-
+        initializer_node = None
         if decl_node.label == AST_ANNOTATED_DECLARATION:
             var_name = emit_utils.get_var_name_from_annotated_decl(decl_node)
             var_type = emit_utils.get_var_type_dict_from_annotated_decl(decl_node)
+            initializer_node = emit_utils.get_var_initializer_from_annotated_decl(decl_node)
         elif decl_node.label == AST_DECLARATION:
             var_name = emit_utils.get_var_name_from_decl(decl_node)
-            var_type = emit_utils.get_var_type_dict_from_decl(decl_node)            
+            var_type = emit_utils.get_var_type_dict_from_decl(decl_node)
+            initializer_node = emit_utils.get_var_initializer_from_decl(decl_node)            
         #### DEBUG
         else:
             emit_utils.emit_assert(
@@ -166,22 +168,37 @@ def create_wvariables_array(
                 'var that is not a declaration.')
         #### END DEBUG
 
+        # handle emitting the initialization node.  note, if no
+        # initialization of node, then no value is supplied as last
+        # arg when creating the variable.  This means that the
+        # WaldoVariable will not be supplied an init_val argument and
+        # can use its default initialized value.
+        initializer_str = ''
+        if initializer_node != None:
+            emitted_init = emit_statement.emit_statement(
+                initializer_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+            
+            # the actual initializer that will be used when creating variable.
+            initializer_str = (
+                '_context.get_val_if_waldo(%s,_active_event)' %
+                 emitted_init)
 
         variable_type_str = emit_utils.get_var_type_txt_from_type_dict(
             var_type)
             
         wvar_load_text += '''
-%s.add_var(
+self._global_var_store.add_var(
     '%s',
     %s(  # the type of waldo variable to create
         '%s', # variable's name
         %s, # host uuid var name
-        %s  # if peered, True, otherwise, False
-        # FIXME: no initializer
+        %s,  # if peered, True, otherwise, False
+        %s
     ))
-''' % (var_store_name, var_name,variable_type_str,
-       var_name,host_uuid_var_name,peered_str)
-        
+''' % (var_name,variable_type_str,var_name,host_uuid_var_name,
+       peered_str, initializer_str)
+
+            
     return wvar_load_text
 
 

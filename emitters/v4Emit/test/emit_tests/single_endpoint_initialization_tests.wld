@@ -1,0 +1,50 @@
+SingleEndpointInitializationTests
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+    Text global_txt = 'a';
+    Number global_num = 30;
+    TrueFalse global_tf = False;    
+    List(element: Number) global_list = [2,4,6];
+    Map(from:TrueFalse, to: Number) global_map = {True: 100, False: 93};
+
+    // checks if can initialize based on a previous value
+    Number global_other_num = global_num;
+    List(element: Number) global_other_list = global_list;
+
+    
+    Public Function return_global_vars() returns
+        Text, Number, TrueFalse, List(element:Number),
+        Map(from:TrueFalse, to: Number), Number,
+        List(element:Number)
+    {
+        return global_txt,global_num,global_tf,
+            global_list,global_map,global_other_num,
+            global_other_list;
+    }
+
+    Public Function return_local_vars() returns
+        Text, Number, TrueFalse, List(element:Number),
+        Map(from:TrueFalse, to: Number), Number,
+        List(element:Number)
+    {
+        Text local_txt = 'a';
+        Number local_num = 30;
+        TrueFalse local_tf = False;    
+        List(element: Number) local_list = [2,4,6];
+        Map(from:TrueFalse, to: Number) local_map = { True: 100, False: 93};
+
+        Number local_other_num = local_num;
+        List(element: Number) local_other_list = local_list;
+
+        return local_txt,local_num,local_tf,local_list,
+            local_map,local_other_num,local_other_list;
+    }
+}

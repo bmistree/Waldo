@@ -4,7 +4,7 @@ from tuple_return_tests_v4 import SingleSide
 
 
 '''
-Tests all the binary operators in the system.
+Tests that can receive tuple return types from Waldo code
 '''
 
 def run_test():
@@ -35,8 +35,6 @@ def run_test():
         return False
     
     return True
-
-
 
 
 if __name__ == '__main__':

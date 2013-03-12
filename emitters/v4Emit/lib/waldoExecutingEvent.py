@@ -96,6 +96,12 @@ class _ExecutingEventContext(object):
         Therefore, the compiler just uses this function at *runtime.*
         This function will either call get_val on the oject (if it's a
         WaldoReference) or just pass it through otherwise.
+
+        @param {InvalidationListener or None} --- If None, then this
+        is used during initialization of variables.  Means that the
+        Waldo Reference should just return the actual committed value
+        of the variable.  Don't wait for commit or anything else.
+        
         '''
         if isinstance(val,waldoReferenceBase._ReferenceBase):
             return val.get_val(active_event)

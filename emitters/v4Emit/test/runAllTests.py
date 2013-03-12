@@ -98,6 +98,7 @@ def run_emit_tests():
     import emit_tests.set_get_value_test
     import emit_tests.binary_operator_tests
     import emit_tests.tuple_return_tests
+    import emit_tests.single_endpoint_initialization_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -108,6 +109,9 @@ def run_emit_tests():
 
         ('Emit test tuple returns',
          emit_tests.tuple_return_tests.run_test),
+
+        ('Emit test endpoint and local var initialization',
+         emit_tests.single_endpoint_initialization_tests.run_test),
         
         ]
 

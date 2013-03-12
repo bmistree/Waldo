@@ -104,6 +104,18 @@ def get_var_name_from_annotated_decl(annotated_decl_node):
         
     return name_node.sliceAnnotationName
 
+def get_var_initializer_from_annotated_decl(annotated_decl_node):
+    '''
+    @param {AstNode object} annotated_decl_node
+    
+    @returns {AstNode or None} --- If the variable has an initializer,
+    then returns the ast node used for initializing the declaration.
+    '''
+    if len(annotated_decl_node.children) != 4:
+        return None
+    return annotated_decl_node.children[3]
+
+
 def get_var_type_dict_from_annotated_decl(annotated_decl_node):
     '''
     @param {AstNode object} annotated_decl_node
@@ -120,6 +132,17 @@ def get_var_type_dict_from_annotated_decl(annotated_decl_node):
     type_node = annotated_decl.children[1]
     return type_node.type
     
+
+def get_var_initializer_from_decl(decl_node):
+    '''
+    @param {AstNode object} decl_node
+    
+    @returns {AstNode or None} --- If the variable has an initializer,
+    then returns the ast node used for initializing the declaration.
+    '''
+    if len(decl_node.children) != 3:
+        return None
+    return decl_node.children[2]
 
 
 def get_var_name_from_decl(decl_node):

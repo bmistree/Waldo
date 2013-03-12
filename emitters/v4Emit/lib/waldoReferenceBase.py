@@ -241,8 +241,19 @@ class _ReferenceBase(object):
 
     def get_val(self,invalid_listener):
         '''
-        Requests a copy of the internal 
+        Requests a copy of the internal
+
+        If invalid_listener is None, then that means that we actually
+        want the last committed val directly.  (Shouldn't be used
+        frequently, mostly just for initialization, when otherwise do
+        not have an active value.)
         '''
+        if invalid_listener == None:
+            self._lock()
+            internal_val = self.val
+            self._unlock()
+            return internal_val
+        
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_val = self._dirty_map[invalid_listener.uuid].val
