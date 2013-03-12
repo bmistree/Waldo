@@ -12,7 +12,9 @@ SingleSide
 {
     Number num = 0;
     Text txt = '';
+    List(element: Number) test_list;
 
+    
     Public Function get_num() returns Number
     {
         return num;
@@ -29,11 +31,18 @@ SingleSide
         return txt;
     }
 
-
     Public Function increment_txt(Text to_add) returns Text
     {
         txt += to_add;
         return get_txt();
+    }
+
+
+
+    Public Function increment_list(Number to_append) returns List(element:Number)
+    {
+        test_list.append(to_append);
+        return test_list;
     }
     
 }

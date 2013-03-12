@@ -46,6 +46,24 @@ def emit_statement(
             '(_context.get_val_if_waldo(%s,_active_event) %s _context.get_val_if_waldo(%s,_active_event))'
             % (lhs_txt, bin_op_txt, rhs_txt))
         
+
+    elif statement_node.label == AST_APPEND_STATEMENT:
+        to_append_to_node = statement_node.children[0]
+        what_to_append_node = statement_node.children[1]
+
+        what_to_append_txt = emit_statement(
+            what_to_append_node,endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+
+        to_append_to_txt = emit_statement(
+            to_append_to_node,endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+
+        statement_txt = (
+            to_append_to_txt + '.get_val(_active_event).append_val(_active_event,' +
+            '_context.get_val_if_waldo(%s,_active_event))' %
+            what_to_append_txt)
+
         
     elif statement_node.label == AST_STRING:
         statement_txt += "'"  + statement_node.value + "' "

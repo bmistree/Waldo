@@ -40,7 +40,13 @@ def run_test():
             print '\nGot incorrect string back'
             return False
 
-    
+
+        internal_list = single_side.increment_list(counter)
+        expected_internal_list = list(range(0,counter+1))
+        if internal_list != expected_internal_list:
+            print '\nNot appending to internal list correctly'
+            return False
+            
     return True
 
 
