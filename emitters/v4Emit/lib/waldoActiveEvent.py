@@ -1289,7 +1289,7 @@ class PartnerActiveEvent(_ActiveEvent):
         self._unlock()
 
         if to_forward:
-            self.subscriber._forward_first_phase_commit_unsuccessful(
+            self.local_endpoint._forward_first_phase_commit_unsuccessful(
                 event_uuid,msg_originator_endpoint_uuid)
 
 
