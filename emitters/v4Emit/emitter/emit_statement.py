@@ -125,7 +125,7 @@ def emit_statement(
     False, # not peered
     %s) # initializer text''' % (
             var_name_waldo_src,
-            emit_utils.library_transform(var_type_txt), var_name_txt,
+            var_type_txt, var_name_txt,
             var_initializer_txt)
 
             
@@ -256,7 +256,7 @@ def _emit_non_de_waldoed_return(
     return_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     
     ret_list_node = return_node.children[0]
-    return_txt = 'return ('
+    return_txt = 'return _context.flatten_into_single_return_tuple('
 
     if len(ret_list_node.children) == 0:
         return_txt += 'None'
@@ -276,7 +276,7 @@ def _emit_non_de_waldoed_return(
 def _emit_de_waldoed_return(
     return_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     ret_list_node = return_node.children[0]    
-    return_txt = 'return ('
+    return_txt = 'return _context.flatten_into_single_return_tuple('
 
     if len(ret_list_node.children) == 0:
         return_txt += 'None'

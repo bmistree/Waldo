@@ -1,0 +1,41 @@
+TupleReturnTests
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+
+    Public Function return_static_nums() returns Number,Number,Number
+    {
+        return 1,2,3;
+    }
+
+    Public Function return_func_call_nums() returns Number,Number,Number
+    {
+        return return_static_nums();
+    }
+
+    Public Function return_variable_texts() returns Text, Text
+    {
+        Text a = 'a';
+        Text b = 'b';
+        return a,b;
+    }
+
+    Public Function return_func_call_variable_texts() returns Text,Text
+    {
+        return return_variable_texts();
+    }
+
+    Public Function return_extended_texts () returns Text,Text,Text
+    {
+        return return_variable_texts(),'c';
+    }
+    
+}

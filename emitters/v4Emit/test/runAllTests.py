@@ -97,13 +97,17 @@ def run_emit_tests():
 
     import emit_tests.set_get_value_test
     import emit_tests.binary_operator_tests
+    import emit_tests.tuple_return_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
          emit_tests.set_get_value_test.run_test),
 
         ('Emit test binary operators',
-         emit_tests.binary_operator_tests.run_test)
+         emit_tests.binary_operator_tests.run_test),
+
+        ('Emit test tuple returns',
+         emit_tests.tuple_return_tests.run_test),
         
         ]
 

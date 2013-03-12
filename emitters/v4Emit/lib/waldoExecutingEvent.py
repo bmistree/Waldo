@@ -189,6 +189,52 @@ class _ExecutingEventContext(object):
         return de_waldoify(val,active_event)
 
 
+    def flatten_into_single_return_tuple(self,*args):
+        '''
+        @param *args 
+
+        @returns {tuple or a single value}
+
+        Take something like this: 
+        1, (2,3), 4, ((5), (6))
+        or
+        (1, (2,3), 4, ((5), (6)))
+        and turn it into
+        (1, 2, 3, 4, 5, 6)
+
+        If the length of the return tuple is just one, then just
+        return that value directly.  This is so that when we are
+        returning a single value, instead of returning a tuple
+        containing a single value, we return the value.
+
+        Ie, if we take in
+        (1,)
+        we return
+        1
+        '''
+        to_return_list = []
+
+        for arg in args:
+            if isinstance(arg,tuple):
+                for item in arg:
+                    # recursive call returns either a tuple or a
+                    # single value....in either case, we want to
+                    # incorporate it into the master to_return_list.
+                    recursive_val = self.flatten_into_single_return_tuple(item)
+                    if isinstance(recursive_val,tuple):
+                        item = list(recursive_val)
+                    else:
+                        item = [recursive_val]
+                    to_return_list += item
+            else:
+                to_return_list.append(arg)
+
+        to_return_tuple = tuple(to_return_list)
+        if len(to_return_list) == 1:
+            return to_return_tuple[0]
+        return to_return_tuple
+
+
     def handle_in_check(self,lhs,rhs,active_event):
         '''
         Call has form:
@@ -234,6 +280,14 @@ def de_waldoify(val,active_event):
     '''
     if isinstance(val,waldoReferenceBase._ReferenceBase):
         return val.de_waldoify(active_event)
+    if isinstance(val,tuple):
+        # means that we are trying to dewaldoify a function call's
+        # return.  Need to dewaldo-ify each element of tuple
+        return_list = []
+        for item in val:
+            return_list.append(de_waldoify(item,active_event))
+        return tuple(return_list)
+
     return val
     
     
