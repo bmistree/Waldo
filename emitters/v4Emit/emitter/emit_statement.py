@@ -419,10 +419,13 @@ def _emit_msg_seq_begin_call(
     NOTE: This assumes the rule that you cannot start one message
     sequence from *within* another message sequence.
     '''
-    return ('%s if _context.set_msg_send_initialized_bit_false() else None' %
-            _emit_public_private_method_call(
-            msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-            lib_util.partner_endpoint_msg_call_func_name))
+    method_call_txt = _emit_public_private_method_call(
+        msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
+        lib_util.partner_endpoint_msg_call_func_name)
+    
+    return (
+        '%s if _context.set_msg_send_initialized_bit_false() else None' %
+        method_call_txt)
 
 
 def _emit_endpoint_method_call(

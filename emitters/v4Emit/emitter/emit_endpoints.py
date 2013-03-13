@@ -270,7 +270,7 @@ def emit_private_method_interface(
     
     method_name_node = method_node.children[name_node_index]
     src_method_name = method_name_node.value
-    internal_method_name = lib_util.endpoint_call_func_name(src_method_name)
+    internal_method_name = name_mangler(src_method_name)
 
     # When returning, check if it was a call from an outside-Waldo
     # function into this function... if it was (ie,
@@ -280,6 +280,9 @@ def emit_private_method_interface(
     # should be returned as externals (ie, we do not de-waldo-ify
     # them).
     method_arg_names = ['_returning_to_public_ext_array=None']
+    if method_node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        # will fill in the default value of None in reduce
+        method_arg_names = ['_returning_to_public_ext_array']
     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         # message receives take no arguments
         method_arg_names = get_method_arg_names(method_node) + method_arg_names
@@ -507,7 +510,7 @@ def emit_endpoint_message_send_blocks(
 
     return send_block_node_txt
 
-    
+
 def emit_message_send(
     message_send_node,next_to_call_node,seq_globals_node,
     endpoint_name,ast_root, fdep_dict,emit_ctx):
@@ -526,13 +529,12 @@ if not _context.set_msg_send_initialized_bit_true():
 '''
     seq_local_init_prefix += emit_utils.indent_str(
         convert_args_to_waldo(message_send_node,True))
-    seq_local_init_prefix += '\n'
+    seq_local_init_prefix += emit_utils.indent_str('\npass\n')
     # now emit the sequence global initializations and declarations
     seq_local_init_prefix += emit_utils.indent_str(emit_statement.emit_statement(
             seq_globals_node,endpoint_name,ast_root,fdep_dict,emit_ctx))
     seq_local_init_prefix += '\n'
-
-    
+        
     # when message send ends, it must grab the sequence local data
     # requested to return.  To control for jumps, any time we jump, we
     # take whatever text is in emit_ctx's message_seq_return_txt and
@@ -554,9 +556,9 @@ if not _context.set_msg_send_initialized_bit_true():
     emit_ctx.message_seq_return_txt = msg_send_return_txt
 
     # a message send function should look the same as a private
-    # internal method (if we name it a little differently...last arg
-    # takes care of this; and we keep track of the return statement to
-    # issue on jump calls)
+    # internal method (if we name it a little
+    # differently...name_mangler arg takes care of this; and we
+    # keep track of the return statement to issue on jump calls)
     msg_send_txt = emit_private_method_interface(
         message_send_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
         lib_util.partner_endpoint_msg_call_func_name,seq_local_init_prefix)
@@ -615,7 +617,7 @@ def emit_message_node_what_to_call_next(next_to_call_node):
     return '''
 _threadsafe_queue = %s
 _active_event.issue_partner_sequence_block_call(
-    _context,'%s',threadsafe_queue)
+    _context,'%s',_threadsafe_queue)
 _queue_elem = _threadsafe_queue.get()
 
 if isinstance(_queue_elem,%s):
