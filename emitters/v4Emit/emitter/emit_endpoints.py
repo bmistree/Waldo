@@ -925,7 +925,7 @@ def get_return_type_index_from_func_node_label(label):
     #### DEBUG
     else:
         emit_utils.emit_assert(
-            'Unknown label getting return typ for.')
+            'Unknown label getting return type for.')
     #### END DEBUG
         
     return return_node_index

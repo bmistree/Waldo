@@ -66,6 +66,7 @@ def run_lib_tests():
     run_tests(to_run)
 
 def run_tests(to_run):
+    print '\n\n'    
     for to_run_tuple in to_run:
         test_name = to_run_tuple[0]
         test_method = to_run_tuple[1]
@@ -99,6 +100,7 @@ def run_emit_tests():
     import emit_tests.binary_operator_tests
     import emit_tests.tuple_return_tests
     import emit_tests.single_endpoint_initialization_tests
+    import emit_tests.two_sided_modify_peer_check_update_test
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -112,6 +114,9 @@ def run_emit_tests():
 
         ('Emit test endpoint and local var initialization',
          emit_tests.single_endpoint_initialization_tests.run_test),
+
+        ('Emit test peered number gets automatically updated when one side writes to it',
+         emit_tests.two_sided_modify_peer_check_update_test.run_test),
         
         ]
 

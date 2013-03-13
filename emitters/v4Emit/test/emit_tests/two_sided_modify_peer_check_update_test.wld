@@ -1,0 +1,36 @@
+TwoSided
+
+
+Endpoint Modifier;
+Endpoint DataReader;
+
+
+Sequences{}
+
+Peered
+{
+    Nothing controls Number peered_num = 22;
+}
+
+
+DataReader
+{
+    Public Function read_peered_num() returns Number
+    {
+        return peered_num;
+    }
+}
+
+Modifier
+{
+    Public Function increment_peered_num() returns Number
+    {
+        peered_num += 1;
+        return peered_num;
+    }
+    Public Function read_peered_num() returns Number
+    {
+        return peered_num;
+    }
+    
+}

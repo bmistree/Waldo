@@ -95,7 +95,7 @@ def get_var_name_from_annotated_decl(annotated_decl_node):
             'get_var_name_from_annotated_decl.')
     #### END DEBUG
 
-    name_node = annotated_decl.children[2]
+    name_node = annotated_decl_node.children[2]
     #### DEBUG    
     if name_node.sliceAnnotationName == None:
         emit_assert(
@@ -129,7 +129,7 @@ def get_var_type_dict_from_annotated_decl(annotated_decl_node):
             'get_var_type_dict_from_annotated_decl.')
     #### END DEBUG
         
-    type_node = annotated_decl.children[1]
+    type_node = annotated_decl_node.children[1]
     return type_node.type
     
 

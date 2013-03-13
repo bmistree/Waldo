@@ -33,4 +33,4 @@ $(GENERATED_FILES_V4) : %_v4.py : %.wld
 
 .PHONY : clean
 clean :
-	rm -f $(GENERATED_FILES_V2) $(GENERATED_FILES_V4) emitted_v2.py emitted_v4.py *.pyc
+	rm -f $(GENERATED_FILES_V2) $(GENERATED_FILES_V4) emitted_v2.py emitted_v4.py *.pyc parser.out parsetab.py
