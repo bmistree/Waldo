@@ -641,7 +641,7 @@ class _ActiveEvent(_InvalidationListener):
 
             evt_ctx.set_to_reply_with(reply_with_uuid)
             
-            # used to actually star execution of context thread at end
+            # used to actually start execution of context thread at end
             # of loop.  must start event outside of locks.  That way,
             # if the exec event leads to and endpoint call, etc., we
             # don't block waiting on its return.

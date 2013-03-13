@@ -1,0 +1,114 @@
+TwoSided
+
+
+Endpoint SideA;
+Endpoint SideB;
+
+
+Sequences{
+  basic_exchange:
+    SideA.start_basic_exchange ->
+    SideB.receive_basic_exchange;
+
+  extended_exchange:
+    SideA.extended_1 ->
+    SideB.extended_2 ->
+    SideA.extended_3 ->
+    SideB.extended_4 ->
+    SideA.extended_5 ->
+    SideB.extended_6 ->
+    SideA.extended_7;
+}
+
+Peered
+{
+    Nothing controls Number peered_num = 22;
+}
+
+
+Sequence basic_exchange()
+{
+    /**
+       Checks that both sides execute by insuring that the value of
+       peered num is two greater than it was before we started.
+     */
+    SideA.start_basic_exchange
+    {
+        peered_num += 1;
+    }
+    SideB.receive_basic_exchange
+    {
+        peered_num += 1;
+    }
+}
+
+
+Sequence extended_exchange()
+{
+    /**
+       Checks that both sides execute by insuring that the value of
+       peered num is 28 larger than what we started out with.  Also, last
+       sequence block is on endpoint that started the messages: checks to ensure
+       that other endpoint still gets updated in this situation.
+     */
+    SideA.extended_1
+    {
+        peered_num += 1;
+    }
+    SideB.extended_2
+    {
+        peered_num += 2;
+    }
+    SideA.extended_3
+    {
+        peered_num += 3;
+    }
+    SideB.extended_4
+    {
+        peered_num += 4;
+    }
+    SideA.extended_5
+    {
+        peered_num += 5;
+    }
+    SideB.extended_6
+    {
+        peered_num += 6;
+    }
+    SideA.extended_7
+    {
+        peered_num += 7;
+    }
+}
+
+
+
+SideA
+{
+    Public Function read_peered_num() returns Number
+    {
+        return peered_num;
+    }
+
+
+    Public Function basic_exchange_test() returns Number
+    {
+        start_basic_exchange();
+        return peered_num;
+    }
+
+    Public Function extended_exchange_test() returns Number
+    {
+        extended_1();
+        return peered_num;
+    }
+}
+
+SideB
+{
+    Public Function read_peered_num() returns Number
+    {
+        return peered_num;
+    }
+    
+}

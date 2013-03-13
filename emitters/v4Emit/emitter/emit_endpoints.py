@@ -66,7 +66,7 @@ def emit_endpoint_body(
     endpoint_body_text += '### USER DEFINED SEQUENCE BLOCKS ###\n'
     endpoint_body_text += emit_endpoint_message_sequence_blocks(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
-    # FIXME: fill this section in
+
     
     return endpoint_body_text
     
@@ -580,6 +580,12 @@ if not _context.set_msg_send_initialized_bit_true():
 def emit_message_receive(
     message_receive_node,next_to_call_node,endpoint_name,ast_root,
     fdep_dict,emit_ctx):
+    '''
+    @param {AstNode or None} next_to_call_node --- If AstNode, then
+    has label AST_MESSAGE_RECEIVE_FUNCTION.  If None, means that this
+    is the last message receive node in sequence and should tell other
+    side to issue a block call with target None.
+    '''
 
     emit_ctx.in_message_receive = True
     emit_ctx.message_seq_return_txt = '\nreturn '
@@ -591,7 +597,59 @@ def emit_message_receive(
     
     emit_ctx.in_message_receive = False
     emit_ctx.message_seq_return_txt = ''
-    
+
+    ## Ends by telling the opposite side what to do next
+    next_to_call_txt = 'None'
+    if next_to_call_node != None:
+        # the name of the next sequence block to execute, as it
+        # appears in the source Waldo text, ie, before mangling.
+        next_sequence_block_src_name = next_to_call_node.children[1].value
+        
+        next_to_call_txt = '"' + lib_util.partner_endpoint_msg_call_func_name(
+            next_sequence_block_src_name) + '"'
+        
+
+        
+    # note that we must wait on receiving a response from the other
+    # side before we can continue on, or the original sender may
+    # return too early. We should not wait on the last message that we
+    # send however, because, we do not expect any response to it.
+    # (Ie, if next_to_call_txt == 'None', then do not wait.)
+    next_sequence_txt = '''
+_threadsafe_queue = %s
+_active_event.issue_partner_sequence_block_call(
+    _context,%s,_threadsafe_queue)
+# must wait on the result of the call before returning
+
+if %s != None:
+    _queue_elem = _threadsafe_queue.get()
+
+    if isinstance(_queue_elem,%s):
+        # back everything out
+        raise %s
+
+    _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
+
+    # apply changes to sequence variables.  Note: that
+    # the system has already applied deltas for global data.
+    _context.sequence_local_store.incorporate_deltas(
+        _active_event,_queue_elem.sequence_local_var_store_deltas)
+
+    # send more messages
+    _to_exec_next = _queue_elem.to_exec_next_name_msg_field
+    if _to_exec_next != None:
+        # means that we do not have any additional functions to exec
+        _to_exec = getattr(self,_to_exec_next)
+        _to_exec(_active_event,_context)
+
+''' % (emit_utils.library_transform('Queue.Queue()'),
+       next_to_call_txt,
+       next_to_call_txt,
+       emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
+       emit_utils.library_transform('BackoutException()'),
+       )
+
+    msg_receive_txt += emit_utils.indent_str(next_sequence_txt)
     return msg_receive_txt
     
     
@@ -629,10 +687,10 @@ _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
 # be any, but it's worth getting in practice.)  Note: that
 # the system has already applied deltas for global data.
 _context.sequence_local_store.incorporate_deltas(
-    active_event,seq_msg_call_res.sequence_local_var_store_deltas)
+    _active_event,_queue_elem.sequence_local_var_store_deltas)
 
 # send more messages
-_to_exec_next = seq_msg_call_res.to_exec_next_name_msg_field
+_to_exec_next = _queue_elem.to_exec_next_name_msg_field
 if _to_exec_next != None:
     # means that we do not have any additional functions to exec
     _to_exec = getattr(self,_to_exec_next)

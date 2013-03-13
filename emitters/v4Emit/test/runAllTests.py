@@ -101,6 +101,7 @@ def run_emit_tests():
     import emit_tests.tuple_return_tests
     import emit_tests.single_endpoint_initialization_tests
     import emit_tests.two_sided_modify_peer_check_update_test
+    import emit_tests.basic_message_sequence_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -117,6 +118,9 @@ def run_emit_tests():
 
         ('Emit test peered number gets automatically updated when one side writes to it',
          emit_tests.two_sided_modify_peer_check_update_test.run_test),
+
+        ('Emit test update peered data across several sequence blocks',
+         emit_tests.basic_message_sequence_tests.run_test),
         
         ]
 
