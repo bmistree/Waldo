@@ -33,7 +33,20 @@ def run_test():
     if ('a','b','c') != single_side.return_extended_texts():
         print '\nErr getting extended texts'
         return False
+
+
     
+    for i in range(1,15):
+        if (i,i) != single_side.return_tuple_endpoint_global():
+            print '\nErr: incorrect tuple value of mutated state'
+            return False
+
+    for j in range(i+1,i+15):
+        if (j,j,0) != single_side.wrapped_tuple():
+            print '\nErr: incorrect tuple value of wrapped mutated state'
+            return False
+        
+        
     return True
 
 

@@ -424,7 +424,7 @@ def _emit_msg_seq_begin_call(
         lib_util.partner_endpoint_msg_call_func_name)
     
     return (
-        '%s if _context.set_msg_send_initialized_bit_false() else None' %
+        '(%s if _context.set_msg_send_initialized_bit_false() else None)' %
         method_call_txt)
 
 
