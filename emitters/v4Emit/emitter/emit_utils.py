@@ -20,7 +20,6 @@ class EmitContext(object):
         self.message_seq_return_txt = ''
 
 
-
 def get_endpoint_names(ast_root):
     '''
     @return {2-tuple} --- Each element contains a string representing

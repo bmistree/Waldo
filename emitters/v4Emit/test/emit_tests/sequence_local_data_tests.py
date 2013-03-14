@@ -83,6 +83,18 @@ def run_test():
             err_msg += 'in returns check.'
             print err_msg
             return False
+
+
+    #### Testing that can declare and manipulate sequence local
+    #### data not in arguments or return nodes
+    expecting_seq_local_num = 62
+    expecting_seq_local_text = 'wowwow'
+
+    if (expecting_seq_local_num, expecting_seq_local_text) != sideA.non_arg_return_seq_local_data_check():
+        err_msg = '\nErr: A could not declare and manipulate '
+        err_msg += 'additional sequence local data.'
+        print err_msg
+        return False
         
     return True
 

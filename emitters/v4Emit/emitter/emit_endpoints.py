@@ -613,13 +613,13 @@ if not _context.set_msg_send_initialized_bit_true():
 '''
     seq_local_init_prefix += emit_utils.indent_str(
         convert_args_to_waldo(message_send_node,True))
-    seq_local_init_prefix += emit_utils.indent_str(
-        convert_returns_to_waldo(message_send_node))
-    
-    seq_local_init_prefix += emit_utils.indent_str('\npass\n')
+
+    # seq_local_init_prefix += emit_utils.indent_str(
+    #     convert_returns_to_waldo(message_send_node))
     # now emit the sequence global initializations and declarations
     seq_local_init_prefix += emit_utils.indent_str(emit_statement.emit_statement(
-            seq_globals_node,endpoint_name,ast_root,fdep_dict,emit_ctx))
+            seq_globals_node,endpoint_name,ast_root,fdep_dict,emit_ctx))    
+    seq_local_init_prefix += emit_utils.indent_str('\npass\n')
     seq_local_init_prefix += '\n'
 
     

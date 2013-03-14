@@ -12,6 +12,9 @@ Sequences{
     SideA.start_returns_check_exchange ->
     SideB.receive_returns_check_exchange;
 
+  non_arg_return_seq_local_data_check_exchange:
+    SideA.start_non_arg_return_seq_local_data_check_exchange ->
+    SideB.receive_non_arg_return_seq_local_data_check_exchange;
     
     /*
   arguments_check_references_exchange:
@@ -75,6 +78,22 @@ Sequence returns_check_exchange()
     }
 }
 
+Sequence non_arg_return_seq_local_data_check_exchange()
+    returns Number ret_num, Text ret_text
+{
+    Number seq_local_num = 52;
+    Text seq_local_text = 'wow';
+    SideA.start_non_arg_return_seq_local_data_check_exchange
+    {
+        ret_num = seq_local_num + 10;
+    }
+    SideB.receive_non_arg_return_seq_local_data_check_exchange
+    {
+        seq_local_text += seq_local_text;
+        ret_text = seq_local_text;
+    }
+}
+
 
 // Sequence arguments_check_references_exchange(
 //     Map (from: Number, to: TrueFalse) arg_map, List(element: Text) arg_list)
@@ -107,7 +126,13 @@ SideA
     {
         return start_returns_check_exchange();
     }
-    
+
+    Public Function non_arg_return_seq_local_data_check()
+        returns Number, Text
+    {
+        return start_non_arg_return_seq_local_data_check_exchange();
+    }
+
 }
 
 SideB

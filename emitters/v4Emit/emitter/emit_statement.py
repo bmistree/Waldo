@@ -128,8 +128,6 @@ def emit_statement(
             var_type_txt, var_name_txt,
             var_initializer_txt)
 
-            
-            
     elif statement_node.label == AST_RETURN_STATEMENT:
         statement_txt = _emit_return_statement(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -200,8 +198,32 @@ def emit_statement(
     self._uuid,
     False,
     [%s])''' % (variable_type_str, list_item_str)
-        
-        
+
+    elif statement_node.label == AST_MESSAGE_SEQUENCE_GLOBALS:
+        for sequence_local_decl_node in statement_node.children:
+            name_node = sequence_local_decl_node.children[1]
+            waldo_src_name = name_node.value
+            unique_name = name_node.sliceAnnotationName
+
+            # we go through a message sequence's non-argument
+            # sequence local data variables.  (This includes the
+            # return nodes.)  For each, we create and initialize a
+            # variable.  
+
+            # FIXME: we are declaring a Waldo variable and then
+            # copying that entire varialbe declartion through
+            # _context.convert_for_seq_local to be a peered variable.
+            # It would be more efficient to just declare the initial
+            # variable as peered and use that.
+            
+            statement_txt += emit_statement(
+                sequence_local_decl_node,endpoint_name,ast_root,
+                fdep_dict,emit_ctx)            
+            statement_txt += '\n'
+            statement_txt += (
+                '''_context.sequence_local_store.add_var(
+    "%s",_context.convert_for_seq_local(%s,_active_event,self._host_uuid))
+''' % (unique_name, waldo_src_name))
     else:
         emit_utils.emit_warn(
             'Unknown label in emit statement ' + statement_node.label)
