@@ -363,39 +363,6 @@ def convert_args_to_waldo(method_node,sequence_local=False):
     '''
     arg_node_index = get_arg_index_from_func_node_label(method_node.label)
     func_decl_arglist_node = method_node.children[arg_node_index]
-
-    return convert_func_decl_arg_list_to_waldo(
-        func_decl_arglist_node,sequence_local,False)
-
-def convert_returns_to_waldo(message_send_node):
-    '''
-    @param {AstNode} message_send_node --- An AstNode with label
-    AST_MESSAGE_SEND_FUNCTION.  We want to take the node's return
-    tuple (which should be a func_decl_arg_list) and initialize each
-    value as a sequence local data item.
-    '''
-    return_func_decl_arg_list = message_send_node.children[4]
-    return convert_func_decl_arg_list_to_waldo(
-        return_func_decl_arg_list,True,True)
-
-
-def convert_func_decl_arg_list_to_waldo(
-    func_decl_arglist_node,sequence_local,create_new):
-    '''
-    @param {AstNode} func_decl_arglist --- An AstNode with label
-    FUNC_DECL_ARG_LIST (may be the arguments to a general method or it
-    may be the return node of a message send sequence node).
-
-    @param {bool} sequence_local --- True if we want to load the
-    variable into the local variable store.
-
-    @param {bool} create_new --- True if we also have to declare the
-    variable before using it, ie, it was not passed in.  This might
-    happen, for instance, for a message sequence send method's return
-    nodes.
-    
-    @see convert_args_to_waldo
-    '''
     converted_args_string = ''
     
     for func_decl_arg_node in func_decl_arglist_node.children:
@@ -404,33 +371,9 @@ def convert_func_decl_arg_list_to_waldo(
         # the name of the argument as it appears in the Waldo source
         # text
         arg_name = arg_name_node.value
+        # the unique, name of the argument, annotated by the slice-ing
+        # code.
         arg_unique_name = arg_name_node.sliceAnnotationName
-        # if we are creating a new argument (create_new is True), then
-        # we replace var_name with the variable's declaration.
-        var_name = arg_name
-
-        if create_new:
-            var_type_str = emit_utils.get_var_type_txt_from_type_dict(
-                var_type_dict)
-            
-            peered_str = 'False'
-            if sequence_local:
-                peered_str = 'True'
-            
-            # FIXME: note if creating new, do not actually need to use
-            # _context.turn_into_waldo_var.  Because we're already
-            # creating a new variable.
-
-            # Produces something like:
-            # _waldo_libs.WaldoNumVariable(  # the type of waldo variable 
-            #     '13__endpoint_num', # variable's name
-            #     _host_uuid, # host uuid var name
-            #     True,  # if peered, True, otherwise, False
-            #     )
-            var_name = (
-                '%s("%s",self._host_uuid,%s)' %
-                (var_type_str, arg_unique_name, peered_str))
-
             
         if not sequence_local:
             force_copy = 'True'
@@ -438,11 +381,9 @@ def convert_func_decl_arg_list_to_waldo(
                 emit_utils.is_reference_type(func_decl_arg_node)):
                 force_copy = 'False'
 
-            # if created_new, then var_name has the declartion of the
-            # variable in var_name, and can just use that.
             converted_args_string += (
                 arg_name + ' = ' +
-                '_context.turn_into_waldo_var(' + var_name +
+                '_context.turn_into_waldo_var(' + arg_name +
                 ',_active_event,self._host_uuid,%s)\n' % (force_copy))
         else:
 
@@ -453,7 +394,7 @@ def convert_func_decl_arg_list_to_waldo(
 
             # returns a peered version of passed in data
             convert_call_txt = (
-                '_context.convert_for_seq_local(' + var_name + ',' +
+                '_context.convert_for_seq_local(' + arg_name + ',' +
                 '_active_event,self._host_uuid)\n' )
 
             # actually adds the created peered variable above to the
@@ -613,10 +554,8 @@ if not _context.set_msg_send_initialized_bit_true():
 '''
     seq_local_init_prefix += emit_utils.indent_str(
         convert_args_to_waldo(message_send_node,True))
-
-    # seq_local_init_prefix += emit_utils.indent_str(
-    #     convert_returns_to_waldo(message_send_node))
     # now emit the sequence global initializations and declarations
+    # (this will also emit for the return nodes).
     seq_local_init_prefix += emit_utils.indent_str(emit_statement.emit_statement(
             seq_globals_node,endpoint_name,ast_root,fdep_dict,emit_ctx))    
     seq_local_init_prefix += emit_utils.indent_str('\npass\n')
