@@ -7,14 +7,16 @@ Sequences{
   arguments_check_exchange:
     SideA.start_arguments_check_exchange ->
     SideB.receive_arguments_check_exchange;
-/*
-  arguments_check_references_exchange:
-    SideA.start_arguments_check_references_exchange ->
-    SideB.receive_returns_check_references_exchange;
 
   returns_check_exchange:
     SideA.start_returns_check_exchange ->
     SideB.receive_returns_check_exchange;
+
+    
+    /*
+  arguments_check_references_exchange:
+    SideA.start_arguments_check_references_exchange ->
+    SideB.receive_returns_check_references_exchange;
 
   returns_check_references_exchange:
     SideA.start_returns_check_references_exchange ->
@@ -28,6 +30,14 @@ Peered
     Nothing controls Number peered_num = 22;
     Nothing controls Text peered_text = 'a';
     Nothing controls TrueFalse peered_tf = True;
+
+    /*
+    Nothing controls Map(from: Number, to: TrueFalse) peered_map = {
+      3: True,
+      5: False
+    };
+    Nothing controls List(element: Text) peered_list = ['m','n','o'];
+    */
 }
 
 
@@ -51,8 +61,33 @@ Sequence arguments_check_exchange(
     }
 }
 
+Sequence returns_check_exchange()
+    returns Number ret_num, Text ret_text, TrueFalse ret_tf
+{
+    SideA.start_returns_check_exchange
+    {
+        ret_tf = True;
+        ret_text = endpoint_text;
+    }
+    SideB.receive_returns_check_exchange
+    {
+        ret_num = endpoint_num;
+    }
+}
+
+
+// Sequence arguments_check_references_exchange(
+//     Map (from: Number, to: TrueFalse) arg_map, List(element: Text) arg_list)
+//     returns Map(from: Number, to: TrueFalse) returned_arg_map,
+//     List(element: Text) returned_arg_list
+// {
+// }
+
+
 SideA
 {
+    Text endpoint_text = 'sideA';
+    
     Public Function read_peered_value_types()
         returns Number, Text, TrueFalse
     {
@@ -66,10 +101,19 @@ SideA
         start_arguments_check_exchange(arg_num,arg_text,arg_tf);
         return read_peered_value_types();
     }
+
+    Public Function returns_check()
+        returns Number, Text, TrueFalse
+    {
+        return start_returns_check_exchange();
+    }
+    
 }
 
 SideB
 {
+    Number endpoint_num = 55;
+    
     Public Function read_peered_value_types()
         returns Number, Text, TrueFalse
     {

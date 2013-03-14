@@ -46,16 +46,15 @@ def run_test():
         print '\nErr: incorrect initial val of peered on SideB'
         return False
 
-    #### Testing that when send a 2-long sequence message, both sides update peered
-    #### value
+    #### Testing that when send a 2-long sequence message, both sides
+    #### can read peered args.
     
     NUM_ARGUMENTS_CHECK_EXCHANGE = 20
     expected_new_text = initial_text
     expected_new_num = initial_num
     expected_tf = initial_tf
     for i in range(0,NUM_ARGUMENTS_CHECK_EXCHANGE):
-        # when we initiate a basic sequence, peered number should end up
-        # +2 of what it was before it started.
+        # the values that we expect to be returned
         expected_new_num += i
         expected_new_text += 'b'
         expected_tf = ((i % 2) == 0)
@@ -72,6 +71,18 @@ def run_test():
             print err_msg
             return False
 
+    #### Testing that can return values from sequence
+    NUM_RETURNS_CHECK_EXCHANGE = 20
+    for i in range(0,NUM_RETURNS_CHECK_EXCHANGE):
+        expected_returned_num = 55
+        expected_returned_text = 'sideA';
+        expected_returned_tf = True
+
+        if sideA.returns_check() != (expected_returned_num,expected_returned_text,expected_returned_tf):
+            err_msg = '\nErr: A got incorrect returns while '
+            err_msg += 'in returns check.'
+            print err_msg
+            return False
         
     return True
 

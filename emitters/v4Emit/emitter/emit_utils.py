@@ -177,7 +177,7 @@ def get_var_type_dict_from_decl(decl_node):
     if decl_node.label != AST_DECLARATION:
         emit_assert(
             'Expected annotated declaration in ' +
-            'get_var_type_dict_from_annotated_decl.')
+            'get_var_type_dict_from_decl.')
     #### END DEBUG
         
     type_node = decl_node.children[0]
