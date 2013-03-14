@@ -1,0 +1,78 @@
+TwoSided
+
+Endpoint SideA;
+Endpoint SideB;
+
+Sequences{
+  arguments_check_exchange:
+    SideA.start_arguments_check_exchange ->
+    SideB.receive_arguments_check_exchange;
+/*
+  arguments_check_references_exchange:
+    SideA.start_arguments_check_references_exchange ->
+    SideB.receive_returns_check_references_exchange;
+
+  returns_check_exchange:
+    SideA.start_returns_check_exchange ->
+    SideB.receive_returns_check_exchange;
+
+  returns_check_references_exchange:
+    SideA.start_returns_check_references_exchange ->
+    SideB.receive_returns_check_references_exchange;
+*/
+    
+}
+
+Peered
+{
+    Nothing controls Number peered_num = 22;
+    Nothing controls Text peered_text = 'a';
+    Nothing controls TrueFalse peered_tf = True;
+}
+
+
+Sequence arguments_check_exchange(
+    Number some_number, Text some_text, TrueFalse some_tf)
+{
+    /**
+       Checks that read in arguments and that read in args to
+       sequences correctly.  Check that both sides' peered values are
+       updated correctly through call to read_peered_value_types on
+       either endpoint.
+     */
+    SideA.start_arguments_check_exchange
+    {
+        peered_num += some_number;
+    }
+    SideB.receive_arguments_check_exchange
+    {
+        peered_text += some_text;
+        peered_tf = some_tf;
+    }
+}
+
+SideA
+{
+    Public Function read_peered_value_types()
+        returns Number, Text, TrueFalse
+    {
+        return peered_num, peered_text, peered_tf;
+    }
+
+    Public Function arguments_check(
+        Number arg_num, Text arg_text, TrueFalse arg_tf)
+        returns Number, Text, TrueFalse
+    {
+        start_arguments_check_exchange(arg_num,arg_text,arg_tf);
+        return read_peered_value_types();
+    }
+}
+
+SideB
+{
+    Public Function read_peered_value_types()
+        returns Number, Text, TrueFalse
+    {
+        return peered_num, peered_text, peered_tf;
+    }
+}
