@@ -102,7 +102,7 @@ class _VariableStore(object):
             print key
         print '\n'            
         
-    def generate_deltas(self,invalidation_listener):
+    def generate_deltas(self,invalidation_listener,force=False):
         '''
         Create a map with an entry for each piece of peered data that
         was modified.  The entry should contain a
@@ -110,6 +110,27 @@ class _VariableStore(object):
         representation of the object on the other side of the
         connection.
 
+        @param {bool} force --- True if regardless of whether changed
+        or not, we serialize and send its value.
+
+        An example of when this would be used
+
+        Sequence some_seq(Text a)
+        {
+            Side1.send_msg
+            {
+            }
+            Side2.recv_msg
+            {
+               print (a);
+            }
+        }
+
+        The first block does not actually modify a.  Therefore, it
+        wouldn't be included in the message sent to Side2.recv_msg
+        unless we force serialization of deltas for all sequence local
+        data on the first message we send.
+        
         @returns{string} --- After this, pickle map into string and
         return it.
         
@@ -121,8 +142,16 @@ class _VariableStore(object):
         for key in self._name_to_var_map.keys():
             waldo_variable = self._name_to_var_map[key]
 
-            if (waldo_variable.is_peered() and
-                waldo_variable.modified(invalidation_listener)):
+            should_serialize = False
+            if force:
+                should_serialize = True
+            else:
+                # peered data that has been modified
+                should_serialize = (
+                    waldo_variable.is_peered() and
+                    waldo_variable.modified(invalidation_listener))
+
+            if should_serialize:
                 changed_map[key] = waldo_variable.serializable_var_tuple_for_network(
                     key,invalidation_listener)
 

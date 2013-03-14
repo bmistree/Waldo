@@ -378,10 +378,25 @@ def convert_args_to_waldo(method_node,sequence_local=False):
             converted_args_string += (
                 arg_name + ' = ' +
                 '_context.turn_into_waldo_var(' + arg_name +
-                ',_active_event,self._uuid,%s)\n' % (force_copy))
+                ',_active_event,self._host_uuid,%s)\n' % (force_copy))
         else:
-            converted_args_string += (
-                '_context.convert_for_seq_local(' + arg_name + ')\n')
+            arg_unique_name = arg_name_node.sliceAnnotationName
+            if arg_unique_name == None:
+                emit_utils.emit_assert(
+                    'When converting sequence local args, arg name has no ' +
+                    'unique name.')
+
+            # returns a peered version of passed in data
+            convert_call_txt = (
+                '_context.convert_for_seq_local(' + arg_name + ',' +
+                '_active_event,self._host_uuid)\n' )
+
+            # actually adds the created peered variable above to the
+            # variable store.
+            converted_args_string +='''
+_context.sequence_local_store.add_var(
+    "%s", %s)
+''' % ( arg_unique_name , convert_call_txt)
             
     return converted_args_string
 
@@ -522,10 +537,14 @@ def emit_message_send(
 
     method_arg_names = get_method_arg_names(message_send_node)
     seq_local_init_prefix = '''
+_first_msg = False
 if not _context.set_msg_send_initialized_bit_true():
     # we must load all arguments into sequence local data and perform
     # initialization on sequence local data....start by loading
     # arguments into sequence local data
+    # below tells the message send that it must serialize and
+    # send all sequence local data.
+    _first_msg = True
 '''
     seq_local_init_prefix += emit_utils.indent_str(
         convert_args_to_waldo(message_send_node,True))
@@ -566,7 +585,7 @@ if not _context.set_msg_send_initialized_bit_true():
     # issue call for what to call next
     msg_send_txt += '\n'
     msg_send_txt += emit_utils.indent_str(
-        emit_message_node_what_to_call_next(next_to_call_node))
+        emit_message_node_what_to_call_next(next_to_call_node,emit_ctx))
 
     # takes care of fall-through return (ie, message send has
     # completed)
@@ -618,7 +637,7 @@ def emit_message_receive(
     next_sequence_txt = '''
 _threadsafe_queue = %s
 _active_event.issue_partner_sequence_block_call(
-    _context,%s,_threadsafe_queue)
+    _context,%s,_threadsafe_queue,False)
 # must wait on the result of the call before returning
 
 if %s != None:
@@ -654,7 +673,7 @@ if %s != None:
     
     
 
-def emit_message_node_what_to_call_next(next_to_call_node):
+def emit_message_node_what_to_call_next(next_to_call_node,emit_ctx):
     '''
     @param {AstNode or None} next_to_call_node --- A message receive
     node or None.  At the end of a message send or message receive
@@ -668,14 +687,25 @@ def emit_message_node_what_to_call_next(next_to_call_node):
 
     if next_to_call_node == None:
         return ''
+
+    # FIXME: seems to reproduce a lot of work already done in
+    # emit_message_receive.
     
     next_message_name_node = next_to_call_node.children[1]
     next_message_name = next_message_name_node.value
 
+    issue_call_is_first_txt = 'False'
+    if emit_ctx.in_message_send:
+        # allows us to determine if this is the first message in a
+        # sequence block that is being sent.  If it is, then we need
+        # to force sequence local data to be synchronized.  If it's
+        # not, we only need to synchronize modified sequence local data.
+        issue_call_is_first_txt = '_first_msg'
+
     return '''
 _threadsafe_queue = %s
 _active_event.issue_partner_sequence_block_call(
-    _context,'%s',_threadsafe_queue)
+    _context,'%s',_threadsafe_queue, '%s')
 _queue_elem = _threadsafe_queue.get()
 
 if isinstance(_queue_elem,%s):
@@ -699,6 +729,7 @@ if _to_exec_next != None:
 ''' % (emit_utils.library_transform('Queue.Queue()'),
        next_message_name, # the name of the message receive func to
                           # exec on other side in plain text
+       issue_call_is_first_txt,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
        emit_utils.library_transform('BackoutException()'),
        )

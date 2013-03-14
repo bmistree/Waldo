@@ -478,7 +478,7 @@ class _DirtyMapElement(object):
             return True
 
         # check if sub-object was modified
-        if isinstance(self.val,waldoReferenceBase._ReferenceBase):
+        if isinstance(self.val,_ReferenceBase):
             if self.val.modified(invalidation_listener):
                 return True
 

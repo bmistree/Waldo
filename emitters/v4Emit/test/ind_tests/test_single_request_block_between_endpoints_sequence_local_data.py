@@ -52,7 +52,11 @@ class DummyEndpoint(test_util.DummyEndpoint):
         active_event, nor a context.  We create them.
         '''
         seq_local_num_name = 'seq_local_num'
-        
+
+        # keep track of whether this is the first message sent in a
+        # sequence so that we know whether or not we must force
+        # updating all the new sequence local data.
+        _first_msg = False
         if active_event == None:
             # create active event
             active_event = self._act_event_map.create_root_event()
@@ -67,6 +71,8 @@ class DummyEndpoint(test_util.DummyEndpoint):
             context = waldoExecutingEvent._ExecutingEventContext(
                 self._global_var_store,seq_local_store)
 
+            _first_msg = True
+            
 
         # Send messages back and forth to each other to decrement
         # sequence local data seq_local_num.  Keep doing so until
@@ -84,7 +90,7 @@ class DummyEndpoint(test_util.DummyEndpoint):
             
             threadsafe_queue = Queue.Queue()
             active_event.issue_partner_sequence_block_call(
-                context,'sequence_block',threadsafe_queue)
+                context,'sequence_block',threadsafe_queue,_first_msg)
 
             
             seq_msg_call_res = threadsafe_queue.get()

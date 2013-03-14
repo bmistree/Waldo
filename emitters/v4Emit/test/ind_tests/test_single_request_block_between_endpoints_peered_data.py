@@ -70,16 +70,23 @@ class DummyEndpoint(test_util.DummyEndpoint):
         The first time that this function is called, it has neither an
         active_event, nor a context.  We create them.
         '''
+
+        # keep track of whether this is the first message sent in a
+        # sequence so that we know whether or not we must force
+        # updating all the new sequence local data.
+        _first_msg = False
         if active_event == None:
             # create active event
             active_event = self._act_event_map.create_root_event()
-
+            
             # create context
             context = waldoExecutingEvent._ExecutingEventContext(
                 self._global_var_store,
                 # not using sequence local store
                 waldoVariableStore._VariableStore(self._host_uuid))
 
+            _first_msg = True
+            
         # Send messages back and forth to each other to decrement
         # peered local data seq_local_num.  Keep doing so until
         # numero is negative.
@@ -96,7 +103,7 @@ class DummyEndpoint(test_util.DummyEndpoint):
             
             threadsafe_queue = Queue.Queue()
             active_event.issue_partner_sequence_block_call(
-                context,'sequence_block',threadsafe_queue)
+                context,'sequence_block',threadsafe_queue,_first_msg)
 
             seq_msg_call_res = threadsafe_queue.get()
             

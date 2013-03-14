@@ -118,7 +118,7 @@ class EndpointA(test_util.DummyEndpoint):
 
         threadsafe_queue = Queue.Queue()
         active_event.issue_partner_sequence_block_call(
-            context,'update_beta_when_receive_message',threadsafe_queue)
+            context,'update_beta_when_receive_message',threadsafe_queue,True)
 
         msg_call_res = threadsafe_queue.get()
         # not checking for backout...won't happen
@@ -162,7 +162,7 @@ class EndpointB(test_util.DummyEndpoint):
         
         # last message in sequence, so tell other side we're all done.
         active_event.issue_partner_sequence_block_call(
-            context,None,None)
+            context,None,None,False)
 
         
 class EndpointC(test_util.DummyEndpoint):
@@ -185,7 +185,7 @@ class EndpointC(test_util.DummyEndpoint):
         
         # last message in sequence, so tell other side we're all done.
         active_event.issue_partner_sequence_block_call(
-            context,None,None)
+            context,None,None,False)
 
 
         
@@ -233,7 +233,7 @@ class EndpointR2(test_util.DummyEndpoint):
         # call method on c, which calls method on a
         threadsafe_queue = Queue.Queue()
         active_event.issue_partner_sequence_block_call(
-            context,'receive_message_for_a',threadsafe_queue)
+            context,'receive_message_for_a',threadsafe_queue,True)
         msg_call_res = threadsafe_queue.get()
         return active_event
 

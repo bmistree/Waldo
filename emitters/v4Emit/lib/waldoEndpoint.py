@@ -491,10 +491,10 @@ class _Endpoint(object):
         self._endpoint_service_thread.receive_first_phase_commit_message(
             event_uuid,endpoint_uuid,False)
 
-        
+
     def _send_partner_message_sequence_block_request(
         self,block_name,event_uuid,reply_with_uuid,reply_to_uuid,
-        invalidation_listener,sequence_local_store):
+        invalidation_listener,sequence_local_store,first_msg):
         '''
         Sends a message using connection object to the partner
         endpoint requesting it to perform some message sequence
@@ -532,15 +532,16 @@ class _Endpoint(object):
         changes that invalidation_listener has made to sequence local
         data.  (For peered data, we can just use
         self._global_var_store.)
+
+        @param {bool} first_msg --- If we are sending the first
+        message in a sequence block, then we must force the sequence
+        local data to be transmitted whether or not it was modified.
         
         '''
-        # FIXME: need to get data_contents from invalidation_listener.
-        # should contain the peered data that has been written to.
-
         glob_deltas = self._global_var_store.generate_deltas(
             invalidation_listener)
         sequence_local_deltas = sequence_local_store.generate_deltas(
-            invalidation_listener)
+            invalidation_listener,first_msg)
         
         msg_to_send = waldoMessages._PartnerRequestSequenceBlockMessage(
             event_uuid,block_name,reply_with_uuid,reply_to_uuid,

@@ -255,12 +255,17 @@ class _ActiveEvent(_InvalidationListener):
         
         
     def issue_partner_sequence_block_call(
-        self,ctx,func_name,result_queue):
+        self,ctx,func_name,result_queue,first_msg):
         '''
         @param {String or None} func_name --- When func_name is None,
         then sending to the other side the message that we finished
         performing the requested block.  In this case, we do not need
         to add result_queue to waiting queues.
+
+        @param {bool} first_msg --- True if this is the first message
+        in a sequence that we're sending.  Necessary so that we can
+        tell whether or not to force sending sequence local data.
+
         
         The local endpoint is requesting its partner to call some
         sequence block.
@@ -285,7 +290,8 @@ class _ActiveEvent(_InvalidationListener):
                 # a response.
                 self.message_listening_queues_map[
                     reply_with_uuid] = result_queue
-            
+
+                
             # here, the local endpoint uses the connection object to
             # actually send the message.
             self.local_endpoint._send_partner_message_sequence_block_request(
@@ -295,7 +301,8 @@ class _ActiveEvent(_InvalidationListener):
                 # deltas in sequence local state made from this call.
                 # do not need to add global store, because
                 # self.local_endpoint already has a copy of it.
-                ctx.sequence_local_store)
+                ctx.sequence_local_store,
+                first_msg)
             
         self._unlock()
         return partner_call_requested
@@ -594,7 +601,7 @@ class _ActiveEvent(_InvalidationListener):
             self,msg.global_var_store_deltas)
 
         exec_event = None
-        
+
         self._lock()
         if reply_to_uuid == None:
             # means that the other side has generated a first message
@@ -630,6 +637,7 @@ class _ActiveEvent(_InvalidationListener):
             seq_local_var_store = waldoVariableStore._VariableStore(
                 self.local_endpoint._host_uuid)
 
+            
             seq_local_var_store.incorporate_deltas(
                 self,msg.sequence_local_var_store_deltas)
             
