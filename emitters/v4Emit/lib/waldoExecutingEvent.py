@@ -241,6 +241,30 @@ class _ExecutingEventContext(object):
         return to_return_tuple
 
 
+    def handle_len(self,what_calling_len_on, active_event):
+        '''
+        Can support python lists, dicts, strings, or waldo lists, waldo maps,
+        waldo texts.
+        
+        @returns {int}
+        '''
+        if (isinstance(what_calling_len_on, dict) or
+            isinstance(what_calling_len_on, list) or
+            isinstance(what_calling_len_on, basestring)):
+            return len(what_calling_len_on)
+
+        if isinstance(what_calling_len_on,wVariables.WaldoTextVariable):
+            return len(what_calling_len_on.get_val(active_event))
+
+
+        if (isinstance(what_calling_len_on,wVariables.WaldoListVariable) or
+            isinstance(what_calling_len_on,wVariables.WaldoListVariable)):
+            return what_calling_len_on.get_val(active_event).get_len(active_event)
+
+        util.emit_assert(
+            'Calling len on an object that does not support the function')
+        
+    
     def handle_in_check(self,lhs,rhs,active_event):
         '''
         Call has form:

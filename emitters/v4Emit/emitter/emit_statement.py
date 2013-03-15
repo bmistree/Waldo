@@ -26,6 +26,23 @@ def emit_statement(
     elif statement_node.label == AST_BOOL:
         statement_txt =  statement_node.value + ' '
 
+    elif statement_node.label == AST_NOT_EXPRESSION:
+        what_notting_node = statement_node.children[0]
+        what_notting_txt = emit_statement(
+            what_notting_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        
+        statement_txt = (
+            '( not ( _context.get_val_if_waldo(%s,_active_event) ))' %
+            what_notting_txt)
+
+    elif statement_node.label == AST_LEN:
+        what_getting_len_of_node = statement_node.children[0]
+        what_getting_len_of_txt = emit_statement(
+            what_getting_len_of_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        statement_txt = (
+            '_context.handle_len(%s,_active_event)' %
+            what_getting_len_of_txt)
+        
     elif statement_node.label == AST_IN_STATEMENT:
         lhs_node = statement_node.children[0]
         rhs_node = statement_node.children[1]
