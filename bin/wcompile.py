@@ -13,8 +13,8 @@ from parser.ast.astBuilder_v2 import getParser as v2GetParser;
 from parser.ast.astBuilder_v2 import getErrorEncountered as v2GetErrorEncountered;
 from parser.ast.astBuilder_v2 import resetErrorEncountered as v2ResetErrorEncountered;
 
-def getParser(progText,outputErrsTo,versionNum):
-    return v2GetParser(progText,outputErrsTo);
+def getParser(suppress_warnings,progText,outputErrsTo,versionNum):
+    return v2GetParser(suppress_warnings,progText,outputErrsTo);
 
 def getErrorEncountered(versionNum):
     return v2GetErrorEncountered();
@@ -53,9 +53,9 @@ def stripWindowsLineEndings(textToStripFrom):
     return re.sub(r'\r','',textToStripFrom)
 
 
-def genAstFromFile(inputFilename,outputErrsTo,versionNum):
+def genAstFromFile(inputFilename,outputErrsTo,versionNum,suppress_warnings):
     fileText = getFileText(inputFilenameArg);
-    return genAst(fileText,outputErrsTo,versionNum);
+    return genAst(fileText,outputErrsTo,versionNum,suppress_warnings);
 
 def astProduceTextOutput(astNode,textOutFilename):
     astNode.printAst(textOutFilename);
@@ -72,9 +72,13 @@ def astProduceGraphicalOutput(astNode,graphOutArg):
     astNode.drawPretty(graphOutArg.outFile,graphOutArg.d3,graphOutArg.width,graphOutArg.height);
     return astNode;
 
-def genAst(progText,outputErrsTo,versionNum):
+def genAst(progText,outputErrsTo,versionNum,suppress_warnings):
+    '''
+    @param {bool} suppress_warnings --- True if we tell the parser not
+    to emit parsing warnings, False otherwise.
+    '''
     progText = stripWindowsLineEndings(progText);
-    parser = getParser(progText,outputErrsTo,versionNum);
+    parser = getParser(suppress_warnings,progText,outputErrsTo,versionNum);
     astNode = parser.parse(progText);
     if (versionNum == 1):
         pass;
@@ -87,7 +91,7 @@ def genAst(progText,outputErrsTo,versionNum):
 
     return astNode,progText;
 
-def compileText(progText,outputErrStream,versionNum):
+def compileText(progText,outputErrStream,versionNum,suppress_warnings):
     '''
     Mostly will be used when embedding in another project.  
     
@@ -103,7 +107,8 @@ def compileText(progText,outputErrStream,versionNum):
     returns the compiled source of the file.  If compile errors were
     encountered, then returns None.
     '''
-    astRootNode = lexAndParse(progText,outputErrStream,versionNum);
+    astRootNode = lexAndParse(
+        progText,outputErrStream,versionNum,suppress_warnings)
     if astRootNode == None:
         return None;
     
@@ -113,13 +118,14 @@ def compileText(progText,outputErrStream,versionNum):
                      # emit.  otherwise, file text.
 
 
-def lexAndParse(progText,outputErrStream,versionNum):
+def lexAndParse(progText,outputErrStream,versionNum,suppress_warnings):
     '''
     Returns None if there was an error (either in lexing, parsing, or
     type checking).  Returns astRootNode if there was not an error.
     '''
     try:
-        astRootNode, other = genAst(progText,outputErrStream,versionNum);
+        astRootNode, other = genAst(
+            progText,outputErrStream,versionNum,suppress_warnings)
     except WaldoLexException as excep:
         print >> outputErrStream, excep.value;
         return None;
@@ -151,17 +157,16 @@ def lexAndParse(progText,outputErrStream,versionNum):
     # no error
     return astRootNode;
 
-
         
 def handleArgs(
     inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,
-    typeCheckArg,emitArg,versionNum):
-
+    typeCheckArg,emitArg,versionNum,suppress_warnings):
     
     errOutputStream = sys.stderr;
 
     try:
-        astRootNode,fileText = genAstFromFile(inputFilename,errOutputStream,versionNum);
+        astRootNode,fileText = genAstFromFile(
+            inputFilename,errOutputStream,versionNum,suppress_warnings)
     except WaldoLexException as excep:
         print >> errOutputStream, excep.value;
         return;
@@ -258,6 +263,8 @@ def printUsage():
 
     -ne don't emit 
 
+    -w Turn parse and lex warnings on.  Otherwise, they are off.
+
     -v <version number 2> Input file is of version 2.  Default is version 2
 
     single arg (filename) .... try compiling the file to emitted.py
@@ -276,11 +283,10 @@ if __name__ == '__main__':
     helpArg = None;
     printOutputArg = None;
     emitArg = 'emitted.py'
-    typeCheckArg = True;
-    skipNext = False;
-    versionNum = 2;
-
-    
+    typeCheckArg = True
+    skipNext = False
+    versionNum = 2
+    suppress_warnings = True
     
     for s in range(0,len(sys.argv)):
         if (skipNext):
@@ -297,7 +303,10 @@ if __name__ == '__main__':
 
         if sys.argv[s] == '-ne':
             emitArg = None
-                
+
+        if sys.argv[s] == '-w':
+            suppress_warnings = False
+            
         if (sys.argv[s] == '-v'):
             if (s + 1 < len(sys.argv)):
                 versionNum = int(sys.argv[s+1]);
@@ -368,5 +377,5 @@ if __name__ == '__main__':
         else:
             handleArgs(
                 inputFilenameArg,graphicalOutputArg,textOutputArg,
-                printOutputArg,typeCheckArg,emitArg,versionNum);
+                printOutputArg,typeCheckArg,emitArg,versionNum,suppress_warnings)
             

@@ -314,12 +314,17 @@ def p_EndpointFunctionSection(p):
 
 
 
-def getParser(programText=None,outputErrsTo=sys.stderr):
+def getParser(suppress_warnings,programText=None,outputErrsTo=sys.stderr):
     global lexer;
     lexer = constructLexer();
 
     global ProgramText;
-    returner = yacc.yacc();
+    
+    if suppress_warnings:
+        returner = yacc.yacc(errorlog=yacc.NullLogger())
+    else:
+        returner = yacc.yacc()
+        
     ProgramText = programText;
 
     setOutputErrorsTo(outputErrsTo);
