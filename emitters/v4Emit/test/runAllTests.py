@@ -61,7 +61,7 @@ def run_lib_tests():
 
         ('Test deadlock detection and rollback',
          ind_tests.test_deadlock_detection.run_test),
-
+        
         ]
     run_tests(to_run)
 
@@ -102,6 +102,7 @@ def run_emit_tests():
     import emit_tests.single_endpoint_initialization_tests
     import emit_tests.two_sided_modify_peer_check_update_test
     import emit_tests.basic_message_sequence_tests
+    import emit_tests.conditional_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -121,6 +122,9 @@ def run_emit_tests():
 
         ('Emit test update peered data across several sequence blocks',
          emit_tests.basic_message_sequence_tests.run_test),
+        
+        ('Emit test conditional statements',
+         emit_tests.conditional_tests.run_test),
         
         ]
 

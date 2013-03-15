@@ -24,7 +24,7 @@ def emit_statement(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
     elif statement_node.label == AST_BOOL:
-        statement_txt =  statement_node.value + ' '
+        statement_txt = statement_node.value + ' '
 
     elif statement_node.label == AST_NOT_EXPRESSION:
         what_notting_node = statement_node.children[0]
@@ -42,6 +42,22 @@ def emit_statement(
         statement_txt = (
             '_context.handle_len(%s,_active_event)' %
             what_getting_len_of_txt)
+
+    elif statement_node.label == AST_CONDITION_STATEMENT:
+        statement_txt = emit_condition_statement(
+            statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    elif statement_node.label == AST_BOOLEAN_CONDITION:
+        statement_txt = emit_statement(
+            statement_node.children[0],endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+
+    elif statement_node.label == AST_FUNCTION_BODY:
+        for single_statement_node in statement_node.children:
+            statement_txt += emit_statement(
+                single_statement_node,endpoint_name,ast_root,
+                fdep_dict,emit_ctx)
+            statement_txt += '\n'
         
     elif statement_node.label == AST_IN_STATEMENT:
         lhs_node = statement_node.children[0]
@@ -632,7 +648,7 @@ def _emit_second_level_assign(
             # if using a non-waldo number, string, etc. or a waldo
             # variable, and want to use the value type, this gives the
             # value type.
-            inside_txt =  '_context._get_val_if_waldo(%s)' % (
+            inside_txt =  '_context.get_val_if_waldo(%s)' % (
                 emit_statement(
                     inside_bracket_node,endpoint_name,
                     ast_root,fdep_dict,emit_ctx))
@@ -733,3 +749,64 @@ def _emit_identifier(identifier_node):
             'Unknown annotation on identifier ' + str(id_annotation_type))
     #### END DEBUG
     return identifier_txt
+
+
+def emit_condition_statement(
+    condition_statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    @param {AstNode} statement_node --- Should be labeled with
+    AST_CONDITION_STATEMENT
+    '''
+
+    #### DEBUG
+    if condition_statement_node.label != AST_CONDITION_STATEMENT:
+        emit_utils.emit_assert(
+            'Incorrect node type in emit_condition_statement')
+    #### END DEBUG
+
+    if_statement_node = condition_statement_node.children[0]
+    elif_statement_node = condition_statement_node.children[1]
+    else_statement_node = condition_statement_node.children[2]
+
+    
+    ## IF statement
+    if_cond_node = if_statement_node.children[0]
+    if_body_node = if_statement_node.children[1]
+    if_cond_txt = emit_statement(
+        if_cond_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    if_body_txt = emit_statement(
+        if_body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    if_body_txt += '\npass\n'
+
+    if_txt = 'if _context.get_val_if_waldo(%s,_active_event):\n' % if_cond_txt
+    if_txt += emit_utils.indent_str(if_body_txt)
+    if_txt += '\n'
+    
+    ## ELSE IF statement
+    elif_txt = ''
+    for single_elif_node in elif_statement_node.children:
+        elif_cond_node = single_elif_node.children[0]
+        elif_body_node = single_elif_node.children[1]
+
+        elif_cond_txt = emit_statement(
+            elif_cond_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        elif_body_txt = emit_statement(
+            elif_body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        elif_body_txt += '\npass\n'
+
+        elif_txt += 'elif _context.get_val_if_waldo(%s,_active_event):\n' % elif_cond_txt
+        elif_txt += emit_utils.indent_str(elif_body_txt)
+        elif_txt += '\n'
+    
+    ## ELSE statement
+    else_txt = ''
+    if len(else_statement_node.children) != 0:
+        else_txt += 'else:\n'
+        else_body_node = else_statement_node.children[0]
+        else_body_txt = emit_statement(
+            else_body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        else_body_txt += '\npass\n'
+        else_txt += emit_utils.indent_str(else_body_txt)
+        else_txt += '\n'
+
+    return if_txt + elif_txt + else_txt
