@@ -416,19 +416,12 @@ def _emit_public_private_method_call(
     for method_call_arg_node in method_call_arg_list_node.children:
         arg_txt = emit_statement(
             method_call_arg_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
-
-        suffix = ','
-
-        # FIXME: incorrect check: actually want to know whether the
-        # function *expects* an external, not whether the var itself
-        # is external.  Simplest way to fix is in function to copy
-        # non-references if they are not supposed to be external.
-        if ((not method_call_arg_node.external) and
-            (not emit_utils.is_reference_type(method_call_arg_node))):
-            method_call_txt += '_context.get_val_if_waldo(' 
-            suffix = ',_active_event),'
-
-        method_call_txt += arg_txt + suffix
+        # note: at point of function call, do not need to check
+        # whether to pass internal vals (ie, get_val on Waldo
+        # variable), because the first thing that the callee does is
+        # go through all the arguments that it received and copy them
+        # if they're non-external value types.
+        method_call_txt += arg_txt + ','
 
     return method_call_txt + ')'
 
@@ -648,7 +641,7 @@ def _emit_second_level_assign(
             # if using a non-waldo number, string, etc. or a waldo
             # variable, and want to use the value type, this gives the
             # value type.
-            inside_txt =  '_context.get_val_if_waldo(%s)' % (
+            inside_txt =  '_context.get_val_if_waldo(%s,_active_event)' % (
                 emit_statement(
                     inside_bracket_node,endpoint_name,
                     ast_root,fdep_dict,emit_ctx))

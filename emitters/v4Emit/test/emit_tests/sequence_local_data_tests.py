@@ -95,7 +95,13 @@ def run_test():
         err_msg += 'additional sequence local data.'
         print err_msg
         return False
-        
+
+    #### Test to ensure that sequence local data do not affect 
+    if not sideA.arguments_check_references():
+        err_msg = '\nErr: incorrect behavior for references'
+        print err_msg
+        return False
+    
     return True
 
 

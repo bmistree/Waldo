@@ -16,11 +16,12 @@ Sequences{
     SideA.start_non_arg_return_seq_local_data_check_exchange ->
     SideB.receive_non_arg_return_seq_local_data_check_exchange;
     
-    /*
+
   arguments_check_references_exchange:
     SideA.start_arguments_check_references_exchange ->
     SideB.receive_returns_check_references_exchange;
 
+/*
   returns_check_references_exchange:
     SideA.start_returns_check_references_exchange ->
     SideB.receive_returns_check_references_exchange;
@@ -30,17 +31,10 @@ Sequences{
 
 Peered
 {
-    Nothing controls Number peered_num = 22;
-    Nothing controls Text peered_text = 'a';
-    Nothing controls TrueFalse peered_tf = True;
+    Number peered_num = 22;
+    Text peered_text = 'a';
+    TrueFalse peered_tf = True;
 
-    /*
-    Nothing controls Map(from: Number, to: TrueFalse) peered_map = {
-      3: True,
-      5: False
-    };
-    Nothing controls List(element: Text) peered_list = ['m','n','o'];
-    */
 }
 
 
@@ -67,6 +61,9 @@ Sequence arguments_check_exchange(
 Sequence returns_check_exchange()
     returns Number ret_num, Text ret_text, TrueFalse ret_tf
 {
+    /**
+      Checks that can return value types from message sequences.
+     */
     SideA.start_returns_check_exchange
     {
         ret_tf = True;
@@ -81,6 +78,11 @@ Sequence returns_check_exchange()
 Sequence non_arg_return_seq_local_data_check_exchange()
     returns Number ret_num, Text ret_text
 {
+    /**
+       Checks that sequence local data declared and initialized at the top of
+       the sequence is available in all sequences.
+     */
+    
     Number seq_local_num = 52;
     Text seq_local_text = 'wow';
     SideA.start_non_arg_return_seq_local_data_check_exchange
@@ -95,12 +97,31 @@ Sequence non_arg_return_seq_local_data_check_exchange()
 }
 
 
-// Sequence arguments_check_references_exchange(
-//     Map (from: Number, to: TrueFalse) arg_map, List(element: Text) arg_list)
-//     returns Map(from: Number, to: TrueFalse) returned_arg_map,
-//     List(element: Text) returned_arg_list
-// {
-// }
+Sequence arguments_check_references_exchange(
+    Map (from: Number, to: TrueFalse) arg_map, List(element: Text) arg_list)
+    returns TrueFalse expected_behavior
+{
+    /**
+       Arguments to sequences are passed by value, not reference.  Check that
+       when make changes to values inside of a sequence that the changes do not
+       affect the data passed in.
+
+       Assumes that first element of arg_list should be 'm'
+     */
+    
+    SideA.start_arguments_check_references_exchange
+    {
+        arg_map[62] = True;
+        expected_behavior = arg_list[0] == 'm';
+        arg_list[0] = 'n';
+
+    }
+    SideB.receive_returns_check_references_exchange
+    {
+        arg_list.append('50');
+        expected_behavior = (arg_list[0] == 'n') and expected_behavior;
+    }
+}
 
 
 SideA
@@ -133,6 +154,26 @@ SideA
         return start_non_arg_return_seq_local_data_check_exchange();
     }
 
+    Public Function arguments_check_references() returns TrueFalse
+    {
+        Map(from: Number, to: TrueFalse) map_ = {
+          3: True,
+          5: False
+        };
+        List(element: Text) list_ = ['m','n','o'];
+
+
+        TrueFalse sequence_checks_passed = start_arguments_check_references_exchange(map_,list_);
+        
+        
+        // FIXME: the additional parens around sequence_checks_passed are
+        // because of a parsing error.
+        return ((sequence_checks_passed) and
+            (len(list_) == 3) and (list_[0] == 'm') and 
+            (not (62  in map_)));
+    }
+
+        
 }
 
 SideB

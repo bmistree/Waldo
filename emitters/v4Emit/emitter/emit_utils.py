@@ -231,8 +231,11 @@ def is_method_call(node):
 def is_reference_type(node):
     # FIXME: should also add reference types for user structs as well
     # as functions
+
+    # FIXME: need to unwrap the possibility of the nodes' being
+    # function call returns.
     return ((TypeCheck.templateUtil.isListType(node.type)) or 
-            (TypeCheck.templateUtil.isListType(node.type)))
+            (TypeCheck.templateUtil.isMapType(node.type)))
 
 def is_msg_seq_begin_call(node,endpoint_name,fdep_dict):
     '''
