@@ -14,8 +14,36 @@ def run_test():
 
     if not test_range(single_side):
         return False
+
+    if not test_while(single_side):
+        return False
     
     return True
+
+def test_while(single_side):
+
+    # should not have entered the while loop
+    if single_side.test_while_less_than(1,1) != 0:
+        print '\nWhile fail 1'
+        return False
+    
+    # should not have entered the while loop
+    if single_side.test_while_less_than(1,0) != 0:
+        print '\nWhile fail 2'
+        return False
+
+    if single_side.test_while_less_than(1,5) != 4:
+        print '\nWhile fail 3'
+        return False
+    
+    if single_side.test_while_less_than(100,500) != 400:
+        print '\nWhile fail 4'
+        return False
+
+    single_side.test_empty_while()
+
+    return True
+
 
 def test_range(single_side):
 

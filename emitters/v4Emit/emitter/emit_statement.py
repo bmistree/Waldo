@@ -23,6 +23,24 @@ def emit_statement(
         statement_txt = _emit_assignment(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
+    elif statement_node.label == AST_WHILE_STATEMENT:
+        bool_cond_node = statement_node.children[0]
+        body_node = statement_node.children[1]
+
+        bool_cond_txt = emit_statement(
+            bool_cond_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        
+        body_txt = emit_statement(
+            body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        body_txt += '\npass\n'
+        
+        while_head_txt = (
+            'while _context.get_val_if_waldo(%s,_active_event): \n' %
+            bool_cond_txt)
+
+        statement_txt = while_head_txt + emit_utils.indent_str(body_txt)
+        
+        
     elif statement_node.label == AST_RANGE:
         base_range_node = statement_node.children[0]
         limit_range_node = statement_node.children[1]

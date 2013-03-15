@@ -9,7 +9,7 @@ Garbage{}
 
 SingleSide
 {
-
+    // tests range
     Public Function range_test(Number base, Number limit, Number increment)
         returns List(element: Number)
     {
@@ -20,6 +20,27 @@ SingleSide
         returns List(element: Number)
     {
         return range(base, limit);
+    }
+
+    // basic while tests
+    Public Function test_while_less_than(
+        Number lhs, Number rhs) returns Number
+    {
+        Number times_in_loop = 0;
+
+        while (lhs < rhs)
+        {
+            times_in_loop += 1;
+            lhs += 1;
+        }
+
+        return times_in_loop;
+    }
+
+    Public Function test_empty_while()
+    {
+        while (False)
+        {}
     }
     
 }
