@@ -461,8 +461,8 @@ def moreSpecificListMapType(typeA,typeB):
     twoMaps = False;
     if bothLists(typeA,typeB):
         # grab the types of elements for each list.
-        valueTypeA = get_list_value_type(typeA)
-        valueTypeB = get_list_value_type(typeB)
+        valueTypeA = getListValueType(typeA)
+        valueTypeB = getListValueType(typeB)
 
         # can just set these to any non-sentinel value
         indexTypeA = '';
