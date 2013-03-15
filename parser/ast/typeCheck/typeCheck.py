@@ -456,7 +456,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             progText)
 
         un_function_called_id_type = unwrap_function_call_type_checker(
-            identiferNode.type,node,
+            identifierNode.type,node,
             ('Error in specifying what to iterate over: function call ' +
             'returns more than one value.'),
             progText)
