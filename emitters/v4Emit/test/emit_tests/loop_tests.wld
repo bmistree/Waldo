@@ -1,0 +1,25 @@
+LoopTests
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+
+    Public Function range_test(Number base, Number limit, Number increment)
+        returns List(element: Number)
+    {
+        return range(base,limit,increment);
+    }
+
+    Public Function no_increment_range_test(Number base,Number limit)
+        returns List(element: Number)
+    {
+        return range(base, limit);
+    }
+    
+}

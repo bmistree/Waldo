@@ -23,6 +23,23 @@ def emit_statement(
         statement_txt = _emit_assignment(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
+    elif statement_node.label == AST_RANGE:
+        base_range_node = statement_node.children[0]
+        limit_range_node = statement_node.children[1]
+        increment_range_node = statement_node.children[2]
+
+        base_range_txt = emit_statement(
+            base_range_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        limit_range_txt = emit_statement(
+            limit_range_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        increment_range_txt = emit_statement(
+            increment_range_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        
+        statement_txt = (
+            'range(_context.get_val_if_waldo(%s,_active_event),' % base_range_txt +
+            '_context.get_val_if_waldo(%s,_active_event),' % limit_range_txt +
+            '_context.get_val_if_waldo(%s,_active_event))' % increment_range_txt )
+        
     elif statement_node.label == AST_BOOL:
         statement_txt = statement_node.value + ' '
 
