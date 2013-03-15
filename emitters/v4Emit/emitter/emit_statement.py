@@ -39,7 +39,9 @@ def emit_statement(
             bool_cond_txt)
 
         statement_txt = while_head_txt + emit_utils.indent_str(body_txt)
-        
+
+    elif statement_node.label == AST_EMPTY:
+        pass
         
     elif statement_node.label == AST_RANGE:
         base_range_node = statement_node.children[0]
