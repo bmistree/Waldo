@@ -1,0 +1,111 @@
+ConditionalTests
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+    Public Function test_if(
+        TrueFalse cond_if, Number if_true, Number if_false) returns Number
+    {
+        if (cond_if)
+            return if_true;
+        return if_false;
+    }
+
+    Public Function test_else_if(
+        TrueFalse cond_if, Number return_if,
+        TrueFalse cond_else_if_a, Number return_else_if_a,
+        TrueFalse cond_else_if_b, Number return_else_if_b,
+        TrueFalse cond_else_if_c, Number return_else_if_c,
+        TrueFalse cond_else_if_d, Number return_else_if_d,
+        TrueFalse cond_else_if_e, Number return_else_if_e,
+        TrueFalse cond_else_if_f, Number return_else_if_f,
+        Number return_else, Number incorrect_return) returns Number
+    {
+        if (cond_if)
+            return return_if;
+        elseIf(cond_else_if_a)
+            return return_else_if_a;
+        elseIf(cond_else_if_b)
+            return return_else_if_b;
+        elseIf(cond_else_if_c)
+            return return_else_if_c;
+        elseIf(cond_else_if_d)
+            return return_else_if_d;
+        elseIf(cond_else_if_e)
+            return return_else_if_e;
+        elseIf(cond_else_if_f)
+            return return_else_if_f;
+        else
+            return return_else;
+
+        return incorrect_return;
+    }
+
+        
+    Public Function test_if_else(
+        TrueFalse cond_if, Number return_if, Number return_else,
+        Number incorrect_number) returns Number
+    {
+        if (cond_if)
+            return return_if;
+        else
+            return return_else;
+
+        return incorrect_number;
+    }
+
+    Public Function test_boolean_logic(
+        TrueFalse a_or1, TrueFalse a_or2,TrueFalse b_and1,
+        TrueFalse b_and2, Number return_if, Number return_else) returns Number
+    {
+        if ((a_or1 or a_or2) and (b_and1 and b_and2))
+        {
+            return return_if;
+        }
+
+        return return_else;
+    }
+
+    Public Function many_statements_in_if_else_if_else(
+        TrueFalse if_cond, TrueFalse else_if_cond, 
+        Number if_base, Number else_if_base, Number else_base,
+        Number incorrect_number) returns Number
+    {
+
+        if (if_cond)
+        {
+            if_base += 1;
+            if_base += 2;
+            if_base += 5;
+            if_base = 3*4 + if_base;
+            return if_base;
+        }
+        elseIf(else_if_cond)
+        {
+            else_if_base += 1;
+            else_if_base += 2;
+            else_if_base += 5;
+            else_if_base = 3*4 + else_if_base;
+            return else_if_base;
+        }
+        else
+        {
+            else_base += 1;
+            else_base += 2;
+            else_base += 5;
+            else_base = 3*4 + else_base;
+            return else_base;
+        }
+        
+        return incorrect_number;
+    }
+        
+    
+}
