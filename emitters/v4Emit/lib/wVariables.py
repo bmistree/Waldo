@@ -138,6 +138,20 @@ class WaldoMapVariable(_WaldoVariable):
             return internal_val.de_waldoify(invalid_listener)
         return internal_val
 
+
+    def write_val(self,invalid_listener,new_val):
+        '''
+        When writing a value to a peered container, we need to be
+        careful that the new value also becomes peered.  Otherwise, we
+        could have a peered variable holding a reference to a
+        non-peered InternalMap or InternalList.
+        '''
+        if self.peered:
+            if isinstance(new_val,waldoReferenceBase._ReferenceBase):
+                new_val = new_val.copy(invalid_listener,True)
+        super(WaldoMapVariable,self).write_val(invalid_listener,new_val)
+
+
     
 class WaldoListVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
@@ -171,3 +185,11 @@ class WaldoListVariable(_WaldoVariable):
             return internal_val.de_waldoify(invalid_listener)
         return internal_val
 
+    def write_val(self,invalid_listener,new_val):
+        '''
+        @see write_val in WaldoMapVariable
+        '''
+        if self.peered:
+            if isinstance(new_val,waldoReferenceBase._ReferenceBase):
+                new_val = new_val.copy(invalid_listener,True)
+        super(WaldoListVariable,self).write_val(invalid_listener,new_val)

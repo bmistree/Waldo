@@ -19,13 +19,11 @@ Sequences{
 
   arguments_check_references_exchange:
     SideA.start_arguments_check_references_exchange ->
-    SideB.receive_returns_check_references_exchange;
+    SideB.receive_arguments_check_references_exchange;
 
-/*
   returns_check_references_exchange:
     SideA.start_returns_check_references_exchange ->
     SideB.receive_returns_check_references_exchange;
-*/
     
 }
 
@@ -116,10 +114,27 @@ Sequence arguments_check_references_exchange(
         arg_list[0] = 'n';
 
     }
-    SideB.receive_returns_check_references_exchange
+    SideB.receive_arguments_check_references_exchange
     {
         arg_list.append('50');
         expected_behavior = (arg_list[0] == 'n') and expected_behavior;
+    }
+}
+
+
+Sequence returns_check_references_exchange()
+    returns Map(from: Number, to: Number) map_, List(element: Text) list_
+{
+    SideA.start_returns_check_references_exchange
+    {
+        map_ = {
+          1: 2,
+          3: 4
+        };
+    }
+    SideB.receive_returns_check_references_exchange
+    {
+        list_ = ['5','7','9'];
     }
 }
 
@@ -173,6 +188,38 @@ SideA
             (not (62  in map_)));
     }
 
+    Public Function returns_check_references() returns TrueFalse
+    {
+        /**
+           Tests that after return a sequence local reference type from message
+           sequence and assigning it to a local variable, changes we make to
+           reference are reflected in copies of the reference.
+         */
+        Map(from: Number, to: Number) map_;
+        List(element: Text) list_;
+        
+        map_, list_ = start_returns_check_references_exchange();
+
+        Map(from: Number, to: Number) other_map;
+        List(element: Text) other_list;
+
+        other_map = map_;
+
+        other_list = list_;
+
+        other_list.append('20');
+
+        if (len(other_list) != len(list_))
+            return False;
+
+        map_[3] = 25;
+        if (other_map[3] != map_[3])
+            return False;
+
+        return True;
+    }
+
+    
         
 }
 

@@ -101,7 +101,14 @@ def run_test():
         err_msg = '\nErr: incorrect behavior for references'
         print err_msg
         return False
-    
+
+    #### Test to ensure that returned reference types from sequences
+    #### get translated into non-peered.
+    if not sideA.returns_check_references():
+        err_msg = '\nErr: incorrect references returned from message sequence'
+        print err_msg
+        return False
+        
     return True
 
 

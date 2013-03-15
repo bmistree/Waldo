@@ -26,6 +26,34 @@ ReferenceTypeConstructorDict = {
     waldoInternalMap.InternalMap.var_type(): waldoInternalMap.InternalMap
     }
 
+def requires_name_arg_in_constructor(var_type):
+    '''
+    The InternalList and InternalMap constructors do not take a name
+    argument.  The other constructors in ReferenceTypeConstructorDict
+    do.
+    '''
+    if var_type in [waldoInternalList.InternalList.var_type(),
+                    waldoInternalMap.InternalMap.var_type()]:
+        return False
+    return True
+    
+def get_constructed_obj(var_type,var_name,host_uuid,peered,init_data):
+    '''
+    @returns {WaldoReferenceObject} --- Either a wVariable or an
+    InternalList or InternalMap.
+    '''
+    #### DEBUG
+    if var_type not in ReferenceTypeConstructorDict:
+        util.logger_assert(
+            'Unknown variable type to deserialize')
+    #### END DEBUG
+    var_constructor = ReferenceTypeConstructorDict[var_type]
+    
+    if requires_name_arg_in_constructor(var_type):
+        return var_constructor(var_name,host_uuid,peered,init_data)
+    
+    return var_constructor(host_uuid,peered,init_data)    
+
 
 def create_new_variable_wrapper_from_serialized(
     host_uuid,serial_obj_named_tuple):
@@ -227,34 +255,24 @@ def new_obj_from_serialized(
     version_obj = RefVers.deserialize_version_obj_from_network_data(
         serial_vobj)
 
-
+    var_data = serial_obj_named_tuple.var_data
     var_type = serial_obj_named_tuple.var_type
-    #### DEBUG: Testing whether got a valid type
-    if var_type not in ReferenceTypeConstructorDict:
-        util.logger_assert(
-            'Error when in waldoNetworkSerializer.new_obj_from_serialized' +
-            '.  Unknown Waldo type requested for deserialization.')
-    #### END DEBUG
-
-    var_constructor = ReferenceTypeConstructorDict[var_type]
-
 
     if isinstance(var_data,util._SerializationHelperNamedTuple):
         nested_obj = new_obj_from_serialized(
             host_uuid,var_data,invalidation_listener)
-
-        new_obj = var_constructor(var_name,host_uuid,True,nested_obj)
-        
+        new_obj = get_constructed_obj(
+            var_type,var_name,host_uuid,True,nested_obj)
     else:
         if (isinstance(var_data,dict) and
             (len(var_data) != 0) and
             (isinstance(var_data.itervalues().next(),
                         util._SerializationHelperNamedTuple))):
-
             new_obj = {}
             for key in var_data.keys():
-                new_obj[key] = var_constructor(var_name,host_uuid,True,var_data[key])
-
+                new_obj[key] = get_constructed_obj(
+                    var_type,var_name,host_uuid,True,var_data[key])
+                
         elif (isinstance(var_data,list) and
               (len(var_data) != 0) and
               (isinstance(var_data[0],
@@ -262,10 +280,12 @@ def new_obj_from_serialized(
 
             new_obj = []
             for key in range(0,len(var_data)):
-                new_obj.append(var_constructor(var_name,host_uuid,True,var_data[key]))
-
+                new_obj.append(
+                    get_constructed_obj(
+                        var_type,var_name,host_uuid,True,var_data[key]))
         else:
-            new_obj = var_constructor(var_name,host_uuid,True,var_data)
+            new_obj = get_constructed_obj(
+                var_type,var_name,host_uuid,True,var_data)
 
     # do not need to copy in version object because creating a new
     # object, which means that no other events were able to perform
