@@ -563,7 +563,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 errMsg += dict_type_to_str(listElemType) + '.  Instead, '
                 errMsg += 'you appended an element with ';
                 errMsg += 'type ' + dict_type_to_str(toAppendNode.type) + '.';
-                errorFunction(errMsg, [toAppendToNdoe],[toAppendToNode.lineNo],
+                errorFunction(errMsg, [toAppendToNode],[toAppendToNode.lineNo],
                               progText);
         
     elif node.label == AST_IN_STATEMENT:
