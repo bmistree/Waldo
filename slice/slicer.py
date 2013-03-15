@@ -516,7 +516,9 @@ def slicer(node,functionDeps=None,typeStack=None):
             # copied from
             from_node_name = from_node.value
             typeStack.annotateNode(from_node,from_node_name)
-        
+
+    elif node.label == AST_EMPTY:
+        pass
     else:
         warn_msg = '\nBehram error: in slicer, still need to '
         warn_msg += 'process label for ' + node.label + '\n'
