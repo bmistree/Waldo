@@ -2441,14 +2441,27 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
         a list of nodes that caused the errors.
       '''
 
-    if not isValueType(index.type):
+    un_function_called_index_type = unwrap_function_call_type_checker(
+        index.type,index,
+        ('Error in map index: method call ' +
+         'returns more than one value.'),
+        progText)
+
+    un_function_called_to_read_from_type = unwrap_function_call_type_checker(
+        toReadFrom.type,toReadFrom,
+        ('Error in map toReadFrom: method call ' +
+         'returns more than one value.'),
+        progText)
+
+    
+    if not isValueType(un_function_called_index_type):
         errMsg = '\nYou can only index into a map using Text, Numer, ';
         errMsg += 'or Number.  Instead, your index has type '
-        errMsg += dict_type_to_str(index.type) + '.\n';
+        errMsg += dict_type_to_str(un_function_called_index_type) + '.\n';
         astErrorNodes = [ index ];
         return True,None,errMsg,astErrorNodes;
 
-    if is_empty_map(toReadFrom.type):
+    if is_empty_map(un_function_called_to_read_from_type):
         # reading from a value that is empty
         errMsg = '\nYou cannot read from an empty map.\n';
         astErrorNodes = [ toReadFrom ];
@@ -2457,8 +2470,8 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
     # ensure that the type of the index we are reading from in
     # readingFrom matches the type of the index actually doing the
     # reading.
-    toReadFromIndexType = getMapIndexType(toReadFrom.type);
-    indexType = index.type;
+    toReadFromIndexType = getMapIndexType(un_function_called_to_read_from_type);
+    indexType = un_function_called_index_type;
     if checkTypeMismatch(index,toReadFromIndexType,indexType,typeStack,progText):
         errMsg = '\nError reading from map.  You were supposed to index into the ';
         errMsg += 'map with an indexer of type [ ' + toReadFromIndexType + ' ].  ';
@@ -2466,27 +2479,41 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
         astErrorNodes = [ toReadFrom, index ];
         return True, None, errMsg, astErrorNodes;
     
-    statementType = getMapValueType(toReadFrom.type);
+    statementType = getMapValueType(un_function_called_to_read_from_type)
     return False,statementType,None,None;
 
 def typeCheckListBracket(toReadFrom,index,typeStack,progText):
     '''
     @see typeCheckMapBracket
     '''
-    if is_empty_list(toReadFrom.type):
+    un_function_called_index_type = unwrap_function_call_type_checker(
+        index.type,index,
+        ('Error in list index: method call ' +
+         'returns more than one value.'),
+        progText)
+    
+    un_function_called_to_read_from_type = unwrap_function_call_type_checker(
+        toReadFrom.type,toReadFrom,
+        ('Error in list toReadFrom: method call ' +
+         'returns more than one value.'),
+        progText)
+    
+    if is_empty_list(un_function_called_to_read_from_type):
         errMsg = '\nError indexing into empty list.\n';
         astErrorNodes = [ toReadFrom ];
         return True, None, errMsg, astErrorNodes;
 
-    if not is_number(index.type):
+    if not is_number(un_function_called_index_type):
         errMsg = '\nError.  Can only index into a list using a number.  ';
-        errMsg += 'Instead, you used a type [ ' + index.type + ' ].\n';
+        errMsg += ('Instead, you used a type [ ' +
+                   dict_type_to_str(un_function_called_index_type) +
+                   ' ].\n')
         astErrorNodes = [ index ];
         return True, None, errMsg, astErrorNodes;
 
     # no type error that we can catch.  Return that the statement will
     # have value of whatever is being accessed.
-    listValType = getListValueType(toReadFrom.type);
+    listValType = getListValueType(un_function_called_to_read_from_type)
     return False,listValType,None,None;
 
 def typeCheckMessageSequencesGlobals(msgSeqSectionNode,progText,typeStack):
