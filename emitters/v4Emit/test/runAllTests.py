@@ -103,6 +103,7 @@ def run_emit_tests():
     import emit_tests.two_sided_modify_peer_check_update_test
     import emit_tests.basic_message_sequence_tests
     import emit_tests.conditional_tests
+    import emit_tests.pass_references_through_methods
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -125,7 +126,9 @@ def run_emit_tests():
         
         ('Emit test conditional statements',
          emit_tests.conditional_tests.run_test),
-        
+
+        ('Emit test pass references through methods',
+         emit_tests.pass_references_through_methods.run_test),        
         ]
 
     run_tests(emit_tests_to_run)
