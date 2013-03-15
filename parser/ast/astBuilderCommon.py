@@ -131,14 +131,39 @@ def p_AnnotatedDeclaration(p):
                             | Identifier CONTROLS Type Identifier EQUALS TerminalReturnable
                             | NOTHING_TYPE CONTROLS Type Identifier
                             | NOTHING_TYPE CONTROLS Type Identifier EQUALS TerminalReturnable
+                            | Declaration
                             '''
-
 
     if (p[1] == TYPE_NOTHING):
         # create an Identifier with controls as nothing
         p[1] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
 
     p[0] = AstNode(AST_ANNOTATED_DECLARATION,p[1].lineNo,p[1].linePos);
+
+    if len(p) == 2:
+        # means that we do not have any annotation on the variable,
+        # ie, change it to Nothing Controls
+        declaration_node = p[1]
+        declared_type_node = declaration_node.children[0]
+        declared_name_node = declaration_node.children[1]
+
+        # create an Identifier with controls as nothing
+        nothing_controller_identifier_node = AstNode(
+            AST_IDENTIFIER,declaration_node.lineNo,
+            declaration_node.linePos,TYPE_NOTHING)
+
+        p[0].addChildren(
+            [nothing_controller_identifier_node,declared_type_node,
+             declared_name_node])
+
+        if len(declaration_node.children) == 3:
+            # means that there's some initializer that we need to add
+            initialization_node = declaration_node.children[2]
+            p[0].addChild(initialization_node)
+        
+        return
+    
+
     p[0].addChildren([p[1],p[3],p[4]]);
     
     if (len(p) == 7):
