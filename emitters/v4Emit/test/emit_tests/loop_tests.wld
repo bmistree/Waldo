@@ -42,5 +42,37 @@ SingleSide
         while (False)
         {}
     }
+
+
+    
+    // basic for tests
+
+    Public Function range_for_test(Number num_iterations)
+        returns Number
+    {
+        Number counter = 0;
+        for (Number i in range(0,num_iterations))
+        {
+            counter += 1;
+        }
+
+        return counter;
+    }
+
+    Public Function empty_for_test()
+    {
+        for (Number i in range(0,2))
+        {}
+    }
+
+    Public Function list_iter_for_test(List(element:Text) list_)
+        returns List(element:Text)
+    {
+        List(element: Text) to_return;
+        for (Text t in list_)
+            to_return.append(t);
+        
+        return to_return;
+    }
     
 }

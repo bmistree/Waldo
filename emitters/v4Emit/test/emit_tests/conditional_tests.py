@@ -181,6 +181,12 @@ def run_test():
         False,False,-1,-1,1,-1) != 21:
         print '\nErr on many if 3'
         return False
+
+
+    # Test empty bodies
+    single_side.test_empty_if_body()
+    single_side.test_empty_else_if_body()
+    single_side.test_empty_else_body()
     
     return True
 

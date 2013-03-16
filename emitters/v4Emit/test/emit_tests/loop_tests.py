@@ -17,8 +17,36 @@ def run_test():
 
     if not test_while(single_side):
         return False
+
+    if not test_for(single_side):
+        return False
     
     return True
+
+def test_for(single_side):
+
+    # FOR RANGE TESTS
+    NUM_FOR_RANGE_TESTS = 20
+    for i in range(0,NUM_FOR_RANGE_TESTS):
+        if i != single_side.range_for_test(i):
+            print '\nErr in for range test'
+            return False
+
+    # EMPTY FOR TEST
+    single_side.empty_for_test()
+
+    # ITER FOR TEST
+    NUM_FOR_LIST_ITER_TESTS = 20
+    expected_str_list = ['a','b']
+    for i in range(0,NUM_FOR_LIST_ITER_TESTS):
+        expected_str_list.append('c')
+        if expected_str_list != single_side.list_iter_for_test(expected_str_list):
+            print '\nErr in list iter for test'
+            return False
+
+    return True
+    
+        
 
 def test_while(single_side):
 

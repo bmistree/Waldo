@@ -106,6 +106,29 @@ SingleSide
         
         return incorrect_number;
     }
-        
+
+    // Really, just trying to ensure that we put pass-s in the compiled text
+    Public Function test_empty_if_body()
+    {
+        if (True)
+        {}
+    }
+
+    Public Function test_empty_else_if_body()
+    {
+        if (False)
+        {}
+        elseIf(True)
+        {}
+    }
+    Public Function test_empty_else_body()
+    {
+        if (False)
+        {}
+        elseIf(False)
+        {}
+        else
+        {}
+    }
     
 }

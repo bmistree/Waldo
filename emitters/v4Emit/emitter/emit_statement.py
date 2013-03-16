@@ -3,6 +3,7 @@ from slice.typeStack import TypeStack
 import emit_utils
 import parser.ast.typeCheck as TypeCheck
 import emitters.v4Emit.lib.util as lib_util
+from parser.ast.astNode import AstNode
 
 def emit_statement(
     statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
@@ -42,7 +43,11 @@ def emit_statement(
 
     elif statement_node.label == AST_EMPTY:
         pass
-        
+
+    elif statement_node.label == AST_FOR_STATEMENT:
+        statement_txt = emit_for(
+            statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    
     elif statement_node.label == AST_RANGE:
         base_range_node = statement_node.children[0]
         limit_range_node = statement_node.children[1]
@@ -56,9 +61,10 @@ def emit_statement(
             increment_range_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
         
         statement_txt = (
-            'range(_context.get_val_if_waldo(%s,_active_event),' % base_range_txt +
+            '%s("garbage",self._host_uuid,False,' % emit_utils.library_transform('WaldoListVariable') +
+            'list(range(_context.get_val_if_waldo(%s,_active_event),' % base_range_txt +
             '_context.get_val_if_waldo(%s,_active_event),' % limit_range_txt +
-            '_context.get_val_if_waldo(%s,_active_event))' % increment_range_txt )
+            '_context.get_val_if_waldo(%s,_active_event))))' % increment_range_txt )
         
     elif statement_node.label == AST_BOOL:
         statement_txt = statement_node.value + ' '
@@ -185,13 +191,13 @@ def emit_statement(
         
         # op_successful = _waldo_libs.WaldoTrueFalseVariable(  # the type of waldo variable to create
         #     '1__op_successful', # variable's name
-        #     _host_uuid, # host uuid var name
+        #     self._host_uuid, # host uuid var name
         #     False,  # if peered, True, otherwise, False
         #     True
         # )
         statement_txt = '''%s = %s( # the type of waldo var to create
     '%s', # var name
-    self._uuid, # host uuid
+    self._host_uuid, # host uuid
     False, # not peered
     %s) # initializer text''' % (
             var_name_waldo_src,
@@ -840,3 +846,96 @@ def emit_condition_statement(
         else_txt += '\n'
 
     return if_txt + elif_txt + else_txt
+
+
+def emit_for(
+    for_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+
+    #### DEBUG
+    if for_node.label != AST_FOR_STATEMENT:
+        emit_utils.emit_assert(
+            'emit_for expects a for node')
+    #### END DEBUG
+
+    if len(for_node.children) == 3:
+        identifier_type_node_index = None
+        identifier_node_index = 0
+        to_iterate_node_index = 1
+        for_body_node_index = 2
+
+    elif len(for_node.children) == 4:
+        identifier_type_node_index = 0
+
+        identifier_node_index = 1
+        to_iterate_node_index = 2
+        for_body_node_index = 3
+
+
+    for_txt = ''
+    if identifier_type_node_index != None:
+        # need to declare index variable before emitting the for loop
+        # create a declaration node and then emit_statement
+        decl_node = AstNode(AST_DECLARATION)
+        decl_node.addChildren(
+            [for_node.children[identifier_type_node_index],
+             for_node.children[identifier_node_index]])
+        
+        iterator_decl_txt = emit_statement(
+            decl_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        for_txt += iterator_decl_txt + '\n'
+
+    identifier_node = for_node.children[identifier_node_index]
+    to_iterate_node = for_node.children[to_iterate_node_index]
+    for_body_node = for_node.children[for_body_node_index]
+
+    # FIXME
+    # challenge with for loops: we should use Waldo variables as
+    # iterators.  Ie, for the statement:
+    #     for (Number i in range(0,10))
+    # i should be a WaldoNumberVariable.  But the only way to write
+    # into a WaldoVariable is to call write_val on it.  Solution is to
+    # create an intermediate Python variable that we use as the index.
+    # Then, on the first line of the for loop body, we assign into the
+    # Waldo variable (using the python variable) using write_va.  Ie,
+    # the above would get translated to:
+    #     i = WaldoNum(...)
+    #     for _i in range(0,10):
+    #         i.write_val(_i,_active_event)
+    # The problem with this approach, and the reason for this FIXME is
+    # that we need to be careful to select the intermediate Python
+    # variable carefully to prevent collisions with other variables.
+    # For instance, if a user had the following loop:
+    #     for (Number context in range(0,10))
+    # and we just used _context, we would have a collision.  For now,
+    # just hoping to avoid collisions by picking something obscure.
+    inter_iter_name = intermediate_python_name_from_identifier(identifier_node)
+
+    to_iterate_txt = emit_statement(
+        to_iterate_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    
+    # actually emit text
+    for_txt += (
+        'for %s in _context.get_for_iter(%s,_active_event):\n' %
+        (inter_iter_name,to_iterate_txt))
+    
+    for_body_txt = emit_statement(
+        identifier_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    for_body_txt += '.write_val(_active_event,%s)\n' % inter_iter_name
+
+    for_body_txt += emit_statement(
+        for_body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    for_body_txt += '\npass\n'
+    
+    for_txt += emit_utils.indent_str(for_body_txt)
+    return for_txt
+
+
+def intermediate_python_name_from_identifier(identifier_node):
+    '''
+    @see FIXME in middle of emit_for.
+
+    @returns {String}
+    '''
+    waldo_src_name = identifier_node.value
+    return '_secret_waldo_for_iter____' + waldo_src_name

@@ -240,6 +240,35 @@ class _ExecutingEventContext(object):
             return to_return_tuple[0]
         return to_return_tuple
 
+    def get_for_iter(self,to_iter_over,active_event):
+        '''
+        When call for loop on Waldo variables, need to get item to
+        iterate over
+        '''
+
+        if (isinstance(to_iter_over,dict) or
+            isinstance(to_iter_over,list) or
+            isinstance(to_iter_over,basestring)):
+            return iter(to_iter_over)
+
+        if isinstance(to_iter_over,wVariables.WaldoTextVariable):
+            return iter(to_iter_over.get_val(active_event))
+
+        if isinstance(to_iter_over,wVariables.WaldoMapVariable):
+            return iter(to_iter_over.get_val(active_event).get_keys(active_event))
+
+        if isinstance(to_iter_over,wVariables.WaldoListVariable):
+            # FIXME: This is an inefficient way of reading all values
+            # over list.
+            to_return = []
+            for i in range(0, to_iter_over.get_val(active_event).get_len(active_event)):
+                to_return.append(
+                    to_iter_over.get_val(active_event).get_val_on_key(active_event,i))
+            return iter(to_return)
+        
+        util.emit_assert(
+            'Calling get_for_iter on an object that does not support iteration')
+        
 
     def handle_len(self,what_calling_len_on, active_event):
         '''

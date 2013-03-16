@@ -11,12 +11,10 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             _InternalListDirtyMapElement)
     
     def add_key(self,invalid_listener,key,new_val):
-        util.logger_assert(
-            'Cannot call add_key on a list')
+        util.logger_assert('Cannot call add_key on a list')
 
     def get_keys(self,invalid_listener):
-        util.logger_assert(
-            'Cannot call get_keys on a list')
+        util.logger_assert('Cannot call get_keys on a list')
         
     @staticmethod
     def var_type():
@@ -27,7 +25,6 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         '''
         @see _ReferenceBase.de_waldoify
         '''
-
         internal_len = self.get_len(invalid_listener)
         to_return = []
         for index in range(0, internal_len):
