@@ -44,6 +44,33 @@ def test_for(single_side):
             print '\nErr in list iter for test'
             return False
 
+    # iter over map for test
+    input_map = {
+        'a': 5,
+        'v': 3,
+        'm': 31,
+        'q': 35
+        }
+    expected_list = list(input_map.values()).sort()
+    received_list = single_side.map_iter_for_test(input_map).sort()
+    
+    if expected_list != received_list:
+        print '\nErr in iter for map test'
+        return False
+    
+
+    # iter over nested list of numbers.  should contain the sum of
+    # every number in lists.
+    input_list = [ [1,5,6], [2,3,4], [10,11,2]]
+    expected_num = reduce(
+        lambda x,y:
+            x + reduce(lambda a,b: a+b,y,0),
+        input_list,
+        0)
+    if expected_num != single_side.nested_list_iter_test(input_list):
+        print '\nErr iterating over nested list'
+        return False
+    
     return True
     
         

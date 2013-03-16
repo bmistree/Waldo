@@ -44,9 +44,7 @@ SingleSide
     }
 
 
-    
     // basic for tests
-
     Public Function range_for_test(Number num_iterations)
         returns Number
     {
@@ -73,6 +71,42 @@ SingleSide
             to_return.append(t);
         
         return to_return;
+    }
+
+    Public Function map_iter_for_test(Map(from: Text, to:Number) map_)
+        returns List(element: Number)
+    {
+        // takes all the values from the map and returns them as an
+        // array.
+        List(element:Number) to_return;
+        
+        Text t;
+        for (t in map_)
+            to_return.append(map_[t]);
+
+        return to_return;
+    }
+
+
+    Public Function nested_list_iter_test(
+        List(element: List(element: Number)) nested_list)
+        returns Number
+    {
+        // Returns the sum of every number in the nested lists
+        Number return_val = 0;
+        
+        for (List(element: Number) it in nested_list)
+        {
+            for (Number i in it)
+                return_val += i;
+        }
+
+
+        // List(element: Number) tmp = nested_list[0];
+        // for (Number i in tmp)
+        // {}
+        
+        return return_val;
     }
     
 }

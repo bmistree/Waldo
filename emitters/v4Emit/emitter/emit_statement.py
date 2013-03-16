@@ -884,7 +884,7 @@ def emit_for(
             decl_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
         for_txt += iterator_decl_txt + '\n'
-
+            
     identifier_node = for_node.children[identifier_node_index]
     to_iterate_node = for_node.children[to_iterate_node_index]
     for_body_node = for_node.children[for_body_node_index]

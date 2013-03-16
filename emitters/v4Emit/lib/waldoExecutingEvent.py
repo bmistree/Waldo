@@ -262,8 +262,25 @@ class _ExecutingEventContext(object):
             # over list.
             to_return = []
             for i in range(0, to_iter_over.get_val(active_event).get_len(active_event)):
-                to_return.append(
-                    to_iter_over.get_val(active_event).get_val_on_key(active_event,i))
+                to_append = to_iter_over.get_val(active_event).get_val_on_key(active_event,i)
+
+                # The reason that we do this here is that in a for
+                # loop, the operation we perform in the compiled code
+                # immediately following the actual for header is
+                # assign to another Waldo variable the variable being
+                # held by to_append.  (We do this through a write_val
+                # call.  write_val must take in InternalMaps or
+                # InternalLists.  Therefore, get_val on the
+                # WaldoList/WaldoMap first.  Note this is unnecessary
+                # for all other for iterations because none of the
+                # others possibly return a WaldoObject to iterate over.
+                if (isinstance(to_append,wVariables.WaldoListVariable) or
+                    isinstance(to_append,wVariables.WaldoMapVariable)):
+                    to_append = to_append.get_val(active_event)
+                
+                to_return.append(to_append)
+
+
             return iter(to_return)
         
         util.emit_assert(
