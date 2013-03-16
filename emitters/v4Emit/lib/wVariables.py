@@ -71,13 +71,12 @@ class WaldoTextVariable(_WaldoVariable):
         return WaldoTextVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
-
     def de_waldoify(self,invalid_listener):
         '''
         @see _ReferenceBase.de_waldoify
         '''
         return self.get_val(invalid_listener)
-
+            
     
         
 class WaldoTrueFalseVariable(_WaldoVariable):
@@ -101,17 +100,58 @@ class WaldoTrueFalseVariable(_WaldoVariable):
         '''
         return self.get_val(invalid_listener)
 
-    
-    
 
-### CONTAINER TYPES        
+def recursive_map_list(val,name,host_uuid,peered):
+    '''
+    Challenge is that both list and map types can take in
+    arbitrarily-nested dicts and lists.  Eg.,
+    {'a': [ [1,2,3]] , 'b': [[1],[3]]}
+
+    In this case, we need to turn each level into a
+    WaldoMap/WaldoList.  To do so, we recursively take in initializer
+    val (@param val above) and check if it's a dict or a list.  If it
+    is, then, check all the elements of the dict/list and create
+    variables out of them.
+    '''
+
+    # FIXME: here's probably a lot of overhead to this approach.  If
+    # you look at the actual WaldoList and WaldoMap initializers, what
+    # ends up happening is that we take the last WaldoMapVariable and
+    # just grab the Internal representation of it.
+    if isinstance(val,dict):
+        copy = {}
+        for key in val:
+            dict_entry = val[key]
+            copy[key] = recursive_map_list(dict_entry,name,host_uuid,peered)
+
+        copy = InternalMap(host_uuid,peered,copy)
+        return WaldoMapVariable(name,host_uuid,peered,copy)
+            
+    elif isinstance(val,list):
+        copy = []
+        for element in val:
+            copy.append( recursive_map_list(element,name,host_uuid,peered))
+
+        copy = InternalList(host_uuid,peered,copy)            
+        return WaldoListVariable(name,host_uuid,peered,copy)
+
+    # neither a Python map or list type, and therefore can be used as
+    # itself.
+    return val
+
+
+### CONTAINER TYPES
 class WaldoMapVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
+        # see comments in recursive_map_list
         if init_val == None:
-            init_val = InternalMap(host_uuid,peered,{})
+            init_val = recursive_map_list({},name,host_uuid,peered)
+            init_val = init_val.get_val(None)
+        elif isinstance(init_val, InternalMap):
+            pass
         else:
-            if isinstance(init_val,dict):
-                init_val = InternalMap(host_uuid,peered,init_val)
+            init_val = recursive_map_list(init_val,name,host_uuid,peered)
+            init_val = init_val.get_val(None)
                 
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
 
@@ -155,11 +195,15 @@ class WaldoMapVariable(_WaldoVariable):
     
 class WaldoListVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
+        # see comments in recursive_map_list
         if init_val == None:
-            init_val = InternalList(host_uuid,peered,[])
+            init_val = recursive_map_list([],name,host_uuid,peered)
+            init_val = init_val.get_val(None)
+        elif isinstance(init_val, InternalList):
+            pass
         else:
-            if isinstance(init_val,list):
-                init_val = InternalList(host_uuid,peered,init_val)
+            init_val = recursive_map_list(init_val,name,host_uuid,peered)
+            init_val = init_val.get_val(None)
             
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
     
