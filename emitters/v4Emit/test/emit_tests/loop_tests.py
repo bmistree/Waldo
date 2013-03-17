@@ -20,6 +20,21 @@ def run_test():
 
     if not test_for(single_side):
         return False
+
+    if not test_break_continue(single_side):
+        return False
+    
+    return True
+
+def test_break_continue(single_side):
+
+    if not single_side.test_break():
+        '\nErr in break'
+        return False
+    
+    if not single_side.test_continue():
+        '\nErr in continue'
+        return False
     
     return True
 

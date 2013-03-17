@@ -44,6 +44,11 @@ def emit_statement(
     elif statement_node.label == AST_EMPTY:
         pass
 
+    elif statement_node.label == AST_CONTINUE:
+        statement_txt = 'continue'
+    elif statement_node.label == AST_BREAK:
+        statement_txt = 'break'
+        
     elif statement_node.label == AST_FOR_STATEMENT:
         statement_txt = emit_for(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)

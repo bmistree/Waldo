@@ -119,5 +119,36 @@ SingleSide
         }
         return counter;
     }
+
+
+    Public Function test_break() returns TrueFalse
+    {
+        for (Number i in range(0,10))
+        {
+            if (i == 5)
+                break;
+        }
+
+        return i==5;        
+    }
+
+    Public Function test_continue() returns TrueFalse
+    {
+        // just sums up every odd number between 0 and 10.
+        Number counter = 0;
+        for (Number i in range(0,10))
+        {
+            if (i in range(0,10,2))
+                continue;
+            counter += i;
+        }
+
+        Number expected_num = 0;
+        for (i in range(1,10,2))
+            expected_num += i;
+        
+        return expected_num == counter;
+    }
+
     
 }
