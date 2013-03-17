@@ -100,13 +100,24 @@ SingleSide
             for (Number i in it)
                 return_val += i;
         }
-
-
-        // List(element: Number) tmp = nested_list[0];
-        // for (Number i in tmp)
-        // {}
-        
         return return_val;
+    }
+
+
+    Public Function nested_map_iter_test(
+        Map(from: Text, to: Map(from: Text, to: Number)) map_)
+        returns Number
+    {
+        Number counter = 0;
+        for (Text t1 in map_)
+        {
+            for (Text t2 in map_[t1])
+            {
+                Number map_elem = map_[t1][t2];
+                counter += map_elem;
+            }
+        }
+        return counter;
     }
     
 }

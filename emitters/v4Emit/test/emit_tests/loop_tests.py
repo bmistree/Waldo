@@ -70,6 +70,32 @@ def test_for(single_side):
     if expected_num != single_side.nested_list_iter_test(input_list):
         print '\nErr iterating over nested list'
         return False
+
+    # iter over nested map of map of numbers.  result should contain
+    # the sum of every number in the maps
+    input_map = {
+        'a': {
+            'b': 23,
+            'c': 34,
+            'd': 45
+            },
+        'e': {
+            'f': 67,
+            },
+        'g': {},
+        'h': {
+            'i': 0
+            }}
+        
+    expected_num = reduce (
+        lambda x,y:
+            x + reduce( lambda a,b: a+b, list(y.values()),0),
+        list(input_map.values()),
+        0)
+
+    if single_side.nested_map_iter_test(input_map) != expected_num:
+        print '\nErr with nested map sum'
+        return False
     
     return True
     
