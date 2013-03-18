@@ -26,6 +26,7 @@ JSON_LIST_ELEMENT_TYPE_FIELD = 'ElementType';
 JSON_MAP_FROM_TYPE_FIELD = 'From';
 JSON_MAP_TO_TYPE_FIELD = 'To';
 JSON_TUPLE_TYPE_FIELD = 'Tuple'
+JSON_EXTERNAL_TYPE_FIELD = 'external'
 
 
 JSON_STRUCT_FIELDS_DICT = 'StructFields'
@@ -103,6 +104,27 @@ def get_struct_field_type(field_name,struct_type_dict):
     struct_fields_dict = struct_type_dict[JSON_STRUCT_FIELDS_DICT]
     return struct_fields_dict.get(field_name,None)
 
+
+def type_dict_scrub_externals(dict_type):
+    '''
+    Returns a map without any external fields in it.
+    '''
+    _assert_if_not_dict(dict_type,'is_external')
+
+    to_return = {}
+    to_add = dict_type[JSON_TYPE_FIELD]
+    if isinstance(to_add,dict):
+        to_add = type_dict_scrub_externals(to_add)
+        
+    to_return[JSON_TYPE_FIELD] = to_add
+
+    return to_return
+    
+
+
+def is_external(dict_type):
+    _assert_if_not_dict(dict_type,'is_external')
+    return dict_type[JSON_EXTERNAL_TYPE_FIELD]
 
 def is_endpoint(dict_type):
     _assert_if_not_dict(dict_type,'is_endpoint')
@@ -233,8 +255,6 @@ def get_single_type_if_func_call_reg_type(type_dict):
     return type_dict_array[0], not_just_one_return_type_bool
 
 
-    
-
 def generate_returned_tuple_type(tuple_element_list):
     '''
     Each one of these should themselves be a type dict.
@@ -265,16 +285,16 @@ def _assert_if_not_dict(to_check,caller):
         assert(False)
         
 
-def generate_type_as_dict(type_string):
+def generate_type_as_dict(type_string,is_external):
     '''
     The .type fields of all nodes should be dicts with 'TYPE'
     specified in them.
 
     This takes one type and wraps it in another.
     '''
-
     return {
-        JSON_TYPE_FIELD: type_string
+        JSON_TYPE_FIELD: type_string,
+        JSON_EXTERNAL_TYPE_FIELD: is_external
         }
 
 
