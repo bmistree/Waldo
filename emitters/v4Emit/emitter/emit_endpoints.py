@@ -154,10 +154,12 @@ def create_wvariables_array(
         # check if annotated declaration or just declaration
         initializer_node = None
         if decl_node.label == AST_ANNOTATED_DECLARATION:
+            id_node = decl_node.children[1]
             var_name = emit_utils.get_var_name_from_annotated_decl(decl_node)
             var_type = emit_utils.get_var_type_dict_from_annotated_decl(decl_node)
             initializer_node = emit_utils.get_var_initializer_from_annotated_decl(decl_node)
         elif decl_node.label == AST_DECLARATION:
+            id_node = decl_node.children[0]
             var_name = emit_utils.get_var_name_from_decl(decl_node)
             var_type = emit_utils.get_var_type_dict_from_decl(decl_node)
             initializer_node = emit_utils.get_var_initializer_from_decl(decl_node)            
@@ -184,8 +186,8 @@ def create_wvariables_array(
                  emitted_init)
 
         variable_type_str = emit_utils.get_var_type_txt_from_type_dict(
-            var_type)
-            
+            var_type,id_node)
+
         wvar_load_text += '''
 self._global_var_store.add_var(
     '%s',
@@ -384,7 +386,7 @@ def convert_args_to_waldo(method_node,sequence_local=False):
             converted_args_string += (
                 arg_name + ' = ' +
                 '_context.turn_into_waldo_var(' + arg_name +
-                ',_active_event,self._host_uuid,%s)\n' % (force_copy))
+                ',%s,_active_event,self._host_uuid,False)\n' % force_copy)
         else:
 
             if arg_unique_name == None:

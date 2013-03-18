@@ -103,7 +103,10 @@ class _ExecutingEventContext(object):
         of the variable.  Don't wait for commit or anything else.
         
         '''
-        if isinstance(val,waldoReferenceBase._ReferenceBase):
+
+        if isinstance(val,wVariables._WaldoExternalValueType):
+            return val.get_val(active_event).get_val(active_event)
+        elif isinstance(val,waldoReferenceBase._ReferenceBase):
             return val.get_val(active_event)
         return val
 

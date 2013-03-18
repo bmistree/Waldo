@@ -107,6 +107,7 @@ def run_emit_tests():
     import emit_tests.sequence_local_data_tests
     import emit_tests.loop_tests
     import emit_tests.misc_tests
+    import emit_tests.external_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -141,6 +142,9 @@ def run_emit_tests():
 
         ('Emit test misc',
          emit_tests.misc_tests.run_test),
+
+        ('Emit test externals',
+         emit_tests.external_tests.run_test),
         
         ]
 

@@ -183,6 +183,50 @@ def emit_statement(
         
     elif statement_node.label == AST_STRING:
         statement_txt += "'"  + statement_node.value + "' "
+
+    elif statement_node.label == AST_EXT_ASSIGN:
+        to_assign_to_node = statement_node.children[1]
+        to_assign_from_node = statement_node.children[0]
+
+        # FIXME: need to be careful of function call assignment
+        to_assign_to_node_txt = emit_statement(
+            to_assign_to_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        to_assign_from_node_txt = emit_statement(
+            to_assign_from_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        # from extAssign a to b, produces
+        # b.write_val(_active_event, a.get_val(_active_event))
+        # ie, take the internal val of a and put it in b.
+        statement_txt = (
+            to_assign_to_node_txt + '.write_val(_active_event,%s.get_val(_active_event))' %
+            to_assign_from_node_txt)
+
+    elif statement_node.label == AST_EXT_COPY:
+        # extCopy 3 to a
+        # should produce
+        # a.get_val(_active_event).write_val(
+        #    _active_event,_context.get_val_if_waldo(
+        #        3,_active_event))
+        # ie, assign the internal value of a to whatever
+        # get_val_if_waldo of 3 produces
+        
+        to_copy_from_node = statement_node.children[0]
+        to_copy_from_node_txt = emit_statement(
+            to_copy_from_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        to_copy_to_node = statement_node.children[1]
+        to_copy_to_node_txt = emit_statement(
+            to_copy_to_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        statement_txt = (
+            to_copy_to_node_txt + '.get_val(_active_event).' +
+            'write_val(_active_event,_context.get_val_if_waldo(' +
+            to_copy_from_node_txt + ',_active_event))'
+            )
+
+        # FIXME: what about lists/maps of externals?  How do you
+        # assign into and copy them?
+        # extCopy 3 to a[3] extAssign a[3] to b
         
     elif statement_node.label == AST_NUMBER:
         statement_txt += statement_node.value + ' '
@@ -209,7 +253,8 @@ def emit_statement(
         # should contain something like WaldoNumVariable,
         # WaldoTextVariable, etc.
         var_type_txt = emit_utils.get_var_type_txt_from_type_dict(
-            emit_utils.get_var_type_dict_from_decl(statement_node))
+            emit_utils.get_var_type_dict_from_decl(statement_node),
+            var_name_node)
 
         # the name that the user used for the variable.
         var_name_txt = emit_utils.get_var_name_from_decl(statement_node)

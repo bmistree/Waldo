@@ -9,6 +9,10 @@ from wVariables import WaldoTrueFalseVariable
 from wVariables import WaldoMapVariable
 from wVariables import WaldoListVariable
 
+from wVariables import WaldoExtNumVariable
+from wVariables import WaldoExtTrueFalseVariable
+from wVariables import WaldoExtTextVariable
+
 # call results
 from waldoCallResults import _CompleteRootCallResult as CompleteRootCallResult
 from waldoCallResults import _BackoutBeforeReceiveMessageResult as BackoutBeforeReceiveMessageResult

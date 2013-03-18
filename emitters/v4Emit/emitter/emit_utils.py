@@ -197,21 +197,34 @@ def is_endpoint_method_call(node):
     return False
 
 
-def get_var_type_txt_from_type_dict(var_type_dict):
+def get_var_type_txt_from_type_dict(var_type_dict,var_id_node):
     '''
-    @param {dict} var_type_dict --- Gotten from an AstNode's .type field.
+    @param {dict} var_type_dict --- Gotten from an AstNode's .type
+    field.
+
+    @param {AstNode} var_id_node --- The identifier node associated
+    with var_type_dict.  Essentially, just want to be able to check
+    whether node is external to determine what type of variable to
+    create from it.
     '''
     # FIXME: still need to add entries for function, endpoint, and
     # user struct types.
     if TypeCheck.templateUtil.is_number(var_type_dict):
-        variable_type_str = library_transform('WaldoNumVariable')
+        if var_id_node.external != None:
+            variable_type_str = library_transform('WaldoExtNumVariable')
+        else:
+            variable_type_str = library_transform('WaldoNumVariable')
     elif TypeCheck.templateUtil.is_true_false(var_type_dict):
-        variable_type_str = library_transform('WaldoTrueFalseVariable')
+        if var_id_node.external != None:
+            variable_type_str = library_transform('WaldoExtTrueFalseVariable')
+        else:
+            variable_type_str = library_transform('WaldoTrueFalseVariable')
     elif TypeCheck.templateUtil.is_text(var_type_dict):
-        variable_type_str = library_transform('WaldoTextVariable')
-    elif TypeCheck.templateUtil.is_text(var_type_dict):
-        variable_type_str = library_transform('WaldoTextVariable')
-    elif TypeCheck.templateUtil.isListType(var_type_dict):
+        if var_id_node.external != None:
+            variable_type_str = library_transform('WaldoExtTextVariable')
+        else:
+            variable_type_str = library_transform('WaldoTextVariable')
+    elif TypeCheck.templateUtil.isListType(var_type_dict):        
         variable_type_str = library_transform('WaldoListVariable')
     elif TypeCheck.templateUtil.isMapType(var_type_dict):
         variable_type_str = library_transform('WaldoMapVariable')

@@ -141,7 +141,12 @@ def recursive_map_list(val,name,host_uuid,peered):
 
 
 ### CONTAINER TYPES
-class WaldoMapVariable(_WaldoVariable):
+## External types
+class _WaldoExternalVariable(_WaldoVariable):
+    pass
+
+
+class WaldoMapVariable(_WaldoExternalVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         # see comments in recursive_map_list
         if init_val == None:
@@ -193,7 +198,7 @@ class WaldoMapVariable(_WaldoVariable):
 
 
     
-class WaldoListVariable(_WaldoVariable):
+class WaldoListVariable(_WaldoExternalVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         # see comments in recursive_map_list
         if init_val == None:
@@ -237,3 +242,72 @@ class WaldoListVariable(_WaldoVariable):
             if isinstance(new_val,waldoReferenceBase._ReferenceBase):
                 new_val = new_val.copy(invalid_listener,True)
         super(WaldoListVariable,self).write_val(invalid_listener,new_val)
+
+class _WaldoExternalValueType(_WaldoExternalVariable):
+    def is_value_type(self):
+        return False
+
+    def copy(self,invalid_listener,peered):
+        util.logger_assert(
+            'Calling copy on external number is disallowed.')
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        internal_val = self.get_val(invalid_listener)
+
+        if isinstance(internal_val,waldoReferenceBase._ReferenceBase):
+            return internal_val.de_waldoify(invalid_listener)
+        return internal_val
+
+
+class WaldoExtNumVariable(_WaldoExternalValueType):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+
+        if init_val == None:
+            init_val = WaldoNumVariable(name,host_uuid,False,0)
+        elif isinstance(init_val,WaldoNumVariable):
+            pass
+        else:
+            init_val = WaldoNumVariable(name,host_uuid,False,init_val)
+                 
+        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+        
+    def var_type():
+        return 'WaldoExternalNumVariable'
+
+    
+class WaldoExtTextVariable(_WaldoExternalVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+
+        if init_val == None:
+            init_val = WaldoTextVariable(name,host_uuid,False,'')
+        elif isinstance(init_val,WaldoTextVariable):
+            pass
+        else:
+            init_val = WaldoTextVariable(name,host_uuid,False,init_val)
+                 
+        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+        
+            
+    def var_type():
+        return 'WaldoExternalTextVariable'
+
+    
+
+class WaldoExtTrueFalseVariable(_WaldoExternalVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+
+        if init_val == None:
+            init_val = WaldoTextVariable(name,host_uuid,False,'')
+        elif isinstance(init_val,WaldoTextVariable):
+            pass
+        else:
+            init_val = WaldoTextVariable(name,host_uuid,False,init_val)
+                 
+        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+        
+            
+    def var_type():
+        return 'WaldoExternalTextVariable'
