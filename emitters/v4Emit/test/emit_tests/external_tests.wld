@@ -19,7 +19,6 @@ SingleSide
     {
         extAssign input_num to num;
         // map_[3] = input_num;
-        extAssign input_num to map_[3];
     }
 
     Public Function increment_ext_num() returns Number
@@ -37,4 +36,19 @@ SingleSide
     {
         return num;
     }
+
+
+    
+    Public Function input_ext_num_to_map(
+        External Number input_num, Number index)
+    {
+        extAssign input_num to map_[index];
+    }
+
+    Public Function get_endpoint_map_ext_value(Number index)
+        returns Number
+    {
+        return map_[index];
+    }
+    
 }
