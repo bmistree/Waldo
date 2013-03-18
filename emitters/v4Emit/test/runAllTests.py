@@ -106,6 +106,7 @@ def run_emit_tests():
     import emit_tests.pass_references_through_methods
     import emit_tests.sequence_local_data_tests
     import emit_tests.loop_tests
+    import emit_tests.misc_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -137,6 +138,9 @@ def run_emit_tests():
         
         ('Emit test loops',
          emit_tests.loop_tests.run_test),
+
+        ('Emit test misc',
+         emit_tests.misc_tests.run_test),
         
         ]
 

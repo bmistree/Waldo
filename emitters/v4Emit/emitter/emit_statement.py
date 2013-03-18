@@ -48,7 +48,7 @@ def emit_statement(
         statement_txt = 'continue'
     elif statement_node.label == AST_BREAK:
         statement_txt = 'break'
-        
+
     elif statement_node.label == AST_FOR_STATEMENT:
         statement_txt = emit_for(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -73,6 +73,12 @@ def emit_statement(
         
     elif statement_node.label == AST_BOOL:
         statement_txt = statement_node.value + ' '
+
+    elif statement_node.label == AST_TOTEXT_FUNCTION:
+        to_call_to_txt_on_node = statement_node.children[0]
+        to_call_to_txt_on_txt = emit_statement(
+            to_call_to_txt_on_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        statement_txt = '_context.to_text(%s,_active_event)' % to_call_to_txt_on_txt
 
     elif statement_node.label == AST_NOT_EXPRESSION:
         what_notting_node = statement_node.children[0]
@@ -158,6 +164,22 @@ def emit_statement(
             '_context.get_val_if_waldo(%s,_active_event))' %
             what_to_append_txt)
 
+    elif statement_node.label == AST_REMOVE_STATEMENT:
+        to_remove_from_node = statement_node.children[0]
+        what_to_remove_node = statement_node.children[1]
+
+        what_to_remove_txt = emit_statement(
+            what_to_remove_node,endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+
+        to_remove_from_txt = emit_statement(
+            to_remove_from_node,endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+
+        statement_txt = (
+            to_remove_from_txt + '.get_val(_active_event).del_key_called(_active_event,' +
+            '_context.get_val_if_waldo(%s,_active_event))' %
+            what_to_remove_txt)
         
     elif statement_node.label == AST_STRING:
         statement_txt += "'"  + statement_node.value + "' "

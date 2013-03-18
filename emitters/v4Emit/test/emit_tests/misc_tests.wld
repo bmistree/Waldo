@@ -1,0 +1,63 @@
+MiscTests
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+
+    // value type tests
+    Public Function to_text_number(Number to_call_to_text_on)
+        returns Text
+    {
+        return toText(to_call_to_text_on);
+    }
+
+    Public Function to_text_text(Text to_call_to_text_on)
+        returns Text
+    {
+        return toText(to_call_to_text_on);
+    }
+
+    Public Function to_text_true_false(TrueFalse to_call_to_text_on)
+        returns Text
+    {
+        return toText(to_call_to_text_on);
+    }
+
+    // // reference type tests
+    // Public Function to_text_map(
+    //     Map(from: Number, to: Text) to_call_to_text_on)
+    //     returns Text
+    // {
+    //     return toText(to_call_to_text_on);
+    // }
+    
+    // Public Function to_text_list(
+    //     List(element: Number) to_call_to_text_on)
+    //     returns Text
+    // {
+    //     return toText(to_call_to_text_on);
+    // }
+
+    // // nested reference types
+    // Public Function to_text_nested_map(
+    //     Map(from: Number, to: Map(from: Text, to: Number)) to_call_to_text_on)
+    //     returns Text
+    // {
+    //     return toText(to_call_to_text_on);
+    // }
+    
+    // Public Function to_text_nested_list(
+    //     List(element: Map(from: Text, to: List(element: Number))) to_call_to_text_on)
+    //     returns Text
+    // {
+    //     return toText(to_call_to_text_on);
+    // }
+    
+}

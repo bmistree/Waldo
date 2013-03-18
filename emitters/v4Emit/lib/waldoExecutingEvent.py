@@ -286,7 +286,57 @@ class _ExecutingEventContext(object):
         util.emit_assert(
             'Calling get_for_iter on an object that does not support iteration')
         
+    def to_text(self,what_to_call_to_text_on,active_event):
+        '''
+        @returns {Python String}
+        '''
+        if not isinstance(what_to_call_to_text_on,waldoReferenceBase._ReferenceBase):
+            return str(what_to_call_to_text_on)
 
+        # strings for waldo variable value types
+        if (isinstance(what_to_call_to_text_on, wVariables.WaldoNumVariable) or
+            isinstance(what_to_call_to_text_on, wVariables.WaldoTextVariable) or
+            isinstance(what_to_call_to_text_on, wVariables.WaldoTrueFalseVariable)):
+            return str(what_to_call_to_text_on.get_val(active_event))
+
+        # strings for reference types
+        # lists
+        if isinstance(what_to_call_to_text_on, wVariables.WaldoListVariable):
+            to_return_arg = ''
+            waldo_internal_list = what_to_call_to_text_on.get_val(active_event)
+            # get each element separately from the list and call
+            # to_text on it.
+            for i in range(0,waldo_internal_list.get_len(active_event)):
+                list_val = waldo_internal_list.get_val_on_key(active_event,i)
+                to_return_arg += self.to_text(list_val,active_event) + ', '
+            
+            return '[%s]' % to_return_arg
+
+        # maps
+        if isinstance(what_to_call_to_text_on, wVariables.WaldoMapVariable):
+            to_return_arg = ''
+            waldo_internal_map = what_to_call_to_text_on.get_val(active_event)
+            # get each element separately from the list and call
+            # to_text on it.
+            waldo_key_list = waldo_internal_map.get_keys(active_event)
+            waldo_internal_key_list = waldo_key_list.get_val(active_event)
+            
+            for i in range(0,waldo_internal_key_list.get_len(active_event)):
+                key_val = waldo_internal_key_list.get_val_on_key(active_event,i)
+
+                # get item from map
+                item_val = waldo_internal_map.get_val_on_key(active_event,key_val)
+
+                
+                to_return_arg += (
+                    self.to_text(key_val,active_event) + ': ' +
+                    self.to_text(item_val,active_event) + ', ')
+
+            
+            return '{%s}' % to_return_arg
+        
+
+        
     def handle_len(self,what_calling_len_on, active_event):
         '''
         Can support python lists, dicts, strings, or waldo lists, waldo maps,
