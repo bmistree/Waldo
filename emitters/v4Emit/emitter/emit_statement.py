@@ -185,21 +185,9 @@ def emit_statement(
         statement_txt += "'"  + statement_node.value + "' "
 
     elif statement_node.label == AST_EXT_ASSIGN:
-        to_assign_to_node = statement_node.children[1]
-        to_assign_from_node = statement_node.children[0]
+        statement_txt = emit_ext_assign(
+            statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-        # FIXME: need to be careful of function call assignment
-        to_assign_to_node_txt = emit_statement(
-            to_assign_to_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-        to_assign_from_node_txt = emit_statement(
-            to_assign_from_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-
-        # from extAssign a to b, produces
-        # b.write_val(_active_event, a.get_val(_active_event))
-        # ie, take the internal val of a and put it in b.
-        statement_txt = (
-            to_assign_to_node_txt + '.write_val(_active_event,%s.get_val(_active_event))' %
-            to_assign_from_node_txt)
 
     elif statement_node.label == AST_EXT_COPY:
         # extCopy 3 to a
@@ -918,6 +906,59 @@ def emit_condition_statement(
         else_txt += '\n'
 
     return if_txt + elif_txt + else_txt
+
+def emit_ext_assign(
+    ext_assign_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    
+    to_assign_to_node = ext_assign_node.children[1]
+    to_assign_from_node = ext_assign_node.children[0]
+
+    to_assign_from_node_txt = emit_statement(
+        to_assign_from_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+
+    # need to be careful of function call assignment and need to be
+    # careful of bracket assignment
+
+    if to_assign_to_node.label == AST_BRACKET_STATEMENT:
+        # must write value on key instead of just getting it
+        outside_bracket_node = to_assign_to_node.children[0]
+        inside_bracket_node = to_assign_to_node.children[1]
+
+        outside_bracket_node_txt = emit_statement(
+            outside_bracket_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        
+        inside_bracket_node_txt = emit_statement(
+            inside_bracket_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        
+        statement_txt = (
+            outside_bracket_node_txt + '.get_val(_active_event)'
+            '.write_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event),%s)' %
+            (inside_bracket_node_txt,to_assign_from_node_txt))
+        
+    elif to_assign_to_node.label == AST_FUNCTION_CALL:
+        # FIXME: actually need to handle case of assigning based on
+        # function call.
+        emit_utils.emit_assert(
+            'Error: still must handle the case of assigning to an ' +
+            'external based on a function call.')
+        statement_txt = ''
+    
+    else:
+
+        # function call assignment
+        to_assign_to_node_txt = emit_statement(
+            to_assign_to_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        # from extAssign a to b, produces
+        # b.write_val(_active_event, a.get_val(_active_event))
+        # ie, take the internal val of a and put it in b.
+        statement_txt = (
+            to_assign_to_node_txt + '.write_val(_active_event,%s.get_val(_active_event))' %
+            to_assign_from_node_txt)
+
+        
+    return statement_txt
 
 
 def emit_for(

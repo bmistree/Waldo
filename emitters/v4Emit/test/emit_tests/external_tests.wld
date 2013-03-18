@@ -19,7 +19,7 @@ SingleSide
     {
         extAssign input_num to num;
         // map_[3] = input_num;
-        // extAssign input_num to map_[3];
+        extAssign input_num to map_[3];
     }
 
     Public Function increment_ext_num() returns Number
