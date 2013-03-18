@@ -379,7 +379,7 @@ def convert_args_to_waldo(method_node,sequence_local=False):
             
         if not sequence_local:
             force_copy = 'True'
-            if (func_decl_arg_node.external or
+            if (TypeCheck.templateUtil.is_external(func_decl_arg_node.type) or
                 emit_utils.is_reference_type(func_decl_arg_node)):
                 force_copy = 'False'
 
@@ -988,7 +988,7 @@ def get_non_external_arg_names_from_func_node(func_node):
     returner = []
     func_decl_arg_list_node = func_node.children[arg_node_index]
     for func_decl_arg_node in func_decl_arg_list_node.children:
-        if not func_decl_arg_node.external:
+        if not TypeCheck.templateUtil.is_external(func_decl_arg_node.type):
             name_node = func_decl_arg_node.children[1]
             returner.append(name_node.value)
 
@@ -1012,7 +1012,7 @@ def get_external_return_positions_from_func_node(func_node):
     
     for return_counter in range(0,len(return_type_node.children)):
         return_node = return_type_node.children[return_counter]
-        if return_node.external:
+        if TypeCheck.templateUtil.is_external(return_node.type):
             external_return_indices.append(return_counter)
     return external_return_indices
 

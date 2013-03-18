@@ -26,6 +26,7 @@ JSON_LIST_ELEMENT_TYPE_FIELD = 'ElementType';
 JSON_MAP_FROM_TYPE_FIELD = 'From';
 JSON_MAP_TO_TYPE_FIELD = 'To';
 JSON_TUPLE_TYPE_FIELD = 'Tuple'
+JSON_EXTERNAL_TYPE_FIELD = 'external'
 
 
 JSON_STRUCT_FIELDS_DICT = 'StructFields'
@@ -103,6 +104,30 @@ def get_struct_field_type(field_name,struct_type_dict):
     struct_fields_dict = struct_type_dict[JSON_STRUCT_FIELDS_DICT]
     return struct_fields_dict.get(field_name,None)
 
+
+def type_dict_scrub_externals(dict_type):
+    '''
+    Returns a map without any external fields in it.
+    '''
+    _assert_if_not_dict(dict_type,'is_external')
+
+    to_return = {}
+    to_add = dict_type[JSON_TYPE_FIELD]
+    if isinstance(to_add,dict):
+        to_add = type_dict_scrub_externals(to_add)
+        
+    to_return[JSON_TYPE_FIELD] = to_add
+
+    return to_return
+    
+
+def set_type_external(node,is_ext):
+    node.type[JSON_EXTERNAL_TYPE_FIELD] = is_ext
+        
+
+def is_external(dict_type):
+    _assert_if_not_dict(dict_type,'is_external')
+    return dict_type[JSON_EXTERNAL_TYPE_FIELD]
 
 def is_endpoint(dict_type):
     _assert_if_not_dict(dict_type,'is_endpoint')
@@ -233,8 +258,6 @@ def get_single_type_if_func_call_reg_type(type_dict):
     return type_dict_array[0], not_just_one_return_type_bool
 
 
-    
-
 def generate_returned_tuple_type(tuple_element_list):
     '''
     Each one of these should themselves be a type dict.
@@ -265,16 +288,16 @@ def _assert_if_not_dict(to_check,caller):
         assert(False)
         
 
-def generate_type_as_dict(type_string):
+def generate_type_as_dict(type_string,is_external):
     '''
     The .type fields of all nodes should be dicts with 'TYPE'
     specified in them.
 
     This takes one type and wraps it in another.
     '''
-
     return {
-        JSON_TYPE_FIELD: type_string
+        JSON_TYPE_FIELD: type_string,
+        JSON_EXTERNAL_TYPE_FIELD: is_external
         }
 
 
@@ -512,35 +535,39 @@ def moreSpecificListMapType(typeA,typeB):
     # must rebuild surrounding list type signature to match typeA or
     # typeB.
     if twoMaps:
-        to_return = buildMapTypeSignatureFromTypeName(indexTypeA,recursionResult);
+        to_return = buildMapTypeSignatureFromTypeName(
+            indexTypeA,recursionResult,False)
     else:
-        to_return = buildListTypeSignatureFromTypeName(recursionResult);
+        to_return = buildListTypeSignatureFromTypeName(
+            recursionResult,False)
         
     return to_return
 
 
-def buildListTypeSignatureFromTypeName(node_type):
+def buildListTypeSignatureFromTypeName(node_type,is_external):
     '''
     @param {type dict} node_type....or EMPTY_LIST/EMPTY_MAP
     '''
     return {
         JSON_TYPE_FIELD: TYPE_LIST,
-        JSON_LIST_ELEMENT_TYPE_FIELD: node_type
+        JSON_LIST_ELEMENT_TYPE_FIELD: node_type,
+        JSON_EXTERNAL_TYPE_FIELD: is_external,
         };
 
+
 def create_empty_list_type():
-    return buildListTypeSignatureFromTypeName(EMPTY_LIST)
+    return buildListTypeSignatureFromTypeName(EMPTY_LIST,False)
 
 
-def buildListTypeSignature(node, progText,typeStack):
+def buildListTypeSignature(node,progText,typeStack,is_external):
     elementTypeNode = node.children[0];
     elementTypeNode.typeCheck(progText,typeStack);
     elementType = elementTypeNode.type;
-    return buildListTypeSignatureFromTypeName(elementType);
+    return buildListTypeSignatureFromTypeName(elementType,is_external);
 
 
 
-def buildMapTypeSignatureFromTypeNames(fromType,toType):
+def buildMapTypeSignatureFromTypeNames(fromType,toType,is_external):
     '''
     @param {type dict} fromType
     @param {type dict} toType
@@ -548,7 +575,8 @@ def buildMapTypeSignatureFromTypeNames(fromType,toType):
     return {
         JSON_TYPE_FIELD: TYPE_MAP,
         JSON_MAP_FROM_TYPE_FIELD: fromType,
-        JSON_MAP_TO_TYPE_FIELD: toType
+        JSON_MAP_TO_TYPE_FIELD: toType,
+        JSON_EXTERNAL_TYPE_FIELD: is_external,
         };
 
 def getMapIndexType(node_type):
@@ -573,7 +601,7 @@ def getMapIndexType(node_type):
 
 
 
-def buildMapTypeSignature(node,progText,typeStack):
+def buildMapTypeSignature(node,progText,typeStack,is_ext):
     '''
     @returns 3-tuple: (a,b,c)
 
@@ -603,7 +631,7 @@ def buildMapTypeSignature(node,progText,typeStack):
         errNodeList = [node,fromTypeNode];
 
     toType = toTypeNode.type
-    return (buildMapTypeSignatureFromTypeNames(fromType,toType),
+    return (buildMapTypeSignatureFromTypeNames(fromType,toType,is_ext),
             errMsg,
             errNodeList)
 

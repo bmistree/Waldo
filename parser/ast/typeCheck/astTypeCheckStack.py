@@ -10,6 +10,7 @@ from traceLine import TypeCheckError;
 
 from templateUtil import JSON_TYPE_FIELD;
 from templateUtil import JSON_FUNC_RETURNS_FIELD;
+from templateUtil import JSON_EXTERNAL_TYPE_FIELD
 from templateUtil import JSON_FUNC_IN_FIELD;
 from templateUtil import dict_type_to_str
 from templateUtil import get_type_array_from_func_call_returned_tuple_type
@@ -407,7 +408,7 @@ class TypeCheckContextStack(object):
         '''
         @param {string} functionName: name of function
 
-        @param{list of strings} functionType --- The return type of
+        @param{list of type dicts} functionType --- The return type of
         this function.  We're using a list to support returning
         tuples.  Each element of the list is the return type of that
         element of the tuple.
@@ -594,13 +595,14 @@ class FuncMatchObject():
 
     def getReturnType(self):
         '''
-        @returns{List of strings} --- List to support tuple return.
+        @returns{List of type dicts} --- List to support tuple return.
         '''
         return self.element.funcIdentifierType;
 
     def createTypeDict(self):
         returner = {
-            JSON_TYPE_FIELD:TYPE_FUNCTION
+            JSON_TYPE_FIELD:TYPE_FUNCTION,
+            JSON_EXTERNAL_TYPE_FIELD: False
             };
 
         # input args
@@ -622,7 +624,7 @@ class FuncMatchObject():
 
     def argMatchError(self, funcArgTypes, callingAstNode):
         '''
-        @param {List of Strings} funcArgTypes -- the types of each
+        @param {List of type dicts} funcArgTypes -- the types of each
         argument for the function.
 
         @param {AstNode} callingAstNode -- the astNode where the

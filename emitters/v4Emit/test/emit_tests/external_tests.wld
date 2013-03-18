@@ -11,10 +11,15 @@ Garbage{}
 SingleSide
 {
     External Number num;
-
+    List(element: External Number) list_;
+    Map(from: Number, to: External Number) map_;
+    
+    
     Public Function input_ext_num(External Number input_num)
     {
         extAssign input_num to num;
+        // map_[3] = input_num;
+        // extAssign input_num to map_[3];
     }
 
     Public Function increment_ext_num() returns Number

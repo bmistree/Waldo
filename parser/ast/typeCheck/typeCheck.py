@@ -185,21 +185,19 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         from_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-        
-        if to_node.label != AST_IDENTIFIER:
-            err_msg = 'You are trying to perform an external copy '
-            err_msg += 'to an invalid element.  You can only copy '
-            err_msg += 'to an external identifier.'
-            errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
-            return
+        # if to_node.label != AST_IDENTIFIER:
+        #     err_msg = 'You are trying to perform an external copy '
+        #     err_msg += 'to an invalid element.  You can only copy '
+        #     err_msg += 'to an external identifier.'
+        #     errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
+        #     return
             
-        if not to_node.external:
+        if not is_external(to_node.type):
             err_msg = 'You are trying to extCopy to a non-external '
             err_msg += 'named "' + to_node.value + '."'
             errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
             return
             
-        
         if checkTypeMismatch(
             to_node,to_node.type,from_node.type,typeStack,progText):
 
@@ -215,7 +213,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
     elif ((node.label == AST_BREAK) or
           (node.label == AST_CONTINUE)):
-        node.type = generate_type_as_dict(TYPE_NOTHING)
+        node.type = generate_type_as_dict(TYPE_NOTHING,False)
         
     elif node.label == AST_WHILE_STATEMENT:
         bool_cond = node.children[0]
@@ -266,8 +264,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         to_node = node.children[0]
         to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-        if to_node.external == None:
-            err_msg = 'Error in call "' + for_tuple_type + ' _ to ..." '
+        if not is_external(to_node.type):
+            err_msg = 'Error in call "' + dict_type_to_str(for_tuple_type)
+            err_msg += ' _ to ..." '
             err_msg += 'What you are assigning to is not an '
             err_msg += 'external.  If it is not supposed to be, '
             err_msg += 'then, just use the variable instead.'
@@ -287,21 +286,20 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         from_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-        if to_node.label != AST_IDENTIFIER:
-            err_msg = 'You are trying to perform an external assign '
-            err_msg += 'to an invalid element.  You can only assign '
-            err_msg += 'to an external identifier.'
-            errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
-            return
+        # if to_node.label != AST_IDENTIFIER:
+        #     err_msg = 'You are trying to perform an external assign '
+        #     err_msg += 'to an invalid element.  You can only assign '
+        #     err_msg += 'to an external identifier.'
+        #     errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
+        #     return
             
-        if not to_node.external:
+        if not is_external(to_node.type):
             err_msg = 'You are trying to assign to a non-external '
             err_msg += 'named "' + to_node.value + '."'
             errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
             return
-            
 
-        if not from_node.external:
+        if not is_external(from_node.type):
             err_msg = 'Error in external assign.  Must assign from an '
             err_msg += 'external to another external.  What you are trying '
             err_msg += 'to assign from is not external.'
@@ -332,7 +330,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             progText,typeStack,avoidFunctionObjects)
 
         # do not get anything back when remove the element
-        node.type = generate_type_as_dict(TYPE_NOTHING)
+        node.type = generate_type_as_dict(TYPE_NOTHING,False)
 
 
         un_function_called_rm_from_type = unwrap_function_call_type_checker(
@@ -412,7 +410,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             typeNode = node.children[identifierTypeNodeIndex];
             typeNode.typeCheck(progText,typeStack,avoidFunctionObjects);
             declaredIdType = typeNode.type;
-            node.type = generate_type_as_dict(TYPE_NOTHING)
+            node.type = generate_type_as_dict(TYPE_NOTHING,False)
 
             identifierNode = node.children[identifierNodeIndex];
             identifierName = identifierNode.value;
@@ -548,7 +546,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 # where we're appending a wild card to an empty list.
                 warn_msg = '\nBehram error: for a list, appended a wildcard.\n'
                 print (warn_msg)
-            node.type = buildListTypeSignatureFromTypeName(un_function_called_to_ap_to_type)
+            node.type = buildListTypeSignatureFromTypeName(un_function_called_to_ap_to_type,False)
+
         else:
             node.type = un_function_called_to_ap_to_type
             # check that the elements of the list match what we're appending
@@ -567,7 +566,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                               progText);
         
     elif node.label == AST_IN_STATEMENT:
-        node.type = generate_type_as_dict(TYPE_BOOL)
+        node.type = generate_type_as_dict(TYPE_BOOL,False)
         lhsNode = node.children[0];
         rhsNode = node.children[1];
 
@@ -627,7 +626,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             
     elif (node.label == AST_JUMP_COMPLETE) or (node.label == AST_JUMP):
 
-        node.type = generate_type_as_dict(TYPE_NOTHING)
+        node.type = generate_type_as_dict(TYPE_NOTHING,False)
         if ((not typeStack.inSequencesSection) or
             typeStack.inOnComplete):
             errMsg = 'Error.  You can only issue a jump statement ';
@@ -685,7 +684,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             astLineNos = [node.lineNo];
             errorFunction(typeErrorMsg,[childNode],astLineNos,progText);
 
-        node.type = generate_type_as_dict(TYPE_BOOL)
+        node.type = generate_type_as_dict(TYPE_BOOL,False)
         
     elif node.label == AST_TRACE_SECTION:
         '''
@@ -741,13 +740,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         
         if isMapType(un_function_to_read_from_type):
-            
             typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckMapBracket(
                 toReadFrom,index,typeStack,progText)
-
+            
         elif isListType(un_function_to_read_from_type):
             typeError,statementType,typeErrorMsg,typeErrorNodes = typeCheckListBracket(
                 toReadFrom,index,typeStack,progText)
+            
         elif is_text(un_function_to_read_from_type):
             typeError = False
             if not is_number(un_function_index_type):
@@ -757,7 +756,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 typeErrorNodes = [index]
 
             statementType = un_function_to_read_from_type
-            
         else:
             typeError = True;
             typeErrorMsg = 'You can only index into a map type, list type, or Text type.  ';
@@ -765,14 +763,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             typeErrorMsg += dict_type_to_str(toReadFrom.type) + ' ].\n';
             typeErrorNodes = [toReadFrom];
 
+            
         if typeError:
-            node.type = generate_type_as_dict(TYPE_NOTHING)
+            node.type = generate_type_as_dict(TYPE_NOTHING,False)
             for node in typeErrorNodes:
                 astLineNos = [node.lineNo];
                 errorFunction(typeErrorMsg,typeErrorNodes,astLineNos,progText);
         else:
-            # apply type 
-            node.type = statementType;
+            # apply type
+            node.type = statementType
 
     elif node.label == AST_TRACE_LINE:
         #first, checking that each trace item has an endpoint
@@ -864,7 +863,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorString += dict_type_to_str(argument.type) + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
-        node.type = generate_type_as_dict(TYPE_NUMBER)
+        node.type = generate_type_as_dict(TYPE_NUMBER,False)
 
     elif node.label == AST_KEYS:
         argumentNode = node.children[0];
@@ -876,14 +875,14 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # if map was empty, then just return an empty list.
         if isListType(argumentNode.type):
             node.type = buildListTypeSignatureFromTypeName(
-                generate_type_as_dict(TYPE_NUMBER))
+                generate_type_as_dict(TYPE_NUMBER,False),False)
         elif isMapType(argumentNode.type):
             if is_empty_map(argumentNode.type):
-                node.type = generate_type_as_dict(EMPTY_LIST_SENTINEL)
+                node.type = generate_type_as_dict(EMPTY_LIST_SENTINEL,False)
             else:
                 mapIndexType = getMapIndexType(argumentNode.type)
                 node.type = buildListTypeSignatureFromTypeName(
-                    mapIndexType);
+                    mapIndexType,False);
         else:
             errorString = 'Error in calling keys.  Can only call keys on a ';
             errorString += 'list or map.  Instead, you passed in a ';
@@ -914,7 +913,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         # type that assign should be list to numbers
         node.type = buildListTypeSignatureFromTypeName(
-            generate_type_as_dict(TYPE_NUMBER))
+            generate_type_as_dict(TYPE_NUMBER,False),False)
 
             
     elif node.label == AST_PRINT:
@@ -937,10 +936,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorString += dict_type_to_str(argument.type) + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
-        node.type = generate_type_as_dict(TYPE_NOTHING)
+        node.type = generate_type_as_dict(TYPE_NOTHING,False)
 
     elif node.label == AST_REFRESH:
-        node.type = generate_type_as_dict(TYPE_NOTHING)
+        node.type = generate_type_as_dict(TYPE_NOTHING,False)
         
     elif(node.label == AST_TOTEXT_FUNCTION):
         # check to ensure that it's passed a Text, TrueFalse, or a
@@ -963,7 +962,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorString += dict_type_to_str(argumentNode.type) + '.';
             errorFunction(errorString,[node],[node.lineNo],progText);
 
-        node.type = generate_type_as_dict(TYPE_STRING)
+        node.type = generate_type_as_dict(TYPE_STRING,False)
 
     elif(node.label == AST_SHARED_SECTION):
         #each child will be an annotated declaration.
@@ -1030,11 +1029,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             
     elif(node.label == AST_NUMBER):
-        node.type = generate_type_as_dict(TYPE_NUMBER)
+        node.type = generate_type_as_dict(TYPE_NUMBER,False)
     elif(node.label == AST_STRING):
-        node.type = generate_type_as_dict(TYPE_STRING)
+        node.type = generate_type_as_dict(TYPE_STRING,False)
     elif(node.label == AST_BOOL):
-        node.type = generate_type_as_dict(TYPE_BOOL)
+        node.type = generate_type_as_dict(TYPE_BOOL,False)
 
     elif node.label == AST_DOT_STATEMENT:
         pre_dot_node = node.children[0]
@@ -1066,7 +1065,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             isMapType(un_function_pre_dot_node_type) or
             is_text(un_function_pre_dot_node_type)):
 
-            node.type = generate_type_as_dict(TYPE_NOTHING)
+            node.type = generate_type_as_dict(TYPE_NOTHING,False)
             
             # Should only get into this part of statement from
             # function call.  if calling append or remove, change
@@ -1323,7 +1322,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             # { Type: 'List',
             #   ElementType: { Type: "Number" }}
             #
-            node.type = buildListTypeSignature(node,progText,typeStack);
+            node.type = buildListTypeSignature(
+                node,progText,typeStack,node.external)
 
         elif node.value == TYPE_MAP:
             # more complicated types for maps
@@ -1334,7 +1334,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #   From: { Type: 'Number'},
             #   To: {Type: 'Text'}
             #  }
-            typeSignature,errMsg,errNodes = buildMapTypeSignature(node,progText,typeStack);
+            typeSignature,errMsg,errNodes = buildMapTypeSignature(
+                node,progText,typeStack,node.external)
 
             if errMsg != None:
                 # list comprehension!
@@ -1361,10 +1362,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         else:
             # just assign the type directly since it is one of the
             # basic types Text, TrueFalse, or Number.
-            node.type = generate_type_as_dict(node.value)
+            external = False
+            if node.external != None:
+                external = True
+
+            node.type = generate_type_as_dict(
+                node.value,external)
 
     elif (node.label == AST_LIST):
-        node.type = generate_type_as_dict(EMPTY_LIST_SENTINEL)
+        node.type = generate_type_as_dict(EMPTY_LIST_SENTINEL,False)
         allTypes = [];
 
         # get all types from element nodes
@@ -1383,7 +1389,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         for typeCheckingIndex in range(0,len(allTypes)):
 
             potentialType = buildListTypeSignatureFromTypeName(
-                allTypes[typeCheckingIndex]);
+                allTypes[typeCheckingIndex],False);
 
             node.type = moreSpecificListMapType(node.type,potentialType);
 
@@ -1404,7 +1410,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
     elif node.label == AST_MAP:
         # type check all children
-        node.type = generate_type_as_dict(EMPTY_MAP_SENTINEL)
+        node.type = generate_type_as_dict(EMPTY_MAP_SENTINEL,False)
         allIndexTypes = [];
         allValueTypes = [];
 
@@ -1430,7 +1436,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             indexType = allIndexTypes[typeCheckingIndex];
             valueType = allValueTypes[typeCheckingIndex];
             potentialType = buildMapTypeSignatureFromTypeNames(
-                indexType,valueType);
+                indexType,valueType,False);
             
             node.type = moreSpecificListMapType(node.type,potentialType);
             for subTypeCheckingIndex in range(typeCheckingIndex+1,len(allIndexTypes)):
@@ -1502,7 +1508,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs = node.children[1];
         lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
-        node.type = generate_type_as_dict(TYPE_BOOL)
+        node.type = generate_type_as_dict(TYPE_BOOL,False)
         node.lineNo = lhs.lineNo;
 
         un_function_lhs_type = unwrap_function_call_type_checker(
@@ -1553,7 +1559,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         rhs = node.children[1];
         lhs.typeCheck(progText,typeStack,avoidFunctionObjects);
         rhs.typeCheck(progText,typeStack,avoidFunctionObjects);
-        node.type = generate_type_as_dict(TYPE_BOOL)
+        node.type = generate_type_as_dict(TYPE_BOOL,False)
         node.lineNo = lhs.lineNo;
 
         un_function_lhs_type = unwrap_function_call_type_checker(
@@ -1584,7 +1590,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg = '\nError when checking ' + expressionType + '. ';
             errMsg += 'Right-hand side expression must be '
             errMsg += dict_type_to_str(
-                generate_type_as_dict(TYPE_BOOL))            
+                generate_type_as_dict(TYPE_BOOL,False))
             errMsg += '.  Instead, has type '
             errMsg += dict_type_to_str(rhs.type) + '\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
@@ -1592,7 +1598,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg = '\nError when checking ' + expressionType + '. ';
             errMsg += 'Left-hand side expression must be '
             errMsg += dict_type_to_str(
-                generate_type_as_dict(TYPE_BOOL))
+                generate_type_as_dict(TYPE_BOOL,False))
             errMsg += '.  Instead, has type '
             errMsg += dict_type_to_str(lhs.type) + '\n';
             errorFunction(errMsg, [node],[node.lineNo],progText);
@@ -1679,23 +1685,23 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         #for error reporting
         expressionType  = 'MINUS';
-        node.type = generate_type_as_dict(TYPE_NUMBER)
+        node.type = generate_type_as_dict(TYPE_NUMBER,False)
         if (node.label == AST_MULTIPLY):
             expressionType = 'MULTIPLY';
         elif(node.label == AST_DIVIDE):
             expressionType = 'DIVIDE';
         elif(node.label == AST_GREATER_THAN):
             expressionType = 'GREATER THAN';
-            node.type = generate_type_as_dict(TYPE_BOOL)
+            node.type = generate_type_as_dict(TYPE_BOOL,False)
         elif(node.label == AST_GREATER_THAN_EQ):
             expressionType = 'GREATER THAN EQUAL';                
-            node.type = generate_type_as_dict(TYPE_BOOL)
+            node.type = generate_type_as_dict(TYPE_BOOL,False)
         elif(node.label == AST_LESS_THAN):
             expressionType = 'LESS THAN';
-            node.type = generate_type_as_dict(TYPE_BOOL)
+            node.type = generate_type_as_dict(TYPE_BOOL,False)
         elif(node.label == AST_LESS_THAN_EQ):
             expressionType = 'LESS THAN EQUAL';
-            node.type = generate_type_as_dict(TYPE_BOOL)
+            node.type = generate_type_as_dict(TYPE_BOOL,False)
 
         lhs = node.children[0];
         rhs = node.children[1];
@@ -1761,7 +1767,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errMsg += '.\n';
             errorFunction(errMsg,[node],[node.lineNo],progText);
         else:
-            node.type = generate_type_as_dict(TYPE_BOOL)
+            node.type = generate_type_as_dict(TYPE_BOOL,False)
 
             
     elif(node.label == AST_ELSE_IF_STATEMENTS):
@@ -1817,7 +1823,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         declaredType = typeNode.type
         node.lineNo = typeNode.lineNo;
-        node.external = typeNode.external;
 
         if (node.children[1].label != AST_IDENTIFIER):
             errMsg = '\nError at declaration statement. ';
@@ -1827,7 +1832,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             return;
 
         nameNode = node.children[1];
-        nameNode.external = typeNode.external;
+        nameNode.type = declaredType
         name = nameNode.value;
         currentLineNo = node.children[0].lineNo;
         if len(node.children) == 3:
@@ -1913,7 +1918,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         
     elif(node.label == AST_RETURN_STATEMENT):
-        node.type = generate_type_as_dict(TYPE_NOTHING)
+        node.type = generate_type_as_dict(TYPE_NOTHING,False)
 
         return_tuple_node = node.children[0]
         return_tuple_node.typeCheck(
@@ -1946,8 +1951,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             ctxElm = typeStack.getIdentifierElement(name);
             if ctxElm == None:
                 assert(False);
-                
-            node.external = ctxElm.astNode.external;
 
     elif(node.label == AST_ENDPOINT_FUNCTION_SECTION):
         # this just type checks the headers of each function.
@@ -2084,21 +2087,22 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if isFunctionType(argType) and avoidFunctionObjects:
                 pass;
             else:
-                node.external = arg_type_node.external
                 typeStack.addIdentifier(
                     argName,argType,None,node,node.lineNo)
 
+        node.type = argType
+                
 
     elif (node.label == AST_FUNCTION_BODY_STATEMENT):
         for s in node.children:
             s.typeCheck(progText,typeStack,avoidFunctionObjects);
 
     elif (node.label == AST_STRING):
-        node.type = generate_type_as_dict(TYPE_STRING)
+        node.type = generate_type_as_dict(TYPE_STRING,False)
     elif (node.label == AST_NUMBER):
-        node.type = generate_type_as_dict(TYPE_NUMBER)
+        node.type = generate_type_as_dict(TYPE_NUMBER,False)
     elif (node.label == AST_BOOL):
-        node.type = generate_type_as_dict(TYPE_BOOL)
+        node.type = generate_type_as_dict(TYPE_BOOL,False)
 
     elif (node.label == AST_ASSIGNMENT_STATEMENT):
         # lhs can only hold a list of values if assignment is a result
@@ -2166,7 +2170,7 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         
     elif(node.label == AST_ONCREATE_FUNCTION):
         returnType = generate_returned_tuple_type(
-            [ generate_type_as_dict(TYPE_NOTHING) ] )
+            [ generate_type_as_dict(TYPE_NOTHING,False) ] )
         argDeclIndex = 1;
         funcNameIndex = 0;
         
@@ -2188,7 +2192,7 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
             
         if len(return_type_tuple_list) == 0:
             return_type_tuple_list.append(
-                generate_type_as_dict(TYPE_NOTHING) )
+                generate_type_as_dict(TYPE_NOTHING,False) )
         
         returnType = return_type_tuple_list
 
@@ -2199,7 +2203,7 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         argDeclIndex = None;
         funcNameIndex = 1;
         returnType = generate_returned_tuple_type(
-            [ generate_type_as_dict(TYPE_NOTHING) ] )        
+            [ generate_type_as_dict(TYPE_NOTHING,False) ] )
         
     elif node.label == AST_ONCOMPLETE_FUNCTION:
         # should never load an oncomplete function into stack because
@@ -2247,7 +2251,7 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         # because you cannot directly call a message receive function
         # (the system calls it for you when you receive a message).
         # So just insert gibberish for argument.
-        argTypeList.append(generate_type_as_dict(TYPE_NOTHING))
+        argTypeList.append(generate_type_as_dict(TYPE_NOTHING,False))
 
     collisionObj = typeStack.checkCollision(funcName,node);
     if collisionObj != None:
@@ -2317,9 +2321,14 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
     rhsType,more_in_tuple = get_single_type_if_func_call_reg_type(rhsType)
     if more_in_tuple:
         return True
-    
+
     errorTrue = False;
-    if (lhsType != rhsType):
+
+    # scrub externals because there are some operations where it does
+    # not matter whether operating on externals and non-externals.
+    # Eg., a_ext + a
+    
+    if type_dict_scrub_externals(lhsType) != type_dict_scrub_externals(rhsType):
         errorTrue = True;
         # message literals have indeterminate types until
         # they're assigned to an identifier that expects them

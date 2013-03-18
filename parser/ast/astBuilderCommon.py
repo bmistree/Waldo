@@ -293,31 +293,32 @@ def p_StructType(p):
     p[0].addChild(p[2])
 
     
-def p_ExtAssignForTuple(p):
-    '''
-    ExtAssignForTuple : EXT_ASSIGN HOLDER TO_OPERATOR Identifier
-    '''
-    p[0] = AstNode(AST_EXT_ASSIGN_FOR_TUPLE,p.lineno(1),p.lexpos(1))
-    p[0].addChild(p[4])
+# def p_ExtAssignForTuple(p):
+#     '''
+#     ExtAssignForTuple : EXT_ASSIGN HOLDER TO_OPERATOR OperatableOn
+#     '''
+#     p[0] = AstNode(AST_EXT_ASSIGN_FOR_TUPLE,p.lineno(1),p.lexpos(1))
+#     p[0].addChild(p[4])
     
-def p_ExtCopyForTuple(p):
-    '''
-    ExtCopyForTuple : EXT_COPY HOLDER TO_OPERATOR Identifier
-    '''
-    p[0] = AstNode(AST_EXT_COPY_FOR_TUPLE,p.lineno(1),p.lexpos(1))
-    p[0].addChild(p[4])
+# def p_ExtCopyForTuple(p):
+#     '''
+#     ExtCopyForTuple : EXT_COPY HOLDER TO_OPERATOR OperatableOn
+#     '''
+#     p[0] = AstNode(AST_EXT_COPY_FOR_TUPLE,p.lineno(1),p.lexpos(1))
+#     p[0].addChild(p[4])
     
-    
+
+
 def p_ExtAssign(p):
     '''
-    ExtAssign : EXT_ASSIGN Identifier TO_OPERATOR Identifier
+    ExtAssign : EXT_ASSIGN ReturnableExpression TO_OPERATOR OperatableOn
     '''
     p[0] = AstNode(AST_EXT_ASSIGN,p.lineno(1),p.lexpos(1))
     p[0].addChildren([p[2],p[4]])
 
 def p_ExtCopy(p):
     '''
-    ExtCopy : EXT_COPY ReturnableExpression TO_OPERATOR Identifier
+    ExtCopy : EXT_COPY ReturnableExpression TO_OPERATOR OperatableOn
     '''
     p[0] = AstNode(AST_EXT_COPY,p.lineno(1),p.lexpos(1))
     p[0].addChildren([p[2],p[4]])
@@ -416,22 +417,42 @@ def p_KeysStatement(p):
     
     
 def p_NonBracketOperatableOn(p):
-    '''NonBracketOperatableOn : Number
-                              | Identifier
-                              | String
-                              | Bool
-                              | List
-                              | Map
-                              | FunctionCall
-                              | ToTextCall
-                              | KeysStatement
-                              | LenStatement
-                              | RangeStatement
-                              | DotStatement
-                              | ExtAssignForTuple
-                              | ExtCopyForTuple
-                              | Garbage
-                              ''';
+    '''
+    NonBracketOperatableOn : Number
+                           | Identifier
+                           | String
+                           | Bool
+                           | List
+                           | Map
+                           | FunctionCall
+                           | ToTextCall
+                           | KeysStatement
+                           | LenStatement
+                           | RangeStatement
+                           | DotStatement
+                           | Garbage
+                           '''
+
+    # FIXME: got rid of ExtAssignForTuple and ExtCopyForTuple for the
+    # time being.
+    
+    # '''NonBracketOperatableOn : Number
+    #                           | Identifier
+    #                           | String
+    #                           | Bool
+    #                           | List
+    #                           | Map
+    #                           | FunctionCall
+    #                           | ToTextCall
+    #                           | KeysStatement
+    #                           | LenStatement
+    #                           | RangeStatement
+    #                           | DotStatement
+    #                           | ExtAssignForTuple
+    #                           | ExtCopyForTuple
+    #                           | Garbage
+    #                           '''
+    
     # note that ExtAssignForTuple and ExtCopyForTuple can only be
     # operatable on as the lhs of an assignment statement from a
     # function call.

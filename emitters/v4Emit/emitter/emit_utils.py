@@ -210,21 +210,21 @@ def get_var_type_txt_from_type_dict(var_type_dict,var_id_node):
     # FIXME: still need to add entries for function, endpoint, and
     # user struct types.
     if TypeCheck.templateUtil.is_number(var_type_dict):
-        if var_id_node.external != None:
+        if TypeCheck.templateUtil.is_external(var_type_dict):
             variable_type_str = library_transform('WaldoExtNumVariable')
         else:
             variable_type_str = library_transform('WaldoNumVariable')
     elif TypeCheck.templateUtil.is_true_false(var_type_dict):
-        if var_id_node.external != None:
+        if TypeCheck.templateUtil.is_external(var_type_dict):
             variable_type_str = library_transform('WaldoExtTrueFalseVariable')
         else:
             variable_type_str = library_transform('WaldoTrueFalseVariable')
     elif TypeCheck.templateUtil.is_text(var_type_dict):
-        if var_id_node.external != None:
+        if TypeCheck.templateUtil.is_external(var_type_dict):
             variable_type_str = library_transform('WaldoExtTextVariable')
         else:
             variable_type_str = library_transform('WaldoTextVariable')
-    elif TypeCheck.templateUtil.isListType(var_type_dict):        
+    elif TypeCheck.templateUtil.isListType(var_type_dict):
         variable_type_str = library_transform('WaldoListVariable')
     elif TypeCheck.templateUtil.isMapType(var_type_dict):
         variable_type_str = library_transform('WaldoMapVariable')

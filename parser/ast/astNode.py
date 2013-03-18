@@ -73,7 +73,7 @@ class AstNode():
             print(errMsg);
             assert(False);
 
-        
+            
     def setNote(self,note):
         self.note = note;
         
