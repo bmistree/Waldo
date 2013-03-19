@@ -228,6 +228,9 @@ def get_var_type_txt_from_type_dict(var_type_dict,var_id_node):
         variable_type_str = library_transform('WaldoListVariable')
     elif TypeCheck.templateUtil.isMapType(var_type_dict):
         variable_type_str = library_transform('WaldoMapVariable')
+    elif TypeCheck.templateUtil.is_endpoint(var_type_dict):
+        variable_type_str = library_transform('WaldoEndpointVariable')
+        
     #### DEBUG
     else:
         emit_assert(

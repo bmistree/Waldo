@@ -1,0 +1,39 @@
+EndpointCall
+
+
+Endpoint SideA;
+Endpoint SideB;
+
+
+Sequences{}
+
+Peered
+{}
+
+
+SideA
+{
+    Endpoint end;
+    Public Function assign_endpoint (Endpoint ept)
+    {
+        end = ept;
+    }
+
+    Public Function test_assigned_number(Number input_number) returns Number
+    {
+        Number a;
+        a = end.get_val(input_number);
+        return a;
+        // return end.get_val(input_number);
+    }
+}
+
+
+SideB
+{
+    Public Function get_val (Number input_number) returns Number
+    {
+        return input_number;
+    }
+    
+}

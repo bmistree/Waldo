@@ -606,18 +606,18 @@ def _emit_endpoint_method_call(
     arg_list_node = emit_utils.get_method_call_arg_list_node(
         endpoint_method_call_node)
     for arg_node in arg_list_node.children:
-        method_arg_str += statement_emit(
+        method_arg_str += emit_statement(
             arg_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
         method_arg_str += ','
     
     call_txt = ('_threadsafe_queue = %s\n' %
                 emit_utils.library_transform('Queue.Queue()'))
 
-    emitted_endpoint_name = statement_emit(
+    emitted_endpoint_name = emit_statement(
         endpoint_name_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
     
     call_txt += ('_active_event.issue_endpoint_object_call(' +
-                 emitted_endpoint_name + ',' + method_name + ',' +
+                 emitted_endpoint_name + '.get_val(_active_event),"' + method_name + '",' +
                  '_threadsafe_queue,%s)\n' % method_arg_str )
 
     call_txt += '_queue_elem = _threadsafe_queue.get()\n'
@@ -679,11 +679,11 @@ def _emit_assignment(
 
         if emit_utils.is_endpoint_method_call(rhs_node):
             # execute the function call before 
-            intermediate_assign_txt = func_call_txt + '\n' + internmediate_assign_txt
+            intermediate_assign_txt = func_call_txt + '\n' + intermediate_assign_txt
             # emitting an endpoint function call stores values in
             # _queue_elem
             # FIXME: it sucks that _queue_elem is hard-coded
-            to_assign_txt = '_queue_elem.to_return'
+            to_assign_txt = '_queue_elem.result_array'
         else:
             to_assign_txt = func_call_txt
 

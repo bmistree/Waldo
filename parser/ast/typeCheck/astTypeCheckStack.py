@@ -16,6 +16,7 @@ from templateUtil import dict_type_to_str
 from templateUtil import get_type_array_from_func_call_returned_tuple_type
 from templateUtil import checkTypeMismatch
 from templateUtil import is_external
+from templateUtil import is_wildcard_type
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -201,14 +202,14 @@ class TypeCheckContextStack(object):
 
             # takes care of case where we are returning a function
             # call
-            if single_node.label == AST_FUNCTION_CALL:
+            if ((single_node.label == AST_FUNCTION_CALL) and
+                (not is_wildcard_type(single_node.type))):
                 func_returned_type_array = get_type_array_from_func_call_returned_tuple_type(
                     single_node.type)
                 for ind_tuple_return_type in func_returned_type_array:
                     return_type_list.append(ind_tuple_return_type)
             else:
                 return_type_list.append(single_node.type)
-
             
         returnStatementType = returnNode.children[0].type;
         if ((self.currentFunctionNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION) or

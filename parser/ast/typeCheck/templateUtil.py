@@ -744,11 +744,10 @@ def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
     '''
     
     if is_wildcard_type(rhsType):
-        warn_msg = '\nBehram warn: using wildcard type for development '
-        warn_msg += 'code while type checking.\n'
-        print warn_msg
+        # Potential FIXME: we're using wildcard type when type
+        # checking for development.  May want formal import mechanisms
+        # and static type checking instead.
         return False
-
 
     lhsType,more_in_tuple = get_single_type_if_func_call_reg_type(lhsType)
     if more_in_tuple:
