@@ -4,6 +4,7 @@ import waldoReferenceBase
 import numbers
 import wVariables
 import util
+import waldoEndpoint
 
 class _ExecutingEventContext(object):
     def __init__(self,global_store,sequence_local_store):
@@ -169,6 +170,8 @@ class _ExecutingEventContext(object):
             constructor = wVariables.WaldoMapVariable
         elif isinstance(val,list):
             constructor = wVariables.WaldoListVariable
+        elif isinstance(val,waldoEndpoint._Endpoint):
+            constructor = wVariables.WaldoEndpointVariable
         #### DEBUG
         else:
             util.logger_assert(

@@ -2,7 +2,7 @@ import util
 import waldoCallResults
 import threading
 import waldoExecutingEvent
-import waldoVariableStore
+# import waldoVariableStore
 
 class _Action(object):
     '''
@@ -261,6 +261,7 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
         act_event = act_evt_map.get_or_create_endpoint_called_event(
             self.endpoint_making_call,self.event_uuid,self.result_queue)
         
+        import waldoVariableStore
         evt_ctx = waldoExecutingEvent._ExecutingEventContext(
             self.local_endpoint._global_var_store,
             # should not have any sequence local data from an endpoint

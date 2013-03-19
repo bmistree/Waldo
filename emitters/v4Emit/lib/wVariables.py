@@ -29,7 +29,32 @@ def de_waldoify_for_return(val):
     # FIXME: actually write
     return val
 
+
+
+### Pointer to endpoint
+class WaldoEndpointVariable(_WaldoVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
         
+    @staticmethod
+    def var_type():
+        return 'WaldoEndpointVariable'
+
+    def is_value_type(self):
+        return False
+    
+    def copy(self,invalid_listener,peered):
+        return WaldoEndpointVariable(
+            self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        return self.get_val(invalid_listener)
+
+    
+
 
 ### VALUE TYPES
 class WaldoNumVariable(_WaldoVariable):
@@ -55,7 +80,6 @@ class WaldoNumVariable(_WaldoVariable):
         return self.get_val(invalid_listener)
     
     
-    
 class WaldoTextVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=''):
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
@@ -77,8 +101,8 @@ class WaldoTextVariable(_WaldoVariable):
         '''
         return self.get_val(invalid_listener)
             
+
     
-        
 class WaldoTrueFalseVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=False):
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)

@@ -3,7 +3,7 @@ import util
 import threading
 import waldoCallResults
 import waldoExecutingEvent
-import waldoVariableStore
+# import waldoVariableStore
 from abc import abstractmethod
 import Queue
 import waldoDeadlockDetector
@@ -634,6 +634,7 @@ class _ActiveEvent(_InvalidationListener):
             to_exec = getattr(self.local_endpoint,block_to_exec_internal_name)
 
             ### SET UP CONTEXT FOR EXECUTING
+            import waldoVariableStore
             seq_local_var_store = waldoVariableStore._VariableStore(
                 self.local_endpoint._host_uuid)
 
