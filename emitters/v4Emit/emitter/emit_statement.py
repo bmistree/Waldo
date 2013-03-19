@@ -725,6 +725,12 @@ def _emit_second_level_assign(
             # unwraps the extAssign.
             ext_assign = True
             lhs_node = lhs_node.children[0]
+            # FIXME: this logic is broken for ext assigning based on
+            # a tuple list
+            emit_utils.emit_assert(
+                'Error: unfinished methods for assigning from function ' +
+                'calls into tuples.')
+
 
         to_assign_txt = '_tmp' + str(counter)
         if not ext_assign:
@@ -935,15 +941,30 @@ def emit_ext_assign(
             outside_bracket_node_txt + '.get_val(_active_event)'
             '.write_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event),%s)' %
             (inside_bracket_node_txt,to_assign_from_node_txt))
-        
-    elif to_assign_to_node.label == AST_FUNCTION_CALL:
-        # FIXME: actually need to handle case of assigning based on
-        # function call.
-        emit_utils.emit_assert(
-            'Error: still must handle the case of assigning to an ' +
-            'external based on a function call.')
-        statement_txt = ''
-    
+
+    elif emit_utils.is_method_call(to_assign_to_node):
+
+        # emitting function call
+        to_assign_to_txt = emit_statement(
+            to_assign_to_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        if not emit_utils.is_endpoint_method_call(to_assign_to_node):
+            # means that this must be a public/private method call (if
+            # it were a message call, then we wouldn't be able to
+            # write an external back)
+            statement_txt = (
+                to_assign_to_txt + '.write_val(_active_event,%s)' %
+                to_assign_from_node_txt)
+            
+        else:
+            # it was an endpoint call, the value should be in
+            # queue_elem. get the value out of
+            # _queue_elem.result_array[0] and write to it.
+
+            statement_txt = (
+                '_queue_elem.result_array[0].write_val(_active_event,%s)' %
+                to_assign_from_node_txt)
+            
     else:
 
         # function call assignment
@@ -954,8 +975,8 @@ def emit_ext_assign(
         # b.write_val(_active_event, a.get_val(_active_event))
         # ie, take the internal val of a and put it in b.
         statement_txt = (
-            to_assign_to_node_txt + '.write_val(_active_event,%s.get_val(_active_event))' %
-            to_assign_from_node_txt)
+            to_assign_to_node_txt + ('.write_val(_active_event,%s.get_val(_active_event))' %
+            to_assign_from_node_txt))
 
         
     return statement_txt

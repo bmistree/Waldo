@@ -191,10 +191,16 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         #     err_msg += 'to an external identifier.'
         #     errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
         #     return
-            
-        if not is_external(to_node.type):
-            err_msg = 'You are trying to extCopy to a non-external '
-            err_msg += 'named "' + to_node.value + '."'
+
+
+        un_function_called_to_node_type = unwrap_function_call_type_checker(
+            to_node.type,to_node,
+            ('Error in extAssign: function call assigning to' +
+            'returns more than one value.'),
+            progText)
+
+        if not is_external(un_function_called_to_node_type):
+            err_msg = 'You are trying to extCopy to a non-external.'
             errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
             return
             
@@ -239,44 +245,45 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         
         body.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-        
-    elif node.label in [AST_EXT_ASSIGN_FOR_TUPLE, AST_EXT_COPY_FOR_TUPLE]:
 
-        # used for error message printing
-        for_tuple_type = 'extAssign'
-        if node.label == AST_EXT_COPY_FOR_TUPLE:
-            for_tuple_type = 'extCopy'
-        
-        if not typeStack.in_lhs_assign:
-            err_msg = 'Error in call "' + for_tuple_type + ' _ to ..."  '
-            err_msg += 'You can only use a placeholder, "_", '
-            err_msg += 'when this expression is on the '
-            err_msg += 'left hand side of an assignment.  Ie, '
-            err_msg += for_tuple_type
-            err_msg += ' _ to some_ext = some_func(); is '
-            err_msg += 'fine.  But ' + for_tuple_type + ' _ to some_ext; '
-            err_msg += 'by itself is not.'
-            err_nodes = [node]
-            err_line_nos = [node.lineNo]
-            errorFunction(err_msg,err_nodes,err_line_nos)
-            return
+    # FIXME: hae disabled tuple assignment with extAssign and extCopy
+    # elif node.label in [AST_EXT_ASSIGN_FOR_TUPLE, AST_EXT_COPY_FOR_TUPLE]:
 
-        to_node = node.children[0]
-        to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+    #     # used for error message printing
+    #     for_tuple_type = 'extAssign'
+    #     if node.label == AST_EXT_COPY_FOR_TUPLE:
+    #         for_tuple_type = 'extCopy'
         
-        if not is_external(to_node.type):
-            err_msg = 'Error in call "' + dict_type_to_str(for_tuple_type)
-            err_msg += ' _ to ..." '
-            err_msg += 'What you are assigning to is not an '
-            err_msg += 'external.  If it is not supposed to be, '
-            err_msg += 'then, just use the variable instead.'
-            err_nodes = [node]
-            err_line_nos = [node.lineNo]
-            errorFunction(err_msg,err_nodes,err_line_nos)
+    #     if not typeStack.in_lhs_assign:
+    #         err_msg = 'Error in call "' + for_tuple_type + ' _ to ..."  '
+    #         err_msg += 'You can only use a placeholder, "_", '
+    #         err_msg += 'when this expression is on the '
+    #         err_msg += 'left hand side of an assignment.  Ie, '
+    #         err_msg += for_tuple_type
+    #         err_msg += ' _ to some_ext = some_func(); is '
+    #         err_msg += 'fine.  But ' + for_tuple_type + ' _ to some_ext; '
+    #         err_msg += 'by itself is not.'
+    #         err_nodes = [node]
+    #         err_line_nos = [node.lineNo]
+    #         errorFunction(err_msg,err_nodes,err_line_nos)
+    #         return
 
-        # need to bubble up type information to ensure that when type
-        # check assign, can also type check here.
-        node.type = to_node.type
+    #     to_node = node.children[0]
+    #     to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+    #     if not is_external(to_node.type):
+    #         err_msg = 'Error in call "' + dict_type_to_str(for_tuple_type)
+    #         err_msg += ' _ to ..." '
+    #         err_msg += 'What you are assigning to is not an '
+    #         err_msg += 'external.  If it is not supposed to be, '
+    #         err_msg += 'then, just use the variable instead.'
+    #         err_nodes = [node]
+    #         err_line_nos = [node.lineNo]
+    #         errorFunction(err_msg,err_nodes,err_line_nos)
+
+    #     # need to bubble up type information to ensure that when type
+    #     # check assign, can also type check here.
+    #     node.type = to_node.type
 
         
     elif node.label == AST_EXT_ASSIGN:
@@ -286,20 +293,25 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         from_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-        # if to_node.label != AST_IDENTIFIER:
-        #     err_msg = 'You are trying to perform an external assign '
-        #     err_msg += 'to an invalid element.  You can only assign '
-        #     err_msg += 'to an external identifier.'
-        #     errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
-        #     return
-            
-        if not is_external(to_node.type):
-            err_msg = 'You are trying to assign to a non-external '
-            err_msg += 'named "' + to_node.value + '."'
+        un_function_called_to_node_type = unwrap_function_call_type_checker(
+            to_node.type,to_node,
+            ('Error in extAssign: function call assigning to' +
+            'returns more than one value.'),
+            progText)
+
+        un_function_called_from_node_type = unwrap_function_call_type_checker(
+            to_node.type,to_node,
+            ('Error in extAssign: function call assigning from' +
+            'returns more than one value.'),
+            progText)
+
+        
+        if not is_external(un_function_called_to_node_type):
+            err_msg = 'You are trying to assign to a non-external.'
             errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
             return
 
-        if not is_external(from_node.type):
+        if not is_external(un_function_called_from_node_type):
             err_msg = 'Error in external assign.  Must assign from an '
             err_msg += 'external to another external.  What you are trying '
             err_msg += 'to assign from is not external.'

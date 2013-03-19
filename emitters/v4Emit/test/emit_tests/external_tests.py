@@ -51,6 +51,30 @@ def test_ext_num(single_side):
         print '\nErr: getting external back'
         return False
 
+
+    # test that can assign into map index from function call
+    map_ext_index_2 = 1
+    single_side.test_assign_from_map_index(map_ext_index_2,ext_num)
+    if ext_num.get_val(None).get_val(None) != single_side.get_endpoint_map_ext_value(map_ext_index_2):
+        print '\nErr: could not assign external into a function call'
+        return False
+
+    # creating another external number.  using it to test whether can
+    # assign after a function call
+    ext_num2 = _waldo_libs.WaldoExtNumVariable(
+        'garbage',single_side._host_uuid,False,original_num)
+    single_side.test_assign_from_func_call(ext_num2)
+    if single_side.get_endpoint_ext_value() != original_num:
+        print '\nErr: did not overwrite previous with new value'
+
+    # test to ensure overwriting one external's reference did not
+    # change other externals' values.
+    if ext_num.get_val(None).get_val(None) != single_side.get_endpoint_map_ext_value(map_ext_index_2):
+        print '\nErr: could not assign external into a function call'
+        return False
+
+
+        
     
     return True
 
