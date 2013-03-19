@@ -575,10 +575,17 @@ if not _context.set_msg_send_initialized_bit_true():
         message_send_node)
 
     msg_send_return_txt = '\nreturn '
-    for var_name_node in return_var_name_nodes:
+    for counter in range(0,len(return_var_name_nodes)):
+        var_name_node = return_var_name_nodes[counter]
         msg_send_return_txt += (
-            '_context.sequence_local_store.get_var_if_exists("%s"),' %
+            '_context.sequence_local_store.get_var_if_exists("%s")' %
             var_name_node)
+        if counter != (len(return_var_name_nodes) -1):
+            msg_send_return_txt += ','
+            
+
+        
+        
 
         
     emit_ctx.in_message_send = True

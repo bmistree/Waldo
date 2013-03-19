@@ -468,7 +468,6 @@ def _emit_de_waldoed_return(
 
 
 
-
 def _emit_method_call(
     method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''

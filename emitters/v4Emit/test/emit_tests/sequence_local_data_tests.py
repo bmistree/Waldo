@@ -108,7 +108,18 @@ def run_test():
         err_msg = '\nErr: incorrect references returned from message sequence'
         print err_msg
         return False
-        
+
+    # test that when we call a sequence that has
+    lister = [93,3,5,68,3]
+    index = 3
+    if sideA.return_reference_index(lister,index) != lister[index]:
+        err_msg = '\nErr: could not get element from lilst '
+        err_msg += 'returned by sequence.'
+        print err_msg
+        return False
+    
+
+    
     return True
 
 

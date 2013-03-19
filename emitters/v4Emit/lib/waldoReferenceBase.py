@@ -483,7 +483,7 @@ class _DirtyMapElement(object):
                 return True
 
         elif ((isinstance(self.val,list) or isinstance(self.val,dict)) and
-            (len(self.val) != 0)):
+              (len(self.val) != 0)):
 
             keys = range(0,len(self.val))
             if isinstance(self.val,dict):
@@ -492,9 +492,9 @@ class _DirtyMapElement(object):
             # iterate through all subobjects in list/map to see if
             # they were modified.
             for key in keys:
-                item = self.val[keys]
+                item = self.val[key]
 
-                if isinstance(self.val,waldoReferenceBase._ReferenceBase):
+                if isinstance(self.val,_ReferenceBase):
                     if item.modified(invalidation_listener):
                         return True
                 else:

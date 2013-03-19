@@ -24,6 +24,10 @@ Sequences{
   returns_check_references_exchange:
     SideA.start_returns_check_references_exchange ->
     SideB.receive_returns_check_references_exchange;
+
+  returns_single_reference_exchange:
+    SideA.start_returns_single_reference_exchange ->
+    SideB.receive_returns_single_reference_exchange;
     
 }
 
@@ -32,7 +36,6 @@ Peered
     Number peered_num = 22;
     Text peered_text = 'a';
     TrueFalse peered_tf = True;
-
 }
 
 
@@ -139,6 +142,19 @@ Sequence returns_check_references_exchange()
 }
 
 
+Sequence returns_single_reference_exchange(List(element:Number) input)
+    returns List(element: Number) to_return
+{
+    SideA.start_returns_single_reference_exchange
+    {
+        to_return = input;
+    }
+    SideB.receive_returns_single_reference_exchange
+    {
+    }
+}
+
+
 SideA
 {
     Text endpoint_text = 'sideA';
@@ -219,7 +235,13 @@ SideA
         return True;
     }
 
-    
+
+    Public Function return_reference_index(
+        List(element:Number)l, Number index) returns Number
+    {
+        return start_returns_single_reference_exchange(l)[index];
+    }
+
         
 }
 
