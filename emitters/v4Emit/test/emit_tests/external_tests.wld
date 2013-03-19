@@ -11,7 +11,6 @@ Garbage{}
 SingleSide
 {
     External Number num;
-    List(element: External Number) list_;
     Map(from: Number, to: External Number) map_;
     
     
@@ -65,5 +64,29 @@ SingleSide
     {
         extAssign to_assign to get_endpoint_ext();
     }
+
+
+    Public Function test_ext_copy_dual_function_call(Number index, Number amt_to_add)
+        returns Number 
+    {
+        extCopy get_endpoint_map_ext_value(index) + amt_to_add to
+            get_endpoint_map_index()[index];
+
+        return get_endpoint_map_ext_value(index);
+    }
+
+
+    Public Function test_ext_copy_single_function_call (Number to_copy_in)
+        returns Number
+    {
+        extCopy to_copy_in to get_endpoint_ext();
+        return num;
+    }
+    
+    Public Function test_ext_copy_map(Number index, Number to_ext_copy_ind)
+    {
+        extCopy to_ext_copy_ind to map_[index];
+    }
+    
     
 }

@@ -74,7 +74,31 @@ def test_ext_num(single_side):
         return False
 
 
-        
+    # test extCopy can handle it when what assigning to is a function call
+    expected_num = 58
+    if single_side.test_ext_copy_single_function_call(expected_num) != expected_num:
+        print '\nErr: could not copy into single function call'
+        return False
+
+    
+    # testing that extCopy can handle indexing into function calls
+    amt_to_add = 3
+    expected_num = amt_to_add + single_side.get_endpoint_map_ext_value(
+        map_ext_index_2)
+    
+    if single_side.test_ext_copy_dual_function_call(map_ext_index_2,amt_to_add) != expected_num:
+        print '\nErr: extcopy method call failure'
+        return False
+
+
+    # test that can ext copy into a non-function element call of map
+    expected_num = 50
+    single_side.test_ext_copy_map(map_ext_index_2,expected_num)
+    if single_side.get_endpoint_map_ext_value(map_ext_index_2) != expected_num:
+        print '\nErr: could not copy into indexed structure'
+        return False
+
+    
     
     return True
 
