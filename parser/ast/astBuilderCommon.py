@@ -323,8 +323,6 @@ def p_ExtCopy(p):
     p[0] = AstNode(AST_EXT_COPY,p.lineno(1),p.lexpos(1))
     p[0].addChildren([p[2],p[4]])
 
-    
-
 def p_MapType(p):
     '''
     MapType : MAP LEFT_PAREN FROM COLON Type COMMA TO_OPERATOR COLON Type RIGHT_PAREN

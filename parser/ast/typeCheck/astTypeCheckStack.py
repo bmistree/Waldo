@@ -14,7 +14,8 @@ from templateUtil import JSON_EXTERNAL_TYPE_FIELD
 from templateUtil import JSON_FUNC_IN_FIELD;
 from templateUtil import dict_type_to_str
 from templateUtil import get_type_array_from_func_call_returned_tuple_type
-
+from templateUtil import checkTypeMismatch
+from templateUtil import is_external
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -656,9 +657,14 @@ class FuncMatchObject():
         for s in range(0,len(funcArgTypes)):
             expectedType = self.element.funcArgTypes[s];
             providedType = funcArgTypes[s];
-            if (providedType != expectedType):
-                #means had a type error mismatch
-                if (returner == None):
+
+            
+            if ((is_external(expectedType) and (not is_external(providedType)))
+                or checkTypeMismatch(self.element,expectedType,providedType,None,None)):
+
+                # means that we expected an external and were provided
+                # with a non-external
+                if returner == None:
                     #means it was our first type error mismatch, and
                     #we should craft a FuncCallArgMatchError object to
                     #return.

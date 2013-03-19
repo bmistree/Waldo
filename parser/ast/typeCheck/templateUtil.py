@@ -701,3 +701,164 @@ def buildFuncTypeSignature(node,progText,typeStack):
         
     return returner;
 
+
+
+
+            
+def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
+    '''
+    @returns {Bool} True if should throw type mismatch error.  False
+    otherwise.
+
+    Reasons not to indicate type mismatch error
+    
+       * lhsType and rhsType are the same
+
+       * unknown list and map types.  For instance, if rhsType was
+         produced from [], and lhsType was List(element: Number),
+         would not produce error.
+
+       * A function call has the following type dict structure:
+           {
+              Type: [
+                      {
+                          Type: Number
+                      },
+                      {
+                          Type: Text
+                      },
+                      ...
+                    ]
+           }
+         however, we want to be able to make calls, such as
+         
+         if (func_call())
+             <do something>
+
+         Therefore, if we are type checking with a checkTypeMismatch
+         statement, and the function call returns just a single
+         element in its tuple, we should type check *that* element.
+         Not entire list of elements.
+
+    Note: no type mismatch if rhsType is a wildcard.
+    '''
+    
+    if is_wildcard_type(rhsType):
+        warn_msg = '\nBehram warn: using wildcard type for development '
+        warn_msg += 'code while type checking.\n'
+        print warn_msg
+        return False
+
+
+    lhsType,more_in_tuple = get_single_type_if_func_call_reg_type(lhsType)
+    if more_in_tuple:
+        return True
+        
+    rhsType,more_in_tuple = get_single_type_if_func_call_reg_type(rhsType)
+    if more_in_tuple:
+        return True
+
+    errorTrue = False;
+
+    # scrub externals because there are some operations where it does
+    # not matter whether operating on externals and non-externals.
+    # Eg., a_ext + a
+    
+    if type_dict_scrub_externals(lhsType) != type_dict_scrub_externals(rhsType):
+        errorTrue = True;
+        # message literals have indeterminate types until
+        # they're assigned to an identifier that expects them
+        # to have an OutgoingMessage or IncomingMessage type.
+        # Here is where we check that.
+
+        # Must use special checks to type check lists.  For
+        # instance, if one side presents empty_list and other is
+        # [Number], should not produce typecheck error.
+
+        # determine if lists are involved
+        if isListType(lhsType) and isListType(rhsType):
+            errorTrue = listTypeMismatch(lhsType,rhsType,typeStack,progText);
+
+        elif isMapType(lhsType) and isMapType(rhsType):
+            errorTrue = mapTypeMismatch(lhsType,rhsType,typeStack,progText);
+        else:
+            # both sides were not lists and there types did not
+            # match.  will throw an error.
+            errorTrue = True;
+             
+    return errorTrue;
+
+
+def mapTypeMismatch(mapTypeA, mapTypeB,typeStack,progText):
+    '''
+    @see listTypeMismatch
+    '''
+    if is_empty_map(mapTypeA) or is_empty_map(mapTypeB):
+        # any time one side or the other side is an empty map, we
+        # know we're okay because both sides have to be maps.
+        return False;
+
+    indexTypeA = getMapIndexType(mapTypeA)
+    indexTypeB = getMapIndexType(mapTypeB)
+
+    valueTypeA = getMapValueType(mapTypeA)
+    valueTypeB = getMapValueType(mapTypeB)
+
+        
+    if checkTypeMismatch(None,indexTypeA,indexTypeB,typeStack,progText):
+        # there's an error because the indices have to match.
+        return True;
+
+    if (not isMapType(valueTypeA)) or (not isMapType(valueTypeB)):
+        # handles all cases where one or both values are not maps
+        return checkTypeMismatch(None,valueTypeA,valueTypeB,typeStack,progText);
+
+    # both values are maps.  know that we can quit with no error if
+    # one or other is sentinel.
+    if is_empty_map(valueTypeA) or is_empty_map(valueTypeB):
+        return False;
+    
+    # recurse on map types
+    return mapTypeMismatch(valueTypeA,valueTypeB,typeStack,progText);
+
+
+def listTypeMismatch(listTypeA, listTypeB,typeStack,progText):
+    '''
+    @param{type dict} listTypeA, listTypeB: both are known to be list
+    types.
+    
+    @returns{Bool} True if there is a mismatch, False otherwise.
+
+    Note, that for list types it is inadequate to do a pure equality
+    test type signatures (ie listTypeA == listTypeB) to determine if
+    there is or is not a type mismatch.  This is because of the following case:
+
+    List(Element: Number) l = [];
+
+    The lhs has type [Number] and the rhs has type
+    [EMPTY_LIST_SENTINEL].  However, the assignment is okay and should
+    not produce a type mismatch.
+
+    The following however should produce a type mismatch:
+    
+    List(Element: Number) l = [True];
+        
+    '''
+    if is_empty_list(listTypeA) or is_empty_list(listTypeB):
+        # any time one side or the other side is an empty list, we
+        # know we're okay because both sides have to be lists.
+        return False;
+
+    elementTypeA = getListValueType(listTypeA)
+    elementTypeB = getListValueType(listTypeB)
+
+    if (not isListType(elementTypeA)) or (not isListType(elementTypeB)):
+        # handles all cases where one or both are not lists
+        return checkTypeMismatch(None,elementTypeA,elementTypeB,typeStack,progText);
+
+    # both elements are list types.  know that we can quit if one or other is a sentinel.
+    if is_empty_list(elementTypeA) or is_empty_list(elementTypeB):
+        return False;
+    
+    # recurse on list types
+    return listTypeMismatch(elementTypeA,elementTypeB,typeStack,progText);
