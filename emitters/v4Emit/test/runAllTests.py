@@ -108,6 +108,8 @@ def run_emit_tests():
     import emit_tests.loop_tests
     import emit_tests.misc_tests
     import emit_tests.external_tests
+    import emit_tests.sequence_plus_externals_tests
+
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -145,6 +147,11 @@ def run_emit_tests():
 
         ('Emit test externals',
          emit_tests.external_tests.run_test),
+
+        ( ('Emit test coercing externals to value types when' +
+           'passing them as args to sequences and functions'),
+          emit_tests.sequence_plus_externals_tests.run_test
+          ),
         
         ]
 

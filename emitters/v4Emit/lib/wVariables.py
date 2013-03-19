@@ -248,9 +248,8 @@ class _WaldoExternalValueType(_WaldoExternalVariable):
         return False
 
     def copy(self,invalid_listener,peered):
-        util.logger_assert(
-            'Calling copy on external number is disallowed.')
-
+        return self.get_val(invalid_listener).copy(invalid_listener,peered)
+        
     def de_waldoify(self,invalid_listener):
         '''
         @see _ReferenceBase.de_waldoify
