@@ -602,7 +602,6 @@ def _emit_endpoint_method_call(
     emitted_endpoint_name = emit_statement(
         endpoint_name_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-    
     method_arg_str = ''
     arg_list_node = emit_utils.get_method_call_arg_list_node(
         endpoint_method_call_node)
@@ -614,9 +613,7 @@ def _emit_endpoint_method_call(
 
     call_txt = (
         '_context.hide_endpoint_call(_active_event,_context,' +
-
         ('_context.get_val_if_waldo(%s,_active_event)' % emitted_endpoint_name) +
-        
          ',"' + method_name + '",' + method_arg_str + ')'
         )
 

@@ -11,7 +11,7 @@ ind_test_dir = os.path.join(
     'ind_tests')
 sys.path.append(ind_test_dir)
 import test_util
-    
+import _waldo_libs
 
 '''
 Tests that changes to a peered type on one side get updated to partner side.
@@ -34,7 +34,8 @@ def run_test():
     # assign endpoint into a
     sideA.assign_endpoint(sideB)
 
-
+    # check to ensure that one side can make an endpoint call to the
+    # other side and receive a result.
     base_num = 20
     increment_num = 30
     if sideA.test_assigned_number(base_num,increment_num) != (base_num+increment_num):
@@ -46,6 +47,24 @@ def run_test():
         print '\nErr: incorrectly modified value type data'
         return False
 
+
+    # Test to ensure that passing an external variable through an
+    # endpoint call can change its value.
+    original_num = 32
+    ext_num = _waldo_libs.WaldoExtNumVariable(
+        'garbage',sideA._host_uuid,False,original_num)
+    sideA.assign_external_number(ext_num)
+    new_num = 50
+    if sideA.test_updated_val(new_num) != new_num:
+        print '\nErr: external should have global change'
+        return False
+
+
+    # test that lists and maps are copied across endpoint calls
+    original_list = ['eiof','ff','efeio']
+    if sideA.hide_list(original_list) != len(original_list):
+        print '\nErr: list passed by reference across endpoint call'
+        return False
     
     return True
 
