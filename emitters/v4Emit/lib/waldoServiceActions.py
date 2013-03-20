@@ -268,7 +268,12 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
             # call.
             waldoVariableStore._VariableStore(
                 self.local_endpoint._host_uuid) )
-
+        # receiving endpoint must know that this call was an endpoint
+        # call.  This is so that it can ensure to make deep copies of
+        # all non-external arguments (including lists,maps, and user
+        # structs).
+        evt_ctx.set_from_endpoint_true()
+        
         exec_event = waldoExecutingEvent._ExecutingEvent(
             self.to_exec,act_event,evt_ctx,self.result_queue,
             *self.args)

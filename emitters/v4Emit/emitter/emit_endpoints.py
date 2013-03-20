@@ -366,6 +366,34 @@ def convert_args_to_waldo(method_node,sequence_local=False):
     arg_node_index = get_arg_index_from_func_node_label(method_node.label)
     func_decl_arglist_node = method_node.children[arg_node_index]
     converted_args_string = ''
+
+    # need to emit two sections of code, decide which to run based on
+    # whether this was an endpoint call or not.  The reason that we
+    # make this distinction is that non-external maps, lists, and user
+    # structs passed across endpoint call boundaries are copied,
+    # rather than used by reference.  (Across non-endpoint method call
+    # boundaries, they're used by reference.)
+
+    converted_args_string = 'if _context.check_and_set_from_endpoint_call_false():\n'
+    converted_args_string += emit_utils.indent_str(
+        convert_args_helper(func_decl_arglist_node,sequence_local,True) +
+        '\npass\n')
+    
+    converted_args_string += '\nelse:\n'
+    converted_args_string += emit_utils.indent_str(
+        convert_args_helper(func_decl_arglist_node,sequence_local,True) +
+        '\npass\n')
+
+    converted_args_string += '\n'
+    return converted_args_string
+
+
+
+def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call):
+    '''
+    @see convert_args_to_waldo
+    '''
+    converted_args_string = ''
     
     for func_decl_arg_node in func_decl_arglist_node.children:
         arg_name_node = func_decl_arg_node.children[1]
@@ -379,8 +407,14 @@ def convert_args_to_waldo(method_node,sequence_local=False):
             
         if not sequence_local:
             force_copy = 'True'
-            if (TypeCheck.templateUtil.is_external(func_decl_arg_node.type) or
+            
+            if TypeCheck.templateUtil.is_external(func_decl_arg_node.type):
+                force_copy = 'False'
+            
+            if ((not is_endpoint_call) and
                 emit_utils.is_reference_type(func_decl_arg_node)):
+                # we force copy maps, lists, and user structs only if
+                # it's an endpoint call and they're not external.  
                 force_copy = 'False'
 
             converted_args_string += (
@@ -405,7 +439,7 @@ def convert_args_to_waldo(method_node,sequence_local=False):
 _context.sequence_local_store.add_var(
     "%s", %s)
 ''' % ( arg_unique_name , convert_call_txt)
-            
+
     return converted_args_string
 
     

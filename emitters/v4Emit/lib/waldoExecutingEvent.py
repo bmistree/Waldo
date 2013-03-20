@@ -38,6 +38,23 @@ class _ExecutingEventContext(object):
 
         self.msg_send_initialized_bit = False
 
+        # if this function were called via an endpoint call on another
+        # endpoint, then from_endpoint_call will be true.  We check
+        # whether this function was called from another endpoint so
+        # that we know whether we need to copy in reference
+        # containers.  Pass lists, maps, and user structs by value
+        # type across endpoint calls unless they're declared external.
+        self.from_endpoint_call = False
+
+
+    def set_from_endpoint_true(self):
+        self.from_endpoint_call = True
+
+    def check_and_set_from_endpoint_call_false (self):
+        to_return = self.from_endpoint_call
+        self.from_endpoint_call = False
+        return to_return
+        
     def set_to_reply_with (self,to_reply_with_uuid):
         '''
         @param {uuid} to_reply_with_uuid --- @see comments above

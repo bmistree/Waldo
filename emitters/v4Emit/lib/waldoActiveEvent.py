@@ -3,7 +3,6 @@ import util
 import threading
 import waldoCallResults
 import waldoExecutingEvent
-# import waldoVariableStore
 from abc import abstractmethod
 import Queue
 import waldoDeadlockDetector
