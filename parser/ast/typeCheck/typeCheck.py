@@ -1868,17 +1868,21 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 # declaration and we throw an error.  Otherwise, use
                 # the internal type, {Type: Number} as rhsType
 
-                func_call_type_array = get_type_array_from_func_call_returned_tuple_type(
-                    rhs.type)
 
-                if len(func_call_type_array) != 1:
-                    err_msg = (
-                        'Error in declaration.  Function call produces ' +
-                        'more return values than can assign into in a ' +
-                        'declaration.')
-                    errorFunction(errMsg,[node],[currentLineNo],progtext)
+                if not is_wildcard_type(rhs.type):
+                    func_call_type_array = get_type_array_from_func_call_returned_tuple_type(
+                        rhs.type)
 
-                rhsType = func_call_type_array[0]
+                    if len(func_call_type_array) != 1:
+                        err_msg = (
+                            'Error in declaration.  Function call produces ' +
+                            'more return values than can assign into in a ' +
+                            'declaration.')
+                        errorFunction(err_msg,[node],[currentLineNo],progText)
+
+                    rhsType = func_call_type_array[0]
+                else:
+                    rhsType = rhs.type
                     
             else:
                 rhsType = rhs.type;
