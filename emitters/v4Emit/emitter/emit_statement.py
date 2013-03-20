@@ -223,46 +223,25 @@ def emit_statement(
         # These should all be local variables (peered, endpoint
         # global, and sequence global variables don't get emitted
         # here).
-        
         var_name_node = statement_node.children[1]
         var_name_waldo_src = var_name_node.value
+
+        var_type_node = statement_node.children[0]
         
-        # initialization is optional: declarations may not have any
-        # initializers
-        var_initializer_txt = ''
-        if len(statement_node.children) == 3:
-            var_initializer_node = statement_node.children[2]
-            var_initializer_txt = (
-                '_context.get_val_if_waldo(%s,_active_event)' %
-                emit_statement(
-                    var_initializer_node,endpoint_name,ast_root,
-                    fdep_dict,emit_ctx))
+        if TypeCheck.templateUtil.is_struct(var_type_node.type):
+            decl_txt,var_name = struct_rhs_declaration(
+                statement_node,'self._host_uuid',
+                False, # variable is not peered
+                endpoint_name,
+                ast_root,fdep_dict,emit_ctx)
+        else:
+            decl_txt,var_name = non_struct_rhs_declaration(
+                statement_node,'self._host_uuid',
+                False, # variable is not peered
+                endpoint_name,
+                ast_root,fdep_dict,emit_ctx)
 
-        # should contain something like WaldoNumVariable,
-        # WaldoTextVariable, etc.
-        var_type_txt = emit_utils.get_var_type_txt_from_type_dict(
-            emit_utils.get_var_type_dict_from_decl(statement_node),
-            var_name_node)
-
-        # the name that the user used for the variable.
-        var_name_txt = emit_utils.get_var_name_from_decl(statement_node)
-
-        # Example of what statement_txt should look like:
-        
-        # op_successful = _waldo_libs.WaldoTrueFalseVariable(  # the type of waldo variable to create
-        #     '1__op_successful', # variable's name
-        #     self._host_uuid, # host uuid var name
-        #     False,  # if peered, True, otherwise, False
-        #     True
-        # )
-        statement_txt = '''%s = %s( # the type of waldo var to create
-    '%s', # var name
-    self._host_uuid, # host uuid
-    False, # not peered
-    %s) # initializer text''' % (
-            var_name_waldo_src,
-            var_type_txt, var_name_txt,
-            var_initializer_txt)
+        statement_txt = var_name_waldo_src + ' = ' + decl_txt + '\n'
 
     elif statement_node.label == AST_RETURN_STATEMENT:
         statement_txt = _emit_return_statement(
@@ -945,6 +924,90 @@ def emit_ext_assign(
 
         
     return statement_txt
+
+
+def struct_rhs_declaration(
+    decl_node,host_uuid_var_name,peered,endpoint_name,ast_root,
+    fdep_dict,emit_ctx):
+    '''
+    Used to emit the right hand side of a declaration of a struct type
+    '''
+    # FIXME: must still fill in.
+    emit_utils.emit_assert(
+        'Still must fill in struct_rhs_declaration')
+    return '',''
+
+
+
+def non_struct_rhs_declaration(
+    decl_node,host_uuid_var_name,peered,endpoint_name,ast_root,
+    fdep_dict,emit_ctx):
+    '''
+    @param {AstNode} decl_node --- Can either be labeled
+    AST_ANNOTATED_DECLARATION or AST_DECLARATION.  Should not be the
+    declaration of a struct.  Use struct_declaration function for
+    that.
+
+    @returns {2-tuple} (a,b)
+    
+       a {String} --- Emitted text for the creation of the Waldo
+                      variable declared by decl_node.
+       b {String} --- Name of the variable
+    '''
+
+    wvar_load_text = ''
+
+    peered_str = 'True' if peered else 'False'
+    
+    # check if annotated declaration or just declaration
+    initializer_node = None
+    if decl_node.label == AST_ANNOTATED_DECLARATION:
+        id_node = decl_node.children[1]
+        var_name = emit_utils.get_var_name_from_annotated_decl(decl_node)
+        var_type = emit_utils.get_var_type_dict_from_annotated_decl(decl_node)
+        initializer_node = emit_utils.get_var_initializer_from_annotated_decl(decl_node)
+    elif decl_node.label == AST_DECLARATION:
+        id_node = decl_node.children[0]
+        var_name = emit_utils.get_var_name_from_decl(decl_node)
+        var_type = emit_utils.get_var_type_dict_from_decl(decl_node)
+        initializer_node = emit_utils.get_var_initializer_from_decl(decl_node)            
+    #### DEBUG
+    else:
+        emit_utils.emit_assert(
+            'In create_wvariables_array, trying to create a ' +
+            'var that is not a declaration.')
+    #### END DEBUG
+
+    # handle emitting the initialization node.  note, if no
+    # initialization of node, then no value is supplied as last
+    # arg when creating the variable.  This means that the
+    # WaldoVariable will not be supplied an init_val argument and
+    # can use its default initialized value.  (This only works for
+    # non-struct declarations.  Structs require an initialization
+    # argument for all their internal fields.)
+    initializer_str = ''
+    if initializer_node != None:
+        emitted_init = emit_statement(
+            initializer_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        # the actual initializer that will be used when creating variable.
+        initializer_str = (
+            '_context.get_val_if_waldo(%s,_active_event)' %
+             emitted_init)
+
+    variable_type_str = emit_utils.get_var_type_txt_from_type_dict(
+        var_type,id_node)
+    
+    wvar_load_text += '''%s(  # the type of waldo variable to create
+    '%s', # variable's name
+    %s, # host uuid var name
+    %s,  # if peered, True, otherwise, False
+    %s)
+''' % (variable_type_str,var_name,host_uuid_var_name,
+       peered_str, initializer_str)
+
+    return wvar_load_text,var_name
+
 
 
 def emit_for(

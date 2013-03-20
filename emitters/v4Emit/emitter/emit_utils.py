@@ -239,7 +239,6 @@ def get_var_type_txt_from_type_dict(var_type_dict,var_id_node):
 
     return variable_type_str
         
-
 def is_method_call(node):
     return node.label == AST_FUNCTION_CALL
 
