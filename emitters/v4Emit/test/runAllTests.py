@@ -110,6 +110,7 @@ def run_emit_tests():
     import emit_tests.external_tests
     import emit_tests.sequence_plus_externals_tests
     import emit_tests.basic_endpoint_call_test
+    import emit_tests.user_struct_basics
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -154,6 +155,9 @@ def run_emit_tests():
 
         ('Emit test basic endpoint calls',
          emit_tests.basic_endpoint_call_test.run_test),
+
+        ('Emit test user struct setup',
+         emit_tests.user_struct_basics.run_test),
         
         ]
 

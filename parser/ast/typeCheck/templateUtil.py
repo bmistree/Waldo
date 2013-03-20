@@ -39,6 +39,8 @@ JSON_STRUCT_FIELDS_NAME = 'StructName'
 WILDCARD_TYPE = 'Wildcard'
 
 
+# FIXME: require an external flag
+
 def create_struct_type(struct_name,struct_field_tuples):
     '''
     @param {String} struct_name --- The name of the user-defined
@@ -103,6 +105,9 @@ def get_struct_field_type(field_name,struct_type_dict):
 
     struct_fields_dict = struct_type_dict[JSON_STRUCT_FIELDS_DICT]
     return struct_fields_dict.get(field_name,None)
+
+def get_struct_fields_dict(struct_type_dict):
+    return struct_type_dict[JSON_STRUCT_FIELDS_DICT]
 
 
 def type_dict_scrub_externals(dict_type):

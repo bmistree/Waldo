@@ -41,6 +41,20 @@ def emit_statement(
 
         statement_txt = while_head_txt + emit_utils.indent_str(body_txt)
 
+    elif statement_node.label == AST_DOT_STATEMENT:
+        pre_dot_node = statement_node.children[0]
+        post_dot_node = statement_node.children[1]
+
+        pre_dot_txt = emit_statement(
+            pre_dot_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+        # rhs node is always an identifier type
+        post_dot_name = post_dot_node.value
+
+        statement_txt = (
+            pre_dot_txt + '.get_val(_active_event)' +
+            ('.get_val_on_key(_active_event,"%s")' % post_dot_name))
+        
     elif statement_node.label == AST_EMPTY:
         pass
 
@@ -925,18 +939,78 @@ def emit_ext_assign(
         
     return statement_txt
 
-
 def struct_rhs_declaration(
     decl_node,host_uuid_var_name,peered,endpoint_name,ast_root,
     fdep_dict,emit_ctx):
     '''
-    Used to emit the right hand side of a declaration of a struct type
-    '''
-    # FIXME: must still fill in.
-    emit_utils.emit_assert(
-        'Still must fill in struct_rhs_declaration')
-    return '',''
+    Used to emit the right hand side of a declaration of a struct
+    type.  A struct type *must* have an initializer that populates the
+    struct's fields with Waldo variables.
 
+    For returns, @see non_struct_rhs_declaration
+    
+    '''
+    if decl_node.label == AST_ANNOTATED_DECLARATION:
+        var_name = emit_utils.get_var_name_from_annotated_decl(decl_node)
+        var_type = emit_utils.get_var_type_dict_from_annotated_decl(decl_node)
+    else:
+        var_name = emit_utils.get_var_name_from_decl(decl_node)
+        var_type = emit_utils.get_var_type_dict_from_decl(decl_node)
+
+    struct_type_variable_txt = struct_type_emit_declaration(
+        var_type,var_name,host_uuid_var_name,peered,endpoint_name,ast_root,
+        fdep_dict,emit_ctx)
+    
+    return struct_type_variable_txt,var_name
+
+
+
+def struct_type_emit_declaration(
+    var_type,var_name,host_uuid_var_name,peered,endpoint_name,ast_root,
+    fdep_dict,emit_ctx):
+    '''
+    @param {type dict} var_type --- Should be the type dict for a user
+    struct.
+    
+    @param {String} var_name --- The name of the Waldo 
+    
+    @returns {String} --- The string for a WaldoUserStructVariable
+    with initialization vector.
+    '''
+    #### DEBUG
+    if not TypeCheck.templateUtil.is_struct(var_type):
+        emit_utils.emit_assert(
+            'Expected struct type dict for struct rhs declaration')
+    #### END DEBUG
+    
+    struct_fields_dict = TypeCheck.templateUtil.get_struct_fields_dict(
+        var_type)
+
+    init_val_dict_str = '{'
+    for field_name in struct_fields_dict:
+        field_type_dict = struct_fields_dict [field_name]
+
+        if TypeCheck.templateUtil.is_struct(field_type_dict):
+            field_var_decl = struct_type_emit_declaration(
+                field_type_dict,field_name,host_uuid_var_name,peered,
+                endpoint_name,ast_root,fdep_dict,emit_ctx)
+        else:
+            field_var_decl = non_struct_type_emit_declaration(
+                field_type_dict,field_name,host_uuid_var_name,peered,
+                endpoint_name,ast_root,fdep_dict,emit_ctx,'None')
+
+        init_val_dict_str +=  '"' + field_name + '": '
+        init_val_dict_str += field_var_decl + ', '
+
+    init_val_dict_str += '}'
+            
+    peered_str = str(peered)
+            
+    struct_waldo_var_txt = (
+        emit_utils.library_transform('WaldoUserStructVariable') +
+        '("%s",%s,%s,%s)' % (var_name,host_uuid_var_name,peered_str,init_val_dict_str))
+
+    return struct_waldo_var_txt
 
 
 def non_struct_rhs_declaration(
@@ -957,8 +1031,6 @@ def non_struct_rhs_declaration(
 
     wvar_load_text = ''
 
-    peered_str = 'True' if peered else 'False'
-    
     # check if annotated declaration or just declaration
     initializer_node = None
     if decl_node.label == AST_ANNOTATED_DECLARATION:
@@ -995,10 +1067,24 @@ def non_struct_rhs_declaration(
             '_context.get_val_if_waldo(%s,_active_event)' %
              emitted_init)
 
-    variable_type_str = emit_utils.get_var_type_txt_from_type_dict(
-        var_type,id_node)
+    wvar_load_txt = non_struct_type_emit_declaration(
+        var_type,var_name,host_uuid_var_name,peered,
+        endpoint_name,ast_root,fdep_dict,emit_ctx,
+        initializer_str)
     
-    wvar_load_text += '''%s(  # the type of waldo variable to create
+    return wvar_load_txt,var_name
+
+
+def non_struct_type_emit_declaration(
+    type_dict,var_name,host_uuid_var_name,peered,
+    endpoint_name,ast_root,fdep_dict,emit_ctx,initializer_str):
+
+    peered_str = 'True' if peered else 'False'
+    
+    variable_type_str = emit_utils.get_var_type_txt_from_type_dict(
+        type_dict)
+    
+    wvar_load_text = '''%s(  # the type of waldo variable to create
     '%s', # variable's name
     %s, # host uuid var name
     %s,  # if peered, True, otherwise, False
@@ -1006,7 +1092,9 @@ def non_struct_rhs_declaration(
 ''' % (variable_type_str,var_name,host_uuid_var_name,
        peered_str, initializer_str)
 
-    return wvar_load_text,var_name
+    return wvar_load_text
+
+
 
 
 

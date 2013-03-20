@@ -197,15 +197,10 @@ def is_endpoint_method_call(node):
     return False
 
 
-def get_var_type_txt_from_type_dict(var_type_dict,var_id_node):
+def get_var_type_txt_from_type_dict(var_type_dict):
     '''
     @param {dict} var_type_dict --- Gotten from an AstNode's .type
     field.
-
-    @param {AstNode} var_id_node --- The identifier node associated
-    with var_type_dict.  Essentially, just want to be able to check
-    whether node is external to determine what type of variable to
-    create from it.
     '''
     # FIXME: still need to add entries for function, endpoint, and
     # user struct types.

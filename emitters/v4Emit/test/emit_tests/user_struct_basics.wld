@@ -1,0 +1,29 @@
+SetGetVal
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Struct NumberStruct
+{
+    Number num;
+}
+
+Garbage{}
+
+SingleSide
+{
+    Struct NumberStruct m_struct;
+
+    Public Function assign_num_to_number_struct(Number new_num)
+    {
+        m_struct.num = new_num;
+    }
+
+    Public Function read_num_from_number_struct() returns Number
+    {
+        return m_struct.num;
+    }
+}
