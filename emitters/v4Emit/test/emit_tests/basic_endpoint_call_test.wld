@@ -20,16 +20,35 @@ SideA
     }
 
     
-    Public Function test_assigned_number(Number input_number) returns Number
+    Public Function test_assigned_number(
+        Number input_number,Number increment_num)
+        returns Number
     {
-        return end.get_val(input_number);
+        // Tests to ensure that can pass arguments and send back
+        // results
+        return end.get_val(input_number,increment_num);
+    }
+
+    
+    Public Function check_value_type_argument(
+        Number input_number, Number increment_by)
+        returns Number, Number
+    {
+        // checks to insure that changes to value type made on other
+        // endpoint are not reflected in the value type in this
+        // scope.  (Ie, eventhough we incremented input_number in
+        // get_val, input_number in this function is unchanged.)
+        Number result = end.get_val(input_number,increment_by);
+
+        return input_number, result;
     }
 }
 
 SideB
 {
-    Public Function get_val (Number input_number) returns Number
+    Public Function get_val (Number input_number,Number increment_by) returns Number
     {
+        input_number += increment_by;
         return input_number;
     }
 }

@@ -34,11 +34,18 @@ def run_test():
     # assign endpoint into a
     sideA.assign_endpoint(sideB)
 
-    expected_num = 20
-    if sideA.test_assigned_number(expected_num) != expected_num:
-        print '\nErr: with endpoint call'
+
+    base_num = 20
+    increment_num = 30
+    if sideA.test_assigned_number(base_num,increment_num) != (base_num+increment_num):
+        print '\nErr: with basic endpoint call'
         return False
-    
+
+
+    if sideA.check_value_type_argument(base_num,increment_num) != (base_num,base_num+increment_num):
+        print '\nErr: incorrectly modified value type data'
+        return False
+
     
     return True
 
