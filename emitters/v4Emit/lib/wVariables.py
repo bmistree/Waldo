@@ -252,6 +252,8 @@ class WaldoListVariable(_WaldoExternalVariable):
         '''
         @see _ReferenceBase.de_waldoify
         '''
+        # FIXME: this will not work if we want userstructs to return
+        # as dicts.
         internal_val = self.get_val(invalid_listener)
 
         if isinstance(internal_val,waldoReferenceBase._ReferenceBase):
@@ -266,6 +268,42 @@ class WaldoListVariable(_WaldoExternalVariable):
             if isinstance(new_val,waldoReferenceBase._ReferenceBase):
                 new_val = new_val.copy(invalid_listener,True)
         super(WaldoListVariable,self).write_val(invalid_listener,new_val)
+
+
+class WaldoUserStructVariable(WaldoMapVariable):
+    '''
+    Under the hood, user structs in Waldo are really just maps indexed
+    by text.
+    '''
+
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        '''
+        @param {dict} init_val --- Required to be non-None.  Contains
+        a mapping of names to WaldoVariables.  Each name corresponds
+        to one of the variable fields in the struct.  
+        '''
+        
+        if not isinstance(init_val,dict):
+            util.logger_assert(
+                'User structs must always have init_vals.  ' +
+                'Otherwise, not initializing struct data')
+    
+        WaldoMapVariable.__init__(self,name,host_uuid,peered,init_val)
+
+
+    def var_type():
+        return 'WaldoUserStructVariable'
+
+    def is_value_type(self):
+        return False
+
+    def copy(self,invalid_listener,peered):
+        return WaldoUserStructVariable(
+            self.name,self.host_uuid,peered,
+            self.get_val(invalid_listener).copy(invalid_listener,peered))
+
+        
+
 
 class _WaldoExternalValueType(_WaldoExternalVariable):
     def is_value_type(self):
