@@ -581,12 +581,10 @@ def _emit_msg_seq_begin_call(
 def _emit_endpoint_method_call(
     endpoint_method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''
-    Listens for result on threadsafe queue after making the call.  If
-    the queue results say that we should back out, then raise a
-    BackoutException.  ExecutingEvent code will catch it and forward
-    the backout on.
-
-    Otherwise, ensure that the read queue element is in _queue_elem.
+    Calls into context's hide_endpoint_call, which listens for result
+    on threadsafe queue after making the call.  If the queue results
+    say that we should back out, then raise a BackoutException.
+    ExecutingEvent code will catch it and forward the backout on.
     '''
     name_node = endpoint_method_call_node.children[0]
 
@@ -601,6 +599,10 @@ def _emit_endpoint_method_call(
     method_name_node = name_node.children[1]
     method_name = method_name_node.value
 
+    emitted_endpoint_name = emit_statement(
+        endpoint_name_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    
     method_arg_str = ''
     arg_list_node = emit_utils.get_method_call_arg_list_node(
         endpoint_method_call_node)
@@ -608,27 +610,16 @@ def _emit_endpoint_method_call(
         method_arg_str += emit_statement(
             arg_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
         method_arg_str += ','
-    
-    call_txt = ('_threadsafe_queue = %s\n' %
-                emit_utils.library_transform('Queue.Queue()'))
 
-    emitted_endpoint_name = emit_statement(
-        endpoint_name_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
-    
-    call_txt += ('_active_event.issue_endpoint_object_call(' +
-                 emitted_endpoint_name + '.get_val(_active_event),"' + method_name + '",' +
-                 '_threadsafe_queue,%s)\n' % method_arg_str )
 
-    call_txt += '_queue_elem = _threadsafe_queue.get()\n'
+    call_txt = (
+        '_context.hide_endpoint_call(_active_event,_context,' +
 
-    # FIXME: may also want to check whether the error is just that the
-    # endpoint does not actually have a method with that name...
-    call_txt += '''
-if not isinstance(_queue_elem,%s):
-    raise %s()
-''' % (emit_utils.library_transform('EndpointCallResult'),
-       emit_utils.library_transform('BackoutException'))
-    # FIXME: must add BackoutException to list of exceptions.
+        ('_context.get_val_if_waldo(%s,_active_event)' % emitted_endpoint_name) +
+        
+         ',"' + method_name + '",' + method_arg_str + ')'
+        )
+
     return call_txt
 
 
@@ -673,19 +664,8 @@ def _emit_assignment(
 
 
     if emit_utils.is_method_call(rhs_node):
-        func_call_txt = emit_statement(
+        to_assign_txt = emit_statement(
             rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-
-        if emit_utils.is_endpoint_method_call(rhs_node):
-            # execute the function call before 
-            intermediate_assign_txt = func_call_txt + '\n' + intermediate_assign_txt
-            # emitting an endpoint function call stores values in
-            # _queue_elem
-            # FIXME: it sucks that _queue_elem is hard-coded
-            to_assign_txt = '_queue_elem.result_array'
-        else:
-            to_assign_txt = func_call_txt
-
     else:
         to_assign_txt = emit_statement(
             rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -947,23 +927,12 @@ def emit_ext_assign(
         to_assign_to_txt = emit_statement(
             to_assign_to_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-        if not emit_utils.is_endpoint_method_call(to_assign_to_node):
-            # means that this must be a public/private method call (if
-            # it were a message call, then we wouldn't be able to
-            # write an external back)
-            statement_txt = (
-                to_assign_to_txt + '.write_val(_active_event,%s)' %
-                to_assign_from_node_txt)
-            
-        else:
-            # it was an endpoint call, the value should be in
-            # queue_elem. get the value out of
-            # _queue_elem.result_array[0] and write to it.
-
-            statement_txt = (
-                '_queue_elem.result_array[0].write_val(_active_event,%s)' %
-                to_assign_from_node_txt)
-            
+        # means that this must be a public/private method call or
+        # endpoint call(if it were a message call, then we
+        # wouldn't be able to write an external back)
+        statement_txt = (
+            to_assign_to_txt + '.write_val(_active_event,%s)' %
+            to_assign_from_node_txt)
     else:
 
         # function call assignment

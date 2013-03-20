@@ -585,9 +585,6 @@ if not _context.set_msg_send_initialized_bit_true():
             
 
         
-        
-
-        
     emit_ctx.in_message_send = True
     emit_ctx.message_seq_return_txt = msg_send_return_txt
 

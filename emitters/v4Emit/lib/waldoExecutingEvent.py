@@ -5,6 +5,7 @@ import numbers
 import wVariables
 import util
 import waldoEndpoint
+import Queue
 
 class _ExecutingEventContext(object):
     def __init__(self,global_store,sequence_local_store):
@@ -366,7 +367,25 @@ class _ExecutingEventContext(object):
         util.emit_assert(
             'Calling len on an object that does not support the function')
         
-    
+
+    def hide_endpoint_call(
+        self,active_event,context,endpoint_obj,method_name,*args):
+
+        threadsafe_result_queue = Queue.Queue()
+        
+        active_event.issue_endpoint_object_call(
+            endpoint_obj,method_name,threadsafe_result_queue,*args)
+
+        queue_elem = threadsafe_result_queue.get()
+
+        # FIXME: there may be other errors that are not from
+        # backout...we shouldn't treat all cases of not getting a
+        # result as a backout exception
+        if not isinstance(queue_elem, waldoCallResults._EndpointCallResult):
+            raise util.BackoutException()
+        
+        return queue_elem.result_array
+        
     def handle_in_check(self,lhs,rhs,active_event):
         '''
         Call has form:

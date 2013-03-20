@@ -19,15 +19,12 @@ SideA
         end = ept;
     }
 
+    
     Public Function test_assigned_number(Number input_number) returns Number
     {
-        Number a;
-        a = end.get_val(input_number);
-        return a;
-        // return end.get_val(input_number);
+        return end.get_val(input_number);
     }
 }
-
 
 SideB
 {
@@ -35,5 +32,4 @@ SideB
     {
         return input_number;
     }
-    
 }
