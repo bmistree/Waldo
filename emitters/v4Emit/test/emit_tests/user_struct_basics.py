@@ -19,6 +19,16 @@ def run_test():
         print '\nErr: could not write user struct number'
         return False
 
+
+    # tests nesting user structs
+    outer_nested_num = 52
+    inner_nested_num = 31
+    single_side.assign_num_to_nested_struct(
+        outer_nested_num,inner_nested_num)
+    if single_side.get_outer_and_inner_nested_nums() != (outer_nested_num,inner_nested_num):
+        print '\nErr with nested user structs'
+        return False
+    
     return True
 
 
