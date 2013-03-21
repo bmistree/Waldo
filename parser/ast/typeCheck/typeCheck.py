@@ -1149,7 +1149,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if is_self_struct_type(un_function_pre_dot_node_type):
                 struct_name = get_struct_name_from_struct_type(
                     un_function_pre_dot_node_type)
-                struct_type = typeStack.get_struct_type(struct_name)
+                struct_type = typeStack.get_struct_type(
+                    struct_name,is_external(un_function_pre_dot_node_type))
 
             else:
                 struct_type = un_function_pre_dot_node_type
@@ -1403,7 +1404,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         elif node.value == TYPE_STRUCT:
             struct_name = node.children[0].value
 
-            struct_type = typeStack.get_struct_type(struct_name)
+            struct_type = typeStack.get_struct_type(struct_name,node.external)
             if struct_type == None:
                 # means that struct with name struct_name has not been
                 # already declared by the user

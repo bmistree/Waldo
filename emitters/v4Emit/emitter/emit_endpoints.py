@@ -343,7 +343,7 @@ def convert_args_to_waldo(method_node,sequence_local=False):
     
     converted_args_string += '\nelse:\n'
     converted_args_string += emit_utils.indent_str(
-        convert_args_helper(func_decl_arglist_node,sequence_local,True) +
+        convert_args_helper(func_decl_arglist_node,sequence_local,False) +
         '\npass\n')
 
     converted_args_string += '\n'
@@ -366,7 +366,8 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
         # the unique, name of the argument, annotated by the slice-ing
         # code.
         arg_unique_name = arg_name_node.sliceAnnotationName
-            
+
+        
         if not sequence_local:
             force_copy = 'True'
             

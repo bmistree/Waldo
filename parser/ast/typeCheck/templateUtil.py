@@ -55,7 +55,7 @@ def create_struct_type(struct_name,struct_field_tuples):
         JSON_TYPE_FIELD: TYPE_STRUCT,
         JSON_STRUCT_FIELDS_DICT: {},
         JSON_STRUCT_FIELDS_NAME: struct_name,
-        JSON_STRUCT_FIELD_IS_SELF: False
+        JSON_STRUCT_FIELD_IS_SELF: False,
         }
 
     for single_field in struct_field_tuples:
@@ -72,7 +72,7 @@ def create_self_struct_type(struct_name):
         JSON_TYPE_FIELD: TYPE_STRUCT,
         JSON_STRUCT_FIELDS_DICT: {},
         JSON_STRUCT_FIELDS_NAME: struct_name,
-        JSON_STRUCT_FIELD_IS_SELF: True
+        JSON_STRUCT_FIELD_IS_SELF: True,
         }
     return struct_type
 
@@ -87,6 +87,9 @@ def type_check_assert(err_msg):
     print '\n'
     assert False
 
+def set_external(type_dict,external):
+    type_dict[JSON_EXTERNAL_TYPE_FIELD] = external
+    
 def get_struct_name_from_struct_type(struct_type_dict):
     '''
     @param {type dict} struct_type_dict --- Must be the type dict for

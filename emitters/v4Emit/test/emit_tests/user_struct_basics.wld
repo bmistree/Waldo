@@ -51,7 +51,20 @@ SingleSide
     {
         return nested_struct.num, nested_struct.additional_structs[0].num;
     }
-    
 
-    
+
+    // testing passing user struct in as argument to method
+    Public Function get_nested_struct_num(Struct NestedStruct ns)
+        returns Number
+    {
+        return ns.num;
+    }
+
+    Public Function get_endpoint_nested_struct_num(Number new_num)
+        returns Number
+        
+    {
+        nested_struct.num = new_num;
+        return get_nested_struct_num(nested_struct);
+    }
 }

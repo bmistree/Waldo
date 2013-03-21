@@ -28,6 +28,12 @@ def run_test():
     if single_side.get_outer_and_inner_nested_nums() != (outer_nested_num,inner_nested_num):
         print '\nErr with nested user structs'
         return False
+
+    # tests passing struct through argument to method
+    new_num = 1
+    if single_side.get_endpoint_nested_struct_num(new_num) != new_num:
+        print '\nError passing structs through as method args'
+        return False
     
     return True
 

@@ -17,6 +17,8 @@ from templateUtil import get_type_array_from_func_call_returned_tuple_type
 from templateUtil import checkTypeMismatch
 from templateUtil import is_external
 from templateUtil import is_wildcard_type
+from templateUtil import set_external
+import pickle
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -150,13 +152,23 @@ class TypeCheckContextStack(object):
         self.struct_type_dict[struct_name] = struct_type
         return err_msg
 
-    def get_struct_type(self,struct_name):
+    def get_struct_type(self,struct_name,external):
         '''
+        @param {bool} external
+        
         @returns{type dict or None} --- None if struct_name has not
         been declared by user.  type dict if it has (where type dict
         is the declared type of that node).
         '''
-        return self.struct_type_dict.get(struct_name,None)
+        s_type = self.struct_type_dict.get(struct_name,None)
+        if s_type == None:
+            return s_type
+
+        # deep copy type so that marking as external or not will not
+        # affect any other type.
+        s_type = pickle.loads(pickle.dumps(s_type))
+        set_external(s_type,external)
+        return s_type
         
     def addCurrentFunctionNode(self,node):
         '''
