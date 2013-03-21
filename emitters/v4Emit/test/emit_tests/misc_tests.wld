@@ -30,6 +30,16 @@ SingleSide
         return toText(to_call_to_text_on);
     }
 
+    Public Function nested_list_append()
+    {
+        List(element: List(element: Number)) double_list;
+        List(element: Number) l;
+        l.append(13);
+        double_list.append(l);
+        double_list[0][0];
+    }
+
+    
     // // reference type tests
     // Public Function to_text_map(
     //     Map(from: Number, to: Text) to_call_to_text_on)

@@ -237,15 +237,17 @@ def get_var_type_txt_from_type_dict(var_type_dict):
 def is_method_call(node):
     return node.label == AST_FUNCTION_CALL
 
+def is_reference_type_type_dict(type_dict):
+    return ((TypeCheck.templateUtil.isListType(type_dict)) or 
+            (TypeCheck.templateUtil.isMapType(type_dict)) or
+            (TypeCheck.templateUtil.is_struct(type_dict)))
+
 
 def is_reference_type(node):
-    # FIXME: should also add reference types for user structs as well
-    # as functions
-
     # FIXME: need to unwrap the possibility of the nodes' being
     # function call returns.
-    return ((TypeCheck.templateUtil.isListType(node.type)) or 
-            (TypeCheck.templateUtil.isMapType(node.type)))
+    return is_reference_type_type_dict(node.type)
+    
 
 def is_msg_seq_begin_call(node,endpoint_name,fdep_dict):
     '''

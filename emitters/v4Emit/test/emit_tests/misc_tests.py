@@ -40,6 +40,8 @@ def test_to_text(single_side):
         if single_side.to_text_true_false(i) != str(i):
             print '\nErr in tf to str'
             return False
+
+    single_side.nested_list_append()
         
     # maps
     # map_on = {

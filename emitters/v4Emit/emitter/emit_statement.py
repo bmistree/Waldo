@@ -173,10 +173,22 @@ def emit_statement(
             to_append_to_node,endpoint_name,ast_root,
             fdep_dict,emit_ctx)
 
+
+        element_type_dict = TypeCheck.templateUtil.getListValueType(
+            to_append_to_node.type)
+
+        
+        if (not emit_utils.is_reference_type_type_dict(element_type_dict) and
+           (not TypeCheck.templateUtil.is_external(element_type_dict))):
+            what_to_append_txt = (
+                '_context.get_val_if_waldo(%s,_active_event)' %
+                what_to_append_txt)
+            
         statement_txt = (
-            to_append_to_txt + '.get_val(_active_event).append_val(_active_event,' +
-            '_context.get_val_if_waldo(%s,_active_event))' %
-            what_to_append_txt)
+            to_append_to_txt +
+            ('.get_val(_active_event).append_val(_active_event,%s)'
+             %
+             what_to_append_txt))
 
     elif statement_node.label == AST_REMOVE_STATEMENT:
         to_remove_from_node = statement_node.children[0]
