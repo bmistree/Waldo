@@ -31,6 +31,7 @@ JSON_EXTERNAL_TYPE_FIELD = 'external'
 
 JSON_STRUCT_FIELDS_DICT = 'StructFields'
 JSON_STRUCT_FIELDS_NAME = 'StructName'
+JSON_STRUCT_FIELD_IS_SELF = 'is_self'
 
 # There is no real wildcard type in Waldo.  This is just used to make
 # adding features easier.  For instance, with calling functions on
@@ -53,7 +54,8 @@ def create_struct_type(struct_name,struct_field_tuples):
     struct_type = {
         JSON_TYPE_FIELD: TYPE_STRUCT,
         JSON_STRUCT_FIELDS_DICT: {},
-        JSON_STRUCT_FIELDS_NAME: struct_name
+        JSON_STRUCT_FIELDS_NAME: struct_name,
+        JSON_STRUCT_FIELD_IS_SELF: False
         }
 
     for single_field in struct_field_tuples:
@@ -64,6 +66,40 @@ def create_struct_type(struct_name,struct_field_tuples):
         struct_type[JSON_STRUCT_FIELDS_DICT][field_name] = field_type
 
     return struct_type
+
+def create_self_struct_type(struct_name):
+    struct_type = {
+        JSON_TYPE_FIELD: TYPE_STRUCT,
+        JSON_STRUCT_FIELDS_DICT: {},
+        JSON_STRUCT_FIELDS_NAME: struct_name,
+        JSON_STRUCT_FIELD_IS_SELF: True
+        }
+    return struct_type
+
+def is_self_struct_type(type_dict):
+    if is_struct(type_dict):
+        return type_dict[JSON_STRUCT_FIELD_IS_SELF]
+    return False
+
+def type_check_assert(err_msg):
+    print '\n'
+    print 'Type check error: ' + err_msg
+    print '\n'
+    assert False
+
+def get_struct_name_from_struct_type(struct_type_dict):
+    '''
+    @param {type dict} struct_type_dict --- Must be the type dict for
+    a struct type.
+    '''
+    #### DEBUG
+    if not is_self_struct_type(struct_type_dict):
+        type_check_assert(
+            'Passed in a non-struct type in ' +
+            'get_struct_name_from_struct_type')
+    #### END DEBUG
+
+    return struct_type_dict[JSON_STRUCT_FIELDS_NAME]
 
 
 def is_wildcard_type(type_dict):

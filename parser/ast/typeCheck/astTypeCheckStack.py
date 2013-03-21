@@ -88,6 +88,7 @@ class TypeCheckContextStack(object):
         # indices are the struct names.  values are the types of the
         # struct with that name
         self.struct_type_dict = {}
+
         
     def setRootNode(self,root):
         if self.rootNode != None:
@@ -141,14 +142,13 @@ class TypeCheckContextStack(object):
         @returns {None or String} --- String if there's an error (the
         string is the error message).  None if there's no error.
         '''
+        err_msg = None
         if struct_name in self.struct_type_dict:
             err_msg = 'Error.  Already have a struct named '
             err_msg += struct_name + '.'
-            return err_msg
         
         self.struct_type_dict[struct_name] = struct_type
-        # no error, return None
-        return None
+        return err_msg
 
     def get_struct_type(self,struct_name):
         '''

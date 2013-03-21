@@ -146,20 +146,54 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         struct_name = struct_name_node.value
         struct_body = node.children[1]
 
+        # pre-load a dummy version of 
+        dummy_struct_type = create_self_struct_type(struct_name)
+        err_msg = typeStack.add_struct_type(struct_name,dummy_struct_type)
+        if err_msg != None:
+            # means that there was some error adding the struct type
+            # to type stack.  (Likely, we already declared a struct of
+            # that type.)
+            errorFunction(err_msg,[node],[node.lineNo],progText)
+
         # adding a context onto type stack so that the fields that we
         # type check don't get actually added to type stack context
-        
         typeStack.pushContext()
 
         # each element is a tuple.  the first element is a string ---
         # the name of the field.  the second element is the type dict
         # for that field
         field_tuple_array = []
-        
+
         for field_decl_node in struct_body.children:
             field_decl_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+            field_decl_type_node = field_decl_node.children[0]
             field_identifier_node = field_decl_node.children[1]
             field_name = field_identifier_node.value
+
+            # disallow
+            # Struct SomeStruct
+            # {
+            #     Number num;
+            #     Struct SomeStruct other;
+            # }
+            #
+            # This is because will get infinite recursion when laying
+            # out the memory for SomeStruct.  Explicitly check that no
+            # field has self type.
+            # 
+            # Note: it's okay if a subfield of it has self type, eg.,
+            # have a List(element: Struct SomeStruct).  Because will
+            # only assign additional structs when add elements to it.
+            if is_self_struct_type(field_decl_node.type):
+                err_msg = (
+                'Error.  You cannot have a member of a struct have the ' +
+                'same type as that struct.  Note that you can have a field ' +
+                'that is a List (or Map) with elements (or values) ' +
+                'that point to the same struct if nesting is necessary.')
+                
+                errorFunction(
+                    err_msg,[field_decl_node],[field_decl_node.lineNo],progText)
+
             
             # not calling type check directly on field_decl_node
             # because we do not want to insert it directly into
@@ -169,14 +203,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # remove the fields that we just added to the context
         typeStack.popContext()
 
+
         node.type = create_struct_type(struct_name,field_tuple_array)
-        err_msg = typeStack.add_struct_type(struct_name,node.type)
-        if err_msg != None:
-            # means that there was some error adding the struct type
-            # to type stack.  (Likely, we already declared a struct of
-            # that type.)
-            errorFunction(err_msg,[node],[node.lineNo],progText)
-            
+        dummy_err_msg = typeStack.add_struct_type(struct_name,node.type)
+        # expected that we should have an err_msg because already have
+        # an entry for the struct type in the type dict that we put in
+        # before type checking the struct body (so that the struct
+        # body could reference the struct type within it). do nothing
+        # as a result of the error.
+        
             
     elif node.label == AST_EXT_COPY:
         from_node = node.children[0]
@@ -1110,15 +1145,24 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         elif is_struct(un_function_pre_dot_node_type):
             # from struct type, get the type of the field named by
             # post_dot_node_name
+
+            if is_self_struct_type(un_function_pre_dot_node_type):
+                struct_name = get_struct_name_from_struct_type(
+                    un_function_pre_dot_node_type)
+                struct_type = typeStack.get_struct_type(struct_name)
+
+            else:
+                struct_type = un_function_pre_dot_node_type
+            
             node.type = get_struct_field_type(
-                post_dot_node_name,un_function_pre_dot_node_type)
+                post_dot_node_name,struct_type)
 
             # field we are trying to call did not exist
             if node.type == None:
                 err_msg = 'Error.  The struct has type '
                 err_msg += dict_type_to_str(pre_dot_node.type)
-                err_msg += '.  It does not have a field named '
-                err_msg += post_dot_node_name + ' for you to access.'
+                err_msg += '.  It does not have a field named "'
+                err_msg += post_dot_node_name + '" for you to access.'
                 errorFunction(
                     err_msg,[pre_dot_node],[pre_dot_node.lineNo],progText)
 
@@ -1363,10 +1407,10 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if struct_type == None:
                 # means that struct with name struct_name has not been
                 # already declared by the user
-                err_msg = 'Error.  Struct ' + struct_name + ' has '
+                err_msg = 'Error.  Struct ' + struct_name + ' has not '
                 err_msg += 'been declared ahead of time.  Did you misspell "'
                 err_msg += struct_name + '" or forget to declare it?'
-                
+
                 errorFunction(err_msg,[node],[node.lineNo],progText)
                 
             node.type = struct_type

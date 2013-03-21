@@ -809,17 +809,23 @@ def get_root_node_from_bracket_dot(node):
         print err_msg
         assert(False)
 
-        
     lhs_node = node.children[0]
 
     if lhs_node.label != AST_IDENTIFIER:
-        # FIXME: note that this disqualifies statements, such as
-        # func_call()[0]
-        err_msg = '\nBehram error in get_root_node_from_bracket_dot.  '
-        err_msg += 'Expected an identifier node as first child of root/'
-        err_msg += 'dot, but received something else.\n'
-        print err_msg
-        assert(False)
 
+        if (lhs_node.label not in [AST_BRACKET_STATEMENT,
+                                  AST_DOT_STATEMENT]):
+            # FIXME: note that this disqualifies statements, such as
+            # func_call()[0]
+            err_msg = '\nBehram error in get_root_node_from_bracket_dot.  '
+            err_msg += 'Expected an identifier node as first child of root/'
+            err_msg += 'dot, but received something else.\n'
+            print err_msg
+            assert(False)
+
+        else:
+            lhs_node = get_root_node_from_bracket_dot(lhs_node)
+    
+        
     return lhs_node
 
