@@ -30,6 +30,9 @@ def partner_endpoint_msg_call_func_name(func_name):
     '''
     return '_partner_endpoint_msg_func_call_prefix__waldo__' + func_name
 
+def internal_oncreate_func_call_name(func_name):
+    return '_onCreate'
+
 
 
 # FIXME: Lower overhead to using named tuple, however, when I try to,

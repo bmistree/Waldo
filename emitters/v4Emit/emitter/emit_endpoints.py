@@ -57,7 +57,13 @@ def emit_endpoint_body(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
     endpoint_body_text += '\n\n'
 
-    # emit public and private functions
+    # emit oncreate method
+    endpoint_body_text += '### OnCreate method\n'
+    endpoint_body_text += emit_endpoint_oncreate_method_def(
+        endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    
+    # emit public and private method
     endpoint_body_text += '### USER DEFINED METHODS ###\n'
     endpoint_body_text += emit_endpoint_publics_privates(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -76,19 +82,22 @@ def emit_endpoint_init(
     '''
     For params and return, @see emit_single_endpoint
     '''
+    oncreate_argument_string = ''
+    oncreate_node = get_oncreate_node(endpoint_name,ast_root)
+    if oncreate_node != None:
+        oncreate_arg_names = get_method_arg_names(oncreate_node)
+        oncreate_argument_string = reduce (
+            lambda x, y : x + ',' + y,
+            oncreate_arg_names,'')
 
-    # FIXME: for now, not taking in any onCreate arguments and not
-    # calling onCreate.
-
-    init_header = 'def __init__(self,_host_uuid,_conn_obj):\n'
+    init_header = (
+        'def __init__(self,_host_uuid,_conn_obj%s):\n' % oncreate_argument_string)
 
 
     # actually initialize super class
     init_body = '''
 %s.__init__(self,_host_uuid,_conn_obj,%s(_host_uuid))
 
-# FIXME: should perform onCreate before calling ready
-self._this_side_ready()
 ''' % (emit_utils.library_transform('Endpoint'),
        emit_utils.library_transform('VariableStore'))
 
@@ -97,11 +106,68 @@ self._this_side_ready()
     init_body += emit_endpoint_global_and_peered_variable_store(
         endpoint_name,'_host_uuid',ast_root,fdep_dict,emit_ctx)
 
+    # emit call to oncreate method
+    init_body += emit_oncreate_call(endpoint_name,ast_root)
 
-    
-    # FIXME: this is where would actually make call to onCreate
-    
     return init_header + emit_utils.indent_str(init_body)
+
+
+def emit_oncreate_call(endpoint_name,ast_root):
+    '''
+    Inside of each endpoint's initializer, we may need to emit a call
+    to an onCreate initializer method.  Below emits the text that
+    actually calls the initializer method.
+    
+    @returns {String}
+    '''
+    oncreate_node = get_oncreate_node(endpoint_name,ast_root)
+    
+    if oncreate_node != None:
+        oncreate_arglist = get_method_arg_names(oncreate_node)
+        comma_sep_arg_names = reduce (
+            lambda x, y : x + ',' + y,
+            oncreate_arglist,'')
+
+        # run the initializer
+        oncreate_call_txt = '''
+while True:  # FIXME: currently using infinite retry 
+    _root_event = self._act_event_map.create_root_event()
+    _ctx = %s(
+        self._global_var_store,
+        # not using sequence local store
+        %s(self._host_uuid))
+
+    # call internal function... note True as last param tells internal
+    # version of function that it needs to de-waldo-ify all return
+    # arguments (while inside transaction) so that this method may
+    # return them....if it were false, might just get back refrences
+    # to Waldo variables, and de-waldo-ifying them outside of the
+    # transaction might return over-written/inconsistent values.
+    _to_return = self.%s(_root_event,_ctx %s,[])
+    # try committing root event
+    _root_event.request_commit()
+    _commit_resp = _root_event.event_complete_queue.get()
+    if isinstance(_commit_resp,%s):
+        # means it isn't a backout message: we're done
+        return _to_return
+
+    ''' % (emit_utils.library_transform('ExecutingEventContext'),
+           emit_utils.library_transform('VariableStore'),
+           lib_util.internal_oncreate_func_call_name('onCreate'),
+           comma_sep_arg_names,
+           emit_utils.library_transform('CompleteRootCallResult'))
+
+    else:
+        oncreate_call_txt = '\n'
+
+    # local endpoint's initialization has succeeded, tell other side that
+    # we're done initializing.
+    oncreate_call_txt += '''
+# local endpoint's initialization has succeeded, tell other side that
+# we're done initializing.
+self._this_side_ready()
+'''
+    return oncreate_call_txt
 
 
 def emit_endpoint_global_and_peered_variable_store(
@@ -133,8 +199,24 @@ _context = %s(
         host_uuid_var_name,peered_decl_nodes,True,
         endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-    
     return var_store_loading_text
+
+
+def emit_endpoint_oncreate_method_def(
+    endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    If the node exists, then emit code for it, otherwise, pass
+    '''
+    oncreate_node = get_oncreate_node(endpoint_name,ast_root)
+    if oncreate_node != None:
+        # actually define the oncreate node
+        oncreate_method_txt = emit_private_method_interface(
+            oncreate_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
+            lib_util.internal_oncreate_func_call_name)
+    else:
+        oncreate_method_txt = '\n# no oncreate defined to emit method for \n'
+        
+    return oncreate_method_txt
 
 
 def create_wvariables_array(
@@ -845,7 +927,25 @@ def _get_endpoint_sequence_nodes(
     return endpoint_seq_node_array
 
 
+def get_oncreate_node(endpoint_name,ast_root):
+    '''
+    @param {String} endpoint_name
 
+    @param {AstNode} ast_root
+
+    @returns {AstNode or None} --- Either returns the AstNode
+    associated with the endpoint named endpoint_name, or returns None.
+    '''
+    oncreate_node_list = _get_endpoint_method_nodes(
+        endpoint_name,ast_root,AST_ONCREATE_FUNCTION)
+
+    # there can only be one onCreate node, so must unwrap it.
+    if len(oncreate_node_list) == 0:
+        return None
+
+    return oncreate_node_list[0]
+
+    
 
 def get_method_arg_names(method_node):
     '''
@@ -914,8 +1014,9 @@ def get_endpoint_private_method_nodes(endpoint_name,ast_root):
 def _get_endpoint_method_nodes(endpoint_name,ast_root,label_looking_for):
     '''
     Returns all methods that have label label_looking_for (which will
-    either be AST_PUBLIC_FUNCTION or AST_PRIVATE_FUNCTION, depending
-    on whether we want to return an array of public or private nodes.
+    either be AST_PUBLIC_FUNCTION, AST_PRIVATE_FUNCTION, or
+    AST_ONCREATE, depending on whether we want to return an array of
+    public or private nodes.
 
     @see get_endpoint_public_method_nodes
     '''
