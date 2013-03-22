@@ -71,9 +71,6 @@ def run_test():
     conn_obj = test_util.DummyConnectionObj()
     end1 = DummyEndpoint(conn_obj)
     end2 = DummyEndpoint(conn_obj)
-    conn_obj.register_endpoint(end1)
-    conn_obj.register_endpoint(end2)
-    conn_obj.start()
 
     # only performing operations on end1
     read_root_event,read_var_value = end1.new_event_and_read_numero()

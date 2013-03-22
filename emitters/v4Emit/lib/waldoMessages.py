@@ -374,6 +374,25 @@ class _PartnerNotifyOfPeeredModifiedResponse(_Message):
             msg[_PartnerNotifyOfPeeredModifiedResponse.INVALIDATED_FIELD])
     
 
+class _PartnerNotifyReady(_Message):
+    '''
+    The endpoint that sent this message has completed its on_ready
+    method
+    '''
+    MSG_TYPE = 'partner_notify_ready_msg'
+
+    def __init__(self):
+        pass
+    
+    def msg_to_map(self):
+        return {
+            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE
+            }
+
+    @staticmethod
+    def map_to_msg(msg):
+        return _PartnerNotifyReady()
+
     
 _Message.SUBTYPE_MAP[
     _PartnerRequestSequenceBlockMessage.MSG_TYPE] = _PartnerRequestSequenceBlockMessage
@@ -393,3 +412,5 @@ _Message.SUBTYPE_MAP[
     _PartnerNotifyOfPeeredModified.MSG_TYPE] = _PartnerNotifyOfPeeredModified
 _Message.SUBTYPE_MAP[
     _PartnerNotifyOfPeeredModifiedResponse.MSG_TYPE] = _PartnerNotifyOfPeeredModifiedResponse
+_Message.SUBTYPE_MAP[
+    _PartnerNotifyReady.MSG_TYPE] = _PartnerNotifyReady

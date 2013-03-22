@@ -271,27 +271,13 @@ def basic_setup():
     a = EndpointA(a_b_conn,host1_uuid)
     c = EndpointC(a,c_r2_conn,host1_uuid)
 
-
     # host two endpoints
     r2 = EndpointR2(c_r2_conn,host2_uuid)
     b = EndpointB(a_b_conn,host2_uuid)
 
-    
-    # register the endpoints with connections
-    a_b_conn.register_endpoint(a)
-    a_b_conn.register_endpoint(b)
-
-    c_r2_conn.register_endpoint(c)
-    c_r2_conn.register_endpoint(r2)
-
-    # start the connections
-    a_b_conn.start()
-    c_r2_conn.start()
-
     # start each event
     act_r1 = r1.evt_r1(a)
     act_r2 = r2.evt_r2(b)
-
 
     try1 = TryCommit(act_r1)
     try2 = TryCommit(act_r2)

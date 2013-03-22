@@ -3,6 +3,14 @@
 from external_tests_v4 import SingleSide
 import _waldo_libs
 
+import os,sys
+ind_test_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), '..',
+    'ind_tests')
+sys.path.append(ind_test_dir)
+import test_util
+
+
 '''
 Tests externals
 '''
@@ -10,9 +18,8 @@ Tests externals
 def run_test():
     # for single side tests, these values do not really matter.
     host_uuid = 10
-    conn_obj = None
+    conn_obj = test_util.SingleEndpointConnectionObj()
     single_side = SingleSide(host_uuid,conn_obj)
-
 
     if not test_ext_num(single_side):
         return False

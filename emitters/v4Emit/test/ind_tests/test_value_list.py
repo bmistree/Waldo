@@ -24,7 +24,8 @@ def create_two_events(dummy_endpoint):
         
 def run_test():
     # initialize and populate list to be [1,2,3]
-    dummy_endpoint = test_util.DummyEndpoint(None,host_uuid)
+    dummy_endpoint = test_util.DummyEndpoint(
+        test_util.SingleEndpointConnectionObj(),host_uuid)
     wlist = wVariables.WaldoListVariable('some list',host_uuid)
     evt1,evt2 = create_two_events(dummy_endpoint)
     wlist.get_val(evt1).append_val(evt1,1)

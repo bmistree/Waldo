@@ -23,7 +23,9 @@ def create_two_events(dummy_endpoint):
     return evt1,evt2    
         
 def run_test():
-    dummy_endpoint = test_util.DummyEndpoint(None,host_uuid)    
+    dummy_endpoint = test_util.DummyEndpoint(
+        test_util.SingleEndpointConnectionObj(),host_uuid)
+    
     wmap = wVariables.WaldoMapVariable('some map',host_uuid)
 
     evt1,evt2 = create_two_events(dummy_endpoint)

@@ -28,9 +28,6 @@ def run_test():
     
     sideA = SideA(mod_host,conn_obj)
     sideB = SideB(data_reader_host,conn_obj)
-    conn_obj.register_endpoint(sideA)
-    conn_obj.register_endpoint(sideB)
-    conn_obj.start()
 
     original_num = 30
     ext_num = _waldo_libs.WaldoExtNumVariable(

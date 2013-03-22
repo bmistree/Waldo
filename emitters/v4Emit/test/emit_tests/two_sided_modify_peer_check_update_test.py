@@ -26,9 +26,6 @@ def run_test():
     
     modifier = Modifier(mod_host,conn_obj)
     data_reader = DataReader(data_reader_host,conn_obj)
-    conn_obj.register_endpoint(modifier)
-    conn_obj.register_endpoint(data_reader)
-    conn_obj.start()
 
     # check peered value is initialized properly
     if modifier.read_peered_num() != 22:

@@ -16,7 +16,8 @@ host_uuid = util.generate_uuid()
         
 INITIAL_NUMBER = 31
 def setup():
-    dummy_endpoint = test_util.DummyEndpoint(None,host_uuid)
+    dummy_endpoint = test_util.DummyEndpoint(
+        test_util.SingleEndpointConnectionObj(),host_uuid)
     
     evt1 = dummy_endpoint._act_event_map.create_root_event()
     evt2 = dummy_endpoint._act_event_map.create_root_event()

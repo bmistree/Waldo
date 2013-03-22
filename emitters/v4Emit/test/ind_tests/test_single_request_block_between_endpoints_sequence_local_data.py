@@ -115,16 +115,12 @@ class DummyEndpoint(test_util.DummyEndpoint):
             # print '\nComplete!!!\n'
             pass
 
-            
-                 
+
 def run_test():
     # setup
     conn_obj = test_util.DummyConnectionObj()
     end1 = DummyEndpoint(conn_obj)
     end2 = DummyEndpoint(conn_obj)
-    conn_obj.register_endpoint(end1)
-    conn_obj.register_endpoint(end2)
-    conn_obj.start()
 
     # actually run test
     end1.sequence_block()

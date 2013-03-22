@@ -3,7 +3,9 @@ import waldoEndpointServiceThread
 import pickle
 import waldoActiveEventMap
 import waldoMessages
-        
+import Queue
+import threading
+
 class _Endpoint(object):
     '''
     All methods that begin with _receive, are called by other
@@ -50,6 +52,86 @@ class _Endpoint(object):
         self._partner_uuid = None
 
         self._uuid = util.generate_uuid()
+
+
+        # both sides should run their onCreate methods to entirety
+        # before we can execute any additional calls.
+        self._ready_lock = threading.Lock()
+        self._this_side_ready_bool = False
+        self._other_side_ready_bool = False
+
+        self._ready_waiting_list_mutex = threading.Lock()
+        self._ready_waiting_list = []
+
+        self._conn_obj.register_endpoint(self)
+
+        
+    def _block_ready(self):
+        '''
+        Returns True if both sides are initialized.  Otherwise, blocks
+        until initialization is complete
+        '''
+        waiting_queue = None
+        self._ready_waiting_list_mutex.acquire()
+        if self._ready_waiting_list != None:
+            waiting_queue = Queue.Queue()
+            # when this endpoint becomes ready, every queue in this
+            # list gets written into, this will unblock the method
+            # below.
+            self._ready_waiting_list.append(waiting_queue)
+
+        self._ready_waiting_list_mutex.release()
+
+        if waiting_queue != None:
+            waiting_queue.get()
+
+        return True
+
+    
+    def _other_side_ready(self):
+        '''
+        Gets called when the other side sends a message that its
+        ready.
+        '''
+        self._ready_lock.acquire()
+        self._other_side_ready_bool = True
+        set_ready = self._this_side_ready_bool and self._other_side_ready_bool
+        self._ready_lock.release()
+
+        if set_ready:
+            self._set_ready()
+        
+    
+    def _this_side_ready(self):
+        '''
+        Gets called when this side finishes its initialization
+        '''
+        self._ready_lock.acquire()
+        self._this_side_ready_bool = True
+        set_ready = self._this_side_ready_bool and self._other_side_ready_bool
+        self._ready_lock.release()
+
+        # send message to the other side that we are ready
+        self._notify_partner_ready()
+        
+        if set_ready:
+            self._set_ready()
+
+
+    def _swapped_in_block_ready(self):
+        return True
+            
+    def _set_ready(self):
+        # any future events that try to check if ready, will get True
+        setattr(
+            self,'_block_ready',self._swapped_in_block_ready)
+
+        self._ready_waiting_list_mutex.acquire()
+        for queue in self._ready_waiting_list:
+            queue.put(True)
+        self._ready_waiting_list = None
+        self._ready_waiting_list_mutex.release()
+
         
     def _set_partner_uuid(self,uuid):
         '''
@@ -144,7 +226,10 @@ class _Endpoint(object):
             
         elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModifiedResponse):
             self._endpoint_service_thread.receive_partner_notify_of_peered_modified_rsp_msg(msg)
-                
+
+        elif isinstance(msg,waldoMessages._PartnerNotifyReady):
+            self._receive_partner_ready()
+            
         else:
             #### DEBUG
             util.logger_assert(
@@ -152,6 +237,17 @@ class _Endpoint(object):
                 'in _receive_msg_from_partner.')
             #### END DEBUG
 
+    def _receive_partner_ready(self):
+        self._endpoint_service_thread.receive_partner_ready()
+            
+    def _notify_partner_ready(self):
+        '''
+        Tell partner endpoint that I have completed my onReady action.
+        '''
+        msg = waldoMessages._PartnerNotifyReady()
+        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+
+            
     def _notify_partner_removed_subscriber(
         self,event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''

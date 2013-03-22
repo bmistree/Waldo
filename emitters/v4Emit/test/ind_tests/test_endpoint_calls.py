@@ -115,16 +115,12 @@ class DummyEndpoint(test_util.DummyEndpoint):
                  
 def run_test():
     # setup
-    conn_obj1 = test_util.DummyConnectionObj()
-    conn_obj2 = test_util.DummyConnectionObj()
+    conn_obj1 = test_util.SingleEndpointConnectionObj()
+    conn_obj2 = test_util.SingleEndpointConnectionObj()
             
     # connected to different, anonymous endpoints
     end1 = DummyEndpoint(conn_obj1) 
     end2 = DummyEndpoint(conn_obj2,end1._host_uuid)
-    conn_obj1.register_endpoint(end1)
-    conn_obj2.register_endpoint(end2)
-    conn_obj1.start()        
-    conn_obj2.start()
 
     endpoint_var_num_name = 'external'
     end1.endpoint_number_var_name = endpoint_var_num_name

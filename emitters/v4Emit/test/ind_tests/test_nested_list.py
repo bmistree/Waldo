@@ -49,7 +49,9 @@ def create_list(dummy_endpoint,to_populate_with):
     
 
 def run_test():
-    dummy_endpoint = test_util.DummyEndpoint(None)
+    dummy_endpoint = test_util.DummyEndpoint(
+        test_util.SingleEndpointConnectionObj())
+
     
     el1_list = create_list(dummy_endpoint,[0,1,2])
     el2_list = create_list(dummy_endpoint,[3,4,5])

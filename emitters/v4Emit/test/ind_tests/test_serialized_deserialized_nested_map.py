@@ -14,7 +14,8 @@ import test_util
 
 class SingleSide(test_util.DummyEndpoint):
     def __init__(self):
-        test_util.DummyEndpoint.__init__(self,None)
+        test_util.DummyEndpoint.__init__(
+            self,test_util.SingleEndpointConnectionObj())
         # both sides start at 1
         self.map = wVariables.WaldoMapVariable('some map',self._host_uuid,True)
 

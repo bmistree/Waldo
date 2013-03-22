@@ -43,6 +43,11 @@ class _EndpointServiceThread(threading.Thread):
         self.threadsafe_queue.put(req_backout_action)
         
 
+    def receive_partner_ready(self):
+        partner_ready_action = waldoServiceActions._ReceivePartnerReadyAction(
+            self.endpoint)
+        self.threadsafe_queue.put(partner_ready_action)
+        
     def receive_request_complete_commit(self,event_uuid,request_from_partner):
         '''
         Another endpoint (either on the same host as I am or my

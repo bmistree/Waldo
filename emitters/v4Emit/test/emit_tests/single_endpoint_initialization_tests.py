@@ -2,6 +2,12 @@
 
 from single_endpoint_initialization_tests_v4 import SingleSide
 
+import sys,os
+ind_test_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), '..',
+    'ind_tests')
+sys.path.append(ind_test_dir)
+import test_util
 
 '''
 Tests that local variables and endpoint global variables get
@@ -11,7 +17,7 @@ initialized correctly.
 def run_test():
     # for single side tests, these values do not really matter.
     host_uuid = 10
-    conn_obj = None
+    conn_obj = test_util.SingleEndpointConnectionObj()    
     single_side = SingleSide(host_uuid,conn_obj)
 
     expected_txt = 'a'

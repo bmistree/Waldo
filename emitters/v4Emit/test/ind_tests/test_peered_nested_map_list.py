@@ -59,7 +59,8 @@ def create_peered_list(dummy_endpoint,to_populate_with):
 
 
 def run_test():
-    dummy_endpoint = test_util.DummyEndpoint(None,host_uuid)
+    dummy_endpoint = test_util.DummyEndpoint(
+        test_util.SingleEndpointConnectionObj(),host_uuid)
 
     map_vals = {
         'a': 1,

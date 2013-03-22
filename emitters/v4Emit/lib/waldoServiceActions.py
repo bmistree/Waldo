@@ -365,4 +365,17 @@ class _ReceivePeeredModifiedResponseMsg(_Action,threading.Thread):
             # (event could == None if we backed out the event before
             # received response for message.)
             event.receive_partner_modified_peered_response(self.msg)
-        
+
+            
+class _ReceivePartnerReadyAction(_Action,threading.Thread):
+    def __init__(self,local_endpoint):
+        self.local_endpoint = local_endpoint
+        threading.Thread.__init__(self)
+        self.daemon = True
+
+    def service(self):
+        self.start()
+
+    def run(self):
+        self.local_endpoint._other_side_ready()
+

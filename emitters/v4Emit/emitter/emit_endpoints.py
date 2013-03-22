@@ -86,6 +86,9 @@ def emit_endpoint_init(
     # actually initialize super class
     init_body = '''
 %s.__init__(self,_host_uuid,_conn_obj,%s(_host_uuid))
+
+# FIXME: should perform onCreate before calling ready
+self._this_side_ready()
 ''' % (emit_utils.library_transform('Endpoint'),
        emit_utils.library_transform('VariableStore'))
 
@@ -93,6 +96,8 @@ def emit_endpoint_init(
     # create endpoint and peered variable store
     init_body += emit_endpoint_global_and_peered_variable_store(
         endpoint_name,'_host_uuid',ast_root,fdep_dict,emit_ctx)
+
+
     
     # FIXME: this is where would actually make call to onCreate
     
@@ -427,8 +432,14 @@ def emit_public_method_interface(
 def %s(self%s):
 ''' % (method_name, comma_sep_arg_names)
 
-
-    public_body = ''
+    # wait until ready initialization for node has completed before
+    # continuing
+    public_body = '''
+# ensure that both sides have completed their onCreate calls
+# before continuing
+self._block_ready()
+'''
+    
     #### Deep copy non-external args
     # non_ext_arg_names is an array of strings
     non_ext_arg_names = get_non_external_arg_names_from_func_node(

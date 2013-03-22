@@ -2,7 +2,13 @@
 
 from user_struct_basics_v4 import SingleSide
 
-
+import sys,os
+ind_test_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), '..',
+    'ind_tests')
+sys.path.append(ind_test_dir)
+import test_util
+    
 '''
 Tests that can declare and use user structs.
 '''
@@ -10,7 +16,7 @@ Tests that can declare and use user structs.
 def run_test():
     # for single side tests, these values do not really matter.
     host_uuid = 10
-    conn_obj = None
+    conn_obj = test_util.SingleEndpointConnectionObj()
     single_side = SingleSide(host_uuid,conn_obj)
 
     num_to_assign = 30
