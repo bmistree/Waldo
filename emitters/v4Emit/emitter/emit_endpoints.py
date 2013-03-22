@@ -149,6 +149,11 @@ while True:  # FIXME: currently using infinite retry
     _commit_resp = _root_event.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
+
+        # local endpoint's initialization has succeeded, tell other side that
+        # we're done initializing.
+        self._this_side_ready()
+
         return _to_return
 
     ''' % (emit_utils.library_transform('ExecutingEventContext'),
@@ -160,8 +165,11 @@ while True:  # FIXME: currently using infinite retry
     else:
         oncreate_call_txt = '\n'
 
-    # local endpoint's initialization has succeeded, tell other side that
-    # we're done initializing.
+    # local endpoint's initialization has succeeded, tell other side
+    # that we're done initializing.  note: we don't hit this section
+    # of code if we actually had an oncreate node, so it's okay that
+    # we list self._this_side_ready() twice: only one of them will
+    # ever be called.
     oncreate_call_txt += '''
 # local endpoint's initialization has succeeded, tell other side that
 # we're done initializing.
