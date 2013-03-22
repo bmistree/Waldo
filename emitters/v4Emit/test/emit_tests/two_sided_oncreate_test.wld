@@ -1,0 +1,66 @@
+TwoSidedOnCreate
+
+Endpoint SideA;
+Endpoint SideB;
+
+
+Sequences
+{
+  GetBText:
+    SideA.start_get_b_text ->
+    SideB.receive_get_b_text;
+}
+
+
+Peered
+{
+    Number peered_num = 22;
+}
+
+
+
+Sequence GetBText() returns Text b_text
+{
+    SideA.start_get_b_text
+    {}
+    SideB.receive_get_b_text
+    {
+        b_text = end_text;
+    }
+}
+
+
+SideA
+{
+    onCreate(Number new_num)
+    {
+        peered_num = new_num;
+    }
+
+    Public Function read_peered_num() returns Number
+    {
+        return peered_num;
+    }
+
+    Public Function read_b_text() returns Text
+    {
+        return start_get_b_text();
+    }
+    
+}
+
+SideB
+{
+    Text end_text = 'jefo';
+        
+    onCreate(Text new_end_text)
+    {
+        end_text = new_end_text;
+    }
+    
+    Public Function read_peered_num() returns Number
+    {
+        return peered_num;
+    }
+    
+}

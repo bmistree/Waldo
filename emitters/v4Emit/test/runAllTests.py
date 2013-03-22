@@ -112,6 +112,7 @@ def run_emit_tests():
     import emit_tests.basic_endpoint_call_test
     import emit_tests.user_struct_basics
     import emit_tests.oncreate_single_node_test
+    import emit_tests.two_sided_oncreate_test
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -162,6 +163,9 @@ def run_emit_tests():
 
         ('Emit test for single side onCreate',
          emit_tests.oncreate_single_node_test.run_test),
+
+        ('Emit test two sided onCreate',
+         emit_tests.two_sided_oncreate_test.run_test),
         
         ]
 
