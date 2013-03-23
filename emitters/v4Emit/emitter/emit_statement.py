@@ -305,7 +305,7 @@ def emit_statement(
 
         
         statement_txt = '''%s("garbage_name",
-    self._uuid,
+    self._host_uuid,
     False,
     {%s})''' % (variable_type_str, map_item_str)
 
@@ -339,7 +339,7 @@ def emit_statement(
             list_item_str += ','
 
         statement_txt = '''%s("garbage_name",
-    self._uuid,
+    self._host_uuid,
     False,
     [%s])''' % (variable_type_str, list_item_str)
 

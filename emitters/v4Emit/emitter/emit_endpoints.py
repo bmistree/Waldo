@@ -73,7 +73,6 @@ def emit_endpoint_body(
     endpoint_body_text += emit_endpoint_message_sequence_blocks(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-    
     return endpoint_body_text
     
 
@@ -93,18 +92,29 @@ def emit_endpoint_init(
     init_header = (
         'def __init__(self,_host_uuid,_conn_obj%s):\n' % oncreate_argument_string)
 
+    # create endpoint and peered variable store
+    
+    # should initialize variable store before entering into _Endpoint
+    # super class initializer: super class initializer registers the
+    # _Endpoint with connection object.  
+    endpoint_global_and_peered_variable_store_load_txt = (
+        emit_endpoint_global_and_peered_variable_store(
+            endpoint_name,'_host_uuid',ast_root,fdep_dict,emit_ctx))
 
     # actually initialize super class
     init_body = '''
-%s.__init__(self,_host_uuid,_conn_obj,%s(_host_uuid))
+# a little ugly in that need to pre-initialize _host_uuid, because
+# code used for initializing variable store may rely on it.  (Eg., if
+# initializing nested lists.)
+self._host_uuid = _host_uuid
+self._global_var_store = %s(_host_uuid)
+%s
+%s.__init__(self,_host_uuid,_conn_obj,self._global_var_store)
 
-''' % (emit_utils.library_transform('Endpoint'),
-       emit_utils.library_transform('VariableStore'))
+''' % (emit_utils.library_transform('VariableStore'),
+       endpoint_global_and_peered_variable_store_load_txt,
+       emit_utils.library_transform('Endpoint'))
 
-
-    # create endpoint and peered variable store
-    init_body += emit_endpoint_global_and_peered_variable_store(
-        endpoint_name,'_host_uuid',ast_root,fdep_dict,emit_ctx)
 
     # emit call to oncreate method
     init_body += emit_oncreate_call(endpoint_name,ast_root)
@@ -196,7 +206,7 @@ def emit_endpoint_global_and_peered_variable_store(
 _context = %s(
     self._global_var_store,
     # not using sequence local store
-    _waldo_libs.VariableStore(self._host_uuid))
+    _waldo_libs.VariableStore(_host_uuid))
 ''' % emit_utils.library_transform('ExecutingEventContext')
 
     var_store_loading_text += create_wvariables_array(
