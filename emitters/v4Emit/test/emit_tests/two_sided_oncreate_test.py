@@ -55,10 +55,6 @@ def run_test():
 
     create_a.join()
     create_b.join()
-    
-    # sideA = SideA(side_a_host,conn_obj,new_peered_num)
-    # sideB = SideB(side_b_host,conn_obj,new_end_text)
-    
 
     if sideB.read_peered_num() != new_peered_num:
         print '\nErr: B has incorrect peered number'

@@ -236,9 +236,8 @@ def slicer(node,functionDeps=None,typeStack=None):
             # same thing in the AST_IDENTIFIER section, but that won't
             # get called this way because the function call sidesteps
             # going through the identifier calls
-            pre_dot_node = funcCallNameNode.children[0]
-            identifier_name = pre_dot_node.value            
-            typeStack.annotateNode(pre_dot_node,identifier_name)
+            pre_dot_node = funcCallNameNode.children[0]            
+            slicer(pre_dot_node,functionDeps,typeStack)
 
         funcArgListNode = node.children[1];
         
@@ -267,10 +266,14 @@ def slicer(node,functionDeps=None,typeStack=None):
             # a dependent read.  This is probably not the best thing
             # to do long term.  Better to import and use type
             # checking.
-            ntt = typeStack.getIdentifier(identifier_name)
-            typeStack.addToVarReadSet(ntt)
-            typeStack.addReadsToVarReadSet(ntt,funcArgReads)
+            # ntt = typeStack.getIdentifier(identifier_name)
+            # typeStack.addToVarReadSet(ntt)
+            # typeStack.addReadsToVarReadSet(ntt,funcArgReads)
 
+            # When moved to v4, realized could ignore reads vs write
+            # static dependency analyses.
+            pass
+            
         else:
             # the function call is either on a function object or a
             # function that was defined on a locally defined function
