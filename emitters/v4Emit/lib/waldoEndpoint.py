@@ -188,7 +188,6 @@ class _Endpoint(object):
         peered variable, request to backout an event, etc.  In this
         function, we dispatch depending on message we receive.
         '''
-        
         msg_map = pickle.loads(string_msg)
         msg = waldoMessages._Message.map_to_msg(msg_map)
         
