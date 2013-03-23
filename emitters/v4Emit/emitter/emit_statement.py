@@ -20,6 +20,9 @@ def emit_statement(
                 child_node,endpoint_name,ast_root,fdep_dict,
                 emit_ctx)
 
+    elif statement_node.label == AST_SELF:
+        statement_txt = 'self'
+    
     elif statement_node.label == AST_ASSIGNMENT_STATEMENT:
         statement_txt = _emit_assignment(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -592,7 +595,7 @@ def _emit_endpoint_method_call(
     ExecutingEvent code will catch it and forward the backout on.
     '''
     name_node = endpoint_method_call_node.children[0]
-
+    
     #### DEBUG
     if name_node.label != AST_DOT_STATEMENT:
         emit_utils.emit_assert(

@@ -114,6 +114,7 @@ def run_emit_tests():
     import emit_tests.oncreate_single_node_test
     import emit_tests.two_sided_oncreate_test
     import emit_tests.network_two_sided_modify_peer_check_update_test
+    import emit_tests.self_oncreate_list
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -170,6 +171,9 @@ def run_emit_tests():
 
         ('Emit test TCP connection test peered data',
          emit_tests.network_two_sided_modify_peer_check_update_test.run_test),
+
+        ('Test self with onCreate append to external list',
+         emit_tests.self_oncreate_list.run_test),
         
         ]
 

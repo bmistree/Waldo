@@ -52,6 +52,7 @@ reserved = {
     'break': 'BREAK',
     'continue': 'CONTINUE',
     'Struct': 'STRUCT',
+    'self': 'SELF',
     };
 
 

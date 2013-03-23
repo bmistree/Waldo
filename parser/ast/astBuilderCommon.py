@@ -429,6 +429,7 @@ def p_NonBracketOperatableOn(p):
                            | RangeStatement
                            | DotStatement
                            | Garbage
+                           | Self
                            '''
 
     # FIXME: got rid of ExtAssignForTuple and ExtCopyForTuple for the
@@ -674,6 +675,9 @@ def p_Identifier(p):
     'Identifier : IDENTIFIER';
     p[0] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
 
+def p_Self(p):
+    'Self : SELF'
+    p[0] = AstNode(AST_SELF,p.lineno(1),p.lexpos(1))
 
 def p_EndpointSection(p):
     '''EndpointSection : Identifier CURLY_LEFT EndpointBodySection CURLY_RIGHT

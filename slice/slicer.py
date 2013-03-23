@@ -125,7 +125,10 @@ def slicer(node,functionDeps=None,typeStack=None):
     elif ((node.label == AST_BREAK) or
           (node.label == AST_CONTINUE)):
         pass
-        
+
+    elif node.label == AST_SELF:
+        pass
+    
     elif node.label == AST_FOR_STATEMENT:
         if len(node.children) == 3:
             identifierNodeIndex = 0;

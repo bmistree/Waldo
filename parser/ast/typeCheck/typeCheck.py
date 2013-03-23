@@ -252,6 +252,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(err_msg,err_nodes,err_line_nos,progText)
             return
 
+    elif node.label == AST_SELF:
+        node.type = create_wildcard_type()
+        
     elif ((node.label == AST_BREAK) or
           (node.label == AST_CONTINUE)):
         node.type = generate_type_as_dict(TYPE_NOTHING,False)
