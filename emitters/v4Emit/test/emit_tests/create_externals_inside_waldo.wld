@@ -1,0 +1,34 @@
+ExternalTests
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+    External Number num;
+    External Map(from: Number, to: External Number) map_;
+
+    onCreate(Number internal_num, Number index_num)
+    {
+        extCopy internal_num to num;
+        extAssign num to map_[index_num];
+    }
+
+    Public Function get_external_vals(Number index_num)
+        returns Number,Number
+    {
+        return num, map_[index_num];
+    }
+
+
+    Public Function change_external_num(Number to_change_to)
+    {
+        extCopy to_change_to to num;
+    }
+    
+}

@@ -115,6 +115,7 @@ def run_emit_tests():
     import emit_tests.two_sided_oncreate_test
     import emit_tests.network_two_sided_modify_peer_check_update_test
     import emit_tests.self_oncreate_list
+    import emit_tests.create_externals_inside_waldo
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -174,6 +175,10 @@ def run_emit_tests():
 
         ('Test self with onCreate append to external list',
          emit_tests.self_oncreate_list.run_test),
+
+        ('Test create externals inside of Waldo',
+         emit_tests.create_externals_inside_waldo.run_test),
+    
         
         ]
 
