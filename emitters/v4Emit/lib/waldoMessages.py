@@ -380,18 +380,21 @@ class _PartnerNotifyReady(_Message):
     method
     '''
     MSG_TYPE = 'partner_notify_ready_msg'
+    ENDPOINT_UUID_FIELD = 'endpoint_uuid'
 
-    def __init__(self):
-        pass
-    
+    def __init__(self,endpoint_uuid):
+        self.endpoint_uuid = endpoint_uuid
+
     def msg_to_map(self):
         return {
-            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE
+            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
+            _PartnerNotifyReady.ENDPOINT_UUID_FIELD: self.endpoint_uuid,
             }
 
     @staticmethod
     def map_to_msg(msg):
-        return _PartnerNotifyReady()
+        return _PartnerNotifyReady(
+            msg[_PartnerNotifyReady.ENDPOINT_UUID_FIELD])
 
     
 _Message.SUBTYPE_MAP[

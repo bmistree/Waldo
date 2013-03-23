@@ -43,7 +43,6 @@ def run_test():
         print '\nErr: incorrect modifier initial val of peered num'
         return False
 
-    
     if data_reader.read_peered_num() != 22:
         print '\nErr: incorrect data reader initial val of peered num'
         return False
@@ -64,8 +63,6 @@ def run_test():
         print '\nErr: incorrect data reader return from peered num read'
         return False
 
-    print '\n\nAll done!!!\n'
-    
     accept_stoppable.stop()
     
     return True

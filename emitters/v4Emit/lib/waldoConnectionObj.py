@@ -26,7 +26,7 @@ class _WaldoSingleSideConnectionObject(_WaldoConnectionObject):
 
         # force a message to other side that fakes saying that the
         # other side's onCreate has completed
-        self.endpoint._receive_partner_ready()
+        self.endpoint._receive_partner_ready(None)
 
     def write(self,to_write,endpoint_writing):
         pass

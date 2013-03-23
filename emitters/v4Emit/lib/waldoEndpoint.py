@@ -227,7 +227,7 @@ class _Endpoint(object):
             self._endpoint_service_thread.receive_partner_notify_of_peered_modified_rsp_msg(msg)
 
         elif isinstance(msg,waldoMessages._PartnerNotifyReady):
-            self._receive_partner_ready()
+            self._receive_partner_ready(msg.endpoint_uuid)
             
         else:
             #### DEBUG
@@ -236,14 +236,15 @@ class _Endpoint(object):
                 'in _receive_msg_from_partner.')
             #### END DEBUG
 
-    def _receive_partner_ready(self):
+    def _receive_partner_ready(self,partner_uuid = None):
         self._endpoint_service_thread.receive_partner_ready()
-            
+        self._set_partner_uuid(partner_uuid)
+        
     def _notify_partner_ready(self):
         '''
         Tell partner endpoint that I have completed my onReady action.
         '''
-        msg = waldoMessages._PartnerNotifyReady()
+        msg = waldoMessages._PartnerNotifyReady(self._uuid)
         self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
 
             
