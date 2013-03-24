@@ -487,8 +487,11 @@ def _emit_method_call(
     elif emit_utils.is_msg_seq_begin_call(method_call_node,endpoint_name,fdep_dict):
         return _emit_msg_seq_begin_call(
             method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    elif emit_utils.is_func_obj_call(
+        method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+        emit_utils.emit_warn('Skipping call for function object call')
+        return ''
 
-    # FIXME: add code for function objects
     
     # standard public/private call
     return _emit_public_private_method_call(

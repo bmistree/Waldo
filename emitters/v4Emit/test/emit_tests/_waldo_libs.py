@@ -9,6 +9,8 @@ from wVariables import WaldoTrueFalseVariable
 from wVariables import WaldoMapVariable
 from wVariables import WaldoListVariable
 from wVariables import WaldoUserStructVariable
+from wVariables import WaldoFunctionVariable
+
 
 from wVariables import WaldoEndpointVariable
 from wVariables import WaldoExtNumVariable

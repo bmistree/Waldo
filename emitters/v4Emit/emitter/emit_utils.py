@@ -188,10 +188,8 @@ def get_method_call_arg_list_node(method_call_node):
 
 def is_endpoint_method_call(node):
     if is_method_call(node):
-        name_node = node.children[0]
-        # FIXME: currently, the only way to test if it's a function call
-        # on an endpoint object is if the func name is a dot statement
-        if name_node.label == AST_DOT_STATEMENT:
+        caller_node = node.children[0]
+        if TypeCheck.templateUtil.is_endpoint_function_type(caller_node.type):
             return True
         
     return False
@@ -219,6 +217,13 @@ def get_var_type_txt_from_type_dict(var_type_dict):
             variable_type_str = library_transform('WaldoExtTextVariable')
         else:
             variable_type_str = library_transform('WaldoTextVariable')
+
+    elif TypeCheck.templateUtil.is_basic_function_type(var_type_dict):
+        if TypeCheck.templateUtil.is_external(var_type_dict):
+            emit_assert(
+                'Have not yet begun emitting for external function objects')
+        else:
+            variable_type_str = library_transform('WaldoFunctionVariable')
     elif TypeCheck.templateUtil.isListType(var_type_dict):
         variable_type_str = library_transform('WaldoListVariable')
     elif TypeCheck.templateUtil.isMapType(var_type_dict):
@@ -248,6 +253,11 @@ def is_reference_type(node):
     # function call returns.
     return is_reference_type_type_dict(node.type)
     
+def is_func_obj_call(
+    method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    
+    return False
+
 
 def is_msg_seq_begin_call(node,endpoint_name,fdep_dict):
     '''
@@ -265,9 +275,10 @@ def is_msg_seq_begin_call(node,endpoint_name,fdep_dict):
 
     fdep = find_function_dep_from_fdep_dict(method_name,endpoint_name,fdep_dict)
     if fdep == None:
-        emit_assert(
-            'Unable to find function in fdep_dict when checking ' +
-            'if it is a message send.')
+        # could not find any method names on this endpoint matching
+        # method name.  This could happen if we're executing a call on
+        # a function object.
+        return False
 
     # check if the node is labeled as a message sequence node.
     return fdep.funcNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION;

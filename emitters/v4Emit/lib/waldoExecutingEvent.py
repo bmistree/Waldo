@@ -190,6 +190,10 @@ class _ExecutingEventContext(object):
             constructor = wVariables.WaldoListVariable
         elif isinstance(val,waldoEndpoint._Endpoint):
             constructor = wVariables.WaldoEndpointVariable
+        elif hasattr(val,'__call__'):
+            # checks if is function
+            constructor = wVariables.WaldoFunctionVariable
+            
         #### DEBUG
         else:
             util.logger_assert(

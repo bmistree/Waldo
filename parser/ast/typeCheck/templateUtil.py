@@ -384,10 +384,11 @@ def isFunctionType(typeLabel):
     return (is_basic_function_type(typeLabel) or
             is_endpoint_function_type(typeLabel))
 
-def is_basic_function_type(typeLabel):
-    return typeLabel[JSON_TYPE_FIELD] == TYPE_FUNCTION
-def is_endpoint_function_type(typeLabel):
-    return typeLabel[JSON_TYPE_FIELD] == TYPE_ENDPOINT_FUNCTION_CALL
+def is_basic_function_type(type_dict):
+    return type_dict[JSON_TYPE_FIELD] == TYPE_FUNCTION
+
+def is_endpoint_function_type(type_dict):
+    return type_dict[JSON_TYPE_FIELD] == TYPE_ENDPOINT_FUNCTION_CALL
 
 def isListType(typeLabel):
     '''
@@ -687,10 +688,11 @@ def build_endpoint_func_type_signature(node,prog_text,type_stack):
     to_return[JSON_TYPE_FIELD] = TYPE_ENDPOINT_FUNCTION_CALL
     to_return[JSON_FUNC_IN_FIELD] = []
     to_return[JSON_FUNC_RETURNS_FIELD] =  create_wildcard_type()
-
+    to_return[JSON_EXTERNAL_TYPE_FIELD ] = False
+        
     return to_return
 
-def buildFuncTypeSignature(node,progText,typeStack):
+def buildFuncTypeSignature(node,progText,typeStack,is_external):
     '''
     @see createJsonType of FuncMatchObject in
     astTypeCheckStack.py....needs to be consistent between both.
@@ -734,7 +736,7 @@ def buildFuncTypeSignature(node,progText,typeStack):
             inputTypes.append(toAppend);
             
     returner[JSON_FUNC_IN_FIELD] = inputTypes;
-
+    
     ##### HANDLE OUTPUT ARGS #####
     outArgNode = node.children[1];
     outArgNode.typeCheck(progText,typeStack);
@@ -742,11 +744,11 @@ def buildFuncTypeSignature(node,progText,typeStack):
     returner[JSON_FUNC_RETURNS_FIELD] = {
         JSON_TYPE_FIELD: outArgNode.type
         };
-        
+
+    #### HANDLE WHETHER EXTERNAL OR NOT
+    returner[JSON_EXTERNAL_TYPE_FIELD ] = is_external
+    
     return returner;
-
-
-
 
             
 def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):

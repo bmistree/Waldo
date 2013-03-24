@@ -1372,7 +1372,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #          }],
             #    Returns: [{ Type: "Text"}]
             # }
-            node.type = buildFuncTypeSignature(node,progText,typeStack);
+            node.type = buildFuncTypeSignature(
+                node,progText,typeStack,node.external)
 
         elif node.value == TYPE_LIST:
             # more complicated types for lists

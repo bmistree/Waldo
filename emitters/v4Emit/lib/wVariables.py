@@ -100,7 +100,7 @@ class WaldoTextVariable(_WaldoVariable):
         @see _ReferenceBase.de_waldoify
         '''
         return self.get_val(invalid_listener)
-            
+
 
     
 class WaldoTrueFalseVariable(_WaldoVariable):
@@ -302,7 +302,44 @@ class WaldoUserStructVariable(WaldoMapVariable):
             self.name,self.host_uuid,peered,
             self.get_val(invalid_listener).copy(invalid_listener,peered))
 
-        
+
+
+
+class WaldoFunctionVariable(_WaldoVariable):
+    def __init__(
+        self,name,host_uuid,peered=False,init_val=None):
+
+        if peered:
+            util.logger_assert(
+                'Function variables may not be peered')
+
+        def _default_helper_func(*args,**kwargs):
+            pass
+
+        if init_val == None:
+            init_val = _default_helper_func
+
+        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+
+    @staticmethod
+    def var_type():
+        return 'WaldoFunctionVariable'
+
+    def is_value_type(self):
+        return True
+
+    def copy(self,invalid_listener,peered):
+        return WaldoFunctionVariable(
+            self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        return self.get_val(invalid_listener)
+
+
+    
 
 
 class _WaldoExternalValueType(_WaldoExternalVariable):
