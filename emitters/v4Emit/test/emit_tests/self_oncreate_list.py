@@ -3,11 +3,11 @@
 from self_oncreate_list_v4 import SingleSide
 
 import os,sys
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
 import _waldo_libs
 
 '''
@@ -18,10 +18,8 @@ def run_test():
     # for single side tests, these values do not really matter.
     host_uuid = 10
     wlist = _waldo_libs.WaldoListVariable('some list',host_uuid)
-    single_side = SingleSide(
-        host_uuid,
-        test_util.SingleEndpointConnectionObj(),
-        wlist)
+
+    single_side = Waldo.no_partner_create(SingleSide, wlist)
 
     internal_list = wlist.get_val(None)
     raw_internal_list = internal_list.val

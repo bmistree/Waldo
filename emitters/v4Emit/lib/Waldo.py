@@ -1,6 +1,9 @@
 import util
 import waldoConnectionObj
 import Queue
+import wVariables
+# import shim.get_math_endpoint
+
 
 _host_uuid = util.generate_uuid()
 _threadsafe_stoppable_cleanup_queue = Queue.Queue()
@@ -44,7 +47,21 @@ def tcp_accept(constructor,host,port,*args,**kwargs):
     # no disadvantage to calling stop multiple times.
     _threadsafe_stoppable_cleanup_queue.put(stoppable)
     return stoppable
-    
+
+
+# def math_endpoint_lib():
+#     return shim.get_math_endpoint.math_endpoint(no_partner_create)
+
+def no_partner_create(constructor,*args):
+    '''
+    @returns{Waldo endpoint} --- Calls constructor with args for an
+    endpoint that has no partner.
+    '''
+    return constructor(
+        _host_uuid,
+        waldoConnectionObj._WaldoSingleSideConnectionObject(),
+        *args)
+        
 
 def stop():
     '''
@@ -60,4 +77,3 @@ def stop():
         stop()
     except:
         return
-

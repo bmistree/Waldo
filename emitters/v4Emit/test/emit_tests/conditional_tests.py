@@ -4,22 +4,18 @@ from conditional_tests_v4 import SingleSide
 
 
 import os,sys
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
-
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
 
 '''
 Tests if, else, elseIf 
 '''
 
 def run_test():
-    # for single side tests, these values do not really matter.
-    host_uuid = 10
-    conn_obj = test_util.SingleEndpointConnectionObj()
-    single_side = SingleSide(host_uuid,conn_obj)
+    single_side = Waldo.no_partner_create(SingleSide)
 
 
     # basic if test

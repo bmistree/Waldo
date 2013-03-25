@@ -3,11 +3,11 @@
 from function_obj_test_v4 import SingleSide
 
 import os,sys
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
 
 
 '''
@@ -38,10 +38,8 @@ def return_three_args(endpoint,arg_a,arg_b,arg_c):
 def run_test():
     # for single side tests, these values do not really matter.
     host_uuid = 10
-    single_side = SingleSide(
-        host_uuid,
-        test_util.SingleEndpointConnectionObj(),
-        text_identity,text_len,list_sum,no_return,
+    single_side = Waldo.no_partner_create(
+        SingleSide, text_identity,text_len,list_sum,no_return,
         sum_three_args,return_three_args)
 
 

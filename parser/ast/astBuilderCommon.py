@@ -262,7 +262,8 @@ def p_Type(p):
          | StructType
 
          | ENDPOINT 
-         
+
+         | EXTERNAL StructType
          | EXTERNAL NUMBER_TYPE
          | EXTERNAL STRING_TYPE
          | EXTERNAL BOOL_TYPE

@@ -361,8 +361,6 @@ class WaldoFunctionVariable(_WaldoVariable):
         return self.get_val(invalid_listener)
 
 
-    
-
 
 class _WaldoExternalValueType(_WaldoExternalVariable):
     def is_value_type(self):

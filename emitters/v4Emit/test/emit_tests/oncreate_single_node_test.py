@@ -3,12 +3,11 @@
 from oncreate_single_node_test_v4 import SingleSide
 
 import os,sys
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
-
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
 
 '''
 Tests that oncreate gets called on a single node.
@@ -25,9 +24,8 @@ def run_test():
         6: 'this'}
     
     host_uuid = 10
-    single_side = SingleSide(
-        host_uuid,
-        test_util.SingleEndpointConnectionObj(),
+    single_side = Waldo.no_partner_create(
+        SingleSide, 
         init_num,init_text,init_list,init_map)
 
 
