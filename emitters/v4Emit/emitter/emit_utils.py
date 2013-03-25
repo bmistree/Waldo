@@ -199,7 +199,17 @@ def get_var_type_txt_from_type_dict(var_type_dict):
     '''
     @param {dict} var_type_dict --- Gotten from an AstNode's .type
     field.
+
+    @returns {2-tuple} (a,b)
+
+        a{String} --- The translated name of the constructor for the
+        variable.
+
+        b{bool} --- True if constructing a function object variable.
+        False otherwise. 
     '''
+    is_func = False
+    
     # FIXME: still need to add entries for function, endpoint, and
     # user struct types.
     if TypeCheck.templateUtil.is_number(var_type_dict):
@@ -219,11 +229,14 @@ def get_var_type_txt_from_type_dict(var_type_dict):
             variable_type_str = library_transform('WaldoTextVariable')
 
     elif TypeCheck.templateUtil.is_basic_function_type(var_type_dict):
+        is_func = True
+        
         if TypeCheck.templateUtil.is_external(var_type_dict):
             emit_assert(
                 'Have not yet begun emitting for external function objects')
         else:
             variable_type_str = library_transform('WaldoFunctionVariable')
+
     elif TypeCheck.templateUtil.isListType(var_type_dict):
         variable_type_str = library_transform('WaldoListVariable')
     elif TypeCheck.templateUtil.isMapType(var_type_dict):
@@ -237,7 +250,7 @@ def get_var_type_txt_from_type_dict(var_type_dict):
             'Unknown type in create_wvariables_array')
     #### END DEBUG
 
-    return variable_type_str
+    return variable_type_str,is_func
         
 def is_method_call(node):
     return node.label == AST_FUNCTION_CALL
@@ -255,6 +268,30 @@ def is_reference_type(node):
     
 def is_func_obj_call(
     method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    It's a function object call through process of elimination
+    '''
+    
+    if is_endpoint_method_call(method_call_node):
+        return False
+    
+    if is_msg_seq_begin_call(method_call_node,endpoint_name,fdep_dict):
+        return False
+
+    lhs_node = method_call_node.children[0]
+    if lhs_node.label == AST_IDENTIFIER:
+        func_name = lhs_node.value
+        fdep = find_function_dep_from_fdep_dict(func_name,endpoint_name,fdep_dict)
+        if fdep != None:
+            # the name of the function being called is either a
+            # message sequence function or a public/private method
+            # name.  Means that the call isn't on a function object,
+            # but rather on a method.  
+            return False
+
+    if is_method_call(method_call_node):
+        # can't be anything else
+        return True
     
     return False
 

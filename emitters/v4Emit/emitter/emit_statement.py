@@ -451,7 +451,7 @@ def _emit_de_waldoed_return(
         ret_item_node = ret_list_node.children[counter]
 
         # the actual emission of the return value
-        item_emit =  emit_statement(
+        item_emit = emit_statement(
             ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
         # Example output of below: 
@@ -489,14 +489,45 @@ def _emit_method_call(
             method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
     elif emit_utils.is_func_obj_call(
         method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
-        emit_utils.emit_warn('Skipping call for function object call')
-        return ''
+        return emit_func_object_call(
+            method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-    
     # standard public/private call
     return _emit_public_private_method_call(
         method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
+
+def emit_func_object_call(
+    method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
+    '''
+    @param {AstNode} method_call_node --- 
+    '''
+    function_obj_node = method_call_node.children[0]
+    function_obj_txt = emit_statement(
+        function_obj_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    # contains the arguments passed into the function.
+    func_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
+        method_call_node)
+
+    # emit each argument separately, passing them in as arguments
+    func_call_arg_list_txt_list = []
+    for arg_node in func_call_arg_list_node.children:
+        func_call_txt = emit_statement(
+            arg_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+        func_call_arg_list_txt_list.append(func_call_txt)
+
+    func_call_arg_string = reduce (
+        lambda x, y : x + ',' + y,
+        func_call_arg_list_txt_list,'')
+
+
+    func_call_txt = (
+        '_context.call_func_obj(_active_event,%s%s)' %
+        (function_obj_txt, func_call_arg_string))
+
+    return func_call_txt
+    
 
 def _emit_public_private_method_call(
     method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
@@ -1099,20 +1130,54 @@ def non_struct_type_emit_declaration(
 
     peered_str = 'True' if peered else 'False'
     
-    variable_type_str = emit_utils.get_var_type_txt_from_type_dict(
+    variable_type_str,is_func = emit_utils.get_var_type_txt_from_type_dict(
         type_dict)
-    
+
     wvar_load_text = '''%s(  # the type of waldo variable to create
     '%s', # variable's name
     %s, # host uuid var name
     %s,  # if peered, True, otherwise, False
-    %s)
-''' % (variable_type_str,var_name,host_uuid_var_name,
+    %s
+)''' % (variable_type_str,var_name,host_uuid_var_name,
        peered_str, initializer_str)
 
+    if is_func:
+        ext_args_array_txt = emit_external_args_list_from_func_obj_type_dict(
+            type_dict)
+        wvar_load_text += '.set_external_args_array(%s)' % ext_args_array_txt
+    
     return wvar_load_text
 
+def emit_external_args_list_from_func_obj_type_dict(type_dict):
+    '''
+    @param {type dict} type_dict --- The type dictionary for a Waldo
+    function object.
+    
+    @returns {String} --- Should be a string representation of a list.
+    Each element of the list is a number.  If a number is in this
+    list, then that means that the corresponding argument to func_obj
+    is external and therefore should not be de_waldo-ified.  If an
+    argument does not have its corresponding index in the array, then
+    dewaldo-ify it.
+    '''
+    #### DEBUG
+    if not TypeCheck.templateUtil.is_basic_function_type(type_dict):
+        emit_util.emit_assert(
+            'Expected function object type in ' +
+            'emit_external_args_list_from_func_obj_type_dict')
+    #### END DEBUG
 
+    arg_type_dict_list = (
+        TypeCheck.templateUtil.get_list_of_input_argument_type_dicts_for_func_object(type_dict))
+
+    external_arg_list = []
+    for arg_pos in range(0,len(arg_type_dict_list)):
+        arg_type_dict = arg_type_dict_list[arg_pos]
+        
+        if TypeCheck.templateUtil.is_external(arg_type_dict):
+            external_arg_list.append(arg_pos)
+        
+    return str(external_arg_list)
 
 
 

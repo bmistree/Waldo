@@ -19,7 +19,7 @@ supports:
 
 JSON_TYPE_FIELD = 'Type';
 JSON_FUNC_RETURNS_FIELD = 'Returns';
-JSON_FUNC_IN_FIELD = 'In';
+JSON_FUNC_IN_FIELD = 'In'
 
 JSON_LIST_ELEMENT_TYPE_FIELD = 'ElementType';
 
@@ -692,6 +692,27 @@ def build_endpoint_func_type_signature(node,prog_text,type_stack):
         
     return to_return
 
+def get_list_of_input_argument_type_dicts_for_func_object(type_dict):
+    '''
+    @param {type dict} type_dict --- The type dict of a function
+    object
+
+    @returns {array} --- Each element is the type dict of an argument
+    to the function (sorted by position of argument)
+
+    For example, for function:
+
+    Function (In: External Number, Text; Out: Nothing)
+    
+    should return:
+
+    [ <type dict for External Number>,
+      <type dict for Text>]
+    
+    '''
+    return type_dict[JSON_FUNC_IN_FIELD]
+
+
 def buildFuncTypeSignature(node,progText,typeStack,is_external):
     '''
     @see createJsonType of FuncMatchObject in
@@ -727,14 +748,13 @@ def buildFuncTypeSignature(node,progText,typeStack,is_external):
         # means that we have a node of type typelist.  each of its
         # children should be an independent type.
         for typeNode in inArgNode.children:
-            
             typeNode.typeCheck(progText,typeStack);
+            # toAppend = {
+            #     JSON_TYPE_FIELD: typeNode.type
+            #     };
+            # inputTypes.append(toAppend);
+            inputTypes.append(typeNode.type)
 
-            toAppend = {
-                JSON_TYPE_FIELD: typeNode.type
-                };
-            inputTypes.append(toAppend);
-            
     returner[JSON_FUNC_IN_FIELD] = inputTypes;
     
     ##### HANDLE OUTPUT ARGS #####

@@ -595,7 +595,7 @@ def createFuncMatchObjFromFuncTypeDict(func_type_dict,astNode):
 
     argTypes = [];
     for arg in func_type_dict[JSON_FUNC_IN_FIELD]:
-        argTypes.append(arg[JSON_TYPE_FIELD])
+        argTypes.append(arg)
 
     returnType = func_type_dict[JSON_FUNC_RETURNS_FIELD];
         
@@ -622,8 +622,7 @@ class FuncMatchObject():
         # input args
         inArgs = [];
         for item in self.element.funcArgTypes:
-            toAppend = { JSON_TYPE_FIELD: item }
-            inArgs.append(toAppend);
+            inArgs.append(item)
 
         returner[JSON_FUNC_IN_FIELD] = inArgs;
 
@@ -671,7 +670,6 @@ class FuncMatchObject():
             expectedType = self.element.funcArgTypes[s];
             providedType = funcArgTypes[s];
 
-            
             if ((is_external(expectedType) and (not is_external(providedType)))
                 or checkTypeMismatch(self.element,expectedType,providedType,None,None)):
 

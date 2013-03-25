@@ -321,6 +321,27 @@ class WaldoFunctionVariable(_WaldoVariable):
 
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
 
+        # {Array} --- Each element is an int.  When making a call to a
+        # function object, the function object takes in arguments.
+        # For non-externals, we de-waldoify these arguments.  However,
+        # for external arguments, we do not.  If an argument is
+        # supposed to be an external, then we just pass it through
+        # directly
+        self.ext_args_array = None
+        
+    def set_external_args_array(self,ext_args_array):
+        '''
+        @see comment above declartion of ext_args_array.  Used by
+        _ExecutingEventContext.call_func_obj to de-waldo-ify arguments
+        passed to non-Waldo function objects.
+
+        As soon as we create a new WaldoFunctionObject, we instantly
+        set its args array.
+        '''
+        self.ext_args_array = ext_args_array
+        return self
+    
+        
     @staticmethod
     def var_type():
         return 'WaldoFunctionVariable'
@@ -329,8 +350,9 @@ class WaldoFunctionVariable(_WaldoVariable):
         return True
 
     def copy(self,invalid_listener,peered):
-        return WaldoFunctionVariable(
+        new_func_variable = WaldoFunctionVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+        return new_func_variable.set_external_args_array(self.ext_args_array)
 
     def de_waldoify(self,invalid_listener):
         '''

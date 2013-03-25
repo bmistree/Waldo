@@ -207,6 +207,39 @@ class _ExecutingEventContext(object):
             val # used as initial value
             )
 
+    def call_func_obj(
+        self,active_event,func_obj,*args):
+        '''
+        @param {wVariable.WaldoFunctionVariable} func_obj --- The
+        wrapped function that we are calling.
+
+        @param {*args} --- The actual arguments that get passed to the
+        function.
+        '''
+        # {list} external_arg_list --- Each element is a number.
+        # If a number is in this list, then that means that the
+        # corresponding argument to func_obj is external and therefore
+        # should not be de_waldo-ified.  If an argument does not have
+        # its corresponding index in the array, then dewaldo-ify it.
+        external_arg_list = func_obj.ext_args_array
+
+        if external_arg_list == None:
+            util.logger_assert(
+                'No external arg array for function object')
+        
+        call_arg_list = []
+        for counter in range(0,len(args)):
+            to_append = args[counter]
+            if counter not in external_arg_list:
+                to_append = self.de_waldoify(to_append,active_event)
+
+            call_arg_list.append(to_append)
+
+        internal_func = func_obj.get_val(active_event)
+        return internal_func(
+            active_event.local_endpoint,*call_arg_list)
+
+    
     def convert_for_seq_local(self,val,active_event,host_uuid):
         '''
         Take whatever is in val and copy it into a sequence local

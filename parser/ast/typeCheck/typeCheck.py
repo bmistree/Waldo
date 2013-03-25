@@ -1373,7 +1373,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #    Returns: [{ Type: "Text"}]
             # }
             node.type = buildFuncTypeSignature(
-                node,progText,typeStack,node.external)
+                node,progText,typeStack,node.external != None)
 
         elif node.value == TYPE_LIST:
             # more complicated types for lists
@@ -1384,7 +1384,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #   ElementType: { Type: "Number" }}
             #
             node.type = buildListTypeSignature(
-                node,progText,typeStack,node.external)
+                node,progText,typeStack,node.external != None)
 
         elif node.value == TYPE_MAP:
             # more complicated types for maps
@@ -1396,7 +1396,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #   To: {Type: 'Text'}
             #  }
             typeSignature,errMsg,errNodes = buildMapTypeSignature(
-                node,progText,typeStack,node.external)
+                node,progText,typeStack,node.external != None)
 
             if errMsg != None:
                 # list comprehension!
@@ -1408,7 +1408,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         elif node.value == TYPE_STRUCT:
             struct_name = node.children[0].value
 
-            struct_type = typeStack.get_struct_type(struct_name,node.external)
+            struct_type = typeStack.get_struct_type(
+                struct_name,node.external != None)
             if struct_type == None:
                 # means that struct with name struct_name has not been
                 # already declared by the user
