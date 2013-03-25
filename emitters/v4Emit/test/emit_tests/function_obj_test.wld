@@ -1,0 +1,87 @@
+FunctionObjectTests
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Garbage{}
+
+SingleSide
+{
+    Function(in: Text; returns: Text) text_identity;
+    Function(in: Text; returns: Number) text_len;
+    Function(in: List(element:Number); returns: Number) sum_list;
+    Function(returns:Nothing) no_return;
+    Function(in: Number, Number, Number; returns: Number)sum_three_args;
+    Function(in: Number, Number, Number;
+      returns: Number,Number,Number)return_three_args;
+
+
+    
+    onCreate(
+        Function(in: Text; returns: Text) in_text_identity,
+        Function(in: Text; returns: Number) in_text_len,
+        Function(in: Text; returns: Number) in_sum_list,
+        
+        Function(returns: Nothing ) in_no_return,
+        
+        Function(in: Number, Number, Number;
+          returns: Number) in_sum_three_args,
+        
+        Function(in: Number, Number, Number;
+          returns: Number,Number,Number)in_return_three_args
+        )
+        
+    {
+        text_identity = in_text_identity;
+        text_len = in_text_len;
+        sum_list = in_sum_list;
+        no_return = in_no_return;
+        sum_three_args = in_sum_three_args;
+        return_three_args = in_return_three_args;
+    }
+
+    Public Function execute_identity_endpoint_func (
+        Text input_text) returns TrueFalse
+    {
+        return text_identity(input_text) == input_text;
+    }
+    
+    Public Function execute_len_endpoint_func (
+        Text input_text) returns TrueFalse
+    {
+        return text_len(input_text) == len(input_text);
+    }
+
+    Public Function execute_sum_list_endpoint_func (
+        List(element:Number) input_list)
+        returns TrueFalse
+    {
+        Number expected_sum = 0;
+        for (Number num in input_list)
+            expected_sum += num;
+        
+        return sum_list(input_list) == expected_sum;
+    }
+
+
+    Public Function execute_no_return_endpoint_func()
+    {
+        no_return();
+    }
+
+    Public Function execute_sum_three_args_endpoint_func(
+        Number a, Number b, Number c) returns TrueFalse
+    {
+        Number expected_sum = a + b + c;
+        return sum_three_args(a,b,c) == expected_sum;
+    }
+
+    Public Function execute_return_three_args_endpoint_func(
+        Number a, Number b, Number c) returns Number, Number, Number
+    {
+        return return_three_args(a,b,c);
+    }    
+}

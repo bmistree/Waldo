@@ -117,6 +117,8 @@ def run_emit_tests():
     import emit_tests.self_oncreate_list
     import emit_tests.create_externals_inside_waldo
     import emit_tests.external_reference_tests
+    import emit_tests.function_obj_test
+
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -182,7 +184,10 @@ def run_emit_tests():
 
         ('Test loading self into external maps and lists',
          emit_tests.external_reference_tests.run_test),
-        
+
+        ('Test basic function objects',
+         emit_tests.function_obj_test.run_test),
+         
         ]
 
     run_tests(emit_tests_to_run)
