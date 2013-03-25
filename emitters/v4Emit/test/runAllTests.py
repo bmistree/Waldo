@@ -118,7 +118,7 @@ def run_emit_tests():
     import emit_tests.create_externals_inside_waldo
     import emit_tests.external_reference_tests
     import emit_tests.function_obj_test
-
+    import emit_tests.user_struct_as_library_test
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -187,7 +187,10 @@ def run_emit_tests():
 
         ('Test basic function objects',
          emit_tests.function_obj_test.run_test),
-         
+
+        ('Test user struct as library',
+         emit_tests.user_struct_as_library_test.run_test),
+        
         ]
 
     run_tests(emit_tests_to_run)

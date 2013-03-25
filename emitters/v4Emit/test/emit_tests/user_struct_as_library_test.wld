@@ -1,0 +1,49 @@
+FunctionObjectTests
+
+
+Endpoint SingleSide;
+Endpoint Garbage;
+
+Sequences{}
+
+Struct Math
+{
+    Function (in: List(element: Number); returns: Number) min_func;
+    Function (in: List(element: Number); returns: Number) max_func;
+    Function (in: Number, Number; returns: Number) mod_func;
+}
+
+
+Garbage{}
+
+SingleSide
+{
+    Struct Math math;
+    
+    onCreate(
+        Function (in: List(element: Number); returns: Number) min_func,
+        Function (in: List(element: Number); returns: Number) max_func,
+        Function (in: Number, Number; returns: Number) mod_func)
+    {
+        math.min_func = min_func;
+        math.max_func = max_func;
+        math.mod_func = mod_func;
+    }
+
+
+    Public Function test_mod(Number lhs, Number rhs) returns Number
+    {
+        return math.mod_func(lhs,rhs);
+    }
+
+    Public Function test_max(List(element: Number) max_list) returns Number
+    {
+        return math.max_func(max_list);
+    }
+
+    Public Function test_min(List(element: Number) min_list) returns Number
+    {
+        return math.min_func(min_list);
+    }
+
+}
