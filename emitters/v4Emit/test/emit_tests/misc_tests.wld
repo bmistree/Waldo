@@ -1,12 +1,8 @@
 MiscTests
 
-
 Endpoint SingleSide;
-Endpoint Garbage;
 
 Sequences{}
-
-Garbage{}
 
 SingleSide
 {

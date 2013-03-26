@@ -68,15 +68,72 @@ def handle_symmetric(ast_node):
     endpoint_section_node = ast_node.children[4]
 
     if alias_section_node.label != AST_SYMMETRIC_ALIAS_SECTION:
-        if len(endpoint_section_node.children) != 2:
+        if len(endpoint_section_node.children) > 2:
             err_msg = 'For non-symmetric declaration, require '
-            err_msg += 'two endpoint definitions.'
+            err_msg += 'one or two endpoint definitions.'
             endpoint_section_node.value = 'Endpoint'
             raise astBuilderCommon.WaldoParseException(
                 endpoint_section_node,err_msg)
 
-        endpoint_1_definition_node = endpoint_section_node.children[0]
-        endpoint_2_definition_node = endpoint_section_node.children[1]
+        if len(endpoint_section_node.children) == 1:
+
+            if len(alias_section_node.children) != 1:
+                err_msg = 'Requested separate endpoints at top of file,'
+                err_msg += 'but only defined one at bottom.  Maybe use '
+                err_msg += 'Symmetric instead?'
+                endpoint_section_node.value = 'Endpoint'
+                raise astBuilderCommon.WaldoParseException(
+                    endpoint_section_node,err_msg)
+                
+            
+            # means that we must invent another endpoint: give it a
+            # name that we know will not conflict with any other
+            # Endpoint name.  Can do so by appending an '_' to the
+            # beginning of the first endpoint's name
+            endpoint_1_definition_node = endpoint_section_node.children[0]
+            endpoint_1_name_node = endpoint_1_definition_node.children[0]
+            name_defined = endpoint_1_name_node.value
+            
+            dummy_endpoint_name = '_' + name_defined
+
+            endpoint_identifier_node = AstNode(
+                AST_IDENTIFIER,endpoint_1_definition_node.lineNo,
+                endpoint_1_definition_node.linePos,dummy_endpoint_name)
+            
+            bodySecChild = AstNode(
+                AST_ENDPOINT_BODY_SECTION,endpoint_1_definition_node.lineNo,
+                endpoint_1_definition_node.linePos)
+            
+            bodyGlobSec = AstNode(
+                AST_ENDPOINT_GLOBAL_SECTION,endpoint_1_definition_node.lineNo,
+                endpoint_1_definition_node.linePos)
+            
+            funcGlobSec = AstNode(
+                AST_ENDPOINT_FUNCTION_SECTION,endpoint_1_definition_node.lineNo,
+                endpoint_1_definition_node.linePos)
+            
+            bodySecChild.addChildren([bodyGlobSec,funcGlobSec])
+
+            endpoint_2_definition_node = AstNode(
+                AST_ENDPOINT,endpoint_1_definition_node.lineNo,
+                endpoint_1_definition_node.linePos)
+
+            endpoint_2_definition_node.addChildren([endpoint_identifier_node,bodySecChild])
+
+            alias_section_node.addChild(endpoint_identifier_node)
+            
+        else:
+            if len(alias_section_node.children) != 2:
+                err_msg = 'Defined two endpoints in file, but only declared '
+                err_msg += 'one at top.'
+                endpoint_section_node.value = 'Endpoint'
+                raise astBuilderCommon.WaldoParseException(
+                    endpoint_section_node,err_msg)
+
+            
+            # we were given two endpoints
+            endpoint_1_definition_node = endpoint_section_node.children[0]
+            endpoint_2_definition_node = endpoint_section_node.children[1]
 
     else:
         alias_section_node.label = AST_ENDPOINT_ALIAS_SECTION

@@ -1,17 +1,12 @@
 PassReferencesThroughMethods
 
-
 Endpoint SingleSide;
-Endpoint Garbage;
 
 Sequences{}
 
 Peered
-{
-    
-}
+{}
 
-Garbage{}
 
 SingleSide
 {

@@ -1,8 +1,6 @@
 MathStruct
-
-
 Endpoint MathEndpoint;
-Endpoint Garbage;
+
 
 Sequences{}
 
@@ -12,9 +10,6 @@ Struct Math
     Function (in: List(element: Number); returns: Number) max_func;
     Function (in: Number, Number; returns: Number) mod_func;
 }
-
-
-Garbage{}
 
 MathEndpoint
 {

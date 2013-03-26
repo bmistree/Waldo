@@ -1,8 +1,7 @@
 FunctionObjectTests
 
-
 Endpoint SingleSide;
-Endpoint Garbage;
+
 
 Sequences{}
 
@@ -13,8 +12,6 @@ Struct Math
     Function (in: Number, Number; returns: Number) mod_func;
 }
 
-
-Garbage{}
 
 SingleSide
 {

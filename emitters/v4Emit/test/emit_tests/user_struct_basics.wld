@@ -1,8 +1,7 @@
 SetGetVal
 
-
 Endpoint SingleSide;
-Endpoint Garbage;
+
 
 Sequences{}
 
@@ -17,8 +16,6 @@ Struct NestedStruct
     
     List (element: Struct NumberStruct) additional_structs;
 }
-
-Garbage{}
 
 SingleSide
 {

@@ -30,11 +30,18 @@ def p_NameSection(p):
 
 def p_EndpointAliasSection(p):
     '''
-    EndpointAliasSection : ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON
+    EndpointAliasSection : ENDPOINT Identifier SEMI_COLON
+                         | ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON
                          | SYMMETRIC Identifier COMMA Identifier SEMI_COLON
     '''
 
-    if len(p) == 7:
+
+    if len(p) == 4:
+        # first condition above: we only have one endpoint
+        p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1))
+        p[0].addChild(p[2])
+    elif len(p) == 7:
+        # second condition above
         p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1));
         p[0].addChildren([p[2], p[5]]);
     else:

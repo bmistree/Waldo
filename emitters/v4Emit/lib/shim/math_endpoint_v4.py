@@ -262,8 +262,8 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
         ### User-defined message receive blocks ###
 
     return _MathEndpoint(_waldo_classes,_host_uuid,_conn_obj,*args)
-def Garbage (_waldo_classes,_host_uuid,_conn_obj,*args):
-    class _Garbage (_waldo_classes["Endpoint"]):
+def _MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
+    class __MathEndpoint (_waldo_classes["Endpoint"]):
         def __init__(self,_waldo_classes,_host_uuid,_conn_obj):
 
             # a little ugly in that need to pre-initialize _host_uuid, because
@@ -297,4 +297,4 @@ def Garbage (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         ### User-defined message receive blocks ###
 
-    return _Garbage(_waldo_classes,_host_uuid,_conn_obj,*args)
+    return __MathEndpoint(_waldo_classes,_host_uuid,_conn_obj,*args)
