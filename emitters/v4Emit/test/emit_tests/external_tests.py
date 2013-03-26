@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from external_tests_v4 import SingleSide
-import _waldo_libs
+
 
 import os,sys
 lib_dir = os.path.join(
@@ -9,13 +9,6 @@ lib_dir = os.path.join(
     '..','lib')
 sys.path.append(lib_dir)
 import Waldo
-
-
-ind_test_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
 
 
 '''
@@ -33,8 +26,8 @@ def run_test():
 def test_ext_num(single_side):
 
     original_num = 32
-    
-    ext_num = _waldo_libs.WaldoExtNumVariable(
+
+    ext_num = Waldo._waldo_classes['WaldoExtNumVariable'](
         'garbage',single_side._host_uuid,False,original_num)
 
     single_side.input_ext_num(ext_num)
@@ -72,7 +65,7 @@ def test_ext_num(single_side):
 
     # creating another external number.  using it to test whether can
     # assign after a function call
-    ext_num2 = _waldo_libs.WaldoExtNumVariable(
+    ext_num2 = Waldo._waldo_classes['WaldoExtNumVariable'](
         'garbage',single_side._host_uuid,False,original_num)
     single_side.test_assign_from_func_call(ext_num2)
     if single_side.get_endpoint_ext_value() != original_num:

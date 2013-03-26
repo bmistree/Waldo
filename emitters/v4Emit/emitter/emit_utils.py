@@ -41,7 +41,7 @@ def library_transform(name):
     '''
     # FIXME: Actually need to ensure that libraries are structures
     # such that _waldo_libs exists and has correct __init__.py file.
-    return '_waldo_libs.' + name
+    return 'self._waldo_classes["' + name + '"]'
 
 
 def emit_assert(err_msg):

@@ -3,29 +3,20 @@
 from two_sided_modify_peer_check_update_test_v4 import Modifier
 from two_sided_modify_peer_check_update_test_v4 import DataReader
 
-# going through all this trouble to re-use test_util's
-# DummyConnectionObj.
 import sys,os
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
-    
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
 
 '''
-Tests that changes to a peered type on one side get updated to partner side.
+Tests that changes to a peered type on one side get updated to partner
+side.
 '''
 
 def run_test():
-    conn_obj = test_util.DummyConnectionObj()
-    # just must insure that modifier and data reader appear to be on
-    # different hosts.
-    mod_host = 10
-    data_reader_host = mod_host + 1
-    
-    modifier = Modifier(mod_host,conn_obj)
-    data_reader = DataReader(data_reader_host,conn_obj)
+    modifier,data_reader = Waldo.same_host_create(Modifier).same_host_create(DataReader)
 
     # check peered value is initialized properly
     if modifier.read_peered_num() != 22:

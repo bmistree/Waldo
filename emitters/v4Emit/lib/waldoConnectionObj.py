@@ -298,7 +298,7 @@ class _TCPListeningThread(threading.Thread):
 class _TCPAcceptThread(threading.Thread):
 
     def __init__(
-        self, stoppable, endpoint_constructor, host_listen_on,
+        self, stoppable, endpoint_constructor, waldo_classes, host_listen_on,
         port_listen_on, cb, host_uuid,synchronization_listening_queue,
         *args):
         '''
@@ -336,6 +336,7 @@ class _TCPAcceptThread(threading.Thread):
         
         self.stoppable= stoppable
         self.endpoint_constructor = endpoint_constructor
+        self.waldo_classes = waldo_classes
         self.host_listen_on = host_listen_on
         self.port_listen_on = port_listen_on
         self.cb = cb
@@ -367,7 +368,7 @@ class _TCPAcceptThread(threading.Thread):
                 tcp_conn_obj = _WaldoTCPConnectionObj(None,None,conn)
 
                 created_endpoint = self.endpoint_constructor(
-                    self.host_uuid,tcp_conn_obj,*self.args)
+                    self.waldo_classes,self.host_uuid,tcp_conn_obj,*self.args)
 
                 if self.cb != None:
                     self.cb(created_endpoint)

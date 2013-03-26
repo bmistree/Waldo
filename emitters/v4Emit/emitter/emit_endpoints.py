@@ -36,14 +36,43 @@ def emit_single_endpoint(endpoint_name,ast_root,fdep_dict,emit_ctx):
     currently emitting.
 
     For all other params + return, @see emit_endpoints
+
+    Will produce something like the following:
+    
+def SingleSide(_waldo_classes,_host_uuid,_conn_obj):
+
+    class _SingleSide (_waldo_classes["Endpoint"]):
+        def __init__(self,_waldo_classes,_host_uuid,_conn_obj):
+
+        ...
+
+    return _SingleSide(_waldo_classes,_host_uuid,_conn_obj)
+
+
+    The reason that we wrap the class in a function instead of just
+    directly providing the class is so that we do not have to
+    statically link the generated file to any library.  Can take in an
+    argument that dynamically tells us how to make the Endpoint
+    inherit from the hidden Waldo _Endpoint.
     '''
-    endpoint_header = 'class %s (%s):\n' % (
-        endpoint_name,emit_utils.library_transform('Endpoint'))
+    endpoint_factory_func = (
+        'def %s (_waldo_classes,_host_uuid,_conn_obj,*args):\n' %
+        endpoint_name)
+    
+    endpoint_header = 'class _%s (_waldo_classes["Endpoint"]):\n' % (
+        endpoint_name)
 
     endpoint_body = emit_endpoint_body(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
     
-    return endpoint_header + emit_utils.indent_str(endpoint_body)
+    endpoint_class = endpoint_header + emit_utils.indent_str(endpoint_body)
+
+    
+    endpoint_factory_func += emit_utils.indent_str(endpoint_class)
+    endpoint_factory_func += emit_utils.indent_str(
+        'return _%s(_waldo_classes,_host_uuid,_conn_obj,*args)\n' % endpoint_name)
+        
+    return endpoint_factory_func
     
 
 def emit_endpoint_body(
@@ -90,7 +119,7 @@ def emit_endpoint_init(
             oncreate_arg_names,'')
 
     init_header = (
-        'def __init__(self,_host_uuid,_conn_obj%s):\n' % oncreate_argument_string)
+        'def __init__(self,_waldo_classes,_host_uuid,_conn_obj%s):\n' % oncreate_argument_string)
 
     # create endpoint and peered variable store
     
@@ -106,10 +135,11 @@ def emit_endpoint_init(
 # a little ugly in that need to pre-initialize _host_uuid, because
 # code used for initializing variable store may rely on it.  (Eg., if
 # initializing nested lists.)
+self._waldo_classes = _waldo_classes
 self._host_uuid = _host_uuid
 self._global_var_store = %s(_host_uuid)
 %s
-%s.__init__(self,_host_uuid,_conn_obj,self._global_var_store)
+%s.__init__(self,_waldo_classes,_host_uuid,_conn_obj,self._global_var_store)
 
 ''' % (emit_utils.library_transform('VariableStore'),
        endpoint_global_and_peered_variable_store_load_txt,
@@ -206,8 +236,10 @@ def emit_endpoint_global_and_peered_variable_store(
 _context = %s(
     self._global_var_store,
     # not using sequence local store
-    _waldo_libs.VariableStore(_host_uuid))
-''' % emit_utils.library_transform('ExecutingEventContext')
+    %s(_host_uuid))
+''' % (
+        emit_utils.library_transform('ExecutingEventContext'),
+        emit_utils.library_transform('VariableStore'))
 
     var_store_loading_text += create_wvariables_array(
         host_uuid_var_name,endpoint_global_decl_nodes,False,
@@ -757,7 +789,7 @@ def emit_message_receive(
     # send however, because, we do not expect any response to it.
     # (Ie, if next_to_call_txt == 'None', then do not wait.)
     next_sequence_txt = '''
-_threadsafe_queue = %s
+_threadsafe_queue = %s.Queue()
 _active_event.issue_partner_sequence_block_call(
     _context,%s,_threadsafe_queue,False)
 # must wait on the result of the call before returning
@@ -783,7 +815,7 @@ if %s != None:
         _to_exec = getattr(self,_to_exec_next)
         _to_exec(_active_event,_context)
 
-''' % (emit_utils.library_transform('Queue.Queue()'),
+''' % (emit_utils.library_transform('Queue'),
        next_to_call_txt,
        next_to_call_txt,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
@@ -825,7 +857,7 @@ def emit_message_node_what_to_call_next(next_to_call_node,emit_ctx):
         issue_call_is_first_txt = '_first_msg'
 
     return '''
-_threadsafe_queue = %s
+_threadsafe_queue = %s.Queue()
 _active_event.issue_partner_sequence_block_call(
     _context,'%s',_threadsafe_queue, '%s')
 _queue_elem = _threadsafe_queue.get()
@@ -848,7 +880,7 @@ if _to_exec_next != None:
     _to_exec = getattr(self,_to_exec_next)
     _to_exec(_active_event,_context)
 
-''' % (emit_utils.library_transform('Queue.Queue()'),
+''' % (emit_utils.library_transform('Queue'),
        next_message_name, # the name of the message receive func to
                           # exec on other side in plain text
        issue_call_is_first_txt,

@@ -16,8 +16,11 @@ class _Endpoint(object):
     active events on this endpoint.
     '''
 
-    def __init__(self,host_uuid,conn_obj,global_var_store):
+    def __init__(self,waldo_classes,host_uuid,conn_obj,global_var_store):
         '''
+        @param {dict} waldo_classes --- Contains common utilities
+        needed by emitted code, such as WaldoNumVariable
+        
         @param {uuid} host_uuid --- The uuid of the host this endpoint
         lives on.
         
@@ -29,6 +32,8 @@ class _Endpoint(object):
         add or remove any peered or endpoint global variables.  Will
         only make calls on them.
         '''
+        self._waldo_classes = waldo_classes
+        
         self._act_event_map = waldoActiveEventMap._ActiveEventMap(self)
         self._conn_obj = conn_obj
         

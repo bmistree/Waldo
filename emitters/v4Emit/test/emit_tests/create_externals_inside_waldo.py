@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from create_externals_inside_waldo_v4 import SingleSide
-import _waldo_libs
+
 
 import os,sys
 lib_dir = os.path.join(

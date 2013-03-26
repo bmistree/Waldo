@@ -2,16 +2,14 @@
 
 from sequence_plus_externals_tests_v4 import SideA
 from sequence_plus_externals_tests_v4 import SideB
-import _waldo_libs
 
-# going through all this trouble to re-use test_util's
-# DummyConnectionObj.
+
 import sys,os
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
     
 
 '''
@@ -20,17 +18,12 @@ import test_util
 '''
 
 def run_test():
-    conn_obj = test_util.DummyConnectionObj()
-    # just must insure that modifier and data reader appear to be on
-    # different hosts.
-    mod_host = 10
-    data_reader_host = mod_host + 1
-    
-    sideA = SideA(mod_host,conn_obj)
-    sideB = SideB(data_reader_host,conn_obj)
+    sideA, sideB = (
+        Waldo.same_host_create(SideA).same_host_create(SideB))
 
+    
     original_num = 30
-    ext_num = _waldo_libs.WaldoExtNumVariable(
+    ext_num = Waldo._waldo_classes['WaldoExtNumVariable'](
         'garbage',sideA._host_uuid,False,original_num)
 
 

@@ -3,15 +3,13 @@
 from sequence_local_data_tests_v4 import SideA
 from sequence_local_data_tests_v4 import SideB
 
-# going through all this trouble to re-use test_util's
-# DummyConnectionObj.
 import sys,os
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
-    
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
+
 
 '''
 Tests that arguments to sequences get put into sequence local data.
@@ -20,14 +18,9 @@ And can be accessed from outside.  Also checks returns.
 '''
 
 def run_test():
-    conn_obj = test_util.DummyConnectionObj()
-    # just must insure that modifier and data reader appear to be on
-    # different hosts.
-    mod_host = 10
-    data_reader_host = mod_host + 1
-    
-    sideA = SideA(mod_host,conn_obj)
-    sideB = SideB(data_reader_host,conn_obj)
+
+    sideA, sideB = (
+        Waldo.same_host_create(SideA).same_host_create(SideB))
 
     initial_num = 22
     initial_text = 'a'

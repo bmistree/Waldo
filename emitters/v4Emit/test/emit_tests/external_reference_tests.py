@@ -2,15 +2,14 @@
 
 from external_reference_tests_v4 import SideA
 from external_reference_tests_v4 import SideB
-import _waldo_libs
 
 import os,sys
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
-import threading
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
+
 
 '''
 Want to test that can put self endpoint into maps and lists and then
@@ -18,44 +17,16 @@ make endpoint calls on them.  See comments in Waldo source.
 '''
 
 
-conn_obj = test_util.DummyConnectionObj()
-# just must insure that modifier and data reader appear to be on
-# different hosts.
-side_a_host = 10
-side_b_host = side_a_host + 1
-
-a_num = 3902
-a_index = 133
-
-b_num = 302
-b_index = 33
-
-# each of these are in separate threads so that both oncreates can
-# run.
-side_a = None
-side_b = None
-class CreateSideA(threading.Thread):
-    def run(self):
-        global side_a
-        side_a = SideA(side_a_host,conn_obj,a_num, a_index)
-        
-class CreateSideB(threading.Thread):
-    def run(self):
-        global side_b
-        side_b = SideB(side_b_host,conn_obj,b_num)
-
-
 def run_test():
 
-    create_a = CreateSideA()
-    create_b = CreateSideB()
+    a_num = 3902
+    a_index = 133
 
-    create_a.start()
-    create_b.start()
+    b_num = 302
+    b_index = 33
 
-    create_a.join()
-    create_b.join()
-
+    side_a, side_b = (
+        Waldo.same_host_create(SideA,a_num,a_index).same_host_create(SideB,b_num))
 
     list_of_endpoints, map_of_endpoints = side_a.get_self_holders()
 

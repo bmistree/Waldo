@@ -11,6 +11,7 @@ import waldoEndpoint
 import waldoVariableStore
 import wVariables
 import waldoConnectionObj
+import Waldo
 
 class DummyConnectionObj(waldoConnectionObj._WaldoSameHostConnectionObject):
     pass
@@ -52,7 +53,8 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
                 self.peered_list_var_name,host_uuid,True))
 
         waldoEndpoint._Endpoint.__init__(
-            self,host_uuid,conn_obj,glob_var_store)
+            self,Waldo._waldo_classes,
+            host_uuid,conn_obj,glob_var_store)
 
 
     def add_number_var_to_var_store(self,waldo_num_var):

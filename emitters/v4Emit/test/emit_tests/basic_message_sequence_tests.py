@@ -3,14 +3,12 @@
 from basic_message_sequence_tests_v4 import SideA
 from basic_message_sequence_tests_v4 import SideB
 
-# going through all this trouble to re-use test_util's
-# DummyConnectionObj.
 import sys,os
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
     
 
 '''
@@ -18,15 +16,8 @@ Tests that changes to a peered type on one side get updated to partner side.
 '''
 
 def run_test():
-    conn_obj = test_util.DummyConnectionObj()
-    # just must insure that modifier and data reader appear to be on
-    # different hosts.
-    mod_host = 10
-    data_reader_host = mod_host + 1
+    sideA,sideB = Waldo.same_host_create(SideA).same_host_create(SideB)
     
-    sideA = SideA(mod_host,conn_obj)
-    sideB = SideB(data_reader_host,conn_obj)
-
     initial_val = 22
     # check peered value is initialized properly
     if sideA.read_peered_num() != initial_val:

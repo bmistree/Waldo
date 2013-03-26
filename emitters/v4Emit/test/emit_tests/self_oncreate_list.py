@@ -8,7 +8,7 @@ lib_dir = os.path.join(
     '..','lib')
 sys.path.append(lib_dir)
 import Waldo
-import _waldo_libs
+
 
 '''
 Tests all the binary operators in the system.
@@ -17,7 +17,7 @@ Tests all the binary operators in the system.
 def run_test():
     # for single side tests, these values do not really matter.
     host_uuid = 10
-    wlist = _waldo_libs.WaldoListVariable('some list',host_uuid)
+    wlist = Waldo._waldo_classes['WaldoListVariable']('some list',host_uuid)
 
     single_side = Waldo.no_partner_create(SingleSide, wlist)
 

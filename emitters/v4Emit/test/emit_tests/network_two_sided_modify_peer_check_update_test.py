@@ -3,8 +3,7 @@
 from two_sided_modify_peer_check_update_test_v4 import Modifier
 from two_sided_modify_peer_check_update_test_v4 import DataReader
 
-# going through all this trouble to re-use test_util's
-# DummyConnectionObj.
+
 import sys,os,Queue
 waldo_lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',

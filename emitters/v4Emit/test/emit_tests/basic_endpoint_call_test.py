@@ -3,29 +3,20 @@
 from basic_endpoint_call_test_v4 import SideA
 from basic_endpoint_call_test_v4 import SideB
 
-# going through all this trouble to re-use test_util's
-# DummyConnectionObj.
 import sys,os
-ind_test_dir = os.path.join(
+lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    'ind_tests')
-sys.path.append(ind_test_dir)
-import test_util
-import _waldo_libs
+    '..','lib')
+sys.path.append(lib_dir)
+import Waldo
+
 
 '''
 Tests that changes to a peered type on one side get updated to partner side.
 '''
 
 def run_test():
-    conn_obj = test_util.DummyConnectionObj()
-    # just must insure that modifier and data reader appear to be on
-    # different hosts.
-    mod_host = 10
-    data_reader_host = mod_host + 1
-    
-    sideA = SideA(mod_host,conn_obj)
-    sideB = SideB(data_reader_host,conn_obj)
+    sideA, sideB = Waldo.same_host_create(SideA).same_host_create(SideB)
     
     # assign endpoint into a
     sideA.assign_endpoint(sideB)
@@ -47,7 +38,7 @@ def run_test():
     # Test to ensure that passing an external variable through an
     # endpoint call can change its value.
     original_num = 32
-    ext_num = _waldo_libs.WaldoExtNumVariable(
+    ext_num = Waldo._waldo_classes['WaldoExtNumVariable'](
         'garbage',sideA._host_uuid,False,original_num)
     sideA.assign_external_number(ext_num)
     new_num = 50

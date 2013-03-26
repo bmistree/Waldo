@@ -2,8 +2,6 @@
 
 from set_get_val_wld_v4 import SingleSide
 
-# going through all this trouble to re-use test_util's
-# DummyConnectionObj.
 import sys,os
 lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
