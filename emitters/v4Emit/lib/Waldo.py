@@ -7,7 +7,7 @@ import waldoEndpoint
 import waldoExecutingEvent
 import waldoVariableStore
 import threading
-# import shim.get_math_endpoint
+import shim.get_math_endpoint
 
 
 _host_uuid = util.generate_uuid()
@@ -136,8 +136,8 @@ def same_host_create(constructor,*args):
 
     
 
-# def math_endpoint_lib():
-#     return shim.get_math_endpoint.math_endpoint(no_partner_create)
+def math_endpoint_lib():
+    return shim.get_math_endpoint.math_endpoint(no_partner_create)
 
 def no_partner_create(constructor,*args):
     '''
