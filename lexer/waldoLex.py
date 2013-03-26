@@ -53,6 +53,7 @@ reserved = {
     'continue': 'CONTINUE',
     'Struct': 'STRUCT',
     'self': 'SELF',
+    'Symmetric': 'SYMMETRIC',
     };
 
 

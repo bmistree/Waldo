@@ -29,9 +29,20 @@ def p_NameSection(p):
 
 
 def p_EndpointAliasSection(p):
-    'EndpointAliasSection : ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON';
-    p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1));
-    p[0].addChildren([p[2], p[5]]);
+    '''
+    EndpointAliasSection : ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON
+                         | SYMMETRIC Identifier COMMA Identifier SEMI_COLON
+    '''
+
+    if len(p) == 7:
+        p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1));
+        p[0].addChildren([p[2], p[5]]);
+    else:
+        # we're emitting symmetric
+        p[0] = AstNode(AST_SYMMETRIC_ALIAS_SECTION,p.lineno(1),p.lexpos(1))
+        endpoint_name_node_a = p[2]
+        endpoint_name_node_b = p[4]
+        p[0].addChildren([endpoint_name_node_a,endpoint_name_node_b])
 
     
 

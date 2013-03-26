@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-
 from astNode import *;
 from astLabels import *;
+import astBuilderCommon
+import pickle
 
 def preprocess(astNode,progText):
     '''
@@ -17,6 +18,27 @@ def preprocess(astNode,progText):
 
     Big changes:
 
+
+        * To handle symmetric nodes:
+        
+             1) Check if the alias section is symmetric.  If it is
+                then check that only have one endpoint in
+                EndpointDefinitionSection.
+
+             2) Make a deep copy of the endpoint definition section
+                and replace its identifier with the identifier of the
+                symmetric node.
+
+             3) Re-write root, splitting endpoint_section node into
+                two nodes, one for each section.
+
+             4) Update message sequences to make symmetric copies for
+                other value.
+
+             5) Update peered data annotated with who controls it
+                (FIXME: have not implemented this part).
+
+    
         * Run through all definitions of message sequences and move
           the FunctionDeclArgList-s that appear as children under each
           to appear instead as children of each sequence's respective
@@ -30,15 +52,147 @@ def preprocess(astNode,progText):
           section.  Remove the functiondeclarglist from the sequence
           node and add it to the sequence send node so that can still
           use it for type checking.
-    
+          
     '''
-    
-    # first star
+
+    # first star above
+    handle_symmetric(astNode)
+    # second star    
     move_sequence_function_args(astNode)
-    # second star
+    # third star
     move_sequence_function_return_types(astNode)
 
 
+def handle_symmetric(ast_node):
+    alias_section_node = ast_node.children[1]
+    endpoint_section_node = ast_node.children[4]
+
+    if alias_section_node.label != AST_SYMMETRIC_ALIAS_SECTION:
+        if len(endpoint_section_node.children) != 2:
+            err_msg = 'For non-symmetric declaration, require '
+            err_msg += 'two endpoint definitions.'
+            endpoint_section_node.value = 'Endpoint'
+            raise astBuilderCommon.WaldoParseException(
+                endpoint_section_node,err_msg)
+
+        endpoint_1_definition_node = endpoint_section_node.children[0]
+        endpoint_2_definition_node = endpoint_section_node.children[1]
+
+    else:
+        alias_section_node.label = AST_ENDPOINT_ALIAS_SECTION
+
+        name_node_1 = alias_section_node.children[0]
+        name_1 = name_node_1.value
+        name_node_2 = alias_section_node.children[1]
+        name_2 = name_node_2.value
+        
+        num_endpoint_definitions = len(endpoint_section_node.children)
+        if  num_endpoint_definitions != 1:
+            err_msg = 'For symmetric declaration, expecting one '
+            err_msg += 'endpoint definition.  Received '
+            err_msg += str(num_endpoint_definitions) + '.'
+            endpoint_section_node.value = name_1 + '|' + name_2
+            raise astBuilderCommon.WaldoParseException(
+                endpoint_section_node,err_msg)
+
+        defined_endpoint_node = endpoint_section_node.children[0]
+        defined_endpoint_name_node = defined_endpoint_node.children[0]
+        name_defined = defined_endpoint_name_node.value
+
+        copy_defined_endpoint_node = pickle.loads(
+            pickle.dumps(defined_endpoint_node))
+        copy_endpoint_name_node = copy_defined_endpoint_node.children[0]
+
+        # change name of copy
+        name_copied = name_1
+        if name_defined == name_1:
+            name_copied = name_2
+        copy_endpoint_name_node.value = name_copied
+
+        endpoint_1_definition_node = defined_endpoint_node
+        endpoint_2_definition_node = copy_defined_endpoint_node
+        
+
+        # for every message sequence in sequences section, produce an
+        # alternate sequence, flipping order of
+        trace_section_node = ast_node.children[2]
+        symmetric_traces = []
+        for trace_node in trace_section_node.children:
+            # deep copy trace item so that modifications on copies
+            # will not affect new items
+            copied_trace_node = pickle.loads(pickle.dumps(trace_node))
+            symmetric_traces.append(copied_trace_node)
+
+            # change name of trace node
+            copied_trace_name_node = copied_trace_node.children[0]
+            pre_copied_trace_name = copied_trace_name_node.value
+            copied_trace_name = change_msg_seq_name_for_symmetric(
+                name_copied,pre_copied_trace_name)
+            copied_trace_name_node.value = copied_trace_name
+            
+            
+            # overwrite each of the sequence blocks' first node names,
+            # reversing Endpoint names
+            for trace_item_node in copied_trace_node.children[1:]:
+                endpoint_name_node = trace_item_node.children[0]
+                original_endpoint_name = endpoint_name_node.value
+                
+                new_endpoint_name = name_copied
+                if original_endpoint_name == name_copied:
+                    new_endpoint_name = name_defined
+                endpoint_name_node.value = new_endpoint_name
+                
+        trace_section_node.addChildren(symmetric_traces)
+
+                
+        # for every message sequence, create a new one with the
+        # symmetric name + send endpoint messages in different orders
+        msg_seq_section_node = ast_node.children[5]
+        copied_sequence_nodes = pickle.loads(pickle.dumps(msg_seq_section_node.children))
+
+        for copied_sequence_node in copied_sequence_nodes:
+            # copy over the name of the overall sequence
+            copied_sequence_name_node = copied_sequence_node.children[0]
+            copied_sequence_original_name = copied_sequence_name_node.value
+
+            copied_sequence_name_node.value = change_msg_seq_name_for_symmetric(
+                name_copied,copied_sequence_original_name)
+
+            # change endpoint names in each of the sequence steps
+            msg_seq_functions_node = copied_sequence_node.children[3]
+            for msg_seq_function_node in msg_seq_functions_node.children:
+                msg_seq_function_endpoint_name_node = msg_seq_function_node.children[0]
+
+                new_endpoint_name = name_copied
+                if msg_seq_function_endpoint_name_node.value == name_copied:
+                    new_endpoint_name = name_defined
+
+                msg_seq_function_endpoint_name_node.value = new_endpoint_name
+
+        msg_seq_section_node.addChildren(copied_sequence_nodes)
+                
+                
+        # FIXME: make copies of peered data that only one side controls
+
+    # insert the new endpoint nodes into ast_node...note, displace
+    # old endpoint section.
+    ast_node.children[4] = endpoint_1_definition_node
+    ast_node.children.insert(5,endpoint_2_definition_node )
+
+
+def change_msg_seq_name_for_symmetric(new_endpoint_name,msg_seq_name):
+    '''
+    When have a symmetric file, need to create a duplicate message
+    sequence for each existing message sequence.  
+    '''
+    # FIXME: does not actually guarantee that there will be no
+    # collision with an existing message sequence.
+    return new_endpoint_name + '____' + msg_seq_name
+    
+            
+
+        
+    
 def move_sequence_function_return_types (ast_node):
     '''
     The last child of a sequence function contains a

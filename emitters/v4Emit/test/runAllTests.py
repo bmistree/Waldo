@@ -120,6 +120,8 @@ def run_emit_tests():
     import emit_tests.function_obj_test
     import emit_tests.user_struct_as_library_test
     import emit_tests.endpoint_as_library_test
+    import emit_tests.symmetric_test
+
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -194,6 +196,9 @@ def run_emit_tests():
 
         ('Test endpoint as math library',
          emit_tests.endpoint_as_library_test.run_test),
+
+        ('Test symmetric compile',
+         emit_tests.symmetric_test.run_test),         
         
         ]
 

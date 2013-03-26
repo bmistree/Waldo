@@ -22,21 +22,12 @@ from parserUtil import setOutputErrorsTo;
 
 from astBuilderCommon import * 
 
-# Overall Structure:
-# NameSection
-# EndpointAliasSection
-# TraceSection
-# Struct section (optional)
-# SharedSection (optional)
-# Message sequence section
-# EndpointSection
-# EndpointSection ... not necessary if have symmetric names....
 
 
 def p_RootExpression(p):
     '''
-    RootExpression : NameSection EndpointAliasSection TraceSection StructSharedSection MessageSequenceSection EndpointSection EndpointSection
-                   | NameSection EndpointAliasSection TraceSection StructSharedSection EndpointSection EndpointSection
+    RootExpression : NameSection EndpointAliasSection TraceSection StructSharedSection MessageSequenceSection EndpointDefinitionSection
+                   | NameSection EndpointAliasSection TraceSection StructSharedSection EndpointDefinitionSection
                    
     '''
     
@@ -55,18 +46,56 @@ def p_RootExpression(p):
         [name_section,endpoint_alias_section,trace_section,shared_section]);
 
     msg_seq_section = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[4].lineNo,p[4].linePos);
-    endpoint_section_1 = p[5]
-    endpoint_section_2 = p[6]
+    endpoint_definition_section = p[5]
     
-    if len(p) == 8:
+    if len(p) == 7:
         msg_seq_section = p[5]
-        endpoint_section_1 = p[6]
-        endpoint_section_2 = p[7]
-    
+        endpoint_definition_section = p[6]
 
     p[0].addChildren([
-            endpoint_section_1,endpoint_section_2,
-            msg_seq_section,struct_section]);   
+            endpoint_definition_section,msg_seq_section,struct_section])
+
+    # ends up producing
+    #   name_section
+    #   endpoint_alias_section
+    #   trace_section
+    #   shared section
+    #   endpoint definition section
+    #     (containing one endpoint or two endpoints)
+    #   msg seq section
+    #   struct section
+
+    # Canonicalize however turns it into
+    #   name_section
+    #   endpoint_alias_section
+    #   trace_section
+    #   shared section
+    #   endpoint1 section
+    #   endpoint2 section
+    #   msg seq section
+    #   struct section
+
+def p_EndpointDefinitionSection(p):
+    '''
+    EndpointDefinitionSection : EndpointDefinitionSection EndpointSection
+                              | EndpointSection
+    '''
+    p[0] = AstNode(AST_ENDPOINT_DEFINITION_SECTION,p[1].lineNo,p[1].linePos)
+
+    # order of first and second section does not matter
+
+    if len(p) == 3:
+        end_def_sec_node = p[1]
+        second_section = p[2]
+        p[0].addChildren(end_def_sec_node.getChildren())
+        p[0].addChild(second_section)
+    else:
+        first_section = p[1]
+        p[0].addChild(first_section)
+
+    if len(p[0].children) > 2:
+        err_msg = 'Parse error.  Can have at most 2 endpoints per connection.'
+        raise WaldoParseException(p[0],err_msg)
 
 
 def p_MessageSequenceSection(p):
@@ -247,10 +276,17 @@ def p_MessageReceiveSequenceFunction(p):
 
 
 def p_TraceBodySection(p):
-    '''TraceBodySection : Identifier COLON TraceLine SEMI_COLON TraceBodySection
-                        | Identifier COLON TraceLine SEMI_COLON
-                        ''';
-    #note: currently, cannot have empty trace body section.
+    '''
+    TraceBodySection : Identifier COLON TraceLine SEMI_COLON TraceBodySection
+                     | Identifier COLON TraceLine SEMI_COLON
+    '''
+
+    # produces many children.  Each child has format:
+    #   Identifier (name of trace line/message sequence)
+    #   Message sequence block name
+    #   Message sequence block name
+    #   ...
+    
     p[0] = AstNode(AST_TRACE_BODY_SECTION,p[1].lineNo,p[1].linePos);
     p[3].prependChild(p[1]);
     p[0].addChild(p[3]);
