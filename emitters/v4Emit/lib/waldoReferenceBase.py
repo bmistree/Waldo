@@ -161,7 +161,7 @@ class _ReferenceBase(object):
                         var_name,invalid_listener)
 
         version_obj_data = dirty_element.version_obj.serializable_for_network_data()
-
+        
         to_return = util._generate_serialization_named_tuple(
             var_name,self.var_type(),var_data,version_obj_data)
         return to_return

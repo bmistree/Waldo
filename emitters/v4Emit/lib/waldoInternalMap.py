@@ -79,7 +79,25 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
             self._unlock()
 
         return InternalMap(self.host_uuid,peered,new_internal_val)
-        
+
+
+    def copy_internal_val(self,invalid_listener,peered):
+        '''
+        Used by WaldoUserStruct when copying it.
+
+        @returns {dict} --- Just want to return a copy of the internal
+        dict of this InternalMap.
+        '''
+
+        # FIXME: very ugly.
+        new_internal_map = self.copy(invalid_listener,peered)
+        new_internal_map._lock()
+        new_internal_map._add_invalid_listener(invalid_listener)
+        internal_dict =  new_internal_map._dirty_map[invalid_listener.uuid].val
+        new_internal_map._unlock()
+        return internal_dict
+
+    
             
 class _InternalMapDirtyMapElement(
     waldoReferenceContainerBase._ReferenceContainerDirtyMapElement):

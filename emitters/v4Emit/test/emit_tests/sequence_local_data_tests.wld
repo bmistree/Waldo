@@ -28,7 +28,10 @@ Sequences{
   returns_single_reference_exchange:
     SideA.start_returns_single_reference_exchange ->
     SideB.receive_returns_single_reference_exchange;
-    
+
+  plus_equals_on_map_exchange:
+    SideA.start_plus_equals_on_map_exchange ->
+    SideB.receive_plus_equals_on_map_exchange;
 }
 
 Peered
@@ -155,6 +158,22 @@ Sequence returns_single_reference_exchange(List(element:Number) input)
 }
 
 
+Sequence plus_equals_on_map_exchange(
+    Map(from: Text, to: Number) map_, Number to_increment_by)
+    returns Number total
+{
+    SideA.start_plus_equals_on_map_exchange
+    {}
+    SideB.receive_plus_equals_on_map_exchange
+    {
+        for (Text index in map_)
+        {
+            map_[index] += to_increment_by;
+            total += map_[index];
+        }
+    }
+}
+
 SideA
 {
     Text endpoint_text = 'sideA';
@@ -173,6 +192,16 @@ SideA
         return read_peered_value_types();
     }
 
+    Public Function plus_equals_on_map_check(
+        Map(from: Text, to: Number) map_, Number to_increment_by)
+        returns Number
+    {
+        Number total_plus_increment = start_plus_equals_on_map_exchange(
+            map_,to_increment_by);
+        return total_plus_increment;
+    }
+
+    
     Public Function returns_check()
         returns Number, Text, TrueFalse
     {

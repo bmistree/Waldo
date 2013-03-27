@@ -290,7 +290,6 @@ class WaldoUserStructVariable(WaldoMapVariable):
         a mapping of names to WaldoVariables.  Each name corresponds
         to one of the variable fields in the struct.  
         '''
-        
         if not isinstance(init_val,dict):
             util.logger_assert(
                 'User structs must always have init_vals.  ' +
@@ -304,13 +303,13 @@ class WaldoUserStructVariable(WaldoMapVariable):
 
     def is_value_type(self):
         return False
-
+    
     def copy(self,invalid_listener,peered):
-        return WaldoUserStructVariable(
+        
+        to_return = WaldoUserStructVariable(
             self.name,self.host_uuid,peered,
-            self.get_val(invalid_listener).de_waldoify(invalid_listener))
-            # self.get_val(invalid_listener).copy(invalid_listener,peered))
-
+            self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered))
+        return to_return
 
 
 class WaldoFunctionVariable(_WaldoVariable):
@@ -336,7 +335,7 @@ class WaldoFunctionVariable(_WaldoVariable):
         # supposed to be an external, then we just pass it through
         # directly
         self.ext_args_array = None
-        
+
     def set_external_args_array(self,ext_args_array):
         '''
         @see comment above declartion of ext_args_array.  Used by

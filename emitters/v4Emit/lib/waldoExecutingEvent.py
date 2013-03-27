@@ -122,13 +122,26 @@ class _ExecutingEventContext(object):
         of the variable.  Don't wait for commit or anything else.
         
         '''
-
         if isinstance(val,wVariables._WaldoExternalValueType):
             return val.get_val(active_event).get_val(active_event)
         elif isinstance(val,waldoReferenceBase._ReferenceBase):
             return val.get_val(active_event)
         return val
 
+    # def assign_val_if_waldo(self,val,active_event):
+    #     '''
+    #     Wraps get_val_if_waldo.  Essentially, when assigning a
+    #     function between Waldo variables, we need to insure that we
+    #     maintain that function's meta-data (which includes whether
+    #     incoming arguments are external or not).  Therefore, if val is
+    #     just a function object, return it directly.  otherwise, call
+    #     get_val_if_waldo
+    #     '''
+    #     # if isinstance(val,wVariables.WaldoFunctionVariable):
+    #     #     return val
+    #     return self.get_val_if_waldo(val,active_event)
+
+    
     def turn_into_waldo_var(
         self,val,force_copy,active_event, host_uuid,new_peered=False):
         '''
@@ -144,7 +157,7 @@ class _ExecutingEventContext(object):
         to copy a value, the copy should be peered.  Used for loading
         arguments into sequence local data when message send is
         called.  @see convert_for_seq_local.
-        
+
         @returns {WaldoVariable}
 
         Used when copying arguments in to function.  Compiler's caller
@@ -190,11 +203,11 @@ class _ExecutingEventContext(object):
             constructor = wVariables.WaldoListVariable
         elif isinstance(val,waldoEndpoint._Endpoint):
             constructor = wVariables.WaldoEndpointVariable
+        #### DEBUG
         elif hasattr(val,'__call__'):
             # checks if is function
-            constructor = wVariables.WaldoFunctionVariable
-            
-        #### DEBUG
+            util.logger_assert(
+                'Should use special call func_turn_into_waldo_var for function objects')
         else:
             util.logger_assert(
                 'Unknown object type to call turn_into_waldo_var on')
@@ -207,6 +220,39 @@ class _ExecutingEventContext(object):
             val # used as initial value
             )
 
+    def func_turn_into_waldo_var(
+        self,val,force_copy,active_event, host_uuid,new_peered,ext_args_array):
+        '''
+        turn_into_waldo_var works for all non-function types.
+        function-types require additional information (which arguments
+        are and are not external) to populate their ext_args_array.
+        This is passed in in this function.
+        '''
+        if isinstance(val,wVariables.WaldoFunctionVariable):
+            if force_copy:
+                # means that it was a WaldoVariable: just call its copy
+                # method
+                return val.copy(active_event,new_peered)
+            # otherwise, just return val
+            return val
+        elif hasattr(val,'__call__'):
+            # python function
+            pass
+        #### DEBUG
+        else:
+            util.logger_assert(
+                'incorrect type passed into func_turn_into_waldo_var')
+        #### END DEBUG
+
+        waldo_func = wVariables.WaldoFunctionVariable(
+            'garbage',
+            host_uuid,
+            new_peered,
+            val).set_external_args_array(ext_args_array)
+
+        return waldo_func
+    
+    
     def call_func_obj(
         self,active_event,func_obj,*args):
         '''
@@ -235,6 +281,7 @@ class _ExecutingEventContext(object):
 
             call_arg_list.append(to_append)
 
+            
         internal_func = func_obj.get_val(active_event)
         return internal_func(
             active_event.local_endpoint,*call_arg_list)
@@ -250,7 +297,7 @@ class _ExecutingEventContext(object):
         '''
         return self.turn_into_waldo_var(
             val,True,active_event,host_uuid,True)
-
+    
 
     def de_waldoify(self,val,active_event):
         return de_waldoify(val,active_event)

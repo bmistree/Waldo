@@ -517,10 +517,23 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
                 # it's an endpoint call and they're not external.  
                 force_copy = 'False'
 
-            converted_args_string += (
-                arg_name + ' = ' +
-                '_context.turn_into_waldo_var(' + arg_name +
-                ',%s,_active_event,self._host_uuid,False)\n' % force_copy)
+            if TypeCheck.templateUtil.is_basic_function_type(func_decl_arg_node.type):
+                # functions copied in must have their external args
+                # arrays set.  these should be passed into the context
+                # method that transforms a function into a waldo variable.
+                ext_args_array_txt = emit_statement.emit_external_args_list_from_func_obj_type_dict(
+                    func_decl_arg_node.type)
+
+                converted_args_string += (
+                    arg_name + ' = ' +
+                    '_context.func_turn_into_waldo_var(' + arg_name +
+                    ',%s,_active_event,self._host_uuid,False,%s)\n' % (force_copy,ext_args_array_txt))
+            else:
+                converted_args_string += (
+                    arg_name + ' = ' +
+                    '_context.turn_into_waldo_var(' + arg_name +
+                    ',%s,_active_event,self._host_uuid,False)\n' % force_copy)
+
         else:
 
             if arg_unique_name == None:
@@ -528,6 +541,11 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
                     'When converting sequence local args, arg name has no ' +
                     'unique name.')
 
+            # FIXME: assume that there's a mechanism preventing
+            # copying functions in user structs.  Longer-term answer
+            # may be to remove function fields from user structs???
+            # Rely on endpoint calls for foreign functions???
+                
             # returns a peered version of passed in data
             convert_call_txt = (
                 '_context.convert_for_seq_local(' + arg_name + ',' +

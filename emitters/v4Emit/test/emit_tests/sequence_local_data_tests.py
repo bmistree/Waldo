@@ -99,7 +99,8 @@ def run_test():
         print err_msg
         return False
 
-    # test that when we call a sequence that has
+    # test that when we call a sequence that can access the element of
+    # a reference list
     lister = [93,3,5,68,3]
     index = 3
     if sideA.return_reference_index(lister,index) != lister[index]:
@@ -107,10 +108,40 @@ def run_test():
         err_msg += 'returned by sequence.'
         print err_msg
         return False
-    
 
+    # previously had some problems reading elements from copied
+    # maps/lists in the middle of a sequence.  This tests to ensure
+    # that do not still have problem.
+    to_test_list = [
+        ({
+            'a': 39,
+            'b': 22,
+            'c': 91
+        }, 39),
+        ({
+            'oifjef': 3,
+            'b': 22,
+            'c': 91
+        },1)]
+
+    for to_test in to_test_list:
+        map_to_test = to_test[0]
+        increment_to_test = to_test[1]
+        returned_val = sideA.plus_equals_on_map_check(
+            map_to_test,increment_to_test)
+        expected_val = plus_equals_on_map(map_to_test,increment_to_test)
+
+        if returned_val != expected_val:
+            print '\nErr: in sequence map increment.'
+            return False
     
     return True
+
+def plus_equals_on_map(map_to_test,increment_by):
+    total = 0
+    for val in map_to_test.values():
+        total += increment_by + val
+    return total
 
 
 if __name__ == '__main__':

@@ -261,6 +261,35 @@ def is_reference_type_type_dict(type_dict):
             (TypeCheck.templateUtil.is_struct(type_dict)))
 
 
+def emit_value_type_default(type_dict):
+    '''
+    @param {type dict} type_dict --- Must be a value type (not even an
+    external value type)
+
+    @returns {String} --- That can be used to initialize the value type.
+    Number: '0', Text: '""', TrueFalse: 'False'
+    '''
+
+    #### DEBUG
+    if (TypeCheck.templateUtil.is_external(type_dict) or
+        is_reference_type_type_dict(type_dict)):
+        emit_assert(
+            'Incorrect type passed into default value type')
+    #### END DEBUG
+    if TypeCheck.templateUtil.is_number(type_dict):
+        return '0'
+    elif TypeCheck.templateUtil.is_true_false(type_dict):
+        return 'False'
+    elif TypeCheck.templateUtil.is_text(type_dict):
+        return '""'
+
+
+    #### DEBUG
+    emit_assert('Unknown type requested default of.')
+    #### END DEBUG
+    
+
+    
 def is_reference_type(node):
     # FIXME: need to unwrap the possibility of the nodes' being
     # function call returns.

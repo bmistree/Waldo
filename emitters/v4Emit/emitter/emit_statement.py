@@ -784,10 +784,17 @@ def _emit_second_level_assign(
                 'Error: unfinished methods for assigning from function ' +
                 'calls into tuples.')
 
+        # Function objects are copied in assignment to user structs.
+        # when get to user struct section of code,
+        is_func = False
+        if TypeCheck.templateUtil.is_basic_function_type(lhs_node.type):
+            is_func = True
 
-        to_assign_txt = '_tmp' + str(counter)
+        original_to_assign_txt = '_tmp' + str(counter)            
+        to_assign_txt = original_to_assign_txt
         if not ext_assign:
-            to_assign_txt = '_context.get_val_if_waldo(' + to_assign_txt + ',_active_event)'
+            to_assign_txt = '_context.get_val_if_waldo(' + to_assign_txt + ',_active_event)'            
+
             
         if lhs_node.label == AST_BRACKET_STATEMENT:
             # need to actually assign to a particular key, rather than the
@@ -807,14 +814,42 @@ def _emit_second_level_assign(
                 emit_statement(
                     inside_bracket_node,endpoint_name,
                     ast_root,fdep_dict,emit_ctx))
-                                    
+
             to_assign_to_txt = (
                 outside_txt +
                 '.get_val(_active_event).write_val_on_key(_active_event,' +
                 inside_txt + ',' # gives key for map writing into
                                  # still need actual value
                 )
+        elif lhs_node.label == AST_DOT_STATEMENT:
+            # means that we are assigning into a user struct
+            # statement.  need to emit the user struct object and then
+            # call write_val_on_key on it because a user-struct is
+            # essentially a map
+            pre_dot_node = lhs_node.children[0]
+            to_assign_to_txt = emit_statement(
+                pre_dot_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+            # must be identifier
+            post_dot_node = lhs_node.children[1]
+            #### DEBUG
+            if post_dot_node.label != AST_IDENTIFIER:
+                emit_utils.emit_assert(
+                    'Expected identifier as second part of user ' +
+                    'struct access.')
+            #### END DEBUG
+            post_dot_node_name = post_dot_node.value
+
+            if is_func:
+                to_assign_txt = (
+                    original_to_assign_txt + '.copy(_active_event,False)')
             
+            to_assign_to_txt += (
+                '.get_val(_active_event).write_val_on_key(_active_event,"%s",'
+                % post_dot_node_name)
+            # not putting in actual value assigning because that will
+            # be appended at end of if-else statement, below.
+
         else:
             # was not a bracket statement, can just call write_val
             # directly
@@ -975,7 +1010,8 @@ def emit_ext_assign(
     to_assign_from_node_txt = emit_statement(
         to_assign_from_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-
+    # FIXME: what about ext_assign into user struct?
+    
     # need to be careful of function call assignment and need to be
     # careful of bracket assignment
 
@@ -1078,10 +1114,19 @@ def struct_type_emit_declaration(
             field_var_decl = struct_type_emit_declaration(
                 field_type_dict,field_name,host_uuid_var_name,peered,
                 endpoint_name,ast_root,fdep_dict,emit_ctx)
-        else:
+            
+        elif (emit_utils.is_reference_type_type_dict(field_type_dict) or
+              TypeCheck.templateUtil.is_external(field_type_dict) or
+              TypeCheck.templateUtil.is_basic_function_type(field_type_dict) or
+              TypeCheck.templateUtil.is_endpoint(field_type_dict)):
+            
             field_var_decl = non_struct_type_emit_declaration(
                 field_type_dict,field_name,host_uuid_var_name,peered,
                 endpoint_name,ast_root,fdep_dict,emit_ctx,'None')
+        else:
+            # means it is just a value type.  Load its default value
+            field_var_decl = emit_utils.emit_value_type_default(field_type_dict)
+            
 
         init_val_dict_str +=  '"' + field_name + '": '
         init_val_dict_str += field_var_decl + ', '
@@ -1265,7 +1310,7 @@ def emit_for(
     # into a WaldoVariable is to call write_val on it.  Solution is to
     # create an intermediate Python variable that we use as the index.
     # Then, on the first line of the for loop body, we assign into the
-    # Waldo variable (using the python variable) using write_va.  Ie,
+    # Waldo variable (using the python variable) using write_val.  Ie,
     # the above would get translated to:
     #     i = WaldoNum(...)
     #     for _i in range(0,10):

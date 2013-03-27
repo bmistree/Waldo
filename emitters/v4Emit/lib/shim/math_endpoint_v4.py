@@ -79,32 +79,32 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def _onCreate(self,_active_event,_context,in_min_func,in_max_func,in_mod_func,in_rand_int_func,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
-                in_min_func = _context.turn_into_waldo_var(in_min_func,True,_active_event,self._host_uuid,False)
-                in_max_func = _context.turn_into_waldo_var(in_max_func,True,_active_event,self._host_uuid,False)
-                in_mod_func = _context.turn_into_waldo_var(in_mod_func,True,_active_event,self._host_uuid,False)
-                in_rand_int_func = _context.turn_into_waldo_var(in_rand_int_func,True,_active_event,self._host_uuid,False)
+                in_min_func = _context.func_turn_into_waldo_var(in_min_func,True,_active_event,self._host_uuid,False,[])
+                in_max_func = _context.func_turn_into_waldo_var(in_max_func,True,_active_event,self._host_uuid,False,[])
+                in_mod_func = _context.func_turn_into_waldo_var(in_mod_func,True,_active_event,self._host_uuid,False,[])
+                in_rand_int_func = _context.func_turn_into_waldo_var(in_rand_int_func,True,_active_event,self._host_uuid,False,[])
 
                 pass
 
             else:
-                in_min_func = _context.turn_into_waldo_var(in_min_func,True,_active_event,self._host_uuid,False)
-                in_max_func = _context.turn_into_waldo_var(in_max_func,True,_active_event,self._host_uuid,False)
-                in_mod_func = _context.turn_into_waldo_var(in_mod_func,True,_active_event,self._host_uuid,False)
-                in_rand_int_func = _context.turn_into_waldo_var(in_rand_int_func,True,_active_event,self._host_uuid,False)
+                in_min_func = _context.func_turn_into_waldo_var(in_min_func,True,_active_event,self._host_uuid,False,[])
+                in_max_func = _context.func_turn_into_waldo_var(in_max_func,True,_active_event,self._host_uuid,False,[])
+                in_mod_func = _context.func_turn_into_waldo_var(in_mod_func,True,_active_event,self._host_uuid,False,[])
+                in_rand_int_func = _context.func_turn_into_waldo_var(in_rand_int_func,True,_active_event,self._host_uuid,False,[])
 
                 pass
 
             _tmp0 = in_min_func
-            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"min_func").write_val(_active_event,_context.get_val_if_waldo(_tmp0,_active_event))
+            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).write_val_on_key(_active_event,"min_func",_tmp0.copy(_active_event,False))
 
             _tmp0 = in_max_func
-            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"max_func").write_val(_active_event,_context.get_val_if_waldo(_tmp0,_active_event))
+            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).write_val_on_key(_active_event,"max_func",_tmp0.copy(_active_event,False))
 
             _tmp0 = in_mod_func
-            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"mod_func").write_val(_active_event,_context.get_val_if_waldo(_tmp0,_active_event))
+            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).write_val_on_key(_active_event,"mod_func",_tmp0.copy(_active_event,False))
 
             _tmp0 = in_rand_int_func
-            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"rand_int_func").write_val(_active_event,_context.get_val_if_waldo(_tmp0,_active_event))
+            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).write_val_on_key(_active_event,"rand_int_func",_tmp0.copy(_active_event,False))
 
         ### USER DEFINED METHODS ###
 

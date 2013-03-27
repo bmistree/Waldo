@@ -23,7 +23,8 @@ ReferenceTypeConstructorDict = {
     wVariables.WaldoMapVariable.var_type(): wVariables.WaldoMapVariable,
     wVariables.WaldoListVariable.var_type(): wVariables.WaldoListVariable,
     waldoInternalList.InternalList.var_type(): waldoInternalList.InternalList,
-    waldoInternalMap.InternalMap.var_type(): waldoInternalMap.InternalMap
+    waldoInternalMap.InternalMap.var_type(): waldoInternalMap.InternalMap,
+    wVariables.WaldoUserStructVariable.var_type(): wVariables.WaldoUserStructVariable,
     }
 
 def requires_name_arg_in_constructor(var_type):
@@ -82,8 +83,14 @@ def create_new_variable_wrapper_from_serialized(
     #### END DEBUG
 
     var_constructor = ReferenceTypeConstructorDict[var_type]
+    if var_type == wVariables.WaldoUserStructVariable.var_type():
+        # user structs require dict initializers.  for the time being,
+        # it's okay to just write in an empt dict because we know we
+        # will overwrite it anyways.
+        return var_constructor(var_name,host_uuid,True,{})
+        
     return var_constructor(var_name,host_uuid,True)
-    
+
 
 def deserialize_peered_object_into_variable(
     host_uuid,serial_obj_named_tuple,invalidation_listener,waldo_reference):

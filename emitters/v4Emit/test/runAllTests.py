@@ -121,7 +121,7 @@ def run_emit_tests():
     import emit_tests.user_struct_as_library_test
     import emit_tests.endpoint_as_library_test
     import emit_tests.symmetric_test
-
+    import emit_tests.more_struct_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -198,7 +198,10 @@ def run_emit_tests():
          emit_tests.endpoint_as_library_test.run_test),
 
         ('Test symmetric compile',
-         emit_tests.symmetric_test.run_test),         
+         emit_tests.symmetric_test.run_test),
+
+        ('Stresses structs (passing them between partner endpoints, etc)',
+         emit_tests.more_struct_tests.run_test),         
         
         ]
 
