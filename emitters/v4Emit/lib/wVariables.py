@@ -58,7 +58,10 @@ class WaldoEndpointVariable(_WaldoVariable):
 
 ### VALUE TYPES
 class WaldoNumVariable(_WaldoVariable):
-    def __init__(self,name,host_uuid,peered=False,init_val=0):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        if init_val == None:
+            init_val = 0
+        
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
         
     @staticmethod
@@ -81,7 +84,10 @@ class WaldoNumVariable(_WaldoVariable):
     
     
 class WaldoTextVariable(_WaldoVariable):
-    def __init__(self,name,host_uuid,peered=False,init_val=''):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        if init_val == None:
+            init_val = ''
+        
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
 
     @staticmethod
@@ -104,7 +110,9 @@ class WaldoTextVariable(_WaldoVariable):
 
     
 class WaldoTrueFalseVariable(_WaldoVariable):
-    def __init__(self,name,host_uuid,peered=False,init_val=False):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        if init_val == None:
+            init_val = False
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
         
     @staticmethod
@@ -290,7 +298,7 @@ class WaldoUserStructVariable(WaldoMapVariable):
     
         WaldoMapVariable.__init__(self,name,host_uuid,peered,init_val)
 
-
+    @staticmethod
     def var_type():
         return 'WaldoUserStructVariable'
 
@@ -300,8 +308,8 @@ class WaldoUserStructVariable(WaldoMapVariable):
     def copy(self,invalid_listener,peered):
         return WaldoUserStructVariable(
             self.name,self.host_uuid,peered,
-            self.get_val(invalid_listener).copy(invalid_listener,peered))
-
+            self.get_val(invalid_listener).de_waldoify(invalid_listener))
+            # self.get_val(invalid_listener).copy(invalid_listener,peered))
 
 
 
