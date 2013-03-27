@@ -428,7 +428,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
                     progText)
 
-
         else:
             err_msg = 'Error in remove statement.  Item '
             err_msg += 'calling remove on must be a Map or '
@@ -439,7 +438,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(
                 err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
                 progText)
-
         
         
     elif node.label == AST_FOR_STATEMENT:
@@ -562,6 +560,78 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         forBodyNode = node.children[forBodyNodeIndex];
         forBodyNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
+    elif node.label == AST_INSERT_STATEMENT:
+        to_insert_into_node = node.children[0]
+        index_to_insert_node = node.children[1]
+        what_to_insert_node = node.children[2]
+
+        to_insert_into_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        index_to_insert_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        what_to_insert_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+        
+        un_function_called_to_insert_into_type = unwrap_function_call_type_checker(
+            to_insert_into_node.type,node,
+            ('Error in insert on what inserting into: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        un_function_called_index_to_insert_type = unwrap_function_call_type_checker(
+            index_to_insert_node.type,node,
+            ('Error in insert on index to insert into: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        un_function_called_what_to_insert_type = unwrap_function_call_type_checker(
+            what_to_insert_node.type,node,
+            ('Error in insert on what to insert: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        if not is_number(un_function_called_index_to_insert_type):
+            err_msg = 'Error when inserting.  Index inserting into '
+            err_msg += 'must be a Number.  Instead, you provided an '
+            err_msg += 'index with type '
+            err_msg += dict_type_to_str(un_function_called_index_to_insert_type)
+            errorFunction(
+                err_msg, [index_to_insert_node],[index_to_insert_node.lineNo],
+                progText)
+
+        if not isListType(un_function_called_to_insert_into_type):
+            errMsg = 'Error insert operation is only supported on lists.  ';
+            errMsg += 'You are calling append on '
+            errMsg += dict_type_to_str(un_function_called_to_insert_into_type) + '.';
+            errorFunction(
+                errMsg,[to_insert_into_node],[to_insert_into_node.lineNo],
+                progText)
+        if is_empty_list(un_function_called_to_insert_into_type):
+            if is_wildcard_type(un_function_called_to_insert_into_type):
+                # FIXME: cannot determine what to do for the case
+                # where we're appending a wild card to an empty list.
+                warn_msg = '\nBehram error: for a list, inserted a wildcard.\n'
+                print (warn_msg)
+            node.type = buildListTypeSignatureFromTypeName(
+                un_function_called_to_insert_into_type,False)
+
+        else:
+            node.type = un_function_called_to_insert_into_type
+            # check that the elements of the list match what we're appending
+            listElemType = getListValueType(un_function_called_to_insert_into_type)
+            if checkTypeMismatch(
+                to_insert_into_node, listElemType,what_to_insert_node.type,
+                typeStack, progText):
+
+                errMsg = 'Type mismatch when trying to insert into element.  List ';
+                errMsg += 'inserting into has type '
+                errMsg += dict_type_to_str(to_insert_into_node.type) + ', and ';
+                errMsg += 'therefore you must insert an element with type ';
+                errMsg += dict_type_to_str(listElemType) + '.  Instead, '
+                errMsg += 'you inserted an element with ';
+                errMsg += 'type ' + dict_type_to_str(what_to_insert_node.type) + '.';
+                errorFunction(
+                    errMsg, [to_insert_into_node],[to_insert_into_node.lineNo],
+                    progText)
+        
 
     elif node.label == AST_APPEND_STATEMENT:
         toAppendToNode = node.children[0];
@@ -1119,12 +1189,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             
             # Should only get into this part of statement from
             # function call.  if calling append or remove, change
-            # these nodes' labels to ast_append and ast_remove,
-            # respectively.  this will serve as a signal to function
-            # call type checking code to handle append and remove
-            # differently (ie, create an AST_APPEND and AST_REMOVE
-            # statement in ast type tree and use existing emitting and
-            # slicing code developed for these labels).
+            # these nodes' labels to ast_append, ast_insert, and
+            # ast_remove, respectively.  this will serve as a signal
+            # to function call type checking code to handle append and
+            # remove differently (ie, create an AST_APPEND,
+            # AST_REMOVE, and AST_INSERT statement in ast type tree
+            # and use existing emitting and slicing code developed for
+            # these labels).
 
             if post_dot_node_name == 'remove':
                 node.label = AST_REMOVE_STATEMENT
@@ -1134,6 +1205,12 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 node.label = AST_APPEND_STATEMENT
                 node.children = []
                 node.addChild(pre_dot_node)
+                
+            elif post_dot_node_name == 'insert':
+                node.label = AST_INSERT_STATEMENT
+                node.children = []
+                node.addChild(pre_dot_node)
+                
             else:
                 err_msg = 'Error.  Type '
                 err_msg += dict_type_to_str(pre_dot_node.type)
@@ -1216,35 +1293,44 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # construct the full ast_append_statement or
         # ast_remove_statement itself because it does not have access
         # to the function's arguments that are available here.
-        if func_name_node.label in [AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT]:
+        if func_name_node.label in [
+            AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT,AST_INSERT_STATEMENT]:
+            
             node.label = func_name_node.label
             # clear exsiting children structure.
             node.children = []
             # this adds in the node that is being appended to
             node.addChild(func_name_node.children[0])
-            
-            if len(func_arg_list_node.children) != 1:
-                which_func = 'append' if node.label == AST_APEND_STATEMENT else 'remove'
-                
-                err_msg = 'Error when calling ' + which_func + '.  '
-                err_msg += 'append takes 1 argument.  You '
-                err_msg += 'provided ' + str(len(func_arg_list_node.children))
-                err_msg += '.'
-                errorFunction(
-                    err_msg, [node],[node.lineNo],progText);
+
+            if func_name_node.label in [AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT]:
+                if len(func_arg_list_node.children) != 1:
+                    which_func = 'append' if node.label == AST_APEND_STATEMENT else 'remove'
+
+                    err_msg = 'Error when calling ' + which_func + '.  '
+                    err_msg += which_func + ' takes 1 argument.  You '
+                    err_msg += 'provided ' + str(len(func_arg_list_node.children))
+                    err_msg += '.'
+                    errorFunction(err_msg, [node],[node.lineNo],progText)
+
+            else:
+                if len(func_arg_list_node.children) != 2:
+                    err_msg = 'Error when calling insert.  insert' 
+                    err_msg += ' takes 2 arguments.  You provided '
+                    err_msg += str(len(func_arg_list_node.children)) + '.'
+                    errorFunction(err_msg,[node],[node.lineNo],progText)
+
 
             # this adds in the node corresponding to the argument of
             # the append statement.  Eg, if we called a.append(1),
             # then here we would be appending the node corresponding
             # to the literal 1.
-            node.addChild(func_arg_list_node.children[0])
+            node.addChildren(func_arg_list_node.getChildren())
 
             # need to re-type check to ensure that the append and
             # remove statements are correct (eg. what we're appending
             # to a list has the same type as the elements of the list,
             # etc.
             node.typeCheck(progText,typeStack,avoidFunctionObjects)
-            
         else:
 
             if not isFunctionType(func_name_node.type):

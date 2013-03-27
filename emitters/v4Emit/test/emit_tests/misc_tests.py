@@ -18,9 +18,55 @@ def run_test():
 
     if not test_to_text(single_side):
         return False
+
+    if not test_misc_list(single_side):
+        return False
     
     return True
 
+
+def test_misc_list(single_side):
+
+    single_side.nested_list_append()
+
+    # test remove
+    to_test_on = [
+        (['a','b','m','d','r','q'], 3),
+        (['a','b','m','d','r','q'], 1),
+        (['a','b','m','d','r','q'], 5)
+        ]
+    for to_test in to_test_on:
+        list_to_test = to_test[0]
+        index_to_test = to_test[1]
+        returned_list = single_side.test_list_remove(list_to_test,index_to_test)
+        del list_to_test[index_to_test]
+        if returned_list != list_to_test:
+            print '\nError with remove statement'
+            return False
+        
+    # test insert
+    to_test_on = [
+        ([True,False,True,False,True,False], 3, True),
+        ([True,False,False,False,True,True], 3, True),
+        ([True,False,False,False,True,True], 0, False),
+        ([True,False,False,False,True,True], 2, False),
+        ([True,False,False,False,True,True], 5, False),
+        ]
+    for to_test in to_test_on:
+        list_to_test = to_test[0]
+        index_to_test = to_test[1]
+        to_insert_to_test = to_test[2]
+        returned_list = single_side.test_list_insert(
+            list_to_test,index_to_test,to_insert_to_test)
+        
+        list_to_test.insert(index_to_test, to_insert_to_test)
+        
+        if returned_list != list_to_test:
+            print '\nError with insert statement'
+            return False
+    
+    return True
+    
 
 def test_to_text(single_side):
 
@@ -43,8 +89,6 @@ def test_to_text(single_side):
         if single_side.to_text_true_false(i) != str(i):
             print '\nErr in tf to str'
             return False
-
-    single_side.nested_list_append()
         
     # maps
     # map_on = {

@@ -209,6 +209,41 @@ def emit_statement(
             to_remove_from_txt + '.get_val(_active_event).del_key_called(_active_event,' +
             '_context.get_val_if_waldo(%s,_active_event))' %
             what_to_remove_txt)
+
+    elif statement_node.label == AST_INSERT_STATEMENT:
+        to_insert_into_node = statement_node.children[0]
+        index_to_insert_into_node = statement_node.children[1]
+        what_to_insert_node = statement_node.children[2]
+
+        index_to_insert_into_txt = emit_statement(
+            index_to_insert_into_node,endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+        
+        to_insert_into_txt = emit_statement(
+            to_insert_into_node,endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+
+
+        what_to_insert_txt = emit_statement(
+            what_to_insert_node,endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+        
+        # if list's elements are not reference types or external
+        # types, then we should get their internal types before
+        # inserting.
+        element_type_dict = TypeCheck.templateUtil.getListValueType(
+            to_insert_into_node.type)
+        if (not emit_utils.is_reference_type_type_dict(element_type_dict) and
+            (not TypeCheck.templateUtil.is_external(element_type_dict))):
+            what_to_insert_txt = (
+                '_context.get_val_if_waldo(%s,_active_event)' %
+                what_to_insert_txt)
+        
+        statement_txt = (
+            to_insert_into_txt + '.get_val(_active_event).insert_into(_active_event,' +
+            ('_context.get_val_if_waldo(%s,_active_event),' % index_to_insert_into_txt) +
+            what_to_insert_txt + ')')
+
         
     elif statement_node.label == AST_STRING:
         statement_txt += "'"  + statement_node.value + "' "

@@ -178,6 +178,15 @@ def slicer(node,functionDeps=None,typeStack=None):
         # FIXME: Need to improve slicing for append/remove statement.
         # Should specify that toAppendToNode got written to.
 
+    elif node.label == AST_INSERT_STATEMENT:
+        to_insert_into_node = node.children[0]
+        to_insert_index_node = node.children[1]
+        what_to_insert_node = node.children[2]
+
+        slicer(to_insert_into_node,functionDeps,typeStack)
+        slicer(to_insert_index_node,functionDeps,typeStack)
+        slicer(what_to_insert_node,functionDeps,typeStack)
+        
 
     elif node.label == AST_REFRESH:
         # don't need to do anything for refresh statement.

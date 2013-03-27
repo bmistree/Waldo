@@ -35,6 +35,25 @@ SingleSide
         double_list[0][0];
     }
 
+    Public Function test_list_remove(
+        List(element: Text) to_remove_from,
+        Number index_to_remove)
+        returns List(element:Text)
+    {
+        to_remove_from.remove(index_to_remove);
+        return to_remove_from;
+    }
+
+    Public Function test_list_insert(
+        List(element: TrueFalse) to_insert_into,
+        Number index_to_insert_into,
+        TrueFalse what_to_insert)
+        returns List(element: TrueFalse)
+    {
+        to_insert_into.insert(index_to_insert_into,what_to_insert);
+        return to_insert_into;
+    }
+    
     
     // // reference type tests
     // Public Function to_text_map(

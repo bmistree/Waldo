@@ -20,7 +20,6 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
     def var_type():
         return 'internal list'
 
-
     def de_waldoify(self,invalid_listener):
         '''
         @see _ReferenceBase.de_waldoify
@@ -55,6 +54,20 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         self._unlock()
 
         return found
+
+    def insert_into(self,invalid_listener, index, val):
+        # this will get overwritten later.  for now, just append some
+        # val
+        
+        self.append_val(invalid_listener,val)
+
+        len_list = self.get_len(invalid_listener)
+        for i in range(len_list-1,index,-1):
+            self.write_val_on_key(
+                invalid_listener,
+                i,self.get_val_on_key(invalid_listener,i-1))
+            
+        self.write_val_on_key(invalid_listener,index,val)
         
     
     def contains_key(self,invalid_listener, key):

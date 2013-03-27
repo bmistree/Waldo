@@ -3,7 +3,7 @@
 
 def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
     class _MathEndpoint (_waldo_classes["Endpoint"]):
-        def __init__(self,_waldo_classes,_host_uuid,_conn_obj,in_min_func,in_max_func,in_mod_func):
+        def __init__(self,_waldo_classes,_host_uuid,_conn_obj,in_min_func,in_max_func,in_mod_func,in_rand_int_func):
 
             # a little ugly in that need to pre-initialize _host_uuid, because
             # code used for initializing variable store may rely on it.  (Eg., if
@@ -33,6 +33,11 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _host_uuid, # host uuid var name
                 False,  # if peered, True, otherwise, False
                 None
+            ).set_external_args_array([]), "rand_int_func": self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
+                'rand_int_func', # variable's name
+                _host_uuid, # host uuid var name
+                False,  # if peered, True, otherwise, False
+                None
             ).set_external_args_array([]), }))
 
             self._waldo_classes["Endpoint"].__init__(self,_waldo_classes,_host_uuid,_conn_obj,self._global_var_store)
@@ -51,7 +56,7 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # return them....if it were false, might just get back refrences
                 # to Waldo variables, and de-waldo-ifying them outside of the
                 # transaction might return over-written/inconsistent values.
-                _to_return = self._onCreate(_root_event,_ctx ,in_min_func,in_max_func,in_mod_func,[])
+                _to_return = self._onCreate(_root_event,_ctx ,in_min_func,in_max_func,in_mod_func,in_rand_int_func,[])
                 # try committing root event
                 _root_event.request_commit()
                 _commit_resp = _root_event.event_complete_queue.get()
@@ -72,11 +77,12 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         ### OnCreate method
 
-        def _onCreate(self,_active_event,_context,in_min_func,in_max_func,in_mod_func,_returning_to_public_ext_array=None):
+        def _onCreate(self,_active_event,_context,in_min_func,in_max_func,in_mod_func,in_rand_int_func,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
                 in_min_func = _context.turn_into_waldo_var(in_min_func,True,_active_event,self._host_uuid,False)
                 in_max_func = _context.turn_into_waldo_var(in_max_func,True,_active_event,self._host_uuid,False)
                 in_mod_func = _context.turn_into_waldo_var(in_mod_func,True,_active_event,self._host_uuid,False)
+                in_rand_int_func = _context.turn_into_waldo_var(in_rand_int_func,True,_active_event,self._host_uuid,False)
 
                 pass
 
@@ -84,6 +90,7 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 in_min_func = _context.turn_into_waldo_var(in_min_func,True,_active_event,self._host_uuid,False)
                 in_max_func = _context.turn_into_waldo_var(in_max_func,True,_active_event,self._host_uuid,False)
                 in_mod_func = _context.turn_into_waldo_var(in_mod_func,True,_active_event,self._host_uuid,False)
+                in_rand_int_func = _context.turn_into_waldo_var(in_rand_int_func,True,_active_event,self._host_uuid,False)
 
                 pass
 
@@ -95,6 +102,9 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
             _tmp0 = in_mod_func
             _context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"mod_func").write_val(_active_event,_context.get_val_if_waldo(_tmp0,_active_event))
+
+            _tmp0 = in_rand_int_func
+            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"rand_int_func").write_val(_active_event,_context.get_val_if_waldo(_tmp0,_active_event))
 
         ### USER DEFINED METHODS ###
 
@@ -252,6 +262,60 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
             # otherwise, use regular return mechanism... do not de-waldo-ify
             return _context.flatten_into_single_return_tuple(_context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"mod_func"),lhs,rhs))
+
+
+
+
+        def rand_int_func(self,a,b):
+
+            # ensure that both sides have completed their onCreate calls
+            # before continuing
+            self._block_ready()
+
+            while True:  # FIXME: currently using infinite retry 
+                _root_event = self._act_event_map.create_root_event()
+                _ctx = self._waldo_classes["ExecutingEventContext"](
+                    self._global_var_store,
+                    # not using sequence local store
+                    self._waldo_classes["VariableStore"](self._host_uuid))
+
+                # call internal function... note True as last param tells internal
+                # version of function that it needs to de-waldo-ify all return
+                # arguments (while inside transaction) so that this method may
+                # return them....if it were false, might just get back refrences
+                # to Waldo variables, and de-waldo-ifying them outside of the
+                # transaction might return over-written/inconsistent values.
+                _to_return = self._endpoint_func_call_prefix__waldo__rand_int_func(_root_event,_ctx ,a,b,[])
+                # try committing root event
+                _root_event.request_commit()
+                _commit_resp = _root_event.event_complete_queue.get()
+                if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
+                    # means it isn't a backout message: we're done
+                    return _to_return
+
+
+
+        def _endpoint_func_call_prefix__waldo__rand_int_func(self,_active_event,_context,a,b,_returning_to_public_ext_array=None):
+            if _context.check_and_set_from_endpoint_call_false():
+                a = _context.turn_into_waldo_var(a,True,_active_event,self._host_uuid,False)
+                b = _context.turn_into_waldo_var(b,True,_active_event,self._host_uuid,False)
+
+                pass
+
+            else:
+                a = _context.turn_into_waldo_var(a,True,_active_event,self._host_uuid,False)
+                b = _context.turn_into_waldo_var(b,True,_active_event,self._host_uuid,False)
+
+                pass
+
+
+            if _returning_to_public_ext_array != None:
+                # must de-waldo-ify objects before passing back
+                return _context.flatten_into_single_return_tuple(_context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"rand_int_func"),a,b) if 0 in _returning_to_public_ext_array else _context.de_waldoify(_context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"rand_int_func"),a,b),_active_event))
+
+
+            # otherwise, use regular return mechanism... do not de-waldo-ify
+            return _context.flatten_into_single_return_tuple(_context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("0__math").get_val(_active_event).get_val_on_key(_active_event,"rand_int_func"),a,b))
 
 
 
