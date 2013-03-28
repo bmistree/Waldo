@@ -63,6 +63,50 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         '''
         pass
 
+    def update_val_of_key_during_deserialize(
+        self,invalid_listener,key,val):
+        '''
+        @param {Text,Number,TrueFalse} key --- The index of the
+        internal map or list (if list, then key is just a number)
+
+        @param {Anything} val --- Can be a python value or pointers to
+        additional Waldo variables.
+
+        Called when deserializing nested maps/lists.  See case 4 in
+        the comments for the method
+        waldoNetworkSerializer.deserialize_peered_object_into_variables.
+        '''
+        #### DEBUG
+        # note only should be serializing and deserializing peered data
+        if not self.peered:
+            util.logger_assert(
+                'Should not be updating value and version for a ' +
+                'non-peered data item.')
+        #### END DEBUG
+        self._lock()
+        self._add_invalid_listener(invalid_listener)
+        dirty_element = self._dirty_map[invalid_listener.uuid]
+        dirty_element.val[key] = val
+        self._unlock()
+
+    def update_version_obj_during_deserialize(
+        self,invalid_listener,new_version_obj):
+        '''
+        @see update_val_of_key_during_deserialize
+        '''
+        #### DEBUG        
+        # note only should be serializing and deserializing peered data
+        if not self.peered:
+            util.logger_assert(
+                'Should not be updating value and version for a ' +
+                'non-peered data item.')
+        #### END DEBUG
+        self._lock()
+        self._add_invalid_listener(invalid_listener)
+        dirty_element = self._dirty_map[invalid_listener.uuid]
+        dirty_element.version_obj = new_version_obj
+        self._unlock()
+
     
     def get_len(self,invalid_listener):
         self._lock()

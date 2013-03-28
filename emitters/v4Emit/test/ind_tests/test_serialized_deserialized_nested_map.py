@@ -53,13 +53,14 @@ def run_test():
     # should produce:
     #  { 1: [7,8,9], 2: [4,5,6] }
     
-    
     serializabled = lhs.map.serializable_var_tuple_for_network(
         'some_name',evt)
 
+    
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
         rhs._host_uuid,serializabled,rhs_event,rhs.map)
 
+    
     if not evt.hold_can_commit():
         print '\nError: should be able to commit lhs.\n'
         return False
@@ -70,7 +71,6 @@ def run_test():
         print '\nError: should be able to commit rhs.\n'
         return False
     rhs_event.complete_commit()
-
 
 
     # now check that cannot do operations in parallel that affect each
@@ -86,6 +86,7 @@ def run_test():
     rhs_event1 = rhs.new_event()
     rhs_event2 = rhs.new_event()
 
+    
     if lhs.map.get_val(lhs_event).get_val_on_key(lhs_event,1).get_val(lhs_event).get_val_on_key(lhs_event,0) != 7:
         print '\nErr: did not get change from previous commit.\n'
         return False
@@ -132,7 +133,9 @@ def run_test():
     rhs_event1 = rhs.new_event()
     rhs_event2 = rhs.new_event()
 
+
     lhs.map.get_val(lhs_event1).get_val_on_key(lhs_event1,1).get_val(lhs_event1).write_val_on_key(lhs_event1,2,66)
+    
     rhs.map.get_val(rhs_event1).get_val_on_key(rhs_event1,2).get_val(rhs_event1).del_key_called(rhs_event1,2)
     
     serializabled = lhs.map.serializable_var_tuple_for_network(
@@ -184,6 +187,7 @@ def run_test():
     if rhs.map.get_val(rhs_event).get_val_on_key(rhs_event,1).get_val(rhs_event).get_val_on_key(rhs_event,2) != 66:
         print '\nError: rhs_event should have seen updated value of 66.\n'
         return False
+    
     if rhs.map.get_val(rhs_event).get_val_on_key(rhs_event,2).get_val(rhs_event).get_len(rhs_event) != 2:
         print '\nError: rhs_event should know that it contains a list of length 2.\n'
         return False    

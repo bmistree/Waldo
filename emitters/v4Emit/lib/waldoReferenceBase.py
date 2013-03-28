@@ -150,18 +150,36 @@ class _ReferenceBase(object):
         if isinstance(var_data,_ReferenceBase):
             var_data = dirty_element.val.serializable_var_tuple_for_network(
                 var_name,invalid_listener)
-        elif isinstance(var_data,list) or isinstance(var_data,dict):
-            keys = range(0,len(var_data))
-            if isinstance(var_data,dict):
-                keys = var_data.keys()
+        elif isinstance(var_data,list):
+            new_var_data = []
+            for index in range(0,len(var_data)):
+                if isinstance(var_data[index], _ReferenceBase):
+                    new_var_data.append(
+                        var_data[index].serializable_var_tuple_for_network(
+                            var_name,invalid_listener))
+                else:
+                    new_var_data.append(var_data[index])
+            var_data = new_var_data
             
-            for index in keys:
-                if isinstance(var_data,_ReferenceBase):
-                    var_data[index] = var_data[index].serializable_var_tuple_for_network(
+        elif isinstance(var_data,dict):
+            new_var_data = {}
+            for index in var_data.keys():
+                if isinstance(var_data[index],_ReferenceBase):
+                    new_var_data[index] = var_data[index].serializable_var_tuple_for_network(
                         var_name,invalid_listener)
+                else:
+                    new_var_data[index] = var_data[index]
+            var_data = new_var_data
 
         version_obj_data = dirty_element.version_obj.serializable_for_network_data()
-        
+
+        #### DEBUG
+        import wVariables
+        if isinstance(var_data,wVariables.WaldoUserStructVariable):
+            import pdb
+            pdb.set_trace()
+        #### END DEBUG
+
         to_return = util._generate_serialization_named_tuple(
             var_name,self.var_type(),var_data,version_obj_data)
         return to_return

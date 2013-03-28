@@ -5,6 +5,7 @@ Symmetric SideA, SideB;
 Sequences{
   Test: SideA.start_test -> SideB.recv_test;
   InputStruct: SideA.start_input_struct -> SideB.recv_input_struct;
+  MapOfStructsTest: SideA.start_map_of_structs -> SideB.recv_map_of_structs;
 }
 
 // Want to ensure that can get a struct from an endpoint call and that can
@@ -37,6 +38,21 @@ Sequence InputStruct(Struct SomeStruct input_struct, Number inc1, Number inc2)
       input_struct.a += inc2;
       to_return = input_struct;
   }
+}
+
+Sequence MapOfStructsTest(
+    Map(from: Text, to: Struct SomeStruct) mapper, Text index_to_insert)
+    returns Map(from: Text, to: Struct SomeStruct) returner
+{
+    SideA.start_map_of_structs
+    {
+        Struct SomeStruct ss;
+        mapper[index_to_insert] = ss;
+    }
+    SideB.recv_map_of_structs
+    {
+        returner = mapper;
+    }
 }
 
 
@@ -73,8 +89,6 @@ SideA
         return s_struct.a;
     }
 
-    
-    
     Public Function test_struct_map(Text index, Number num) returns Number
     {
         Struct SomeStruct ss = start_test(num + 23);
@@ -86,6 +100,16 @@ SideA
         3+6;
         return ss.a;
         // return struct_map[index].a;
+    }
+
+    Public Function test_sequence_struct_map()
+    {
+        Struct SomeStruct ss;
+        ss.a = 390;
+        Map(from: Text, to: Struct SomeStruct) mapper;
+        mapper['hi'] = ss;
+        
+        start_map_of_structs(mapper,'wow');
     }
     
 }

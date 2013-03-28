@@ -172,7 +172,26 @@ def deserialize_peered_object_into_variable(
     #      them to point to a new reference.  
     #
     # CASE 4: We have a map/list of SerializationHelperNamedTuple-s
-    #   FIXME: think through this and fill it in.
+    #
+    #  Here's why we need to keep track of whether each element was
+    #  written to or read from.  Assume that we have a map of maps:
+    #    Map(from: Text, to: Map(from: Text, to: Text)) m
+    #
+    #  It is important to distinguish:
+    #     m['a'] = { 'other_a': 'other_a'}
+    #  from
+    #     m['a']['other_a'] = 'other_a' (assuming m['a'] is already defined)
+    #  because if we have another operation
+    #     m['a']['b'] = 'b'
+    #  for the first case, there's a conflict, for the second they
+    #  can execute in parallel
+        
+    # To determine whether written to or read from, use version_obj,
+    # which will have type
+    # waldoReferenceContainerBase._ReferenceContainerVersion.  For
+    # each key within it that was written, added, or deleted, treat
+    # the index similarly to 3b above.  For others, treat as 3a above.
+        
 
     var_data = serial_obj_named_tuple.var_data
     if not isinstance(var_data,util._SerializationHelperNamedTuple):
@@ -236,11 +255,65 @@ def deserialize_peered_object_into_variable(
 
     # CASE 4 above: list/map of SerializationHelperNamedTuple-s
     
-    # TODO: see fixme note below.  Challenge is that we may not know
-    # whether these have been written to or not.
-    util.logger_assert(
-        'FIXME: have not handled the case of a list/map of named tuples ' +
-        'when deserializing.')
+    # make it able to handle maps or lists.
+    all_keys = range(0,len(var_data))
+    if isinstance(var_data, dict):
+        all_keys = list(var_data.keys())
+
+    for key in all_keys:
+        if ((key in version_obj.written_values_keys) or
+            (key in version_obj.added_keys) or
+            (key in version_obj.deleted_keys)):
+            # handle same as 3b above
+
+            # waldo_reference is an InternalMap/InternalDict and we
+            # must notify it that this object has been
+            # deleted/written/added
+            new_obj = new_obj_from_serialized(
+                host_uuid,var_data[key],invalidation_listener)
+            waldo_reference.update_val_of_key_during_deserialize(
+                invalidation_listener,key,new_obj)
+        # else:
+        elif key in version_obj.read_values_keys:
+            # only add others if have been read.  do not willy-nilly
+            # add references.
+            
+            # handle same as 3a above...except getting val for target
+            # key
+            nested_reference = waldo_reference.get_val_on_key(
+                invalidation_listener,key)
+            # recurse
+            deserialize_peered_object_into_variable(
+                host_uuid,var_data[key],invalidation_listener,
+                nested_reference)
+
+    # remove any elements that may have been deleted by the other side
+    if isinstance(var_data,dict):
+        # it's a map.  look for keys that are not in all keys
+        local_keys = waldo_reference.get_keys(invalidation_listener)
+        for key in local_keys:
+            if key not in all_keys:
+                waldo_reference.del_key_called(invalidation_listener,key)
+    if isinstance(var_data,list):
+        if len(local_keys) > len(all_keys):
+            import pdb
+            pdb.set_trace()
+            
+            # FIXME: if do something more intelligent about sliding
+            # elements in the list down when they are not modified,
+            # then may have to do something more intelligent than just
+            # deleting off the end.
+            num_times_to_delete = len(all_keys) - len(local_keys)
+            for i in range(0,num_times_to_delete):
+                # keep deleting the spot just beyond how long the list
+                # should be.
+                waldo_reference.del_key_called(
+                    invalidation_listener,len(all_keys))
+            
+    # either way, reset the version obj of overall internal list/map
+    waldo_reference.update_version_obj_during_deserialize(
+        invalidation_listener,version_obj)
+    
     
 
 def new_obj_from_serialized(

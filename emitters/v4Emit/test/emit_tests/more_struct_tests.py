@@ -43,6 +43,9 @@ def run_test():
     if sideA.test_struct_map('hello',expected_num) != expected_num:
         print '\nErr: structs in maps is broken'
         return False
+
+    # test that can serialize maps of structs
+    sideA.test_sequence_struct_map()
     
     return True
 
