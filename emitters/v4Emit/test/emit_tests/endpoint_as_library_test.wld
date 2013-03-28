@@ -1,0 +1,34 @@
+FunctionObjectTests
+
+Endpoint SingleSide;
+
+
+Sequences{}
+
+
+SingleSide
+{
+    Endpoint math;
+    
+    onCreate(Endpoint math_lib)
+    {
+        math = math_lib;
+    }
+
+
+    Public Function test_mod(Number lhs, Number rhs) returns Number
+    {
+        return math.mod_func(lhs,rhs);
+    }
+
+    Public Function test_max(List(element: Number) max_list) returns Number
+    {
+        return math.max_func(max_list);
+    }
+
+    Public Function test_min(List(element: Number) min_list) returns Number
+    {
+        return math.min_func(min_list);
+    }
+
+}
