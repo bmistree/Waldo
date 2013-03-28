@@ -273,7 +273,6 @@ def deserialize_peered_object_into_variable(
                 host_uuid,var_data[key],invalidation_listener)
             waldo_reference.update_val_of_key_during_deserialize(
                 invalidation_listener,key,new_obj)
-        # else:
         elif key in version_obj.read_values_keys:
             # only add others if have been read.  do not willy-nilly
             # add references.
@@ -296,9 +295,6 @@ def deserialize_peered_object_into_variable(
                 waldo_reference.del_key_called(invalidation_listener,key)
     if isinstance(var_data,list):
         if len(local_keys) > len(all_keys):
-            import pdb
-            pdb.set_trace()
-            
             # FIXME: if do something more intelligent about sliding
             # elements in the list down when they are not modified,
             # then may have to do something more intelligent than just

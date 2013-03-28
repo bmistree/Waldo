@@ -249,7 +249,7 @@ class _PartnerFirstPhaseResultMessage(_Message):
     before transitioning to second phase of commit.
     '''
 
-    MSG_TYPE = 'partner_first_phase_resutl_message'
+    MSG_TYPE = 'partner_first_phase_result_message'
 
     SENDING_ENDPOINT_UUID_FIELD = 'sending_endpoint'
     SUCCESSFUL_FIELD = 'successful'
@@ -274,7 +274,7 @@ class _PartnerFirstPhaseResultMessage(_Message):
         self.sending_endpoint_uuid = sending_endpoint_uuid
         self.successful = successful
         self.children_event_endpoint_uuids = children_event_endpoint_uuids
-        
+
 
     def msg_to_map(self):
         return {

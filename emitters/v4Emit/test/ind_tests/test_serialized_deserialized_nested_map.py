@@ -105,21 +105,22 @@ def run_test():
     rhs.map.get_val(rhs_event1).del_key_called(rhs_event1,1)
     
 
-    if not lhs_event.hold_can_commit():
-        print '\nError: should be able to commit lhs\'s reads+single write.\n'
+    if not rhs_event1.hold_can_commit():
+        print '\nError: should be able to commit delete'
         return False
-    lhs_event.complete_commit()
+    rhs_event1.complete_commit()
 
-    if not rhs_event2.hold_can_commit():
-        print '\nError: should be able to commit rhs\'s read+single write update.\n'
+    if rhs_event2.hold_can_commit():
+        err_msg = '\nError: should not be able to commit rhs\'s '
+        err_msg += 'read+single write update after committed delete\n'
         return False
-    rhs_event2.complete_commit()
+    rhs_event2.backout_commit()
+    lhs_event.hold_can_commit()
+    lhs_event.backout_commit()
 
-    if rhs_event1.hold_can_commit():
-        print '\nError rhs_evt1 and rhs_evt2 should conflict.\n'
-        return False
-    rhs_event1.backout_commit()
-        
+    # should produce:
+    #  { 2: [4,5,6] }
+
 
     # now check that can do operations in parallel that do not affect
     # each other. lhs_event sets one value.  "concurrently" rhs_event1
@@ -128,19 +129,21 @@ def run_test():
     # commit all events.  lhs_event2 will try to commit the change
     # made by rhs_event1
 
+    
     lhs_event1 = lhs.new_event()
     lhs_event2 = lhs.new_event()
     rhs_event1 = rhs.new_event()
     rhs_event2 = rhs.new_event()
 
 
-    lhs.map.get_val(lhs_event1).get_val_on_key(lhs_event1,1).get_val(lhs_event1).write_val_on_key(lhs_event1,2,66)
+    lhs.map.get_val(lhs_event1).get_val_on_key(lhs_event1,2).get_val(lhs_event1).write_val_on_key(lhs_event1,1,16)
     
     rhs.map.get_val(rhs_event1).get_val_on_key(rhs_event1,2).get_val(rhs_event1).del_key_called(rhs_event1,2)
     
     serializabled = lhs.map.serializable_var_tuple_for_network(
         'some_name',lhs_event1)
 
+    
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
         rhs._host_uuid,serializabled,rhs_event2,rhs.map)
 
@@ -150,7 +153,8 @@ def run_test():
 
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
         lhs._host_uuid,serializabled,lhs_event2,lhs.map)
-    
+
+
 
     if not lhs_event1.hold_can_commit():
         print '\nError: should be able to commit lhs\'s write.\n'
@@ -161,7 +165,7 @@ def run_test():
         print '\nError: should be able to commit rhs\'s delete.\n'
         return False
     rhs_event1.complete_commit()
-
+    
     if not rhs_event2.hold_can_commit():
         print '\nError: rhs_evt1 and rhs_evt2 should be able to commit in parallel.\n'
         return False
@@ -171,29 +175,85 @@ def run_test():
         print '\nError: should be able to commit the rhs change on lhs2.\n'
         return False
     lhs_event2.complete_commit()
-    
+
+    # should produce:
+    #  { 2: [4,16] }
     
     # check to ensure that both sides saw the changes from above
     lhs_event = lhs.new_event()
     rhs_event = rhs.new_event()
     
-    if lhs.map.get_val(lhs_event).get_val_on_key(lhs_event,1).get_val(lhs_event).get_val_on_key(lhs_event,2) != 66:
-        print '\nError: lhs_event should have seen updated value of 66.\n'
+    if lhs.map.get_val(lhs_event).get_val_on_key(lhs_event,2).get_val(lhs_event).get_val_on_key(lhs_event,1) != 16:
+        print '\nError: lhs_event should have seen updated value of 16.\n'
         return False
     if lhs.map.get_val(lhs_event).get_val_on_key(lhs_event,2).get_val(lhs_event).get_len(lhs_event) != 2:
         print '\nError: lhs_event should know that it contains a list of length 2.\n'
         return False    
 
-    if rhs.map.get_val(rhs_event).get_val_on_key(rhs_event,1).get_val(rhs_event).get_val_on_key(rhs_event,2) != 66:
-        print '\nError: rhs_event should have seen updated value of 66.\n'
+    if rhs.map.get_val(rhs_event).get_val_on_key(rhs_event,2).get_val(rhs_event).get_val_on_key(rhs_event,1) != 16:
+        print '\nError: rhs_event should have seen updated value of 16.\n'
         return False
-    
+
     if rhs.map.get_val(rhs_event).get_val_on_key(rhs_event,2).get_val(rhs_event).get_len(rhs_event) != 2:
         print '\nError: rhs_event should know that it contains a list of length 2.\n'
         return False    
 
+
+
+    # should produce:
+    #  { 2: [4,16] }
     
+    # another check that can do operations in parallel.  lhs_event
+    # will read all values in the map (and ensure that they were set
+    # correctly from above).  It also sets one value.  "concurrently"
+    # rhs_event1 will delete a value from its map.  similarly,
+    # rhs_event2 will try to apply the change made from lhs_event.
+    # Should be able to commit {lhs_event, rhs_event2} and then
+    # {rhs_event1}.
+
+    lhs_event = lhs.new_event()
+    rhs_event1 = rhs.new_event()
+    rhs_event2 = rhs.new_event()
+
     
+    if lhs.map.get_val(lhs_event).get_val_on_key(lhs_event,2).get_val(lhs_event).get_val_on_key(lhs_event,0) != 4:
+        print '\nErr: did not get change from previous commit.\n'
+        return False
+    
+    if lhs.map.get_val(lhs_event).get_val_on_key(lhs_event,2).get_val(lhs_event).get_val_on_key(lhs_event,1) != 16:
+        print '\nErr: did not get change from previous commit 2.\n'
+        return False
+
+    lhs.map.get_val(lhs_event).get_val_on_key(lhs_event,2).get_val(lhs_event).write_val_on_key(lhs_event,1,20)
+    
+    serializabled = lhs.map.serializable_var_tuple_for_network(
+        'some_name',lhs_event)
+
+    waldoNetworkSerializer.deserialize_peered_object_into_variable(
+        rhs._host_uuid,serializabled,rhs_event2,rhs.map)
+
+    internal_list1,evt = create_waldo_list(lhs,[1,2,3])
+    evt.complete_commit()
+    
+    rhs.map.get_val(rhs_event1).add_key(rhs_event1,1,internal_list1)
+
+    if not rhs_event1.hold_can_commit():
+        print '\nError: should be able to commit add'
+        return False
+    rhs_event1.complete_commit()
+    
+    if not rhs_event2.hold_can_commit():
+        err_msg = '\nError: should not be able to commit rhs\'s '
+        err_msg += 'read+single write update in parallel with add\n'
+        return False
+    rhs_event2.complete_commit()
+
+    if not lhs_event.hold_can_commit():
+        err_msg = '\nError: should not be able to commit lhs\'s '
+        err_msg += 'read+single write update in parallel with add\n'
+        return False
+    lhs.complete_commit()
+
     return True
     
         

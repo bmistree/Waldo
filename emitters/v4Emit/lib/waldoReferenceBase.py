@@ -70,7 +70,10 @@ class _ReferenceBase(object):
     @abstractmethod
     def copy(self,invalid_listener,peered):
         '''
-        Returns a deep copy of this object.  
+        Returns a deep copy of this object.  Useful when assigning
+        to/from a peered variable.  Eg., if have a peered map of
+        lists, any list that we assign into the map should be copied
+        as peered first.  This way, avoid problem of sharing references.
         '''
         util.logger_assert(
             'copy is pure virtual in _ReferenceBase.')
@@ -173,12 +176,12 @@ class _ReferenceBase(object):
 
         version_obj_data = dirty_element.version_obj.serializable_for_network_data()
 
-        #### DEBUG
-        import wVariables
-        if isinstance(var_data,wVariables.WaldoUserStructVariable):
-            import pdb
-            pdb.set_trace()
-        #### END DEBUG
+        # #### DEBUG
+        # import wVariables
+        # if isinstance(var_data,wVariables.WaldoUserStructVariable):
+        #     import pdb
+        #     pdb.set_trace()
+        # #### END DEBUG
 
         to_return = util._generate_serialization_named_tuple(
             var_name,self.var_type(),var_data,version_obj_data)

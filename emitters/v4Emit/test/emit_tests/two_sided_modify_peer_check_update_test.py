@@ -41,8 +41,33 @@ def run_test():
     if data_reader.read_peered_num() != 23:
         print '\nErr: incorrect data reader return from peered num read'
         return False
+
+    # check modifier can increment
+    if modifier.increment_peered_num() != 24:
+        print '\nErr: incorrect second modifier return from peered num increment'
+        return False
+
+    if modifier.increment_peered_num() != 25:
+        print '\nErr: incorrect second modifier return from peered num increment'
+        return False
+
     
+
     
+    # check work on peered map
+    to_add_list = [
+        ('r',{ 'a': True, 'b': False}),
+        ('dl',{ 'a': False, 'b': False}),
+        ('m',{ 'a': False, 'b': True}),
+        ('dl',{ 'a': True, 'b': False})]
+    first_time = True
+    for index,inner_map_to_add in to_add_list:
+        modifier.add_inner_map(index,inner_map_to_add)
+
+        if data_reader.read_inner_map(index) != inner_map_to_add:
+            print '\nErr: problem with updating peered nested map'
+            return False
+
     return True
 
 

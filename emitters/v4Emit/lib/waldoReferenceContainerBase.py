@@ -154,11 +154,23 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._add_invalid_listener(invalid_listener)
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
+
+        if self.peered:
+            # copy the data that's being written in: peereds do not
+            # hold references.  If they did, could be trying to
+            # synchronize references across multiple hosts.  Eg., if
+            # have a peered map of lists, then when insert a list,
+            # want to insert copy of list.  If did not, then might be
+            # able to share the reference to the inner list between
+            # many machines.
+            if isinstance(new_val,waldoReferenceBase._ReferenceBase):
+                new_val = new_val.copy(invalid_listener,True)
+            
         dirty_elem.write_val_on_key(key,new_val)
         if self.peered:
             invalid_listener.add_peered_modified()        
         self._unlock()
-        
+
     
     def _add_invalid_listener(self,invalid_listener):
         '''
@@ -298,7 +310,6 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         fields_to_update = w_obj.version_obj.update(self)
         # FIXME: probably do not want to overwrite the entire val each
         # time.  could just apply deltas instead.
-        
         if isinstance(val,dict):
             for field_to_update in fields_to_update.keys():
                 if field_to_update not in val:
@@ -331,7 +342,15 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     continue
 
                 w_obj.val[field_to_update] = val[field_to_update]
-            
+
+            #### DEBUG
+            for i in w_obj.val:
+                if i == None:
+                    import pdb
+                    pdb.set_trace()
+                    print '\n'
+            #### END DEBUG
+                    
 
     def copy(self):
         '''
@@ -559,15 +578,17 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         update.  Values don't matter.
         
         '''
-        self.commit_num += 1
         
         updated_fields = {}
         _ReferenceContainerVersion._test_and_overwrite(
             self.contains_keys,dirty_version_obj.contains_keys,
             updated_fields)
-        _ReferenceContainerVersion._test_and_overwrite(
-            self.read_values_keys,dirty_version_obj.read_values_keys,
-            updated_fields)
+
+        # Should not need to copy values that we only read from:
+        # should already have copies of those.
+        # _ReferenceContainerVersion._test_and_overwrite(
+        # self.read_values_keys,dirty_version_obj.read_values_keys,
+        # updated_fields)
         _ReferenceContainerVersion._test_and_overwrite(
             self.written_values_keys,dirty_version_obj.written_values_keys,
             updated_fields)
@@ -577,17 +598,25 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         _ReferenceContainerVersion._test_and_overwrite(
             self.deleted_keys,dirty_version_obj.deleted_keys,
             updated_fields)
-        
-        
-        if dirty_version_obj.len_called != None:
-            if ((self.len_called == None) or
-                (dirty_version_obj.len_called > self.len_called)):
-                self.len_called = dirty_version_obj.len_called
 
-        if dirty_version_obj.keys_called != None:
-            if ((self.keys_called == None) or
-                (dirty_version_obj.keys_called > self.keys_called)):
-                self.keys_called = dirty_version_obj.keys_called
+        if len(updated_fields) != 0:
+            # if all we did were reads, then can use same commit
+            # number.  this is because the object has not actually
+            # changed due to performing this commit.
+            self.commit_num += 1
+
+        # FIXME: check through the logic on keys + len.  I'm not
+        # entirely satisfied that they are correct.
+            
+        # if dirty_version_obj.len_called != None:
+        #     if ((self.len_called == None) or
+        #         (dirty_version_obj.len_called > self.len_called)):
+        #         self.len_called = dirty_version_obj.len_called
+
+        # if dirty_version_obj.keys_called != None:
+        #     if ((self.keys_called == None) or
+        #         (dirty_version_obj.keys_called > self.keys_called)):
+        #         self.keys_called = dirty_version_obj.keys_called
         
         return updated_fields
 

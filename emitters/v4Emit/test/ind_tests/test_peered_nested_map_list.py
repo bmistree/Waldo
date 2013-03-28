@@ -133,18 +133,18 @@ def run_test():
     # write
     peered_list.get_val(evt2).get_val_on_key(evt2,0).get_val(evt2).write_val_on_key(evt2,'b',22)
 
+    if not evt2.hold_can_commit():
+        err_msg = '\nerr: should be able to commit write\n'
+        print err_msg
+        return False
+    evt2.complete_commit()
 
-    if not evt1.hold_can_commit():
-        err_msg = '\nerr: should be able to commit master list read\n'
-        print err_msg
-        return False
-    evt1.complete_commit()
     
-    if evt2.hold_can_commit():
-        err_msg = '\nerr: should not be able to commit because of dual change\n'
+    if evt1.hold_can_commit():
+        err_msg = '\nerr: should not be able to commit read after write.\n'
         print err_msg
         return False
-    evt2.backout_commit()
+    evt1.backout_commit()
 
     return True
     

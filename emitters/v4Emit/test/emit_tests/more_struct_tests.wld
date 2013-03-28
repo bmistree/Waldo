@@ -46,8 +46,10 @@ Sequence MapOfStructsTest(
 {
     SideA.start_map_of_structs
     {
-        Struct SomeStruct ss;
-        mapper[index_to_insert] = ss;
+        // using weird name here makes struct easier to identify in
+        // compiled code
+        Struct SomeStruct strangely_named_struct;
+        mapper[index_to_insert] = strangely_named_struct;
     }
     SideB.recv_map_of_structs
     {

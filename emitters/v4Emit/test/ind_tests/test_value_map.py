@@ -56,23 +56,33 @@ def run_test():
     else:
         evt2.backout_commit()
 
-    # testing to ensure that cannot simultaneously commit a read and a
-    # write to the same cell.
+
+    # testing to ensure that cannot simultaneously commit a read to a
+    # data cell after have writtent to it.        
     evt1,evt2 = create_two_events(dummy_endpoint)
+    
+    # start read on index
     if wmap.get_val(evt1).get_val_on_key(evt1,'b') != 2:
         print '\nerr: expected 2\n'
         return False
+
+    # before committing read, perform write on same index and commit
+    # the write.
     wmap.get_val(evt2).write_val_on_key(evt2,'b',5)
-    if not evt1.hold_can_commit():
-        print '\nerr: should be able to commit 5\n'
+    if not evt2.hold_can_commit():
+        print '\nerr: should be able to commit after having written 5\n'
         return False
-    evt1.complete_commit()
+    evt2.complete_commit()
 
-    if evt2.hold_can_commit():
-        print '\nerr: should not be able to read after having written 5\n'
+    
+    if evt1.hold_can_commit():
+        err_msg = '\nerr: should be not able to commit read element '
+        err_msg += 'after write has committed to it'
+        print err_msg
         return False
-    evt2.backout_commit()
+    evt1.backout_commit()
 
+    
     # testing to ensure can write to one element and write to another
     # element
     evt1,evt2 = create_two_events(dummy_endpoint)
@@ -111,7 +121,7 @@ def run_test():
     evt2.backout_commit()
 
     # check to ensure last delete was correct and that we cannot call
-    # keys and append simultaneoulsy.
+    # keys and add_key simultaneoulsy.
     evt1,evt2 = create_two_events(dummy_endpoint)
     keys = list(wmap.get_val(evt1).get_keys(evt1))
     if 'a' not in keys:
@@ -121,16 +131,19 @@ def run_test():
         print '\nerr: not expecting key b\n'
         return False
 
+    # before can commit keys call, add a key and commit that action,
+    # should force backout of keys
     wmap.get_val(evt2).add_key(evt2,'m',3)
-    if not evt1.hold_can_commit():
-        print '\nerr: should have been able to commit keys\n'
+    if not evt2.hold_can_commit():
+        print '\nerr: should have been able to commit add key\n'
         return False
-    evt1.complete_commit()
+    evt2.complete_commit()
+    
+    if evt1.hold_can_commit():
+        print '\nerr: should not have been able to commit keys after add_key\n'
+        return False
+    evt1.backout_commit()
 
-    if evt2.hold_can_commit():
-        print '\nerr: should not have been able to commit append\n'
-        return False
-    evt2.backout_commit()
 
     return True
         

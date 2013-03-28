@@ -60,22 +60,28 @@ def run_test():
         return False
     evt2.complete_commit()
 
-    # testing to ensure that cannot simultaneously commit a read and a
-    # write to the same cell.
+    # testing to ensure that cannot simultaneously commit a read to a
+    # data cell after have writtent to it.
     evt1,evt2 = create_two_events(dummy_endpoint)
+
+    # start read on index.  
     if wlist.get_val(evt1).get_val_on_key(evt1,1) != 2:
         print '\nerr: expected 2\n'
         return False
-    wlist.get_val(evt2).write_val_on_key(evt2,1,5)
-    if not evt1.hold_can_commit():
-        print '\nerr: should be able read 5\n'
-        return False
-    evt1.complete_commit()
 
-    if evt2.hold_can_commit():
-        print '\nerr: should not be able to read after having written 5\n'
+    # before committing read, perform write on same index
+    wlist.get_val(evt2).write_val_on_key(evt2,1,5)
+    if not evt2.hold_can_commit():
+        print '\nerr: should be able commit write of 5\n'
         return False
-    evt2.backout_commit()
+    evt2.complete_commit()
+
+    if evt1.hold_can_commit():
+        err_msg = '\nerr: should not be able to finish read commit '
+        err_msg += 'with intefering write\n'
+        print err_msg
+        return False
+    evt1.backout_commit()
 
     # testing to ensure can write to one element and write to another
     # element
@@ -121,17 +127,19 @@ def run_test():
     if length != 2:
         print '\nerr: expecting length of 2 after delete\n'
         return False
-    
-    wlist.get_val(evt2).append_val(evt2,5)
-    if not evt1.hold_can_commit():
-        print '\nerr: should have been able to commit length\n'
-        return False
-    evt1.complete_commit()
 
-    if evt2.hold_can_commit():
-        print '\nerr: should not have been able to commit append\n'
+    # before commit len, append and commit append....should not be
+    # able to commit len after that.
+    wlist.get_val(evt2).append_val(evt2,5)
+    if not evt2.hold_can_commit():
+        print '\nerr: should be able to commit append\n'
         return False
-    evt2.backout_commit()
+    evt2.complete_commit()
+    
+    if evt1.hold_can_commit():
+        print '\nerr: cannot commit len if appended in meantime.\n'
+        return False
+    evt1.backout_commit()
 
     return True
     

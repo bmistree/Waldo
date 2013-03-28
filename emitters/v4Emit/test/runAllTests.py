@@ -33,7 +33,6 @@ def run_lib_tests():
         ('Basic num test', ind_tests.test_num.run_test),
         ('List of values', ind_tests.test_value_list.run_test),
         ('Map of values', ind_tests.test_value_map.run_test),
-        ('Map of values', ind_tests.test_value_map.run_test),
         ('Nested peered list', ind_tests.test_peered_nested_map_list.run_test),
 
         ('Test de-waldo-ify', ind_tests.test_de_waldoified.run_test),
