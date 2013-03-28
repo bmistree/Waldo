@@ -21,9 +21,19 @@ def run_test():
 
     if not test_misc_list(single_side):
         return False
+
+    if not test_nested_map(single_side):
+        return False
     
     return True
 
+
+def test_nested_map(single_side):
+    expected_num = 3
+    if expected_num != single_side.nested_map('hello',expected_num):
+        print '\nErr with nested map'
+        return False
+    return True
 
 def test_misc_list(single_side):
 

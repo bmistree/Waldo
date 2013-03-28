@@ -36,6 +36,13 @@ def run_test():
         print '\nErr: input struct sequence did not increment correctly'
         return False
     
+
+    # test that can insert a struct into a map and access its fields
+    # from within map
+    expected_num = 390
+    if sideA.test_struct_map('hello',expected_num) != expected_num:
+        print '\nErr: structs in maps is broken'
+        return False
     
     return True
 

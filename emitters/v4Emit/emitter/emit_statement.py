@@ -792,14 +792,22 @@ def _emit_second_level_assign(
 
         original_to_assign_txt = '_tmp' + str(counter)            
         to_assign_txt = original_to_assign_txt
+        # if ((not ext_assign) and
+        #     (not emit_utils.is_reference_type_type_dict(lhs_node.type))):
         if not ext_assign:
             to_assign_txt = '_context.get_val_if_waldo(' + to_assign_txt + ',_active_event)'            
 
-            
         if lhs_node.label == AST_BRACKET_STATEMENT:
             # need to actually assign to a particular key, rather than the
             # overall variable.  can't use write_val, must use
             # write_val_on_key instead.
+
+            if emit_utils.is_reference_type_type_dict(lhs_node.type):
+                # we're assigning a reference type (list, map, user
+                # struct) into the key of a map/list.  Just write over
+                # directly (don't get its val first)
+                to_assign_txt = original_to_assign_txt
+            
             outside_bracket_node = lhs_node.children[0]
             inside_bracket_node = lhs_node.children[1]
 
@@ -830,6 +838,13 @@ def _emit_second_level_assign(
             to_assign_to_txt = emit_statement(
                 pre_dot_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
+            if emit_utils.is_reference_type_type_dict(lhs_node.type):
+                # we're assigning a reference type (list, map, user
+                # struct) into the key of a map/list.  Just write over
+                # directly (don't get its val first)
+                to_assign_txt = original_to_assign_txt
+
+            
             # must be identifier
             post_dot_node = lhs_node.children[1]
             #### DEBUG

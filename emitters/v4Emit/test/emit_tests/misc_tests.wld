@@ -26,6 +26,19 @@ SingleSide
         return toText(to_call_to_text_on);
     }
 
+    Public Function nested_map(Text outer_index,Number inner_val_and_index) returns Number
+    {
+        Map(from: Text, to: Map(from: Number, to: Number)) outer_map;
+        Map(from: Number, to: Number) inner_map;
+        inner_map[inner_val_and_index] = inner_val_and_index;
+        
+        outer_map[outer_index] = inner_map;
+        Number to_return;
+        to_return = outer_map[outer_index][inner_val_and_index];
+        return to_return;
+    }
+
+    
     Public Function nested_list_append()
     {
         List(element: List(element: Number)) double_list;
