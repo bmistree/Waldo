@@ -437,6 +437,7 @@ class _Endpoint(object):
 
         msg_map = msg_to_send.msg_to_map()
 
+        
         self._conn_obj.write(pickle.dumps(msg_map),self)
 
         

@@ -1070,24 +1070,32 @@ def struct_rhs_declaration(
     For returns, @see non_struct_rhs_declaration
     
     '''
+
     if decl_node.label == AST_ANNOTATED_DECLARATION:
         var_name = emit_utils.get_var_name_from_annotated_decl(decl_node)
         var_type = emit_utils.get_var_type_dict_from_annotated_decl(decl_node)
+        initializer_node = emit_utils.get_var_initializer_from_annotated_decl(decl_node)        
     else:
         var_name = emit_utils.get_var_name_from_decl(decl_node)
         var_type = emit_utils.get_var_type_dict_from_decl(decl_node)
+        initializer_node = emit_utils.get_var_initializer_from_decl(decl_node)
+
+
+    initializer_str = ''
+    if initializer_node != None:
+        initializer_str = emit_statement(
+            initializer_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
 
     struct_type_variable_txt = struct_type_emit_declaration(
         var_type,var_name,host_uuid_var_name,peered,endpoint_name,ast_root,
-        fdep_dict,emit_ctx)
+        fdep_dict,emit_ctx, initializer_str)
     
     return struct_type_variable_txt,var_name
 
 
-
 def struct_type_emit_declaration(
     var_type,var_name,host_uuid_var_name,peered,endpoint_name,ast_root,
-    fdep_dict,emit_ctx):
+    fdep_dict,emit_ctx, initializer_str):
     '''
     @param {type dict} var_type --- Should be the type dict for a user
     struct.
@@ -1095,14 +1103,17 @@ def struct_type_emit_declaration(
     @param {String} var_name --- The name of the Waldo 
     
     @returns {String} --- The string for a WaldoUserStructVariable
-    with initialization vector.
+    with initialization vector or with assignment to new value.
     '''
     #### DEBUG
     if not TypeCheck.templateUtil.is_struct(var_type):
         emit_utils.emit_assert(
             'Expected struct type dict for struct rhs declaration')
     #### END DEBUG
-    
+
+    if initializer_str != '':
+        return initializer_str
+        
     struct_fields_dict = TypeCheck.templateUtil.get_struct_fields_dict(
         var_type)
 
@@ -1171,7 +1182,7 @@ def non_struct_rhs_declaration(
         id_node = decl_node.children[0]
         var_name = emit_utils.get_var_name_from_decl(decl_node)
         var_type = emit_utils.get_var_type_dict_from_decl(decl_node)
-        initializer_node = emit_utils.get_var_initializer_from_decl(decl_node)            
+        initializer_node = emit_utils.get_var_initializer_from_decl(decl_node)
     #### DEBUG
     else:
         emit_utils.emit_assert(
