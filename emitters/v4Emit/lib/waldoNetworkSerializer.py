@@ -38,7 +38,8 @@ def requires_name_arg_in_constructor(var_type):
         return False
     return True
     
-def get_constructed_obj(var_type,var_name,host_uuid,peered,init_data):
+def get_constructed_obj(
+    var_type,var_name,host_uuid,peered,init_data,invalidation_listener):
     '''
     @returns {WaldoReferenceObject} --- Either a wVariable or an
     InternalList or InternalMap.
@@ -48,6 +49,31 @@ def get_constructed_obj(var_type,var_name,host_uuid,peered,init_data):
         util.logger_assert(
             'Unknown variable type to deserialize')
     #### END DEBUG
+
+    if var_type == wVariables.WaldoUserStructVariable.var_type():
+        # we are constructing a user struct: in this case, init_data
+        # will be an internal map.  can just deserialize the map into
+
+        #### DEBUG
+        if not isinstance(init_data,waldoInternalMap.InternalMap):
+            util.logger_assert(
+                'Must initialize user struct data with internal map')
+        #### END DEBUG
+
+        # FIXME: it is unclear if we just created an internal map for
+        # no reason here.  maybe just serialize and deserialize
+        # internal values of structs as dicts.
+            
+        # FIXME: it is gross that reaching into the internal map this
+        # way.
+        init_data._lock()
+        if invalidation_listener.uuid not in init_data._dirty_map:
+            new_init_data = init_data.val
+        else:
+            new_init_data = init_data._dirty_map[invalidation_listener.uuid].val
+        init_data._unlock()
+        init_data = new_init_data
+        
     var_constructor = ReferenceTypeConstructorDict[var_type]
     
     if requires_name_arg_in_constructor(var_type):
@@ -338,7 +364,8 @@ def new_obj_from_serialized(
         nested_obj = new_obj_from_serialized(
             host_uuid,var_data,invalidation_listener)
         new_obj = get_constructed_obj(
-            var_type,var_name,host_uuid,True,nested_obj)
+            var_type,var_name,host_uuid,True,nested_obj,
+            invalidation_listener)
     else:
         if (isinstance(var_data,dict) and
             (len(var_data) != 0) and
@@ -347,7 +374,8 @@ def new_obj_from_serialized(
             new_obj = {}
             for key in var_data.keys():
                 new_obj[key] = get_constructed_obj(
-                    var_type,var_name,host_uuid,True,var_data[key])
+                    var_type,var_name,host_uuid,True,var_data[key],
+                    invalidation_listener)
                 
         elif (isinstance(var_data,list) and
               (len(var_data) != 0) and
@@ -358,10 +386,11 @@ def new_obj_from_serialized(
             for key in range(0,len(var_data)):
                 new_obj.append(
                     get_constructed_obj(
-                        var_type,var_name,host_uuid,True,var_data[key]))
+                        var_type,var_name,host_uuid,True,var_data[key],
+                        invalidation_listener))
         else:
             new_obj = get_constructed_obj(
-                var_type,var_name,host_uuid,True,var_data)
+                var_type,var_name,host_uuid,True,var_data,invalidation_listener)
 
     # do not need to copy in version object because creating a new
     # object, which means that no other events were able to perform
