@@ -327,9 +327,6 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         elif isinstance(val,list):
             if len(w_obj.val) > len(val):
                 del w_obj.val[len(val):]
-            elif len(w_obj.val) < len(val):
-                num_elements_to_append = len(val) - len(w_obj.val)
-                w_obj.val += [None]*num_elements_to_append
 
             for field_to_update in fields_to_update.keys():
 
@@ -341,16 +338,17 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     # same size.
                     continue
 
+                if field_to_update >= len(w_obj.val):
+                    num_elements_to_append = field_to_update + 1 - len(w_obj.val)
+                    # note: using this approach, may have val fields
+                    # that are None.  This will only happen for
+                    # sequence peered data that are not accessed, so
+                    # this is fine.
+                    to_append = [None]*num_elements_to_append
+                    w_obj.val += to_append
+                
                 w_obj.val[field_to_update] = val[field_to_update]
 
-            #### DEBUG
-            for i in w_obj.val:
-                if i == None:
-                    import pdb
-                    pdb.set_trace()
-                    print '\n'
-            #### END DEBUG
-                    
 
     def copy(self):
         '''

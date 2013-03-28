@@ -232,10 +232,13 @@ def run_test():
     waldoNetworkSerializer.deserialize_peered_object_into_variable(
         rhs._host_uuid,serializabled,rhs_event2,rhs.map)
 
-    internal_list1,evt = create_waldo_list(lhs,[1,2,3])
-    evt.complete_commit()
-    
-    rhs.map.get_val(rhs_event1).add_key(rhs_event1,1,internal_list1)
+    int_l,evtl = create_waldo_list(rhs,[1,2,3])
+    if not evtl.hold_can_commit():
+        print '\nError: should be able to append to list'
+        return False
+    evtl.complete_commit()
+
+    rhs.map.get_val(rhs_event1).add_key(rhs_event1,1,int_l)
 
     if not rhs_event1.hold_can_commit():
         print '\nError: should be able to commit add'
@@ -252,7 +255,7 @@ def run_test():
         err_msg = '\nError: should not be able to commit lhs\'s '
         err_msg += 'read+single write update in parallel with add\n'
         return False
-    lhs.complete_commit()
+    lhs_event.complete_commit()
 
     return True
     
