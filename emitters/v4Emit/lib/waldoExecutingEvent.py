@@ -462,10 +462,10 @@ class _ExecutingEventContext(object):
 
 
         if (isinstance(what_calling_len_on,wVariables.WaldoListVariable) or
-            isinstance(what_calling_len_on,wVariables.WaldoListVariable)):
+            isinstance(what_calling_len_on,wVariables.WaldoMapVariable)):
             return what_calling_len_on.get_val(active_event).get_len(active_event)
 
-        util.emit_assert(
+        util.logger_assert(
             'Calling len on an object that does not support the function')
         
 
