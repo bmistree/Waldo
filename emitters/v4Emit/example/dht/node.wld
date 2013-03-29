@@ -1,0 +1,133 @@
+Node
+Endpoint Node;
+
+/**
+ * A single node in the dht.  Contains data holding as part of dht + a finger
+ * table of connections to other endpoints.  It can use its finger table to look
+ * up keys that it's not responsible for.
+ */
+
+
+Sequences{}
+
+Struct NeighborNode
+{
+    TrueFalse valid;
+    Text neighbor_uuid;
+    Endpoint neighbor;
+}
+
+
+Node
+{
+    Text uuid;
+    Function(in: Text, Text; returns: Number) distance_func;
+    
+    // UUID of node to connection object
+    Map(from: Text, to: Endpoint) finger_table;
+    Struct NeighborNode next_neighbor;
+    Struct NeighborNode previous_neighbor;
+
+    
+    // UUID of data to actual stored data
+    Map(from: Text, to: Text) local_data_store;
+    
+    onCreate(
+        Text uuid_,
+        Function(in: Text, Text; returns: Number) distance_func_)
+    {
+        uuid = uuid_;
+        distance_func = distance_func_;
+    }
+
+    Public Function add_data(Text data_id,Text data)
+    {
+        Text closest_node_id = find_closest(data_id);
+        if (closest_node_id == uuid)
+            local_data_store[data_id] = data;
+        else
+            finger_table[closest_node_id].forward_add_data(data_id,data);
+    }
+    
+    Public Function add_connection(Text node_id, Endpoint connection_endpoint)
+    {
+        finger_table[node_id] = connection_endpoint;
+    }
+
+    Public Function remove_connection(Text node_id)
+    {
+        finger_table.remove(node_id);
+    }
+
+
+    Public Function get_uuid() returns Text
+    {
+        return uuid;
+    }
+    
+    /**
+       @returns {3-tuple} (a,b,c)
+       
+          a {Text} --- The actual data associated with the id if the id existed
+          in the table.
+
+          b {Number} --- The number of network hops required to answer the
+          query.
+
+          c {TrueFalse} --- Whether the id existed in the dht.  True if it did,
+          False if it did not.
+          
+     */
+    Public Function get_data(Text data_id) returns Text, Number, TrueFalse
+    {
+        Text value = '';
+        Number num_hops = 0;        
+        TrueFalse found = False;
+
+        
+        Text closest_id = find_closest(data_id);
+        if (closest_id == uuid)
+        {
+            if (data_id in local_data_store)
+            {
+                value = local_data_store[data_id];
+                found = True;
+            }
+            
+            return value, num_hops, found;
+        }
+
+        // Data not contained on this node.  Must query more distant node for
+        // data.
+        value, num_hops, found = finger_table[data_id].forward_get(data_id);
+        return value, num_hops+1, found;
+    }
+
+    
+    
+    /**
+       @returns {Text} --- The uuid of the connection with the closest
+       connection to the data.
+     */
+    Private Function find_closest(Text data_id) returns Text
+    {
+        Text closest_id = uuid;
+        Number closest_distance = distance_func(data_id,uuid);
+        
+        // Check if any other endpoints are closer.
+        for (Text uuid_ in finger_table)
+        {
+            Number dist_to_element = distance_func(data_id,uuid);
+            
+            if (closest_distance > dist_to_element)
+            {
+                closest_distance = dist_to_element;
+                closest_id = uuid_;
+            }
+        }
+
+        return closest_id;
+    }
+
+}
+

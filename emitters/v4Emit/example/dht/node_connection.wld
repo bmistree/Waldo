@@ -1,0 +1,142 @@
+NodeConnection
+Symmetric NodeSideA, NodeSideB;
+
+/**
+ * Bi-directional connections between nodes and their partners in their finger
+ * tables.
+ */
+
+Sequences{
+  AddData: NodeSideA.start_add_data -> NodeSideB.recv_add_data;
+  RemoveData: NodeSideA.start_remove_data -> NodeSideB.recv_remove_data;    
+  GetData: NodeSideA.start_get_data -> NodeSideB.recv_get_data;
+  GetListeningInfo: NodeSideA.start_get_listening_info -> NodeSideB.recv_get_listening_info;
+  OtherSideAddConnectionToNode: NodeSideA.start_other_side_add_connection_to_node ->
+        NodeSideB.recv_other_side_add_connection_to_node;
+
+  GetOtherSideUUID: NodeSideA.start_get_other_uuid -> NodeSideB.recv_get_other_uuid;
+}
+
+
+
+Sequence AddData(Text data_id, Text data)
+{
+    NodeSideA.start_add_data{}
+    NodeSideB.recv_add_data
+    {
+        node_manager.add_data(data_id,data);
+    }
+}
+
+Sequence RemoveData(Text data_id)
+{
+    NodeSideA.start_remove_data{}
+    NodeSideB.recv_remove_data
+    {
+        node_manager.remove_data(data_id);
+    }
+}
+
+Sequence GetData(Text data_id)
+    returns Text contents, Number num_hops, TrueFalse found
+{
+    NodeSideA.start_get_data{}
+    NodeSideB.recv_get_data
+    {
+        contents, num_hops, found = node_manager.get_data(data_id);
+    }
+}
+
+// Returns a host and and port that the other side will listen for connections
+// on.  Note: in the future, it would be better that host and port would be
+// peered data.  We didn't do it this time because currently, symmetric
+// connections have no syntax to distinguish one side's peered data from the
+// other's.
+Sequence GetListeningInfo() returns Text host, Number port
+{
+    NodeSideA.start_get_listening_info{}
+    NodeSideB.recv_get_listening_info
+    {
+        host = listening_host;
+        port = listening_port;
+    }
+}
+
+// After creating a connection, we need to register the connection in the node's
+// finger table.  This sequence gets one endpoint (that's already registered
+// itself in its node_manager's finger table to get its partner to register
+// itself in its node_manager's finger table.
+Sequence OtherSideAddConnectionToNode()
+{
+    NodeSideA.start_other_side_add_connection_to_node{}
+    NodeSideB.recv_other_side_add_connection_to_node
+    {
+        // pass in False because the other side has already added itself to its
+        // node, so do not need to tell it to again
+        add_connection_to_node_and_connect_other(False);
+    }
+}
+
+Sequence GetOtherSideUUID() returns Text uuid
+{
+    NodeSideA.start_get_other_uuid{}
+    NodeSideB.recv_get_other_uuid
+    {
+        uuid = node_manager.get_uuid();
+    }
+}
+
+
+NodeSideA
+{
+    Endpoint node_manager;
+    Text listening_host;
+    Number listening_port;
+    
+    /**
+       @param {Node endpoint} manager
+       
+       @param {Text} listening_host_ --- Node is listening for connections
+       at this host.  (Can either be IPv4 address or domain name.)
+
+       @param {Number} listening_port_ --- Node listens for new connections
+       at this port.
+     */
+    onCreate(Endpoint manager, Text listening_host_, Number listening_port_)
+    {
+        node_manager = manager;
+        listening_host = listening_host_;
+        listening_port = listening_port_;
+    }
+
+    Public Function add_connection_to_node()
+    {
+        add_connection_to_node_and_connect_other(True);
+    }
+
+    Private Function add_connection_to_node_and_connect_other(
+        TrueFalse connect_other)
+    {
+        Text other_node_uuid = start_get_other_uuid();
+        node_manager.add_connection(other_node_uuid,self);
+        
+        if (connect_other)
+            start_other_side_add_connection_to_node();
+    }
+
+    Public Function forward_add_data(Text data_id, Text data)
+    {
+        start_add_data(data_id,data);
+    }
+
+    Public Function forward_remove_data(Text data_id)
+    {
+        start_remove_data(data_id);
+    }
+
+    Public Function forward_get_data(Text data_id)
+        returns Text, Number, TrueFalse
+    {
+        return start_get_data(data_id);
+    }
+}
