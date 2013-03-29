@@ -2,8 +2,14 @@ NodeConnection
 Symmetric NodeSideA, NodeSideB;
 
 /**
- * Bi-directional connections between nodes and their partners in their finger
- * tables.
+  Bi-directional connections between nodes and their partners in their finger
+  tables.
+
+  When registering with the coordinator, the coordinator returns a map of node
+  uuids + host,port pairs to use for a node's finger table.  The setup script
+  then creates connections to each of them.  Note: after creating a connection,
+  the listening node calls add_connection_to_node.  This method registers the
+  connection with the node master.
  */
 
 Sequences{
@@ -109,6 +115,11 @@ NodeSideA
         listening_port = listening_port_;
     }
 
+    /**
+       Immediately after accepting a connection, the node that was listening for
+       the connection calls this method.  This method atomically adds the
+       connection to each node's finger table.
+     */
     Public Function add_connection_to_node()
     {
         add_connection_to_node_and_connect_other(True);

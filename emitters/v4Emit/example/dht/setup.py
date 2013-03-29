@@ -44,11 +44,11 @@ def add_single_dht_node(node_host_port_pair):
 
     uuid, finger_table, next, prev = requester.register()
     dht_node = Waldo.no_partner_create(Node,uuid,util_funcs.distance)
-
+    
     # listen for connections to my node
     def on_connected(sidea_endpoint):
         sidea_endpoint.add_connection_to_node()
-    
+
     Waldo.tcp_accept(
         NodeSideA, node_host_port_pair.host,
         node_host_port_pair.port, dht_node,
@@ -57,20 +57,41 @@ def add_single_dht_node(node_host_port_pair):
         connected_callback = on_connected)
     
     # connect to other nodes in my finger table
+    for uuid in finger_table.keys():
+        # table_entry has form:
+        #   host: <text>
+        #   port: <number>
+        #   valid: <bool>
+        #   uuid: <text>
+        table_entry = finger_table[uuid]
+        host_to_connect_to = table_entry['host']
+        port_to_connect_to = table_entry['port']
+        
+        connection_to_finger_table_node = Waldo.tcp_connect(
+            NodeSideB, host_to_connect_to, port_to_connect_to,
+            dht_node,node_host_port_pair.host, node_host_port_pair.port)
     
-    
-    
-    
-def add_dht_nodes():
-    for node_host_port_pair in conf.NODE_HOST_PORT_PAIRS:
-        add_single_dht_node(node_host_port_pair)
+    return dht_node
 
+        
+def add_dht_nodes():
+    dht_node_list = []
+    for node_host_port_pair in conf.NODE_HOST_PORT_PAIRS:
+        dht_node_list.append(add_single_dht_node(node_host_port_pair))
+    return dht_node_list
     
 def run():
     coordinator_master = start_coordinator()
-    add_dht_nodes()
+    dht_node_list = add_dht_nodes()
+
+    import pdb
+    pdb.set_trace()
+    
     time.sleep(5)
 
+    
+
+    
     
 
 if __name__ == '__main__':
