@@ -22,13 +22,6 @@ class _WaldoVariable(_ReferenceValue):
         util.logger_assert(
             'Cannot call pure virtual method var_type ' +
             'on _WaldoVariable.')        
-        
-
-
-def de_waldoify_for_return(val):
-    # FIXME: actually write
-    return val
-
 
 
 ### Pointer to endpoint
@@ -303,9 +296,9 @@ class WaldoUserStructVariable(WaldoMapVariable):
 
     def is_value_type(self):
         return False
+
     
     def copy(self,invalid_listener,peered):
-        
         to_return = WaldoUserStructVariable(
             self.name,self.host_uuid,peered,
             self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered))
