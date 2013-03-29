@@ -43,7 +43,8 @@ def add_single_dht_node(node_host_port_pair):
         node_host_port_pair.port)
 
     uuid, finger_table, next, prev = requester.register()
-    dht_node = Waldo.no_partner_create(Node,uuid,util_funcs.distance)
+    dht_node = Waldo.no_partner_create(
+        Node,uuid,util_funcs.distance,util_funcs.hashed_uuid)
     
     # listen for connections to my node
     def on_connected(sidea_endpoint):
