@@ -217,7 +217,6 @@ class _ReferenceBase(object):
 
         return copied_val
 
-
     def update_version_and_val(
         self,invalid_listener,version_obj,val):
         '''
@@ -236,12 +235,12 @@ class _ReferenceBase(object):
             util.logger_assert(
                 'Should not be updating value and version for a ' +
                 'non-peered data item.')
-        
+
+            
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
         dirty_element.set_version_obj_and_val(version_obj,val)
-        
         self._unlock()
 
         

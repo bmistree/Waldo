@@ -122,24 +122,15 @@ class _ExecutingEventContext(object):
         of the variable.  Don't wait for commit or anything else.
         
         '''
+        import waldoReferenceContainerBase
+        
         if isinstance(val,wVariables._WaldoExternalValueType):
             return val.get_val(active_event).get_val(active_event)
+        # elif isinstance(val,waldoReferenceContainerBase._ReferenceContainer):
+        #     return val.get_val(active_event).get_val(active_event)
         elif isinstance(val,waldoReferenceBase._ReferenceBase):
             return val.get_val(active_event)
         return val
-
-    # def assign_val_if_waldo(self,val,active_event):
-    #     '''
-    #     Wraps get_val_if_waldo.  Essentially, when assigning a
-    #     function between Waldo variables, we need to insure that we
-    #     maintain that function's meta-data (which includes whether
-    #     incoming arguments are external or not).  Therefore, if val is
-    #     just a function object, return it directly.  otherwise, call
-    #     get_val_if_waldo
-    #     '''
-    #     # if isinstance(val,wVariables.WaldoFunctionVariable):
-    #     #     return val
-    #     return self.get_val_if_waldo(val,active_event)
 
     
     def turn_into_waldo_var(

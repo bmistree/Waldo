@@ -4,6 +4,18 @@ import waldoExecutingEvent
 
 class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
     def __init__(self,host_uuid,peered,init_val):
+
+        #### DEBUG
+        import util
+        if isinstance(
+            init_val,util._SerializationHelperNamedTuple):
+            import pdb
+            pdb.set_trace()
+            print '\n\n'
+        #### END DEBUG
+            
+                      
+        
         waldoReferenceContainerBase._ReferenceContainer.__init__(
             self,host_uuid,peered,init_val,_InternalMapVersion(),
             _InternalMapDirtyMapElement)

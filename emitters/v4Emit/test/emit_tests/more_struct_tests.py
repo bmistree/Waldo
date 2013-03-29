@@ -44,8 +44,40 @@ def run_test():
         print '\nErr: structs in maps is broken'
         return False
 
-    # test that can serialize maps of structs
-    sideA.test_sequence_struct_map()
+
+    # test that can write over a map in a message sequence
+    to_test = [
+        {'a': {'c': 'd'}},
+        {'m': { 'o': 'q'}}]
+
+    for map_to_test in to_test:
+        if sideA.test_write_over_map(map_to_test) != map_to_test:
+            print '\nErr: got incorrect map value'
+            return False
+    
+    
+    # # test that can serialize maps of structs
+    struct_index_name = 'a'
+    to_test = [
+        ('hi',3, 'm', 1),
+        ('hi',3, 'n', 1),
+        ('hoiwei',100, 'n', 1),
+        ]
+    for index1_to_insert, number1_to_insert, index2_to_insert, number2_to_insert in to_test:
+        expected = { index1_to_insert: { struct_index_name: number1_to_insert},
+                     index2_to_insert: { struct_index_name: number2_to_insert}}
+
+        got_val = sideA.test_sequence_struct_map(
+            index1_to_insert,number1_to_insert, index2_to_insert, number2_to_insert)
+
+        import pdb
+        pdb.set_trace()
+        
+        if (sideA.test_sequence_struct_map(
+            index1_to_insert,number1_to_insert, index2_to_insert, number2_to_insert) !=
+            expected):
+            print '\nErr: got incorrect struct map from passing across sequence.'
+            return False
     
     return True
 

@@ -247,10 +247,11 @@ def deserialize_peered_object_into_variable(
         if case1_or_case2:
             # CASE 1/2 above ... overwrite val and version object of
             # the variable's associated dirty map element.
+                
             waldo_reference.update_version_and_val(
                 invalidation_listener,version_obj,var_data)
             return
-        
+
     else:
         # CASE 3 above: we have a single SerializationHelperNamedTuple
         # means that we must have a _ReferenceValue
@@ -274,6 +275,7 @@ def deserialize_peered_object_into_variable(
             new_obj = new_obj_from_serialized(
                 host_uuid,var_data,invalidation_listener)
 
+            
             waldo_reference.update_version_and_val(
                 invalidation_listener,version_obj,new_obj)
             

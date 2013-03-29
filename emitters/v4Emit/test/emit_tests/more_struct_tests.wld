@@ -6,6 +6,7 @@ Sequences{
   Test: SideA.start_test -> SideB.recv_test;
   InputStruct: SideA.start_input_struct -> SideB.recv_input_struct;
   MapOfStructsTest: SideA.start_map_of_structs -> SideB.recv_map_of_structs;
+  WriteOverMapTest: SideA.start_write_over_map_test -> SideB.recv_write_over_map_test;
 }
 
 // Want to ensure that can get a struct from an endpoint call and that can
@@ -41,7 +42,8 @@ Sequence InputStruct(Struct SomeStruct input_struct, Number inc1, Number inc2)
 }
 
 Sequence MapOfStructsTest(
-    Map(from: Text, to: Struct SomeStruct) mapper, Text index_to_insert)
+    Map(from: Text, to: Struct SomeStruct) mapper,
+    Text index_to_insert, Number to_insert)
     returns Map(from: Text, to: Struct SomeStruct) returner
 {
     SideA.start_map_of_structs
@@ -49,12 +51,25 @@ Sequence MapOfStructsTest(
         // using weird name here makes struct easier to identify in
         // compiled code
         Struct SomeStruct strangely_named_struct;
+        strangely_named_struct.a = to_insert;
         mapper[index_to_insert] = strangely_named_struct;
     }
     SideB.recv_map_of_structs
     {
         returner = mapper;
     }
+}
+
+Sequence WriteOverMapTest(
+    Map(from: Text, to: Map(from: Text, to: Text)) innerest)
+    returns Map(from: Text, to: Map(from: Text, to: Text)) outer
+{
+    SideA.start_write_over_map_test
+    {
+        outer = innerest;
+    }
+    SideB.recv_write_over_map_test
+    {}
 }
 
 
@@ -91,6 +106,7 @@ SideA
         return s_struct.a;
     }
 
+    
     Public Function test_struct_map(Text index, Number num) returns Number
     {
         Struct SomeStruct ss = start_test(num + 23);
@@ -104,15 +120,31 @@ SideA
         // return struct_map[index].a;
     }
 
-    Public Function test_sequence_struct_map()
+    Public Function test_sequence_struct_map(
+        Text index1_to_insert, Number number1_to_insert,
+        Text index2_to_insert, Number number2_to_insert)
+        returns Map (from: Text, to: Struct SomeStruct)
     {
         Struct SomeStruct ss;
-        ss.a = 390;
+        ss.a = number1_to_insert;
         Map(from: Text, to: Struct SomeStruct) mapper;
-        mapper['hi'] = ss;
-        
-        start_map_of_structs(mapper,'wow');
+        mapper[index1_to_insert] = ss;
+
+        Map(from: Text, to: Struct SomeStruct) mapper2;
+        mapper2 = start_map_of_structs(
+            mapper,index2_to_insert, number2_to_insert);
+        // mapper2[index1_to_insert] = ss;
+        return mapper2;
     }
     
-}
 
+    Public Function test_write_over_map(
+        Map(from:Text, to: Map(from: Text, to: Text)) inner)
+        returns Map(from: Text, to: Text)
+    {
+        
+        Map (from: Text, to: Map(from: Text, to: Text)) intermediate;
+        intermediate = start_write_over_map_test(inner);
+        return intermediate;
+    }
+}
