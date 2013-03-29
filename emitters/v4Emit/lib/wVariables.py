@@ -297,7 +297,14 @@ class WaldoUserStructVariable(WaldoMapVariable):
     def is_value_type(self):
         return False
 
-    
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        internal_map = self.get_val(invalid_listener)
+        to_return = internal_map.de_waldoify(invalid_listener)
+        return to_return
+
     def copy(self,invalid_listener,peered):
         to_return = WaldoUserStructVariable(
             self.name,self.host_uuid,peered,

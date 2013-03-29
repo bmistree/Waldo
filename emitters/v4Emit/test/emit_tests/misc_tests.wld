@@ -4,6 +4,12 @@ Endpoint SingleSide;
 
 Sequences{}
 
+Struct TextStruct
+{
+    Text fielda;
+    Text fieldb;
+}
+
 SingleSide
 {
 
@@ -65,6 +71,35 @@ SingleSide
     {
         to_insert_into.insert(index_to_insert_into,what_to_insert);
         return to_insert_into;
+    }
+
+    Public Function test_return_nested_map(
+        Map(from: Text, to: Map( from: Text, to: Text)) in_nested_map)
+        returns Map(from: Text, to: Map( from: Text, to: Text))
+    {
+        return in_nested_map;
+    }
+
+
+    Public Function test_return_user_struct(Text fielda, Text fieldb)
+        returns Struct TextStruct
+    {
+        Struct TextStruct ts;
+        ts.fielda = fielda;
+        ts.fieldb = fieldb;
+        return ts;
+    }
+
+    Public Function test_return_user_struct_in_map(
+        Text map_index, Text user_struct_fielda, Text user_struct_fieldb)
+        returns Map(from: Text, to: Struct TextStruct)
+    {
+        Map(from: Text, to: Struct TextStruct) map_;
+
+        map_[map_index] = test_return_user_struct(
+            user_struct_fielda, user_struct_fieldb);
+        
+        return map_;    
     }
     
     

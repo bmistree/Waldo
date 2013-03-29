@@ -24,7 +24,42 @@ def run_test():
 
     if not test_nested_map(single_side):
         return False
+
+    if not test_user_struct_returns(single_side):
+        return False
     
+    return True
+
+def test_user_struct_returns(single_side):
+
+    # can we return a single user struct at a time from waldo
+    fields_to_test = [
+        ('a','b'),
+        ('m','n'),
+        ('wowo', 'oo'),
+        ]
+    for fielda, fieldb in fields_to_test:
+        user_struct = single_side.test_return_user_struct(fielda,fieldb)
+        if ('fielda' not in user_struct) or ('fieldb' not in user_struct):
+            print '\nErr: missing key for user struct'
+            return False
+
+        if (user_struct['fielda'] != fielda) or (user_struct['fieldb'] != fieldb):
+            print '\nErr: incorrect value in user struct field'
+            return False
+
+
+    # can we return user structs nested in a map
+    for fielda, fieldb in fields_to_test:
+        # just going to reuse fields for indices of map that should return
+        map_index = fielda
+
+        expecting = { map_index: { 'fielda': fielda, 'fieldb': fieldb}}
+        
+        if single_side.test_return_user_struct_in_map(map_index,fielda,fieldb) != expecting:
+            print '\nErr: got back incorrect nested user struct'
+            return False
+                
     return True
 
 
@@ -33,6 +68,21 @@ def test_nested_map(single_side):
     if expected_num != single_side.nested_map('hello',expected_num):
         print '\nErr with nested map'
         return False
+
+    # test can get a nested map returned from Waldo
+    to_test_on = [
+        {},
+        {
+            'a': {'b': 'c'},
+            'd': {},
+            'e': {'f' : 'g', 'h' : 'i'}
+            }]
+    for map_to_test_on in to_test_on:
+        if map_to_test_on != single_side.test_return_nested_map(map_to_test_on):
+            print '\nErr with returning nested map'
+            return False
+        
+    
     return True
 
 def test_misc_list(single_side):
