@@ -1,0 +1,62 @@
+MultipleSequences
+
+Endpoint SideA;
+Endpoint SideB;
+
+
+Sequences
+{
+  SeqA: SideA.start_seq_a -> SideB.recv_seq_a;
+  SeqB: SideA.start_seq_b -> SideB.recv_seq_b;
+}
+
+Sequence SeqA(Text input_txt) returns Text output_txt
+{
+    SideA.start_seq_a
+    {}
+    SideB.recv_seq_a
+    {
+        output_txt = input_txt;
+    }
+}
+
+Sequence SeqB(Text input_txt) returns Text output_txt
+{
+    SideA.start_seq_b
+    {}
+    SideB.recv_seq_b
+    {
+        output_txt = input_txt;
+    }
+}
+
+SideA
+{
+    Function(in: Text; returns: Nothing) print_debug;
+    
+    onCreate(
+        Function(in: Text; returns: Nothing) print_debug_)
+    {
+        print_debug = print_debug_;
+    }
+
+    Public Function test_two_sequences(Text seq_one_txt, Text seq_two_txt)
+        returns Text, Text
+    {
+        Text return1 = start_seq_a(seq_one_txt);
+        Text return2 = start_seq_b(seq_two_txt);
+        
+        return return1, return2;
+    }
+}
+
+SideB
+{
+    Function(in: Text; returns: Nothing) print_debug;
+    
+    onCreate(
+        Function(in: Text; returns: Nothing) print_debug_)
+    {
+        print_debug = print_debug_;
+    }
+}
