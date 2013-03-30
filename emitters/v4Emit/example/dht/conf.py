@@ -14,3 +14,5 @@ NODE_HOST_PORT_PAIRS = [
     HostPortPair('127.0.0.1',15559),
     ]
     
+
+NUMBER_DATA_ITEMS = 5000

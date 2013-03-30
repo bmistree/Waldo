@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-import conf
-import util_funcs
-import time
+import conf, util_funcs, data
 
-import os,sys
+import os,sys, time
 sys.path.append(
     os.path.join('..','..','lib'))
 import Waldo
@@ -74,7 +72,11 @@ def add_single_dht_node(node_host_port_pair):
     
     return dht_node
 
-        
+
+def load_data():
+    data_items = data.get_data(
+    
+
 def add_dht_nodes():
     dht_node_list = []
     for node_host_port_pair in conf.NODE_HOST_PORT_PAIRS:
