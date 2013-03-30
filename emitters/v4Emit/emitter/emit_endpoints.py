@@ -818,7 +818,7 @@ if %s != None:
 
     if isinstance(_queue_elem,%s):
         # back everything out
-        raise %s
+        raise %s()
 
     _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
 
@@ -838,8 +838,9 @@ if %s != None:
        next_to_call_txt,
        next_to_call_txt,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
-       emit_utils.library_transform('BackoutException()'),
+       emit_utils.library_transform('BackoutException'),
        )
+
     msg_receive_txt += emit_utils.indent_str(next_sequence_txt)
     return msg_receive_txt
 
@@ -880,7 +881,7 @@ _active_event.issue_partner_sequence_block_call(
 _queue_elem = _threadsafe_queue.get()
 
 if isinstance(_queue_elem,%s):
-    raise %s
+    raise %s()
 
 _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
 
@@ -909,7 +910,7 @@ else:
                           # exec on other side in plain text
        issue_call_is_first_txt,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
-       emit_utils.library_transform('BackoutException()'),
+       emit_utils.library_transform('BackoutException'),
        )
 
                                    
