@@ -22,6 +22,7 @@ import ind_tests.test_one_side_changes_peered
 import ind_tests.test_endpoint_calls
 import ind_tests.test_deadlock_detection
 import ind_tests.test_de_waldoified
+import ind_tests.tcp_encapsulate_decapsulate
 
 emit_test_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), 'emit_tests')
@@ -60,6 +61,9 @@ def run_lib_tests():
 
         ('Test deadlock detection and rollback',
          ind_tests.test_deadlock_detection.run_test),
+
+        ('Test tcp message encapsulation and decapsulation',
+         ind_tests.tcp_encapsulate_decapsulate.run_test),
         
         ]
     run_tests(to_run)
