@@ -74,12 +74,17 @@ Sequence GetListeningInfo() returns Text host, Number port
 // itself in its node_manager's finger table.
 Sequence OtherSideAddConnectionToNode()
 {
-    NodeSideA.start_other_side_add_connection_to_node{}
+    Text side_a_uuid;
+    
+    NodeSideA.start_other_side_add_connection_to_node
+    {
+        side_a_uuid = node_manager.get_uuid();
+    }
     NodeSideB.recv_other_side_add_connection_to_node
     {
         // pass in False because the other side has already added itself to its
         // node, so do not need to tell it to again
-        add_connection_to_node_and_connect_other(False);
+        add_connection_to_node_and_connect_other(False,side_a_uuid);
     }
 }
 
@@ -122,15 +127,14 @@ NodeSideA
      */
     Public Function add_connection_to_node()
     {
-        add_connection_to_node_and_connect_other(True);
+        Text other_node_uuid = start_get_other_uuid();
+        add_connection_to_node_and_connect_other(True,other_node_uuid);
     }
 
     Private Function add_connection_to_node_and_connect_other(
-        TrueFalse connect_other)
+        TrueFalse connect_other, Text other_node_uuid)
     {
-        Text other_node_uuid = start_get_other_uuid();
         node_manager.add_connection(other_node_uuid,self);
-        
         if (connect_other)
             start_other_side_add_connection_to_node();
     }
