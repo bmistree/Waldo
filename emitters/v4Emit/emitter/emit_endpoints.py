@@ -813,11 +813,12 @@ _active_event.issue_partner_sequence_block_call(
 # must wait on the result of the call before returning
 
 if %s != None:
+    # means that we have another sequence item to execute next
     _queue_elem = _threadsafe_queue.get()
 
     if isinstance(_queue_elem,%s):
         # back everything out
-        raise %s
+        raise %s()
 
     _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
 
@@ -837,13 +838,12 @@ if %s != None:
        next_to_call_txt,
        next_to_call_txt,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
-       emit_utils.library_transform('BackoutException()'),
+       emit_utils.library_transform('BackoutException'),
        )
 
     msg_receive_txt += emit_utils.indent_str(next_sequence_txt)
     return msg_receive_txt
-    
-    
+
 
 def emit_message_node_what_to_call_next(next_to_call_node,emit_ctx):
     '''
@@ -881,7 +881,7 @@ _active_event.issue_partner_sequence_block_call(
 _queue_elem = _threadsafe_queue.get()
 
 if isinstance(_queue_elem,%s):
-    raise %s
+    raise %s()
 
 _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
 
@@ -897,13 +897,20 @@ if _to_exec_next != None:
     # means that we do not have any additional functions to exec
     _to_exec = getattr(self,_to_exec_next)
     _to_exec(_active_event,_context)
+else:
+    # end of sequence: reset to_reply_with_uuid in context.  we do
+    # this so that if we go on to execute another message sequence
+    # following this one, then the message sequence will be viewed as
+    # a new message sequence, rather than the continuation of a
+    # previous one.
+    _context.reset_to_reply_with()
 
 ''' % (emit_utils.library_transform('Queue'),
        next_message_name, # the name of the message receive func to
                           # exec on other side in plain text
        issue_call_is_first_txt,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
-       emit_utils.library_transform('BackoutException()'),
+       emit_utils.library_transform('BackoutException'),
        )
 
                                    

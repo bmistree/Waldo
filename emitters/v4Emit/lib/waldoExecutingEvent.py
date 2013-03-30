@@ -62,6 +62,16 @@ class _ExecutingEventContext(object):
         '''
         self.to_reply_with_uuid = to_reply_with_uuid
 
+    def reset_to_reply_with(self):
+        '''
+        Each time we finish a message sequence, we reset
+        set_to_reply_with.  This is so that if we start any new
+        message sequences, the calls to the message sequences will be
+        started fresh instead of viewed as a continuation of the
+        previous sequence.
+        '''
+        self.set_to_reply_with(None)
+        
 
     def set_msg_send_initialized_bit_false(self):
         '''

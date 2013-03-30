@@ -290,7 +290,6 @@ class _ActiveEvent(_InvalidationListener):
                 self.message_listening_queues_map[
                     reply_with_uuid] = result_queue
 
-                
             # here, the local endpoint uses the connection object to
             # actually send the message.
             self.local_endpoint._send_partner_message_sequence_block_request(
@@ -659,7 +658,6 @@ class _ActiveEvent(_InvalidationListener):
                      # bother with waiting for modified peered-s to
                      # update.
                 )
-
         else:
             #### DEBUG
             if reply_to_uuid not in self.message_listening_queues_map:
