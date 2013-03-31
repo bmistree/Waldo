@@ -437,7 +437,9 @@ class _Endpoint(object):
 
         msg_map = msg_to_send.msg_to_map()
 
-        self._conn_obj.write(pickle.dumps(msg_map),self)
+        sending_msg_str = pickle.dumps(msg_map)
+        msg_len = len(sending_msg_str)
+        self._conn_obj.write(sending_msg_str,self)
 
         
     def _forward_commit_request_partner(self,active_event):

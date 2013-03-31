@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import conf, util_funcs, data
+import conf, util_funcs, data, dht_util
 
 import os,sys, time
 sys.path.append(
@@ -73,10 +73,60 @@ def add_single_dht_node(node_host_port_pair):
     return dht_node
 
 
-def load_data():
-    data_items = data.get_data(
-    
+def load_data(dht_node_list):
+    '''
+    @param {List} dht_node_list --- Each element is a dht node
 
+    @returns {List} --- Each element is a a data.DataItem, which is a thin
+    wrapper for data key and value.
+    '''
+    data_items = data.get_data(conf.NUMBER_DATA_ITEMS)
+    if len(dht_node_list) == 0:
+        dht_util.dht_assert(
+            'No dht nodes passed in when loading data')
+    dht_load_node = dht_node_list[0]
+
+    for counter in range(0, len(data_items)):
+        if (counter % 5) == 0:
+            print '\nLoading data ' + str(counter) + ' of ' + str(len(data_items))
+        
+        data_item = data_items[counter]
+        dht_load_node.add_data(data_item.key,data_item.val)
+
+    return data_items
+        
+def query_loaded_data(dht_node_list,loaded_data_list):
+
+    total_num_hops = 0
+    for counter in range(0,len(loaded_data_list)):
+
+        if (counter % 5) == 0:
+            print ('About to query for index ' +
+                   str(counter) + ' of ' +
+                   str(len(loaded_data_list)))
+        
+        data_item_to_query_for = loaded_data_list[counter]
+        node_to_query = dht_node_list[counter % len(dht_node_list)  ]
+        
+        gotten_value, num_hops_to_get, found = node_to_query.get_data(
+            data_item_to_query_for.key)
+
+        if not found:
+            import pdb
+            pdb.set_trace()
+            dht_util.dht_assert(
+                'Could not find value expecting when querying dht')
+        if gotten_value != data_item_to_query_for.val:
+            dht_util.dht_assert(
+                'Queried value disagrees with expected value when querying the dht')
+
+        total_num_hops += num_hops_to_get
+
+    print '\n\n'
+    print 'Average number of hops: ' + str(total_num_hops/counter)
+    print '\n\n'
+
+    
 def add_dht_nodes():
     dht_node_list = []
     for node_host_port_pair in conf.NODE_HOST_PORT_PAIRS:
@@ -86,11 +136,11 @@ def add_dht_nodes():
 def run():
     coordinator_master = start_coordinator()
     dht_node_list = add_dht_nodes()
+    print '\nAbout to load data'
+    loaded_data_list = load_data(dht_node_list)
+    print '\nAbout to query data'    
+    query_loaded_data(dht_node_list,loaded_data_list)
 
-    import pdb
-    pdb.set_trace()
-    
-    time.sleep(5)
 
     
 

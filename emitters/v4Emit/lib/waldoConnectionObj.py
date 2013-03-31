@@ -126,6 +126,10 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         self.received_data = ''
         self.local_endpoint = None
 
+        #### DEBUG
+        self.previous_msgs = []
+# lkjs;
+        #### END DEBUG
         
     def register_endpoint(self,local_endpoint):
         '''
@@ -181,8 +185,6 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
            message
 
         '''
-            # '[^%s](?:%s%s)*(%s%s)' %
-        
         regex = (
             '[^%s](?:%s%s)*%s%s' %
             (_WaldoTCPConnectionObj.DELIMITER_A,_WaldoTCPConnectionObj.DELIMITER_A,
@@ -226,7 +228,6 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
 
         @returns {Nothing} 
         '''
-
         msg_str,rest_of_data = self._decapsulate_msg_str(
             self.received_data)
 
@@ -234,9 +235,29 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
             # had not received full message
             return
 
-        # dispatch to endpoint
-        self.local_endpoint._receive_msg_from_partner(msg_str)
 
+        #### DEBUG on try-except
+        self.previous_msgs.append(self.received_data)
+                
+        try:
+            # dispatch to endpoint
+            self.local_endpoint._receive_msg_from_partner(msg_str)
+        except:
+            import pdb
+            pdb.set_trace()
+
+            filer = open('tmp2.txt','w')
+            for string in self.previous_msgs:
+                filer.write('\n\n***********\n\n' + string)
+            filer.flush()
+            filer.close()
+            
+# lkjs;            
+            print '\n\nError'
+
+        #### END DEBUG on try-except
+            
+            
         self.received_data = rest_of_data
         # recurse in case received more than two messages worth of
         # information simultaneously.
@@ -251,7 +272,30 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         Gets called from endpoint to send message from one side to the
         other.
         '''
+        #### DEBUG
+        # ensure that can un-encapsulate the message that is being sent
+        import pickle
+        try:
+            deserialized = pickle.loads(msg_str_to_write)
+        except:
+            import pdb
+            pdb.set_trace()
+            print '\n\nError\n'
+# lkjs;            
+        #### END DEBUG
+        
+        
         msg_str_to_send = self._encapsulate_msg_str(msg_str_to_write)
+        
+        #### DEBUG
+        if msg_str_to_send[0] != self.MSG_HEAD:
+            import pdb
+            pdb.set_trace()
+            print '\n\nError'
+# lkjs;            
+        #### END DEBUG
+            
+        
         self.sock.send(msg_str_to_send)
 
 
