@@ -569,6 +569,7 @@ class _ActiveEvent(_InvalidationListener):
                     waldoCallResults._BackoutBeforeEndpointCallResult())
 
         for reply_with_uuid in self.message_listening_queues_map.keys():
+            message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
             message_listening_queue.put(
                 waldoCallResults._BackoutBeforeReceiveMessageResult())
 
