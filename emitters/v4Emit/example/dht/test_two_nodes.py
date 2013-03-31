@@ -1,15 +1,14 @@
 #!/usr/bin/env python
-import conf
-import util_funcs
+import util_funcs, conf
 
-import os,sys
+import os,sys, time, random
 sys.path.append(
     os.path.join('..','..','lib'))
 import Waldo
 
 from node_v4 import Node
 from node_connection_v4 import NodeSideA, NodeSideB
-import random
+
 
 HOSTA = '127.0.0.1'
 HOSTB = HOSTA
@@ -25,7 +24,8 @@ trying to connect.)
 def create_single_node(listen_on_host, listen_on_port, should_accept=False):
     uuid = util_funcs.hashed_uuid(None,str(random.random()))
     dht_node = Waldo.no_partner_create(
-        Node,uuid,util_funcs.distance,util_funcs.hashed_uuid)
+        Node,uuid,util_funcs.distance,util_funcs.hashed_uuid,
+        util_funcs.debug_print)
 
     if should_accept:
         def on_connected(endpoint):
@@ -53,7 +53,25 @@ def run_test():
         NodeSideB,HOSTB,PORTB,dhta, HOSTA, PORTA)
 
     connection.add_connection_to_node()
-    
+    time.sleep(3)
+
+    # connection established between two sides.
+
+    # add several pieces of data
+    NUM_DATA_TO_ADD = 10
+    for i in range(0, NUM_DATA_TO_ADD):
+        dhta.add_data(str(i),str(i))
+
+    # # check that the added pieces of data are returned when query
+    # for i in range(0, NUM_DATA_TO_ADD):
+    #     value, num_hops, found = dhtb.get_data(str(i))
+    #     if not found:
+    #         print '\nError: did not find key expecting'
+    #         return False
+    #     if value != str(i):
+    #         print '\nError: incorrect value'
+    #         return False
+        
     return True
 
 if __name__ == '__main__':

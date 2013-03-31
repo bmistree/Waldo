@@ -23,6 +23,7 @@ Node
     Text uuid;
     Function(in: Text, Text; returns: Number) distance_func;
     Function(in: Text; returns: Text) hash_func;
+    Function(in: Text; returns: Nothing) debug_print;
     
     // UUID of node to connection object
     Map(from: Text, to: Endpoint) finger_table;
@@ -39,11 +40,13 @@ Node
     onCreate(
         Text uuid_,
         Function(in: Text, Text; returns: Number) distance_func_,
-        Function(in: Text; returns: Text) hash_func_)
+        Function(in: Text; returns: Text) hash_func_,
+        Function(in: Text; returns: Nothing) debug_print_)
     {
         uuid = uuid_;
         distance_func = distance_func_;
         hash_func = hash_func_;
+        debug_print = debug_print_;
     }
 
     Public Function add_data(Text data_key,Text data)
@@ -63,6 +66,7 @@ Node
         }
         else
             finger_table[closest_node_id].forward_add_data(data_key,data);
+
     }
     
     Public Function add_connection(Text node_id, Endpoint connection_endpoint)
@@ -135,7 +139,7 @@ Node
         // Check if any other endpoints are closer.
         for (Text uuid_ in finger_table)
         {
-            Number dist_to_element = distance_func(hash_of_key,uuid);
+            Number dist_to_element = distance_func(hash_of_key,uuid_);
             
             if (closest_distance > dist_to_element)
             {

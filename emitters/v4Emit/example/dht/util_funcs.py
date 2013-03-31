@@ -9,6 +9,9 @@ MAX_HASH = int( 'F'*NUM_HASH_OCTETS, 16)
 MIN_HASH = 0
 
 
+def debug_print(endpoint,msg):
+    print msg
+
 def hashed_uuid(endpoint,to_hash):
     '''
     @param {String} to_hash --- Arbitrarily long string.
