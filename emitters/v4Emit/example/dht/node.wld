@@ -121,10 +121,9 @@ Node
 
         // Data not contained on this node.  Must query more distant node for
         // data.
-        value, num_hops, found = finger_table[data_key].forward_get(data_key);
+        value, num_hops, found = finger_table[closest_id].forward_get_data(data_key);
         return value, num_hops+1, found;
     }
-
     
     
     /**

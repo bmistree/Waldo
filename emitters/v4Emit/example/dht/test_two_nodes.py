@@ -62,15 +62,15 @@ def run_test():
     for i in range(0, NUM_DATA_TO_ADD):
         dhta.add_data(str(i),str(i))
 
-    # # check that the added pieces of data are returned when query
-    # for i in range(0, NUM_DATA_TO_ADD):
-    #     value, num_hops, found = dhtb.get_data(str(i))
-    #     if not found:
-    #         print '\nError: did not find key expecting'
-    #         return False
-    #     if value != str(i):
-    #         print '\nError: incorrect value'
-    #         return False
+    # check that the added pieces of data are returned when query
+    for i in range(0, NUM_DATA_TO_ADD):
+        value, num_hops, found = dhtb.get_data(str(i))
+        if not found:
+            print '\nError: did not find key expecting'
+            return False
+        if value != str(i):
+            print '\nError: incorrect value'
+            return False
         
     return True
 
