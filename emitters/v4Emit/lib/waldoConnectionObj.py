@@ -203,7 +203,8 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
             len(_WaldoTCPConnectionObj.MSG_HEAD):
                 match_obj.end(new_msg_group_index) - len(_WaldoTCPConnectionObj.MSG_DELIMITER)]
         
-        remaining_msg = match_obj.string[match_obj.end(new_msg_group_index) + 1:]
+        # remaining_msg = match_obj.string[match_obj.end(new_msg_group_index) + 1:]
+        remaining_msg = match_obj.string[match_obj.end(new_msg_group_index):]        
 
         
         # de-duplicate replaced characters
