@@ -2,7 +2,7 @@ import util
 import waldoCallResults
 import threading
 import waldoExecutingEvent
-# import waldoVariableStore
+import logging
 
 class _Action(object):
     '''
@@ -238,8 +238,7 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
         this action will take place.)
 
         For other @params, @see, _EndpointServiceThread._endpointCall.
-        '''
-
+        '''        
         self.local_endpoint = local_endpoint
         self.endpoint_making_call = endpoint_making_call
         self.event_uuid = event_uuid
@@ -281,11 +280,18 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
         # all non-external arguments (including lists,maps, and user
         # structs).
         evt_ctx.set_from_endpoint_true()
-        
         exec_event = waldoExecutingEvent._ExecutingEvent(
             self.to_exec,act_event,evt_ctx,self.result_queue,
             *self.args)
 
+        log_msg = (
+            'Servicing endpoint call for %s. Starting event.' % self.func_name)
+        logging_info = {
+            'mod': 'ReceiveEndpointCallAction',
+            'endpoint_string': str(self.local_endpoint._uuid)
+            }
+        util.get_logger().debug(log_msg,extra=logging_info)
+        
         exec_event.start()
 
         

@@ -599,8 +599,23 @@ class _ExecutingEvent(threading.Thread):
         
 
     def run(self):
+        logging_info = {
+            'mod': 'ExecutingEvent',
+            'endpoint_string': str(self.active_event.local_endpoint._uuid)
+            }        
+        log_msg = (
+            'Starting executing event %s.' % str(self.active_event.uuid))
+        util.get_logger().debug(log_msg,extra=logging_info)
+
+        
         result = self.to_exec(self.active_event,self.ctx,*self.to_exec_args)
 
+        log_msg = (
+            'Result from executing event %s: %s.' %
+            (str(self.active_event.local_endpoint._uuid),(str(result))))
+        util.get_logger().debug(log_msg,extra=logging_info)
+
+        
         if self.result_queue == None:
             return
         
@@ -609,6 +624,11 @@ class _ExecutingEvent(threading.Thread):
         # ack of message before returning.
         completed = self.active_event.wait_if_modified_peered()
 
+        log_msg = (
+            'Completed waiting on modified peered for %s.' %
+            str(self.active_event.uuid))
+        util.get_logger().debug(log_msg,extra=logging_info)
+        
         if not completed:
             self.result_queue.put(
                 waldoCallResults._BackoutBeforeEndpointCallResult())

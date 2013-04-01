@@ -438,9 +438,18 @@ class _ActiveEvent(_InvalidationListener):
         event map.  Completes the commit, and forwards the complete
         request on to others
         '''
-        self._lock()
+        log_msg = (
+            'complete_commit_and_forward_complete_msg for event %s' %
+            str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
 
+        self._lock()
         if not self.in_state_completed_commit_phase():
+            log_msg = (
+                'complete_commit_and_forward_complete_msg completing commit for: %s' %
+                str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
+
             self.set_state_completed_commit_phase()
 
             ##### remove event from active event map
@@ -460,7 +469,13 @@ class _ActiveEvent(_InvalidationListener):
                 
             ##### actually complete the commit
             self.complete_commit()
-        
+        else:
+            log_msg = (
+                'complete_commit_and_forward_complete_msg already in complete_commit_phase for: %s' %
+                str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
+
+            
         self._unlock()
 
     
@@ -682,6 +697,7 @@ class _ActiveEvent(_InvalidationListener):
                      # bother with waiting for modified peered-s to
                      # update.
                 )
+
         else:
             #### DEBUG
             if reply_to_uuid not in self.message_listening_queues_map:
@@ -967,7 +983,7 @@ class _ActiveEvent(_InvalidationListener):
         CALLED FROM WITHIN LOCK
         '''
         log_msg = (
-            'Backout commit for event %s.  ' %  str(self.uuid))
+            'Start backout commit for event %s.  ' %  str(self.uuid))
         util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.set_breakout()
@@ -976,17 +992,26 @@ class _ActiveEvent(_InvalidationListener):
             to_backout_obj.backout(self,True)
         self.holding_locks_on = []
 
+        log_msg = (
+            'Finished backout commit for event %s.  ' %  str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
+        
     def complete_commit(self):
         '''
         Should only be called if hold_can_commit returned True.  Runs
         through all touched objects and completes their commits.
         '''
         log_msg = (
-            'Complete commit for event %s.  ' %  str(self.uuid))
+            'Start complete commit for event %s.  ' %  str(self.uuid))
         util.get_logger().debug(log_msg,extra=self.logging_info)
         
         for touched_obj in self.objs_touched.values():
             touched_obj.complete_commit(self)
+
+        log_msg = (
+            'Finished complete commit for event %s.  ' %  str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)            
             
     def set_breakout(self):
         self._breakout_mutex.acquire()
@@ -1013,6 +1038,8 @@ class RootActiveEvent(_ActiveEvent):
             'endpoint_string': str(self.local_endpoint._uuid)
             }
 
+        log_msg = 'New RootActiveEvent for event %s ' % str(self.uuid)
+        util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.subscriber = None
 
@@ -1224,7 +1251,7 @@ class RootActiveEvent(_ActiveEvent):
         
         self.event_complete_queue.put(
             waldoCallResults._RescheduleRootCallResult())
-        
+
             
     def _request_complete_commit(self):
         '''
@@ -1293,6 +1320,9 @@ class PartnerActiveEvent(_ActiveEvent):
             'mod': 'PartnerActiveEvent',
             'endpoint_string': str(self.local_endpoint._uuid)
             }
+
+        log_msg = 'New PartnerActiveEvent for event %s' % str(uuid)
+        util.get_logger().debug(log_msg,extra=self.logging_info)
 
         
         # we received a message, which caused us to create this event.
@@ -1431,6 +1461,10 @@ class EndpointCalledActiveEvent(_ActiveEvent):
             'mod': 'EndpointCalledActiveEvent',
             'endpoint_string': str(self.local_endpoint._uuid)
             }
+        
+        log_msg = 'New EndpointCalledActiveEvent for event %s ' % str(uuid)
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
