@@ -114,11 +114,19 @@ class _ReceiveRequestCommitAction(_Action,threading.Thread):
     def run(self):
         evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
         
-        #### DEBUG
         if evt == None:
-            util.logger_assert(
-                'Requested committing an event that does not exist')
-        #### END DEBUG
+            # can happen if commit is requested and then
+            #  a ---> b ---> c
+            # 
+            #     a asks for commit.  b backs out and forwards commit
+            #     request on to c.  c waits on active event map lock
+            #     before receiving request for commit.  a tells b to back
+            #     out and forwards the request to b to backout, which
+            #     forwards the request on to c.  Then, if c reads the
+            #     backout before the request to commit, we may get to this
+            #     point.  Just ignore the request.
+            return
+
 
         evt.forward_commit_request_and_try_holding_commit_on_myself(
             self.from_partner)        
