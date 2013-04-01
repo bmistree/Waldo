@@ -3,7 +3,7 @@ import ctypes
 import os
 import inspect
 from collections import namedtuple
-
+import logging
 
 PARTNER_ENDPOINT_SENTINEL = -1
 
@@ -12,7 +12,11 @@ PARTNER_ENDPOINT_SENTINEL = -1
 # time and then try to re-acquire the lock (if we haven't already been
 # told to back out).
 TIME_TO_SLEEP_BEFORE_ATTEMPT_TO_ACQUIRE_VAR_FIRST_PHASE_LOCK = .2
+LOGGER_NAME = 'Waldo'
 
+
+def get_logger():
+    return logging.getLogger(LOGGER_NAME)
 
 def endpoint_call_func_name(func_name):
     '''
@@ -32,7 +36,6 @@ def partner_endpoint_msg_call_func_name(func_name):
 
 def internal_oncreate_func_call_name(func_name):
     return '_onCreate'
-
 
 
 # FIXME: Lower overhead to using named tuple, however, when I try to,
@@ -176,12 +179,27 @@ def generate_py_uuid():
     return uuid.uuid4()
 
 
-def logger_assert(assert_msg):
-    print 'Compiler error: ' + assert_msg
+def logger_assert(assert_msg,logging_info=None):
+    assert_msg = 'Compiler error: ' + assert_msg
+    print assert_msg
+
+    if logging_info == None:
+        logging_info = {
+            'mod': 'unknown',
+            'endpoint': 'unknown'
+            }
+    logging.critical(assert_msg, logging_info)
     assert(False)
 
-def logger_warn(warn_msg):
-    print 'Compiler warn: ' + warn_msg
+def logger_warn(warn_msg,logging_info=None):
+    warn_msg = 'Compiler warn: ' + warn_msg
+    if logging_info == None:
+        logging_info = {
+            'mod': 'unknown',
+            'endpoint': 'unknown'
+            }
+    logging.critical(warn_msg, logging_info)
+    print warn_msg
 
 
 class BackoutException(Exception):

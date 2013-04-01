@@ -7,6 +7,7 @@ from abc import abstractmethod
 import Queue
 import waldoDeadlockDetector
 import time
+import logging
 
 class _SubscribedToElement(object):
     '''
@@ -93,7 +94,7 @@ class _ActiveEvent(_InvalidationListener):
             self,uuid)
 
         self.local_endpoint = local_endpoint
-        
+
         # If we hit any sequences that have oncomplete handlers, we
         # keep track of each that we must fire.
         self.on_completes_to_fire = []
@@ -265,12 +266,17 @@ class _ActiveEvent(_InvalidationListener):
         in a sequence that we're sending.  Necessary so that we can
         tell whether or not to force sending sequence local data.
 
-        
         The local endpoint is requesting its partner to call some
         sequence block.
         
         For other params, @see issue_endpoint_object_call
         '''
+        
+        log_msg = (
+            'Sending message to partner to exec sequence for event %s' %
+            str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+
         partner_call_requested = False
         self._lock()
         if self.in_running_phase():
@@ -480,6 +486,10 @@ class _ActiveEvent(_InvalidationListener):
         that we know who to forward our commit requests and backout
         requests to.)
         '''
+        log_msg = (
+            'Endpoint object call for event %s' %   str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
         endpoint_call_requested = False
         self._lock()
 
@@ -518,6 +528,12 @@ class _ActiveEvent(_InvalidationListener):
             else:
                 self.subscribed_to[endpoint_calling._uuid].add_result_queue(
                     result_queue)
+        else:
+            log_msg = (
+                ('Endpoint object call for event %s not requested.  ' %
+                str(self.uuid)) + 
+                'Backed out already.')
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
         self._unlock()
         return endpoint_call_requested
@@ -538,6 +554,11 @@ class _ActiveEvent(_InvalidationListener):
         endpoint object calls or request partner to do any additional
         work for this event.)
         '''
+        log_msg = (
+            'Forwarding backout and backing out self for event %s.' %
+            str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
         self.set_breakout()
 
         self._lock()
@@ -945,8 +966,11 @@ class _ActiveEvent(_InvalidationListener):
         '''
         CALLED FROM WITHIN LOCK
         '''
-        self.set_breakout()
+        log_msg = (
+            'Backout commit for event %s.  ' %  str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
         
+        self.set_breakout()
         for obj_id in self.holding_locks_on:
             to_backout_obj = self.objs_touched[obj_id]
             to_backout_obj.backout(self,True)
@@ -957,6 +981,10 @@ class _ActiveEvent(_InvalidationListener):
         Should only be called if hold_can_commit returned True.  Runs
         through all touched objects and completes their commits.
         '''
+        log_msg = (
+            'Complete commit for event %s.  ' %  str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
         for touched_obj in self.objs_touched.values():
             touched_obj.complete_commit(self)
             
@@ -980,6 +1008,12 @@ class RootActiveEvent(_ActiveEvent):
 
         _ActiveEvent.__init__(self,None,local_endpoint)
 
+        self.logging_info = {
+            'mod': 'RootActiveEvent',
+            'endpoint_string': str(self.local_endpoint._uuid)
+            }
+
+        
         self.subscriber = None
 
         # from endpoint uuid to bool.  bool value is True if still
@@ -1024,6 +1058,10 @@ class RootActiveEvent(_ActiveEvent):
 
         # FIXME: there may be instances/topologies where do not have
         # to issue this call.
+        log_msg = (
+            'Request commit for event %s.  ' %  str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
         self.wait_if_modified_peered()
         self.forward_commit_request_and_try_holding_commit_on_myself()
 
@@ -1032,6 +1070,10 @@ class RootActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
+        log_msg = (
+            'Received unsuccessful first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.set_breakout()
         to_broadcast_backout = False
@@ -1058,6 +1100,11 @@ class RootActiveEvent(_ActiveEvent):
         '''
         @see base class' receive_successful_first_phase_commit_msg
         '''
+        log_msg = (
+            'Received successful first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+     
         self._lock()
         # ordering of additions/changes to self.waiting_on_commit_map
         # is important.  if flipped order, root could think that it
@@ -1171,6 +1218,10 @@ class RootActiveEvent(_ActiveEvent):
         # FIXME: may eventually want to put some additional metadata
         # in, for instance, the uuid of the event so that may increase
         # event priority for next go around.
+        log_msg = (
+            'Rescheduling event %s.' %  str(self.uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
         self.event_complete_queue.put(
             waldoCallResults._RescheduleRootCallResult())
         
@@ -1209,10 +1260,19 @@ class RootActiveEvent(_ActiveEvent):
                 additional_subscriber_uuid,host_uuid,resource_uuid)
         self._unlock()
 
-        
+        if potential_deadlock:
+            log_msg = (
+                'Potential deadlock for event %s.' % str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
+
         if potential_deadlock and (self.uuid < additional_subscriber_uuid):
             # backout changes if this event's uuid is less than
             # the additional subscriber's uuid.
+            if potential_deadlock:
+                log_msg = (
+                    'Potential deadlock for event %s.  Backing out.' % str(self.uuid))
+                util.get_logger().debug(log_msg,extra=self.logging_info)
+            
             self.forward_backout_request_and_backout_self()
 
     def notify_removed_subscriber(
@@ -1229,6 +1289,12 @@ class PartnerActiveEvent(_ActiveEvent):
     def __init__(self,uuid,local_endpoint):
         _ActiveEvent.__init__(self,uuid,local_endpoint)
 
+        self.logging_info = {
+            'mod': 'PartnerActiveEvent',
+            'endpoint_string': str(self.local_endpoint._uuid)
+            }
+
+        
         # we received a message, which caused us to create this event.
         # That means that we must check with our partner before we can
         # commit/backout.
@@ -1278,6 +1344,12 @@ class PartnerActiveEvent(_ActiveEvent):
         '''
         @see base class' receive_successful_first_phase_commit_msg
         '''
+        log_msg = (
+            'Received successful first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+        
         self._lock()
         if self.in_commit_request_holding_locks_phase():
             # forward message towards root
@@ -1296,6 +1368,11 @@ class PartnerActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
+        log_msg = (
+            'Received unsuccessful first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
         self.set_breakout()
         to_forward = False
         self._lock()
@@ -1350,7 +1427,10 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         
         _ActiveEvent.__init__(self,uuid,local_endpoint)
         self.subscriber = endpoint_making_call
-
+        self.logging_info = {
+            'mod': 'EndpointCalledActiveEvent',
+            'endpoint_string': str(self.local_endpoint._uuid)
+            }
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
@@ -1358,6 +1438,12 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         '''
         @see base class' receive_successful_first_phase_commit_msg
         '''
+        log_msg = (
+            'Received successful first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+        
         self._lock()
         if self.in_commit_request_holding_locks_phase():
             # forward message towards root
@@ -1410,6 +1496,11 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
+        log_msg = (
+            'Received unsuccessful first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+
         self.set_breakout()
         
         to_forward = False

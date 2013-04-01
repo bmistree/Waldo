@@ -1,6 +1,8 @@
 import Queue
 import threading
 import waldoServiceActions
+import logging
+import util
 
 class _EndpointServiceThread(threading.Thread):
     def __init__(self,endpoint):
@@ -15,12 +17,18 @@ class _EndpointServiceThread(threading.Thread):
         threading.Thread.__init__(self)
         self.daemon = True
 
+        self.logging_info = {
+            'mod': 'EndpointServiceThread',
+            'endpoint_string': str(self.endpoint._uuid)
+            }
+        
     def run(self):
         '''
         Event loop.  Keep on reading off queue and servicing.
         '''
         while True:
             service_action = self.threadsafe_queue.get()
+            util.get_logger().debug('Servicing action',extra= self.logging_info)
             service_action.service()
 
     def receive_request_backout(self,uuid,requesting_endpoint):

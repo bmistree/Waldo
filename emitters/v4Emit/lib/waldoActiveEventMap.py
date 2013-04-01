@@ -2,17 +2,25 @@ from waldoActiveEvent import PartnerActiveEvent
 from waldoActiveEvent import EndpointCalledActiveEvent
 from waldoActiveEvent import RootActiveEvent
 import threading
+import logging
+import util
 
 class _ActiveEventMap(object):
     '''
     Keeps track of all activeevent-s on an endpoint
     '''
-
+    
     def __init__(self,local_endpoint):
         
         self.map = {}
         self._mutex = threading.Lock()
         self.local_endpoint = local_endpoint
+
+        self.logging_info = {
+            'mod': 'ActiveEventMap',
+            'endpoint_string': str(self.local_endpoint._uuid)
+            }
+
         
     def create_root_event(self):
         '''
@@ -28,12 +36,18 @@ class _ActiveEventMap(object):
     def remove_event(self,event_uuid):
         self._lock()
         del self.map[event_uuid]
+        log_msg = 'Deleted ' + str(event_uuid) + ' from map.'
+        util.get_logger().debug(log_msg, extra=self.logging_info)
+        
         self._unlock()
 
     def remove_event_if_exists(self,event_uuid):
         self._lock()
         if event_uuid in self.map:
             del self.map[event_uuid]
+            log_msg = 'Deleted ' + str(event_uuid) + ' from map.'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
+
         self._unlock()
         
     
@@ -51,7 +65,7 @@ class _ActiveEventMap(object):
         event = self.map[uuid]
         self._unlock()
         return event
-        
+
     def get_or_create_endpoint_called_event(self,endpoint,uuid,result_queue):
         '''
         @param {Endpoint object} endpoint --- The endpoint that made
@@ -82,6 +96,8 @@ class _ActiveEventMap(object):
         if uuid in self.map:
             act_event = self.map[uuid]
             del self.map[uuid]
+            log_msg = 'Deleted ' + str(uuid) + ' from map.'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
         self._unlock()
         return act_event
 
@@ -110,9 +126,10 @@ class _ActiveEventMap(object):
                 'that already exists.')
         #### END DEBUG
         self.map[event.uuid] = event
-        
 
-    
+        log_msg = 'Inserted ' + str(event.uuid) + ' into map.'
+        util.get_logger().debug(log_msg, extra=self.logging_info)
+
     def _lock(self):
         self._mutex.acquire()
         

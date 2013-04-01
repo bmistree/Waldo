@@ -5,6 +5,7 @@ import waldoActiveEventMap
 import waldoMessages
 import Queue
 import threading
+import logging
 
 class _Endpoint(object):
     '''
@@ -32,6 +33,14 @@ class _Endpoint(object):
         add or remove any peered or endpoint global variables.  Will
         only make calls on them.
         '''
+        self._uuid = util.generate_uuid()
+
+        self._logging_info = {
+            'mod': 'Endpoint',
+            'endpoint_string': str(self._uuid)
+            }
+
+        
         self._waldo_classes = waldo_classes
         
         self._act_event_map = waldoActiveEventMap._ActiveEventMap(self)
@@ -56,9 +65,7 @@ class _Endpoint(object):
         # handshake instead.
         self._partner_uuid = None
 
-        self._uuid = util.generate_uuid()
-
-
+        
         # both sides should run their onCreate methods to entirety
         # before we can execute any additional calls.
         self._ready_lock = threading.Lock()
@@ -98,6 +105,7 @@ class _Endpoint(object):
         Gets called when the other side sends a message that its
         ready.
         '''
+        util.get_logger().debug('Other side ready',extra=self._logging_info)
         self._ready_lock.acquire()
         self._other_side_ready_bool = True
         set_ready = self._this_side_ready_bool and self._other_side_ready_bool
@@ -111,6 +119,7 @@ class _Endpoint(object):
         '''
         Gets called when this side finishes its initialization
         '''
+        util.get_logger().debug('This side ready',extra=self._logging_info)
         self._ready_lock.acquire()
         self._this_side_ready_bool = True
         set_ready = self._this_side_ready_bool and self._other_side_ready_bool
@@ -127,6 +136,8 @@ class _Endpoint(object):
         return True
             
     def _set_ready(self):
+        util.get_logger().debug('Set ready',extra=self._logging_info)
+        
         # any future events that try to check if ready, will get True
         setattr(
             self,'_block_ready',self._swapped_in_block_ready)
@@ -156,6 +167,12 @@ class _Endpoint(object):
         '''
         @see _EndpointServiceThread.receive_request_backout
         '''
+        log_msg = (
+            'Received request backout for event %s.  Requesting endpoint: %s.' %
+            (str(uuid), str(requesting_endpoint)))
+
+        util.get_logger().debug(log_msg,extra=self._logging_info)
+        
         self._endpoint_service_thread.receive_request_backout(
             uuid,requesting_endpoint)
 
@@ -165,6 +182,12 @@ class _Endpoint(object):
         to begin the first phase of the commit of the active event
         with uuid "uuid."
         '''
+        log_msg = (
+            'Received request commit for event %s.  Requesting endpoint: %s.' %
+            (str(uuid), str(requesting_endpoint)))
+        util.get_logger().debug(log_msg,extra=self._logging_info)
+
+        
         self._endpoint_service_thread.receive_request_commit_from_endpoint(
             uuid,requesting_endpoint)
         
@@ -174,6 +197,10 @@ class _Endpoint(object):
         to finish the second phase of the commit of active event with
         uuid "uuid."
         '''
+        log_msg = (
+            'Received request complete commit for event %s' % str(uuid))
+        util.get_logger().debug(log_msg,extra=self._logging_info)
+        
         self._endpoint_service_thread.receive_request_complete_commit(
             uuid,
             False # complete commit request was not from partner
@@ -196,6 +223,8 @@ class _Endpoint(object):
         msg_map = pickle.loads(string_msg)
         msg = waldoMessages._Message.map_to_msg(msg_map)
         
+        util.get_logger().debug('Received message from partner',extra=self._logging_info)
+
         if isinstance(msg,waldoMessages._PartnerRequestSequenceBlockMessage):
             self._endpoint_service_thread.receive_partner_request_message_sequence_block(
                 msg)
@@ -326,6 +355,12 @@ class _Endpoint(object):
 
         @see notify_additional_subscriber (in _ActiveEvent.py)
         '''
+        log_msg = (
+            'Received additional subscriber for event %s on resource %s' %
+            (str(event_uuid), str(resource_uuid)))
+        util.get_logger().debug(log_msg,extra=self._logging_info)
+
+        
         self._endpoint_service_thread.receive_additional_subscriber(
             event_uuid,subscriber_event_uuid,host_uuid,resource_uuid)
 
@@ -334,6 +369,11 @@ class _Endpoint(object):
         '''
         @see _receive_additional_subscriber
         '''
+        log_msg = (
+            'Received removed subscriber for event %s on resource %s' %
+            (str(event_uuid), str(resource_uuid)))
+        util.get_logger().debug(log_msg,extra=self._logging_info)
+        
         self._endpoint_service_thread.receive_removed_subscriber(
             event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid)
 
@@ -345,6 +385,10 @@ class _Endpoint(object):
         Non-blocking.  Requests the endpoint_service_thread to perform
         the endpoint function call listed as func_name.
         '''
+        log_msg = 'Received endpoint call for event %s. ' % str(event_uuid)
+        util.get_logger().debug(log_msg,extra=self._logging_info)
+        
+
         self._endpoint_service_thread.receive_endpoint_call(
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
 
@@ -367,6 +411,10 @@ class _Endpoint(object):
         
         Forward the message on to the root.  
         '''
+        log_msg = (
+            'Received first phase commit successful for event %s' % str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self._logging_info)
+        
         self._endpoint_service_thread.receive_first_phase_commit_message(
             event_uuid,endpoint_uuid,True,children_event_endpoint_uuids)
         
@@ -376,6 +424,11 @@ class _Endpoint(object):
         '''
         @see _receive_first_phase_commit_successful
         '''
+        log_msg = (
+            'Received first phase commit unsuccessful for event %s' % str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self._logging_info)
+
+        
         self._endpoint_service_thread.receive_first_phase_commit_message(
             event_uuid,endpoint_uuid,False)
 

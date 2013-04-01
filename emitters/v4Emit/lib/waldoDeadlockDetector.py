@@ -1,4 +1,6 @@
 import threading
+import logging
+import util
 
 class _DeadlockDetector(object):
     '''
@@ -36,6 +38,12 @@ class _DeadlockDetector(object):
         #               }
         #       }
         self.other_event_hosts = {}
+
+        self.logging_info = {
+            'mod': 'DeadlockDetector',
+            'endpoint_string': str(root_active_event.local_endpoint._uuid)
+            }
+        
         
     # FIXME: may not need locks in this class if will always be used
     # within locks of RootActiveEvent.  (Currently the removed
@@ -73,6 +81,11 @@ class _DeadlockDetector(object):
 
         @returns {bool} --- @see _potential_deadlock
         '''
+        log_msg = (
+            'Added subscriber %s for resource %s for event %s.  ' %
+            (str(subscriber_uuid), str(resource_uuid), str(self.root_active_event.uuid)))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+        
         self._lock()
         
         if subscriber_uuid not in self.other_event_hosts:
@@ -92,6 +105,12 @@ class _DeadlockDetector(object):
         '''
         Removes subscription of subscriber_uuid 
         '''
+        log_msg = (
+            'Removed subscriber %s for resource %s for event %s.  ' %
+            (str(subscriber_uuid), str(resource_uuid), str(self.root_active_event.uuid)))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+        
         self._lock()
         if subscriber_uuid in self.other_event_hosts:
             host_map = self.other_event_hosts[subscriber_uuid]

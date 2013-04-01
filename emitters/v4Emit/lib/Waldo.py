@@ -8,7 +8,7 @@ import waldoExecutingEvent
 import waldoVariableStore
 import threading
 import shim.get_math_endpoint
-
+import logging
 
 _host_uuid = util.generate_uuid()
 _threadsafe_stoppable_cleanup_queue = Queue.Queue()
@@ -41,6 +41,26 @@ _waldo_classes = {
     'BackoutException': util.BackoutException,
     }
 
+def set_logging(**kwargs):
+    '''
+    @param {bool} on_off --- True to turn logging on.  False to turn logging off.
+    '''
+    DEFAULT_LOG_FILENAME = 'log.txt'
+    output_filename = kwargs.get('filename',DEFAULT_LOG_FILENAME)
+    DEFAULT_LOGGING_LEVEL = logging.CRITICAL
+    logging_level = kwargs.get('level',DEFAULT_LOGGING_LEVEL)
+    
+    format_ = '%(levelname)s : %(endpoint_string)s : %(mod)s : %(message)s'
+    logging.basicConfig(
+        format=format_, filename=output_filename, level=logging.DEBUG)
+
+    util.get_logger().critical(
+        '\n***** New *****\n', extra={'mod': 'NEW', 'endpoint_string': 'NEW'})
+    
+# set up default logging to file
+set_logging()
+
+    
 
 def tcp_connect(constructor,host,port,*args):
 
