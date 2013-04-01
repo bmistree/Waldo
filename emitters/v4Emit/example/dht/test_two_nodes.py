@@ -25,6 +25,7 @@ def create_single_node(listen_on_host, listen_on_port, should_accept=False):
     uuid = util_funcs.hashed_uuid(None,str(random.random()))
     dht_node = Waldo.no_partner_create(
         Node,uuid,util_funcs.distance,util_funcs.hashed_uuid,
+        util_funcs.between,
         util_funcs.debug_print)
 
     if should_accept:

@@ -6,8 +6,6 @@ Endpoint Node;
  * table of connections to other endpoints.  It can use its finger table to look
  * up keys that it's not responsible for.
  */
-
-
 Sequences{}
 
 Struct NeighborNode
@@ -23,7 +21,9 @@ Node
     Text uuid;
     Function(in: Text, Text; returns: Number) distance_func;
     Function(in: Text; returns: Text) hash_func;
+    Function(in: Text, Text, Text; returns: TrueFalse) between;    
     Function(in: Text; returns: Nothing) debug_print;
+
     
     // UUID of node to connection object
     Map(from: Text, to: Endpoint) finger_table;
@@ -41,11 +41,13 @@ Node
         Text uuid_,
         Function(in: Text, Text; returns: Number) distance_func_,
         Function(in: Text; returns: Text) hash_func_,
+        Function(in: Text, Text, Text; returns: TrueFalse) between_,
         Function(in: Text; returns: Nothing) debug_print_)
     {
         uuid = uuid_;
         distance_func = distance_func_;
         hash_func = hash_func_;
+        between = between_;
         debug_print = debug_print_;
     }
 
@@ -72,8 +74,21 @@ Node
     Public Function add_connection(Text node_id, Endpoint connection_endpoint)
     {
         finger_table[node_id] = connection_endpoint;
+        
+        // if node was not already connected, overwrite next and previous
+        if (not next_neighbor.valid)
+            set_neighbor(next_neighbor,connection_endpoint,node_id);
+        if (not previous_neighbor.valid)
+            set_neighbor(previous_neighbor,connection_endpoint,node_id);
+
+        // if the new id is closer than next or previous, than insert them.
+        if (between(node_id, uuid, next_neighbor.neighbor_uuid))
+            set_neighbor(next_neighbor,connection_endpoint,node_id);
+        if (between(node_id, uuid, previous_neighbor.neighbor_uuid))
+            set_neighbor(previous_neighbor,connection_endpoint,node_id);
     }
 
+    
     Public Function remove_connection(Text node_id)
     {
         finger_table.remove(node_id);
@@ -124,8 +139,17 @@ Node
         value, num_hops, found = finger_table[closest_id].forward_get_data(data_key);
         return value, num_hops+1, found;
     }
-    
-    
+
+    /**
+       Fill in internal fields of neighbor node.
+     */
+    Private Function set_neighbor(Struct NeighborNode neighbor_to_set, Endpoint new_neighbor, Text neighbor_uuid)
+    {
+        neighbor_to_set.valid = True;
+        neighbor_to_set.neighbor = new_neighbor;
+        neighbor_to_set.neighbor_uuid = neighbor_uuid;
+    }
+            
     /**
        @returns {Text} --- The uuid of the connection with the closest
        connection to the data.

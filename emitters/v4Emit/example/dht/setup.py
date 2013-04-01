@@ -42,7 +42,8 @@ def add_single_dht_node(node_host_port_pair):
 
     uuid, finger_table, next, prev = requester.register()
     dht_node = Waldo.no_partner_create(
-        Node,uuid,util_funcs.distance,util_funcs.hashed_uuid)
+        Node,uuid,util_funcs.distance,util_funcs.hashed_uuid,
+        util_funcs.between, util_funcs.debug_print)
     
     # listen for connections to my node
     def on_connected(sidea_endpoint):
@@ -80,6 +81,7 @@ def load_data(dht_node_list):
     @returns {List} --- Each element is a a data.DataItem, which is a thin
     wrapper for data key and value.
     '''
+    start = time.time()
     data_items = data.get_data(conf.NUMBER_DATA_ITEMS)
     if len(dht_node_list) == 0:
         dht_util.dht_assert(
@@ -87,20 +89,26 @@ def load_data(dht_node_list):
     dht_load_node = dht_node_list[0]
 
     for counter in range(0, len(data_items)):
-        if (counter % 5) == 0:
-            print '\nLoading data ' + str(counter) + ' of ' + str(len(data_items))
+        # if (counter % 50) == 0:
+        #     print 'Loading data ' + str(counter) + ' of ' + str(len(data_items))
+        print 'Loading data ' + str(counter) + ' of ' + str(len(data_items))
         
         data_item = data_items[counter]
         dht_load_node.add_data(data_item.key,data_item.val)
 
+    elapsed = time.time() - start
+    print '\nLoad time: ' + str(elapsed)
+    print '\n'
+        
     return data_items
         
 def query_loaded_data(dht_node_list,loaded_data_list):
-
+    start = time.time()
+    
     total_num_hops = 0
     for counter in range(0,len(loaded_data_list)):
 
-        if (counter % 5) == 0:
+        if (counter % 50) == 0:
             print ('About to query for index ' +
                    str(counter) + ' of ' +
                    str(len(loaded_data_list)))
@@ -122,8 +130,10 @@ def query_loaded_data(dht_node_list,loaded_data_list):
 
         total_num_hops += num_hops_to_get
 
+    elapsed = time.time() - start
     print '\n\n'
-    print 'Average number of hops: ' + str(total_num_hops/counter)
+    print 'Average number of hops: ' + str(float(total_num_hops)/float(counter))
+    print 'Elapsed time: ' + str(elapsed)
     print '\n\n'
 
     
@@ -136,15 +146,12 @@ def add_dht_nodes():
 def run():
     coordinator_master = start_coordinator()
     dht_node_list = add_dht_nodes()
+    # time.sleep(2)
     print '\nAbout to load data'
     loaded_data_list = load_data(dht_node_list)
     print '\nAbout to query data'    
     query_loaded_data(dht_node_list,loaded_data_list)
 
-
-    
-
-    
     
 
 if __name__ == '__main__':

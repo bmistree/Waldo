@@ -14,7 +14,8 @@ def run_test():
 
     uuid = util_funcs.hashed_uuid(None,'some id')
     dht_node = Waldo.no_partner_create(
-        Node,uuid,util_funcs.distance,util_funcs.hashed_uuid)
+        Node,uuid,util_funcs.distance,util_funcs.hashed_uuid,
+        util_funcs.between, util_funcs.debug_print)
 
     data_to_add = [
         ('key','data'),
