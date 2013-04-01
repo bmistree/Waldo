@@ -339,6 +339,7 @@ class _ActiveEvent(_InvalidationListener):
         queue_waiting_on =  (
             self.message_listening_queues_map[resp_msg.reply_to_uuid])
         del self.message_listening_queues_map[resp_msg.reply_to_uuid]
+
         self._unlock()
 
         if resp_msg.invalidated:
@@ -438,7 +439,7 @@ class _ActiveEvent(_InvalidationListener):
 
             ##### remove event from active event map
             self.local_endpoint._act_event_map.remove_event(self.uuid)
-            
+
             ##### notify other endpoints
 
             #   notify endpoints we've made endpoint calls on
@@ -541,6 +542,7 @@ class _ActiveEvent(_InvalidationListener):
 
         self._lock()
         if self.in_request_backout_phase():
+            self._unlock()
             return
 
         ##### remove event from active event map
@@ -679,7 +681,7 @@ class _ActiveEvent(_InvalidationListener):
 
             # no need holding onto queue waiting on a message response.
             del self.message_listening_queues_map[reply_to_uuid]
-            
+
         self._unlock()
 
         if exec_event != None:
@@ -776,7 +778,6 @@ class _ActiveEvent(_InvalidationListener):
             # we are subscribed to?  If we do, then we can also
             # remove the active event here....
             self.backout_commit()
-
         else:
             self.set_request_commit_holding_locks_phase()
             if self.hold_can_commit():
@@ -816,9 +817,10 @@ class _ActiveEvent(_InvalidationListener):
                 # FIXME: forward the backout message on to those that
                 # we are subscribed to?  If we do, then we can also
                 # remove the active event here....
+                self.set_request_commit_not_holding_locks_phase()                
                 self.backout_commit()
                 cannot_commit = True
-                self.set_request_commit_not_holding_locks_phase()                
+
 
         # FIXME: unclear if need to hold this lock up until here.  May
         # be able to let go of it earlier.  Reason through whether it
@@ -940,10 +942,15 @@ class _ActiveEvent(_InvalidationListener):
         return True
 
     def backout_commit(self):
+        '''
+        CALLED FROM WITHIN LOCK
+        '''
         self.set_breakout()
+        
         for obj_id in self.holding_locks_on:
             to_backout_obj = self.objs_touched[obj_id]
             to_backout_obj.backout(self,True)
+        self.holding_locks_on = []
 
     def complete_commit(self):
         '''
@@ -1029,9 +1036,12 @@ class RootActiveEvent(_ActiveEvent):
         self.set_breakout()
         to_broadcast_backout = False
         self._lock()
-        if self.in_commit_request_holding_locks_phase():
+
+        if (self.in_commit_request_holding_locks_phase() or
+            self.in_commit_request_not_holding_locks_phase()):
             # okay to make calls because of re-entrantness
             self.forward_backout_request_and_backout_self()
+            
         self._unlock()
 
     def forward_backout_request_and_backout_self(
@@ -1085,7 +1095,6 @@ class RootActiveEvent(_ActiveEvent):
                 # to all to backout and reschedule
                 self.forward_backout_request_and_backout_self(
                     False,True)
-        
         self._unlock()
         return can_commit
         
@@ -1293,7 +1302,12 @@ class PartnerActiveEvent(_ActiveEvent):
         if self.in_commit_request_holding_locks_phase():
             to_forward = True
             self.backout_commit()
-            self.set_request_backout_phase()            
+            self.set_request_backout_phase()
+
+        if self.in_commit_request_not_holding_locks_phase():
+            to_forward = True
+            self.set_request_backout_phase()
+            
         self._unlock()
 
         if to_forward:
@@ -1318,7 +1332,6 @@ class PartnerActiveEvent(_ActiveEvent):
                 # transitioning to second state of commit.                
                 self.local_endpoint._forward_first_phase_commit_successful(
                     self.uuid,self.local_endpoint._uuid,who_forwarded_to)
-
             else:
                 # Tell partner to back out (and forward that back out
                 # to root)                
@@ -1404,7 +1417,12 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         if self.in_commit_request_holding_locks_phase():
             to_forward = True
             self.backout_commit()
-            self.set_request_backout_phase()            
+            self.set_request_backout_phase()
+
+        if self.in_commit_request_not_holding_locks_phase():
+            to_forward = True
+            self.set_request_backout_phase()
+            
         self._unlock()
 
         if to_forward:
