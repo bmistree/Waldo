@@ -5,6 +5,8 @@ import sys
 
 sys.path.append(
     os.path.join('..','..','lib'))
+import logging
+import Waldo
 
 import wVariables
 import time
@@ -27,7 +29,8 @@ NUM_ITERATIONS = 100000
 
 def run_test():
     host_uuid = util.generate_uuid()
-    dummy_endpoint = test_util.DummyEndpoint(None,host_uuid)
+    dummy_endpoint = test_util.DummyEndpoint(
+        test_util.SingleEndpointConnectionObj(),host_uuid)
     number = wVariables.WaldoNumVariable('some num',host_uuid,22)
 
     start = time.time()

@@ -50,6 +50,7 @@ def set_logging(**kwargs):
     output_filename = kwargs.get('filename',DEFAULT_LOG_FILENAME)
     DEFAULT_LOGGING_LEVEL = logging.CRITICAL
     logging_level = kwargs.get('level',DEFAULT_LOGGING_LEVEL)
+
     
     format_ = (
         '%(levelname)s : %(asctime)s.%(msecs).03d: %(endpoint_string)s : %(mod)s : %(message)s')
