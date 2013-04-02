@@ -39,6 +39,7 @@ _waldo_classes = {
     'ExecutingEventContext': waldoExecutingEvent._ExecutingEventContext,
     'VariableStore': waldoVariableStore._VariableStore,
     'BackoutException': util.BackoutException,
+    'logger': util.get_logger()
     }
 
 def set_logging(**kwargs):
@@ -50,9 +51,11 @@ def set_logging(**kwargs):
     DEFAULT_LOGGING_LEVEL = logging.CRITICAL
     logging_level = kwargs.get('level',DEFAULT_LOGGING_LEVEL)
     
-    format_ = '%(levelname)s : %(endpoint_string)s : %(mod)s : %(message)s'
+    format_ = (
+        '%(levelname)s : %(asctime)s.%(msecs).03d: %(endpoint_string)s : %(mod)s : %(message)s')
     logging.basicConfig(
-        format=format_, filename=output_filename, level=logging.DEBUG)
+        format=format_, filename=output_filename, level=logging_level,
+        datefmt='%I:%M:%S')
 
     util.get_logger().critical(
         '\n***** New *****\n', extra={'mod': 'NEW', 'endpoint_string': 'NEW'})

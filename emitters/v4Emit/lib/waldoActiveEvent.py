@@ -1143,6 +1143,11 @@ class RootActiveEvent(_ActiveEvent):
         self.add_received_first_phase(msg_originator_endpoint_uuid)
         self._unlock()
 
+        log_msg = (
+            'Finished received first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+
     def forward_commit_request_and_try_holding_commit_on_myself(
         self,skip_partner=False):
         self._lock()
@@ -1388,6 +1393,12 @@ class PartnerActiveEvent(_ActiveEvent):
                 children_event_endpoint_uuids)
         self._unlock()
 
+        log_msg = (
+            'Finished received first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+
     # FIXME: seems to be quite a bit of code duplication between
     # EndpointCalledActiveEvent and PartnerCalledActiveEvent.  (For
     # instance, this method and
@@ -1486,6 +1497,13 @@ class EndpointCalledActiveEvent(_ActiveEvent):
                 children_event_endpoint_uuids)
         self._unlock()
         
+        log_msg = (
+            'Finished received first phase commit msg for event %s.' %
+            str(event_uuid))
+        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+
+
         
     def notify_additional_subscriber(
         self,additional_subscriber_uuid,host_uuid,resource_uuid):

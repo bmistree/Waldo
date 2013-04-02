@@ -125,7 +125,12 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
 
         self.received_data = ''
         self.local_endpoint = None
+        self.logging_info = {
+            'mod': 'TCP Connection',
+            'endpoint_string': 'None'}
+            
 
+        
         
     def register_endpoint(self,local_endpoint):
         '''
@@ -142,6 +147,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
     def _start_listening_loop(self):
         while 1:
             data = self.sock.recv(1024)
+            util.get_logger().debug('Received data',extra=self.logging_info)
             self.received_data += data
             self._decapsulate_msg_and_dispatch()
 
@@ -252,8 +258,8 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         other.
         '''
         msg_str_to_send = self._encapsulate_msg_str(msg_str_to_write)
+        util.get_logger().debug('Writing message',extra=self.logging_info)
         self.sock.send(msg_str_to_send)
-
 
         
 class _TCPListeningStoppable(object):
