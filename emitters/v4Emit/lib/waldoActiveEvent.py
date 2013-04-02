@@ -448,12 +448,6 @@ class _ActiveEvent(_InvalidationListener):
         self._lock()
         if not self.in_state_completed_commit_phase():
 
-            if __debug__:
-                log_msg = (
-                    'complete_commit_and_forward_complete_msg completing commit for: %s' %
-                    str(self.uuid))
-                util.get_logger().debug(log_msg,extra=self.logging_info)
-
             self.set_state_completed_commit_phase()
 
             ##### remove event from active event map
@@ -473,12 +467,6 @@ class _ActiveEvent(_InvalidationListener):
                 
             ##### actually complete the commit
             self.complete_commit()
-        else:
-            if __debug__:
-                log_msg = (
-                    'complete_commit_and_forward_complete_msg already in complete_commit_phase for: %s' %
-                    str(self.uuid))
-                util.get_logger().debug(log_msg,extra=self.logging_info)
 
             
         self._unlock()

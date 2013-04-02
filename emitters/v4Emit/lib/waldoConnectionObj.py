@@ -192,15 +192,8 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
            message
 
         '''
-            # '[^%s](?:%s%s)*(%s%s)' %
-        
-        regex = (
-            '[^%s](?:%s%s)*%s%s' %
-            (_WaldoTCPConnectionObj.DELIMITER_A,_WaldoTCPConnectionObj.DELIMITER_A,
-             _WaldoTCPConnectionObj.DELIMITER_A,_WaldoTCPConnectionObj.DELIMITER_A,
-             _WaldoTCPConnectionObj.DELIMITER_B))
-
-        match_obj = re.search(regex,to_try_to_decapsulate)
+        global regex_obj
+        match_obj = regex_obj.search(to_try_to_decapsulate)
 
         if match_obj == None:
             return None,None
@@ -270,6 +263,14 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
                 extra=self.logging_info)
             
         self.sock.send(msg_str_to_send)
+
+regex = (
+    '[^%s](?:%s%s)*%s%s' %
+    (_WaldoTCPConnectionObj.DELIMITER_A,_WaldoTCPConnectionObj.DELIMITER_A,
+     _WaldoTCPConnectionObj.DELIMITER_A,_WaldoTCPConnectionObj.DELIMITER_A,
+     _WaldoTCPConnectionObj.DELIMITER_B))
+regex_obj = re.compile(regex)
+
 
         
 class _TCPListeningStoppable(object):
