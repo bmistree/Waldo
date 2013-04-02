@@ -42,30 +42,28 @@ _waldo_classes = {
     'logger': util.get_logger()
     }
 
-def set_logging(**kwargs):
+def setup_logging():
     '''
     @param {bool} on_off --- True to turn logging on.  False to turn logging off.
     '''
     DEFAULT_LOG_FILENAME = 'log.txt'
-    output_filename = kwargs.get('filename',DEFAULT_LOG_FILENAME)
     DEFAULT_LOGGING_LEVEL = logging.CRITICAL
-    logging_level = kwargs.get('level',DEFAULT_LOGGING_LEVEL)
-
     
     format_ = (
-        '%(levelname)s : %(asctime)s.%(msecs).03d: %(endpoint_string)s : %(mod)s : %(message)s')
+        '%(levelname)s : %(asctime)s.%(msecs).03d: %(endpoint_string)s : %(mod)s \n     %(message)s')
     logging.basicConfig(
-        format=format_, filename=output_filename, level=logging_level,
+        format=format_, filename=DEFAULT_LOG_FILENAME, level=DEFAULT_LOGGING_LEVEL,
         datefmt='%I:%M:%S')
 
     util.get_logger().critical(
-        '\n***** New *****\n', extra={'mod': 'NEW', 'endpoint_string': 'NEW'})
-        
+        '***** New *****', extra={'mod': 'NEW', 'endpoint_string': 'NEW'})
+setup_logging()
     
-# set up default logging to file
-# set_logging(level=logging.INFO)
-set_logging()
-# set_logging(level=logging.DEBUG)
+def set_logging_level(level):
+    '''
+    User can set level of logging he/she desires.
+    '''
+    util.get_logger().setLevel(level)
     
 
 def tcp_connect(constructor,host,port,*args):
