@@ -271,11 +271,12 @@ class _ActiveEvent(_InvalidationListener):
         
         For other params, @see issue_endpoint_object_call
         '''
-        
-        log_msg = (
-            'Sending message to partner to exec sequence for event %s' %
-            str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+        if __debug__:
+            log_msg = (
+                'Sending message to partner to exec sequence for event %s' %
+                str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
         partner_call_requested = False
         self._lock()
@@ -438,17 +439,20 @@ class _ActiveEvent(_InvalidationListener):
         event map.  Completes the commit, and forwards the complete
         request on to others
         '''
-        log_msg = (
-            'complete_commit_and_forward_complete_msg for event %s' %
-            str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'complete_commit_and_forward_complete_msg for event %s' %
+                str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
         self._lock()
         if not self.in_state_completed_commit_phase():
-            log_msg = (
-                'complete_commit_and_forward_complete_msg completing commit for: %s' %
-                str(self.uuid))
-            util.get_logger().debug(log_msg,extra=self.logging_info)
+
+            if __debug__:
+                log_msg = (
+                    'complete_commit_and_forward_complete_msg completing commit for: %s' %
+                    str(self.uuid))
+                util.get_logger().debug(log_msg,extra=self.logging_info)
 
             self.set_state_completed_commit_phase()
 
@@ -470,10 +474,11 @@ class _ActiveEvent(_InvalidationListener):
             ##### actually complete the commit
             self.complete_commit()
         else:
-            log_msg = (
-                'complete_commit_and_forward_complete_msg already in complete_commit_phase for: %s' %
-                str(self.uuid))
-            util.get_logger().debug(log_msg,extra=self.logging_info)
+            if __debug__:
+                log_msg = (
+                    'complete_commit_and_forward_complete_msg already in complete_commit_phase for: %s' %
+                    str(self.uuid))
+                util.get_logger().debug(log_msg,extra=self.logging_info)
 
             
         self._unlock()
@@ -501,9 +506,11 @@ class _ActiveEvent(_InvalidationListener):
         that we know who to forward our commit requests and backout
         requests to.)
         '''
-        log_msg = (
-            'Endpoint object call for event %s' %   str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+        if __debug__:
+            log_msg = (
+                'Endpoint object call for event %s' %   str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         endpoint_call_requested = False
         self._lock()
@@ -544,11 +551,12 @@ class _ActiveEvent(_InvalidationListener):
                 self.subscribed_to[endpoint_calling._uuid].add_result_queue(
                     result_queue)
         else:
-            log_msg = (
-                ('Endpoint object call for event %s not requested.  ' %
-                str(self.uuid)) + 
-                'Backed out already.')
-            util.get_logger().debug(log_msg,extra=self.logging_info)
+            if __debug__:
+                log_msg = (
+                    ('Endpoint object call for event %s not requested.  ' %
+                    str(self.uuid)) + 
+                    'Backed out already.')
+                util.get_logger().debug(log_msg,extra=self.logging_info)
 
         self._unlock()
         return endpoint_call_requested
@@ -569,10 +577,11 @@ class _ActiveEvent(_InvalidationListener):
         endpoint object calls or request partner to do any additional
         work for this event.)
         '''
-        log_msg = (
-            'Forwarding backout and backing out self for event %s.' %
-            str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Forwarding backout and backing out self for event %s.' %
+                str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.set_breakout()
 
@@ -982,9 +991,10 @@ class _ActiveEvent(_InvalidationListener):
         '''
         CALLED FROM WITHIN LOCK
         '''
-        log_msg = (
-            'Start backout commit for event %s.  ' %  str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Start backout commit for event %s.  ' %  str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.set_breakout()
         for obj_id in self.holding_locks_on:
@@ -992,26 +1002,28 @@ class _ActiveEvent(_InvalidationListener):
             to_backout_obj.backout(self,True)
         self.holding_locks_on = []
 
-        log_msg = (
-            'Finished backout commit for event %s.  ' %  str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
-        
+        if __debug__:
+            log_msg = (
+                'Finished backout commit for event %s.  ' %  str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
     def complete_commit(self):
         '''
         Should only be called if hold_can_commit returned True.  Runs
         through all touched objects and completes their commits.
         '''
-        log_msg = (
-            'Start complete commit for event %s.  ' %  str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Start complete commit for event %s.  ' %  str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         for touched_obj in self.objs_touched.values():
             touched_obj.complete_commit(self)
 
-        log_msg = (
-            'Finished complete commit for event %s.  ' %  str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)            
+        if __debug__:
+            log_msg = (
+                'Finished complete commit for event %s.  ' %  str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)            
             
     def set_breakout(self):
         self._breakout_mutex.acquire()
@@ -1038,8 +1050,9 @@ class RootActiveEvent(_ActiveEvent):
             'endpoint_string': str(self.local_endpoint._uuid)
             }
 
-        log_msg = 'New RootActiveEvent for event %s ' % str(self.uuid)
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = 'New RootActiveEvent for event %s ' % str(self.uuid)
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.subscriber = None
 
@@ -1085,9 +1098,10 @@ class RootActiveEvent(_ActiveEvent):
 
         # FIXME: there may be instances/topologies where do not have
         # to issue this call.
-        log_msg = (
-            'Request commit for event %s.  ' %  str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Request commit for event %s.  ' %  str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.wait_if_modified_peered()
         self.forward_commit_request_and_try_holding_commit_on_myself()
@@ -1097,10 +1111,11 @@ class RootActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
-        log_msg = (
-            'Received unsuccessful first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Received unsuccessful first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.set_breakout()
         to_broadcast_backout = False
@@ -1127,10 +1142,11 @@ class RootActiveEvent(_ActiveEvent):
         '''
         @see base class' receive_successful_first_phase_commit_msg
         '''
-        log_msg = (
-            'Received successful first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Received successful first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
      
         self._lock()
         # ordering of additions/changes to self.waiting_on_commit_map
@@ -1143,10 +1159,11 @@ class RootActiveEvent(_ActiveEvent):
         self.add_received_first_phase(msg_originator_endpoint_uuid)
         self._unlock()
 
-        log_msg = (
-            'Finished received first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Finished received first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
     def forward_commit_request_and_try_holding_commit_on_myself(
         self,skip_partner=False):
@@ -1250,9 +1267,10 @@ class RootActiveEvent(_ActiveEvent):
         # FIXME: may eventually want to put some additional metadata
         # in, for instance, the uuid of the event so that may increase
         # event priority for next go around.
-        log_msg = (
-            'Rescheduling event %s.' %  str(self.uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Rescheduling event %s.' %  str(self.uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.event_complete_queue.put(
             waldoCallResults._RescheduleRootCallResult())
@@ -1293,17 +1311,19 @@ class RootActiveEvent(_ActiveEvent):
         self._unlock()
 
         if potential_deadlock:
-            log_msg = (
-                'Potential deadlock for event %s.' % str(self.uuid))
-            util.get_logger().debug(log_msg,extra=self.logging_info)
+            if __debug__:
+                log_msg = (
+                    'Potential deadlock for event %s.' % str(self.uuid))
+                util.get_logger().debug(log_msg,extra=self.logging_info)
 
         if potential_deadlock and (self.uuid < additional_subscriber_uuid):
             # backout changes if this event's uuid is less than
             # the additional subscriber's uuid.
             if potential_deadlock:
-                log_msg = (
-                    'Potential deadlock for event %s.  Backing out.' % str(self.uuid))
-                util.get_logger().debug(log_msg,extra=self.logging_info)
+                if __debug__:
+                    log_msg = (
+                        'Potential deadlock for event %s.  Backing out.' % str(self.uuid))
+                    util.get_logger().debug(log_msg,extra=self.logging_info)
             
             self.forward_backout_request_and_backout_self()
 
@@ -1326,8 +1346,9 @@ class PartnerActiveEvent(_ActiveEvent):
             'endpoint_string': str(self.local_endpoint._uuid)
             }
 
-        log_msg = 'New PartnerActiveEvent for event %s' % str(uuid)
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = 'New PartnerActiveEvent for event %s' % str(uuid)
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
         
         # we received a message, which caused us to create this event.
@@ -1379,10 +1400,11 @@ class PartnerActiveEvent(_ActiveEvent):
         '''
         @see base class' receive_successful_first_phase_commit_msg
         '''
-        log_msg = (
-            'Received successful first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Received successful first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
         
         self._lock()
@@ -1393,10 +1415,11 @@ class PartnerActiveEvent(_ActiveEvent):
                 children_event_endpoint_uuids)
         self._unlock()
 
-        log_msg = (
-            'Finished received first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Finished received first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
 
     # FIXME: seems to be quite a bit of code duplication between
@@ -1409,10 +1432,11 @@ class PartnerActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
-        log_msg = (
-            'Received unsuccessful first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Received unsuccessful first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self.set_breakout()
         to_forward = False
@@ -1472,9 +1496,10 @@ class EndpointCalledActiveEvent(_ActiveEvent):
             'mod': 'EndpointCalledActiveEvent',
             'endpoint_string': str(self.local_endpoint._uuid)
             }
-        
-        log_msg = 'New EndpointCalledActiveEvent for event %s ' % str(uuid)
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+        if __debug__:
+            log_msg = 'New EndpointCalledActiveEvent for event %s ' % str(uuid)
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
 
     def receive_successful_first_phase_commit_msg(
@@ -1483,10 +1508,11 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         '''
         @see base class' receive_successful_first_phase_commit_msg
         '''
-        log_msg = (
-            'Received successful first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Received successful first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
         
         self._lock()
@@ -1496,11 +1522,12 @@ class EndpointCalledActiveEvent(_ActiveEvent):
                 self.uuid,msg_originator_endpoint_uuid,
                 children_event_endpoint_uuids)
         self._unlock()
-        
-        log_msg = (
-            'Finished received first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+
+        if __debug__:
+            log_msg = (
+                'Finished received first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
 
 
@@ -1548,10 +1575,11 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         '''
         @see receive_unsuccessful_first_phase_commit_msg in base class
         '''
-        log_msg = (
-            'Received unsuccessful first phase commit msg for event %s.' %
-            str(event_uuid))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Received unsuccessful first phase commit msg for event %s.' %
+                str(event_uuid))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
         self.set_breakout()
         

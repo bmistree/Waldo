@@ -284,13 +284,14 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
             self.to_exec,act_event,evt_ctx,self.result_queue,
             *self.args)
 
-        log_msg = (
-            'Servicing endpoint call for %s. Starting event.' % self.func_name)
-        logging_info = {
-            'mod': 'ReceiveEndpointCallAction',
-            'endpoint_string': str(self.local_endpoint._uuid)
-            }
-        util.get_logger().debug(log_msg,extra=logging_info)
+        if __debug__:
+            log_msg = (
+                'Servicing endpoint call for %s. Starting event.' % self.func_name)
+            logging_info = {
+                'mod': 'ReceiveEndpointCallAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            util.get_logger().debug(log_msg,extra=logging_info)
         
         exec_event.start()
 

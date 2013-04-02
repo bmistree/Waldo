@@ -27,8 +27,9 @@ class _ActiveEventMap(object):
         Generates a new active event for events that were begun on
         this endpoint and returns it.
         '''
-        log_msg = 'Creating root event'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+        if __debug__:
+            log_msg = 'Creating root event'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
 
         new_event = RootActiveEvent(self.local_endpoint)
         self._lock()
@@ -37,22 +38,27 @@ class _ActiveEventMap(object):
         return new_event
 
     def remove_event(self,event_uuid):
-        log_msg = 'Remove event'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+        if __debug__:
+            log_msg = 'Remove event'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
         self._lock()
         del self.map[event_uuid]
-        log_msg = 'Deleted ' + str(event_uuid) + ' from map.'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+
+        if __debug__:
+            log_msg = 'Deleted ' + str(event_uuid) + ' from map.'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
         self._unlock()
 
     def remove_event_if_exists(self,event_uuid):
-        log_msg = 'Remove event if exists'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+        if __debug__:
+            log_msg = 'Remove event if exists'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
         self._lock()
         if event_uuid in self.map:
             del self.map[event_uuid]
-            log_msg = 'Deleted ' + str(event_uuid) + ' from map.'
-            util.get_logger().debug(log_msg, extra=self.logging_info)
+            if __debug__:
+                log_msg = 'Deleted ' + str(event_uuid) + ' from map.'
+                util.get_logger().debug(log_msg, extra=self.logging_info)
 
         self._unlock()
         
@@ -63,8 +69,9 @@ class _ActiveEventMap(object):
 
         @returns {_ActiveEvent}
         '''
-        log_msg = 'Get or create partner event'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+        if __debug__:
+            log_msg = 'Get or create partner event'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
         self._lock()
         if uuid not in self.map:
             new_event = PartnerActiveEvent(
@@ -81,8 +88,9 @@ class _ActiveEventMap(object):
         
         Create an event because received an endpoint call
         '''
-        log_msg = 'Get or create endpoint called event'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+        if __debug__:
+            log_msg = 'Get or create endpoint called event'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
         
         self._lock()
         if uuid not in self.map:
@@ -101,15 +109,18 @@ class _ActiveEventMap(object):
         existed in map, None otherwise.  (Also, if it existed, remove
         it.)
         '''
-        log_msg = 'Get and remove event'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+        if __debug__:
+            log_msg = 'Get and remove event'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
         act_event = None
         self._lock()
         if uuid in self.map:
             act_event = self.map[uuid]
             del self.map[uuid]
-            log_msg = 'Deleted ' + str(uuid) + ' from map.'
-            util.get_logger().debug(log_msg, extra=self.logging_info)
+
+            if __debug__:
+                log_msg = 'Deleted ' + str(uuid) + ' from map.'
+                util.get_logger().debug(log_msg, extra=self.logging_info)
         self._unlock()
         return act_event
 
@@ -120,8 +131,9 @@ class _ActiveEventMap(object):
         is not in map.  Otherwise, reutrns the _ActiveEvent in the
         map.
         '''
-        log_msg = 'Get event'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+        if __debug__:
+            log_msg = 'Get event'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
         self._lock()
         to_return = self.map.get(uuid,None)
         self._unlock()
@@ -141,8 +153,9 @@ class _ActiveEventMap(object):
         #### END DEBUG
         self.map[event.uuid] = event
 
-        log_msg = 'Inserted ' + str(event.uuid) + ' into map.'
-        util.get_logger().debug(log_msg, extra=self.logging_info)
+        if __debug__:
+            log_msg = 'Inserted ' + str(event.uuid) + ' into map.'
+            util.get_logger().debug(log_msg, extra=self.logging_info)
 
     def _lock(self):
         self._mutex.acquire()

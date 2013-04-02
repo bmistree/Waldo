@@ -81,10 +81,11 @@ class _DeadlockDetector(object):
 
         @returns {bool} --- @see _potential_deadlock
         '''
-        log_msg = (
-            'Added subscriber %s for resource %s for event %s.  ' %
-            (str(subscriber_uuid), str(resource_uuid), str(self.root_active_event.uuid)))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Added subscriber %s for resource %s for event %s.  ' %
+                (str(subscriber_uuid), str(resource_uuid), str(self.root_active_event.uuid)))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
         
         self._lock()
         
@@ -105,10 +106,11 @@ class _DeadlockDetector(object):
         '''
         Removes subscription of subscriber_uuid 
         '''
-        log_msg = (
-            'Removed subscriber %s for resource %s for event %s.  ' %
-            (str(subscriber_uuid), str(resource_uuid), str(self.root_active_event.uuid)))
-        util.get_logger().debug(log_msg,extra=self.logging_info)
+        if __debug__:
+            log_msg = (
+                'Removed subscriber %s for resource %s for event %s.  ' %
+                (str(subscriber_uuid), str(resource_uuid), str(self.root_active_event.uuid)))
+            util.get_logger().debug(log_msg,extra=self.logging_info)
 
         
         self._lock()

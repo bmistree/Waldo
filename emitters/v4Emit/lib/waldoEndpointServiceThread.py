@@ -28,7 +28,8 @@ class _EndpointServiceThread(threading.Thread):
         '''
         while True:
             service_action = self.threadsafe_queue.get()
-            util.get_logger().debug('Servicing action',extra= self.logging_info)
+            if __debug__:
+                util.get_logger().debug('Servicing action',extra= self.logging_info)
             service_action.service()
 
     def receive_request_backout(self,uuid,requesting_endpoint):

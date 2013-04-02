@@ -60,10 +60,12 @@ def set_logging(**kwargs):
 
     util.get_logger().critical(
         '\n***** New *****\n', extra={'mod': 'NEW', 'endpoint_string': 'NEW'})
+        
     
 # set up default logging to file
+# set_logging(level=logging.INFO)
 set_logging()
-
+# set_logging(level=logging.DEBUG)
     
 
 def tcp_connect(constructor,host,port,*args):

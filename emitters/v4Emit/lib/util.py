@@ -13,7 +13,7 @@ PARTNER_ENDPOINT_SENTINEL = -1
 # told to back out).
 TIME_TO_SLEEP_BEFORE_ATTEMPT_TO_ACQUIRE_VAR_FIRST_PHASE_LOCK = .2
 LOGGER_NAME = 'Waldo'
-
+LOCK_LOGGER_NAME = 'locker'
 
 def get_logger():
     return logging.getLogger(LOGGER_NAME)
@@ -152,12 +152,6 @@ class WaldoFFUUID(object):
     def __lte__(self,other):
         return (self < other) or (self == other)
         
-    
-    
-def generate_uuid():
-    if wuuid_lib == None:
-        return generate_py_uuid()
-    return generate_foreign_function_uuid()
 
 def generate_foreign_function_uuid():
     '''
@@ -174,6 +168,21 @@ def generate_foreign_function_uuid():
         ctypes.byref(high_bits),ctypes.byref(low_bits))
     
     return WaldoFFUUID(high_bits.value,low_bits.value)
+
+uuid_list = []
+NUM_UUIDS = 100000
+for i in range(0,NUM_UUIDS):
+    uuid_list.append(generate_foreign_function_uuid())
+    
+call_num = 0    
+def generate_uuid():
+    global call_num
+    call_num += 1
+    return uuid_list[call_num % NUM_UUIDS]
+    # if wuuid_lib == None:
+    #     return generate_py_uuid()
+    # return generate_foreign_function_uuid()
+
 
 def generate_py_uuid():
     return uuid.uuid4()
