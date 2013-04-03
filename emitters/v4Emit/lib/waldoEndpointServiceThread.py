@@ -19,7 +19,7 @@ class _EndpointServiceThread(threading.Thread):
 
         self.logging_info = {
             'mod': 'EndpointServiceThread',
-            'endpoint_string': str(self.endpoint._uuid)
+            'endpoint_string': self.endpoint._endpoint_uuid_str
             }
         
     def run(self):

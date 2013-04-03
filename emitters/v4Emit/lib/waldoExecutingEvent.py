@@ -601,7 +601,7 @@ class _ExecutingEvent(threading.Thread):
     def run(self):
         logging_info = {
             'mod': 'ExecutingEvent',
-            'endpoint_string': str(self.active_event.local_endpoint._uuid)
+            'endpoint_string': self.active_event.local_endpoint._endpoint_uuid_str
             }
         if __debug__:
             log_msg = (

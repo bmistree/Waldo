@@ -1035,7 +1035,7 @@ class RootActiveEvent(_ActiveEvent):
 
         self.logging_info = {
             'mod': 'RootActiveEvent',
-            'endpoint_string': str(self.local_endpoint._uuid)
+            'endpoint_string': local_endpoint._endpoint_uuid_str
             }
 
         if __debug__:
@@ -1331,7 +1331,7 @@ class PartnerActiveEvent(_ActiveEvent):
 
         self.logging_info = {
             'mod': 'PartnerActiveEvent',
-            'endpoint_string': str(self.local_endpoint._uuid)
+            'endpoint_string': local_endpoint._endpoint_uuid_str
             }
 
         if __debug__:
@@ -1482,7 +1482,7 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         self.subscriber = endpoint_making_call
         self.logging_info = {
             'mod': 'EndpointCalledActiveEvent',
-            'endpoint_string': str(self.local_endpoint._uuid)
+            'endpoint_string': endpoint_making_call._endpoint_uuid_str
             }
 
         if __debug__:

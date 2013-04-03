@@ -140,7 +140,7 @@ self._host_uuid = _host_uuid
 self._global_var_store = %s(_host_uuid)
 %s
 %s.__init__(self,_waldo_classes,_host_uuid,_conn_obj,self._global_var_store)
-%s.debug("Initializing endpoint",extra={"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+%s.debug("Initializing endpoint",extra={"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 ''' % (emit_utils.library_transform('VariableStore'),
        endpoint_global_and_peered_variable_store_load_txt,
        emit_utils.library_transform('Endpoint'),
@@ -409,7 +409,7 @@ def %s(self,_active_event,_context%s):
     private_body = (
         ('\n%s.debug("In %s for event " + %s, ' %
         (emit_utils.library_transform('logger'), src_method_name, "str(_active_event.uuid)")) +
-        'extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})')
+        'extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})')
     
     private_body = ''
     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
@@ -591,7 +591,7 @@ def %s(self%s):
     # continuing
     public_body = '''
 %s.debug("Public request for %s",
-    extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+    extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
 # ensure that both sides have completed their onCreate calls
 # before continuing
@@ -625,7 +625,7 @@ while True:  # FIXME: currently using infinite retry
         %s(self._host_uuid))
 
     %s.debug("Private request for %s on event with id: " + str(_root_event.uuid),
-        extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+        extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
     # call internal function... note True as last param tells internal
     # version of function that it needs to de-waldo-ify all return
@@ -641,12 +641,12 @@ while True:  # FIXME: currently using infinite retry
         # means it isn't a backout message: we're done
         %s.debug(
             "Returning out of public request for %s with event id: " + str(_root_event.uuid),
-            extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
         return _to_return
     else: 
         %s.debug(
             "Backout out of public request for %s with event id: " + str(_root_event.uuid),
-            extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 ''' % (emit_utils.library_transform('ExecutingEventContext'),
        emit_utils.library_transform('VariableStore'),
        emit_utils.library_transform('logger'),
@@ -836,7 +836,7 @@ def emit_message_receive(
     next_sequence_txt = '''
 %s.debug(
     "%s about to request additional sequence for event " +
-     str(_active_event.uuid),extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+     str(_active_event.uuid),extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 ''' % (emit_utils.library_transform('logger'), msg_recv_name)
 
     
@@ -854,7 +854,7 @@ if %s != None:
 
     %s.debug(
         "%s received a response to message call for event " +
-         str(_active_event.uuid),extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+         str(_active_event.uuid),extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 ''' % (emit_utils.library_transform('Queue'),
        next_to_call_txt,
        next_to_call_txt,
@@ -920,7 +920,7 @@ def emit_message_node_what_to_call_next(next_to_call_node,emit_ctx):
 
     debug_txt = '''
 %s.debug("About to send a request to %s for event " + str(_active_event.uuid),
-    extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+    extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 ''' % (emit_utils.library_transform('logger'), next_message_name)
     
     return debug_txt + '''
@@ -930,7 +930,7 @@ _active_event.issue_partner_sequence_block_call(
 _queue_elem = _threadsafe_queue.get()
 
 %s.debug("Received a response for request of %s for event " + str(_active_event.uuid),
-    extra= {"mod": "EndpointSubclass", "endpoint_string": str(self._uuid)})
+    extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
 if isinstance(_queue_elem,%s):
     raise %s()

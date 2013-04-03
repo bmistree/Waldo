@@ -41,7 +41,7 @@ class _DeadlockDetector(object):
 
         self.logging_info = {
             'mod': 'DeadlockDetector',
-            'endpoint_string': str(root_active_event.local_endpoint._uuid)
+            'endpoint_string': self.root_active_event.local_endpoint._endpoint_uuid_str
             }
         
         

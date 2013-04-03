@@ -35,11 +35,13 @@ class _Endpoint(object):
         '''
         self._uuid = util.generate_uuid()
 
+        self._endpoint_uuid_str = str(self._uuid)
         self._logging_info = {
             'mod': 'Endpoint',
-            'endpoint_string': str(self._uuid)
+            'endpoint_string': self._endpoint_uuid_str
             }
 
+        
         
         self._waldo_classes = waldo_classes
         

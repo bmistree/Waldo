@@ -18,7 +18,7 @@ class _ActiveEventMap(object):
 
         self.logging_info = {
             'mod': 'ActiveEventMap',
-            'endpoint_string': str(self.local_endpoint._uuid)
+            'endpoint_string': self.local_endpoint._endpoint_uuid_str
             }
 
         

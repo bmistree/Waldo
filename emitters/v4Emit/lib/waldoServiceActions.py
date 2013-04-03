@@ -44,7 +44,7 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action,threading.Thread)
         if __debug__:
             logging_info = {
                 'mod': 'ReceivePartnerMesssageRequestSequenceBlockAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string': self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start sequence action for ' + str(event_uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -98,7 +98,7 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
         if __debug__:
             logging_info = {
                 'mod': 'ReceiveSubscriberAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string': self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start receive subscriber for ' + str(self.event_uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -144,7 +144,7 @@ class _ReceiveRequestCommitAction(_Action,threading.Thread):
         if __debug__:
             logging_info = {
                 'mod': 'ReceiveRequestCommitAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string':  self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start receive request commit action ' + str(self.event_uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -202,7 +202,7 @@ class _ReceiveRequestCompleteCommitAction(_Action,threading.Thread):
         if __debug__:
             logging_info = {
                 'mod': 'ReceiveCompleteCommitCallAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string':  self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start complete commit for event ' + str(self.event_uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -262,7 +262,7 @@ class _ReceiveRequestBackoutAction(_Action):
         if __debug__:
             logging_info = {
                 'mod': 'ReceiveRequestBackoutAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string': self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start receive request backout action ' + str(self.uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -337,7 +337,7 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
         if __debug__:
             logging_info = {
                 'mod': 'ReceiveEndpointCallAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string': self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start receive endpoint call action ' + str(self.event_uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -403,7 +403,7 @@ class _ReceiveFirstPhaseCommitMessage(_Action,threading.Thread):
         if __debug__:
             logging_info = {
                 'mod': 'ReceiveFirstPhaseCommitMessageAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string': self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start receive first phase commit message ' + str(self.event_uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -444,7 +444,7 @@ class _ReceivePeeredModifiedMsg(_Action,threading.Thread):
         if __debug__:
             logging_info = {
                 'mod': 'ReceivePeeredModifiedMsgAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string': self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start receive peered mod msg ' + str(self.msg.event_uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -477,7 +477,7 @@ class _ReceivePeeredModifiedResponseMsg(_Action,threading.Thread):
         if __debug__:
             logging_info = {
                 'mod': 'ReceivePeeredModifiedResponseMsgAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string': self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start receive peered mod response msg ' + str(self.msg.event_uuid)
             util.get_logger().info(log_msg,extra=logging_info)
@@ -510,7 +510,7 @@ class _ReceivePartnerReadyAction(_Action,threading.Thread):
         if __debug__:
             logging_info = {
                 'mod': 'ReceivePartnerReadyAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
+                'endpoint_string': self.local_endpoint._endpoint_uuid_str
                 }
             log_msg = 'Start receive ready action '
             util.get_logger().info(log_msg,extra=logging_info)
