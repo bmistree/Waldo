@@ -41,10 +41,25 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action,threading.Thread)
     def run(self):
         event_uuid = self.partner_request_block_msg.event_uuid
         
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceivePartnerMesssageRequestSequenceBlockAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start sequence action for ' + str(event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+        
         evt = self.local_endpoint._act_event_map.get_or_create_partner_event(
             event_uuid)
         
         evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
+        
+        if __debug__:
+            log_msg = 'End sequence action for ' + str(event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+
         
     def service(self):
         self.start()
@@ -80,8 +95,17 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
         self.start()
 
     def run(self):
-        evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceiveSubscriberAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start receive subscriber for ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
 
+        
+        evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
+        
         if evt == None:
             # the event was already backed out or committed.  Do not
             # need to keep forwarding info about it.
@@ -95,7 +119,12 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
             evt.notify_additional_subscriber(
                 self.subscriber_event_uuid,self.host_uuid,
                 self.resource_uuid)
-    
+
+        if __debug__:
+            log_msg = 'End receive subscriber for ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+            
         
 class _ReceiveRequestCommitAction(_Action,threading.Thread):
     '''
@@ -112,6 +141,15 @@ class _ReceiveRequestCommitAction(_Action,threading.Thread):
         self.daemon = True
 
     def run(self):
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceiveRequestCommitAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start receive request commit action ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+        
         evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
         
         if evt == None:
@@ -161,7 +199,20 @@ class _ReceiveRequestCompleteCommitAction(_Action,threading.Thread):
         
         2.  Call its complete_commit_and_forward_complete_msg method.  
         '''
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceiveCompleteCommitCallAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start complete commit for event ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+            
+        
         evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
+
+        if __debug__:
+            log_msg = 'Middle complete commit'
+            util.get_logger().debug(log_msg,extra=logging_info)
         
         if evt == None:
             # event may not exist, for instance if got multiple
@@ -173,6 +224,11 @@ class _ReceiveRequestCompleteCommitAction(_Action,threading.Thread):
         # then we can skip sending a request to our partner to
         # complete the commit.
         evt.complete_commit_and_forward_complete_msg(self.request_from_partner)
+        if __debug__:
+            log_msg = 'End complete commit for event ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+
         
     def service(self):
         # just start the thread
@@ -201,8 +257,17 @@ class _ReceiveRequestBackoutAction(_Action):
         self.uuid = uuid
         self.requesting_endpoint = requesting_endpoint
 
-
+        
     def service(self):
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceiveRequestBackoutAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start receive request backout action ' + str(self.uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+        
         evt = self.local_endpoint._act_event_map.get_and_remove_event(
             self.uuid)
 
@@ -221,6 +286,11 @@ class _ReceiveRequestBackoutAction(_Action):
         # FIXME: should probably be in a separate thread
         evt.forward_backout_request_and_backout_self(skip_partner)
 
+        if __debug__:
+            log_msg = 'End receive request backout action ' + str(self.uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+        
         
 
 class _ReceiveEndpointCallAction(_Action,threading.Thread):
@@ -264,6 +334,15 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
         self.daemon = True
             
     def run(self):
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceiveEndpointCallAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start receive endpoint call action ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+        
         act_evt_map = self.local_endpoint._act_event_map
         act_event = act_evt_map.get_or_create_endpoint_called_event(
             self.endpoint_making_call,self.event_uuid,self.result_queue)
@@ -284,16 +363,12 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
             self.to_exec,act_event,evt_ctx,self.result_queue,
             *self.args)
 
-        if __debug__:
-            log_msg = (
-                'Servicing endpoint call for %s. Starting event.' % self.func_name)
-            logging_info = {
-                'mod': 'ReceiveEndpointCallAction',
-                'endpoint_string': str(self.local_endpoint._uuid)
-                }
-            util.get_logger().debug(log_msg,extra=logging_info)
-        
         exec_event.start()
+        
+        if __debug__:
+            log_msg = 'End receive endpoint call action ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
 
         
     def service(self):
@@ -325,21 +400,33 @@ class _ReceiveFirstPhaseCommitMessage(_Action,threading.Thread):
         self.start()
 
     def run(self):
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceiveFirstPhaseCommitMessageAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start receive first phase commit message ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+        
         act_event = self.local_endpoint._act_event_map.get_event(
             self.event_uuid)
 
-        if act_event == None:
-            return
-        
-        if self.successful:
-            act_event.receive_successful_first_phase_commit_msg(
-                self.event_uuid,self.msg_originator_endpoint_uuid,
-                self.children_event_endpoint_uuids)
-        else:
-            act_event.receive_unsuccessful_first_phase_commit_msg(
-                self.event_uuid,self.msg_originator_endpoint_uuid)
+        if act_event != None:
+            if self.successful:
+                act_event.receive_successful_first_phase_commit_msg(
+                    self.event_uuid,self.msg_originator_endpoint_uuid,
+                    self.children_event_endpoint_uuids)
+            else:
+                act_event.receive_unsuccessful_first_phase_commit_msg(
+                    self.event_uuid,self.msg_originator_endpoint_uuid)
 
 
+        if __debug__:
+            log_msg = 'End receive first phase commit message ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+            
 class _ReceivePeeredModifiedMsg(_Action,threading.Thread):
     def __init__(self,local_endpoint, msg):
         '''
@@ -354,9 +441,23 @@ class _ReceivePeeredModifiedMsg(_Action,threading.Thread):
         self.start()
 
     def run(self):
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceivePeeredModifiedMsgAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start receive peered mod msg ' + str(self.msg.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+        
         event_uuid = self.msg.event_uuid
         event = self.local_endpoint._act_event_map.get_or_create_partner_event(event_uuid)
         event.generate_partner_modified_peered_response(self.msg)
+        
+        if __debug__:
+            log_msg = 'End receive peered mod msg ' + str(self.msg.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+        
 
 
 class _ReceivePeeredModifiedResponseMsg(_Action,threading.Thread):
@@ -373,6 +474,15 @@ class _ReceivePeeredModifiedResponseMsg(_Action,threading.Thread):
         self.start()
 
     def run(self):
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceivePeeredModifiedResponseMsgAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start receive peered mod response msg ' + str(self.msg.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+        
         event_uuid = self.msg.event_uuid
         event = self.local_endpoint._act_event_map.get_event(event_uuid)
         
@@ -381,6 +491,11 @@ class _ReceivePeeredModifiedResponseMsg(_Action,threading.Thread):
             # received response for message.)
             event.receive_partner_modified_peered_response(self.msg)
 
+        if __debug__:
+            log_msg = 'End receive peered mod response msg ' + str(self.msg.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
+
+            
             
 class _ReceivePartnerReadyAction(_Action,threading.Thread):
     def __init__(self,local_endpoint):
@@ -392,5 +507,18 @@ class _ReceivePartnerReadyAction(_Action,threading.Thread):
         self.start()
 
     def run(self):
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceivePartnerReadyAction',
+                'endpoint_string': str(self.local_endpoint._uuid)
+                }
+            log_msg = 'Start receive ready action '
+            util.get_logger().info(log_msg,extra=logging_info)
+
         self.local_endpoint._other_side_ready()
+
+        if __debug__:
+            log_msg = 'End receive ready action '
+            util.get_logger().info(log_msg,extra=logging_info)
+            
 
