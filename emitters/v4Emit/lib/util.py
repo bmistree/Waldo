@@ -100,11 +100,11 @@ class WaldoFFUUID(object):
     def __init__(self,high_order_bits, low_order_bits):
         self.high_order_bits = high_order_bits
         self.low_order_bits = low_order_bits
-
+        self._str = str(self.high_order_bits) + str(self.low_order_bits)
         self._hash = hash((self.high_order_bits,self.low_order_bits))
         
     def __str__(self):
-        return str(self.high_order_bits) + str(self.low_order_bits)
+        return self._str
     
     def __hash__(self):
         return self._hash
