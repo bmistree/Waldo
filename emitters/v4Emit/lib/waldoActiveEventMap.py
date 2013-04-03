@@ -146,7 +146,7 @@ class _ActiveEventMap(object):
         self.map[event.uuid] = event
 
         if __debug__:
-            log_msg = 'Inserted ' + str(event.uuid) + ' into map.'
+            log_msg = 'Inserted ' + event.str_uuid + ' into map.'
             util.get_logger().debug(log_msg, extra=self.logging_info)
 
     def _lock(self):

@@ -56,7 +56,7 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action,threading.Thread)
         evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
         
         if __debug__:
-            log_msg = 'End sequence action for ' + str(event_uuid)
+            log_msg = 'End sequence action for ' + evt.str_uuid
             util.get_logger().info(log_msg,extra=logging_info)
 
 
@@ -121,7 +121,7 @@ class _ReceiveSubscriberAction(_Action,threading.Thread):
                 self.resource_uuid)
 
         if __debug__:
-            log_msg = 'End receive subscriber for ' + str(self.event_uuid)
+            log_msg = 'End receive subscriber for ' + evt.str_uuid
             util.get_logger().info(log_msg,extra=logging_info)
 
             
@@ -225,7 +225,7 @@ class _ReceiveRequestCompleteCommitAction(_Action,threading.Thread):
         # complete the commit.
         evt.complete_commit_and_forward_complete_msg(self.request_from_partner)
         if __debug__:
-            log_msg = 'End complete commit for event ' + str(self.event_uuid)
+            log_msg = 'End complete commit for event ' + evt.str_uuid
             util.get_logger().info(log_msg,extra=logging_info)
 
 
@@ -287,7 +287,7 @@ class _ReceiveRequestBackoutAction(_Action):
         evt.forward_backout_request_and_backout_self(skip_partner)
 
         if __debug__:
-            log_msg = 'End receive request backout action ' + str(self.uuid)
+            log_msg = 'End receive request backout action ' + evt.str_uuid
             util.get_logger().info(log_msg,extra=logging_info)
 
         
@@ -366,7 +366,7 @@ class _ReceiveEndpointCallAction(_Action,threading.Thread):
         exec_event.start()
         
         if __debug__:
-            log_msg = 'End receive endpoint call action ' + str(self.event_uuid)
+            log_msg = 'End receive endpoint call action ' + act_event.str_uuid
             util.get_logger().info(log_msg,extra=logging_info)
 
 
@@ -412,6 +412,7 @@ class _ReceiveFirstPhaseCommitMessage(_Action,threading.Thread):
         act_event = self.local_endpoint._act_event_map.get_event(
             self.event_uuid)
 
+
         if act_event != None:
             if self.successful:
                 act_event.receive_successful_first_phase_commit_msg(
@@ -420,7 +421,7 @@ class _ReceiveFirstPhaseCommitMessage(_Action,threading.Thread):
             else:
                 act_event.receive_unsuccessful_first_phase_commit_msg(
                     self.event_uuid,self.msg_originator_endpoint_uuid)
-
+            
 
         if __debug__:
             log_msg = 'End receive first phase commit message ' + str(self.event_uuid)
@@ -454,10 +455,9 @@ class _ReceivePeeredModifiedMsg(_Action,threading.Thread):
         event.generate_partner_modified_peered_response(self.msg)
         
         if __debug__:
-            log_msg = 'End receive peered mod msg ' + str(self.msg.event_uuid)
+            log_msg = 'End receive peered mod msg ' + event.str_uuid
             util.get_logger().info(log_msg,extra=logging_info)
 
-        
 
 
 class _ReceivePeeredModifiedResponseMsg(_Action,threading.Thread):
@@ -490,9 +490,12 @@ class _ReceivePeeredModifiedResponseMsg(_Action,threading.Thread):
             # (event could == None if we backed out the event before
             # received response for message.)
             event.receive_partner_modified_peered_response(self.msg)
-
+            str_event_uuid = event.str_uuid
+        else:
+            str_event_uuid = str(event_uuid)
+            
         if __debug__:
-            log_msg = 'End receive peered mod response msg ' + str(self.msg.event_uuid)
+            log_msg = 'End receive peered mod response msg ' + str_event_uuid
             util.get_logger().info(log_msg,extra=logging_info)
 
             
