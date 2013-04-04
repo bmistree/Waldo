@@ -169,19 +169,19 @@ def generate_foreign_function_uuid():
     
     return WaldoFFUUID(high_bits.value,low_bits.value)
 
-uuid_list = []
-NUM_UUIDS = 100000
-for i in range(0,NUM_UUIDS):
-    uuid_list.append(generate_foreign_function_uuid())
+# uuid_list = []
+# NUM_UUIDS = 100000
+# for i in range(0,NUM_UUIDS):
+#     uuid_list.append(generate_foreign_function_uuid())
     
-call_num = 0    
+# call_num = 0    
 def generate_uuid():
-    global call_num
-    call_num += 1
-    return uuid_list[call_num % NUM_UUIDS]
-    # if wuuid_lib == None:
-    #     return generate_py_uuid()
-    # return generate_foreign_function_uuid()
+    # global call_num
+    # call_num += 1
+    # return uuid_list[call_num % NUM_UUIDS]
+    if wuuid_lib == None:
+        return generate_py_uuid()
+    return generate_foreign_function_uuid()
 
 
 def generate_py_uuid():
