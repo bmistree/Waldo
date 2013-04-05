@@ -74,23 +74,23 @@ def _generate_serialization_named_tuple(
 
 
 
-current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) 
-waldo_uuid_lib_abs_path = os.path.join(
-    current_dir, 'waldo_uuid',
-    'waldo_foreign.so')
+# current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) 
+# waldo_uuid_lib_abs_path = os.path.join(
+#     current_dir, 'waldo_uuid',
+#     'waldo_foreign.so')
 
-wuuid_lib = None
-if os.path.exists(waldo_uuid_lib_abs_path):
-    wuuid_lib = ctypes.CDLL(waldo_uuid_lib_abs_path)
-    wuuid_lib.foreign_uuid_two_unsigned_longs.argtypes = [
-        ctypes.POINTER(ctypes.c_ulonglong),
-        ctypes.POINTER(ctypes.c_ulonglong)]
-else:
-    warn_msg = '\nWaldo warning: Cannot find shared object file '
-    warn_msg += 'for generating uuids.  For now, using Python\'s '
-    warn_msg += 'uuid module to generate uuids.  To fix, make '
-    warn_msg += 'inside of emitters/v4Emit/lib/waldo_uuid.\n'
-    print warn_msg
+# wuuid_lib = None
+# if os.path.exists(waldo_uuid_lib_abs_path):
+#     wuuid_lib = ctypes.CDLL(waldo_uuid_lib_abs_path)
+#     wuuid_lib.foreign_uuid_two_unsigned_longs.argtypes = [
+#         ctypes.POINTER(ctypes.c_ulonglong),
+#         ctypes.POINTER(ctypes.c_ulonglong)]
+# else:
+#     warn_msg = '\nWaldo warning: Cannot find shared object file '
+#     warn_msg += 'for generating uuids.  For now, using Python\'s '
+#     warn_msg += 'uuid module to generate uuids.  To fix, make '
+#     warn_msg += 'inside of emitters/v4Emit/lib/waldo_uuid.\n'
+#     print warn_msg
 
 
 class WaldoFFUUID(object):
@@ -175,16 +175,19 @@ def generate_foreign_function_uuid():
 #     uuid_list.append(generate_foreign_function_uuid())
     
 # call_num = 0    
+# def generate_uuid():
+#     global call_num
+#     call_num += 1
+#     return uuid_list[call_num % NUM_UUIDS]
+#     # if wuuid_lib == None:
+#     #     return generate_py_uuid()
+#     # return generate_foreign_function_uuid()
+
+
+# def generate_py_uuid():
+#     return uuid.uuid4()
+
 def generate_uuid():
-    # global call_num
-    # call_num += 1
-    # return uuid_list[call_num % NUM_UUIDS]
-    if wuuid_lib == None:
-        return generate_py_uuid()
-    return generate_foreign_function_uuid()
-
-
-def generate_py_uuid():
     return uuid.uuid4()
 
 
