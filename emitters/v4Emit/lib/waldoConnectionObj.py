@@ -2,7 +2,7 @@ import util
 import Queue
 import threading
 import socket
-import re
+import struct
 
 class _WaldoConnectionObject(object):
 
@@ -75,6 +75,8 @@ class _WaldoSameHostConnectionObject(_WaldoConnectionObject,threading.Thread):
 
 class _WaldoTCPConnectionObj(_WaldoConnectionObject):
 
+    HEADER_LEN_OCTETS = 8
+    
     DELIMITER_A = 'a'
     DELIMITER_B = 'b'
     # every message ends with this delimiter
@@ -166,16 +168,30 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         Note: _decapsulate_msg(_encapsulate_msg_str(msg_str)) equals
         the original message.
         '''
+        size_of_msg = len(str_to_escape) + _WaldoTCPConnectionObj.HEADER_LEN_OCTETS
 
-        to_return = str_to_escape.replace(
-            _WaldoTCPConnectionObj.DELIMITER_A,
-            _WaldoTCPConnectionObj.DELIMITER_A + _WaldoTCPConnectionObj.DELIMITER_A)
+        # lower order indices contain the lower order values
+        # header_as_list = [0]*_WaldoTCPConnectionObj.HEADER_LEN_OCTETS
+        header = struct.pack('L',size_of_msg)
+        
+        # # each iteration of this loop, we grab an the lowest order
+        # # octet from size_of_msg that has not yet been read and put it
+        # # into header_as_list.
+        # for i in range(0,_WaldoTCPConnectionObj.HEADER_LEN_OCTETS):
 
-        to_return = to_return.replace(
-            _WaldoTCPConnectionObj.DELIMITER_B,
-            _WaldoTCPConnectionObj.DELIMITER_B + _WaldoTCPConnectionObj.DELIMITER_B)
+        #     # moves the bits of interest into the lowest order of the
+        #     # integer.
+        #     lower_order_shifted_bits = (size_of_msg) >> (i*8)
+        #     octet_val = lower_order_shifted_bits & (0xFF)
+            
+        #     header_as_list[i] = chr(octet_val)
 
-        return _WaldoTCPConnectionObj.MSG_HEAD + to_return + _WaldoTCPConnectionObj.MSG_DELIMITER
+        # # header = reduce(
+        # #     lambda x,y : x + chr(y),
+        # #     header_as_list,'')
+        # header = ''.join(header_as_list)
+            
+        return header + str_to_escape
 
     @staticmethod
     def _decapsulate_msg_str(to_try_to_decapsulate):
@@ -190,37 +206,26 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
            the rest of the data that we received from the opposite
            side or None if did not have enough data to create a
            message
-
         '''
-        global regex_obj
-        match_obj = regex_obj.search(to_try_to_decapsulate)
+        encoded_header_len_byte_array = (
+            to_try_to_decapsulate[0:_WaldoTCPConnectionObj.HEADER_LEN_OCTETS])
 
-        if match_obj == None:
+        if len(to_try_to_decapsulate) < _WaldoTCPConnectionObj.HEADER_LEN_OCTETS:
+            return None, None
+
+        full_size = struct.unpack(
+            'L',
+            to_try_to_decapsulate[0:_WaldoTCPConnectionObj.HEADER_LEN_OCTETS])[0]
+
+
+        if len(to_try_to_decapsulate) < full_size:
             return None,None
 
-        # only checking for one message group at a time.
-        new_msg_group_index = 0
+        msg = to_try_to_decapsulate[_WaldoTCPConnectionObj.HEADER_LEN_OCTETS:full_size]
+        rest_of_msg = to_try_to_decapsulate[full_size:]
 
+        return msg, rest_of_msg
         
-        # Trim off the message header and footer
-        new_msg = match_obj.string[
-            len(_WaldoTCPConnectionObj.MSG_HEAD):
-                match_obj.end(new_msg_group_index) - len(_WaldoTCPConnectionObj.MSG_DELIMITER)]
-        
-        # remaining_msg = match_obj.string[match_obj.end(new_msg_group_index) + 1:]
-        remaining_msg = match_obj.string[match_obj.end(new_msg_group_index):]        
-
-        
-        # de-duplicate replaced characters
-        new_msg = new_msg.replace(
-            _WaldoTCPConnectionObj.DELIMITER_A + _WaldoTCPConnectionObj.DELIMITER_A,
-            _WaldoTCPConnectionObj.DELIMITER_A)
-        new_msg = new_msg.replace(
-            _WaldoTCPConnectionObj.DELIMITER_B + _WaldoTCPConnectionObj.DELIMITER_B,
-            _WaldoTCPConnectionObj.DELIMITER_B)
-
-        
-        return new_msg,remaining_msg
 
         
     def _decapsulate_msg_and_dispatch(self):
@@ -263,13 +268,6 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
                 extra=self.logging_info)
             
         self.sock.send(msg_str_to_send)
-
-regex = (
-    '[^%s](?:%s%s)*%s%s' %
-    (_WaldoTCPConnectionObj.DELIMITER_A,_WaldoTCPConnectionObj.DELIMITER_A,
-     _WaldoTCPConnectionObj.DELIMITER_A,_WaldoTCPConnectionObj.DELIMITER_A,
-     _WaldoTCPConnectionObj.DELIMITER_B))
-regex_obj = re.compile(regex)
 
 
         
