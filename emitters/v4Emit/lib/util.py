@@ -5,6 +5,12 @@ import inspect
 from collections import namedtuple
 import logging
 
+# Queue was changed to queue in Python 3.  
+try:
+    import Queue as Queue
+except:
+    import queue as Queue
+
 PARTNER_ENDPOINT_SENTINEL = -1
 
 # if we cannot acquire a lock for the first phase of a variable's
@@ -15,6 +21,16 @@ TIME_TO_SLEEP_BEFORE_ATTEMPT_TO_ACQUIRE_VAR_FIRST_PHASE_LOCK = .2
 LOGGER_NAME = 'Waldo'
 LOCK_LOGGER_NAME = 'locker'
 
+def is_string(obj):
+    '''
+    Python3 deprecates basestring
+    '''
+    try:
+        return isinstance(obj, basestring)
+    except NameError:
+        return isinstance(obj, str)
+
+    
 def get_logger():
     return logging.getLogger(LOGGER_NAME)
 
@@ -193,7 +209,7 @@ def generate_uuid():
 
 def logger_assert(assert_msg,logging_info=None):
     assert_msg = 'Compiler error: ' + assert_msg
-    print assert_msg
+    print (assert_msg)
 
     if logging_info == None:
         logging_info = {
@@ -211,7 +227,7 @@ def logger_warn(warn_msg,logging_info=None):
             'endpoint': 'unknown'
             }
     logging.critical(warn_msg, logging_info)
-    print warn_msg
+    print (warn_msg)
 
 
 class BackoutException(Exception):

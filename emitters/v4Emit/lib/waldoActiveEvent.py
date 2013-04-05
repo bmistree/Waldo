@@ -4,7 +4,7 @@ import threading
 import waldoCallResults
 import waldoExecutingEvent
 from abc import abstractmethod
-import Queue
+from util import Queue
 import waldoDeadlockDetector
 import time
 import logging

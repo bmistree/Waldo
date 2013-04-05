@@ -97,10 +97,10 @@ class _VariableStore(object):
         '''
         Runs through internal map and prints all keys to stdout
         '''
-        print '\nPrinting all in variable store'
+        print ('\nPrinting all in variable store')
         for key in self._name_to_var_map.keys():
-            print key
-        print '\n'            
+            print (key)
+        print ('\n')
         
     def generate_deltas(self,invalidation_listener,force=False):
         '''

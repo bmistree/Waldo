@@ -6,7 +6,7 @@ sys.path.append(
 
 import util
 import threading
-import Queue
+from util import Queue
 import waldoEndpoint
 import waldoVariableStore
 import wVariables

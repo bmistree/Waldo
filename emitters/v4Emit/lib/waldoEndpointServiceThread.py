@@ -1,4 +1,4 @@
-import Queue
+from util import Queue
 import threading
 import waldoServiceActions
 import logging

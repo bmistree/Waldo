@@ -240,7 +240,8 @@ def deserialize_peered_object_into_variable(
             if ((len(var_data) != 0) and # see len comment in if
                                          # statement above.
                 (isinstance(
-                        var_data.itervalues().next(),
+                        next(iter(var_data.values())),
+                        # var_data.itervalues().next(),
                         util._SerializationHelperNamedTuple))):
                 case1_or_case2 = False
 
@@ -369,7 +370,10 @@ def new_obj_from_serialized(
     else:
         if (isinstance(var_data,dict) and
             (len(var_data) != 0) and
-            (isinstance(var_data.itervalues().next(),
+            
+            (isinstance(
+                    next(iter(var_data.values())),
+                    # var_data.itervalues().next(),
                         util._SerializationHelperNamedTuple))):
             new_obj = {}
             for key in var_data.keys():

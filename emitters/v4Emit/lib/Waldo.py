@@ -1,6 +1,6 @@
 import util
 import waldoConnectionObj
-import Queue
+from util import Queue
 import wVariables
 import waldoCallResults
 import waldoEndpoint

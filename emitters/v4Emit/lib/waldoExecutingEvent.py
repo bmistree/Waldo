@@ -5,7 +5,7 @@ import numbers
 import wVariables
 import util
 import waldoEndpoint
-import Queue
+from util import Queue
 
 class _ExecutingEventContext(object):
     def __init__(self,global_store,sequence_local_store):
@@ -201,7 +201,9 @@ class _ExecutingEventContext(object):
 
         # means that val was not a reference object.... turn it into one.
         constructor = None
-        if isinstance(val,basestring):
+        # if isinstance(val,basestring):
+        #     constructor = wVariables.WaldoTextVariable
+        if util.is_string(val):
             constructor = wVariables.WaldoTextVariable
         elif isinstance(val,numbers.Number):
             constructor = wVariables.WaldoNumVariable
@@ -366,7 +368,7 @@ class _ExecutingEventContext(object):
 
         if (isinstance(to_iter_over,dict) or
             isinstance(to_iter_over,list) or
-            isinstance(to_iter_over,basestring)):
+            util.is_string(to_iter_over)):
             return iter(to_iter_over)
 
         if isinstance(to_iter_over,wVariables.WaldoTextVariable):
@@ -464,7 +466,9 @@ class _ExecutingEventContext(object):
         '''
         if (isinstance(what_calling_len_on, dict) or
             isinstance(what_calling_len_on, list) or
-            isinstance(what_calling_len_on, basestring)):
+            util.is_string(what_calling_len_on)):
+            # isinstance(what_calling_len_on, basestring)):
+            # isinstance(what_calling_len_on, basestring)):
             return len(what_calling_len_on)
 
         if isinstance(what_calling_len_on,wVariables.WaldoTextVariable):
@@ -517,7 +521,8 @@ class _ExecutingEventContext(object):
         lhs_val = self.get_val_if_waldo(lhs,active_event)
 
         # handles Python string case
-        if isinstance(rhs,basestring):
+        if util.is_string(rhs):
+        # if isinstance(rhs,basestring):
             return lhs_val in rhs
 
         elif isinstance(rhs,wVariables.WaldoTextVariable):

@@ -42,6 +42,8 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
             self._waldo_classes["Endpoint"].__init__(self,_waldo_classes,_host_uuid,_conn_obj,self._global_var_store)
 
+            if __debug__:
+                self._waldo_classes["logger"].debug("Initializing endpoint",extra={"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
             while True:  # FIXME: currently using infinite retry 
                 _root_event = self._act_event_map.create_root_event()
@@ -110,6 +112,10 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def min_func(self,in_nums):
 
+            if __debug__:
+                self._waldo_classes["logger"].debug("Public request for min_func",
+                    extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
+
             # ensure that both sides have completed their onCreate calls
             # before continuing
             self._block_ready()
@@ -120,6 +126,10 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                     self._global_var_store,
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
+
+                if __debug__:
+                    self._waldo_classes["logger"].debug("Private request for min_func on event with id: " + str(_root_event.uuid),
+                        extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
@@ -133,8 +143,16 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _commit_resp = _root_event.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
+                    if __debug__:
+                        self._waldo_classes["logger"].debug(
+                            "Returning out of public request for min_func with event id: " + str(_root_event.uuid),
+                            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
                     return _to_return
-
+                else:
+                    if __debug__:
+                        self._waldo_classes["logger"].debug(
+                            "Backout out of public request for min_func with event id: " + str(_root_event.uuid),
+                            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
 
         def _endpoint_func_call_prefix__waldo__min_func(self,_active_event,_context,in_nums,_returning_to_public_ext_array=None):
@@ -162,6 +180,10 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def max_func(self,in_nums):
 
+            if __debug__:
+                self._waldo_classes["logger"].debug("Public request for max_func",
+                    extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
+
             # ensure that both sides have completed their onCreate calls
             # before continuing
             self._block_ready()
@@ -172,6 +194,10 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                     self._global_var_store,
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
+
+                if __debug__:
+                    self._waldo_classes["logger"].debug("Private request for max_func on event with id: " + str(_root_event.uuid),
+                        extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
@@ -185,8 +211,16 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _commit_resp = _root_event.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
+                    if __debug__:
+                        self._waldo_classes["logger"].debug(
+                            "Returning out of public request for max_func with event id: " + str(_root_event.uuid),
+                            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
                     return _to_return
-
+                else:
+                    if __debug__:
+                        self._waldo_classes["logger"].debug(
+                            "Backout out of public request for max_func with event id: " + str(_root_event.uuid),
+                            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
 
         def _endpoint_func_call_prefix__waldo__max_func(self,_active_event,_context,in_nums,_returning_to_public_ext_array=None):
@@ -214,6 +248,10 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def mod_func(self,lhs,rhs):
 
+            if __debug__:
+                self._waldo_classes["logger"].debug("Public request for mod_func",
+                    extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
+
             # ensure that both sides have completed their onCreate calls
             # before continuing
             self._block_ready()
@@ -224,6 +262,10 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                     self._global_var_store,
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
+
+                if __debug__:
+                    self._waldo_classes["logger"].debug("Private request for mod_func on event with id: " + str(_root_event.uuid),
+                        extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
@@ -237,8 +279,16 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _commit_resp = _root_event.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
+                    if __debug__:
+                        self._waldo_classes["logger"].debug(
+                            "Returning out of public request for mod_func with event id: " + str(_root_event.uuid),
+                            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
                     return _to_return
-
+                else:
+                    if __debug__:
+                        self._waldo_classes["logger"].debug(
+                            "Backout out of public request for mod_func with event id: " + str(_root_event.uuid),
+                            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
 
         def _endpoint_func_call_prefix__waldo__mod_func(self,_active_event,_context,lhs,rhs,_returning_to_public_ext_array=None):
@@ -268,6 +318,10 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def rand_int_func(self,a,b):
 
+            if __debug__:
+                self._waldo_classes["logger"].debug("Public request for rand_int_func",
+                    extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
+
             # ensure that both sides have completed their onCreate calls
             # before continuing
             self._block_ready()
@@ -278,6 +332,10 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                     self._global_var_store,
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
+
+                if __debug__:
+                    self._waldo_classes["logger"].debug("Private request for rand_int_func on event with id: " + str(_root_event.uuid),
+                        extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
@@ -291,8 +349,16 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _commit_resp = _root_event.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
+                    if __debug__:
+                        self._waldo_classes["logger"].debug(
+                            "Returning out of public request for rand_int_func with event id: " + str(_root_event.uuid),
+                            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
                     return _to_return
-
+                else:
+                    if __debug__:
+                        self._waldo_classes["logger"].debug(
+                            "Backout out of public request for rand_int_func with event id: " + str(_root_event.uuid),
+                            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
 
         def _endpoint_func_call_prefix__waldo__rand_int_func(self,_active_event,_context,a,b,_returning_to_public_ext_array=None):
@@ -344,6 +410,8 @@ def _MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
             self._waldo_classes["Endpoint"].__init__(self,_waldo_classes,_host_uuid,_conn_obj,self._global_var_store)
 
+            if __debug__:
+                self._waldo_classes["logger"].debug("Initializing endpoint",extra={"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
 
             # local endpoint's initialization has succeeded, tell other side that

@@ -69,20 +69,21 @@ def run_lib_tests():
     run_tests(to_run)
 
 def run_tests(to_run):
-    print '\n\n'    
+    print ('\n\n')
     for to_run_tuple in to_run:
         test_name = to_run_tuple[0]
         test_method = to_run_tuple[1]
 
-        print '\nRunning test ' + test_name 
+        print ('\nRunning test ' + test_name )
         succeeded = test_method()
-        print '........',
+        success_failure_msg = '.......'
         if succeeded:
-            print 'SUCCESS'
+            success_failure_msg += 'SUCCESS'
         else:
-            print 'FAILURE'
+            success_failure_msg += 'FAILURE'
 
-    print '\n\n'
+        print (success_failure_msg)
+    print( '\n\n')
 
 
 def call_make_in_emit_test_folder():

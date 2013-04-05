@@ -32,25 +32,25 @@ def run_test():
     if number.get_val(evt1) != INITIAL_NUMBER:
         err_msg = '\nerror on basic get: expected '
         err_msg += str(INITIAL_NUMBER)
-        print err_msg
+        print (err_msg)
         return False
 
     number.write_val(evt1,2)
     if number.get_val(evt1) != 2:
         err_msg = '\nerr on second basic get\n'
-        print err_msg
+        print (err_msg)
         return False
     
 
     # evt2 shouldn't know anything about evt1's changes to number.
     if number.get_val(evt2) != INITIAL_NUMBER:
         err_msg = '\nerr basic gets should be isolated\n'
-        print err_msg
+        print (err_msg)
         return False
 
 
     if not evt1.hold_can_commit():
-        print '\nError: should be able to commit a single committer.\n'
+        print ('\nError: should be able to commit a single committer.\n')
         return False
 
     evt1.complete_commit()
@@ -61,19 +61,19 @@ def run_test():
 
     if not evt2.is_invalidated:
         err_msg = '\nerr: should have been notified of invalidation'
-        print err_msg
+        print (err_msg)
         return False
 
     
     if evt2.hold_can_commit():
-        print '\nError: should have been unable to commit second event.\n'
+        print ('\nError: should have been unable to commit second event.\n')
         return False
     evt2.backout_commit()
 
     
     # check that final value is what evt1 committed
     if number.get_val(evt3) != 2:
-        print '\nerr: should have seen changes evt1 made.\n'
+        print ('\nerr: should have seen changes evt1 made.\n')
         return False
 
     return True

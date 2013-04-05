@@ -1,4 +1,5 @@
-from math_endpoint_v4 import MathEndpoint 
+# from math_endpoint_v4 import MathEndpoint
+from .math_endpoint_v4 import MathEndpoint 
 import random
 
 def min_func(endpoint,num_list):

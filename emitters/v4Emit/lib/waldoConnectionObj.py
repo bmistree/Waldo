@@ -1,5 +1,5 @@
 import util
-import Queue
+from util import Queue
 import threading
 import socket
 import struct
@@ -129,7 +129,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         else:
             self.sock = sock
 
-        self.received_data = ''
+        self.received_data = b''
         self.local_endpoint = None
         self.logging_info = {
             'mod': 'TCP Connection',

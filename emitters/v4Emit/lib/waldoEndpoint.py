@@ -3,7 +3,7 @@ import waldoEndpointServiceThread
 import pickle
 import waldoActiveEventMap
 import waldoMessages
-import Queue
+from util import Queue
 import threading
 import logging
 
@@ -227,9 +227,20 @@ class _Endpoint(object):
         peered variable, request to backout an event, etc.  In this
         function, we dispatch depending on message we receive.
         '''
-        msg_map = pickle.loads(string_msg)
+        counter = 0
+        while True:
+            try:
+                msg_map = pickle.loads(string_msg)
+                break
+            except:
+                # import pdb
+                # pdb.set_trace()
+                counter +=1
+                util.get_logger().critical('error',extra=self._logging_info)
+                if counter > 5:
+                    raise 
         msg = waldoMessages._Message.map_to_msg(msg_map)
-
+            
         if __debug__:
             util.get_logger().debug('Received message from partner',extra=self._logging_info)
 
