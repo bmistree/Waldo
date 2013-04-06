@@ -176,7 +176,12 @@ class _ActiveEvent(_InvalidationListener):
         self.breakout = False
         
     def _lock(self):
+        if __debug__:
+            util.lock_log('Acquire in active event ' + str(self))
         self._mutex.acquire()
+        if __debug__:
+            util.lock_log('Has acquired in active event ' + str(self))
+        
     def _unlock(self):
         self._mutex.release()
 

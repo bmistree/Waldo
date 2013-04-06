@@ -34,6 +34,10 @@ def is_string(obj):
 def get_logger():
     return logging.getLogger(LOGGER_NAME)
 
+def lock_log(msg):
+    return logging.getLogger(LOCK_LOGGER_NAME).debug(
+        msg, extra={'mod': 'none', 'endpoint_string': 'none'})
+
 def endpoint_call_func_name(func_name):
     '''
     Takes in the name of the function that another endpoint has

@@ -34,7 +34,16 @@ class _ReferenceBase(object):
         self._mutex = threading.Lock()
 
     def _lock(self,blocking=True):
-        return self._mutex.acquire(blocking)
+        if __debug__:
+            util.lock_log('Acquire lock in reference base for ' + str(self))
+
+        to_return = self._mutex.acquire(blocking)
+        
+        if __debug__:
+            util.lock_log('Has acquired lock in reference base for ' + str(self))
+        
+        return to_return
+    
     def _unlock(self):
         self._mutex.release()
 

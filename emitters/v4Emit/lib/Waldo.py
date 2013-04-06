@@ -57,6 +57,10 @@ def setup_logging():
 
     util.get_logger().critical(
         '***** New *****', extra={'mod': 'NEW', 'endpoint_string': 'NEW'})
+
+    util.lock_log('***** New *****')
+
+    
 setup_logging()
     
 def set_logging_level(level):

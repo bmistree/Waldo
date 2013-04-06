@@ -1,4 +1,5 @@
 import threading
+import util
 
 class _NotificationMap(object):
     '''
@@ -40,7 +41,6 @@ class _NotificationMap(object):
            (conservatively) detect potential deadlocks and backout
            requests for locks.
     '''
-
     def __init__(self,resource_uuid,host_uuid):
         '''
         @param {uuid} resource_uuid --- The uuid of the resource that
@@ -55,9 +55,14 @@ class _NotificationMap(object):
         self._mutex = threading.Lock()
         self.resource_uuid = resource_uuid
         self.host_uuid = host_uuid
-        
+
     def _lock(self):
+        if __debug__:
+            util.lock_log('Acquire lock in notificaiton map')
         self._mutex.acquire()
+        if __debug__:
+            util.lock_log('Has acquired lock in notificaiton map')
+        
     def _unlock(self):
         self._mutex.release()
 

@@ -50,7 +50,11 @@ class _DeadlockDetector(object):
     # subscription is not.)
         
     def _lock(self):
+        if __debug__:
+            util.lock_log('Acquire in deadlock detector ')
         self.mutex.acquire()
+        if __debug__:
+            util.lock_log('Has acquired in deadlock detector ')        
     def _unlock(self):
         self.mutex.release()
 

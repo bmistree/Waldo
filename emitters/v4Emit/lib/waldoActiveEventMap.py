@@ -150,7 +150,11 @@ class _ActiveEventMap(object):
             util.get_logger().debug(log_msg, extra=self.logging_info)
 
     def _lock(self):
+        if __debug__:
+            util.lock_log('Acquire in active event map ')
         self._mutex.acquire()
+        if __debug__:
+            util.lock_log('Has acquired in active event map ')
         
     def _unlock(self):
         self._mutex.release()
