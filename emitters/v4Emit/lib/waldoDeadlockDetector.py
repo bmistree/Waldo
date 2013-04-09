@@ -51,12 +51,15 @@ class _DeadlockDetector(object):
         
     def _lock(self):
         if __debug__:
-            util.lock_log('Acquire in deadlock detector ')
+            util.lock_log('Acquire in deadlock detector ' + str(self.mutex))
         self.mutex.acquire()
         if __debug__:
-            util.lock_log('Has acquired in deadlock detector ')        
+            util.lock_log('Has acquired in deadlock detector ' + str(self.mutex))
     def _unlock(self):
         self.mutex.release()
+        if __debug__:
+            util.lock_log('Released in deadlock detector ' + str(self.mutex))
+        
 
     def _potential_deadlock(self,subscriber_uuid):
         '''

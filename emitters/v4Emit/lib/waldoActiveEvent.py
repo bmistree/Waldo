@@ -184,6 +184,8 @@ class _ActiveEvent(_InvalidationListener):
         
     def _unlock(self):
         self._mutex.release()
+        if __debug__:
+            util.lock_log('Released in active event ' + str(self))
 
     ##### STATE CHANGERS AND ACCESSERS #####
         

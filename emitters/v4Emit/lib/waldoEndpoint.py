@@ -82,14 +82,23 @@ class _Endpoint(object):
 
     def _ready_waiting_list_lock(self):
         if __debug__:
-            util.lock_log('Acquire ready waiting list lock in endpoint')
+            util.lock_log(
+                'Acquire ready waiting list lock in endpoint ' +
+                str(self._ready_waiting_list_mutex))
         self._ready_waiting_list_mutex.acquire()
         if __debug__:
-            util.lock_log('Has acquired ready waiting list lock in endpoint')        
+            util.lock_log(
+                'Has acquired ready waiting list lock in endpoint ' +
+                str(self._ready_waiting_list_mutex))
 
     def _ready_waiting_list_unlock(self):
         self._ready_waiting_list_mutex.release()        
-            
+        if __debug__:
+            util.lock_log(
+                'Has released ready waiting list in endpoint ' +
+                str(self._ready_waiting_list_mutex))
+
+        
     def _block_ready(self):
         '''
         Returns True if both sides are initialized.  Otherwise, blocks
@@ -114,13 +123,15 @@ class _Endpoint(object):
 
     def _ready_lock(self):
         if __debug__:
-            util.lock_log('Acquire ready lock in endpoint ' + str(self))
+            util.lock_log('Acquire ready lock in endpoint ' + str(self._ready_lock_))
         self._ready_lock_.acquire()
         if __debug__:
-            util.lock_log('Has acquired ready lock in endpoint ' + str(self))
+            util.lock_log('Has acquired ready lock in endpoint ' + str(self._ready_lock_))
             
     def _ready_unlock(self):
         self._ready_lock_.release()
+        if __debug__:
+            util.lock_log('Has released ready lock in endpoint ' + str(self._ready_lock_))        
         
     
     def _other_side_ready(self):

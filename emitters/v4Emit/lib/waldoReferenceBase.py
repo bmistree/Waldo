@@ -46,6 +46,8 @@ class _ReferenceBase(object):
     
     def _unlock(self):
         self._mutex.release()
+        if __debug__:
+            util.lock_log('Released lock in reference base for ' + str(self))
 
     def is_peered(self):
         return self.peered
@@ -141,12 +143,13 @@ class _ReferenceBase(object):
 
         # FIXME: eventually want to do serialize deltas of variables
         # and version objects instead of full things.
-        
-        #### DEBUG
-        if not self.peered:
-            util.logger_assert(
-                'Should not be serializing a non-peered data item.')
-        #### END DEBUG
+
+        if __debug__:
+            #### DEBUG
+            if not self.peered:
+                util.logger_assert(
+                    'Should not be serializing a non-peered data item.')
+            #### END DEBUG
 
             
         self._lock()
@@ -185,12 +188,6 @@ class _ReferenceBase(object):
 
         version_obj_data = dirty_element.version_obj.serializable_for_network_data()
 
-        # #### DEBUG
-        # import wVariables
-        # if isinstance(var_data,wVariables.WaldoUserStructVariable):
-        #     import pdb
-        #     pdb.set_trace()
-        # #### END DEBUG
 
         to_return = util._generate_serialization_named_tuple(
             var_name,self.var_type(),var_data,version_obj_data)
@@ -240,11 +237,13 @@ class _ReferenceBase(object):
         '''
 
         # FIXME: eventually, want to transmit deltas instead of the
-        # full val and version_obj.  
-        if not self.peered:
-            util.logger_assert(
-                'Should not be updating value and version for a ' +
-                'non-peered data item.')
+        # full val and version_obj.
+
+        if __debug__:
+            if not self.peered:
+                util.logger_assert(
+                    'Should not be updating value and version for a ' +
+                    'non-peered data item.')
         
         self._lock()
         self._add_invalid_listener(invalid_listener)
@@ -323,12 +322,13 @@ class _ReferenceBase(object):
             # check here.
             return None
 
-        #### DEBUG
-        if invalid_listener.uuid not in self._dirty_map:
-            util.logger_assert('Aborted in check_commit_hold_lock.  ' +
-                               'Have no listener in dirty map with ' +
-                               'appropriate id.')
-        #### END DEBUG
+        if __debug__:
+            #### DEBUG
+            if invalid_listener.uuid not in self._dirty_map:
+                util.logger_assert('Aborted in check_commit_hold_lock.  ' +
+                                   'Have no listener in dirty map with ' +
+                                   'appropriate id.')
+            #### END DEBUG
 
         return not self.version_obj.conflicts(
             self._dirty_map[invalid_listener.uuid].version_obj)
@@ -348,13 +348,14 @@ class _ReferenceBase(object):
         
         if not release_lock_after:
             self._lock()
-        
-        #### DEBUG
-        if invalid_listener.uuid not in self._dirty_map:
-            util.logger_assert('Aborted in backout.  ' +
-                               'Have no listener in dirty map with ' +
-                               'appropriate id.')
-        #### END DEBUG
+
+        if __debug__:
+            #### DEBUG
+            if invalid_listener.uuid not in self._dirty_map:
+                util.logger_assert('Aborted in backout.  ' +
+                                   'Have no listener in dirty map with ' +
+                                   'appropriate id.')
+            #### END DEBUG
             
         del self._dirty_map[invalid_listener.uuid]
 
@@ -384,13 +385,14 @@ class _ReferenceBase(object):
         invalid_listener and release the lock.
         '''
         self.notification_map.remove_invalidation_listener(invalid_listener)
-        
-        #### DEBUG
-        if invalid_listener.uuid not in self._dirty_map:
-            util.logger_assert('Aborted in commit.  ' +
-                               'Have no listener in dirty map with ' +
-                               'appropriate id.')
-        #### END DEBUG
+
+        if __debug__:
+            #### DEBUG
+            if invalid_listener.uuid not in self._dirty_map:
+                util.logger_assert('Aborted in commit.  ' +
+                                   'Have no listener in dirty map with ' +
+                                   'appropriate id.')
+            #### END DEBUG
 
 
         dirty_map_elem  = self._dirty_map[invalid_listener.uuid]

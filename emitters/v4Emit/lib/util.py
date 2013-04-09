@@ -1,5 +1,5 @@
 import uuid
-import ctypes
+# import ctypes
 import os
 import inspect
 from collections import namedtuple
@@ -35,7 +35,7 @@ def get_logger():
     return logging.getLogger(LOGGER_NAME)
 
 def lock_log(msg):
-    return logging.getLogger(LOCK_LOGGER_NAME).debug(
+    return logging.getLogger(LOCK_LOGGER_NAME).critical(
         msg, extra={'mod': 'none', 'endpoint_string': 'none'})
 
 def endpoint_call_func_name(func_name):

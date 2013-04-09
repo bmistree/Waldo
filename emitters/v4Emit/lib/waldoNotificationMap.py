@@ -5,7 +5,7 @@ class _NotificationMap(object):
     '''
     Each waldo reference contains a _NotificationMap.
 
-    Here is how locking an reference for the first phase of its commit
+    Here is how locking a reference for the first phase of its commit
     works:
 
        * The invalidation listener calls hold_can_commit on
@@ -56,19 +56,25 @@ class _NotificationMap(object):
         self.resource_uuid = resource_uuid
         self.host_uuid = host_uuid
 
-    def _lock(self):
+    def _lock(self,additional):
         if __debug__:
-            util.lock_log('Acquire lock in notificaiton map')
+            util.lock_log(
+                'Acquire lock in notificaiton map ' + str(self._mutex) + ' ' + additional)
         self._mutex.acquire()
         if __debug__:
-            util.lock_log('Has acquired lock in notificaiton map')
+            util.lock_log('Has acquired lock in notificaiton map ' + str(self._mutex) + ' ' + additional)
+        pass
+        
         
     def _unlock(self):
         self._mutex.release()
+        if __debug__:
+            util.lock_log('Released lock in notificaiton map ' + str(self._mutex))        
+        pass
 
     def add_invalidation_listener(self,invalid_listener):
         to_notify = []
-        self._lock()
+        self._lock('add invalidation listener')
         if invalid_listener.uuid not in self.invalid_listener_map:
             to_notify = list(self.invalid_listener_map.values())
 
@@ -89,7 +95,7 @@ class _NotificationMap(object):
 
     def remove_invalidation_listener(self,invalid_listener):
         to_notify = []
-        self._lock()
+        self._lock('remove invalidation listener')
         if invalid_listener.uuid in self.invalid_listener_map:
             del self.invalid_listener_map[invalid_listener.uuid]
             to_notify = list(self.invalid_listener_map.values())
