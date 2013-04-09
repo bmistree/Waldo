@@ -66,10 +66,11 @@ class _NotificationMap(object):
         pass
         
         
-    def _unlock(self):
+    def _unlock(self,additional):
         self._mutex.release()
         if __debug__:
-            util.lock_log('Released lock in notificaiton map ' + str(self._mutex))        
+            util.lock_log('Released lock in notificaiton map ' + str(self._mutex) + ' ' + additional)
+            
         pass
 
     def add_invalidation_listener(self,invalid_listener):
@@ -79,7 +80,7 @@ class _NotificationMap(object):
             to_notify = list(self.invalid_listener_map.values())
 
             self.invalid_listener_map[invalid_listener.uuid] = invalid_listener
-        self._unlock()
+        self._unlock('add invalidation listener')
 
         # now notify all those listeners that someone else subscribed
         # to same variable.
@@ -99,7 +100,7 @@ class _NotificationMap(object):
         if invalid_listener.uuid in self.invalid_listener_map:
             del self.invalid_listener_map[invalid_listener.uuid]
             to_notify = list(self.invalid_listener_map.values())
-        self._unlock()
+        self._unlock('remove invalidation listener')
 
         # now notify all those listeners that someone else
         # unsubscribed to same variable.

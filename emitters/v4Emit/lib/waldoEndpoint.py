@@ -80,23 +80,23 @@ class _Endpoint(object):
         self._conn_obj.register_endpoint(self)
 
 
-    def _ready_waiting_list_lock(self):
+    def _ready_waiting_list_lock(self,additional):
         if __debug__:
             util.lock_log(
                 'Acquire ready waiting list lock in endpoint ' +
-                str(self._ready_waiting_list_mutex))
+                str(self._ready_waiting_list_mutex) + ' ' + additional)
         self._ready_waiting_list_mutex.acquire()
         if __debug__:
             util.lock_log(
                 'Has acquired ready waiting list lock in endpoint ' +
-                str(self._ready_waiting_list_mutex))
+                str(self._ready_waiting_list_mutex) + ' ' + additional)
 
-    def _ready_waiting_list_unlock(self):
+    def _ready_waiting_list_unlock(self,additional):
         self._ready_waiting_list_mutex.release()        
         if __debug__:
             util.lock_log(
-                'Has released ready waiting list in endpoint ' +
-                str(self._ready_waiting_list_mutex))
+                'Released ready waiting list in endpoint ' +
+                str(self._ready_waiting_list_mutex) + ' ' + additional)
 
         
     def _block_ready(self):
@@ -105,7 +105,7 @@ class _Endpoint(object):
         until initialization is complete
         '''
         waiting_queue = None
-        self._ready_waiting_list_lock()
+        self._ready_waiting_list_lock('block_ready')
         if self._ready_waiting_list != None:
             waiting_queue = Queue.Queue()
             # when this endpoint becomes ready, every queue in this
@@ -113,7 +113,7 @@ class _Endpoint(object):
             # below.
             self._ready_waiting_list.append(waiting_queue)
 
-        self._ready_waiting_list_unlock()
+        self._ready_waiting_list_unlock('block_ready')
 
         if waiting_queue != None:
             waiting_queue.get()
@@ -121,18 +121,18 @@ class _Endpoint(object):
         return True
 
 
-    def _ready_lock(self):
+    def _ready_lock(self,additional):
         if __debug__:
-            util.lock_log('Acquire ready lock in endpoint ' + str(self._ready_lock_))
+            util.lock_log('Acquire ready lock in endpoint ' + str(self._ready_lock_) + ' ' + additional)
         self._ready_lock_.acquire()
         if __debug__:
-            util.lock_log('Has acquired ready lock in endpoint ' + str(self._ready_lock_))
+            util.lock_log('Has acquired ready lock in endpoint ' + str(self._ready_lock_) + ' ' + additional)
             
-    def _ready_unlock(self):
+    def _ready_unlock(self,additional):
         self._ready_lock_.release()
         if __debug__:
-            util.lock_log('Has released ready lock in endpoint ' + str(self._ready_lock_))        
-        
+            util.lock_log('Released ready lock in endpoint ' + str(self._ready_lock_) + ' ' + additional)
+            
     
     def _other_side_ready(self):
         '''
@@ -141,10 +141,10 @@ class _Endpoint(object):
         '''
         if __debug__:
             util.get_logger().debug('Other side ready',extra=self._logging_info)
-        self._ready_lock()
+        self._ready_lock('other_side_ready')
         self._other_side_ready_bool = True
         set_ready = self._this_side_ready_bool and self._other_side_ready_bool
-        self._ready_unlock()
+        self._ready_unlock('other_side_ready')
 
         if set_ready:
             self._set_ready()
@@ -156,10 +156,10 @@ class _Endpoint(object):
         '''
         if __debug__:
             util.get_logger().debug('This side ready',extra=self._logging_info)
-        self._ready_lock()
+        self._ready_lock('this_side_ready')
         self._this_side_ready_bool = True
         set_ready = self._this_side_ready_bool and self._other_side_ready_bool
-        self._ready_unlock()
+        self._ready_unlock('this_side_ready')
 
         # send message to the other side that we are ready
         self._notify_partner_ready()
@@ -179,11 +179,11 @@ class _Endpoint(object):
         setattr(
             self,'_block_ready',self._swapped_in_block_ready)
 
-        self._ready_waiting_list_lock()        
+        self._ready_waiting_list_lock('set_ready')        
         for queue in self._ready_waiting_list:
             queue.put(True)
         self._ready_waiting_list = None
-        self._ready_waiting_list_unlock()        
+        self._ready_waiting_list_unlock('set_ready')
         
     def _set_partner_uuid(self,uuid):
         '''

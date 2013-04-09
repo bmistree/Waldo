@@ -47,7 +47,7 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         # InternalMap that we return.
         new_internal_val = {}
         
-        self._lock()
+        self._lock('copy')
         val_to_copy = self.val
         self_to_copy = True
         if invalid_listener.uuid in self._dirty_map:
@@ -57,7 +57,7 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         # if copying from internal: stay within the lock so that
         # nothing else can write to internal while we are.
         if not self_to_copy:
-            self._unlock()
+            self._unlock('copy')
 
         for key in val_to_copy:
             to_copy = val_to_copy[key]
@@ -76,7 +76,7 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
             new_internal_val[key] = to_copy
             
         if self_to_copy:
-            self._unlock()
+            self._unlock('copy')
 
         return InternalMap(self.host_uuid,peered,new_internal_val)
 
@@ -91,10 +91,10 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
 
         # FIXME: very ugly.
         new_internal_map = self.copy(invalid_listener,peered)
-        new_internal_map._lock()
+        new_internal_map._lock('copy_internal_val')
         new_internal_map._add_invalid_listener(invalid_listener)
         internal_dict =  new_internal_map._dirty_map[invalid_listener.uuid].val
-        new_internal_map._unlock()
+        new_internal_map._unlock('copy_internal_val')
         return internal_dict
 
     
