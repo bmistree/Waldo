@@ -28,24 +28,24 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
             'In WaldoValueContainer, write_val disallowed.')
 
     def add_key(self,invalid_listener,key_added,new_val):
-        self._lock('add_key')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_elem.add_key(key_added,new_val,invalid_listener,self.peered)
         if self.peered:
             invalid_listener.add_peered_modified()
-        self._unlock('add_key')
+        self._unlock()
 
 
     def del_key_called(self,invalid_listener,key_deleted):
-        self._lock('del_key')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_elem.del_key(key_deleted)
         if self.peered:
             invalid_listener.add_peered_modified()
-        self._unlock('del_key')
+        self._unlock()
 
     @abstractmethod
     def copy_if_peered(self):
@@ -83,11 +83,11 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
                 'Should not be updating value and version for a ' +
                 'non-peered data item.')
         #### END DEBUG
-        self._lock('update_val_of_key_during_deserialize')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
         dirty_element.val[key] = val
-        self._unlock('update_val_of_key_during_deserialize')
+        self._unlock()
 
     def update_version_obj_during_deserialize(
         self,invalid_listener,new_version_obj):
@@ -101,56 +101,56 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
                 'Should not be updating value and version for a ' +
                 'non-peered data item.')
         #### END DEBUG
-        self._lock('update_version_obj_during_deserialize')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
         dirty_element.version_obj = new_version_obj
-        self._unlock('update_version_obj_during_deserialize')
+        self._unlock()
 
     
     def get_len(self,invalid_listener):
-        self._lock('get_len')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         cur_len = dirty_elem.get_len()
-        self._unlock('get_len')
+        self._unlock()
         return cur_len
 
     def get_keys(self,invalid_listener):
         '''
         When requests a list of all keys
         '''
-        self._lock('get_keys')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         keys = dirty_elem.get_keys()
-        self._unlock('get_keys')
+        self._unlock()
         return keys
 
 
     def contains_key_called(self,invalid_listener,contains_key):
-        self._lock('contains_keys')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
 
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         contains_val = dirty_elem.contains_key(contains_key)
-        self._unlock('contains_keys')
+        self._unlock()
         return contains_val
 
     def get_val_on_key(self,invalid_listener,key):
-        self._lock('get_val_on_key')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_val = dirty_elem.get_val_on_key(key)
-        self._unlock('get_val_on_key')
+        self._unlock()
         return dirty_val
         
 
     def write_val_on_key(self,invalid_listener,key,new_val):
-        self._lock('write_val_on_key')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
@@ -169,7 +169,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         dirty_elem.write_val_on_key(key,new_val)
         if self.peered:
             invalid_listener.add_peered_modified()        
-        self._unlock('write_val_on_key')
+        self._unlock()
 
     
     def _add_invalid_listener(self,invalid_listener):

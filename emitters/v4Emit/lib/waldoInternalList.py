@@ -42,7 +42,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         '''
         found = False
         
-        self._lock('contains_val_called')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         # essentially, just iterate through each element of list
@@ -51,7 +51,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             if dirty_elem.get_val_on_key(i) == val:
                 found=True
                 break
-        self._unlock('contains_val_called')
+        self._unlock()
 
         return found
 
@@ -79,13 +79,13 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         When we append, we insert at the end of the list.
         Changes contains, len, keys.
         '''
-        self._lock('append_val')
+        self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_elem.append_val(new_val,invalid_listener,self.peered)
         if self.peered:
             invalid_listener.add_peered_modified()        
-        self._unlock('append_val')
+        self._unlock()
 
     def copy_if_peered(self,invalid_listener):
         '''
@@ -105,7 +105,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         # _ReferenceContainers.  (It may not point to non
         # _ReferenceContainer _WaldoObjects because we disallow
         # externals as value types for maps and lists.)
-        self._lock('copy')
+        self._lock()
         val_to_copy = self.val
         self_to_copy = True
         if invalid_listener.uuid in self._dirty_map:
@@ -115,7 +115,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         # if copying from internal: stay within the lock so that
         # nothing else can write to internal while we are.
         if not self_to_copy:
-            self._unlock('copy')
+            self._unlock()
 
         for to_copy in val_to_copy:
             # if it's not a _ReferenceContainer, then it must just
@@ -136,7 +136,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             new_internal_val.append(to_copy)
             
         if self_to_copy:
-            self._unlock('copy')
+            self._unlock()
 
         return InternalList(self.host_uuid,peered,new_internal_val)
 
