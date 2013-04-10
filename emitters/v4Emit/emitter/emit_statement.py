@@ -752,7 +752,6 @@ def _emit_assignment(
     return first_level_assign_txt +_emit_second_level_assign(
         comma_list_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-
 def _emit_second_level_assign(
     comma_list_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''
@@ -767,86 +766,33 @@ def _emit_second_level_assign(
     (where X is the number of the node in the comma
     list....0,1,2,3...)
     '''
-    # gets returned at end of function
+    
     all_assignments_txt = ''
     for counter in range(0,len(comma_list_node.children)):
         lhs_node = comma_list_node.children[counter]
-        
-        ext_assign = False
-        if lhs_node.label == AST_EXT_ASSIGN_FOR_TUPLE:
-            # notes that we are performing an assignment to an ext and
-            # unwraps the extAssign.
-            ext_assign = True
-            lhs_node = lhs_node.children[0]
-            # FIXME: this logic is broken for ext assigning based on
-            # a tuple list
-            emit_utils.emit_assert(
-                'Error: unfinished methods for assigning from function ' +
-                'calls into tuples.')
 
-        # Function objects are copied in assignment to user structs.
-        # when get to user struct section of code,
-        is_func = False
-        if TypeCheck.templateUtil.is_basic_function_type(lhs_node.type):
-            is_func = True
-
-        original_to_assign_txt = '_tmp' + str(counter)            
-        to_assign_txt = original_to_assign_txt
-        # if ((not ext_assign) and
-        #     (not emit_utils.is_reference_type_type_dict(lhs_node.type))):
-        if not ext_assign:
-            to_assign_txt = '_context.get_val_if_waldo(' + to_assign_txt + ',_active_event)'            
+        rhs = '_tmp' + str(counter)
 
         if lhs_node.label == AST_BRACKET_STATEMENT:
-            # need to actually assign to a particular key, rather than the
-            # overall variable.  can't use write_val, must use
-            # write_val_on_key instead.
-
-            if emit_utils.is_reference_type_type_dict(lhs_node.type):
-                # we're assigning a reference type (list, map, user
-                # struct) into the key of a map/list.  Just write over
-                # directly (don't get its val first)
-                to_assign_txt = original_to_assign_txt
+            lhs_outside_node = lhs_node.children[0]
+            lhs_inside_node = lhs_node.children[1]
             
-            outside_bracket_node = lhs_node.children[0]
-            inside_bracket_node = lhs_node.children[1]
+            lhs_outside_txt = emit_statement(
+                lhs_outside_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+            lhs_inside_txt = emit_statement(
+                lhs_inside_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+            
+            all_assignments_txt += (
+                '_context.assign_on_key(' + lhs_outside_txt + ',' +
+                lhs_inside_txt + ',' + rhs + ', _active_event)\n')
 
-            outside_txt = emit_statement(
-                outside_bracket_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-            # FIXME: declare method in WaldoExecutingContext for
-            # _get_val_if_waldo.  Essentially, in cases where unsure
-            # if using a non-waldo number, string, etc. or a waldo
-            # variable, and want to use the value type, this gives the
-            # value type.
-            inside_txt =  '_context.get_val_if_waldo(%s,_active_event)' % (
-                emit_statement(
-                    inside_bracket_node,endpoint_name,
-                    ast_root,fdep_dict,emit_ctx))
-
-            to_assign_to_txt = (
-                outside_txt +
-                '.get_val(_active_event).write_val_on_key(_active_event,' +
-                inside_txt + ',' # gives key for map writing into
-                                 # still need actual value
-                )
         elif lhs_node.label == AST_DOT_STATEMENT:
-            # means that we are assigning into a user struct
-            # statement.  need to emit the user struct object and then
-            # call write_val_on_key on it because a user-struct is
-            # essentially a map
             pre_dot_node = lhs_node.children[0]
-            to_assign_to_txt = emit_statement(
+            post_dot_node = lhs_node.children[1]
+            
+            pre_dot_node_txt = emit_statement(
                 pre_dot_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-            if emit_utils.is_reference_type_type_dict(lhs_node.type):
-                # we're assigning a reference type (list, map, user
-                # struct) into the key of a map/list.  Just write over
-                # directly (don't get its val first)
-                to_assign_txt = original_to_assign_txt
-
-            
-            # must be identifier
-            post_dot_node = lhs_node.children[1]
             #### DEBUG
             if post_dot_node.label != AST_IDENTIFIER:
                 emit_utils.emit_assert(
@@ -854,29 +800,20 @@ def _emit_second_level_assign(
                     'struct access.')
             #### END DEBUG
             post_dot_node_name = post_dot_node.value
-
-            if is_func:
-                to_assign_txt = (
-                    original_to_assign_txt + '.copy(_active_event,False)')
             
-            to_assign_to_txt += (
-                '.get_val(_active_event).write_val_on_key(_active_event,"%s",'
-                % post_dot_node_name)
-            # not putting in actual value assigning because that will
-            # be appended at end of if-else statement, below.
+            all_assignments_txt += (
+                '_context.assign_on_key(' + pre_dot_node_txt + ',"' +
+                post_dot_node_name + '",' + rhs + ', _active_event)\n')
 
         else:
-            # was not a bracket statement, can just call write_val
-            # directly
-            to_assign_to_txt = emit_statement(
-                lhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-
-            to_assign_to_txt += '.write_val(_active_event,'
+            lhs_txt = emit_statement(
+                lhs_node,endpoint_name, ast_root,fdep_dict,emit_ctx)
             
-        all_assignments_txt += to_assign_to_txt + to_assign_txt + ')\n'
-                      
+            all_assignments_txt += (
+                '_context.assign(' + lhs_txt + ',' + rhs + ',_active_event)\n')
+
     return all_assignments_txt
-    
+                    
 
 def is_binary_operator_from_label(node_label):
     return node_label in get_binary_operator_label_dict()

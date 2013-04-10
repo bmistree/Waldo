@@ -4,7 +4,7 @@ import waldoReferenceBase
 import numbers
 import wVariables
 import util
-import waldoEndpoint
+import waldoEndpoint, waldoInternalMap, waldoInternalList
 from util import Queue
 
 class _ExecutingEventContext(object):
@@ -360,6 +360,80 @@ class _ExecutingEventContext(object):
             return to_return_tuple[0]
         return to_return_tuple
 
+    def assign(self,lhs,rhs,active_event):
+        '''
+        If lhs is a Waldo variable, then write_val rhs's value into it
+        and return True.  Otherwise, return False.  (if return False,
+        then should do assignment in function calling from directly.)
+
+        Note: to assign into a specific index of a map, list, or
+        struct, use assign_on_key, below.
+        
+        @returns{bool} --- True if after this method lhs contains rhs.
+        False otherwise.
+        '''
+        
+        if not isinstance(lhs,waldoReferenceBase._ReferenceBase):
+            return False
+
+        lhs.write_val(active_event,self.get_val_if_waldo(rhs,active_event))
+        return True
+
+
+    def assign_on_key(self,lhs,key,rhs,active_event):
+        '''
+        For bracket statements + struct statements
+        '''
+        if not isinstance(lhs,waldoReferenceBase._ReferenceBase):
+            return False
+
+        raw_key = self.get_val_if_waldo(key,active_event)
+
+
+        if isinstance(lhs,wVariables.WaldoTextVariable):
+            raw_rhs = self.get_val_if_waldo(rhs,active_event)            
+            to_overwrite_string = lhs.get_val(active_event)
+            to_overwrite_string[raw_key] = raw_rhs
+            lhs.write_val(active_event,to_overwrite_string)
+        elif isinstance(lhs,wVariables.WaldoExtTextVariable):
+            raw_rhs = self.get_val_if_waldo(rhs,active_event)            
+            to_overwrite_string = lhs.get_val(active_event).get_val(active_event)
+            to_overwrite_string[raw_key] = raw_rhs
+            lhs.get_val(active_event).write_val(active_event,to_overwrite_string)
+        elif (isinstance(lhs,waldoInternalMap.InternalMap) or
+              isinstance(lhs,waldoInternalList.InternalList)):
+            # just write the value explicitly for now.  Later, will
+            # need to check if we need to wrap it first.
+            lhs.write_val_on_key(active_event,raw_key,rhs)
+        else:
+            # just write the value explicitly for now.  Later, will
+            # need to check if we need to wrap it first.
+            lhs.get_val(active_event).write_val_on_key(active_event,raw_key,rhs)
+            
+            
+        return True
+
+    def get_val_on_key(self,to_get_from,key,active_event):
+        raw_key = self.get_val_if_waldo(key,active_event)
+        
+        if not isinstance(to_get_from,waldoReferenceBase._ReferenceBase):
+            return to_get_from[raw_key]
+
+        # handle text + ext text
+        if isinstance(lhs,wVariables.WaldoTextVariable):
+            return to_get_from.get_val(active_event)[raw_key]
+
+        if isinstance(lhs,wVariables.WaldoExtTextVariable):
+            return to_get_from.get_val(active_event).get_val(active_event)[raw_key]
+
+        # handle internals containers
+        if (isinstance(lhs,waldoInternalMap.InternalMap) or
+            isinstance(lhs,waldoInternalList.InternalList)):
+            return to_get_from.get_val_on_key(active_event,raw_key)
+
+        # handle map, list, struct
+        return to_get_from.get_val(active_event).get_val_on_key(active_event,raw_key)
+        
     def get_for_iter(self,to_iter_over,active_event):
         '''
         When call for loop on Waldo variables, need to get item to
