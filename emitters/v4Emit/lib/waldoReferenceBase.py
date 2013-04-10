@@ -33,12 +33,21 @@ class _ReferenceBase(object):
         self._dirty_map = {}
         self._mutex = threading.Lock()
 
-    def _lock(self,blocking=True):
+    def _lock(self,additional,blocking=True):
+        if __debug__:
+            util.lock_log('Acquire lock in reference base for ' + str(self) + ' ' + additional)
+
         to_return = self._mutex.acquire(blocking)
+        
+        if __debug__:
+            util.lock_log('Has acquired lock in reference base for ' + str(self) + ' ' + additional)
+        
         return to_return
     
-    def _unlock(self):
+    def _unlock(self,additional):
         self._mutex.release()
+        if __debug__:
+            util.lock_log('Released lock in reference base for ' + str(self) + ' ' + additional)
 
     def is_peered(self):
         return self.peered
@@ -50,9 +59,9 @@ class _ReferenceBase(object):
         @returns {bool} --- True if have modified the variable.  False
         otherwise.
         '''
-        self._lock()
+        self._lock('modified')
         dirty_elem = self._dirty_map.get(invalidation_listener.uuid,None)
-        self._unlock()
+        self._unlock('modified')
 
         modified = False
         if dirty_elem != None:
@@ -143,10 +152,10 @@ class _ReferenceBase(object):
             #### END DEBUG
 
             
-        self._lock()
+        self._lock('serializable_var_tuple_for_network')
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
-        self._unlock()
+        self._unlock('serializable_var_tuple_for_network')
 
 
         # a val can either point to a waldo reference, a python value,
@@ -229,12 +238,19 @@ class _ReferenceBase(object):
 
         # FIXME: eventually, want to transmit deltas instead of the
         # full val and version_obj.
-        self._lock()
+
+        if __debug__:
+            if not self.peered:
+                util.logger_assert(
+                    'Should not be updating value and version for a ' +
+                    'non-peered data item.')
+        
+        self._lock('update_version_and_val')
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
         dirty_element.set_version_obj_and_val(version_obj,val)
         
-        self._unlock()
+        self._unlock('update_version_and_val')
 
         
     def _add_invalid_listener(self,invalid_listener):
@@ -262,15 +278,15 @@ class _ReferenceBase(object):
         not have an active value.)
         '''
         if invalid_listener == None:
-            self._lock()
+            self._lock('get_val')
             internal_val = self.val
-            self._unlock()
+            self._unlock('get_val')
             return internal_val
         
-        self._lock()
+        self._lock('get_val2')
         self._add_invalid_listener(invalid_listener)
         dirty_val = self._dirty_map[invalid_listener.uuid].val
-        self._unlock()
+        self._unlock('get_val2')
         return dirty_val
     
 
@@ -278,12 +294,12 @@ class _ReferenceBase(object):
         '''
         Writes to a copy of internal val, dirtying it
         '''
-        self._lock()
+        self._lock('write_val')
         self._add_invalid_listener(invalid_listener)
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
         if self.peered:
             invalid_listener.add_peered_modified()
-        self._unlock()
+        self._unlock('write_val')
         
 
     def check_commit_hold_lock(self,invalid_listener,blocking=True):
@@ -298,13 +314,20 @@ class _ReferenceBase(object):
         gets unreleased either within commit or release.
         '''
         self.notification_map.add_invalidation_listener(invalid_listener)
-
-        acquired_lock = self._lock(blocking)
+        acquired_lock = self._lock('check_commit_hold_lock',blocking)
         
         if not acquired_lock:
             # FIXME: may be able to do an opportunistic conflicts
             # check here.
             return None
+
+        if __debug__:
+            #### DEBUG
+            if invalid_listener.uuid not in self._dirty_map:
+                util.logger_assert('Aborted in check_commit_hold_lock.  ' +
+                                   'Have no listener in dirty map with ' +
+                                   'appropriate id.')
+            #### END DEBUG
 
         return not self.version_obj.conflicts(
             self._dirty_map[invalid_listener.uuid].version_obj)
@@ -323,15 +346,23 @@ class _ReferenceBase(object):
         self.notification_map.remove_invalidation_listener(invalid_listener)
         
         if not release_lock_after:
-            self._lock()
+            self._lock('backout')
+
+        if __debug__:
+            #### DEBUG
+            if invalid_listener.uuid not in self._dirty_map:
+                util.logger_assert('Aborted in backout.  ' +
+                                   'Have no listener in dirty map with ' +
+                                   'appropriate id.')
+            #### END DEBUG
             
         del self._dirty_map[invalid_listener.uuid]
 
         if release_lock_after:
-            self._unlock()
+            self._unlock('check_commit_hold_lock')
             pass
         else:
-            self._unlock()
+            self._unlock('backout')
     
     def complete_commit(self,invalid_listener):
         '''
@@ -356,6 +387,16 @@ class _ReferenceBase(object):
         invalid_listener and release the lock.
         '''
         self.notification_map.remove_invalidation_listener(invalid_listener)
+
+        if __debug__:
+            #### DEBUG
+            if invalid_listener.uuid not in self._dirty_map:
+                util.logger_assert('Aborted in commit.  ' +
+                                   'Have no listener in dirty map with ' +
+                                   'appropriate id.')
+            #### END DEBUG
+
+
         dirty_map_elem  = self._dirty_map[invalid_listener.uuid]
         del self._dirty_map[invalid_listener.uuid]
 
@@ -378,7 +419,7 @@ class _ReferenceBase(object):
                 self,to_invalidate_list)
             dirty_notify_thread.start()
 
-        self._unlock()
+        self._unlock('check_commit_hold_lock')
 
 
 class _DirtyNotifyThread(threading.Thread):

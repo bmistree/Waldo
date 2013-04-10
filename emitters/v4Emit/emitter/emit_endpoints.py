@@ -141,9 +141,12 @@ self._global_var_store = %s(_host_uuid)
 %s
 %s.__init__(self,_waldo_classes,_host_uuid,_conn_obj,self._global_var_store)
 
+if __debug__:
+    %s.debug("Initializing endpoint",extra={"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 ''' % (emit_utils.library_transform('VariableStore'),
        endpoint_global_and_peered_variable_store_load_txt,
-       emit_utils.library_transform('Endpoint'))
+       emit_utils.library_transform('Endpoint'),
+       emit_utils.library_transform('logger'))
 
 
     # emit call to oncreate method
@@ -405,7 +408,14 @@ def %s(self,_active_event,_context%s):
 ''' % (internal_method_name, comma_sep_arg_names)
 
     # actually emit body of function
-    private_body = '\n'
+    private_body = 'if __debug__:\n'
+    print_debug_statement = (
+        ('\n%s.debug("In %s for event " + %s, ' %
+        (emit_utils.library_transform('logger'), src_method_name, "str(_active_event.uuid)")) +
+        'extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})')
+
+    private_body += emit_utils.indent_str(print_debug_statement,1)
+    private_body += '\n'
 
     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
         if prefix == None:
@@ -585,10 +595,14 @@ def %s(self%s):
     # wait until ready initialization for node has completed before
     # continuing
     public_body = '''
+if __debug__:
+    %s.debug("Public request for %s",
+        extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
+
 # ensure that both sides have completed their onCreate calls
 # before continuing
 self._block_ready()
-'''
+''' % (emit_utils.library_transform('logger'), method_name)
     
     #### Deep copy non-external args
     # non_ext_arg_names is an array of strings
@@ -616,6 +630,10 @@ while True:  # FIXME: currently using infinite retry
         # not using sequence local store
         %s(self._host_uuid))
 
+    if __debug__:
+        %s.debug("Private request for %s on event with id: " + str(_root_event.uuid),
+            extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
+
     # call internal function... note True as last param tells internal
     # version of function that it needs to de-waldo-ify all return
     # arguments (while inside transaction) so that this method may
@@ -628,13 +646,29 @@ while True:  # FIXME: currently using infinite retry
     _commit_resp = _root_event.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
+        if __debug__:
+            %s.debug(
+                "Returning out of public request for %s with event id: " + str(_root_event.uuid),
+                extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
         return _to_return
+    else:
+        if __debug__:
+            %s.debug(
+                "Backout out of public request for %s with event id: " + str(_root_event.uuid),
+                extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 ''' % (emit_utils.library_transform('ExecutingEventContext'),
        emit_utils.library_transform('VariableStore'),
+       emit_utils.library_transform('logger'),
+       method_name,
        internal_method_name,
        comma_sep_arg_names,
        str(list_return_external_positions),
-       emit_utils.library_transform('CompleteRootCallResult'))
+       emit_utils.library_transform('CompleteRootCallResult'),
+       emit_utils.library_transform('logger'),
+       method_name,
+       emit_utils.library_transform('logger'),
+       method_name,
+       )
 
     return public_header + emit_utils.indent_str(public_body)
 
@@ -809,6 +843,14 @@ def emit_message_receive(
     # send however, because, we do not expect any response to it.
     # (Ie, if next_to_call_txt == 'None', then do not wait.)
     next_sequence_txt = '''
+if __debug__:
+    %s.debug(
+        "%s about to request additional sequence for event " +
+         str(_active_event.uuid),extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
+''' % (emit_utils.library_transform('logger'), msg_recv_name)
+
+    
+    next_sequence_txt += '''
 
 _threadsafe_queue = %s.Queue()
 _active_event.issue_partner_sequence_block_call(
@@ -820,11 +862,14 @@ if %s != None:
 
     _queue_elem = _threadsafe_queue.get()
 
-
+    if __debug__:
+        %s.debug(
+            "%s received a response to message call for event " +
+             str(_active_event.uuid),extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 ''' % (emit_utils.library_transform('Queue'),
        next_to_call_txt,
-       next_to_call_txt)
-
+       next_to_call_txt,
+       emit_utils.library_transform('logger'), msg_recv_name)
 
 
     next_sequence_txt += '''
@@ -884,12 +929,21 @@ def emit_message_node_what_to_call_next(next_to_call_node,emit_ctx):
         # not, we only need to synchronize modified sequence local data.
         issue_call_is_first_txt = '_first_msg'
 
+    debug_txt = '''
+if __debug__:
+    %s.debug("About to send a request to %s for event " + str(_active_event.uuid),
+        extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
+''' % (emit_utils.library_transform('logger'), next_message_name)
     
-    return  '''
+    return debug_txt + '''
 _threadsafe_queue = %s.Queue()
 _active_event.issue_partner_sequence_block_call(
     _context,'%s',_threadsafe_queue, '%s')
 _queue_elem = _threadsafe_queue.get()
+
+if __debug__:
+    %s.debug("Received a response for request of %s for event " + str(_active_event.uuid),
+        extra= {"mod": "EndpointSubclass", "endpoint_string": self._endpoint_uuid_str})
 
 if isinstance(_queue_elem,%s):
     raise %s()
@@ -920,6 +974,8 @@ else:
        next_message_name, # the name of the message receive func to
                           # exec on other side in plain text
        issue_call_is_first_txt,
+       emit_utils.library_transform('logger'),
+       next_message_name,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
        emit_utils.library_transform('BackoutException'),
        )

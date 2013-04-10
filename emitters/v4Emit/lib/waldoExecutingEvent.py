@@ -295,8 +295,8 @@ class _ExecutingEventContext(object):
 
             
         internal_func = func_obj.get_val(active_event)
-        return internal_func(
-            active_event.local_endpoint,*call_arg_list)
+        # return internal_func(
+        #     active_event.local_endpoint,*call_arg_list)
 
     
     def convert_for_seq_local(self,val,active_event,host_uuid):

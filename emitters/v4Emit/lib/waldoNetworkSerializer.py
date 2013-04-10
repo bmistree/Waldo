@@ -66,12 +66,12 @@ def get_constructed_obj(
             
         # FIXME: it is gross that reaching into the internal map this
         # way.
-        init_data._lock()
+        init_data._lock('get_constructed_obj')
         if invalidation_listener.uuid not in init_data._dirty_map:
             new_init_data = init_data.val
         else:
             new_init_data = init_data._dirty_map[invalidation_listener.uuid].val
-        init_data._unlock()
+        init_data._unlock('get_constructed_obj')
         init_data = new_init_data
         
     var_constructor = ReferenceTypeConstructorDict[var_type]
