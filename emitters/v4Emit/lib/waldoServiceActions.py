@@ -163,12 +163,20 @@ class _ReceiveRequestCommitAction(_Action,threading.Thread):
             #     forwards the request on to c.  Then, if c reads the
             #     backout before the request to commit, we may get to this
             #     point.  Just ignore the request.
-            return
+            pass
+        else:
+            evt.forward_commit_request_and_try_holding_commit_on_myself(
+                self.from_partner)        
 
+        if __debug__:
+            logging_info = {
+                'mod': 'ReceiveRequestCommitAction',
+                'endpoint_string':  self.local_endpoint._endpoint_uuid_str
+                }
+            log_msg = 'End receive request commit action ' + str(self.event_uuid)
+            util.get_logger().info(log_msg,extra=logging_info)
 
-        evt.forward_commit_request_and_try_holding_commit_on_myself(
-            self.from_partner)        
-
+        
     def service(self):
         self.start()
 

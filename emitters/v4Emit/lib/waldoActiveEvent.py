@@ -93,7 +93,7 @@ class _ActiveEvent(_InvalidationListener):
         _InvalidationListener.__init__(
             self,uuid)
 
-        self.str_uuid = str(uuid)
+        self.str_uuid = str(self.uuid)
         
         self.local_endpoint = local_endpoint
 
@@ -476,7 +476,6 @@ class _ActiveEvent(_InvalidationListener):
                 
             ##### actually complete the commit
             self.complete_commit()
-
             
         self._unlock('complete_commit_and_forward_complete_msg')
 
@@ -975,6 +974,12 @@ class _ActiveEvent(_InvalidationListener):
 
                     # FIXME: make this time settable, or use some form
                     # of backoff for checking.
+
+                    if __debug__:
+                        log_msg = (
+                            'Required breaking out for event %s.  ' %  self.str_uuid)
+                        util.get_logger().debug(log_msg,extra=self.logging_info)
+                    
                     time.sleep(
                         util.TIME_TO_SLEEP_BEFORE_ATTEMPT_TO_ACQUIRE_VAR_FIRST_PHASE_LOCK)
                     if self.check_breakout():
@@ -1049,7 +1054,7 @@ class RootActiveEvent(_ActiveEvent):
 
         if __debug__:
             log_msg = 'New RootActiveEvent for event %s ' % self.str_uuid
-            util.get_logger().debug(log_msg,extra=self.logging_info)
+            util.get_logger().info(log_msg,extra=self.logging_info)
         
         self.subscriber = None
 
@@ -1140,10 +1145,9 @@ class RootActiveEvent(_ActiveEvent):
         @see base class' receive_successful_first_phase_commit_msg
         '''
         if __debug__:
-            log_msg = (
-                'Received successful first phase commit msg for event %s.' %
-                self.str_uuid)
-            util.get_logger().debug(log_msg,extra=self.logging_info)
+            log_msg = 'Received successful first phase for RootActiveEvent for event %s ' % self.str_uuid
+            util.get_logger().info(log_msg,extra=self.logging_info)
+
      
         self._lock('receive_successful_first_phase_commit_msg')
         # ordering of additions/changes to self.waiting_on_commit_map
@@ -1164,6 +1168,12 @@ class RootActiveEvent(_ActiveEvent):
 
     def forward_commit_request_and_try_holding_commit_on_myself(
         self,skip_partner=False):
+
+        if __debug__:
+            log_msg = 'Begin send commit and try holding on self in RootActiveEvent for event %s ' % self.str_uuid
+            util.get_logger().info(log_msg,extra=self.logging_info)
+
+        
         self._lock('forward_commit_request_and_try_holding_commit_on_myself')
 
         can_commit, early_abort,who_forwarded_to = super(
@@ -1207,11 +1217,11 @@ class RootActiveEvent(_ActiveEvent):
         lose track of an endpoint that has already responded that it
         was clear to commit in its first phase.
         '''
-        for uuid in endpoint_uuid_array:
-            if uuid not in self.waiting_on_commit_map:
-                self.waiting_on_commit_map[uuid] = True
-
         
+        for uuid in endpoint_uuid_array:
+            self.waiting_on_commit_map.setdefault(uuid,True)
+            
+
     def add_received_first_phase(self,endpoint_uuid):
         '''
         ASSUMES ALREADY HOLDING LOCK
@@ -1285,6 +1295,10 @@ class RootActiveEvent(_ActiveEvent):
         self.event_complete_queue.put(
             waldoCallResults._CompleteRootCallResult())
 
+        if __debug__:
+            log_msg = 'Finished request complete commit RootActiveEvent for event %s ' % self.str_uuid
+            util.get_logger().info(log_msg,extra=self.logging_info)
+        
         
     def notify_additional_subscriber(
         self,additional_subscriber_uuid,host_uuid,resource_uuid):

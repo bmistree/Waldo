@@ -264,7 +264,7 @@ class _ReferenceBase(object):
                 self.version_obj.copy(),
                 self.val,
                 invalid_listener)
-            
+
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
 
@@ -314,9 +314,10 @@ class _ReferenceBase(object):
         gets unreleased either within commit or release.
         '''
         self.notification_map.add_invalidation_listener(invalid_listener)
-        
-        acquired_lock = self._lock('check_commit_hold_lock',blocking)
 
+        acquired_lock = self._lock('check_commit_hold_lock',blocking)
+        acquired_lock = True
+        
         if not acquired_lock:
             # FIXME: may be able to do an opportunistic conflicts
             # check here.
@@ -361,6 +362,7 @@ class _ReferenceBase(object):
 
         if release_lock_after:
             self._unlock('check_commit_hold_lock')
+            pass
         else:
             self._unlock('backout')
     
@@ -420,7 +422,6 @@ class _ReferenceBase(object):
             dirty_notify_thread.start()
 
         self._unlock('check_commit_hold_lock')
-
 
 
 class _DirtyNotifyThread(threading.Thread):

@@ -50,7 +50,8 @@ def setup_logging():
     DEFAULT_LOGGING_LEVEL = logging.CRITICAL
     
     format_ = (
-        '%(levelname)s : %(asctime)s.%(msecs).03d: %(endpoint_string)s : %(mod)s \n     %(message)s')
+        '%(levelname)s : %(asctime)s.%(msecs)f: %(endpoint_string)s : %(mod)s \n     %(message)s')
+        # '%(levelname)s : %(asctime)s.%(msecs).03d: %(endpoint_string)s : %(mod)s \n     %(message)s')
     logging.basicConfig(
         format=format_, filename=DEFAULT_LOG_FILENAME, level=DEFAULT_LOGGING_LEVEL,
         datefmt='%I:%M:%S')
