@@ -300,7 +300,6 @@ class _ReferenceBase(object):
         self.notification_map.add_invalidation_listener(invalid_listener)
 
         acquired_lock = self._lock(blocking)
-        acquired_lock = True
         
         if not acquired_lock:
             # FIXME: may be able to do an opportunistic conflicts
