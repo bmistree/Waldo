@@ -44,7 +44,6 @@ def decapsulate_all(to_decapsulate):
 
     return full_decapsulated
 
-    print (counter)
 
 def check_err(decapsulated,original):
     '''
@@ -95,10 +94,6 @@ def run_test():
         decapsulated = decapsulate_all(serialized_msg)
         if check_err(decapsulated,expected_deserialized_msg):
             return False
-
-    print ('\nElapsed: ',)
-    print (time.time() - start_time)
-    print ('\n')
         
     return True
 
