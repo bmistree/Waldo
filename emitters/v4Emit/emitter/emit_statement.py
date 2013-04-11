@@ -2,7 +2,7 @@ from parser.ast.astLabels import *
 from slice.typeStack import TypeStack
 import emit_utils
 import parser.ast.typeCheck as TypeCheck
-import emitters.v4Emit.lib.util as lib_util
+import lib.util as lib_util
 from parser.ast.astNode import AstNode
 
 def emit_statement(

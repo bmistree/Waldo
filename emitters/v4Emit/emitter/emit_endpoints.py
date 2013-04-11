@@ -1,7 +1,8 @@
 import emit_utils 
 import parser.ast.typeCheck as TypeCheck
 from parser.ast.astLabels import *
-import emitters.v4Emit.lib.util as lib_util
+# import emitters.v4Emit.lib.util as lib_util
+import lib.util as lib_util
 import emit_statement
 
 def emit_endpoints(ast_root,fdep_dict,emit_ctx):

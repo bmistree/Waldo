@@ -1,236 +1,195 @@
-#!/usr/bin/env python
+import util
+import waldoConnectionObj
+from util import Queue
+import wVariables
+import waldoCallResults
+import waldoEndpoint
+import waldoExecutingEvent
+import waldoVariableStore
+import threading
+import shim.get_math_endpoint
+import logging
 
+_host_uuid = util.generate_uuid()
+_threadsafe_stoppable_cleanup_queue = Queue.Queue()
 
-CONNECTION_TYPE_TCP = 0
-# not yet supported
-CONNECTION_TYPE_LOCAL = 1
-# CONNECTION_TYPE_NO_CONNECTION = 2
-
-
-_DEFAULT_TCP_ACCEPT_WALDO_PORT = 5300
-_DEFAULT_TCP_ACCEPT_WALDO_HOST = '127.0.0.1'
-
-from reservationManager import ReservationManager
-import connObj
-import externalObjects as Externals
-import random
-
-class WaldoModuleExcep (Exception):
-    def __init__(self,err_msg):
-        self.value = err_msg
-    def __str__(self):
-        return repr(self.value)
-
-class WaldoTimeoutExcep (Exception):
-    def __init__(self,err_msg):
-        self.value = err_msg
-    def __str__(self):
-        return repr(self.value)
+_waldo_classes = {
+    # waldo variables
+    'WaldoNumVariable': wVariables.WaldoNumVariable,
+    'WaldoTextVariable': wVariables.WaldoTextVariable,
+    'WaldoTrueFalseVariable': wVariables.WaldoTrueFalseVariable,
+    'WaldoMapVariable': wVariables.WaldoMapVariable,
+    'WaldoListVariable': wVariables.WaldoListVariable,
+    'WaldoUserStructVariable': wVariables.WaldoUserStructVariable,
+    'WaldoFunctionVariable': wVariables.WaldoFunctionVariable,
     
-# used to synchronize all external variables
-_reservation_manager = None
-_initialized_called = False
-_waldo_id = None
-
-def initialize(**kwargs):
-    global _reservation_manager
-    _reservation_manager = ReservationManager()
-
-    global _waldo_id
-    _waldo_id = _generate_uuid()
+    'WaldoEndpointVariable': wVariables.WaldoEndpointVariable,
+    'WaldoExtNumVariable': wVariables.WaldoExtNumVariable,
+    'WaldoExtTrueFalseVariable': wVariables.WaldoExtTrueFalseVariable,
+    'WaldoExtTextVariable': wVariables.WaldoExtTextVariable,
     
-    global _initialized_called
-    if _initialized_called:
-        excep_msg = 'Can only initialize Waldo module once'
-        WaldoModuleExcep(excep_msg)
-    
-    _initialized_called = True
+    # call results
+    'CompleteRootCallResult': waldoCallResults._CompleteRootCallResult,
+    'BackoutBeforeReceiveMessageResult': waldoCallResults._BackoutBeforeReceiveMessageResult,
+    'EndpointCallResult': waldoCallResults._EndpointCallResult,
 
-    
-def connect(*args,**kwargs):
+    # misc
+    'Endpoint': waldoEndpoint._Endpoint,
+    'Queue': Queue,
+    'ExecutingEventContext': waldoExecutingEvent._ExecutingEventContext,
+    'VariableStore': waldoVariableStore._VariableStore,
+    'BackoutException': util.BackoutException,
+    'logger': util.get_logger()
+    }
+
+def setup_logging():
     '''
-    @param{int} port --- The port to connect to on the listening host
-    (ie, the host that's running accept).  Defaults to 5300.
-
-    @parma{String} host_name --- The IP address or host name of the
-    host that we're trying to connect to.  Defaults to 127.0.0.1.
-    
-    @param{int} connection_type --- @see accept
-    
-    @param {WaldoEndpoint Class} constructor --- @see accept
-
-    @param {Function} connected_callback --- @see accept
-
-    @param *args --- All other args will be passed into the endpoint
-    constructor in the order they are provided.
-
-    @returns {Waldo Endpoint Object} --- Connected Waldo endpoint.
-    
+    @param {bool} on_off --- True to turn logging on.  False to turn logging off.
     '''
-    _check_init('connect')
+    DEFAULT_LOG_FILENAME = 'log.txt'
+    DEFAULT_LOGGING_LEVEL = logging.CRITICAL
+    
+    format_ = (
+        '%(levelname)s : %(asctime)s.%(msecs)f: %(endpoint_string)s : %(mod)s \n     %(message)s')
+        # '%(levelname)s : %(asctime)s.%(msecs).03d: %(endpoint_string)s : %(mod)s \n     %(message)s')
+    logging.basicConfig(
+        format=format_, filename=DEFAULT_LOG_FILENAME, level=DEFAULT_LOGGING_LEVEL,
+        datefmt='%I:%M:%S')
 
-    if not ('constructor' in kwargs):
-        excep_msg = 'Waldo.connect requires keyword arg "constructor" '
-        excep_msg += 'to be passed in.'
-        raise WaldoModuleExcep(excep_msg)
-        
-    connection_obj_type = kwargs.get('connection_type',CONNECTION_TYPE_TCP)
-    constructor = kwargs['constructor']
+    util.get_logger().critical(
+        '***** New *****', extra={'mod': 'NEW', 'endpoint_string': 'NEW'})
+
+    util.lock_log('***** New *****')
+
+    
+setup_logging()
+    
+def set_logging_level(level):
+    '''
+    User can set level of logging he/she desires.
+    '''
+    util.get_logger().setLevel(level)
+    
+
+def tcp_connect(constructor,host,port,*args):
+
+    tcp_connection_obj = waldoConnectionObj._WaldoTCPConnectionObj(
+        host,port)
+
+    endpoint = constructor(
+        _waldo_classes,_host_uuid,tcp_connection_obj,*args)
+    return endpoint
+
+def tcp_accept(constructor,host,port,*args,**kwargs):
+    '''
+    @returns {Stoppable object} --- Can call stop method on this to
+    stop listening for additional connections.  Note: listeners will
+    not stop instantly, but probably within the next second or two.
+    '''
+    
     connected_callback = kwargs.get('connected_callback',None)
-    _endpoint_id = _generate_uuid()    
+
+    stoppable = waldoConnectionObj._TCPListeningStoppable()
+
+    # TCP listenener starts in a separate thread.  We must wait for
+    # the calling thread to actually be listening for connections
+    # before returning.
+    synchronization_queue = Queue.Queue()
     
-    if connection_obj_type == CONNECTION_TYPE_TCP:
-        port = kwargs.get('port',_DEFAULT_TCP_ACCEPT_WALDO_PORT)
-        host_name = kwargs.get('host',_DEFAULT_TCP_ACCEPT_WALDO_HOST)
+    tcp_accept_thread = waldoConnectionObj._TCPAcceptThread(
+        stoppable, constructor,_waldo_classes,host,port,
+        connected_callback,
+        _host_uuid,synchronization_queue,*args)
+    tcp_accept_thread.start()
 
-        tcp_conn_obj = connObj.TCPConnectionObject(host_name,port,None)
+    # once this returns, we know that we are listening on the
+    # host:port pair.
+    synchronization_queue.get()
 
+    
+    # the user can call stop directly on the returned object, but we
+    # still put it into the cleanup queue.  This is because there is
+    # no disadvantage to calling stop multiple times.
+    _threadsafe_stoppable_cleanup_queue.put(stoppable)
+    return stoppable
+
+def same_host_create(constructor,*args):
+    '''
+    @returns {EndpointCreater object} --- Call same_host_create on
+    SecondCreater, passing in constructor of second endpoint and any
+    args its onCreate takes.  It will return both endpoints created.
+    '''
+
+    class EndpointCreater(object):
+        '''
+        Creates two separate threads in case one side needs to
+        initialize peered data: in this case, both sides need to be
+        running and listening for initialization messages.
+        '''
+                
+        def same_host_create(self,constructor2,*args2):
+
+            class CreateEndpoint(threading.Thread):
+                def __init__(self,threadsafe_queue, same_host_conn_obj,constructor, *args):
+                    self.threadsafe_queue = threadsafe_queue
+                    self.same_host_conn_obj = same_host_conn_obj
+                    self.constructor = constructor
+                    self.args = args
+
+                    threading.Thread.__init__(self)
+                    self.daemon = True
+                    
+                def run(self):
+                    endpoint = self.constructor(
+                        _waldo_classes,_host_uuid,self.same_host_conn_obj,*self.args)
+                    self.threadsafe_queue.put(endpoint)
+
+            
+            same_host_conn_obj = waldoConnectionObj._WaldoSameHostConnectionObject()
+
+            q1 = Queue.Queue()
+            ce1 = CreateEndpoint(q1,same_host_conn_obj,constructor,*args)
+            ce1.start()
+
+            q2 = Queue.Queue()
+            ce2 = CreateEndpoint(q2,same_host_conn_obj,constructor2,*args2)
+            ce2.start()
+
+            first_endpoint = q1.get()
+            second_endpoint = q2.get()
+            
+            return first_endpoint, second_endpoint
+
+    return EndpointCreater()
+
+
+    
+
+def math_endpoint_lib():
+    return shim.get_math_endpoint.math_endpoint(no_partner_create)
+
+def no_partner_create(constructor,*args):
+    '''
+    @returns{Waldo endpoint} --- Calls constructor with args for an
+    endpoint that has no partner.
+    '''
+    return constructor(
+        _waldo_classes,_host_uuid,
+        waldoConnectionObj._WaldoSingleSideConnectionObject(),
+        *args)
         
-        new_obj = constructor(
-            WaldoTimeoutExcep,
-            tcp_conn_obj,_reservation_manager,
-            _waldo_id,_endpoint_id,*args)
-        
-        return new_obj
-    
-    elif connection_obj_type == CONNECTION_TYPE_LOCAL:
-        new_obj = constructor(
-            WaldoTimeoutExcep,
-            connObj.LocalConnectionObject(),_reservation_manager,
-            _waldo_id,_endpoint_id, *args)
-        return new_obj
-        
 
-    
-    excep_msg = 'Waldo.connect only allows TCP connections.  Other '
-    excep_msg += 'connection types may be added in the future.'
-    raise WaldoModuleExcep(excep_msg)
-
-def _generate_uuid():
-    # FIXME: may want a little more control over probability of uniqueness
-    return random.random()
-    
-def accept(*args,**kwargs):
+def stop():
     '''
-    @param {Waldo Endpoint Class} constructor --- Required.  Specifies
-    what endpoint to create when receive a connection.
-
-    @param {int} connection_type --- Specifies whether to create a TCP
-    connection between endpoints (Waldo.CONNECTION_TYPE_TCP).  Other
-    connection types may later be added.  Defaults to tcp connection.
-
-    @param{int} port --- Port to listen on for connections.  Defaults
-    to 5300.
-
-    @param{String} host_name --- The IP address or host name to listen
-    for connections on.  Defaults to 127.0.0.1.
-
-    @param{Function} connected_callback --- Optional.  If provided, as
-    soon as the connection is made, executes this function, passing in
-    the new endpoint object as an argument.
-    
-    @param *args --- All other args will be passed into the endpoint
-    constructor in the order they are provided.
+    Tells all connection listeners to stop listening for new
+    connections and begins safely closing all open connections on this
+    server.
     '''
-
-    _check_init('accept')
-    global _reservation_manager
-
-
-    if not ('constructor' in kwargs):
-        excep_msg = 'Waldo.accept requires keyword arg "constructor" '
-        excep_msg += 'to be passed in.'
-        raise WaldoModuleExcep(excep_msg)
-
+    # FIXME: does not actually begin safely closing connections.
     
-    connection_obj_type = kwargs.get('connection_type',CONNECTION_TYPE_TCP)
-    constructor = kwargs['constructor']
-    connected_callback = kwargs.get('connected_callback',None)
-    
-    
-    if connection_obj_type == CONNECTION_TYPE_TCP:
-        port = kwargs.get('port',_DEFAULT_TCP_ACCEPT_WALDO_PORT)
-        host_name = kwargs.get('host',_DEFAULT_TCP_ACCEPT_WALDO_HOST)
-
-
-        # listen for incoming client connections on host_name:port_no
-        connObj.TCPConnectionObject.accept(
-            host_name,port,connected_callback,
-            constructor,WaldoTimeoutExcep,_reservation_manager,_waldo_id,
-            _generate_uuid,*args)
-    else:
-        excep_msg = 'Waldo.accept only allows TCP connections.  Other '
-        excep_msg += 'connection types may be added in the future.'
-        raise WaldoModuleExcep(excep_msg)
-
-
-
-
-
-
-    
-########################
-#    
-# Thin wrappers around external objects.  @see externalObjects.py
-# for actuall definitions of each.
-#
-########################
-    
-def ExternalTrueFalse(initial_val):
-    _check_init('ExternalTrueFalse')
-    global _reservation_manager
-    return Externals.ExternalTrueFalse(
-        initial_val,_reservation_manager)
-
-def ExternalNumber(initial_val):
-    _check_init('ExternalNumber')
-    global _reservation_manager
-    return Externals.ExternalNumber(
-        initial_val,_reservation_manager)
-
-def ExternalText(initial_val):
-    _check_init('ExternalText')
-    global _reservation_manager
-    return Externals.ExternalText(
-        initial_val,_reservation_manager)
-
-def ExternalList(initial_val):
-    _check_init('ExternalList')
-    global _reservation_manager
-    return Externals.ExternalList(
-        initial_val,_reservation_manager)
-    
-def ExternalMap(initial_val):
-    _check_init('ExternalMap')
-    global _reservation_manager
-    return Externals.ExternalMap(
-        initial_val,_reservation_manager)
-    
-def ExternalFile(filename):
-    _check_init('ExternalFile')
-    global _reservation_manager
-    return Externals.ExternalFile(
-        filename,_reservation_manager)
-    
-def ExternalFs(folder_name):
-    _check_init('ExternalFs')
-    global _reservation_manager
-    return Externals.ExternalFs(
-        folder_name,_reservation_manager)
-
-
-#################
-# Helper functions
-#################    
-def _check_init(function_name):
-    '''
-    @raises {WaldoModuleExcep} --- If the function named function_name
-    is accessed before Waldo.initialize has been called, raise exception.
-    '''
-    global _initialized_called
-    if not _initialized_called:
-        excep_msg = 'Cannot call Waldo.' + function_name
-        excep_msg += ' until have already have called ' 
-        excep_msg += 'Waldo.initialize.'
-        raise WaldoModuleExcep(excep_msg)        
-    
+    try:
+        stoppable_item = _threadsafe_stoppable_cleanup_queue.get_nowait()
+        stoppable_item.stop()
+        stop()
+    except:
+        return

@@ -24,7 +24,6 @@ def resetErrorEncountered(versionNum):
 
 import re
 import json
-from emitters.v3Emit import astEmit as v2Emit
 from emitters.v4Emit.emitter import ast_emit as v4Emit
 
 
@@ -33,11 +32,7 @@ from lexer.waldoLex import WaldoLexException
 
 
 def getEmitter(versionNum):
-    if versionNum == 2:
-        return v2Emit
-
     return v4Emit
-        
 
 
 
@@ -272,11 +267,9 @@ def printUsage():
 
     -e <filename> Emit the generated code to filename.  
 
-    -ne don't emit 
+    -ne No emit: don't emit 
 
     -w Turn parse and lex warnings on.  Otherwise, they are off.
-
-    -v <version number 2> Input file is of version 2.  Default is version 2
 
     single arg (filename) .... try compiling the file to emitted.py
 
@@ -294,7 +287,7 @@ if __name__ == '__main__':
     emitArg = 'emitted.py'
     typeCheckArg = True
     skipNext = False
-    versionNum = 2
+    versionNum = 4
     suppress_warnings = True
     
     for s in range(0,len(sys.argv)):
@@ -307,7 +300,7 @@ if __name__ == '__main__':
                 inputFilenameArg = sys.argv[s+1];
                 skipNext = True;
             else:
-                #will force printing usage without doing any work.
+                # will force printing usage without doing any work.
                 helpArg = True;
 
         if sys.argv[s] == '-ne':
@@ -315,19 +308,8 @@ if __name__ == '__main__':
 
         if sys.argv[s] == '-w':
             suppress_warnings = False
-            
-        if (sys.argv[s] == '-v'):
-            if (s + 1 < len(sys.argv)):
-                versionNum = int(sys.argv[s+1]);
-                skipNext = True;
-                if (versionNum != 1) and (versionNum != 2) and (versionNum != 4):
-                    print('\nI can only handle Waldo versions 1, 2, or 4.\n');
-                    helpArg = True;
-                if versionNum == 1:
-                    print('\nError.  Version 1 is no longer supported.\n');
-                    helpArg = True;
 
-                
+            
         if (sys.argv[s] == '-go'):
             if (s+1 < len(sys.argv)):
                 graphicalOutputArg = parseGraphicalOutputArg(sys.argv[s+1]);
