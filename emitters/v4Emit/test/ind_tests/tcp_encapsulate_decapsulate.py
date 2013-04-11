@@ -5,9 +5,9 @@ sys.path.append(
     os.path.join('../../lib/'))
 import waldoConnectionObj
 
-NUM_RANDOM_STRINGS = 5000
+NUM_RANDOM_STRINGS = 100
 NUM_MULTI_MESSAGES = 500
-MAX_RAND_STRING_LEN = 5000
+MAX_RAND_STRING_LEN = 2000
 MAX_NUM_IN_MULTI_MESSAGE = 10
 
 def get_random_string():
