@@ -808,10 +808,39 @@ def _emit_second_level_assign(
         else:
             lhs_txt = emit_statement(
                 lhs_node,endpoint_name, ast_root,fdep_dict,emit_ctx)
-            
-            all_assignments_txt += (
-                '_context.assign(' + lhs_txt + ',' + rhs + ',_active_event)\n')
 
+            # for variables that point to immediate values (ie, python
+            # values), we will not be able to assign them through
+            # _context.assign and _context.assign will return False.
+            # In that case, we should assign into the variable
+            # directly (the body of the if statement).  However, some
+            # variables can only be accessed through a function call
+            # to the variable store, which would produce code that
+            # looks as follows:
+            #
+            # _context.global_var_store.get_var_if_exists('some_var') = 4
+            #
+            # The above code is a syntax error in python (can't assign
+            # to function call).  And shouldn't be necessary anyways
+            # (because the context_assign should have assigned into
+            # it).  Avoid emitting that code by trying to evaluate it:
+            # if catch syntax error, then know that context.assign
+            # will do work anyways and just input pass.  Otherwise,
+            # emit it.
+            all_assignments_txt += (                
+                'if not _context.assign(' + lhs_txt + ',' + rhs + ',_active_event):\n')
+            inside_if_txt = lhs_txt + ' = ' + rhs + '\n'
+            
+            try:
+                eval (inside_if_txt)
+            except SyntaxError:
+                inside_if_txt = 'pass\n'
+            except:
+                pass
+            
+            all_assignments_txt += emit_utils.indent_str(inside_if_txt,1)
+
+            
     return all_assignments_txt
                     
 
