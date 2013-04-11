@@ -138,20 +138,26 @@ class _ExecutingEventContext(object):
             return val.get_val(active_event)
         return val
 
-    # def assign_val_if_waldo(self,val,active_event):
-    #     '''
-    #     Wraps get_val_if_waldo.  Essentially, when assigning a
-    #     function between Waldo variables, we need to insure that we
-    #     maintain that function's meta-data (which includes whether
-    #     incoming arguments are external or not).  Therefore, if val is
-    #     just a function object, return it directly.  otherwise, call
-    #     get_val_if_waldo
-    #     '''
-    #     # if isinstance(val,wVariables.WaldoFunctionVariable):
-    #     #     return val
-    #     return self.get_val_if_waldo(val,active_event)
+    def turn_into_waldo_var_if_was_var(
+        self,val,force_copy,active_event, host_uuid,new_peered=False):
+        '''
+        @see turn_into_waldo_var, except that we will only turn into a
+        Waldo variable if the previous value had been a Waldo variable.
 
-    
+        Otherwise, return the value and variable keeps Python form.
+        '''
+        if (isinstance(val,waldoReferenceBase._ReferenceBase) or
+            isinstance(val,dict) or
+            isinstance(val,list)):
+            # note: when converting from external, we may need to copy
+            # list and dict reference types so that changes to them do
+            # not interfere with actual values in Python.
+            return self.turn_into_waldo_var(
+                val,force_copy,active_event,host_uuid,new_peered)
+
+        return val
+        
+
     def turn_into_waldo_var(
         self,val,force_copy,active_event, host_uuid,new_peered=False):
         '''
@@ -201,9 +207,9 @@ class _ExecutingEventContext(object):
 
         # means that val was not a reference object.... turn it into one.
         constructor = None
-        # if isinstance(val,basestring):
-        #     constructor = wVariables.WaldoTextVariable
         if util.is_string(val):
+            # not using isinstance here because python 3 and python
+            # 2.7 have different ways of testing for string.
             constructor = wVariables.WaldoTextVariable
         elif isinstance(val,numbers.Number):
             constructor = wVariables.WaldoNumVariable
@@ -309,7 +315,7 @@ class _ExecutingEventContext(object):
         '''
         return self.turn_into_waldo_var(
             val,True,active_event,host_uuid,True)
-    
+
 
     def de_waldoify(self,val,active_event):
         return de_waldoify(val,active_event)
@@ -388,7 +394,6 @@ class _ExecutingEventContext(object):
             return False
 
         raw_key = self.get_val_if_waldo(key,active_event)
-
 
         if isinstance(lhs,wVariables.WaldoTextVariable):
             raw_rhs = self.get_val_if_waldo(rhs,active_event)            

@@ -832,7 +832,7 @@ def _emit_second_level_assign(
             inside_if_txt = lhs_txt + ' = ' + rhs + '\n'
             
             try:
-                eval (inside_if_txt)
+                exec (inside_if_txt)
             except SyntaxError:
                 inside_if_txt = 'pass\n'
             except:

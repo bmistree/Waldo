@@ -531,7 +531,7 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
             else:
                 converted_args_string += (
                     arg_name + ' = ' +
-                    '_context.turn_into_waldo_var(' + arg_name +
+                    '_context.turn_into_waldo_var_if_was_var(' + arg_name +
                     ',%s,_active_event,self._host_uuid,False)\n' % force_copy)
 
         else:

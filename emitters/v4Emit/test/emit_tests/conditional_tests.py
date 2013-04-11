@@ -173,6 +173,11 @@ def run_test():
     # Test many statements if_else_if_else
     if single_side.many_statements_in_if_else_if_else(
         True,True,1,-1,-1,-1) != 21:
+
+        print '\n\n'
+        print single_side.many_statements_in_if_else_if_else(
+            True,True,1,-1,-1,-1)
+        print '\n\n'        
         print '\nErr on many if 1'
         return False
     
