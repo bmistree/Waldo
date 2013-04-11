@@ -216,8 +216,8 @@ class _Endpoint(object):
                 # import pdb
                 # pdb.set_trace()
                 counter +=1
-                util.get_logger().critical('error',extra=self._logging_info)
-                if counter > 5:
+                # util.get_logger().critical('error',extra=self._logging_info)
+                if counter > 10:
                     raise 
         msg = waldoMessages._Message.map_to_msg(msg_map)
             
