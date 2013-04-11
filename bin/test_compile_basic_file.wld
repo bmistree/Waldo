@@ -12,7 +12,7 @@ Endpoint Ping;
 Endpoint Pong;
 
 
-Traces
+Sequences
 {
     // specifies order of handlers that will be called
     PingPongSequence : Ping.one -> Pong.two -> Ping.three -> Pong.four;
@@ -20,22 +20,22 @@ Traces
 
 
 /**** Data shared between both ends */
-Shared
+Peered
 {
     // both of these are rarely used in this program.
-    Ping Controls Number pingCounter = 0;
-    Pong Controls Number pongCounter = 0;
+    Ping controls Number pingCounter = 0;
+    Pong controls Number pongCounter = 0;
 }
 
 
 /***** MessageSequence section: Any sequence declared in Traces is defined here */
-MessageSequence PingPongSequence
+Sequence PingPongSequence()
 {
     // Shared between both endpoint functions.  Only has a lifetime
     // of the message sequence.
     Number numMsgs = 0;
 
-    Ping.one()
+    Ping.one
     {
         numMsgs = numMsgs + 1;
         pingCounter = pingCounter + 1;
@@ -61,16 +61,16 @@ MessageSequence PingPongSequence
 /**** Ping endpoint *********/
 Ping
 {
-    OnCreate ()
+    onCreate ()
     {
         Text printMsg = 'Ping has been created.  ';
         printMsg = printMsg + 'No initialization to  perform.';
-        Print(printMsg);
+        // print(printMsg);
     }
                 
-    Public Function initiateSend() Returns Nothing
+    Public Function initiateSend() returns Nothing
     {
-        Print('**** Initiating send ****');
+        // Print('**** Initiating send ****');
         one();
     }
 }
