@@ -1,0 +1,41 @@
+Atomic
+
+Endpoint AtomicInt;
+
+Sequences{}
+
+
+AtomicInt
+{
+    Number end_int;
+    onCreate(Number val)
+    {
+        set_int(val);
+    }
+
+    Public Function get_int() returns Number
+    {
+        return end_int;
+    }
+    
+    Public Function set_int(Number new_val)
+    {
+        end_int = new_val;
+    }
+    
+    Public Function add_to_int(Number amt_to_add_to) returns Number
+    {
+        end_int += amt_to_add_to;
+        return end_int;
+    }
+    
+    Public Function test_and_set(Number test, Number set) returns TrueFalse
+    {
+        if (test == end_int)
+        {
+            set_int(set);
+            return True;
+        }
+        return False;
+    }
+}
