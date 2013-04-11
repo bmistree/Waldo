@@ -9,12 +9,6 @@ sys.path.append(base_dir)
 from lib import Waldo
 
 
-import os,sys
-lib_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), '..',
-    '..','lib')
-sys.path.append(lib_dir)
-import Waldo
 
 '''
 Tests that range, while, for, break, and continue work correctly
