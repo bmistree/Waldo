@@ -218,9 +218,9 @@ def logger_assert(assert_msg,logging_info=None):
     if logging_info == None:
         logging_info = {
             'mod': 'unknown',
-            'endpoint': 'unknown'
+            'endpoint_string': 'unknown'
             }
-    logging.critical(assert_msg, logging_info)
+    logging.critical(assert_msg, extra=logging_info)
     assert(False)
 
 def logger_warn(warn_msg,logging_info=None):
@@ -228,9 +228,9 @@ def logger_warn(warn_msg,logging_info=None):
     if logging_info == None:
         logging_info = {
             'mod': 'unknown',
-            'endpoint': 'unknown'
+            'endpoint_string': 'unknown'
             }
-    logging.critical(warn_msg, logging_info)
+    logging.critical(warn_msg, extra=logging_info)
     print (warn_msg)
 
 

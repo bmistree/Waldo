@@ -610,7 +610,7 @@ class _ExecutingEventContext(object):
             return rhs.get_val(active_event).contains_val_called(
                 active_event,lhs_val)
 
-        util.emit_assert(
+        util.logger_assert(
             'Error when calling in: unknown right hand side of expression')
         
     
