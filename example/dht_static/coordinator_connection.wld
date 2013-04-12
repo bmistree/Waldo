@@ -1,0 +1,83 @@
+CoordinatorConnection
+
+Endpoint Coordinator;
+Endpoint Requester;
+
+Sequences{
+  Register: Requester.start_register -> Coordinator.recv_register;
+}
+
+
+Struct ConnectionListenerInfo
+{
+    TrueFalse valid;
+    Text host;
+    Number port;
+    Text uuid;
+}
+
+
+Sequence Register()
+    returns
+    Text uuid, Map(from: Text, to: Struct ConnectionListenerInfo) finger_table,
+    Struct ConnectionListenerInfo next, Struct ConnectionListenerInfo prev
+{
+    Text host_;
+    Number port_;
+    Requester.start_register
+    {
+        host_ = host;
+        port_ = port;
+    }
+    Coordinator.recv_register
+    {
+        // Because of a bug in serialization/deserialization that
+        // occurs when write over a peered nested reference type,
+        // created tmp and copied its values into finger_table,
+        // instead of just assigning finger_table directly.  Bug filed
+        // as issue #35 on github.
+        
+        // uuid, finger_table, next, prev = coordinator_master.register(host_,port_);
+        Map(from: Text, to: Struct ConnectionListenerInfo) tmp;
+        uuid, tmp, next, prev = coordinator_master.register(host_,port_);
+        for (Text index in tmp)
+            finger_table[index] = tmp[index];
+    }
+}
+
+Coordinator
+{
+    Endpoint coordinator_master;
+    onCreate(Endpoint coordinator_master_)
+    {
+        coordinator_master = coordinator_master_;
+    }
+}
+
+
+Requester
+{
+    Text host;
+    Number port;
+    
+    onCreate(Text host_, Number port_)
+    {
+        host = host_;
+        port = port_;
+    }
+    
+    Public Function register()
+        returns Text, Map(from: Text, to: Struct ConnectionListenerInfo),
+        Struct ConnectionListenerInfo, Struct ConnectionListenerInfo
+    {
+        Text uuid;
+        Map (from: Text, to: Struct ConnectionListenerInfo) finger_table_;
+        Struct ConnectionListenerInfo next;
+        Struct ConnectionListenerInfo prev;
+
+        uuid, finger_table_, next, prev = start_register();
+        
+        //return start_register();
+        return uuid, finger_table_, next, prev;
+    }
+}

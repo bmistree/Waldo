@@ -15,7 +15,7 @@ value of the atomic integer (which should be 100).
 
 Note: this test runs slowly because Waldo is missing a sensible retry
 policy: as soon as a conflict is detected, each thread tries to retry
-its event.
+its event instantly.
 
 
 Build + Run
