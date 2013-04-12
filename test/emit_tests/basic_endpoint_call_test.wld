@@ -1,0 +1,98 @@
+EndpointCall
+
+
+Endpoint SideA;
+Endpoint SideB;
+
+
+Sequences{}
+
+Peered
+{
+    List (element: Text) peered_list;
+}
+
+
+SideA
+{
+    Endpoint end;
+    External Number ext_num;
+        
+    Public Function assign_endpoint (Endpoint ept)
+    {
+        end = ept;
+    }
+
+    Public Function assign_external_number(External Number e_num)
+    {
+        extAssign e_num to ext_num;
+    }
+
+
+    Public Function test_assigned_number(
+        Number input_number,Number increment_num)
+        returns Number
+    {
+        // Tests to ensure that can pass arguments and send back
+        // results
+        return end.get_val(input_number,increment_num);
+    }
+
+    
+    Public Function check_value_type_argument(
+        Number input_number, Number increment_by)
+        returns Number, Number
+    {
+        // checks to insure that changes to value type made on other
+        // endpoint are not reflected in the value type in this
+        // scope.  (Ie, eventhough we incremented input_number in
+        // get_val, input_number in this function is unchanged.)
+        Number result = end.get_val(input_number,increment_by);
+
+        return input_number, result;
+    }
+
+    Public Function test_updated_val(Number new_val) returns Number
+    {
+        // checks that when one side modifies an external number, the
+        // change is reflected in this side's external number.
+        end.external_changer(ext_num,new_val);
+        return ext_num;
+    }
+
+    Public Function hide_list(List(element:Text) text_list)
+        returns Number
+    {
+        // Tests to ensure that lists are copied rather than passed by
+        // reference between endpoint calls.  If they were not copied,
+        // then could be passing a peered piece of data between
+        // endpoints.
+        peered_list = text_list;
+        
+        end.append_to_list(peered_list);
+        return len(peered_list);
+    }
+    
+}
+
+
+
+SideB
+{
+    Public Function get_val (Number input_number,Number increment_by) returns Number
+    {
+        input_number += increment_by;
+        return input_number;
+    }
+
+    Public Function external_changer(External Number to_change, Number new_val)
+    {
+        extCopy new_val to to_change;
+    }
+
+    Public Function append_to_list(List(element:Text) text_list)
+    {
+        text_list.append('hioe');
+    }
+    
+}

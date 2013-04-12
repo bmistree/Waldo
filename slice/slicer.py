@@ -125,7 +125,10 @@ def slicer(node,functionDeps=None,typeStack=None):
     elif ((node.label == AST_BREAK) or
           (node.label == AST_CONTINUE)):
         pass
-        
+    
+    elif node.label == AST_SELF:
+        pass
+    
     elif node.label == AST_FOR_STATEMENT:
         if len(node.children) == 3:
             identifierNodeIndex = 0;
@@ -175,6 +178,15 @@ def slicer(node,functionDeps=None,typeStack=None):
         # FIXME: Need to improve slicing for append/remove statement.
         # Should specify that toAppendToNode got written to.
 
+    elif node.label == AST_INSERT_STATEMENT:
+        to_insert_into_node = node.children[0]
+        to_insert_index_node = node.children[1]
+        what_to_insert_node = node.children[2]
+
+        slicer(to_insert_into_node,functionDeps,typeStack)
+        slicer(to_insert_index_node,functionDeps,typeStack)
+        slicer(what_to_insert_node,functionDeps,typeStack)
+        
 
     elif node.label == AST_REFRESH:
         # don't need to do anything for refresh statement.
@@ -233,9 +245,8 @@ def slicer(node,functionDeps=None,typeStack=None):
             # same thing in the AST_IDENTIFIER section, but that won't
             # get called this way because the function call sidesteps
             # going through the identifier calls
-            pre_dot_node = funcCallNameNode.children[0]
-            identifier_name = pre_dot_node.value            
-            typeStack.annotateNode(pre_dot_node,identifier_name)
+            pre_dot_node = funcCallNameNode.children[0]            
+            slicer(pre_dot_node,functionDeps,typeStack)
 
         funcArgListNode = node.children[1];
         
@@ -264,10 +275,14 @@ def slicer(node,functionDeps=None,typeStack=None):
             # a dependent read.  This is probably not the best thing
             # to do long term.  Better to import and use type
             # checking.
-            ntt = typeStack.getIdentifier(identifier_name)
-            typeStack.addToVarReadSet(ntt)
-            typeStack.addReadsToVarReadSet(ntt,funcArgReads)
+            # ntt = typeStack.getIdentifier(identifier_name)
+            # typeStack.addToVarReadSet(ntt)
+            # typeStack.addReadsToVarReadSet(ntt,funcArgReads)
 
+            # When moved to v4, realized could ignore reads vs write
+            # static dependency analyses.
+            pass
+            
         else:
             # the function call is either on a function object or a
             # function that was defined on a locally defined function
@@ -374,9 +389,17 @@ def slicer(node,functionDeps=None,typeStack=None):
           (node.label == AST_NOT_EXPRESSION) or (node.label == AST_BOOLEAN_CONDITION) or
           (node.label == AST_LIST)  or (node.label == AST_MAP) or (node.label == AST_LEN) or
           (node.label == AST_BRACKET_STATEMENT) or (node.label == AST_RANGE)):
+
+
         # nothing to do on unary operators
         for child in node.children:
             slicer(child,functionDeps,typeStack);
+
+    elif node.label == AST_SIGNAL_CALL:
+        signal_func_args_node = node.children[0]
+
+        for func_arg_node in signal_func_args_node.children:
+            slicer(func_arg_node,functionDeps,typeStack)
             
     elif ((node.label == AST_FUNCTION_BODY_STATEMENT) or
           (node.label == AST_ENDPOINT) or
@@ -496,21 +519,35 @@ def slicer(node,functionDeps=None,typeStack=None):
         
         from_node = node.children[0]
         to_node = node.children[1]
-        to_node_name = to_node.value
+
 
         read_index = typeStack.getReadIndex()
         slicer(from_node,functionDeps,typeStack)
         assign_reads = typeStack.getReadsAfter(read_index)
 
-        # actually add the read and write on the to node.  do not have
-        # to add read on from node because we slice that.
-        to_node_ntt = typeStack.getIdentifier(to_node_name)
-        typeStack.addToVarReadSet(to_node_ntt)
-        typeStack.addReadsToVarReadSet(to_node_ntt,assign_reads)
+        to_node_read_index = typeStack.getReadIndex()
+        slicer(to_node,functionDeps,typeStack)
+        to_node_assign_reads = typeStack.getReadsAfter(to_node_read_index)
+        
 
+        # FIXME: got rid of logic for dependency analysis here.
+
+        # to_node_name = to_node.value
+        
+        # # actually add the read and write on the to node.  do not have
+        # # to add read on from node because we slice that.
+        # to_node_ntt = typeStack.getIdentifier(to_node_name)
+        # typeStack.addToVarReadSet(to_node_ntt)
+        # typeStack.addReadsToVarReadSet(to_node_ntt,assign_reads)
+
+        
         # annotate the to and from nodes so that the emitter can use
         # their globally unique names
-        typeStack.annotateNode(to_node,to_node_name)
+
+        if to_node.label == AST_IDENTIFIER:
+            to_node_name = to_node.value
+            typeStack.annotateNode(to_node,to_node_name)
+
         if from_node.label == AST_IDENTIFIER:
             # copy does not necessarily require an identifier to be
             # copied from
@@ -795,17 +832,23 @@ def get_root_node_from_bracket_dot(node):
         print err_msg
         assert(False)
 
-        
     lhs_node = node.children[0]
 
     if lhs_node.label != AST_IDENTIFIER:
-        # FIXME: note that this disqualifies statements, such as
-        # func_call()[0]
-        err_msg = '\nBehram error in get_root_node_from_bracket_dot.  '
-        err_msg += 'Expected an identifier node as first child of root/'
-        err_msg += 'dot, but received something else.\n'
-        print err_msg
-        assert(False)
 
+        if (lhs_node.label not in [AST_BRACKET_STATEMENT,
+                                  AST_DOT_STATEMENT]):
+            # FIXME: note that this disqualifies statements, such as
+            # func_call()[0]
+            err_msg = '\nBehram error in get_root_node_from_bracket_dot.  '
+            err_msg += 'Expected an identifier node as first child of root/'
+            err_msg += 'dot, but received something else.\n'
+            print err_msg
+            assert(False)
+
+        else:
+            lhs_node = get_root_node_from_bracket_dot(lhs_node)
+    
+        
     return lhs_node
 

@@ -29,9 +29,27 @@ def p_NameSection(p):
 
 
 def p_EndpointAliasSection(p):
-    'EndpointAliasSection : ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON';
-    p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1));
-    p[0].addChildren([p[2], p[5]]);
+    '''
+    EndpointAliasSection : ENDPOINT Identifier SEMI_COLON
+                         | ENDPOINT Identifier SEMI_COLON ENDPOINT Identifier SEMI_COLON
+                         | SYMMETRIC Identifier COMMA Identifier SEMI_COLON
+    '''
+
+
+    if len(p) == 4:
+        # first condition above: we only have one endpoint
+        p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1))
+        p[0].addChild(p[2])
+    elif len(p) == 7:
+        # second condition above
+        p[0] = AstNode(AST_ENDPOINT_ALIAS_SECTION,p.lineno(1),p.lexpos(1));
+        p[0].addChildren([p[2], p[5]]);
+    else:
+        # we're emitting symmetric
+        p[0] = AstNode(AST_SYMMETRIC_ALIAS_SECTION,p.lineno(1),p.lexpos(1))
+        endpoint_name_node_a = p[2]
+        endpoint_name_node_b = p[4]
+        p[0].addChildren([endpoint_name_node_a,endpoint_name_node_b])
 
     
 
@@ -262,7 +280,8 @@ def p_Type(p):
          | StructType
 
          | ENDPOINT 
-         
+
+         | EXTERNAL StructType
          | EXTERNAL NUMBER_TYPE
          | EXTERNAL STRING_TYPE
          | EXTERNAL BOOL_TYPE
@@ -293,36 +312,35 @@ def p_StructType(p):
     p[0].addChild(p[2])
 
     
-def p_ExtAssignForTuple(p):
-    '''
-    ExtAssignForTuple : EXT_ASSIGN HOLDER TO_OPERATOR Identifier
-    '''
-    p[0] = AstNode(AST_EXT_ASSIGN_FOR_TUPLE,p.lineno(1),p.lexpos(1))
-    p[0].addChild(p[4])
+# def p_ExtAssignForTuple(p):
+#     '''
+#     ExtAssignForTuple : EXT_ASSIGN HOLDER TO_OPERATOR OperatableOn
+#     '''
+#     p[0] = AstNode(AST_EXT_ASSIGN_FOR_TUPLE,p.lineno(1),p.lexpos(1))
+#     p[0].addChild(p[4])
     
-def p_ExtCopyForTuple(p):
-    '''
-    ExtCopyForTuple : EXT_COPY HOLDER TO_OPERATOR Identifier
-    '''
-    p[0] = AstNode(AST_EXT_COPY_FOR_TUPLE,p.lineno(1),p.lexpos(1))
-    p[0].addChild(p[4])
+# def p_ExtCopyForTuple(p):
+#     '''
+#     ExtCopyForTuple : EXT_COPY HOLDER TO_OPERATOR OperatableOn
+#     '''
+#     p[0] = AstNode(AST_EXT_COPY_FOR_TUPLE,p.lineno(1),p.lexpos(1))
+#     p[0].addChild(p[4])
     
-    
+
+
 def p_ExtAssign(p):
     '''
-    ExtAssign : EXT_ASSIGN ReturnableExpression TO_OPERATOR Identifier
+    ExtAssign : EXT_ASSIGN ReturnableExpression TO_OPERATOR OperatableOn
     '''
     p[0] = AstNode(AST_EXT_ASSIGN,p.lineno(1),p.lexpos(1))
     p[0].addChildren([p[2],p[4]])
 
 def p_ExtCopy(p):
     '''
-    ExtCopy : EXT_COPY ReturnableExpression TO_OPERATOR Identifier
+    ExtCopy : EXT_COPY ReturnableExpression TO_OPERATOR OperatableOn
     '''
     p[0] = AstNode(AST_EXT_COPY,p.lineno(1),p.lexpos(1))
     p[0].addChildren([p[2],p[4]])
-
-    
 
 def p_MapType(p):
     '''
@@ -416,22 +434,44 @@ def p_KeysStatement(p):
     
     
 def p_NonBracketOperatableOn(p):
-    '''NonBracketOperatableOn : Number
-                              | Identifier
-                              | String
-                              | Bool
-                              | List
-                              | Map
-                              | FunctionCall
-                              | ToTextCall
-                              | KeysStatement
-                              | LenStatement
-                              | RangeStatement
-                              | DotStatement
-                              | ExtAssignForTuple
-                              | ExtCopyForTuple
-                              | Garbage
-                              ''';
+    '''
+    NonBracketOperatableOn : Number
+                           | Identifier
+                           | String
+                           | Bool
+                           | List
+                           | Map
+                           | FunctionCall
+                           | ToTextCall
+                           | SignalCall
+                           | KeysStatement
+                           | LenStatement
+                           | RangeStatement
+                           | DotStatement
+                           | Garbage
+                           | Self
+                           '''
+
+    # FIXME: got rid of ExtAssignForTuple and ExtCopyForTuple for the
+    # time being.
+    
+    # '''NonBracketOperatableOn : Number
+    #                           | Identifier
+    #                           | String
+    #                           | Bool
+    #                           | List
+    #                           | Map
+    #                           | FunctionCall
+    #                           | ToTextCall
+    #                           | KeysStatement
+    #                           | LenStatement
+    #                           | RangeStatement
+    #                           | DotStatement
+    #                           | ExtAssignForTuple
+    #                           | ExtCopyForTuple
+    #                           | Garbage
+    #                           '''
+    
     # note that ExtAssignForTuple and ExtCopyForTuple can only be
     # operatable on as the lhs of an assignment statement from a
     # function call.
@@ -544,6 +584,15 @@ def p_RefreshCall(p):
     '''
     p[0] = AstNode(AST_REFRESH,p.lineno(1),p.lexpos(1));
 
+
+def p_SignalCall(p):
+    '''
+    SignalCall : SIGNAL LEFT_PAREN FunctionArgList RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_SIGNAL_CALL,p.lineno(1),p.lexpos(1))
+    func_decl_arglist_node = p[3]
+    p[0].addChild(func_decl_arglist_node)
+
     
 def p_ToTextCall(p):
     '''
@@ -655,6 +704,9 @@ def p_Identifier(p):
     'Identifier : IDENTIFIER';
     p[0] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
 
+def p_Self(p):
+    'Self : SELF'
+    p[0] = AstNode(AST_SELF,p.lineno(1),p.lexpos(1))
 
 def p_EndpointSection(p):
     '''EndpointSection : Identifier CURLY_LEFT EndpointBodySection CURLY_RIGHT

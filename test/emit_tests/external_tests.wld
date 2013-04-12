@@ -1,0 +1,89 @@
+ExternalTests
+
+
+Endpoint SingleSide;
+
+Sequences{}
+
+SingleSide
+{
+    External Number num;
+    Map(from: Number, to: External Number) map_;
+    
+    
+    Public Function input_ext_num(External Number input_num)
+    {
+        extAssign input_num to num;
+    }
+
+    Public Function increment_ext_num() returns Number
+    {
+        extCopy num + 1 to num;
+        return num;
+    }
+
+    Public Function get_endpoint_ext_value() returns Number
+    {
+        return num;
+    }
+
+    Public Function get_endpoint_ext() returns External Number
+    {
+        return num;
+    }
+
+    Public Function input_ext_num_to_map(
+        External Number input_num, Number index)
+    {
+        extAssign input_num to map_[index];
+    }
+
+    Public Function get_endpoint_map_ext_value(Number index)
+        returns Number
+    {
+        return map_[index];
+    }
+
+    Public Function get_endpoint_map_index()
+        returns External Map(from: Number, to: External Number)
+    {
+        return map_;
+    }
+
+    Public Function test_assign_from_map_index(
+        Number index,External Number to_assign)
+    {
+        extAssign to_assign to get_endpoint_map_index()[index];
+    }
+
+    Public Function test_assign_from_func_call(
+        External Number to_assign)
+    {
+        extAssign to_assign to get_endpoint_ext();
+    }
+
+
+    Public Function test_ext_copy_dual_function_call(Number index, Number amt_to_add)
+        returns Number 
+    {
+        extCopy get_endpoint_map_ext_value(index) + amt_to_add to
+            get_endpoint_map_index()[index];
+
+        return get_endpoint_map_ext_value(index);
+    }
+
+
+    Public Function test_ext_copy_single_function_call (Number to_copy_in)
+        returns Number
+    {
+        extCopy to_copy_in to get_endpoint_ext();
+        return num;
+    }
+    
+    Public Function test_ext_copy_map(Number index, Number to_ext_copy_ind)
+    {
+        extCopy to_ext_copy_ind to map_[index];
+    }
+    
+    
+}

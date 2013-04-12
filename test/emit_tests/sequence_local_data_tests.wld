@@ -1,0 +1,286 @@
+TwoSided
+
+Endpoint SideA;
+Endpoint SideB;
+
+Sequences{
+  arguments_check_exchange:
+    SideA.start_arguments_check_exchange ->
+    SideB.receive_arguments_check_exchange;
+
+  returns_check_exchange:
+    SideA.start_returns_check_exchange ->
+    SideB.receive_returns_check_exchange;
+
+  non_arg_return_seq_local_data_check_exchange:
+    SideA.start_non_arg_return_seq_local_data_check_exchange ->
+    SideB.receive_non_arg_return_seq_local_data_check_exchange;
+    
+
+  arguments_check_references_exchange:
+    SideA.start_arguments_check_references_exchange ->
+    SideB.receive_arguments_check_references_exchange;
+
+  returns_check_references_exchange:
+    SideA.start_returns_check_references_exchange ->
+    SideB.receive_returns_check_references_exchange;
+
+  returns_single_reference_exchange:
+    SideA.start_returns_single_reference_exchange ->
+    SideB.receive_returns_single_reference_exchange;
+
+  plus_equals_on_map_exchange:
+    SideA.start_plus_equals_on_map_exchange ->
+    SideB.receive_plus_equals_on_map_exchange;
+}
+
+Peered
+{
+    Number peered_num = 22;
+    Text peered_text = 'a';
+    TrueFalse peered_tf = True;
+}
+
+
+Sequence arguments_check_exchange(
+    Number some_number, Text some_text, TrueFalse some_tf)
+{
+    /**
+       Checks that read in arguments and that read in args to
+       sequences correctly.  Check that both sides' peered values are
+       updated correctly through call to read_peered_value_types on
+       either endpoint.
+     */
+    SideA.start_arguments_check_exchange
+    {
+        peered_num += some_number;
+    }
+    SideB.receive_arguments_check_exchange
+    {
+        peered_text += some_text;
+        peered_tf = some_tf;
+    }
+}
+
+Sequence returns_check_exchange()
+    returns Number ret_num, Text ret_text, TrueFalse ret_tf
+{
+    /**
+      Checks that can return value types from message sequences.
+     */
+    SideA.start_returns_check_exchange
+    {
+        ret_tf = True;
+        ret_text = endpoint_text;
+    }
+    SideB.receive_returns_check_exchange
+    {
+        ret_num = endpoint_num;
+    }
+}
+
+Sequence non_arg_return_seq_local_data_check_exchange()
+    returns Number ret_num, Text ret_text
+{
+    /**
+       Checks that sequence local data declared and initialized at the top of
+       the sequence is available in all sequences.
+     */
+    
+    Number seq_local_num = 52;
+    Text seq_local_text = 'wow';
+    SideA.start_non_arg_return_seq_local_data_check_exchange
+    {
+        ret_num = seq_local_num + 10;
+    }
+    SideB.receive_non_arg_return_seq_local_data_check_exchange
+    {
+        seq_local_text += seq_local_text;
+        ret_text = seq_local_text;
+    }
+}
+
+
+Sequence arguments_check_references_exchange(
+    Map (from: Number, to: TrueFalse) arg_map, List(element: Text) arg_list)
+    returns TrueFalse expected_behavior
+{
+    /**
+       Arguments to sequences are passed by value, not reference.  Check that
+       when make changes to values inside of a sequence that the changes do not
+       affect the data passed in.
+
+       Assumes that first element of arg_list should be 'm'
+     */
+    
+    SideA.start_arguments_check_references_exchange
+    {
+        arg_map[62] = True;
+        expected_behavior = arg_list[0] == 'm';
+        arg_list[0] = 'n';
+
+    }
+    SideB.receive_arguments_check_references_exchange
+    {
+        arg_list.append('50');
+        expected_behavior = (arg_list[0] == 'n') and expected_behavior;
+    }
+}
+
+
+Sequence returns_check_references_exchange()
+    returns Map(from: Number, to: Number) map_, List(element: Text) list_
+{
+    SideA.start_returns_check_references_exchange
+    {
+        map_ = {
+          1: 2,
+          3: 4
+        };
+    }
+    SideB.receive_returns_check_references_exchange
+    {
+        list_ = ['5','7','9'];
+    }
+}
+
+
+Sequence returns_single_reference_exchange(List(element:Number) input)
+    returns List(element: Number) to_return
+{
+    SideA.start_returns_single_reference_exchange
+    {
+        to_return = input;
+    }
+    SideB.receive_returns_single_reference_exchange
+    {
+    }
+}
+
+
+Sequence plus_equals_on_map_exchange(
+    Map(from: Text, to: Number) map_, Number to_increment_by)
+    returns Number total
+{
+    SideA.start_plus_equals_on_map_exchange
+    {}
+    SideB.receive_plus_equals_on_map_exchange
+    {
+        for (Text index in map_)
+        {
+            map_[index] += to_increment_by;
+            total += map_[index];
+        }
+    }
+}
+
+SideA
+{
+    Text endpoint_text = 'sideA';
+    
+    Public Function read_peered_value_types()
+        returns Number, Text, TrueFalse
+    {
+        return peered_num, peered_text, peered_tf;
+    }
+
+    Public Function arguments_check(
+        Number arg_num, Text arg_text, TrueFalse arg_tf)
+        returns Number, Text, TrueFalse
+    {
+        start_arguments_check_exchange(arg_num,arg_text,arg_tf);
+        return read_peered_value_types();
+    }
+
+    Public Function plus_equals_on_map_check(
+        Map(from: Text, to: Number) map_, Number to_increment_by)
+        returns Number
+    {
+        Number total_plus_increment = start_plus_equals_on_map_exchange(
+            map_,to_increment_by);
+        return total_plus_increment;
+    }
+
+    
+    Public Function returns_check()
+        returns Number, Text, TrueFalse
+    {
+        return start_returns_check_exchange();
+    }
+
+    Public Function non_arg_return_seq_local_data_check()
+        returns Number, Text
+    {
+        return start_non_arg_return_seq_local_data_check_exchange();
+    }
+
+    Public Function arguments_check_references() returns TrueFalse
+    {
+        Map(from: Number, to: TrueFalse) map_ = {
+          3: True,
+          5: False
+        };
+        List(element: Text) list_ = ['m','n','o'];
+
+
+        TrueFalse sequence_checks_passed = start_arguments_check_references_exchange(map_,list_);
+        
+        
+        // FIXME: the additional parens around sequence_checks_passed are
+        // because of a parsing error.
+        return ((sequence_checks_passed) and
+            (len(list_) == 3) and (list_[0] == 'm') and 
+            (not (62  in map_)));
+    }
+
+    Public Function returns_check_references() returns TrueFalse
+    {
+        /**
+           Tests that after return a sequence local reference type from message
+           sequence and assigning it to a local variable, changes we make to
+           reference are reflected in copies of the reference.
+         */
+        Map(from: Number, to: Number) map_;
+        List(element: Text) list_;
+        
+        map_, list_ = start_returns_check_references_exchange();
+
+        Map(from: Number, to: Number) other_map;
+        List(element: Text) other_list;
+
+        other_map = map_;
+
+        other_list = list_;
+
+        other_list.append('20');
+
+        if (len(other_list) != len(list_))
+            return False;
+
+        map_[3] = 25;
+        if (other_map[3] != map_[3])
+            return False;
+
+        return True;
+    }
+
+
+    Public Function return_reference_index(
+        List(element:Number)l, Number index) returns Number
+    {
+        return start_returns_single_reference_exchange(l)[index];
+    }
+
+        
+}
+
+SideB
+{
+    Number endpoint_num = 55;
+    
+    Public Function read_peered_value_types()
+        returns Number, Text, TrueFalse
+    {
+        return peered_num, peered_text, peered_tf;
+    }
+}

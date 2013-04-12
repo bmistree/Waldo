@@ -1,0 +1,111 @@
+ExternalTests
+
+
+Endpoint SideA;
+Endpoint SideB;
+
+Sequences{}
+
+/**
+ * Both sides have an internal number, set through their onCreate methods and
+ * accessed through get_number.  SideA creates a list of endpoints and a map of
+ * endpoints, inserting itself into both.  External code takes both of these 
+ * external lists and asks SideB to load itself into the lists.  Then, SideA
+ * iterates through all externals in map, calling get_number on them and
+ * returning these values.  External code checks that they are correct.
+ */
+
+SideA
+{
+    External List(element: Endpoint) endpoint_list;
+    External Map(
+        from: Number, to: Endpoint) endpoint_map;
+
+    Number side_a_num;
+
+    onCreate(Number number_to_load,Number index_to_load_self_into)
+    {
+        set_side_number(number_to_load);
+        endpoint_list.append(self);
+        endpoint_map[index_to_load_self_into] = self;
+    }
+
+    Public Function get_self_holders() returns
+        External List(element:Endpoint),
+        External Map(from: Number, to: Endpoint)
+    {
+        return endpoint_list, endpoint_map;
+    }
+            
+    
+    Public Function set_side_number(Number new_number)
+    {
+        side_a_num = new_number;
+    }
+    
+    Public Function get_number() returns Number
+    {
+        return side_a_num;
+    }
+
+    Public Function get_numbers_from_list()
+        returns List (element: Number)
+    {
+        List(element: Number) to_return;
+        for (Endpoint end in endpoint_list)
+            to_return.append(end.get_number());
+
+        return to_return;
+    }
+
+    Public Function get_numbers_from_map()
+        returns Map(from: Number, to: Number)
+    {
+        Map(from: Number, to: Number) to_return;
+
+        for (Number index in endpoint_map)
+            to_return[index] = endpoint_map[index].get_number();
+        
+        return to_return;
+    }
+
+    
+}
+
+
+SideB
+{
+    Number side_b_num;
+
+    onCreate(Number new_number)
+    {
+        // ensures can make function calls in oncreate
+        set_side_number(new_number);
+    }
+    
+    Public Function set_side_number(Number new_number)
+    {
+        side_b_num = new_number;
+    }
+
+    
+    Public Function get_number() returns Number
+    {
+        return side_b_num;
+    }
+
+    // add self to list
+    Public Function append_self_to_list(
+        External List(element: Endpoint) list_)
+    {
+        list_.append(self);
+    }
+    // add self to map
+    Public Function append_self_to_map(
+        Number index, External Map(from: Number, to: Endpoint) map_)
+    {
+        map_[index] = self;
+    }
+    
+    
+}

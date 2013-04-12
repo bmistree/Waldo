@@ -1,0 +1,44 @@
+Basic
+
+Endpoint Requester;
+Endpoint Incrementer;
+
+Sequences
+{
+  other_side_increment:
+    Requester.request_increment ->
+    Incrementer.perform_increment;
+}
+
+Sequence other_side_increment(Number what_to_increment)
+    // the result of this operation will be placed in result
+    returns Number result
+{
+    Requester.request_increment{}
+    Incrementer.perform_increment
+    {
+        // amt_to_increment_by is an Endpoint variable, available to any
+        // Incrementer code.
+        result = what_to_increment + amt_to_increment_by;
+    }
+}
+
+Requester
+{
+    Public Function increment(Number to_increment) returns Number
+    {
+        // issue a sequence call to partner endpoint
+        return request_increment(to_increment);
+    }
+}
+
+Incrementer
+{
+    Number amt_to_increment_by;
+
+    // initializes 
+    onCreate(Number amt)
+    {
+        amt_to_increment_by = amt;
+    }
+}

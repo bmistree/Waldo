@@ -1,0 +1,31 @@
+OncreateSingleNode
+
+Endpoint SingleSide;
+
+Sequences{}
+
+SingleSide
+{
+    Number num = 3;
+    Text text = 'hi';
+    List (element: List(element: TrueFalse)) list_;
+    Map(from: Number, to: Text) map_;
+    
+    onCreate(
+        Number init_num, Text init_text,
+        List (element: List(element: TrueFalse)) init_list,
+        Map(from: Number, to: Text) init_map)
+    {
+        num = init_num;
+        text = init_text;
+        list_ = init_list;
+        map_ = init_map;
+    }
+
+    Public Function get_endpoint_values()
+        returns Number,Text, List (element: List(element: TrueFalse)),
+        Map(from: Number, to: Text)
+    {
+        return num, text,list_,map_;
+    }
+}

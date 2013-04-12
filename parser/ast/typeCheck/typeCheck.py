@@ -14,8 +14,8 @@ from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
 from astTypeCheckStack import createFuncMatchObjFromFuncTypeDict
 from parser.ast.parserUtil import errPrint;
 
-from typeCheckUtil import *;
-from templateUtil import *;
+from typeCheckUtil import *
+from templateUtil import *
 
 
 
@@ -146,20 +146,54 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         struct_name = struct_name_node.value
         struct_body = node.children[1]
 
+        # pre-load a dummy version of 
+        dummy_struct_type = create_self_struct_type(struct_name)
+        err_msg = typeStack.add_struct_type(struct_name,dummy_struct_type)
+        if err_msg != None:
+            # means that there was some error adding the struct type
+            # to type stack.  (Likely, we already declared a struct of
+            # that type.)
+            errorFunction(err_msg,[node],[node.lineNo],progText)
+
         # adding a context onto type stack so that the fields that we
         # type check don't get actually added to type stack context
-        
         typeStack.pushContext()
 
         # each element is a tuple.  the first element is a string ---
         # the name of the field.  the second element is the type dict
         # for that field
         field_tuple_array = []
-        
+
         for field_decl_node in struct_body.children:
             field_decl_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+            field_decl_type_node = field_decl_node.children[0]
             field_identifier_node = field_decl_node.children[1]
             field_name = field_identifier_node.value
+
+            # disallow
+            # Struct SomeStruct
+            # {
+            #     Number num;
+            #     Struct SomeStruct other;
+            # }
+            #
+            # This is because will get infinite recursion when laying
+            # out the memory for SomeStruct.  Explicitly check that no
+            # field has self type.
+            # 
+            # Note: it's okay if a subfield of it has self type, eg.,
+            # have a List(element: Struct SomeStruct).  Because will
+            # only assign additional structs when add elements to it.
+            if is_self_struct_type(field_decl_node.type):
+                err_msg = (
+                'Error.  You cannot have a member of a struct have the ' +
+                'same type as that struct.  Note that you can have a field ' +
+                'that is a List (or Map) with elements (or values) ' +
+                'that point to the same struct if nesting is necessary.')
+                
+                errorFunction(
+                    err_msg,[field_decl_node],[field_decl_node.lineNo],progText)
+
             
             # not calling type check directly on field_decl_node
             # because we do not want to insert it directly into
@@ -169,14 +203,29 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # remove the fields that we just added to the context
         typeStack.popContext()
 
+
         node.type = create_struct_type(struct_name,field_tuple_array)
-        err_msg = typeStack.add_struct_type(struct_name,node.type)
-        if err_msg != None:
-            # means that there was some error adding the struct type
-            # to type stack.  (Likely, we already declared a struct of
-            # that type.)
-            errorFunction(err_msg,[node],[node.lineNo],progText)
-            
+        dummy_err_msg = typeStack.add_struct_type(struct_name,node.type)
+        # expected that we should have an err_msg because already have
+        # an entry for the struct type in the type dict that we put in
+        # before type checking the struct body (so that the struct
+        # body could reference the struct type within it). do nothing
+        # as a result of the error.
+
+
+    elif node.label == AST_SIGNAL_CALL:
+        signal_args_node = node.children[0]
+        func_arglist_node = signal_args_node.children[0]
+
+        # FIXME: add better type checking for signalling
+        
+        for func_arg_node in func_arglist_node.children:
+            un_function_called_arg_node_type = unwrap_function_call_type_checker(
+                func_arg_node.type,func_arg_node,
+                ('Error in signal: function call assigning to' +
+                'returns more than one value.'),
+                progText)
+
             
     elif node.label == AST_EXT_COPY:
         from_node = node.children[0]
@@ -185,17 +234,22 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         from_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-        
-        if to_node.label != AST_IDENTIFIER:
-            err_msg = 'You are trying to perform an external copy '
-            err_msg += 'to an invalid element.  You can only copy '
-            err_msg += 'to an external identifier.'
-            errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
-            return
-            
-        if not is_external(to_node.type):
-            err_msg = 'You are trying to extCopy to a non-external '
-            err_msg += 'named "' + to_node.value + '."'
+        # if to_node.label != AST_IDENTIFIER:
+        #     err_msg = 'You are trying to perform an external copy '
+        #     err_msg += 'to an invalid element.  You can only copy '
+        #     err_msg += 'to an external identifier.'
+        #     errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
+        #     return
+
+
+        un_function_called_to_node_type = unwrap_function_call_type_checker(
+            to_node.type,to_node,
+            ('Error in extAssign: function call assigning to' +
+            'returns more than one value.'),
+            progText)
+
+        if not is_external(un_function_called_to_node_type):
+            err_msg = 'You are trying to extCopy to a non-external.'
             errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
             return
             
@@ -212,6 +266,9 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(err_msg,err_nodes,err_line_nos,progText)
             return
 
+    elif node.label == AST_SELF:
+        node.type = create_wildcard_type()
+        
     elif ((node.label == AST_BREAK) or
           (node.label == AST_CONTINUE)):
         node.type = generate_type_as_dict(TYPE_NOTHING,False)
@@ -240,43 +297,45 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         
         body.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-        
-    elif node.label in [AST_EXT_ASSIGN_FOR_TUPLE, AST_EXT_COPY_FOR_TUPLE]:
 
-        # used for error message printing
-        for_tuple_type = 'extAssign'
-        if node.label == AST_EXT_COPY_FOR_TUPLE:
-            for_tuple_type = 'extCopy'
-        
-        if not typeStack.in_lhs_assign:
-            err_msg = 'Error in call "' + for_tuple_type + ' _ to ..."  '
-            err_msg += 'You can only use a placeholder, "_", '
-            err_msg += 'when this expression is on the '
-            err_msg += 'left hand side of an assignment.  Ie, '
-            err_msg += for_tuple_type
-            err_msg += ' _ to some_ext = some_func(); is '
-            err_msg += 'fine.  But ' + for_tuple_type + ' _ to some_ext; '
-            err_msg += 'by itself is not.'
-            err_nodes = [node]
-            err_line_nos = [node.lineNo]
-            errorFunction(err_msg,err_nodes,err_line_nos)
-            return
+    # FIXME: hae disabled tuple assignment with extAssign and extCopy
+    # elif node.label in [AST_EXT_ASSIGN_FOR_TUPLE, AST_EXT_COPY_FOR_TUPLE]:
 
-        to_node = node.children[0]
-        to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+    #     # used for error message printing
+    #     for_tuple_type = 'extAssign'
+    #     if node.label == AST_EXT_COPY_FOR_TUPLE:
+    #         for_tuple_type = 'extCopy'
         
-        if to_node.external == None:
-            err_msg = 'Error in call "' + for_tuple_type + ' _ to ..." '
-            err_msg += 'What you are assigning to is not an '
-            err_msg += 'external.  If it is not supposed to be, '
-            err_msg += 'then, just use the variable instead.'
-            err_nodes = [node]
-            err_line_nos = [node.lineNo]
-            errorFunction(err_msg,err_nodes,err_line_nos)
+    #     if not typeStack.in_lhs_assign:
+    #         err_msg = 'Error in call "' + for_tuple_type + ' _ to ..."  '
+    #         err_msg += 'You can only use a placeholder, "_", '
+    #         err_msg += 'when this expression is on the '
+    #         err_msg += 'left hand side of an assignment.  Ie, '
+    #         err_msg += for_tuple_type
+    #         err_msg += ' _ to some_ext = some_func(); is '
+    #         err_msg += 'fine.  But ' + for_tuple_type + ' _ to some_ext; '
+    #         err_msg += 'by itself is not.'
+    #         err_nodes = [node]
+    #         err_line_nos = [node.lineNo]
+    #         errorFunction(err_msg,err_nodes,err_line_nos)
+    #         return
 
-        # need to bubble up type information to ensure that when type
-        # check assign, can also type check here.
-        node.type = to_node.type
+    #     to_node = node.children[0]
+    #     to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+    #     if not is_external(to_node.type):
+    #         err_msg = 'Error in call "' + dict_type_to_str(for_tuple_type)
+    #         err_msg += ' _ to ..." '
+    #         err_msg += 'What you are assigning to is not an '
+    #         err_msg += 'external.  If it is not supposed to be, '
+    #         err_msg += 'then, just use the variable instead.'
+    #         err_nodes = [node]
+    #         err_line_nos = [node.lineNo]
+    #         errorFunction(err_msg,err_nodes,err_line_nos)
+
+    #     # need to bubble up type information to ensure that when type
+    #     # check assign, can also type check here.
+    #     node.type = to_node.type
 
         
     elif node.label == AST_EXT_ASSIGN:
@@ -286,20 +345,25 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         from_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         to_node.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-        if to_node.label != AST_IDENTIFIER:
-            err_msg = 'You are trying to perform an external assign '
-            err_msg += 'to an invalid element.  You can only assign '
-            err_msg += 'to an external identifier.'
-            errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
-            return
-            
-        if not is_external(to_node.type):
-            err_msg = 'You are trying to assign to a non-external '
-            err_msg += 'named "' + to_node.value + '."'
+        un_function_called_to_node_type = unwrap_function_call_type_checker(
+            to_node.type,to_node,
+            ('Error in extAssign: function call assigning to' +
+            'returns more than one value.'),
+            progText)
+
+        un_function_called_from_node_type = unwrap_function_call_type_checker(
+            to_node.type,to_node,
+            ('Error in extAssign: function call assigning from' +
+            'returns more than one value.'),
+            progText)
+
+        
+        if not is_external(un_function_called_to_node_type):
+            err_msg = 'You are trying to assign to a non-external.'
             errorFunction(err_msg,[to_node],[to_node.lineNo],progText)
             return
 
-        if not is_external(from_node.type):
+        if not is_external(un_function_called_from_node_type):
             err_msg = 'Error in external assign.  Must assign from an '
             err_msg += 'external to another external.  What you are trying '
             err_msg += 'to assign from is not external.'
@@ -378,7 +442,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                     err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
                     progText)
 
-
         else:
             err_msg = 'Error in remove statement.  Item '
             err_msg += 'calling remove on must be a Map or '
@@ -389,7 +452,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             errorFunction(
                 err_msg,[to_remove_from_node],[to_remove_from_node.lineNo],
                 progText)
-
         
         
     elif node.label == AST_FOR_STATEMENT:
@@ -512,6 +574,78 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         forBodyNode = node.children[forBodyNodeIndex];
         forBodyNode.typeCheck(progText,typeStack,avoidFunctionObjects);
 
+    elif node.label == AST_INSERT_STATEMENT:
+        to_insert_into_node = node.children[0]
+        index_to_insert_node = node.children[1]
+        what_to_insert_node = node.children[2]
+
+        to_insert_into_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        index_to_insert_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        what_to_insert_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+        
+        
+        un_function_called_to_insert_into_type = unwrap_function_call_type_checker(
+            to_insert_into_node.type,node,
+            ('Error in insert on what inserting into: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        un_function_called_index_to_insert_type = unwrap_function_call_type_checker(
+            index_to_insert_node.type,node,
+            ('Error in insert on index to insert into: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        un_function_called_what_to_insert_type = unwrap_function_call_type_checker(
+            what_to_insert_node.type,node,
+            ('Error in insert on what to insert: function call ' +
+            'returns more than one value.'),
+            progText)
+
+        if not is_number(un_function_called_index_to_insert_type):
+            err_msg = 'Error when inserting.  Index inserting into '
+            err_msg += 'must be a Number.  Instead, you provided an '
+            err_msg += 'index with type '
+            err_msg += dict_type_to_str(un_function_called_index_to_insert_type)
+            errorFunction(
+                err_msg, [index_to_insert_node],[index_to_insert_node.lineNo],
+                progText)
+
+        if not isListType(un_function_called_to_insert_into_type):
+            errMsg = 'Error insert operation is only supported on lists.  ';
+            errMsg += 'You are calling append on '
+            errMsg += dict_type_to_str(un_function_called_to_insert_into_type) + '.';
+            errorFunction(
+                errMsg,[to_insert_into_node],[to_insert_into_node.lineNo],
+                progText)
+        if is_empty_list(un_function_called_to_insert_into_type):
+            if is_wildcard_type(un_function_called_to_insert_into_type):
+                # FIXME: cannot determine what to do for the case
+                # where we're appending a wild card to an empty list.
+                warn_msg = '\nBehram error: for a list, inserted a wildcard.\n'
+                print (warn_msg)
+            node.type = buildListTypeSignatureFromTypeName(
+                un_function_called_to_insert_into_type,False)
+
+        else:
+            node.type = un_function_called_to_insert_into_type
+            # check that the elements of the list match what we're appending
+            listElemType = getListValueType(un_function_called_to_insert_into_type)
+            if checkTypeMismatch(
+                to_insert_into_node, listElemType,what_to_insert_node.type,
+                typeStack, progText):
+
+                errMsg = 'Type mismatch when trying to insert into element.  List ';
+                errMsg += 'inserting into has type '
+                errMsg += dict_type_to_str(to_insert_into_node.type) + ', and ';
+                errMsg += 'therefore you must insert an element with type ';
+                errMsg += dict_type_to_str(listElemType) + '.  Instead, '
+                errMsg += 'you inserted an element with ';
+                errMsg += 'type ' + dict_type_to_str(what_to_insert_node.type) + '.';
+                errorFunction(
+                    errMsg, [to_insert_into_node],[to_insert_into_node.lineNo],
+                    progText)
+        
 
     elif node.label == AST_APPEND_STATEMENT:
         toAppendToNode = node.children[0];
@@ -546,7 +680,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 # where we're appending a wild card to an empty list.
                 warn_msg = '\nBehram error: for a list, appended a wildcard.\n'
                 print (warn_msg)
-            node.type = buildListTypeSignatureFromTypeName(un_function_called_to_ap_to_type)
+            node.type = buildListTypeSignatureFromTypeName(un_function_called_to_ap_to_type,False)
+
         else:
             node.type = un_function_called_to_ap_to_type
             # check that the elements of the list match what we're appending
@@ -874,14 +1009,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # if map was empty, then just return an empty list.
         if isListType(argumentNode.type):
             node.type = buildListTypeSignatureFromTypeName(
-                generate_type_as_dict(TYPE_NUMBER,False))
+                generate_type_as_dict(TYPE_NUMBER,False),False)
+
         elif isMapType(argumentNode.type):
             if is_empty_map(argumentNode.type):
                 node.type = generate_type_as_dict(EMPTY_LIST_SENTINEL,False)
             else:
                 mapIndexType = getMapIndexType(argumentNode.type)
                 node.type = buildListTypeSignatureFromTypeName(
-                    mapIndexType);
+                    mapIndexType,False);
         else:
             errorString = 'Error in calling keys.  Can only call keys on a ';
             errorString += 'list or map.  Instead, you passed in a ';
@@ -912,8 +1048,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         # type that assign should be list to numbers
         node.type = buildListTypeSignatureFromTypeName(
-            generate_type_as_dict(TYPE_NUMBER,False))
-
+            generate_type_as_dict(TYPE_NUMBER,False),False)
             
     elif node.label == AST_PRINT:
         #check to ensure that it's passed a string
@@ -1068,12 +1203,13 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             
             # Should only get into this part of statement from
             # function call.  if calling append or remove, change
-            # these nodes' labels to ast_append and ast_remove,
-            # respectively.  this will serve as a signal to function
-            # call type checking code to handle append and remove
-            # differently (ie, create an AST_APPEND and AST_REMOVE
-            # statement in ast type tree and use existing emitting and
-            # slicing code developed for these labels).
+            # these nodes' labels to ast_append, ast_insert, and
+            # ast_remove, respectively.  this will serve as a signal
+            # to function call type checking code to handle append and
+            # remove differently (ie, create an AST_APPEND,
+            # AST_REMOVE, and AST_INSERT statement in ast type tree
+            # and use existing emitting and slicing code developed for
+            # these labels).
 
             if post_dot_node_name == 'remove':
                 node.label = AST_REMOVE_STATEMENT
@@ -1083,6 +1219,12 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 node.label = AST_APPEND_STATEMENT
                 node.children = []
                 node.addChild(pre_dot_node)
+                
+            elif post_dot_node_name == 'insert':
+                node.label = AST_INSERT_STATEMENT
+                node.children = []
+                node.addChild(pre_dot_node)
+                
             else:
                 err_msg = 'Error.  Type '
                 err_msg += dict_type_to_str(pre_dot_node.type)
@@ -1097,15 +1239,25 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         elif is_struct(un_function_pre_dot_node_type):
             # from struct type, get the type of the field named by
             # post_dot_node_name
+
+            if is_self_struct_type(un_function_pre_dot_node_type):
+                struct_name = get_struct_name_from_struct_type(
+                    un_function_pre_dot_node_type)
+                struct_type = typeStack.get_struct_type(
+                    struct_name,is_external(un_function_pre_dot_node_type))
+
+            else:
+                struct_type = un_function_pre_dot_node_type
+            
             node.type = get_struct_field_type(
-                post_dot_node_name,un_function_pre_dot_node_type)
+                post_dot_node_name,struct_type)
 
             # field we are trying to call did not exist
             if node.type == None:
                 err_msg = 'Error.  The struct has type '
                 err_msg += dict_type_to_str(pre_dot_node.type)
-                err_msg += '.  It does not have a field named '
-                err_msg += post_dot_node_name + ' for you to access.'
+                err_msg += '.  It does not have a field named "'
+                err_msg += post_dot_node_name + '" for you to access.'
                 errorFunction(
                     err_msg,[pre_dot_node],[pre_dot_node.lineNo],progText)
 
@@ -1155,35 +1307,44 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # construct the full ast_append_statement or
         # ast_remove_statement itself because it does not have access
         # to the function's arguments that are available here.
-        if func_name_node.label in [AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT]:
+        if func_name_node.label in [
+            AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT,AST_INSERT_STATEMENT]:
+            
             node.label = func_name_node.label
             # clear exsiting children structure.
             node.children = []
             # this adds in the node that is being appended to
             node.addChild(func_name_node.children[0])
-            
-            if len(func_arg_list_node.children) != 1:
-                which_func = 'append' if node.label == AST_APEND_STATEMENT else 'remove'
-                
-                err_msg = 'Error when calling ' + which_func + '.  '
-                err_msg += 'append takes 1 argument.  You '
-                err_msg += 'provided ' + str(len(func_arg_list_node.children))
-                err_msg += '.'
-                errorFunction(
-                    err_msg, [node],[node.lineNo],progText);
+
+            if func_name_node.label in [AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT]:
+                if len(func_arg_list_node.children) != 1:
+                    which_func = 'append' if node.label == AST_APEND_STATEMENT else 'remove'
+
+                    err_msg = 'Error when calling ' + which_func + '.  '
+                    err_msg += which_func + ' takes 1 argument.  You '
+                    err_msg += 'provided ' + str(len(func_arg_list_node.children))
+                    err_msg += '.'
+                    errorFunction(err_msg, [node],[node.lineNo],progText)
+
+            else:
+                if len(func_arg_list_node.children) != 2:
+                    err_msg = 'Error when calling insert.  insert' 
+                    err_msg += ' takes 2 arguments.  You provided '
+                    err_msg += str(len(func_arg_list_node.children)) + '.'
+                    errorFunction(err_msg,[node],[node.lineNo],progText)
+
 
             # this adds in the node corresponding to the argument of
             # the append statement.  Eg, if we called a.append(1),
             # then here we would be appending the node corresponding
             # to the literal 1.
-            node.addChild(func_arg_list_node.children[0])
+            node.addChildren(func_arg_list_node.getChildren())
 
             # need to re-type check to ensure that the append and
             # remove statements are correct (eg. what we're appending
             # to a list has the same type as the elements of the list,
             # etc.
             node.typeCheck(progText,typeStack,avoidFunctionObjects)
-            
         else:
 
             if not isFunctionType(func_name_node.type):
@@ -1311,7 +1472,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #          }],
             #    Returns: [{ Type: "Text"}]
             # }
-            node.type = buildFuncTypeSignature(node,progText,typeStack);
+            node.type = buildFuncTypeSignature(
+                node,progText,typeStack,node.external != None)
 
         elif node.value == TYPE_LIST:
             # more complicated types for lists
@@ -1321,7 +1483,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             # { Type: 'List',
             #   ElementType: { Type: "Number" }}
             #
-            node.type = buildListTypeSignature(node,progText,typeStack);
+            node.type = buildListTypeSignature(
+                node,progText,typeStack,node.external != None)
 
         elif node.value == TYPE_MAP:
             # more complicated types for maps
@@ -1332,7 +1495,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             #   From: { Type: 'Number'},
             #   To: {Type: 'Text'}
             #  }
-            typeSignature,errMsg,errNodes = buildMapTypeSignature(node,progText,typeStack);
+            typeSignature,errMsg,errNodes = buildMapTypeSignature(
+                node,progText,typeStack,node.external != None)
 
             if errMsg != None:
                 # list comprehension!
@@ -1344,14 +1508,15 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         elif node.value == TYPE_STRUCT:
             struct_name = node.children[0].value
 
-            struct_type = typeStack.get_struct_type(struct_name)
+            struct_type = typeStack.get_struct_type(
+                struct_name,node.external != None)
             if struct_type == None:
                 # means that struct with name struct_name has not been
                 # already declared by the user
-                err_msg = 'Error.  Struct ' + struct_name + ' has '
+                err_msg = 'Error.  Struct ' + struct_name + ' has not '
                 err_msg += 'been declared ahead of time.  Did you misspell "'
                 err_msg += struct_name + '" or forget to declare it?'
-                
+
                 errorFunction(err_msg,[node],[node.lineNo],progText)
                 
             node.type = struct_type
@@ -1386,7 +1551,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         for typeCheckingIndex in range(0,len(allTypes)):
 
             potentialType = buildListTypeSignatureFromTypeName(
-                allTypes[typeCheckingIndex]);
+                allTypes[typeCheckingIndex],False);
 
             node.type = moreSpecificListMapType(node.type,potentialType);
 
@@ -1433,7 +1598,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             indexType = allIndexTypes[typeCheckingIndex];
             valueType = allValueTypes[typeCheckingIndex];
             potentialType = buildMapTypeSignatureFromTypeNames(
-                indexType,valueType);
+                indexType,valueType,False);
             
             node.type = moreSpecificListMapType(node.type,potentialType);
             for subTypeCheckingIndex in range(typeCheckingIndex+1,len(allIndexTypes)):
@@ -1820,7 +1985,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
         declaredType = typeNode.type
         node.lineNo = typeNode.lineNo;
-        node.external = typeNode.external;
 
         if (node.children[1].label != AST_IDENTIFIER):
             errMsg = '\nError at declaration statement. ';
@@ -1830,7 +1994,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             return;
 
         nameNode = node.children[1];
-        nameNode.external = typeNode.external;
+        nameNode.type = declaredType
         name = nameNode.value;
         currentLineNo = node.children[0].lineNo;
         if len(node.children) == 3:
@@ -1854,17 +2018,21 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
                 # declaration and we throw an error.  Otherwise, use
                 # the internal type, {Type: Number} as rhsType
 
-                func_call_type_array = get_type_array_from_func_call_returned_tuple_type(
-                    rhs.type)
 
-                if len(func_call_type_array) != 1:
-                    err_msg = (
-                        'Error in declaration.  Function call produces ' +
-                        'more return values than can assign into in a ' +
-                        'declaration.')
-                    errorFunction(errMsg,[node],[currentLineNo],progtext)
+                if not is_wildcard_type(rhs.type):
+                    func_call_type_array = get_type_array_from_func_call_returned_tuple_type(
+                        rhs.type)
 
-                rhsType = func_call_type_array[0]
+                    if len(func_call_type_array) != 1:
+                        err_msg = (
+                            'Error in declaration.  Function call produces ' +
+                            'more return values than can assign into in a ' +
+                            'declaration.')
+                        errorFunction(err_msg,[node],[currentLineNo],progText)
+
+                    rhsType = func_call_type_array[0]
+                else:
+                    rhsType = rhs.type
                     
             else:
                 rhsType = rhs.type;
@@ -1949,8 +2117,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             ctxElm = typeStack.getIdentifierElement(name);
             if ctxElm == None:
                 assert(False);
-                
-            node.external = ctxElm.astNode.external;
 
     elif(node.label == AST_ENDPOINT_FUNCTION_SECTION):
         # this just type checks the headers of each function.
@@ -2056,7 +2222,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             child.typeCheck(progText,typeStack,avoidFunctionObjects)
             
             
-    elif (node.label == AST_FUNCTION_DECL_ARG):
+    elif node.label == AST_FUNCTION_DECL_ARG:
         '''
         for declared argument, checks for its collision
         with existing variables and functions, and then inserts
@@ -2087,10 +2253,11 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             if isFunctionType(argType) and avoidFunctionObjects:
                 pass;
             else:
-                node.external = arg_type_node.external
                 typeStack.addIdentifier(
                     argName,argType,None,node,node.lineNo)
 
+        node.type = argType
+                
 
     elif (node.label == AST_FUNCTION_BODY_STATEMENT):
         for s in node.children:
@@ -2184,7 +2351,13 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         return_type_tuple_list = []
         for func_decl_arg_node in return_type_node.children:
             type_node = func_decl_arg_node.children[0]
+            
             type_node.typeCheck(progText,typeStack,avoidFunctionObjects)
+            if is_external(type_node.type):
+                err_msg = 'Externals may not appear in sequence peered data.  '
+                err_msg += 'Return types are sequence peered.'
+                errorFunction(
+                    err_msg,[type_node],[type_node.lineNo],progText)
             
             return_type_tuple_list.append(
                 type_node.type)
@@ -2223,6 +2396,7 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         node.children[argDeclIndex].typeCheck(
             progText,typeStack,avoidFunctionObjects);
 
+        
     typeStack.popContext();
 
     # build the input argument type list for arguments.
@@ -2244,6 +2418,12 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
             #add the argument type to the typeStack representation for this function.
             argTypeList.append(t.type);
 
+            if node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+                if is_external(t.type):
+                    err_msg = 'Externals may not appear in sequence peered data.  '
+                    err_msg += 'Argument types are sequence peered.'
+                    errorFunction(err_msg,[t],[t.lineNo],progText)
+            
     else:
         # means that we are a message receive fucntion or oncomplete
         # function.  we do not actually need to be careful here,
@@ -2266,167 +2446,6 @@ def functionDeclarationTypeCheck(node, progText,typeStack,avoidFunctionObjects):
         if traceError != None:
             errorFunction(traceError.errMsg,traceError.nodes,traceError.lineNos,progText);
             
-
-            
-def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
-    '''
-    @returns {Bool} True if should throw type mismatch error.  False
-    otherwise.
-
-    Reasons not to indicate type mismatch error
-    
-       * lhsType and rhsType are the same
-
-       * unknown list and map types.  For instance, if rhsType was
-         produced from [], and lhsType was List(element: Number),
-         would not produce error.
-
-       * A function call has the following type dict structure:
-           {
-              Type: [
-                      {
-                          Type: Number
-                      },
-                      {
-                          Type: Text
-                      },
-                      ...
-                    ]
-           }
-         however, we want to be able to make calls, such as
-         
-         if (func_call())
-             <do something>
-
-         Therefore, if we are type checking with a checkTypeMismatch
-         statement, and the function call returns just a single
-         element in its tuple, we should type check *that* element.
-         Not entire list of elements.
-
-    Note: no type mismatch if rhsType is a wildcard.
-    '''
-    
-    if is_wildcard_type(rhsType):
-        warn_msg = '\nBehram warn: using wildcard type for development '
-        warn_msg += 'code while type checking.\n'
-        print warn_msg
-        return False
-
-
-    lhsType,more_in_tuple = get_single_type_if_func_call_reg_type(lhsType)
-    if more_in_tuple:
-        return True
-        
-    rhsType,more_in_tuple = get_single_type_if_func_call_reg_type(rhsType)
-    if more_in_tuple:
-        return True
-
-    errorTrue = False;
-
-    # scrub externals because there are some operations where it does
-    # not matter whether operating on externals and non-externals.
-    # Eg., a_ext + a
-    
-    if type_dict_scrub_externals(lhsType) != type_dict_scrub_externals(rhsType):
-        errorTrue = True;
-        # message literals have indeterminate types until
-        # they're assigned to an identifier that expects them
-        # to have an OutgoingMessage or IncomingMessage type.
-        # Here is where we check that.
-
-        # Must use special checks to type check lists.  For
-        # instance, if one side presents empty_list and other is
-        # [Number], should not produce typecheck error.
-
-        # determine if lists are involved
-        if isListType(lhsType) and isListType(rhsType):
-            errorTrue = listTypeMismatch(lhsType,rhsType,typeStack,progText);
-
-        elif isMapType(lhsType) and isMapType(rhsType):
-            errorTrue = mapTypeMismatch(lhsType,rhsType,typeStack,progText);
-        else:
-            # both sides were not lists and there types did not
-            # match.  will throw an error.
-            errorTrue = True;
-             
-    return errorTrue;
-
-
-def mapTypeMismatch(mapTypeA, mapTypeB,typeStack,progText):
-    '''
-    @see listTypeMismatch
-    '''
-    if is_empty_map(mapTypeA) or is_empty_map(mapTypeB):
-        # any time one side or the other side is an empty map, we
-        # know we're okay because both sides have to be maps.
-        return False;
-
-    indexTypeA = getMapIndexType(mapTypeA)
-    indexTypeB = getMapIndexType(mapTypeB)
-
-    valueTypeA = getMapValueType(mapTypeA)
-    valueTypeB = getMapValueType(mapTypeB)
-
-        
-    if checkTypeMismatch(None,indexTypeA,indexTypeB,typeStack,progText):
-        # there's an error because the indices have to match.
-        return True;
-
-    if (not isMapType(valueTypeA)) or (not isMapType(valueTypeB)):
-        # handles all cases where one or both values are not maps
-        return checkTypeMismatch(None,valueTypeA,valueTypeB,typeStack,progText);
-
-    # both values are maps.  know that we can quit with no error if
-    # one or other is sentinel.
-    if is_empty_map(valueTypeA) or is_empty_map(valueTypeB):
-        return False;
-    
-    # recurse on map types
-    return mapTypeMismatch(valueTypeA,valueTypeB,typeStack,progText);
-
-
-def listTypeMismatch(listTypeA, listTypeB,typeStack,progText):
-    '''
-    @param{type dict} listTypeA, listTypeB: both are known to be list
-    types.
-    
-    @returns{Bool} True if there is a mismatch, False otherwise.
-
-    Note, that for list types it is inadequate to do a pure equality
-    test type signatures (ie listTypeA == listTypeB) to determine if
-    there is or is not a type mismatch.  This is because of the following case:
-
-    List(Element: Number) l = [];
-
-    The lhs has type [Number] and the rhs has type
-    [EMPTY_LIST_SENTINEL].  However, the assignment is okay and should
-    not produce a type mismatch.
-
-    The following however should produce a type mismatch:
-    
-    List(Element: Number) l = [True];
-        
-    '''
-    if is_empty_list(listTypeA) or is_empty_list(listTypeB):
-        # any time one side or the other side is an empty list, we
-        # know we're okay because both sides have to be lists.
-        return False;
-
-    elementTypeA = getListValueType(listTypeA)
-    elementTypeB = getListValueType(listTypeB)
-
-    if (not isListType(elementTypeA)) or (not isListType(elementTypeB)):
-        # handles all cases where one or both are not lists
-        return checkTypeMismatch(None,elementTypeA,elementTypeB,typeStack,progText);
-
-    # both elements are list types.  know that we can quit if one or other is a sentinel.
-    if is_empty_list(elementTypeA) or is_empty_list(elementTypeB):
-        return False;
-    
-    # recurse on list types
-    return listTypeMismatch(elementTypeA,elementTypeB,typeStack,progText);
-
-
 
 def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
     '''
@@ -2534,6 +2553,9 @@ def typeCheckMessageSequencesGlobals(msgSeqSectionNode,progText,typeStack):
     endpoint globals are already on the type stack.  Therefore, call
     this function first (and early).
 
+    Note: cannot have any external arguments into message sequences,
+    so throw error here if do.
+    
     @see comment in addSequenceGlobals for a further discussion.
     '''
     for msgSeqNode in msgSeqSectionNode.children:
@@ -2541,6 +2563,11 @@ def typeCheckMessageSequencesGlobals(msgSeqSectionNode,progText,typeStack):
         typeStack.pushContext();
         for declNode in msgSeqGlobalsNode.children:
             declNode.typeCheck(progText,typeStack,True);
+            if is_external(declNode.type):
+                err_msg = 'Externals may not appear in sequence peered data'
+                errorFunction(
+                    err_msg,[declNode],[declNode.lineNo],progText)
+
         typeStack.popContext();
 
 

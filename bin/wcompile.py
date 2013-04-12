@@ -24,9 +24,15 @@ def resetErrorEncountered(versionNum):
 
 import re
 import json
-from emitters.v3Emit import astEmit
+from emitters.v4Emit.emitter import ast_emit as v4Emit
+
+
 from parser.ast.astBuilderCommon import WaldoParseException;
 from lexer.waldoLex import WaldoLexException
+
+
+def getEmitter(versionNum):
+    return v4Emit
 
 
 
@@ -80,9 +86,9 @@ def genAst(progText,outputErrsTo,versionNum,suppress_warnings):
     progText = stripWindowsLineEndings(progText);
     parser = getParser(suppress_warnings,progText,outputErrsTo,versionNum);
     astNode = parser.parse(progText);
-    if (versionNum == 1):
+    if versionNum == 1:
         pass;
-    elif(versionNum == 2):
+    elif (versionNum == 2) or (versionNum == 4): 
         if (not getErrorEncountered(versionNum)):
             canonicalize.preprocess(astNode,progText);
     else:
@@ -113,7 +119,7 @@ def compileText(progText,outputErrStream,versionNum,suppress_warnings):
         return None;
     
     resetErrorEncountered(versionNum);
-    emitText = astEmit.astEmit(astRootNode);
+    emitText = getEmitter(versionNum).astEmit(astRootNode)
     return emitText; # will be none if encountered an error during
                      # emit.  otherwise, file text.
 
@@ -161,7 +167,7 @@ def lexAndParse(progText,outputErrStream,versionNum,suppress_warnings):
 def handleArgs(
     inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,
     typeCheckArg,emitArg,versionNum,suppress_warnings):
-    
+
     errOutputStream = sys.stderr;
 
     try:
@@ -206,7 +212,7 @@ def handleArgs(
                 errMsg = '\nType error: cancelling code emit\n';
                 print >> errOutputStream, errMsg;
             else:
-                emitText = astEmit.astEmit(astRootNode);
+                emitText = getEmitter(versionNum).astEmit(astRootNode)
                 if (emitText == None):
                     errMsg = '\nBehram error when requesting emission of ';
                     errMsg += 'source code from astHead.py.\n';
@@ -261,18 +267,14 @@ def printUsage():
 
     -e <filename> Emit the generated code to filename.  
 
-    -ne don't emit 
+    -ne No emit: don't emit 
 
     -w Turn parse and lex warnings on.  Otherwise, they are off.
-
-    -v <version number 2> Input file is of version 2.  Default is version 2
 
     single arg (filename) .... try compiling the file to emitted.py
 
     
     ''');
-
-
 
     
 if __name__ == '__main__':
@@ -285,7 +287,7 @@ if __name__ == '__main__':
     emitArg = 'emitted.py'
     typeCheckArg = True
     skipNext = False
-    versionNum = 2
+    versionNum = 4
     suppress_warnings = True
     
     for s in range(0,len(sys.argv)):
@@ -298,7 +300,7 @@ if __name__ == '__main__':
                 inputFilenameArg = sys.argv[s+1];
                 skipNext = True;
             else:
-                #will force printing usage without doing any work.
+                # will force printing usage without doing any work.
                 helpArg = True;
 
         if sys.argv[s] == '-ne':
@@ -306,19 +308,8 @@ if __name__ == '__main__':
 
         if sys.argv[s] == '-w':
             suppress_warnings = False
-            
-        if (sys.argv[s] == '-v'):
-            if (s + 1 < len(sys.argv)):
-                versionNum = int(sys.argv[s+1]);
-                skipNext = True;
-                if (versionNum != 1) and (versionNum != 2):
-                    print('\nI can only handle Waldo versions 1 or 2.\n');
-                    helpArg = True;
-                if versionNum == 1:
-                    print('\nError.  Version 1 is no longer supported.\n');
-                    helpArg = True;
 
-                
+            
         if (sys.argv[s] == '-go'):
             if (s+1 < len(sys.argv)):
                 graphicalOutputArg = parseGraphicalOutputArg(sys.argv[s+1]);

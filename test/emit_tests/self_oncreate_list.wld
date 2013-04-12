@@ -1,0 +1,14 @@
+OnCreateListAppend
+
+
+Endpoint SingleSide;
+
+Sequences{}
+
+SingleSide
+{
+    onCreate(External List(element:Endpoint) end_list)
+    {
+        end_list.append(self);
+    }
+}

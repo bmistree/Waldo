@@ -1,0 +1,169 @@
+CoordinatorMaster
+Endpoint CoordinatorMaster;
+
+Sequences{}
+
+Struct ConnectionListenerInfo
+{
+    TrueFalse valid;
+    Text host;
+    Number port;
+    Text uuid;
+}
+
+
+
+CoordinatorMaster
+{
+    Function(in: Text, Text, Text; returns: TrueFalse) between;
+    Function(returns: Text) rand_uuid;
+    Endpoint math;
+    Number max_finger_list_len;
+    
+    // sorted by uuid
+    List(element: Struct ConnectionListenerInfo) info_list;
+    
+    
+    onCreate(
+        Function(in: Text, Text; returns: Number) between_,
+        Function(returns: Text) rand_uuid_, Endpoint math_,
+        Number max_finger_list_len_)
+    {
+        between = between_;
+        rand_uuid = rand_uuid_;
+        math = math_;
+        max_finger_list_len = max_finger_list_len_;
+    }
+    
+
+    /**
+       @returns
+       
+         {Text} --- UUID.  the UUID of the new node.
+       
+         {List(element: ConnectionListenerInfo)} --- A list of hosts and ports
+         other registered nodes are listening to in the network.  These will be
+         in finger table.  None of these will be invalid.
+
+         {ConnectionListenerInfo} --- Next node.  For assigned uuid, this is the
+         information for the next node that need to communicate with if create a
+         new node with assigned uuid.  (Note: could have valid set to False if
+         not enough nodes in network.  If that's the case, then do not actually
+         try to connect to it.)
+
+         {ConnectionListenerInfo} --- Previous node.  For assigned uuid, this is
+         the information for the previous node that need to communicate with if
+         create a new node with assigned uuid.  (Note: could have valid set to
+         False if not enough nodes in network.  If that's the case, then do not
+         actually try to connect to it.)
+     */
+    Public Function register(Text host, Number port)
+        returns Text, Map(from: Text, to: Struct ConnectionListenerInfo),
+        Struct ConnectionListenerInfo, Struct ConnectionListenerInfo
+    {
+        // initialize return data
+        Text new_uuid = rand_uuid();
+        Map(from: Text, to: Struct ConnectionListenerInfo) finger_table =
+            construct_new_node_finger_table();
+        Struct ConnectionListenerInfo prev;
+        prev.valid = False;
+        Struct ConnectionListenerInfo next;
+        next.valid = False;
+
+        // initialize element to add to info_list for new node
+        Struct ConnectionListenerInfo new_node_info =
+            initialize_connection_listener_info(host,port,new_uuid);
+        
+
+        // must do two things:
+        //   1) Find prev/next nodes for new connection
+        //   2) Insert the new connection info into info_list
+        TrueFalse inserted = False;
+        for (Number i in range(0, len(info_list)))
+        {
+            if (i + 1 >= len(info_list))
+            {
+                // we have gotten to the end of the list without finding the
+                // pair of nodes that the new id is between.  
+                break;
+            }
+            
+            Struct ConnectionListenerInfo cli = info_list[i];                
+            Struct ConnectionListenerInfo cli_next = info_list[i+1];
+            
+            if (between(new_uuid,cli.uuid,cli_next.uuid))
+            {
+                prev = cli;
+                next = cli_next;
+                inserted = True;
+                info_list.insert(i+1,new_node_info);
+                break;
+            }
+        }
+
+        if (not inserted)
+        {
+            // means one of two things:
+            //   1: There are either 0 or 1 nodes in the list
+            //   2: There are 2 or more nodes, but the new node's uuid is
+            //   "between" the last node's and the first node's uuid
+            if (len(info_list) == 1)
+            {
+                next = info_list[0];
+                prev = info_list[0];
+            }
+            elseIf (len(info_list) >= 2)
+            {
+                next = info_list[0];
+                prev = info_list[len(info_list) -1];
+            }
+            info_list.append(new_node_info);
+        }
+
+        return new_uuid,finger_table,prev,next;
+    }
+
+
+    Private Function initialize_connection_listener_info(
+        Text host, Number port, Text new_uuid)
+        returns Struct ConnectionListenerInfo
+    {
+        Struct ConnectionListenerInfo new_node_info;
+        new_node_info.host = host;
+        new_node_info.port = port;
+        new_node_info.uuid = new_uuid;
+        new_node_info.valid = True;
+
+        return new_node_info;
+    }
+
+    /**
+       @returns {Map(from: Text, to: Struct ConnectionListenerInfo)}
+     */
+    Private Function construct_new_node_finger_table()
+        returns Map(from: Text, to: Struct ConnectionListenerInfo)
+    {
+        Map(from: Text, to: Struct ConnectionListenerInfo) finger_map;
+
+        if (len(info_list) < max_finger_list_len)
+        {
+            // not enough elements in list: 
+            for (Number i in range(0,len(info_list)))
+            {
+                Struct ConnectionListenerInfo cli = info_list[i];
+                finger_map[cli.uuid] = cli;
+            }
+        }
+        else
+        {
+            while (len(finger_map) != max_finger_list_len)
+            {
+                Number rand_index = math.rand_int_func(0,len(info_list)-1);
+                Struct ConnectionListenerInfo cli2 = info_list[rand_index];
+                finger_map[cli2.uuid] = cli2;
+            }
+        }
+
+        return finger_map;
+    }
+}

@@ -1,0 +1,50 @@
+TwoSided
+
+
+Endpoint Modifier;
+Endpoint DataReader;
+
+
+Sequences{}
+
+Peered
+{
+    Nothing controls Number peered_num = 22;
+    Map(from: Text, to: Map(from: Text, to: TrueFalse)) peered_nested_map;
+}
+
+
+DataReader
+{
+    Public Function read_peered_num() returns Number
+    {
+        return peered_num;
+    }
+
+    Public Function read_inner_map(Text index)
+        returns Map(from: Text, to: TrueFalse)
+    {
+        return peered_nested_map[index];
+    }
+    
+}
+
+Modifier
+{
+    Public Function increment_peered_num() returns Number
+    {
+        peered_num += 1;
+        return peered_num;
+    }
+    Public Function read_peered_num() returns Number
+    {
+        return peered_num;
+    }
+
+    Public Function add_inner_map(
+        Text index, Map(from: Text, to: Map(from: Text, to: TrueFalse)) inner_map)
+    {
+        peered_nested_map[index] = inner_map;
+    }
+    
+}

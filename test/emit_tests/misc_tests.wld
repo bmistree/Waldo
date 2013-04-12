@@ -1,0 +1,136 @@
+MiscTests
+
+Endpoint SingleSide;
+
+Sequences{}
+
+Struct TextStruct
+{
+    Text fielda;
+    Text fieldb;
+}
+
+SingleSide
+{
+
+    // value type tests
+    Public Function to_text_number(Number to_call_to_text_on)
+        returns Text
+    {
+        return toText(to_call_to_text_on);
+    }
+
+    Public Function to_text_text(Text to_call_to_text_on)
+        returns Text
+    {
+        return toText(to_call_to_text_on);
+    }
+
+    Public Function to_text_true_false(TrueFalse to_call_to_text_on)
+        returns Text
+    {
+        return toText(to_call_to_text_on);
+    }
+
+    Public Function nested_map(Text outer_index,Number inner_val_and_index) returns Number
+    {
+        Map(from: Text, to: Map(from: Number, to: Number)) outer_map;
+        Map(from: Number, to: Number) inner_map;
+        inner_map[inner_val_and_index] = inner_val_and_index;
+        
+        outer_map[outer_index] = inner_map;
+        Number to_return;
+        to_return = outer_map[outer_index][inner_val_and_index];
+        return to_return;
+    }
+
+    
+    Public Function nested_list_append()
+    {
+        List(element: List(element: Number)) double_list;
+        List(element: Number) l;
+        l.append(13);
+        double_list.append(l);
+        double_list[0][0];
+    }
+
+    Public Function test_list_remove(
+        List(element: Text) to_remove_from,
+        Number index_to_remove)
+        returns List(element:Text)
+    {
+        to_remove_from.remove(index_to_remove);
+        return to_remove_from;
+    }
+
+    Public Function test_list_insert(
+        List(element: TrueFalse) to_insert_into,
+        Number index_to_insert_into,
+        TrueFalse what_to_insert)
+        returns List(element: TrueFalse)
+    {
+        to_insert_into.insert(index_to_insert_into,what_to_insert);
+        return to_insert_into;
+    }
+
+    Public Function test_return_nested_map(
+        Map(from: Text, to: Map( from: Text, to: Text)) in_nested_map)
+        returns Map(from: Text, to: Map( from: Text, to: Text))
+    {
+        return in_nested_map;
+    }
+
+
+    Public Function test_return_user_struct(Text fielda, Text fieldb)
+        returns Struct TextStruct
+    {
+        Struct TextStruct ts;
+        ts.fielda = fielda;
+        ts.fieldb = fieldb;
+        return ts;
+    }
+
+    Public Function test_return_user_struct_in_map(
+        Text map_index, Text user_struct_fielda, Text user_struct_fieldb)
+        returns Map(from: Text, to: Struct TextStruct)
+    {
+        Map(from: Text, to: Struct TextStruct) map_;
+
+        map_[map_index] = test_return_user_struct(
+            user_struct_fielda, user_struct_fieldb);
+        
+        return map_;    
+    }
+    
+    
+    // // reference type tests
+    // Public Function to_text_map(
+    //     Map(from: Number, to: Text) to_call_to_text_on)
+    //     returns Text
+    // {
+    //     return toText(to_call_to_text_on);
+    // }
+    
+    // Public Function to_text_list(
+    //     List(element: Number) to_call_to_text_on)
+    //     returns Text
+    // {
+    //     return toText(to_call_to_text_on);
+    // }
+
+    // // nested reference types
+    // Public Function to_text_nested_map(
+    //     Map(from: Number, to: Map(from: Text, to: Number)) to_call_to_text_on)
+    //     returns Text
+    // {
+    //     return toText(to_call_to_text_on);
+    // }
+    
+    // Public Function to_text_nested_list(
+    //     List(element: Map(from: Text, to: List(element: Number))) to_call_to_text_on)
+    //     returns Text
+    // {
+    //     return toText(to_call_to_text_on);
+    // }
+    
+}

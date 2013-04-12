@@ -1,0 +1,118 @@
+StructFromEndpoint
+
+Symmetric SideA, SideB;
+
+Sequences{
+  Test: SideA.start_test -> SideB.recv_test;
+  InputStruct: SideA.start_input_struct -> SideB.recv_input_struct;
+  MapOfStructsTest: SideA.start_map_of_structs -> SideB.recv_map_of_structs;
+}
+
+// Want to ensure that can get a struct from an endpoint call and that can
+// serialize and deserialize a struct in a message.
+
+Struct SomeStruct
+{
+    Number a;
+}
+
+Sequence Test(Number num_to_load) returns Struct SomeStruct to_return
+{
+    SideA.start_test
+    {}
+    SideB.recv_test
+    {
+        to_return = get_struct(num_to_load);
+    }
+}
+
+Sequence InputStruct(Struct SomeStruct input_struct, Number inc1, Number inc2)
+    returns Struct SomeStruct to_return
+{
+  SideA.start_input_struct
+  {
+      input_struct.a += inc1;
+  }
+  SideB.recv_input_struct
+  {
+      input_struct.a += inc2;
+      to_return = input_struct;
+  }
+}
+
+Sequence MapOfStructsTest(
+    Map(from: Text, to: Struct SomeStruct) mapper, Text index_to_insert)
+    returns Map(from: Text, to: Struct SomeStruct) returner
+{
+    SideA.start_map_of_structs
+    {
+        // using weird name here makes struct easier to identify in
+        // compiled code
+        Struct SomeStruct strangely_named_struct;
+        mapper[index_to_insert] = strangely_named_struct;
+    }
+    SideB.recv_map_of_structs
+    {
+        returner = mapper;
+    }
+}
+
+
+
+SideA
+{
+    Map(from: Text, to: Struct SomeStruct) struct_map;
+    
+    Public Function input_struct_sequence(Number inc1, Number inc2) returns Number
+    {
+        Struct SomeStruct ss;
+        ss = start_input_struct(ss,inc1,inc2);
+        return ss.a;
+    }
+    
+    Public Function get_struct(Number init_val) returns Struct SomeStruct
+    {
+        Struct SomeStruct s_struct;
+        s_struct.a = init_val;
+        return s_struct;
+    }
+    
+    Public Function get_struct_from_other_side(
+        Endpoint other_side,Number init_val) returns Number
+    {
+        Struct SomeStruct weirdly_named = other_side.get_struct(init_val);
+        return weirdly_named.a;
+    }
+    
+
+    Public Function get_partner_struct(Number init_val) returns Number
+    {
+        Struct SomeStruct s_struct = start_test(init_val);
+        return s_struct.a;
+    }
+
+    Public Function test_struct_map(Text index, Number num) returns Number
+    {
+        Struct SomeStruct ss = start_test(num + 23);
+        struct_map[index] = ss;
+        0 + 4;
+        struct_map[index].a = num;
+        1 + 2;
+        ss = struct_map[index];
+        3+6;
+        return ss.a;
+        // return struct_map[index].a;
+    }
+
+    Public Function test_sequence_struct_map()
+    {
+        Struct SomeStruct ss;
+        ss.a = 390;
+        Map(from: Text, to: Struct SomeStruct) mapper;
+        mapper['hi'] = ss;
+        
+        start_map_of_structs(mapper,'wow');
+    }
+    
+}
+

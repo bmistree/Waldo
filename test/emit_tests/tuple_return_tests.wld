@@ -1,0 +1,56 @@
+TupleReturnTests
+
+Endpoint SingleSide;
+
+
+Sequences{}
+
+SingleSide
+{
+    Number num = 0;
+
+    Public Function return_static_nums() returns Number,Number,Number
+    {
+        return 1,2,3;
+    }
+
+    Public Function return_func_call_nums() returns Number,Number,Number
+    {
+        return return_static_nums();
+    }
+
+    Public Function return_variable_texts() returns Text, Text
+    {
+        Text a = 'a';
+        Text b = 'b';
+        return a,b;
+    }
+
+    Public Function return_func_call_variable_texts() returns Text,Text
+    {
+        return return_variable_texts();
+    }
+
+    Public Function return_extended_texts () returns Text,Text,Text
+    {
+        return return_variable_texts(),'c';
+    }
+
+    Public Function return_tuple_endpoint_global () returns Number, Number
+    {
+        num += 1;
+        return num, num;
+    }
+
+    Public Function wrapped_tuple() returns Number, Number, Number
+    {
+        // Had been generating these types of returns in such a way
+        // that would be calling return_tuple_endpoint_global once for
+        // each argument returning.  Hadn't noticed that this was a
+        // problem until started returning functions that mutated
+        // state.  Mutations would happen multiple times, instead of
+        // just once, as required.  This is a test case for that.
+        return return_tuple_endpoint_global(), 0;
+    }
+    
+}

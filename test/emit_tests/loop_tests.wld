@@ -1,0 +1,151 @@
+LoopTests
+
+Endpoint SingleSide;
+
+Sequences{}
+
+SingleSide
+{
+    // tests range
+    Public Function range_test(Number base, Number limit, Number increment)
+        returns List(element: Number)
+    {
+        return range(base,limit,increment);
+    }
+
+    Public Function no_increment_range_test(Number base,Number limit)
+        returns List(element: Number)
+    {
+        return range(base, limit);
+    }
+
+    // basic while tests
+    Public Function test_while_less_than(
+        Number lhs, Number rhs) returns Number
+    {
+        Number times_in_loop = 0;
+
+        while (lhs < rhs)
+        {
+            times_in_loop += 1;
+            lhs += 1;
+        }
+
+        return times_in_loop;
+    }
+
+    Public Function test_empty_while()
+    {
+        while (False)
+        {}
+    }
+
+
+    // basic for tests
+    Public Function range_for_test(Number num_iterations)
+        returns Number
+    {
+        Number counter = 0;
+        for (Number i in range(0,num_iterations))
+        {
+            counter += 1;
+        }
+
+        return counter;
+    }
+
+    Public Function empty_for_test()
+    {
+        for (Number i in range(0,2))
+        {}
+    }
+
+    Public Function list_iter_for_test(List(element:Text) list_)
+        returns List(element:Text)
+    {
+        List(element: Text) to_return;
+        for (Text t in list_)
+            to_return.append(t);
+        
+        return to_return;
+    }
+
+    Public Function map_iter_for_test(Map(from: Text, to:Number) map_)
+        returns List(element: Number)
+    {
+        // takes all the values from the map and returns them as an
+        // array.
+        List(element:Number) to_return;
+        
+        Text t;
+        for (t in map_)
+            to_return.append(map_[t]);
+
+        return to_return;
+    }
+
+
+    Public Function nested_list_iter_test(
+        List(element: List(element: Number)) nested_list)
+        returns Number
+    {
+        // Returns the sum of every number in the nested lists
+        Number return_val = 0;
+        
+        for (List(element: Number) it in nested_list)
+        {
+            for (Number i in it)
+                return_val += i;
+        }
+        return return_val;
+    }
+
+
+    Public Function nested_map_iter_test(
+        Map(from: Text, to: Map(from: Text, to: Number)) map_)
+        returns Number
+    {
+        Number counter = 0;
+        for (Text t1 in map_)
+        {
+            for (Text t2 in map_[t1])
+            {
+                Number map_elem = map_[t1][t2];
+                counter += map_elem;
+            }
+        }
+        return counter;
+    }
+
+
+    Public Function test_break() returns TrueFalse
+    {
+        for (Number i in range(0,10))
+        {
+            if (i == 5)
+                break;
+        }
+
+        return i==5;        
+    }
+
+    Public Function test_continue() returns TrueFalse
+    {
+        // just sums up every odd number between 0 and 10.
+        Number counter = 0;
+        for (Number i in range(0,10))
+        {
+            if (i in range(0,10,2))
+                continue;
+            counter += i;
+        }
+
+        Number expected_num = 0;
+        for (i in range(1,10,2))
+            expected_num += i;
+        
+        return expected_num == counter;
+    }
+
+    
+}

@@ -1,0 +1,67 @@
+SetGetVal
+
+Endpoint SingleSide;
+
+
+Sequences{}
+
+Struct NumberStruct
+{
+    Number num;
+}
+
+Struct NestedStruct
+{
+    Number num;
+    
+    List (element: Struct NumberStruct) additional_structs;
+}
+
+SingleSide
+{
+    Struct NumberStruct num_struct;
+    Struct NestedStruct nested_struct;
+
+    
+    Public Function assign_num_to_number_struct(Number new_num)
+    {
+        num_struct.num = new_num;
+    }
+
+    Public Function read_num_from_number_struct() returns Number
+    {
+        return num_struct.num;
+    }
+
+    Public Function assign_num_to_nested_struct(
+        Number outer_num, Number inner_num)
+    {
+        Struct NestedStruct inner_struct;
+        
+        nested_struct.num = outer_num;
+        nested_struct.additional_structs.append(inner_struct);
+        nested_struct.additional_structs[0].num = inner_num;
+    }
+
+    Public Function get_outer_and_inner_nested_nums()
+        returns Number, Number
+    {
+        return nested_struct.num, nested_struct.additional_structs[0].num;
+    }
+
+
+    // testing passing user struct in as argument to method
+    Public Function get_nested_struct_num(Struct NestedStruct ns)
+        returns Number
+    {
+        return ns.num;
+    }
+
+    Public Function get_endpoint_nested_struct_num(Number new_num)
+        returns Number
+        
+    {
+        nested_struct.num = new_num;
+        return get_nested_struct_num(nested_struct);
+    }
+}

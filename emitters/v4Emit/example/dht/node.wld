@@ -1,0 +1,178 @@
+Node
+Endpoint Node;
+
+/**
+ * A single node in the dht.  Contains data holding as part of dht + a finger
+ * table of connections to other endpoints.  It can use its finger table to look
+ * up keys that it's not responsible for.
+ */
+Sequences{}
+
+Struct NeighborNode
+{
+    TrueFalse valid;
+    Text neighbor_uuid;
+    Endpoint neighbor;
+}
+
+
+Node
+{
+    Text uuid;
+    Function(in: Text, Text; returns: Number) distance_func;
+    Function(in: Text; returns: Text) hash_func;
+    Function(in: Text, Text, Text; returns: TrueFalse) between;    
+    Function(in: Text; returns: Nothing) debug_print;
+
+    
+    // UUID of node to connection object
+    Map(from: Text, to: Endpoint) finger_table;
+    Struct NeighborNode next_neighbor;
+    Struct NeighborNode previous_neighbor;
+
+    
+    // First index is the hashed uuid of the key.  Because many keys can hash to
+    // the same index, we use the key itself as the index of the internal map.
+    // The value of the internal map is the value stored for the key.
+    Map(from: Text,
+        to: Map(from: Text, to: Text))  local_data_store;
+    
+    onCreate(
+        Text uuid_,
+        Function(in: Text, Text; returns: Number) distance_func_,
+        Function(in: Text; returns: Text) hash_func_,
+        Function(in: Text, Text, Text; returns: TrueFalse) between_,
+        Function(in: Text; returns: Nothing) debug_print_)
+    {
+        uuid = uuid_;
+        distance_func = distance_func_;
+        hash_func = hash_func_;
+        between = between_;
+        debug_print = debug_print_;
+    }
+
+    Public Function add_data(Text data_key,Text data)
+    {
+        Text hash_of_key = hash_func(data_key);
+        
+        Text closest_node_id = find_closest(hash_of_key);
+        if (closest_node_id == uuid)
+        {
+            if (not (hash_of_key in local_data_store))
+                local_data_store[hash_of_key] = {};
+
+            // FIXME: bug with type checking this expression
+            // local_data_store[hash_of_key][data_key] = data;
+            Map(from: Text, to: Text) to_insert_into = local_data_store[hash_of_key];
+            to_insert_into[data_key] = data;
+        }
+        else
+            finger_table[closest_node_id].forward_add_data(data_key,data);
+
+    }
+    
+    Public Function add_connection(Text node_id, Endpoint connection_endpoint)
+    {
+        finger_table[node_id] = connection_endpoint;
+        
+        // if node was not already connected, overwrite next and previous
+        if (not next_neighbor.valid)
+            set_neighbor(next_neighbor,connection_endpoint,node_id);
+        if (not previous_neighbor.valid)
+            set_neighbor(previous_neighbor,connection_endpoint,node_id);
+
+        // if the new id is closer than next or previous, than insert them.
+        if (between(node_id, uuid, next_neighbor.neighbor_uuid))
+            set_neighbor(next_neighbor,connection_endpoint,node_id);
+        if (between(node_id, uuid, previous_neighbor.neighbor_uuid))
+            set_neighbor(previous_neighbor,connection_endpoint,node_id);
+    }
+
+    
+    Public Function remove_connection(Text node_id)
+    {
+        finger_table.remove(node_id);
+    }
+
+
+    Public Function get_uuid() returns Text
+    {
+        return uuid;
+    }
+    
+    /**
+       @returns {3-tuple} (a,b,c)
+       
+          a {Text} --- The actual data associated with the id if the id existed
+          in the table.
+
+          b {Number} --- The number of network hops required to answer the
+          query.
+
+          c {TrueFalse} --- Whether the id existed in the dht.  True if it did,
+          False if it did not.
+          
+     */
+    Public Function get_data(Text data_key) returns Text, Number, TrueFalse
+    {
+        Text value = '';
+        Number num_hops = 0;        
+        TrueFalse found = False;
+
+        Text hash_of_key = hash_func(data_key);
+        
+        Text closest_id = find_closest(hash_of_key);
+        if (closest_id == uuid)
+        {
+            if ((hash_of_key in local_data_store) and
+                (data_key in local_data_store[hash_of_key]))
+            {
+                value = local_data_store[hash_of_key][data_key];
+                found = True;
+            }
+            
+            return value, num_hops, found;
+        }
+
+        // Data not contained on this node.  Must query more distant node for
+        // data.
+        value, num_hops, found = finger_table[closest_id].forward_get_data(data_key);
+        return value, num_hops+1, found;
+    }
+
+    /**
+       Fill in internal fields of neighbor node.
+     */
+    Private Function set_neighbor(Struct NeighborNode neighbor_to_set, Endpoint new_neighbor, Text neighbor_uuid)
+    {
+        neighbor_to_set.valid = True;
+        neighbor_to_set.neighbor = new_neighbor;
+        neighbor_to_set.neighbor_uuid = neighbor_uuid;
+    }
+            
+    /**
+       @returns {Text} --- The uuid of the connection with the closest
+       connection to the data.
+     */
+    Private Function find_closest(Text hash_of_key) returns Text
+    {
+        Text closest_id = uuid;
+        Number closest_distance = distance_func(hash_of_key,uuid);
+        
+        // Check if any other endpoints are closer.
+        for (Text uuid_ in finger_table)
+        {
+            Number dist_to_element = distance_func(hash_of_key,uuid_);
+            
+            if (closest_distance > dist_to_element)
+            {
+                closest_distance = dist_to_element;
+                closest_id = uuid_;
+            }
+        }
+
+        return closest_id;
+    }
+
+}
+

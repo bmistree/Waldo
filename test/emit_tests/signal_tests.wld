@@ -1,0 +1,47 @@
+SignalTest
+
+Endpoint SideA;
+Endpoint SideB;
+
+
+Sequences{
+  signal_test_seq: SideA.a -> SideB.b;
+}
+
+Sequence signal_test_seq(Number num)
+{
+    
+    SideA.a
+    {
+        signal (sig_func,num);
+        num +=1;
+    }
+    SideB.b
+    {
+        signal(sig_func,num);
+    }
+}
+
+SideA
+{
+    Function (in: Number; returns: Nothing) sig_func;
+    
+    onCreate(Function (in: Number; returns: Nothing) sig_func_in)
+    {
+        sig_func = sig_func_in;
+    }
+    Public Function run_signal(Number input_num)
+    {
+        a(input_num);
+    }
+}
+
+SideB
+{
+    Function (in: Number; returns: Nothing) sig_func;
+    
+    onCreate(Function (in: Number; returns: Nothing) sig_func_in)
+    {
+        sig_func = sig_func_in;
+    }
+}

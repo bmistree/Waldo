@@ -19,7 +19,7 @@ supports:
 
 JSON_TYPE_FIELD = 'Type';
 JSON_FUNC_RETURNS_FIELD = 'Returns';
-JSON_FUNC_IN_FIELD = 'In';
+JSON_FUNC_IN_FIELD = 'In'
 
 JSON_LIST_ELEMENT_TYPE_FIELD = 'ElementType';
 
@@ -31,6 +31,7 @@ JSON_EXTERNAL_TYPE_FIELD = 'external'
 
 JSON_STRUCT_FIELDS_DICT = 'StructFields'
 JSON_STRUCT_FIELDS_NAME = 'StructName'
+JSON_STRUCT_FIELD_IS_SELF = 'is_self'
 
 # There is no real wildcard type in Waldo.  This is just used to make
 # adding features easier.  For instance, with calling functions on
@@ -38,6 +39,8 @@ JSON_STRUCT_FIELDS_NAME = 'StructName'
 # we're using, we can just assign into an endpoint function.
 WILDCARD_TYPE = 'Wildcard'
 
+
+# FIXME: require an external flag
 
 def create_struct_type(struct_name,struct_field_tuples):
     '''
@@ -51,7 +54,8 @@ def create_struct_type(struct_name,struct_field_tuples):
     struct_type = {
         JSON_TYPE_FIELD: TYPE_STRUCT,
         JSON_STRUCT_FIELDS_DICT: {},
-        JSON_STRUCT_FIELDS_NAME: struct_name
+        JSON_STRUCT_FIELDS_NAME: struct_name,
+        JSON_STRUCT_FIELD_IS_SELF: False,
         }
 
     for single_field in struct_field_tuples:
@@ -62,6 +66,43 @@ def create_struct_type(struct_name,struct_field_tuples):
         struct_type[JSON_STRUCT_FIELDS_DICT][field_name] = field_type
 
     return struct_type
+
+def create_self_struct_type(struct_name):
+    struct_type = {
+        JSON_TYPE_FIELD: TYPE_STRUCT,
+        JSON_STRUCT_FIELDS_DICT: {},
+        JSON_STRUCT_FIELDS_NAME: struct_name,
+        JSON_STRUCT_FIELD_IS_SELF: True,
+        }
+    return struct_type
+
+def is_self_struct_type(type_dict):
+    if is_struct(type_dict):
+        return type_dict[JSON_STRUCT_FIELD_IS_SELF]
+    return False
+
+def type_check_assert(err_msg):
+    print '\n'
+    print 'Type check error: ' + err_msg
+    print '\n'
+    assert False
+
+def set_external(type_dict,external):
+    type_dict[JSON_EXTERNAL_TYPE_FIELD] = external
+    
+def get_struct_name_from_struct_type(struct_type_dict):
+    '''
+    @param {type dict} struct_type_dict --- Must be the type dict for
+    a struct type.
+    '''
+    #### DEBUG
+    if not is_self_struct_type(struct_type_dict):
+        type_check_assert(
+            'Passed in a non-struct type in ' +
+            'get_struct_name_from_struct_type')
+    #### END DEBUG
+
+    return struct_type_dict[JSON_STRUCT_FIELDS_NAME]
 
 
 def is_wildcard_type(type_dict):
@@ -104,6 +145,33 @@ def get_struct_field_type(field_name,struct_type_dict):
     struct_fields_dict = struct_type_dict[JSON_STRUCT_FIELDS_DICT]
     return struct_fields_dict.get(field_name,None)
 
+def get_struct_fields_dict(struct_type_dict):
+    return struct_type_dict[JSON_STRUCT_FIELDS_DICT]
+
+
+def type_dict_scrub_externals(dict_type):
+    '''
+    Returns a map without any external fields in it.
+    '''
+    _assert_if_not_dict(dict_type,'is_external')
+
+    to_return = {}
+    to_add = dict_type[JSON_TYPE_FIELD]
+    if isinstance(to_add,dict):
+        to_add = type_dict_scrub_externals(to_add)
+        
+    to_return[JSON_TYPE_FIELD] = to_add
+
+    return to_return
+    
+
+def set_type_external(node,is_ext):
+    node.type[JSON_EXTERNAL_TYPE_FIELD] = is_ext
+        
+
+def is_external(dict_type):
+    _assert_if_not_dict(dict_type,'is_external')
+    return dict_type[JSON_EXTERNAL_TYPE_FIELD]
 
 def type_dict_scrub_externals(dict_type):
     '''
@@ -337,10 +405,11 @@ def isFunctionType(typeLabel):
     return (is_basic_function_type(typeLabel) or
             is_endpoint_function_type(typeLabel))
 
-def is_basic_function_type(typeLabel):
-    return typeLabel[JSON_TYPE_FIELD] == TYPE_FUNCTION
-def is_endpoint_function_type(typeLabel):
-    return typeLabel[JSON_TYPE_FIELD] == TYPE_ENDPOINT_FUNCTION_CALL
+def is_basic_function_type(type_dict):
+    return type_dict[JSON_TYPE_FIELD] == TYPE_FUNCTION
+
+def is_endpoint_function_type(type_dict):
+    return type_dict[JSON_TYPE_FIELD] == TYPE_ENDPOINT_FUNCTION_CALL
 
 def isListType(typeLabel):
     '''
@@ -532,35 +601,39 @@ def moreSpecificListMapType(typeA,typeB):
     # must rebuild surrounding list type signature to match typeA or
     # typeB.
     if twoMaps:
-        to_return = buildMapTypeSignatureFromTypeName(indexTypeA,recursionResult);
+        to_return = buildMapTypeSignatureFromTypeName(
+            indexTypeA,recursionResult,False)
     else:
-        to_return = buildListTypeSignatureFromTypeName(recursionResult);
+        to_return = buildListTypeSignatureFromTypeName(
+            recursionResult,False)
         
     return to_return
 
 
-def buildListTypeSignatureFromTypeName(node_type):
+def buildListTypeSignatureFromTypeName(node_type,is_external):
     '''
     @param {type dict} node_type....or EMPTY_LIST/EMPTY_MAP
     '''
     return {
         JSON_TYPE_FIELD: TYPE_LIST,
-        JSON_LIST_ELEMENT_TYPE_FIELD: node_type
+        JSON_LIST_ELEMENT_TYPE_FIELD: node_type,
+        JSON_EXTERNAL_TYPE_FIELD: is_external,
         };
 
+
 def create_empty_list_type():
-    return buildListTypeSignatureFromTypeName(EMPTY_LIST)
+    return buildListTypeSignatureFromTypeName(EMPTY_LIST,False)
 
 
-def buildListTypeSignature(node, progText,typeStack):
+def buildListTypeSignature(node,progText,typeStack,is_external):
     elementTypeNode = node.children[0];
     elementTypeNode.typeCheck(progText,typeStack);
     elementType = elementTypeNode.type;
-    return buildListTypeSignatureFromTypeName(elementType);
+    return buildListTypeSignatureFromTypeName(elementType,is_external);
 
 
 
-def buildMapTypeSignatureFromTypeNames(fromType,toType):
+def buildMapTypeSignatureFromTypeNames(fromType,toType,is_external):
     '''
     @param {type dict} fromType
     @param {type dict} toType
@@ -568,7 +641,8 @@ def buildMapTypeSignatureFromTypeNames(fromType,toType):
     return {
         JSON_TYPE_FIELD: TYPE_MAP,
         JSON_MAP_FROM_TYPE_FIELD: fromType,
-        JSON_MAP_TO_TYPE_FIELD: toType
+        JSON_MAP_TO_TYPE_FIELD: toType,
+        JSON_EXTERNAL_TYPE_FIELD: is_external,
         };
 
 def getMapIndexType(node_type):
@@ -593,7 +667,7 @@ def getMapIndexType(node_type):
 
 
 
-def buildMapTypeSignature(node,progText,typeStack):
+def buildMapTypeSignature(node,progText,typeStack,is_ext):
     '''
     @returns 3-tuple: (a,b,c)
 
@@ -623,7 +697,7 @@ def buildMapTypeSignature(node,progText,typeStack):
         errNodeList = [node,fromTypeNode];
 
     toType = toTypeNode.type
-    return (buildMapTypeSignatureFromTypeNames(fromType,toType),
+    return (buildMapTypeSignatureFromTypeNames(fromType,toType,is_ext),
             errMsg,
             errNodeList)
 
@@ -635,10 +709,32 @@ def build_endpoint_func_type_signature(node,prog_text,type_stack):
     to_return[JSON_TYPE_FIELD] = TYPE_ENDPOINT_FUNCTION_CALL
     to_return[JSON_FUNC_IN_FIELD] = []
     to_return[JSON_FUNC_RETURNS_FIELD] =  create_wildcard_type()
-
+    to_return[JSON_EXTERNAL_TYPE_FIELD ] = False
+        
     return to_return
 
-def buildFuncTypeSignature(node,progText,typeStack):
+def get_list_of_input_argument_type_dicts_for_func_object(type_dict):
+    '''
+    @param {type dict} type_dict --- The type dict of a function
+    object
+
+    @returns {array} --- Each element is the type dict of an argument
+    to the function (sorted by position of argument)
+
+    For example, for function:
+
+    Function (In: External Number, Text; Out: Nothing)
+    
+    should return:
+
+    [ <type dict for External Number>,
+      <type dict for Text>]
+    
+    '''
+    return type_dict[JSON_FUNC_IN_FIELD]
+
+
+def buildFuncTypeSignature(node,progText,typeStack,is_external):
     '''
     @see createJsonType of FuncMatchObject in
     astTypeCheckStack.py....needs to be consistent between both.
@@ -673,16 +769,15 @@ def buildFuncTypeSignature(node,progText,typeStack):
         # means that we have a node of type typelist.  each of its
         # children should be an independent type.
         for typeNode in inArgNode.children:
-            
             typeNode.typeCheck(progText,typeStack);
+            # toAppend = {
+            #     JSON_TYPE_FIELD: typeNode.type
+            #     };
+            # inputTypes.append(toAppend);
+            inputTypes.append(typeNode.type)
 
-            toAppend = {
-                JSON_TYPE_FIELD: typeNode.type
-                };
-            inputTypes.append(toAppend);
-            
     returner[JSON_FUNC_IN_FIELD] = inputTypes;
-
+    
     ##### HANDLE OUTPUT ARGS #####
     outArgNode = node.children[1];
     outArgNode.typeCheck(progText,typeStack);
@@ -690,6 +785,166 @@ def buildFuncTypeSignature(node,progText,typeStack):
     returner[JSON_FUNC_RETURNS_FIELD] = {
         JSON_TYPE_FIELD: outArgNode.type
         };
-        
+
+    #### HANDLE WHETHER EXTERNAL OR NOT
+    returner[JSON_EXTERNAL_TYPE_FIELD ] = is_external
+    
     return returner;
 
+            
+def checkTypeMismatch(rhs,lhsType,rhsType,typeStack,progText):
+    '''
+    @returns {Bool} True if should throw type mismatch error.  False
+    otherwise.
+
+    Reasons not to indicate type mismatch error
+    
+       * lhsType and rhsType are the same
+
+       * unknown list and map types.  For instance, if rhsType was
+         produced from [], and lhsType was List(element: Number),
+         would not produce error.
+
+       * A function call has the following type dict structure:
+           {
+              Type: [
+                      {
+                          Type: Number
+                      },
+                      {
+                          Type: Text
+                      },
+                      ...
+                    ]
+           }
+         however, we want to be able to make calls, such as
+         
+         if (func_call())
+             <do something>
+
+         Therefore, if we are type checking with a checkTypeMismatch
+         statement, and the function call returns just a single
+         element in its tuple, we should type check *that* element.
+         Not entire list of elements.
+
+    Note: no type mismatch if rhsType is a wildcard.
+    '''
+    
+    if is_wildcard_type(rhsType):
+        # Potential FIXME: we're using wildcard type when type
+        # checking for development.  May want formal import mechanisms
+        # and static type checking instead.
+        return False
+
+    lhsType,more_in_tuple = get_single_type_if_func_call_reg_type(lhsType)
+    if more_in_tuple:
+        return True
+        
+    rhsType,more_in_tuple = get_single_type_if_func_call_reg_type(rhsType)
+    if more_in_tuple:
+        return True
+
+    errorTrue = False;
+
+    # scrub externals because there are some operations where it does
+    # not matter whether operating on externals and non-externals.
+    # Eg., a_ext + a
+    
+    if type_dict_scrub_externals(lhsType) != type_dict_scrub_externals(rhsType):
+        errorTrue = True;
+        # message literals have indeterminate types until
+        # they're assigned to an identifier that expects them
+        # to have an OutgoingMessage or IncomingMessage type.
+        # Here is where we check that.
+
+        # Must use special checks to type check lists.  For
+        # instance, if one side presents empty_list and other is
+        # [Number], should not produce typecheck error.
+
+        # determine if lists are involved
+        if isListType(lhsType) and isListType(rhsType):
+            errorTrue = listTypeMismatch(lhsType,rhsType,typeStack,progText);
+
+        elif isMapType(lhsType) and isMapType(rhsType):
+            errorTrue = mapTypeMismatch(lhsType,rhsType,typeStack,progText);
+        else:
+            # both sides were not lists and there types did not
+            # match.  will throw an error.
+            errorTrue = True;
+             
+    return errorTrue;
+
+
+def mapTypeMismatch(mapTypeA, mapTypeB,typeStack,progText):
+    '''
+    @see listTypeMismatch
+    '''
+    if is_empty_map(mapTypeA) or is_empty_map(mapTypeB):
+        # any time one side or the other side is an empty map, we
+        # know we're okay because both sides have to be maps.
+        return False;
+
+    indexTypeA = getMapIndexType(mapTypeA)
+    indexTypeB = getMapIndexType(mapTypeB)
+
+    valueTypeA = getMapValueType(mapTypeA)
+    valueTypeB = getMapValueType(mapTypeB)
+
+        
+    if checkTypeMismatch(None,indexTypeA,indexTypeB,typeStack,progText):
+        # there's an error because the indices have to match.
+        return True;
+
+    if (not isMapType(valueTypeA)) or (not isMapType(valueTypeB)):
+        # handles all cases where one or both values are not maps
+        return checkTypeMismatch(None,valueTypeA,valueTypeB,typeStack,progText);
+
+    # both values are maps.  know that we can quit with no error if
+    # one or other is sentinel.
+    if is_empty_map(valueTypeA) or is_empty_map(valueTypeB):
+        return False;
+    
+    # recurse on map types
+    return mapTypeMismatch(valueTypeA,valueTypeB,typeStack,progText);
+
+
+def listTypeMismatch(listTypeA, listTypeB,typeStack,progText):
+    '''
+    @param{type dict} listTypeA, listTypeB: both are known to be list
+    types.
+    
+    @returns{Bool} True if there is a mismatch, False otherwise.
+
+    Note, that for list types it is inadequate to do a pure equality
+    test type signatures (ie listTypeA == listTypeB) to determine if
+    there is or is not a type mismatch.  This is because of the following case:
+
+    List(Element: Number) l = [];
+
+    The lhs has type [Number] and the rhs has type
+    [EMPTY_LIST_SENTINEL].  However, the assignment is okay and should
+    not produce a type mismatch.
+
+    The following however should produce a type mismatch:
+    
+    List(Element: Number) l = [True];
+        
+    '''
+    if is_empty_list(listTypeA) or is_empty_list(listTypeB):
+        # any time one side or the other side is an empty list, we
+        # know we're okay because both sides have to be lists.
+        return False;
+
+    elementTypeA = getListValueType(listTypeA)
+    elementTypeB = getListValueType(listTypeB)
+
+    if (not isListType(elementTypeA)) or (not isListType(elementTypeB)):
+        # handles all cases where one or both are not lists
+        return checkTypeMismatch(None,elementTypeA,elementTypeB,typeStack,progText);
+
+    # both elements are list types.  know that we can quit if one or other is a sentinel.
+    if is_empty_list(elementTypeA) or is_empty_list(elementTypeB):
+        return False;
+    
+    # recurse on list types
+    return listTypeMismatch(elementTypeA,elementTypeB,typeStack,progText);

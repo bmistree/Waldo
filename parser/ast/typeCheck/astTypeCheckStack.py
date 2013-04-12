@@ -10,10 +10,15 @@ from traceLine import TypeCheckError;
 
 from templateUtil import JSON_TYPE_FIELD;
 from templateUtil import JSON_FUNC_RETURNS_FIELD;
+from templateUtil import JSON_EXTERNAL_TYPE_FIELD
 from templateUtil import JSON_FUNC_IN_FIELD;
 from templateUtil import dict_type_to_str
 from templateUtil import get_type_array_from_func_call_returned_tuple_type
-
+from templateUtil import checkTypeMismatch
+from templateUtil import is_external
+from templateUtil import is_wildcard_type
+from templateUtil import set_external
+import pickle
 
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
@@ -85,6 +90,7 @@ class TypeCheckContextStack(object):
         # indices are the struct names.  values are the types of the
         # struct with that name
         self.struct_type_dict = {}
+
         
     def setRootNode(self,root):
         if self.rootNode != None:
@@ -138,22 +144,31 @@ class TypeCheckContextStack(object):
         @returns {None or String} --- String if there's an error (the
         string is the error message).  None if there's no error.
         '''
+        err_msg = None
         if struct_name in self.struct_type_dict:
             err_msg = 'Error.  Already have a struct named '
             err_msg += struct_name + '.'
-            return err_msg
         
         self.struct_type_dict[struct_name] = struct_type
-        # no error, return None
-        return None
+        return err_msg
 
-    def get_struct_type(self,struct_name):
+    def get_struct_type(self,struct_name,external):
         '''
+        @param {bool} external
+        
         @returns{type dict or None} --- None if struct_name has not
         been declared by user.  type dict if it has (where type dict
         is the declared type of that node).
         '''
-        return self.struct_type_dict.get(struct_name,None)
+        s_type = self.struct_type_dict.get(struct_name,None)
+        if s_type == None:
+            return s_type
+
+        # deep copy type so that marking as external or not will not
+        # affect any other type.
+        s_type = pickle.loads(pickle.dumps(s_type))
+        set_external(s_type,external)
+        return s_type
         
     def addCurrentFunctionNode(self,node):
         '''
@@ -199,14 +214,14 @@ class TypeCheckContextStack(object):
 
             # takes care of case where we are returning a function
             # call
-            if single_node.label == AST_FUNCTION_CALL:
+            if ((single_node.label == AST_FUNCTION_CALL) and
+                (not is_wildcard_type(single_node.type))):
                 func_returned_type_array = get_type_array_from_func_call_returned_tuple_type(
                     single_node.type)
                 for ind_tuple_return_type in func_returned_type_array:
                     return_type_list.append(ind_tuple_return_type)
             else:
                 return_type_list.append(single_node.type)
-
             
         returnStatementType = returnNode.children[0].type;
         if ((self.currentFunctionNode.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION) or
@@ -407,7 +422,7 @@ class TypeCheckContextStack(object):
         '''
         @param {string} functionName: name of function
 
-        @param{list of strings} functionType --- The return type of
+        @param{list of type dicts} functionType --- The return type of
         this function.  We're using a list to support returning
         tuples.  Each element of the list is the return type of that
         element of the tuple.
@@ -580,7 +595,7 @@ def createFuncMatchObjFromFuncTypeDict(func_type_dict,astNode):
 
     argTypes = [];
     for arg in func_type_dict[JSON_FUNC_IN_FIELD]:
-        argTypes.append(arg[JSON_TYPE_FIELD])
+        argTypes.append(arg)
 
     returnType = func_type_dict[JSON_FUNC_RETURNS_FIELD];
         
@@ -594,20 +609,20 @@ class FuncMatchObject():
 
     def getReturnType(self):
         '''
-        @returns{List of strings} --- List to support tuple return.
+        @returns{List of type dicts} --- List to support tuple return.
         '''
         return self.element.funcIdentifierType;
 
     def createTypeDict(self):
         returner = {
-            JSON_TYPE_FIELD:TYPE_FUNCTION
+            JSON_TYPE_FIELD:TYPE_FUNCTION,
+            JSON_EXTERNAL_TYPE_FIELD: False
             };
 
         # input args
         inArgs = [];
         for item in self.element.funcArgTypes:
-            toAppend = { JSON_TYPE_FIELD: item }
-            inArgs.append(toAppend);
+            inArgs.append(item)
 
         returner[JSON_FUNC_IN_FIELD] = inArgs;
 
@@ -622,7 +637,7 @@ class FuncMatchObject():
 
     def argMatchError(self, funcArgTypes, callingAstNode):
         '''
-        @param {List of Strings} funcArgTypes -- the types of each
+        @param {List of type dicts} funcArgTypes -- the types of each
         argument for the function.
 
         @param {AstNode} callingAstNode -- the astNode where the
@@ -654,9 +669,13 @@ class FuncMatchObject():
         for s in range(0,len(funcArgTypes)):
             expectedType = self.element.funcArgTypes[s];
             providedType = funcArgTypes[s];
-            if (providedType != expectedType):
-                #means had a type error mismatch
-                if (returner == None):
+
+            if ((is_external(expectedType) and (not is_external(providedType)))
+                or checkTypeMismatch(self.element,expectedType,providedType,None,None)):
+
+                # means that we expected an external and were provided
+                # with a non-external
+                if returner == None:
                     #means it was our first type error mismatch, and
                     #we should craft a FuncCallArgMatchError object to
                     #return.

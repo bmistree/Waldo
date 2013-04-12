@@ -1,0 +1,91 @@
+PassReferencesThroughMethods
+
+Endpoint SingleSide;
+
+Sequences{}
+
+Peered
+{}
+
+
+SingleSide
+{
+    /** Testing maps */
+    
+    Public Function create_map_return_literal()
+        returns Map(from: Number, to: Number) 
+    {
+        return {
+          1: 2,
+          3: 4
+        };
+    }
+
+    Public Function create_map_return_var()
+        returns Map(from: Number, to: Number)         
+    {
+        Map (from: Number, to: Number) map_ = create_map_return_literal();
+        return map_;
+    }
+
+    // Tests that Waldo code can use maps returned from method call
+    // constructors.
+    Public Function get_element_from_map_call(Number index_to_get)
+        returns Number
+    {
+        return create_map_return_var()[index_to_get];
+    }
+
+    Public Function get_element_from_map_literal_call(Number index_to_get)
+        returns Number
+    {
+        return create_map_return_literal()[index_to_get];
+    }
+
+    Public Function get_element_from_map_var(Number index_to_get)
+        returns Number
+    {
+        Map(from: Number, to: Number) map_;
+        map_ = create_map_return_literal();
+        return map_[index_to_get];    
+    }
+
+
+    /** Testing lists */
+    
+    Public Function create_list_return_literal()
+        returns List(element: Number) 
+    {
+        return [ 5,7,9];
+    }
+
+    Public Function create_list_return_var()
+        returns List(element: Number) 
+    {
+        List(element: Number) list_ = create_list_return_literal();
+        return list_;
+    }
+
+    // Tests that Waldo code can use maps returned from method call
+    // constructors.
+    Public Function get_element_from_list_call(Number index_to_get)
+        returns Number
+    {
+        return create_list_return_var()[index_to_get];
+    }
+
+    Public Function get_element_from_list_literal_call(Number index_to_get)
+        returns Number
+    {
+        return create_list_return_literal()[index_to_get];
+    }
+
+    Public Function get_element_from_list_var(Number index_to_get)
+        returns Number
+    {
+        List(element:Number) list_;
+        list_ = create_list_return_literal();
+        return list_[index_to_get];
+    }
+
+}

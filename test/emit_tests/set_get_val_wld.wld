@@ -1,0 +1,44 @@
+SetGetVal
+
+Endpoint SingleSide;
+
+Sequences{}
+
+SingleSide
+{
+    Number num = 0;
+    Text txt = '';
+    List(element: Number) test_list;
+
+    
+    Public Function get_num() returns Number
+    {
+        return num;
+    }
+
+    Public Function increment_num() returns Number
+    {
+        num += 1;
+        return get_num();
+    }
+    
+    Public Function get_txt() returns Text
+    {
+        return txt;
+    }
+
+    Public Function increment_txt(Text to_add) returns Text
+    {
+        txt += to_add;
+        return get_txt();
+    }
+
+
+
+    Public Function increment_list(Number to_append) returns List(element:Number)
+    {
+        test_list.append(to_append);
+        return test_list;
+    }
+    
+}
