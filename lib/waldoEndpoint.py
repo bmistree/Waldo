@@ -51,6 +51,8 @@ class _Endpoint(object):
         self._endpoint_service_thread.start()
 
         self._host_uuid = host_uuid
+
+        self._signal_queue = Queue.Queue()
         
         # When go through first phase of commit, may need to forward
         # partner's endpoint uuid back to the root, so the endpoint
@@ -121,7 +123,15 @@ class _Endpoint(object):
         if set_ready:
             self._set_ready()
         
-    
+
+    def service_signal(self):
+        try:
+            signaler = self._signal_queue.get_nowait()
+            signaler.call()            
+        except Queue.Empty:
+            pass
+                
+            
     def _this_side_ready(self):
         '''
         Gets called when this side finishes its initialization

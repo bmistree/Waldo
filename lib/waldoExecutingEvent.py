@@ -533,9 +533,20 @@ class _ExecutingEventContext(object):
 
             
             return '{%s}' % to_return_arg
-        
 
-        
+    def signal_call(self,active_event,func,*args):
+        class Signal(object):
+            def __init__(self,func,*args):
+                self.func = de_waldoify(func,active_event)
+                self.args = []
+                for arg in args:
+                    self.args.append(de_waldoify(arg,active_event))
+            def call(self):
+                self.func(active_event.local_endpoint,*self.args)
+
+        active_event.add_signal_call(Signal(func,*args))
+                
+                
     def handle_len(self,what_calling_len_on, active_event):
         '''
         Can support python lists, dicts, strings, or waldo lists, waldo maps,

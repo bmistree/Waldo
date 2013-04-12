@@ -127,6 +127,7 @@ def run_emit_tests():
     import emit_tests.symmetric_test
     import emit_tests.more_struct_tests
     import emit_tests.multiple_sequences
+    import emit_tests.signal_tests
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -210,7 +211,9 @@ def run_emit_tests():
 
         ('Ensures that can run multiple sequences (in series) from one event',
          emit_tests.multiple_sequences.run_test),
-        
+
+        ('Tests signal code',
+         emit_tests.signal_tests.run_test),
         ]
 
     run_tests(emit_tests_to_run)

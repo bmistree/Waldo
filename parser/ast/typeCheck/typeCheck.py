@@ -14,8 +14,8 @@ from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
 from astTypeCheckStack import createFuncMatchObjFromFuncTypeDict
 from parser.ast.parserUtil import errPrint;
 
-from typeCheckUtil import *;
-from templateUtil import *;
+from typeCheckUtil import *
+from templateUtil import *
 
 
 
@@ -211,7 +211,21 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         # before type checking the struct body (so that the struct
         # body could reference the struct type within it). do nothing
         # as a result of the error.
+
+
+    elif node.label == AST_SIGNAL_CALL:
+        signal_args_node = node.children[0]
+        func_arglist_node = signal_args_node.children[0]
+
+        # FIXME: add better type checking for signalling
         
+        for func_arg_node in func_arglist_node.children:
+            un_function_called_arg_node_type = unwrap_function_call_type_checker(
+                func_arg_node.type,func_arg_node,
+                ('Error in signal: function call assigning to' +
+                'returns more than one value.'),
+                progText)
+
             
     elif node.label == AST_EXT_COPY:
         from_node = node.children[0]

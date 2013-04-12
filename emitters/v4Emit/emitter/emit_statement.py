@@ -87,6 +87,17 @@ def emit_statement(
             'list(range(_context.get_val_if_waldo(%s,_active_event),' % base_range_txt +
             '_context.get_val_if_waldo(%s,_active_event),' % limit_range_txt +
             '_context.get_val_if_waldo(%s,_active_event))))' % increment_range_txt )
+
+
+    elif statement_node.label == AST_SIGNAL_CALL:
+        statement_txt = '_context.signal_call(_active_event,'
+        signal_arg_nodes = statement_node.children[0]
+                
+        for signal_arg_node in signal_arg_nodes.children:
+            signal_arg_node_txt = emit_statement(
+                signal_arg_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+            statement_txt += signal_arg_node_txt + ','
+        statement_txt += ')\n'
         
     elif statement_node.label == AST_BOOL:
         statement_txt = statement_node.value + ' '

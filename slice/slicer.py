@@ -125,7 +125,7 @@ def slicer(node,functionDeps=None,typeStack=None):
     elif ((node.label == AST_BREAK) or
           (node.label == AST_CONTINUE)):
         pass
-
+    
     elif node.label == AST_SELF:
         pass
     
@@ -389,9 +389,17 @@ def slicer(node,functionDeps=None,typeStack=None):
           (node.label == AST_NOT_EXPRESSION) or (node.label == AST_BOOLEAN_CONDITION) or
           (node.label == AST_LIST)  or (node.label == AST_MAP) or (node.label == AST_LEN) or
           (node.label == AST_BRACKET_STATEMENT) or (node.label == AST_RANGE)):
+
+
         # nothing to do on unary operators
         for child in node.children:
             slicer(child,functionDeps,typeStack);
+
+    elif node.label == AST_SIGNAL_CALL:
+        signal_func_args_node = node.children[0]
+
+        for func_arg_node in signal_func_args_node.children:
+            slicer(func_arg_node,functionDeps,typeStack)
             
     elif ((node.label == AST_FUNCTION_BODY_STATEMENT) or
           (node.label == AST_ENDPOINT) or

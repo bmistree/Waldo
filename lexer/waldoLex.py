@@ -25,6 +25,7 @@ reserved = {
     'return': 'RETURN_OPERATOR',
     'to': 'TO_OPERATOR',
     'print': 'PRINT',
+    'signal': 'SIGNAL',
     'if': 'IF',
     'elseIf': 'ELSE_IF',
     'else': 'ELSE',

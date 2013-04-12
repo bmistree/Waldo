@@ -443,6 +443,7 @@ def p_NonBracketOperatableOn(p):
                            | Map
                            | FunctionCall
                            | ToTextCall
+                           | SignalCall
                            | KeysStatement
                            | LenStatement
                            | RangeStatement
@@ -582,6 +583,15 @@ def p_RefreshCall(p):
     RefreshCall : REFRESH LEFT_PAREN RIGHT_PAREN
     '''
     p[0] = AstNode(AST_REFRESH,p.lineno(1),p.lexpos(1));
+
+
+def p_SignalCall(p):
+    '''
+    SignalCall : SIGNAL LEFT_PAREN FunctionArgList RIGHT_PAREN
+    '''
+    p[0] = AstNode(AST_SIGNAL_CALL,p.lineno(1),p.lexpos(1))
+    func_decl_arglist_node = p[3]
+    p[0].addChild(func_decl_arglist_node)
 
     
 def p_ToTextCall(p):
