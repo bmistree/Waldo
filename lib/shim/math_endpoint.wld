@@ -1,9 +1,6 @@
 MathStruct
 Endpoint MathEndpoint;
 
-
-Sequences{}
-
 Struct Math
 {
     Function (in: List(element: Number); returns: Number) min_func;

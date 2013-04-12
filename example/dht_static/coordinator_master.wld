@@ -1,8 +1,6 @@
 CoordinatorMaster
 Endpoint CoordinatorMaster;
 
-Sequences{}
-
 Struct ConnectionListenerInfo
 {
     TrueFalse valid;

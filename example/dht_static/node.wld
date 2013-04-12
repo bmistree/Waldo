@@ -6,7 +6,7 @@ Endpoint Node;
  * table of connections to other endpoints.  It can use its finger table to look
  * up keys that it's not responsible for.
  */
-Sequences{}
+
 
 Struct NeighborNode
 {

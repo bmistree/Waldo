@@ -95,16 +95,16 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 pass
 
             _tmp0 = in_min_func
-            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).write_val_on_key(_active_event,"min_func",_tmp0.copy(_active_event,False))
+            _context.assign_on_key(_context.global_store.get_var_if_exists("0__math"),"min_func",_tmp0, _active_event)
 
             _tmp0 = in_max_func
-            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).write_val_on_key(_active_event,"max_func",_tmp0.copy(_active_event,False))
+            _context.assign_on_key(_context.global_store.get_var_if_exists("0__math"),"max_func",_tmp0, _active_event)
 
             _tmp0 = in_mod_func
-            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).write_val_on_key(_active_event,"mod_func",_tmp0.copy(_active_event,False))
+            _context.assign_on_key(_context.global_store.get_var_if_exists("0__math"),"mod_func",_tmp0, _active_event)
 
             _tmp0 = in_rand_int_func
-            _context.global_store.get_var_if_exists("0__math").get_val(_active_event).write_val_on_key(_active_event,"rand_int_func",_tmp0.copy(_active_event,False))
+            _context.assign_on_key(_context.global_store.get_var_if_exists("0__math"),"rand_int_func",_tmp0, _active_event)
 
         ### USER DEFINED METHODS ###
 
@@ -138,12 +138,12 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def _endpoint_func_call_prefix__waldo__min_func(self,_active_event,_context,in_nums,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
-                in_nums = _context.turn_into_waldo_var(in_nums,True,_active_event,self._host_uuid,False)
+                in_nums = _context.turn_into_waldo_var_if_was_var(in_nums,True,_active_event,self._host_uuid,False)
 
                 pass
 
             else:
-                in_nums = _context.turn_into_waldo_var(in_nums,False,_active_event,self._host_uuid,False)
+                in_nums = _context.turn_into_waldo_var_if_was_var(in_nums,False,_active_event,self._host_uuid,False)
 
                 pass
 
@@ -189,12 +189,12 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def _endpoint_func_call_prefix__waldo__max_func(self,_active_event,_context,in_nums,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
-                in_nums = _context.turn_into_waldo_var(in_nums,True,_active_event,self._host_uuid,False)
+                in_nums = _context.turn_into_waldo_var_if_was_var(in_nums,True,_active_event,self._host_uuid,False)
 
                 pass
 
             else:
-                in_nums = _context.turn_into_waldo_var(in_nums,False,_active_event,self._host_uuid,False)
+                in_nums = _context.turn_into_waldo_var_if_was_var(in_nums,False,_active_event,self._host_uuid,False)
 
                 pass
 
@@ -240,14 +240,14 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def _endpoint_func_call_prefix__waldo__mod_func(self,_active_event,_context,lhs,rhs,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
-                lhs = _context.turn_into_waldo_var(lhs,True,_active_event,self._host_uuid,False)
-                rhs = _context.turn_into_waldo_var(rhs,True,_active_event,self._host_uuid,False)
+                lhs = _context.turn_into_waldo_var_if_was_var(lhs,True,_active_event,self._host_uuid,False)
+                rhs = _context.turn_into_waldo_var_if_was_var(rhs,True,_active_event,self._host_uuid,False)
 
                 pass
 
             else:
-                lhs = _context.turn_into_waldo_var(lhs,True,_active_event,self._host_uuid,False)
-                rhs = _context.turn_into_waldo_var(rhs,True,_active_event,self._host_uuid,False)
+                lhs = _context.turn_into_waldo_var_if_was_var(lhs,True,_active_event,self._host_uuid,False)
+                rhs = _context.turn_into_waldo_var_if_was_var(rhs,True,_active_event,self._host_uuid,False)
 
                 pass
 
@@ -293,14 +293,14 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def _endpoint_func_call_prefix__waldo__rand_int_func(self,_active_event,_context,a,b,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
-                a = _context.turn_into_waldo_var(a,True,_active_event,self._host_uuid,False)
-                b = _context.turn_into_waldo_var(b,True,_active_event,self._host_uuid,False)
+                a = _context.turn_into_waldo_var_if_was_var(a,True,_active_event,self._host_uuid,False)
+                b = _context.turn_into_waldo_var_if_was_var(b,True,_active_event,self._host_uuid,False)
 
                 pass
 
             else:
-                a = _context.turn_into_waldo_var(a,True,_active_event,self._host_uuid,False)
-                b = _context.turn_into_waldo_var(b,True,_active_event,self._host_uuid,False)
+                a = _context.turn_into_waldo_var_if_was_var(a,True,_active_event,self._host_uuid,False)
+                b = _context.turn_into_waldo_var_if_was_var(b,True,_active_event,self._host_uuid,False)
 
                 pass
 

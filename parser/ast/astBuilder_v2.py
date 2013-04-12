@@ -26,31 +26,30 @@ from astBuilderCommon import *
 
 def p_RootExpression(p):
     '''
-    RootExpression : NameSection EndpointAliasSection TraceSection StructSharedSection MessageSequenceSection EndpointDefinitionSection
-                   | NameSection EndpointAliasSection TraceSection StructSharedSection EndpointDefinitionSection
-                   
+    RootExpression : NameSection EndpointAliasSection TraceStructSharedSection MessageSequenceSection EndpointDefinitionSection
+                   | NameSection EndpointAliasSection TraceStructSharedSection EndpointDefinitionSection
     '''
-    
+
     p[0] = AstNode(AST_ROOT,p[1].lineNo,p[1].linePos);
 
     name_section = p[1]
     endpoint_alias_section = p[2]
-    trace_section = p[3]
-    struct_shared_section = p[4]
+    trace_struct_shared_section = p[3]
 
-    struct_section = struct_shared_section.children[0]
-    shared_section = struct_shared_section.children[1]
+    trace_section = trace_struct_shared_section.children[0]
+    struct_section = trace_struct_shared_section.children[1]
+    shared_section = trace_struct_shared_section.children[2]
     
     
     p[0].addChildren(
         [name_section,endpoint_alias_section,trace_section,shared_section]);
 
     msg_seq_section = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[4].lineNo,p[4].linePos);
-    endpoint_definition_section = p[5]
+    endpoint_definition_section = p[4]
     
-    if len(p) == 7:
-        msg_seq_section = p[5]
-        endpoint_definition_section = p[6]
+    if len(p) == 6:
+        msg_seq_section = p[4]
+        endpoint_definition_section = p[5]
 
     p[0].addChildren([
             endpoint_definition_section,msg_seq_section,struct_section])

@@ -5,32 +5,21 @@
 
 # := means expand out now rather than when used
 PROTOCOL_FILES := $(wildcard *.wld)
-GENERATED_FILES_V2 := $(PROTOCOL_FILES:.wld=_v2.py)
-GENERATED_FILES_V4 := $(PROTOCOL_FILES:.wld=_v4.py)
-V2_COMPILE_ARGS= -v 2
-V4_COMPILE_ARGS= -v 4
-WCOMPILE_COMMAND = ../../../../bin/wcompile.py
-
-
-
-.PHONY : v2
-v2 : $(GENERATED_FILES_V2)
-$(GENERATED_FILES_V2) : %_v2.py : %.wld
-	$(WCOMPILE_COMMAND) $(V2_COMPILE_ARGS) -f $< -e $@
-
+GENERATED_FILES := $(PROTOCOL_FILES:.wld=_v4.py)
+COMPILE_ARGS= 
+WCOMPILE_COMMAND = ../../bin/wcompile.py
 
 .PHONY : v4
-v4 : $(GENERATED_FILES_V4)
+v4 : $(GENERATED_FILES)
 
 # Says create a separate rule for each item in the GENERATED_FILES_V4
 # list.  That rule should say take the item that ends in _v4.py and
 # say that it depends on the same prefix, but with ending .wld.
 # @see Static Pattern Rules
-$(GENERATED_FILES_V4) : %_v4.py : %.wld
-	$(WCOMPILE_COMMAND) $(V4_COMPILE_ARGS) -f $< -e $@
-
+$(GENERATED_FILES) : %_v4.py : %.wld
+	$(WCOMPILE_COMMAND) $(COMPILE_ARGS) -f $< -e $@
 
 
 .PHONY : clean
 clean :
-	rm -f $(GENERATED_FILES_V2) $(GENERATED_FILES_V4) emitted_v2.py emitted_v4.py *.pyc parser.out parsetab.py
+	rm -f $(GENERATED_FILES) emitted_v4.py *.pyc parser.out parsetab.py *.pyo
