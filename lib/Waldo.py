@@ -44,7 +44,7 @@ _waldo_classes = {
 
 def setup_logging():
     '''
-    @param {bool} on_off --- True to turn logging on.  False to turn logging off.
+    Internal function.  Not to be used by programmer.
     '''
     DEFAULT_LOG_FILENAME = 'log.txt'
     DEFAULT_LOGGING_LEVEL = logging.CRITICAL
@@ -66,13 +66,35 @@ setup_logging()
     
 def set_logging_level(level):
     '''
-    User can set level of logging he/she desires.
+    @param {int} level --- See Python's internal logging module.
+    Options are logging.CRITICAL, logging.INFO, logging.DEBUG, etc.
+    
+    User can set level of logging he/she desires.  Note: mostly used
+    internally for compiler development.
     '''
     util.get_logger().setLevel(level)
     
 
 def tcp_connect(constructor,host,port,*args):
+    '''
+    @param {Endpoint Constructor} constructor --- The constructor of
+    the endpoint to create upon connection.  Should be imported from
+    the compiled Waldo file.
 
+    @param {String} host --- The name of the host to connect to.
+
+    @param {int} port --- The TCP port to try to connect to.
+
+    @param {*args} *args --- Any arguments that should get passed to
+    the endpoint's onCreate method for initialization.
+
+    @returns {Endpoint object} --- Can call any Public method of this
+    object.
+
+    Tries to connect an endpoint to another endpoint via a TCP
+    connection.
+    '''
+    
     tcp_connection_obj = waldoConnectionObj._WaldoTCPConnectionObj(
         host,port)
 
@@ -82,9 +104,29 @@ def tcp_connect(constructor,host,port,*args):
 
 def tcp_accept(constructor,host,port,*args,**kwargs):
     '''
+    @param {Endpoint Constructor} constructor --- The constructor of
+    the endpoint to create upon connection.  Should be imported from
+    the compiled Waldo file.
+
+    @param {String} host --- The name of the host to listen for
+    connections on.
+
+    @param {int} port --- The TCP port to listen for connections on.
+
+    @param {*args} *args --- Any arguments that should get passed to
+    the endpoint's onCreate method for initialization.
+
+    @param {connected_callback} function --- Use kwarg
+    "connected_callback."  When a connection is received and we create
+    an endpoint, callback gets executed, passing in newly-created
+    endpoint object as argument.
+    
     @returns {Stoppable object} --- Can call stop method on this to
     stop listening for additional connections.  Note: listeners will
     not stop instantly, but probably within the next second or two.
+
+    Non-blocking function that listens for TCP connections and creates
+    endpoints for each new connection.
     '''
     
     connected_callback = kwargs.get('connected_callback',None)
@@ -115,9 +157,22 @@ def tcp_accept(constructor,host,port,*args,**kwargs):
 
 def same_host_create(constructor,*args):
     '''
+    @param {Endpoint Constructor} constructor --- The constructor of
+    the endpoint to create.  Should be imported from
+    the compiled Waldo file.
+
+    @param {*args} *args --- Arguments to be passed to the new host's constructor.
+    
     @returns {EndpointCreater object} --- Call same_host_create on
     SecondCreater, passing in constructor of second endpoint and any
     args its onCreate takes.  It will return both endpoints created.
+
+    Example usage:
+    endpointA, endpointB = (
+        Waldo.same_host_create(ConstructorA,5).same_host_create(ConstructorB))
+
+    if ConstructorA's onCreate method took in a Number and
+    ConstructorB's onCreate method took no arguments.
     '''
 
     class EndpointCreater(object):
@@ -164,8 +219,22 @@ def same_host_create(constructor,*args):
 
 
     
-
 def math_endpoint_lib():
+    '''
+    @returns {Endpoint object} --- Can pass this endpoint into Waldo code and
+    make endpoint calls on it to provide several math operations that otherwise
+    would be missing from the Waldo langauge.
+
+    The enpdoint returned has the following public methods:
+    
+    Public Function min_func(List(element: Number) in_nums) returns Number
+    Public Function max_func(List(element: Number) in_nums) returns Number
+    Public Function mod_func(Number lhs, Number rhs) returns Number
+    /**
+     * @returns {Number} --- Returns random integer in the range [a,b]
+     */
+    Public Function rand_int_func(Number a, Number b) returns Number
+    '''
     return shim.get_math_endpoint.math_endpoint(no_partner_create)
 
 def no_partner_create(constructor,*args):
@@ -181,9 +250,12 @@ def no_partner_create(constructor,*args):
 
 def stop():
     '''
-    Tells all connection listeners to stop listening for new
+    Tells all TCP connection listeners to stop listening for new
     connections and begins safely closing all open connections on this
     server.
+
+    Warning: FIXME: does not actually begin safely closing connections.
+    
     '''
     # FIXME: does not actually begin safely closing connections.
     
