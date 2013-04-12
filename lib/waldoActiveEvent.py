@@ -119,7 +119,12 @@ class _ActiveEvent(_InvalidationListener):
         # that we *may* be able to commit our changes.
         self.is_invalidated = False
 
-        self.signal_queue = Queue.Queue()
+
+        # keeps a list of functions that we should exec when we
+        # complete.  Starts as None, because unlikely to use.  If we
+        # do use, then turn it into a proper Queue.Queue().  
+        # self.signal_queue = Queue.Queue()
+        self.signal_queue = None
 
         
         # True if this event initiated a sequence between both sides,
@@ -335,6 +340,8 @@ class _ActiveEvent(_InvalidationListener):
 
 
     def add_signal_call(self,signaler):
+        if self.signal_queue == None:
+            self.signal_queue = Queue.Queue()
         self.signal_queue.put(signaler)
     
     def receive_partner_modified_peered_response(self,resp_msg):
@@ -971,13 +978,15 @@ class _ActiveEvent(_InvalidationListener):
         for touched_obj in self.objs_touched.values():
             touched_obj.complete_commit(self)
 
-        while True:
-            try:
-                signaler = self.signal_queue.get_nowait()
-                self.local_endpoint._signal_queue.put(signaler)
-            except Queue.Empty:
-                break
-            
+        if self.signal_queue != None:
+            while True:
+                try:
+                    signaler = self.signal_queue.get_nowait()
+                    self.local_endpoint._signal_queue.put(signaler)
+                except Queue.Empty:
+                    break
+
+                
     def set_breakout(self):
         self._breakout_mutex.acquire()
         self.breakout = True
