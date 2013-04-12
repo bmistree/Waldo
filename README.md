@@ -16,12 +16,12 @@ visible state space: instead of considering all possible interleavings
 of messages and expressions, a programmer need only reason about
 orderings of high-level events.
 
-   * Waldo programmers do not explicitly synchronize state themselves.
+  * Waldo programmers do not explicitly synchronize state themselves.
 Waldo's type system includes replication types.  Using replication
 types, the Waldo runtime automatically synchronizes state between
 endpoints and schedules events to avoid read-write conflicts.
 
-   * Waldo fails fast on events interrupted by network or node
+  * Waldo fails fast on events interrupted by network or node
 failure, throwing an exception.  Through replication types, Waldo
 exposes what data are available on a host during exception handling.
 
@@ -35,7 +35,7 @@ For API documentation of the Waldo module, go [here]
 
 Installation
 ----------------
-pip install -r requirements.txt
+    pip install -r requirements.txt
 
 If you have installed correctly, running test/runAllTests.py from the
 command line should produce all SUCCESS-es.
@@ -44,13 +44,15 @@ command line should produce all SUCCESS-es.
 Running
 ----------------
 
-bin/wcompile.py -f <waldo filename> -e <python file to emit to>
-or
-to automatically emit to emitted.py:
-bin/wcompile.py <waldo filename> 
+    bin/wcompile.py -f <waldo filename> -e <python file to emit to>
+
+or to automatically emit to emitted.py:
+
+    bin/wcompile.py <waldo filename> 
 
 For compile options:
-bin/wcompile.py -h 
+
+    bin/wcompile.py -h 
 
 For example Makefiles, see test/emit_tests/Makefile or
 example/*/Makefile.
