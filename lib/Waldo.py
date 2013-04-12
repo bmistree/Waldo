@@ -42,7 +42,7 @@ _waldo_classes = {
     'logger': util.get_logger()
     }
 
-def setup_logging():
+def _setup_logging():
     '''
     Internal function.  Not to be used by programmer.
     '''
@@ -62,39 +62,43 @@ def setup_logging():
     util.lock_log('***** New *****')
 
     
-setup_logging()
+_setup_logging()
     
 def set_logging_level(level):
     '''
-    @param {int} level --- See Python's internal logging module.
-    Options are logging.CRITICAL, logging.INFO, logging.DEBUG, etc.
-    
-    User can set level of logging he/she desires.  Note: mostly used
+    Programmer can set level of logging he/she desires.  Note: mostly used
     internally for compiler development.
+
+    Args: 
+      level (int): See Python's internal logging module.
+      Options are logging.CRITICAL, logging.INFO, logging.DEBUG, etc.    
     '''
+
     util.get_logger().setLevel(level)
     
 
 def tcp_connect(constructor,host,port,*args):
     '''
-    @param {Endpoint Constructor} constructor --- The constructor of
-    the endpoint to create upon connection.  Should be imported from
-    the compiled Waldo file.
-
-    @param {String} host --- The name of the host to connect to.
-
-    @param {int} port --- The TCP port to try to connect to.
-
-    @param {*args} *args --- Any arguments that should get passed to
-    the endpoint's onCreate method for initialization.
-
-    @returns {Endpoint object} --- Can call any Public method of this
-    object.
-
     Tries to connect an endpoint to another endpoint via a TCP
     connection.
-    '''
+
+    Args:
     
+      constructor (Endpoint Constructor): The constructor of the endpoint to
+      create upon connection.  Should be imported from the compiled Waldo file.
+
+      host (String): The name of the host to connect to.
+
+      port (int): The TCP port to try to connect to.
+
+      *args (*args):  Any arguments that should get passed to
+      the endpoint's onCreate method for initialization.
+
+    Returns:
+
+      Endpoint object: --- Can call any Public method of this
+      object.
+    '''
     tcp_connection_obj = waldoConnectionObj._WaldoTCPConnectionObj(
         host,port)
 
@@ -102,31 +106,37 @@ def tcp_connect(constructor,host,port,*args):
         _waldo_classes,_host_uuid,tcp_connection_obj,*args)
     return endpoint
 
+
 def tcp_accept(constructor,host,port,*args,**kwargs):
     '''
-    @param {Endpoint Constructor} constructor --- The constructor of
-    the endpoint to create upon connection.  Should be imported from
-    the compiled Waldo file.
-
-    @param {String} host --- The name of the host to listen for
-    connections on.
-
-    @param {int} port --- The TCP port to listen for connections on.
-
-    @param {*args} *args --- Any arguments that should get passed to
-    the endpoint's onCreate method for initialization.
-
-    @param {connected_callback} function --- Use kwarg
-    "connected_callback."  When a connection is received and we create
-    an endpoint, callback gets executed, passing in newly-created
-    endpoint object as argument.
-    
-    @returns {Stoppable object} --- Can call stop method on this to
-    stop listening for additional connections.  Note: listeners will
-    not stop instantly, but probably within the next second or two.
-
     Non-blocking function that listens for TCP connections and creates
     endpoints for each new connection.
+
+    Args:
+    
+      constructor(Endpoint Constructor): The constructor of
+      the endpoint to create upon connection.  Should be imported from
+      the compiled Waldo file.
+
+      host (String): The name of the host to listen for
+      connections on.
+
+      port(int): The TCP port to listen for connections on.
+
+      *args(*args): Any arguments that should get passed to
+      the endpoint's onCreate method for initialization.
+
+    Kwargs:
+
+      connected_callback(function): Use kwarg "connected_callback."  When a
+      connection is received and we create an endpoint, callback gets executed,
+      passing in newly-created endpoint object as argument.
+
+    Returns:
+    
+      Stoppable object: Can call stop method on this to stop listening for
+      additional connections.  Note: listeners will not stop instantly, but
+      probably within the next second or two.
     '''
     
     connected_callback = kwargs.get('connected_callback',None)
@@ -157,22 +167,28 @@ def tcp_accept(constructor,host,port,*args,**kwargs):
 
 def same_host_create(constructor,*args):
     '''
-    @param {Endpoint Constructor} constructor --- The constructor of
-    the endpoint to create.  Should be imported from
-    the compiled Waldo file.
-
-    @param {*args} *args --- Arguments to be passed to the new host's constructor.
-    
-    @returns {EndpointCreater object} --- Call same_host_create on
-    SecondCreater, passing in constructor of second endpoint and any
-    args its onCreate takes.  It will return both endpoints created.
-
+    Used when trying to create endpoints on the same host.
     Example usage:
     endpointA, endpointB = (
         Waldo.same_host_create(ConstructorA,5).same_host_create(ConstructorB))
 
     if ConstructorA's onCreate method took in a Number and
     ConstructorB's onCreate method took no arguments.
+
+
+    Args:
+
+      constructor(Endpoint Constructor): The constructor of the endpoint to
+      create.  Should be imported from the compiled Waldo file.
+
+      *args (*args): Arguments to be passed to the new host's constructor.
+
+    Returns:
+
+      EndpointCreater object: Call same_host_create on SecondCreater, passing in
+      constructor of second endpoint and any args its onCreate takes.  It will
+      return both endpoints created.
+
     '''
 
     class EndpointCreater(object):
@@ -221,9 +237,9 @@ def same_host_create(constructor,*args):
     
 def math_endpoint_lib():
     '''
-    @returns {Endpoint object} --- Can pass this endpoint into Waldo code and
-    make endpoint calls on it to provide several math operations that otherwise
-    would be missing from the Waldo langauge.
+    Can pass returned endpoint object into Waldo code and make endpoint
+    calls on it to provide several math operations that otherwise would be
+    missing from the Waldo langauge.
 
     The enpdoint returned has the following public methods:
     
@@ -233,14 +249,25 @@ def math_endpoint_lib():
     /**
      * @returns {Number} --- Returns random integer in the range [a,b]
      */
-    Public Function rand_int_func(Number a, Number b) returns Number
+    Public Function rand_int_func(Number a, Number b) returns Number    
+
+    Returns:
+    
+      Endpoint object: Can pass this endpoint into Waldo code and make endpoint
+      calls on it to provide several math operations that otherwise would be
+      missing from the Waldo langauge.
+
     '''
     return shim.get_math_endpoint.math_endpoint(no_partner_create)
 
 def no_partner_create(constructor,*args):
     '''
-    @returns{Waldo endpoint} --- Calls constructor with args for an
-    endpoint that has no partner.
+    Creates an endpoint without its partner.
+
+    Returns:
+    
+      Waldo endpoint: Calls constructor with args for an endpoint that has no
+      partner.
     '''
     return constructor(
         _waldo_classes,_host_uuid,

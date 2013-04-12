@@ -29,6 +29,9 @@ Waldo is an adolescent language and not all of the above works well
 (or even works!).  For known issues or to file a bug, see the github
 page [here] (https://github.com/bmistree/Waldo/issues?state=open).
 
+For API documentation of the Waldo module, go [here]
+(http://bcoli.stanford.edu/wdoc/).
+
 
 Installation
 ----------------
@@ -52,11 +55,3 @@ bin/wcompile.py -h
 For example Makefiles, see test/emit_tests/Makefile or
 example/*/Makefile.
 
-
-Navigation
-----------------
-
-The doc folder contains basic information about the Waldo type system
-and how to include Waldo in one of your projects.
-
-The examples folder shows three examples of Waldo's being used.
