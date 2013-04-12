@@ -2,9 +2,6 @@ SetGetVal
 
 Endpoint SingleSide;
 
-
-Sequences{}
-
 Struct NumberStruct
 {
     Number num;

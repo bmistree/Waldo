@@ -2,8 +2,6 @@ LoopTests
 
 Endpoint SingleSide;
 
-Sequences{}
-
 SingleSide
 {
     // tests range

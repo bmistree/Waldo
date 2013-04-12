@@ -2,9 +2,6 @@ Atomic
 
 Endpoint AtomicInt;
 
-Sequences{}
-
-
 AtomicInt
 {
     Number end_int;

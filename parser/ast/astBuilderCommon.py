@@ -52,12 +52,11 @@ def p_EndpointAliasSection(p):
         p[0].addChildren([endpoint_name_node_a,endpoint_name_node_b])
 
     
-
 def p_TraceSection(p):
     '''
     TraceSection : TRACES CURLY_LEFT TraceBodySection CURLY_RIGHT
                  | TRACES CURLY_LEFT CURLY_RIGHT
-                 ''';
+    '''
     
     #note: this is an intermediate production, and will get skipped.
     p[0] = AstNode(AST_TRACE_SECTION,p.lineno(1),p.lexpos(1));
@@ -188,40 +187,66 @@ def p_AnnotatedDeclaration(p):
         #have an initialization statement to perform
         p[0].addChild(p[6]);
 
-def p_StructSharedSection(p):
+def p_TraceStructSharedSection(p):
     '''
-    StructSharedSection : StructSection SharedSection
-                        | StructSection
-                        | SharedSection
-                        | Empty
+    TraceStructSharedSection : TraceSection StructSection SharedSection
+                             | TraceSection StructSection
+                             | TraceSection SharedSection
+                             | SharedSection StructSection
+                             | StructSection
+                             | SharedSection
+                             | TraceSection
+                             | Empty
     '''
-
     p[0] = AstNode(AST_STRUCT_SHARED_SECTION,p.lineno(1),p.lexpos(1))
-    if len(p) == 3:
-        p[0].addChildren([p[1],p[2]])
-    elif len(p) == 2:
+    if len(p) == 4:
+        # handles first line above
+        trace_section_node = p[1]
+        struct_section_node = p[2]
+        shared_section_node = p[3]
+    elif len(p) == 3:
+        # handles lines 2,3,4 above
+        if p[1].label == AST_TRACE_SECTION:
+            trace_section_node = p[1]
 
-        blank_struct = AstNode(AST_STRUCT_SECTION,p.lineno(1),p.lexpos(1))
-        blank_shared = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1))
-        
-        if isEmptyNode(p[1]):
-            # means that we have to fill in two blank
-            p[0].addChildren([blank_struct,blank_shared])
-        elif p[1].label == AST_STRUCT_SECTION:
-            p[0].addChildren([p[1],blank_shared])
-        elif p[1].label == AST_SHARED_SECTION:
-            p[0].addChildren([blank_struct,p[1]])
+            if p[2].label == AST_STRUCT_SECTION:
+                # handles line 2 above
+                struct_section_node = p[2]
+                shared_section_node = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1))
+            else:
+                # handles line 3 above
+                struct_section_node = AstNode(AST_STRUCT_SECTION,p.lineno(1),p.lexpos(1))
+                shared_section_node = p[2]
         else:
-            err_msg = '\nBehram error.  Unexpected label.\n'
-            print(err_msg)
-            assert(False)
-    else:
-        err_msg = '\nBehram error.  More parts to struct '
-        err_msg += 'shared than expected.\n'
-        print (err_msg)
-        assert(False)
+            # handles line 4 above
+            trace_section_node = AstNode(AST_TRACE_SECTION,p.lineno(1),p.lexpos(1))
+            struct_section_node = p[2]
+            shared_section_node = p[3]
+                
+    elif len(p) == 2:
+        # assign each to blank, and then selectively update below
+        # depending on which node was available.
+        trace_section_node = AstNode(AST_TRACE_SECTION,p.lineno(1),p.lexpos(1))
+        struct_section_node = AstNode(AST_STRUCT_SECTION,p.lineno(1),p.lexpos(1))
+        shared_section_node = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1))
 
-        
+        if isEmptyNode(p[1]):
+            # handles last line above
+            pass
+                    
+        elif p[1].label == AST_STRUCT_SECTION:
+            # handles 5th line above
+            struct_section_node = p[1]
+        elif p[1].label == AST_SHARED_SECTION:
+            shared_section_node = p[1]
+        elif p[1].label == AST_TRACE_SECTION:
+            trace_section_node = p[1]
+
+    p[0].addChildren(
+        [trace_section_node,struct_section_node, shared_section_node])
+
+
+            
 def p_StructSection(p):
     '''
     StructSection : Struct
