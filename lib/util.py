@@ -207,8 +207,14 @@ def generate_foreign_function_uuid():
 # def generate_py_uuid():
 #     return uuid.uuid4()
 
+import random, os
 def generate_uuid():
-    return uuid.uuid4()
+    return os.urandom(16)
+    # return random.random()
+
+# def generate_uuid():
+#     return uuid.uuid4()
+
 
 
 def logger_assert(assert_msg,logging_info=None):
