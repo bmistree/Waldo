@@ -97,6 +97,12 @@ class _ExecutingEventContext(object):
         self.msg_send_initialized_bit = True
         return prev_initialized_bit
 
+    def write_val(self,to_write_to,to_write,active_event):
+        if isinstance(to_write_to, waldoReferenceBase._ReferenceBase):
+            to_write_to.write_val(active_event,to_write)
+            return to_write_to
+        return to_write
+                      
 
     #### UTILITY FUNCTIONS  ####
     # all of these could be static: they don't touch any internal
@@ -481,9 +487,11 @@ class _ExecutingEventContext(object):
 
 
             return iter(to_return)
-        
-        util.emit_assert(
+
+        util.logger_assert(
             'Calling get_for_iter on an object that does not support iteration')
+
+        
         
     def to_text(self,what_to_call_to_text_on,active_event):
         '''

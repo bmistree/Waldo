@@ -181,9 +181,10 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
             # FIXME: may only want to make a copy of val on write
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
+                # self.val,
                 self._non_waldo_copy(),
                 invalid_listener)
-            
+
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
         

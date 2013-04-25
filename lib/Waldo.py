@@ -9,6 +9,7 @@ import waldoVariableStore
 import threading
 import shim.get_math_endpoint
 import logging
+import waldoReferenceBase
 
 _host_uuid = util.generate_uuid()
 _threadsafe_stoppable_cleanup_queue = Queue.Queue()
@@ -39,7 +40,7 @@ _waldo_classes = {
     'ExecutingEventContext': waldoExecutingEvent._ExecutingEventContext,
     'VariableStore': waldoVariableStore._VariableStore,
     'BackoutException': util.BackoutException,
-    'logger': util.get_logger()
+    'logger': util.get_logger(),
     }
 
 def _setup_logging():
