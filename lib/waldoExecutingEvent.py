@@ -702,24 +702,7 @@ class _ExecutingEvent(threading.Thread):
         
 
     def run(self):
-        logging_info = {
-            'mod': 'ExecutingEvent',
-            'endpoint_string': self.active_event.local_endpoint._endpoint_uuid_str
-            }
-        if __debug__:
-            log_msg = (
-                'Starting executing event %s.' % str(self.active_event.uuid))
-            util.get_logger().debug(log_msg,extra=logging_info)
-
-        
         result = self.to_exec(self.active_event,self.ctx,*self.to_exec_args)
-
-        if __debug__:
-            log_msg = (
-                'Result from executing event %s: %s.' %
-                (str(self.active_event.local_endpoint._uuid),(str(result))))
-            util.get_logger().debug(log_msg,extra=logging_info)
-
         
         if self.result_queue == None:
             return
@@ -728,12 +711,6 @@ class _ExecutingEvent(threading.Thread):
         # have, then send an update message to partner and wait for
         # ack of message before returning.
         completed = self.active_event.wait_if_modified_peered()
-
-        if __debug__:
-            log_msg = (
-                'Completed waiting on modified peered for %s.' %
-                str(self.active_event.uuid))
-            util.get_logger().debug(log_msg,extra=logging_info)
         
         if not completed:
             self.result_queue.put(

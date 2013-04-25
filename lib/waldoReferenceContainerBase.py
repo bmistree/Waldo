@@ -182,6 +182,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
                 # self.val,
+                # this copy has a huge performance affect!
                 self._non_waldo_copy(),
                 invalid_listener)
 
