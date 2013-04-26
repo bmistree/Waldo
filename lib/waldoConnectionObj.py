@@ -3,6 +3,7 @@ from util import Queue
 import threading
 import socket
 import struct
+import zlib
 
 class _WaldoConnectionObject(object):
 
@@ -161,29 +162,12 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         Note: _decapsulate_msg(_encapsulate_msg_str(msg_str)) equals
         the original message.
         '''
+        str_to_escape = zlib.compress(str_to_escape)
         size_of_msg = len(str_to_escape) + _WaldoTCPConnectionObj.HEADER_LEN_OCTETS
 
         # lower order indices contain the lower order values
         # header_as_list = [0]*_WaldoTCPConnectionObj.HEADER_LEN_OCTETS
         header = struct.pack('L',size_of_msg)
-        
-        # # each iteration of this loop, we grab an the lowest order
-        # # octet from size_of_msg that has not yet been read and put it
-        # # into header_as_list.
-        # for i in range(0,_WaldoTCPConnectionObj.HEADER_LEN_OCTETS):
-
-        #     # moves the bits of interest into the lowest order of the
-        #     # integer.
-        #     lower_order_shifted_bits = (size_of_msg) >> (i*8)
-        #     octet_val = lower_order_shifted_bits & (0xFF)
-            
-        #     header_as_list[i] = chr(octet_val)
-
-        # # header = reduce(
-        # #     lambda x,y : x + chr(y),
-        # #     header_as_list,'')
-        # header = ''.join(header_as_list)
-            
         return header + str_to_escape
 
     @staticmethod
@@ -215,6 +199,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
             return None,None
 
         msg = to_try_to_decapsulate[_WaldoTCPConnectionObj.HEADER_LEN_OCTETS:full_size]
+        msg = zlib.decompress(msg)
         rest_of_msg = to_try_to_decapsulate[full_size:]
 
         return msg, rest_of_msg
