@@ -254,7 +254,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         other.
         '''
         msg_str_to_send = self._encapsulate_msg_str(msg_str_to_write)
-        self.sock.send(msg_str_to_send)
+        self.sock.sendall(msg_str_to_send)
 
 
         
