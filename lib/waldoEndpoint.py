@@ -47,8 +47,13 @@ class _Endpoint(object):
         # variables.
         self._global_var_store = global_var_store
 
-        self._endpoint_service_thread = waldoEndpointServiceThread._EndpointServiceThread(self)
-        self._endpoint_service_thread.start()
+        # self._endpoint_service_thread = waldoEndpointServiceThread._EndpointServiceThread(self)
+        # self._endpoint_service_thread.start()
+
+        self._endpoint_service_thread_pool = (
+            waldoEndpointServiceThread._EndpointServiceThreadPool(
+                self,util.SIZE_THREAD_POOL))
+
 
         self._host_uuid = host_uuid
 
@@ -173,14 +178,14 @@ class _Endpoint(object):
         '''
         @see _EndpointServiceThread.request_commit
         '''
-        self._endpoint_service_thread.request_commit(
+        self._endpoint_service_thread_pool.request_commit(
             uuid,requesting_endpoint)
 
     def _receive_request_backout(self,uuid,requesting_endpoint):
         '''
         @see _EndpointServiceThread.receive_request_backout
         '''
-        self._endpoint_service_thread.receive_request_backout(
+        self._endpoint_service_thread_pool.receive_request_backout(
             uuid,requesting_endpoint)
 
     def _receive_request_commit(self,uuid,requesting_endpoint):
@@ -189,7 +194,7 @@ class _Endpoint(object):
         to begin the first phase of the commit of the active event
         with uuid "uuid."
         '''
-        self._endpoint_service_thread.receive_request_commit_from_endpoint(
+        self._endpoint_service_thread_pool.receive_request_commit_from_endpoint(
             uuid,requesting_endpoint)
         
     def _receive_request_complete_commit(self,uuid):
@@ -198,7 +203,7 @@ class _Endpoint(object):
         to finish the second phase of the commit of active event with
         uuid "uuid."
         '''
-        self._endpoint_service_thread.receive_request_complete_commit(
+        self._endpoint_service_thread_pool.receive_request_complete_commit(
             uuid,
             False # complete commit request was not from partner
                   # endpoint.
@@ -232,13 +237,13 @@ class _Endpoint(object):
         msg = waldoMessages._Message.map_to_msg(msg_map)
             
         if isinstance(msg,waldoMessages._PartnerRequestSequenceBlockMessage):
-            self._endpoint_service_thread.receive_partner_request_message_sequence_block(
+            self._endpoint_service_thread_pool.receive_partner_request_message_sequence_block(
                 msg)
         elif isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
-            self._endpoint_service_thread.receive_partner_request_commit(msg)
+            self._endpoint_service_thread_pool.receive_partner_request_commit(msg)
             
         elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
-            self._endpoint_service_thread.receive_partner_request_complete_commit(msg)
+            self._endpoint_service_thread_pool.receive_partner_request_complete_commit(msg)
         elif isinstance(msg,waldoMessages._PartnerBackoutCommitRequestMessage):
             self._receive_request_backout(msg.event_uuid,util.PARTNER_ENDPOINT_SENTINEL)
         elif isinstance(msg,waldoMessages._PartnerRemovedSubscriberMessage):
@@ -261,10 +266,10 @@ class _Endpoint(object):
                     msg.event_uuid,msg.sending_endpoint_uuid)
 
         elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModified):
-            self._endpoint_service_thread.receive_partner_notify_of_peered_modified_msg(msg)
+            self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_msg(msg)
             
         elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModifiedResponse):
-            self._endpoint_service_thread.receive_partner_notify_of_peered_modified_rsp_msg(msg)
+            self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_rsp_msg(msg)
 
         elif isinstance(msg,waldoMessages._PartnerNotifyReady):
             self._receive_partner_ready(msg.endpoint_uuid)
@@ -277,7 +282,7 @@ class _Endpoint(object):
             #### END DEBUG
 
     def _receive_partner_ready(self,partner_uuid = None):
-        self._endpoint_service_thread.receive_partner_ready()
+        self._endpoint_service_thread_pool.receive_partner_ready()
         self._set_partner_uuid(partner_uuid)
         
     def _notify_partner_ready(self):
@@ -361,7 +366,7 @@ class _Endpoint(object):
 
         @see notify_additional_subscriber (in _ActiveEvent.py)
         '''
-        self._endpoint_service_thread.receive_additional_subscriber(
+        self._endpoint_service_thread_pool.receive_additional_subscriber(
             event_uuid,subscriber_event_uuid,host_uuid,resource_uuid)
 
     def _receive_removed_subscriber(
@@ -369,7 +374,7 @@ class _Endpoint(object):
         '''
         @see _receive_additional_subscriber
         '''
-        self._endpoint_service_thread.receive_removed_subscriber(
+        self._endpoint_service_thread_pool.receive_removed_subscriber(
             event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid)
 
     def _receive_endpoint_call(
@@ -380,7 +385,7 @@ class _Endpoint(object):
         Non-blocking.  Requests the endpoint_service_thread to perform
         the endpoint function call listed as func_name.
         '''
-        self._endpoint_service_thread.receive_endpoint_call(
+        self._endpoint_service_thread_pool.receive_endpoint_call(
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
 
 
@@ -402,7 +407,7 @@ class _Endpoint(object):
         
         Forward the message on to the root.  
         '''
-        self._endpoint_service_thread.receive_first_phase_commit_message(
+        self._endpoint_service_thread_pool.receive_first_phase_commit_message(
             event_uuid,endpoint_uuid,True,children_event_endpoint_uuids)
         
 
@@ -411,7 +416,7 @@ class _Endpoint(object):
         '''
         @see _receive_first_phase_commit_successful
         '''
-        self._endpoint_service_thread.receive_first_phase_commit_message(
+        self._endpoint_service_thread_pool.receive_first_phase_commit_message(
             event_uuid,endpoint_uuid,False)
 
 

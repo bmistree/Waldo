@@ -5,6 +5,8 @@ import inspect
 from collections import namedtuple
 import logging
 
+SIZE_THREAD_POOL = 50
+
 # Queue was changed to queue in Python 3.  
 try:
     import Queue as Queue

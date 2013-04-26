@@ -241,7 +241,7 @@ class TryCommit(threading.Thread):
 
 def run_test():
     # run 100 times to exercise different timings
-    for i in range(0,100):
+    for i in range(0,10):
         if not basic_setup():
             return False
 

@@ -663,7 +663,8 @@ function, we create an active event to use to execute that function.
 We want to execute it in its own separate thread.  This class provides
 that separate thread and executes the function.
 '''
-class _ExecutingEvent(threading.Thread):
+#class _ExecutingEvent(threading.Thread):
+class _ExecutingEvent(object):
 
     def __init__(self,to_exec,active_event,ctx,result_queue,*to_exec_args):
         '''
@@ -697,8 +698,8 @@ class _ExecutingEvent(threading.Thread):
 
         self.result_queue = result_queue
         
-        threading.Thread.__init__(self)
-        self.daemon = True
+        # threading.Thread.__init__(self)
+        # self.daemon = True
         
 
     def run(self):

@@ -704,7 +704,8 @@ class _ActiveEvent(_InvalidationListener):
 
         if exec_event != None:
             ### ACTUALLY START EXECUTION CONTEXT THREAD
-            exec_event.start()
+            exec_event.run()
+            # exec_event.start()
 
         
     def notify_removed_subscriber(
