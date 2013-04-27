@@ -653,3 +653,38 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
     def set_has_been_written_to(self,new_val):
         util.logger_assert('In _DirtyMapContainerElement, should never get ' +
                            'a call to set_has_been_written_to.')
+
+
+    @staticmethod
+    def deserialize_version_obj_from_network_data(
+        version_network_data):
+
+        rcv = _ReferenceContainerVersion()
+        rcv.commit_num = version_network_data[1]
+        rcv.len_called = version_network_data[2]
+
+        rcv.keys_called = version_network_data[3]
+        rcv.contains_keys  = version_network_data[4]
+        rcv.read_values_keys  = version_network_data[5]
+        rcv.written_values_keys  = version_network_data[6]
+        rcv.added_keys  = version_network_data[7]
+        rcv.deleted_keys  = version_network_data[8]
+        
+        return rcv
+
+        
+
+    def serializable_for_network_data(self):
+        return (
+            self.REFERENCE_CONTAINER_VERSION,
+            self.commit_num,
+            self.len_called,
+            self.keys_called,
+
+            self.contains_keys,
+            self.read_values_keys,
+            self.written_values_keys,
+            self.added_keys,
+            self.deleted_keys)
+
+        

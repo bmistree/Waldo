@@ -178,8 +178,7 @@ class _ReferenceBase(object):
             var_data = new_var_data
 
         version_obj_data = dirty_element.version_obj.serializable_for_network_data()
-
-
+        
         to_return = util._generate_serialization_named_tuple(
             var_name,self.var_type(),var_data,version_obj_data)
         return to_return
@@ -504,6 +503,8 @@ class _ReferenceVersion(object):
     determine if an update from a dirtyElement will apply cleanly, or
     need to be backed out.
     '''
+    REFERENCE_VALUE_VERSION = 1
+    REFERENCE_CONTAINER_VERSION = 2
     
     @abstractmethod
     def copy(self):
@@ -566,10 +567,12 @@ class _ReferenceVersion(object):
         partner endpoint knows which fields were changed on
         serializer's side.
         '''
-
         # FIXME: Lots of overhead in pickling entire class instead of
         # just the necessary data.
-        return pickle.dumps(self)
+        util.logger_assert(
+            'Serializable for network data is pure virtual ' +
+            'in waldoReferenceBase.')
+
 
     @staticmethod
     def deserialize_version_obj_from_network_data(
@@ -578,8 +581,7 @@ class _ReferenceVersion(object):
         @param {Currently string} version_network_data --- The result
         of a call to serilizable_for_network_data on a version object.
         '''
-        return pickle.loads(version_network_data)
-        
-
+        util.logger_assert(
+            'Deserialization is pure virtual in waldoReferenceBase.')
     
     

@@ -2,6 +2,7 @@ import wVariables
 import waldoInternalList
 import waldoInternalMap
 from waldoReferenceBase import _ReferenceVersion as RefVers
+import waldoVersionObjHelper
 import util
 
 
@@ -145,8 +146,12 @@ def deserialize_peered_object_into_variable(
     var_name = serial_obj_named_tuple.var_name
 
     serial_vobj = serial_obj_named_tuple.version_obj_data
-    version_obj = RefVers.deserialize_version_obj_from_network_data(
+    # version_obj = RefVers.deserialize_version_obj_from_network_data(
+    #     serial_vobj)
+    version_obj = waldoVersionObjHelper.deserialize_version_obj_from_network_data(
         serial_vobj)
+
+    
 
     var_type = serial_obj_named_tuple.var_type
     #### DEBUG: Testing whether got a valid type
@@ -355,8 +360,11 @@ def new_obj_from_serialized(
     var_name = serial_obj_named_tuple.var_name
 
     serial_vobj = serial_obj_named_tuple.version_obj_data
-    version_obj = RefVers.deserialize_version_obj_from_network_data(
+    # version_obj = RefVers.deserialize_version_obj_from_network_data(
+    #     serial_vobj)
+    version_obj = waldoVersionObjHelper.deserialize_version_obj_from_network_data(
         serial_vobj)
+
 
     var_data = serial_obj_named_tuple.var_data
     var_type = serial_obj_named_tuple.var_type

@@ -62,5 +62,16 @@ class _ReferenceValueVersion(waldoReferenceBase._ReferenceVersion):
         w_obj.val = val
         
 
-
+    @staticmethod
+    def deserialize_version_obj_from_network_data(
+        version_network_data):
+        version_num = version_network_data[1]
+        has_been_written_to = version_network_data[2]
+        ref_vv = _ReferenceValueVersion(version_num)
+        ref_vv.has_been_written_to = has_been_written_to
+        return ref_vv
+        
+    def serializable_for_network_data(self):
+        return (
+            self.REFERENCE_VALUE_VERSION,self.version_num, self.has_been_written_to)
 

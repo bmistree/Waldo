@@ -150,6 +150,7 @@ class _VariableStore(object):
                 should_serialize = (
                     waldo_variable.is_peered() and
                     waldo_variable.modified(invalidation_listener))
+                
 
             if should_serialize:
                 changed_map[key] = waldo_variable.serializable_var_tuple_for_network(
