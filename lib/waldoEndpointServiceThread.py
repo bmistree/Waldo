@@ -173,7 +173,7 @@ class _EndpointServiceThreadPool():
         
     def receive_partner_request_message_sequence_block(self,msg):
         '''
-        @param {_PartnerRequestSequenceBlockMessage} msg --- Contains
+        @param {PartnerRequestSequenceBlock.proto} msg --- Contains
         all the information for the request partner made.
         '''
         partner_request_sequence_block_action = (

@@ -224,7 +224,9 @@ class _Endpoint(object):
         elif general_msg.HasField('notify_of_peered_modified_resp'):
             self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_rsp_msg(
                 general_msg.notify_of_peered_modified_resp)
-
+        elif general_msg.HasField('request_sequence_block'):
+            self._endpoint_service_thread_pool.receive_partner_request_message_sequence_block(
+                general_msg.request_sequence_block)
 
             
     def _receive_msg_from_partner(self,string_msg):
@@ -251,10 +253,7 @@ class _Endpoint(object):
             
         msg = waldoMessages._Message.map_to_msg(msg_map)
             
-        if isinstance(msg,waldoMessages._PartnerRequestSequenceBlockMessage):
-            self._endpoint_service_thread_pool.receive_partner_request_message_sequence_block(
-                msg)
-        elif isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
+        if isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
             self._endpoint_service_thread_pool.receive_partner_request_commit(msg)
             
         elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
@@ -309,10 +308,8 @@ class _Endpoint(object):
         partner_notify_ready = general_message.notify_ready
         endpoint_uuid = partner_notify_ready.endpoint_uuid
         endpoint_uuid.data = self._uuid
-        
         self._conn_obj.write(general_message.SerializeToString(),self)
-        # msg = waldoMessages._PartnerNotifyReady(self._uuid)
-        # self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+
         
     def _notify_partner_removed_subscriber(
         self,event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid):
@@ -487,20 +484,44 @@ class _Endpoint(object):
         local data to be transmitted whether or not it was modified.
         
         '''
-        glob_deltas = self._global_var_store.generate_deltas(
-            invalidation_listener)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_REQUEST_SEQUENCE_BLOCK
+
+        request_sequence_block_msg = general_message.request_sequence_block
+
+        # event uuid
+        request_sequence_block_msg.event_uuid.data = event_uuid
+        
+        # name of block requesting
+        if block_name != None:
+            request_sequence_block_msg.name_of_block_requesting = block_name
+            
+        # reply with uuid
+        reply_with_uuid_msg = request_sequence_block_msg.reply_with_uuid
+        reply_with_uuid_msg.data = reply_with_uuid
+
+        # reply to uuid
+        if reply_to_uuid != None:
+            reply_to_uuid_msg = request_sequence_block_msg.reply_to_uuid
+            reply_to_uuid_msg.data = reply_to_uuid
+
+        # FIXME: do not actually pickle here.  instead, delta
+        # generation should return messages.
+
+        # sequence_local_var_store_deltas_msg =
+        # request_sequence_block_msg.sequence_local_var_store_deltas
+
         sequence_local_deltas = sequence_local_store.generate_deltas(
             invalidation_listener,first_msg)
-        
-        msg_to_send = waldoMessages._PartnerRequestSequenceBlockMessage(
-            event_uuid,block_name,reply_with_uuid,reply_to_uuid,
-            glob_deltas,sequence_local_deltas)
+        request_sequence_block_msg.sequence_local_var_store_deltas = pickle.dumps(sequence_local_deltas)
 
-        msg_map = msg_to_send.msg_to_map()
 
-        sending_msg_str = pickle.dumps(msg_map)
-        msg_len = len(sending_msg_str)
-        self._conn_obj.write(sending_msg_str,self)
+        glob_deltas = self._global_var_store.generate_deltas(
+            invalidation_listener)
+        request_sequence_block_msg.peered_var_store_deltas = pickle.dumps(glob_deltas)
+
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
 
         
     def _forward_commit_request_partner(self,active_event):

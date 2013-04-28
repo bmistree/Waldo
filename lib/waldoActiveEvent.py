@@ -1,13 +1,13 @@
 from invalidationListener import _InvalidationListener
 import util
-import threading
+import threading, pickle, time
 import waldoCallResults
 import waldoExecutingEvent
 from abc import abstractmethod
 from util import Queue
 import waldoDeadlockDetector
-import time
-import logging
+
+
 
 class _SubscribedToElement(object):
     '''
@@ -596,17 +596,17 @@ class _ActiveEvent(_InvalidationListener):
 
         self._unlock()
 
+
     def recv_partner_sequence_call_msg(self,msg):
         '''
-        @param {_PartnerMessageRequestSequenceBlockAction} msg --- 
+        @param {PartnerMessageRequestSequenceBlock.proto} msg --- 
         '''
-        reply_to_uuid = msg.reply_to_uuid
-        reply_with_uuid = msg.reply_with_uuid
-
         # can be None... if it is means that the other side wants us
         # to decide what to do next (eg, the other side performed its
         # last message sequence action)
-        name_of_block_to_exec_next = msg.name_of_block_requesting
+        name_of_block_to_exec_next = None
+        if msg.HasField('name_of_block_requesting'):
+            name_of_block_to_exec_next = msg.name_of_block_requesting
         
         # update peered data based on data contents of message.
         # (Note: still must update sequence local data from deltas
@@ -615,12 +615,12 @@ class _ActiveEvent(_InvalidationListener):
         # FIXME: pretty sure that do not need to incorporate deltas within
         # lock, but should check
         self.local_endpoint._global_var_store.incorporate_deltas(
-            self,msg.global_var_store_deltas)
+            self,pickle.loads(msg.peered_var_store_deltas))
 
         exec_event = None
 
         self._lock()
-        if reply_to_uuid == None:
+        if not msg.HasField('reply_to_uuid'):
             # means that the other side has generated a first message
             # create a new context to execute that message and do so
             # in a new thread.
@@ -647,17 +647,18 @@ class _ActiveEvent(_InvalidationListener):
                     'Error in _ActiveEvent.  Received a request to ' +
                     'perform an unknown sequence step.')
             #### END MAYBE DEBUG
-                           
+
             to_exec = getattr(self.local_endpoint,block_to_exec_internal_name)
 
             ### SET UP CONTEXT FOR EXECUTING
+            # FIXME: re-arrange code to avoid this import
             import waldoVariableStore
             seq_local_var_store = waldoVariableStore._VariableStore(
                 self.local_endpoint._host_uuid)
 
-            
+            # FIXME: eventually, want to remove pickle-ing here
             seq_local_var_store.incorporate_deltas(
-                self,msg.sequence_local_var_store_deltas)
+                self,pickle.loads(msg.sequence_local_var_store_deltas))
             
             evt_ctx = waldoExecutingEvent._ExecutingEventContext(
                 # already incorporated deltas for global_var_store
@@ -665,7 +666,7 @@ class _ActiveEvent(_InvalidationListener):
                 self.local_endpoint._global_var_store,
                 seq_local_var_store)
 
-            evt_ctx.set_to_reply_with(reply_with_uuid)
+            evt_ctx.set_to_reply_with(msg.reply_with_uuid.data)
             
             # used to actually start execution of context thread at end
             # of loop.  must start event outside of locks.  That way,
@@ -680,31 +681,34 @@ class _ActiveEvent(_InvalidationListener):
 
         else:
             #### DEBUG
-            if reply_to_uuid not in self.message_listening_queues_map:
+            if msg.reply_to_uuid.data not in self.message_listening_queues_map:
                 util.logger_assert(
                     'Error: partner response message responding to ' +
                     'unknown _ActiveEvent message.')
             #### END DEBUG
                 
             # unblock waiting listening queue.
-            self.message_listening_queues_map[reply_to_uuid].put(
+            self.message_listening_queues_map[msg.reply_to_uuid.data].put(
                 waldoCallResults._SequenceMessageCallResult(
-                    reply_with_uuid,
+                    msg.reply_with_uuid.data,
                     name_of_block_to_exec_next,
                     # as soon as read from the listening message
                     # queue, populate sequence local data from context
                     # using sequence_local_var_store_deltas.
-                    msg.sequence_local_var_store_deltas))
+
+                    # FIXME: eventaully, want to move away from
+                    # pickle-ing here.
+                    pickle.loads(msg.sequence_local_var_store_deltas)))
 
             # no need holding onto queue waiting on a message response.
-            del self.message_listening_queues_map[reply_to_uuid]
+            del self.message_listening_queues_map[msg.reply_to_uuid.data]
 
         self._unlock()
 
         if exec_event != None:
             ### ACTUALLY START EXECUTION CONTEXT THREAD
             exec_event.run()
-            # exec_event.start()
+
 
         
     def notify_removed_subscriber(

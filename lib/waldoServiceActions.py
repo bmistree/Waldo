@@ -28,18 +28,16 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
         received a message requesting it to execute one of its
         sequence blocks.
 
-        @param {_PartnerRequestSequenceBlockMessage}
+        @param {PartnerRequestSequenceBlockMessage.proto}
         partner_request_block_msg
         '''
-
         self.local_endpoint = local_endpoint
         self.partner_request_block_msg = partner_request_block_msg
 
     def service(self):
-        event_uuid = self.partner_request_block_msg.event_uuid
         
         evt = self.local_endpoint._act_event_map.get_or_create_partner_event(
-            event_uuid)
+            self.partner_request_block_msg.event_uuid.data)
         
         evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
         

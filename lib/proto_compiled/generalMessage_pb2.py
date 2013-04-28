@@ -9,11 +9,12 @@ from google.protobuf import descriptor_pb2
 
 import partnerNotifyReady_pb2
 import partnerNotifyOfPeeredModifiedResponse_pb2
+import partnerRequestSequenceBlock_pb2
 
 DESCRIPTOR = descriptor.FileDescriptor(
   name='generalMessage.proto',
   package='',
-  serialized_pb='\n\x14generalMessage.proto\x1a\x18partnerNotifyReady.proto\x1a+partnerNotifyOfPeeredModifiedResponse.proto\"\x97\x02\n\x0eGeneralMessage\x12\x31\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x1b.GeneralMessage.MessageType\x12)\n\x0cnotify_ready\x18\x02 \x01(\x0b\x32\x13.PartnerNotifyReady\x12N\n\x1enotify_of_peered_modified_resp\x18\x03 \x01(\x0b\x32&.PartnerNotifyOfPeeredModifiedResponse\"W\n\x0bMessageType\x12\x18\n\x14PARTNER_NOTIFY_READY\x10\x00\x12.\n*PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE\x10\x01')
+  serialized_pb='\n\x14generalMessage.proto\x1a\x18partnerNotifyReady.proto\x1a+partnerNotifyOfPeeredModifiedResponse.proto\x1a!partnerRequestSequenceBlock.proto\"\xf9\x02\n\x0eGeneralMessage\x12\x31\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x1b.GeneralMessage.MessageType\x12)\n\x0cnotify_ready\x18\x02 \x01(\x0b\x32\x13.PartnerNotifyReady\x12N\n\x1enotify_of_peered_modified_resp\x18\x03 \x01(\x0b\x32&.PartnerNotifyOfPeeredModifiedResponse\x12<\n\x16request_sequence_block\x18\x04 \x01(\x0b\x32\x1c.PartnerRequestSequenceBlock\"{\n\x0bMessageType\x12\x18\n\x14PARTNER_NOTIFY_READY\x10\x00\x12.\n*PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE\x10\x01\x12\"\n\x1ePARTNER_REQUEST_SEQUENCE_BLOCK\x10\x02')
 
 
 
@@ -31,11 +32,15 @@ _GENERALMESSAGE_MESSAGETYPE = descriptor.EnumDescriptor(
       name='PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE', index=1, number=1,
       options=None,
       type=None),
+    descriptor.EnumValueDescriptor(
+      name='PARTNER_REQUEST_SEQUENCE_BLOCK', index=2, number=2,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=288,
-  serialized_end=375,
+  serialized_start=385,
+  serialized_end=508,
 )
 
 
@@ -67,6 +72,13 @@ _GENERALMESSAGE = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    descriptor.FieldDescriptor(
+      name='request_sequence_block', full_name='GeneralMessage.request_sequence_block', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -77,13 +89,14 @@ _GENERALMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=96,
-  serialized_end=375,
+  serialized_start=131,
+  serialized_end=508,
 )
 
 _GENERALMESSAGE.fields_by_name['message_type'].enum_type = _GENERALMESSAGE_MESSAGETYPE
 _GENERALMESSAGE.fields_by_name['notify_ready'].message_type = partnerNotifyReady_pb2._PARTNERNOTIFYREADY
 _GENERALMESSAGE.fields_by_name['notify_of_peered_modified_resp'].message_type = partnerNotifyOfPeeredModifiedResponse_pb2._PARTNERNOTIFYOFPEEREDMODIFIEDRESPONSE
+_GENERALMESSAGE.fields_by_name['request_sequence_block'].message_type = partnerRequestSequenceBlock_pb2._PARTNERREQUESTSEQUENCEBLOCK
 _GENERALMESSAGE_MESSAGETYPE.containing_type = _GENERALMESSAGE;
 DESCRIPTOR.message_types_by_name['GeneralMessage'] = _GENERALMESSAGE
 

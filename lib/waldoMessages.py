@@ -58,68 +58,6 @@ class _Message(object):
         msg_subtype = _Message.SUBTYPE_MAP[msg_type_field]
         return msg_subtype.map_to_msg(msg_map)
 
-
-class _PartnerRequestSequenceBlockMessage(_Message):
-    
-    MSG_TYPE = 'partner_request_sequence_block_msg'
-
-    NAME_OF_BLOCK_REQUESTING_FIELD = 'name_of_block_requesting_field'
-    REPLY_WITH_UUID_FIELD = 'reply_with_uuid_field'
-    REPLY_TO_UUID_FIELD = 'reply_to_uuid_field'
-    SEQUENCE_LOCAL_VAR_STORE_DELTAS_FIELD = 'sequence_local_store_field'
-    PEERED_VAR_STORE_DELTAS_FIELD = 'peered_var_store_field'
-    
-    def __init__(
-        self,event_uuid,name_of_block_requesting,reply_with_uuid,reply_to_uuid,
-        global_var_store_deltas,sequence_local_var_store_deltas):
-        '''
-        For params, @see
-        waldoEndpoint._send_partner_message_sequence_block_request.
-
-        +
-
-        @param {dict} sequence_local_var_store_deltas --- For format
-        of dict, @see waldoVariableStore.generate_deltas.  Should be
-        able to put this dict directly into a _VariableStore
-        object to update each of an event's sequnce local data.  @see
-        waldoVariableStore._VariableStore.
-
-        @param {dict} sequence_local_var_store_deltas --- For format
-        of dict, @see waldoVariableStore.generate_deltas.  Should be
-        able to put this dict directly into a _VariableStore
-        object to update each of an event's pieces of peered data.
-        @see wladoVariableStore._VariableStore.
-        '''
-        _Message.__init__(self,event_uuid)
-        self.name_of_block_requesting = name_of_block_requesting
-        self.reply_with_uuid = reply_with_uuid
-        self.reply_to_uuid = reply_to_uuid
-        self.sequence_local_var_store_deltas = sequence_local_var_store_deltas
-        self.global_var_store_deltas = global_var_store_deltas
-
-        
-    def msg_to_map(self):
-        return {
-            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
-            _Message.EVENT_UUID_FIELD: self.event_uuid,
-
-            self.NAME_OF_BLOCK_REQUESTING_FIELD: self.name_of_block_requesting,
-            self.REPLY_WITH_UUID_FIELD: self.reply_with_uuid,
-            self.REPLY_TO_UUID_FIELD: self.reply_to_uuid,
-            self.SEQUENCE_LOCAL_VAR_STORE_DELTAS_FIELD: self.sequence_local_var_store_deltas,
-            self.PEERED_VAR_STORE_DELTAS_FIELD: self.global_var_store_deltas
-            }
-
-    @staticmethod
-    def map_to_msg(msg_map):
-        return _PartnerRequestSequenceBlockMessage(
-            msg_map[_Message.EVENT_UUID_FIELD],
-            msg_map[_PartnerRequestSequenceBlockMessage.NAME_OF_BLOCK_REQUESTING_FIELD],
-            msg_map[_PartnerRequestSequenceBlockMessage.REPLY_WITH_UUID_FIELD],
-            msg_map[_PartnerRequestSequenceBlockMessage.REPLY_TO_UUID_FIELD],
-            msg_map[_PartnerRequestSequenceBlockMessage.PEERED_VAR_STORE_DELTAS_FIELD],
-            msg_map[_PartnerRequestSequenceBlockMessage.SEQUENCE_LOCAL_VAR_STORE_DELTAS_FIELD])
-
     
 class _PartnerCommitRequestMessage(_Message):
     MSG_TYPE = 'partner_commit_request_message'
@@ -329,9 +267,7 @@ class _PartnerNotifyOfPeeredModified(_Message):
             msg[_PartnerNotifyOfPeeredModified.PEERED_DELTAS_FIELD])
 
 
-    
-_Message.SUBTYPE_MAP[
-    _PartnerRequestSequenceBlockMessage.MSG_TYPE] = _PartnerRequestSequenceBlockMessage
+
 _Message.SUBTYPE_MAP[
     _PartnerCommitRequestMessage.MSG_TYPE] = _PartnerCommitRequestMessage
 _Message.SUBTYPE_MAP[
