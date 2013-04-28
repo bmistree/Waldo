@@ -7,6 +7,10 @@ from util import Queue
 import threading
 import logging
 
+from lib.proto_compiled.generalMessage_pb2 import GeneralMessage
+
+
+
 class _Endpoint(object):
     '''
     All methods that begin with _receive, are called by other
@@ -209,6 +213,18 @@ class _Endpoint(object):
                   # endpoint.
             )
 
+        
+    def _receive_proto_msg(self,string_msg):
+        general_msg = GeneralMessage()
+        general_msg.ParseFromString(string_msg)
+
+        if general_msg.HasField('notify_ready'):
+            endpoint_uuid = general_msg.notify_ready.endpoint_uuid
+            self._receive_partner_ready(endpoint_uuid.data)
+
+
+            
+            
     def _receive_msg_from_partner(self,string_msg):
         '''
         Called by the connection object.
@@ -223,17 +239,14 @@ class _Endpoint(object):
         function, we dispatch depending on message we receive.
         '''
         counter = 0
-        while True:
-            try:
-                msg_map = pickle.loads(string_msg)
-                break
-            except:
-                # import pdb
-                # pdb.set_trace()
-                counter +=1
-                # util.get_logger().critical('error',extra=self._logging_info)
-                if counter > 10:
-                    raise 
+        try:
+            msg_map = pickle.loads(string_msg)
+        except:
+            # was a protocol buffer message
+            self._receive_proto_msg(string_msg)
+            return
+
+            
         msg = waldoMessages._Message.map_to_msg(msg_map)
             
         if isinstance(msg,waldoMessages._PartnerRequestSequenceBlockMessage):
@@ -289,10 +302,16 @@ class _Endpoint(object):
         '''
         Tell partner endpoint that I have completed my onReady action.
         '''
-        msg = waldoMessages._PartnerNotifyReady(self._uuid)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
-
-            
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_NOTIFY_READY
+        partner_notify_ready = general_message.notify_ready
+        endpoint_uuid = partner_notify_ready.endpoint_uuid
+        endpoint_uuid.data = self._uuid
+        
+        self._conn_obj.write(general_message.SerializeToString(),self)
+        # msg = waldoMessages._PartnerNotifyReady(self._uuid)
+        # self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+        
     def _notify_partner_removed_subscriber(
         self,event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''

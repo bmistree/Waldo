@@ -1,0 +1,8 @@
+import "util.proto";
+
+message PartnerNotifyOfPeeredModifiedResponse
+{
+        required UUID event_uuid = 1;
+        required UUID reply_to_uuid = 2;
+        required bool invalidated = 3;
+}

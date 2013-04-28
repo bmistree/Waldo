@@ -1,0 +1,14 @@
+import "partnerNotifyReady.proto";
+import "partnerNotifyOfPeeredModifiedResponse.proto";
+
+message GeneralMessage
+{
+        enum MessageType {
+             PARTNER_NOTIFY_READY = 0;
+             PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE = 1;             
+        }
+
+        required MessageType message_type = 1;
+        optional PartnerNotifyReady notify_ready = 2;
+        optional PartnerNotifyOfPeeredModifiedResponse notify_of_peered_modified_resp = 3;
+}
