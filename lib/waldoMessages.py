@@ -328,73 +328,6 @@ class _PartnerNotifyOfPeeredModified(_Message):
             msg[_PartnerNotifyOfPeeredModified.REPLY_WITH_UUID_FIELD],
             msg[_PartnerNotifyOfPeeredModified.PEERED_DELTAS_FIELD])
 
-    
-class _PartnerNotifyOfPeeredModifiedResponse(_Message):
-    '''
-    This is a response message to _PartnerNotifyOfPeeredModified
-    
-    @see waldoActiveEvent.wait_if_modified_peered
-    '''
-    MSG_TYPE = 'partner_notify_of_peered_modified_resp'
-
-    REPLY_TO_UUID_FIELD = 'reply_to_uuid'
-    INVALIDATED_FIELD = 'invalidated'
-
-    
-    def __init__(self,event_uuid,reply_to_uuid,invalidated):
-        '''
-        @param {uuid} event_uuid
-
-        @param {uuid} reply_to_uuid --- Matches reply_with_uuid from
-        _PartnerNotifyOfPeeredModified.
-        
-        @param {bool} invalidated --- True if when notifying other
-        side of the changes to peered data, the other side cannot
-        apply changes because they have already been invalidated.
-        (Early exit condition.)
-        '''
-        self.event_uuid = event_uuid
-        self.reply_to_uuid = reply_to_uuid
-        self.invalidated = invalidated
-
-    def msg_to_map(self):
-        return {
-            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
-            _Message.EVENT_UUID_FIELD: self.event_uuid,
-
-            self.REPLY_TO_UUID_FIELD: self.reply_to_uuid,
-            self.INVALIDATED_FIELD: self.invalidated
-            }
-
-    @staticmethod
-    def map_to_msg(msg):
-        return _PartnerNotifyOfPeeredModifiedResponse(
-            msg[_Message.EVENT_UUID_FIELD],
-            msg[_PartnerNotifyOfPeeredModifiedResponse.REPLY_TO_UUID_FIELD],
-            msg[_PartnerNotifyOfPeeredModifiedResponse.INVALIDATED_FIELD])
-    
-
-class _PartnerNotifyReady(_Message):
-    '''
-    The endpoint that sent this message has completed its on_ready
-    method
-    '''
-    MSG_TYPE = 'partner_notify_ready_msg'
-    ENDPOINT_UUID_FIELD = 'endpoint_uuid'
-
-    def __init__(self,endpoint_uuid):
-        self.endpoint_uuid = endpoint_uuid
-
-    def msg_to_map(self):
-        return {
-            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
-            _PartnerNotifyReady.ENDPOINT_UUID_FIELD: self.endpoint_uuid,
-            }
-
-    @staticmethod
-    def map_to_msg(msg):
-        return _PartnerNotifyReady(
-            msg[_PartnerNotifyReady.ENDPOINT_UUID_FIELD])
 
     
 _Message.SUBTYPE_MAP[
@@ -413,7 +346,3 @@ _Message.SUBTYPE_MAP[
     _PartnerFirstPhaseResultMessage.MSG_TYPE] = _PartnerFirstPhaseResultMessage
 _Message.SUBTYPE_MAP[
     _PartnerNotifyOfPeeredModified.MSG_TYPE] = _PartnerNotifyOfPeeredModified
-_Message.SUBTYPE_MAP[
-    _PartnerNotifyOfPeeredModifiedResponse.MSG_TYPE] = _PartnerNotifyOfPeeredModifiedResponse
-_Message.SUBTYPE_MAP[
-    _PartnerNotifyReady.MSG_TYPE] = _PartnerNotifyReady

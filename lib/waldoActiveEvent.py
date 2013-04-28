@@ -346,16 +346,15 @@ class _ActiveEvent(_InvalidationListener):
     
     def receive_partner_modified_peered_response(self,resp_msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse}
-        resp_msg
+        @param {PartnerNotifyOfPeeredModifiedResponse.proto} resp_msg
         
         @see wait_if_modified_peered.  Unlocks queue being waited on
         in that function.
         '''
         self._lock()
         queue_waiting_on =  (
-            self.message_listening_queues_map[resp_msg.reply_to_uuid])
-        del self.message_listening_queues_map[resp_msg.reply_to_uuid]
+            self.message_listening_queues_map[resp_msg.reply_to_uuid.data])
+        del self.message_listening_queues_map[resp_msg.reply_to_uuid.data]
 
         self._unlock()
 

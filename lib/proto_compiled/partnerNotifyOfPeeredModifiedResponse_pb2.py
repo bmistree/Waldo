@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerNotifyOfPeeredModifiedResponse.proto',
   package='',
-  serialized_pb='\n+partnerNotifyOfPeeredModifiedResponse.proto\x1a\nutil.proto\"u\n%PartnerNotifyOfPeeredModifiedResponse\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x1c\n\rreply_to_uuid\x18\x02 \x02(\x0b\x32\x05.UUID\x12\x13\n\x0binvalidated\x18\x03 \x02(\x08')
+  serialized_pb='\n+partnerNotifyOfPeeredModifiedResponse.proto\x1a\nutil.proto\"u\n%PartnerNotifyOfPeeredModifiedResponse\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x13\n\x0binvalidated\x18\x02 \x02(\x08\x12\x1c\n\rreply_to_uuid\x18\x03 \x02(\x0b\x32\x05.UUID')
 
 
 
@@ -32,16 +32,16 @@ _PARTNERNOTIFYOFPEEREDMODIFIEDRESPONSE = descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='reply_to_uuid', full_name='PartnerNotifyOfPeeredModifiedResponse.reply_to_uuid', index=1,
-      number=2, type=11, cpp_type=10, label=2,
-      has_default_value=False, default_value=None,
+      name='invalidated', full_name='PartnerNotifyOfPeeredModifiedResponse.invalidated', index=1,
+      number=2, type=8, cpp_type=7, label=2,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='invalidated', full_name='PartnerNotifyOfPeeredModifiedResponse.invalidated', index=2,
-      number=3, type=8, cpp_type=7, label=2,
-      has_default_value=False, default_value=False,
+      name='reply_to_uuid', full_name='PartnerNotifyOfPeeredModifiedResponse.reply_to_uuid', index=2,
+      number=3, type=11, cpp_type=10, label=2,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),

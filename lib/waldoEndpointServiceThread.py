@@ -184,7 +184,7 @@ class _EndpointServiceThreadPool():
 
     def receive_partner_notify_of_peered_modified_msg(self,msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModified} msg
+        @param {PartnerNotifyOfPeeredModifiedResponse.proto} msg
         '''
         action = waldoServiceActions._ReceivePeeredModifiedMsg(
             self.endpoint,msg)

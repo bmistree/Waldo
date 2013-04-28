@@ -5,7 +5,7 @@ message GeneralMessage
 {
         enum MessageType {
              PARTNER_NOTIFY_READY = 0;
-             PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE = 1;             
+             PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE = 1;
         }
 
         required MessageType message_type = 1;

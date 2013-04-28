@@ -318,24 +318,20 @@ class _ReceivePeeredModifiedMsg(_Action):
 class _ReceivePeeredModifiedResponseMsg(_Action):
     def __init__(self,local_endpoint, msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse} msg
+        @param {PartnerNotifyOfPeeredModifiedResponse.proto} msg
         '''
         self.local_endpoint = local_endpoint
         self.msg = msg
 
     def service(self):
 
-        event_uuid = self.msg.event_uuid
+        event_uuid = self.msg.event_uuid.data
         event = self.local_endpoint._act_event_map.get_event(event_uuid)
         
         if event != None:
             # (event could == None if we backed out the event before
             # received response for message.)
             event.receive_partner_modified_peered_response(self.msg)
-            str_event_uuid = event.str_uuid
-        else:
-            str_event_uuid = str(event_uuid)
-
             
             
 class _ReceivePartnerReadyAction(_Action):
