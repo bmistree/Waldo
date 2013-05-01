@@ -2,6 +2,12 @@ import waldoReferenceContainerBase
 import util
 import waldoReferenceBase
 import waldoExecutingEvent
+from waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
+from waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
+from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
+import numbers
+
+from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
 class InternalList(waldoReferenceContainerBase._ReferenceContainer):
 
@@ -55,9 +61,11 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
 
         return found
 
-    def insert_into(self,invalid_listener, index, val):
+    def insert_into(self,invalid_listener, index, val,copy_if_peered=True):
         # this will get overwritten later.  for now, just append some
         # val
+
+        # FIXME: This looks horribly inefficient
         
         self.append_val(invalid_listener,val)
 
@@ -68,8 +76,95 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
                 i,self.get_val_on_key(invalid_listener,i-1))
             
         self.write_val_on_key(invalid_listener,index,val)
+
         
-    
+    def incorporate_deltas(self,internal_list_delta,constructors,active_event):
+        '''
+        @param {SingleInternalListDelta} internal_list_delta
+        '''
+        for list_action in internal_list_delta.list_actions:
+            if list_action.container_action == VarStoreDeltas.ContainerAction.WRITE_VALUE:
+                
+                container_written_action = list_action.write_key
+                index_to_write_to = container_written_action.write_key_num
+
+                if container_written_action.HasField('what_written_text'):
+                    new_val = container_written_action.what_written_text
+                elif container_written_action.HasField('what_written_num'):
+                    new_val = container_written_action.what_written_num
+                elif container_written_action.HasField('what_written_tf'):
+                    new_val = container_written_action.what_written_tf
+                    
+                elif container_written_action.HasField('what_written_map'):
+                    new_val = constructors.map_constructor('',self.host_uuid,True)
+                    single_map_delta = container_written_action.what_written_map
+                    new_val.incorporate_deltas(single_map_delta,active_event)
+                    
+                elif list_action.HasField('what_written_list'):
+                    new_val = constructors.list_constructor('',self.host_uuid,True)
+                    single_map_delta = container_written_action.what_written_map
+                    new_val.incorporate_deltas(single_map_delta,active_event)
+                
+                    
+                # actually put new value in list
+                self.write_val_on_key(active_event,index_to_write_to,new_val,False)
+                
+
+            elif list_action.container_action == VarStoreDeltas.ContainerAction.ADD_KEY:
+                container_added_action = list_action.added_key
+                
+                index_to_add_to = container_added_action.added_key_num
+
+                if container_added_action.HasField('added_what_text'):
+                    new_val = container_added_action.added_what_text
+                elif container_added_action.HasField('added_what_num'):
+                    new_val = container_added_action.added_what_num
+                elif container_added_action.HasField('added_what_tf'):
+                    new_val = container_added_action.added_what_tf
+                    
+                elif container_added_action.HasField('added_what_map'):
+                    new_val = constructors.map_constructor('',self.host_uuid,True)
+                    single_map_delta = container_added_action.added_what_map
+                    new_val.incorporate_deltas(single_map_delta,active_event)
+
+                elif container_added_action.HasField('added_what_list'):
+                    new_val = constructors.list_constructor('',self.host_uuid,True)
+                    single_map_delta = container_added_action.added_what_list
+                    new_val.incorporate_deltas(single_map_delta,active_event)
+
+                self.insert_into(active_event,index_to_add_to,new_val,False)
+
+            elif list_action.container_action == VarStoreDeltas.ContainerAction.DELETE_KEY:
+                container_deleted_action = list_action.deleted_key
+                index_to_del_from = container_deleted_action.deleted_key_num
+                self.del_key_called(active_event,index_to_del_from)
+
+                
+        for sub_element_action in internal_list_delta.sub_element_update_actions:
+            index = sub_element_action.key_num
+
+            if sub_element_action.HasField('map_delta'):
+                to_incorporate = sub_element_action.map_delta
+            elif sub_element_action.HasField('list_delta'):
+                to_incorporate = sub_element_action.list_delta
+            #### DEBUG
+            else:
+                util.logger_assert('Unkwnown action type in subelements')
+            #### END DEBUG
+
+            self.get_val_on_key(active_event,index).incorporate_deltas(
+                to_incorporate,constructors,active_event)
+            
+
+        self._lock()
+        self._add_invalid_listener(active_event)
+        dirty_elem = self._dirty_map[active_event.uuid]
+        self._unlock()
+            
+        # do not want to send the same information back to the other side.
+        dirty_elem.clear_partner_change_log()
+
+        
     def contains_key(self,invalid_listener, key):
         util.logger_assert(
             'Cannot call contains_key on list')
@@ -206,7 +301,166 @@ class _InternalListVersion(
 
         self.deleted_keys[del_index] = self.commit_num
 
+        # FIXME: should only append to change log if peered.
+        self.partner_change_log.append(delete_key_tuple(del_index))
+        
         for shifted_write_index in range(del_index,length_of_list_before_del):
             self.deleted_keys[shifted_write_index] = self.commit_num
+            
+
+    def add_all_data_to_delta_list(
+        self,delta_to_add_to,current_internal_val,action_event):
+        '''
+        Run through entire list.  Create an add action for each element.
+        '''
+
+        for key in range(0,len(current_internal_val)):
+            list_action = delta_to_add_to.list_actions.add()
+
+            list_action.container_action = VarStoreDeltas.ContainerAction.ADD_KEY
+            
+            add_action = list_action.added_key
+            add_action.parent_type = VarStoreDeltas.CONTAINER_ADDED
+            add_action.added_key_num = key
+
+            # now actually add the value to the map
+            list_val = current_internal_val[key]
+
+            if isinstance(list_val,numbers.Number):
+                add_action.added_what_num = list_val
+            elif util.is_string(list_val):
+                add_action.added_what_text = list_val
+            elif isinstance(list_val,bool):
+                add_action.added_what_tf = list_val
+
+            elif isinstance(
+                list_val,waldoReferenceBase._ReferenceBase):
+
+                list_val.serializable_var_tuple_for_network(
+                    add_action,'',action_event,True)
+            
+
+    def add_to_delta_list(self,delta_to_add_to,current_internal_val,action_event):
+        '''
+        @param {varStoreDeltas.SingleListDelta} delta_to_add_to ---
+
+        @param {list} current_internal_val --- The internal val of the action event.
+
+        @param {_InvalidationListener} action_event
         
+        @returns {bool} --- Returns true if have any changes to add false otherwise.
+        '''
+        modified_indices = {}
         
+        changes_made = False
+        
+        # FIXME: only need to keep track of change log for peered
+        # variables.  May be expensive to otherwise.
+        for partner_change in self.partner_change_log:
+            changes_made = True
+            
+            # FIXME: no need to transmit overwrites.  but am doing
+            # that currently.
+            list_action = delta_to_add_to.list_actions.add()
+            
+            if is_delete_key_tuple(partner_change):
+                list_action.container_action = VarStoreDeltas.ContainerAction.DELETE_KEY
+                delete_action = list_action.deleted_key
+                key = partner_change[1]
+                modified_indices[key] = True
+                delete_action.deleted_key_num = key
+
+                
+            elif is_add_key_tuple(partner_change):
+                key = partner_change[1]
+                modified_indices[key] = True
+                
+                if key < len(current_internal_val):
+                    # note, key may not be in internal val, for
+                    # instance if we had deleted it after adding.
+                    # in this case, can ignore the add here.
+
+                    list_action.container_action = VarStoreDeltas.ContainerAction.ADD_KEY
+                    add_action = list_action.added_key
+                    add_action.parent_type = VarStoreDeltas.CONTAINER_ADDED
+                    add_action.added_key_num = key
+
+                    # now actually add the value to the map
+                    list_val = current_internal_val[key]
+
+                    if isinstance(list_val,numbers.Number):
+                        add_action.added_what_num = list_val
+                    elif util.is_string(list_val):
+                        add_action.added_what_text = list_val
+                    elif isinstance(list_val,bool):
+                        add_action.added_what_tf = list_val
+
+                    elif isinstance(
+                        list_val,waldoReferenceBase._ReferenceBase):
+                        
+                        list_val.serializable_var_tuple_for_network(
+                            add_action,'',action_event)
+                    #### DEBUG
+                    else:
+                        util.logger_assert('Unknown list value type when serializing')
+                    #### END DEBUG
+
+            elif is_write_key_tuple(partner_change):
+                key = partner_change[1]
+                modified_indices[key] = True
+                
+                if key < len(current_internal_val):
+                    list_action.container_action = VarStoreDeltas.ContainerAction.WRITE_VALUE
+                    write_action = list_action.write_key
+                    
+                    write_action.parent_type = VarStoreDeltas.CONTAINER_WRITTEN
+                    write_action.write_key_num = key
+
+                    list_val = current_internal_val[key]
+                    if isinstance(list_val,numbers.Number):
+                        write_action.what_written_num = list_val
+                    elif util.is_string(list_val):
+                        write_action.what_written_text = list_val
+                    elif isinstance(list_val,bool):
+                        write_action.what_written_tf = list_val
+                    elif isinstance(
+                        list_val,waldoReferenceBase._ReferenceBase):
+                        list_val.serializable_var_tuple_for_network(
+                            write_action,'',action_event)
+                    #### DEBUG
+                    else:
+                        util.logger_assert('Unknown list type')
+                    #### END DEBUG
+
+                        
+            #### DEBUG
+            else:
+                util.logger_assert('Unknown container operation')
+            #### END DEBUG
+
+        for index in range(0,len(current_internal_val)):
+            list_val = current_internal_val[index]
+
+            if not isinstance(list_val,waldoReferenceBase._ReferenceBase):
+                break
+            
+            if index not in modified_indices:
+                # create action
+                sub_element_action = delta_to_add_to.sub_element_update_actions.add()
+                sub_element_action.parent_type = VarStoreDeltas.SUB_ELEMENT_ACTION
+
+                sub_element_action.key_num = index
+                
+                if map_val.serializable_var_tuple_for_network(sub_element_action,'',action_event,False):
+                    changes_made = True
+                else:
+                    # no change made to subtree: go ahead and delete added subaction
+                    del delta_to_add_to.sub_element_update_actions[-1]
+                
+
+        # clean out change log: do not need to re-send updates for
+        # these changes to partner, so can just reset after sending
+        # once.
+        self.partner_change_log = []
+        return changes_made
+

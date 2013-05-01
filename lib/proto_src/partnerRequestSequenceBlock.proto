@@ -1,4 +1,5 @@
 import "util.proto";
+import "varStoreDeltas.proto";
 
 message PartnerRequestSequenceBlock
 {
@@ -32,7 +33,6 @@ message PartnerRequestSequenceBlock
         */      
         optional UUID reply_to_uuid = 4;
 
-        // fix: should eventually be message itself
-        required bytes sequence_local_var_store_deltas = 5;
-        required bytes peered_var_store_deltas = 6;
+        required VarStoreDeltas sequence_local_var_store_deltas = 5;
+        required VarStoreDeltas peered_var_store_deltas = 6;
 }

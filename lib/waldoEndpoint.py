@@ -505,20 +505,11 @@ class _Endpoint(object):
             reply_to_uuid_msg = request_sequence_block_msg.reply_to_uuid
             reply_to_uuid_msg.data = reply_to_uuid
 
-        # FIXME: do not actually pickle here.  instead, delta
-        # generation should return messages.
-
-        # sequence_local_var_store_deltas_msg =
-        # request_sequence_block_msg.sequence_local_var_store_deltas
-
         sequence_local_deltas = sequence_local_store.generate_deltas(
-            invalidation_listener,first_msg)
-        request_sequence_block_msg.sequence_local_var_store_deltas = pickle.dumps(sequence_local_deltas)
-
-
+            invalidation_listener,first_msg,request_sequence_block_msg.sequence_local_var_store_deltas)
+                
         glob_deltas = self._global_var_store.generate_deltas(
-            invalidation_listener)
-        request_sequence_block_msg.peered_var_store_deltas = pickle.dumps(glob_deltas)
+            invalidation_listener,False,request_sequence_block_msg.peered_var_store_deltas)
 
         self._conn_obj.write(general_message.SerializeToString(),self)
 

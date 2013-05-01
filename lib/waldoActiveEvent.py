@@ -615,8 +615,9 @@ class _ActiveEvent(_InvalidationListener):
         # FIXME: pretty sure that do not need to incorporate deltas within
         # lock, but should check
         self.local_endpoint._global_var_store.incorporate_deltas(
-            self,pickle.loads(msg.peered_var_store_deltas))
+            self,msg.peered_var_store_deltas)
 
+        
         exec_event = None
 
         self._lock()
@@ -658,7 +659,7 @@ class _ActiveEvent(_InvalidationListener):
 
             # FIXME: eventually, want to remove pickle-ing here
             seq_local_var_store.incorporate_deltas(
-                self,pickle.loads(msg.sequence_local_var_store_deltas))
+                self,msg.sequence_local_var_store_deltas)
             
             evt_ctx = waldoExecutingEvent._ExecutingEventContext(
                 # already incorporated deltas for global_var_store
@@ -698,8 +699,8 @@ class _ActiveEvent(_InvalidationListener):
 
                     # FIXME: eventaully, want to move away from
                     # pickle-ing here.
-                    pickle.loads(msg.sequence_local_var_store_deltas)))
-
+                    msg.sequence_local_var_store_deltas))
+            
             # no need holding onto queue waiting on a message response.
             del self.message_listening_queues_map[msg.reply_to_uuid.data]
 

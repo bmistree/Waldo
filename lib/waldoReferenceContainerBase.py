@@ -1,7 +1,9 @@
 import waldoReferenceBase
 import util
 from abc import abstractmethod
-import itertools
+import itertools, numbers
+
+from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
 class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     '''
@@ -35,6 +37,12 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         if self.peered:
             invalid_listener.add_peered_modified()
         self._unlock()
+
+
+    def incorporate_deltas(self,delta_to_incorporate,active_event):
+        util.logger_assert(
+            'Error: incorporate_deltas in waldoReferenceContainerBase ' +
+            'is pure virtual')
 
 
     def del_key_called(self,invalid_listener,key_deleted):
@@ -107,7 +115,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         dirty_element.version_obj = new_version_obj
         self._unlock()
 
-    
+
     def get_len(self,invalid_listener):
         self._lock()
         self._add_invalid_listener(invalid_listener)
@@ -148,14 +156,14 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._unlock()
         return dirty_val
         
-
-    def write_val_on_key(self,invalid_listener,key,new_val):
+    
+    def write_val_on_key(self,invalid_listener,key,new_val,copy_if_peered=True):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
 
-        if self.peered:
+        if self.peered and copy_if_peered:
             # copy the data that's being written in: peereds do not
             # hold references.  If they did, could be trying to
             # synchronize references across multiple hosts.  Eg., if
@@ -198,6 +206,7 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         '''
         waldoReferenceBase._DirtyMapElement.__init__(self,*args)
 
+        
     def get_val_on_key(self,key):
         self.version_obj.get_val_on_key(key)
         return self.val[key]
@@ -210,7 +219,9 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
     def write_val_on_key(self,key,new_val):
         self.version_obj.write_val_on_key(key)
         self.val[key] = new_val
+        self.has_been_written_since_last_message = True
 
+        
     def add_key(self,key,new_val,invalid_listener,peered):
         self.version_obj.add_key(key)
         # if we are peered, then we want to assign into ourselves a
@@ -219,6 +230,8 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         # already have the semantics that they will be copied on read.
         # (And we throw an error if a peered variable has a container
         # with externals inside of it.)
+        self.has_been_written_since_last_message = True
+        
         if peered:
             if isinstance(
                 new_val,_ReferenceContainer):
@@ -241,8 +254,13 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
 
         self.val[key] = new_val
 
+
+
+    def clear_partner_change_log(self):
+        self.version_obj.clear_partner_change_log()
         
     def del_key(self,key):
+        self.has_been_written_since_last_message = True
         self.version_obj.del_key(key)        
         del self.val[key]
 
@@ -289,6 +307,17 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         self.added_keys ={}
         self.deleted_keys = {}
 
+        # keeps track of what has not yet been sent over the network
+        # to partner.  Each element should be a 2-tuple.  The first
+        # element of the 2-tuple should be the relevant operation
+        # type: WRITE, ADD, DELETE.  The second element should be the
+        # key identifier.  See helper functions at bottom of file for
+        # tuples.
+        self.partner_change_log = []
+        
+    def clear_partner_change_log(self):
+        self.partner_change_log = []
+        
     def modified(self,invalidation_listener):
         '''
         @returns {bool} true if has been modified; false otherwise
@@ -576,7 +605,6 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
         @returns {map} --- Indices are keys that need to be copied on
         update.  Values don't matter.
-        
         '''
         
         updated_fields = {}
@@ -632,12 +660,39 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
     def write_val_on_key(self,key):
         self.written_values_keys[key] = self.commit_num
 
+        # FIXME: should only append to change log if peered.
+        self.partner_change_log.append(write_key_tuple(key))
+
+        
     def add_key(self,key_added):
         self.added_keys[key_added] = self.commit_num
 
+        # FIXME: should only append to change log if peered.
+        self.partner_change_log.append(add_key_tuple(key_added))
+
+    def add_to_delta_list(self,delta_to_add_to,current_internal_val,action_event):
+        '''
+        @param delta_to_add_to --- Either
+        varStoreDeltas.SingleMapDelta or
+        varStoreDeltas.SingleListDelta
+
+        We log all operations on this variable 
+        '''
+        util.logger_assert(
+            'Pure virutal add_to_delta_list in waldoReferenceContainerBase')
+
+    def add_all_data_to_delta_list(
+        self,delta_to_add_to,current_internal_val,action_event):
+        util.logger_assert(
+            'Pure virutal add_all_data_to_delta_list in waldoReferenceContainerBase')
+        
     def del_key(self,key_deleted):
         self.deleted_keys[key_deleted] = self.commit_num
 
+        # FIXME: should only append to change log if peered.
+        self.partner_change_log.append(delete_key_tuple(key_deleted))
+
+        
     def get_len(self):
         self.len_called = self.commit_num
 
@@ -687,4 +742,21 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
             self.added_keys,
             self.deleted_keys)
 
-        
+
+DELETE_FLAG = 0
+ADD_FLAG = 1
+WRITE_FLAG = 2
+def delete_key_tuple(key):
+    return (DELETE_FLAG,key)
+def is_delete_key_tuple(tup):
+    return tup[0] == DELETE_FLAG
+
+def add_key_tuple(key):
+    return (ADD_FLAG,key)
+def is_add_key_tuple(tup):
+    return tup[0] == ADD_FLAG
+
+def write_key_tuple(key):
+    return (WRITE_FLAG,key)
+def is_write_key_tuple(tup):
+    return tup[0] == WRITE_FLAG
