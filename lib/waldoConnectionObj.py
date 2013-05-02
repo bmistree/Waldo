@@ -361,8 +361,12 @@ class _TCPAcceptThread(threading.Thread):
         # we do not want to listen for the connection forever.  every
         # 1s, if we do not get a connection check if we should stop listening
         sock.settimeout(1)
-        
-        sock.bind((self.host_listen_on, self.port_listen_on))
+
+        try: 
+          sock.bind((self.host_listen_on, self.port_listen_on))
+        except socket.error, ex:
+          print ex[1] # print error message from socket error
+
         sock.listen(1)
         self.synchronization_listening_queue.put(True)
         while True:
