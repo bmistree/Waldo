@@ -227,6 +227,9 @@ class _Endpoint(object):
         elif general_msg.HasField('request_sequence_block'):
             self._endpoint_service_thread_pool.receive_partner_request_message_sequence_block(
                 general_msg.request_sequence_block)
+        elif general_msg.HasField('notify_of_peered_modified'):
+            self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_msg(
+                general_msg.notify_of_peered_modified)
 
             
     def _receive_msg_from_partner(self,string_msg):
@@ -278,15 +281,6 @@ class _Endpoint(object):
             else:
                 self._receive_first_phase_commit_unsuccessful(
                     msg.event_uuid,msg.sending_endpoint_uuid)
-
-        elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModified):
-            self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_msg(msg)
-            
-        # elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModifiedResponse):
-        #     self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_rsp_msg(msg)
-
-        # elif isinstance(msg,waldoMessages._PartnerNotifyReady):
-        #     self._receive_partner_ready(msg.endpoint_uuid)
             
         else:
             #### DEBUG
@@ -529,14 +523,24 @@ class _Endpoint(object):
 
 
     def _notify_partner_peered_before_return(
-        self,event_uuid,reply_with_uuid,peered_deltas):
+        self,event_uuid,reply_with_uuid,active_event):
         '''
         @see waldoActiveEvent.wait_if_modified_peered
         '''
-        msg = waldoMessages._PartnerNotifyOfPeeredModified(
-            event_uuid,reply_with_uuid,peered_deltas)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
+
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_NOTIFY_OF_PEERED_MODIFIED
+        notify_of_peered_modified = general_message.notify_of_peered_modified
+
+        glob_deltas = notify_of_peered_modified.glob_deltas
+        self._global_var_store.generate_deltas(
+            active_event,False,glob_deltas)
+
+        notify_of_peered_modified.event_uuid.data = event_uuid
+        notify_of_peered_modified.reply_with_uuid.data = reply_with_uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
+        
         
     def _notify_partner_peered_before_return_response(
         self,event_uuid,reply_to_uuid,invalidated):
@@ -560,11 +564,6 @@ class _Endpoint(object):
         notify_of_peered_modified_resp.invalidated = invalidated
         
         self._conn_obj.write(general_message.SerializeToString(),self)
-        
-        # msg = waldoMessages._PartnerNotifyOfPeeredModifiedResponse(
-        #     event_uuid,reply_to_uuid,invalidated)
-        # msg_map = msg.msg_to_map()
-        # self._conn_obj.write(pickle.dumps(msg_map),self)
         
 
     def _forward_complete_commit_request_partner(self,active_event):

@@ -327,16 +327,16 @@ class _ActiveEvent(_InvalidationListener):
         response.
         '''
         self.local_endpoint._global_var_store.incorporate_deltas(
-            self,msg.peered_deltas)
+            self,msg.glob_deltas)
 
         # FIXME: should check here whether the delta changes have
         # already been invalidated.
 
-        # FIXME: ensure that I eally do not need locks around
+        # FIXME: ensure that I really do not need locks around
         # incorporate deltas.
         
         self.local_endpoint._notify_partner_peered_before_return_response(
-            self.uuid,msg.reply_with_uuid, False)
+            self.uuid,msg.reply_with_uuid.data, False)
 
 
     def add_signal_call(self,signaler):
@@ -413,10 +413,10 @@ class _ActiveEvent(_InvalidationListener):
             
             # send update message 
             must_send_update = True
-            glob_deltas = self.local_endpoint._global_var_store.generate_deltas(
-                self)
+
         self._unlock()
 
+        
         if must_send_update:
             # send update message and block until we receive a
             # response
@@ -426,7 +426,7 @@ class _ActiveEvent(_InvalidationListener):
                 reply_with_uuid] = waiting_queue
 
             self.local_endpoint._notify_partner_peered_before_return(
-                self.uuid,reply_with_uuid,glob_deltas)
+                self.uuid,reply_with_uuid,self)
             
             peered_mod_get = waiting_queue.get()
             if isinstance(

@@ -184,12 +184,13 @@ class _EndpointServiceThreadPool():
 
     def receive_partner_notify_of_peered_modified_msg(self,msg):
         '''
-        @param {PartnerNotifyOfPeeredModifiedResponse.proto} msg
+        @param {PartnerNotifyOfPeeredModified.proto} msg
         '''
         action = waldoServiceActions._ReceivePeeredModifiedMsg(
             self.endpoint,msg)
         self.threadsafe_queue.put(action)
 
+        
     def receive_partner_notify_of_peered_modified_rsp_msg(self,msg):
         '''
         @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse} msg

@@ -1,17 +1,21 @@
 import "partnerNotifyReady.proto";
 import "partnerNotifyOfPeeredModifiedResponse.proto";
 import "partnerRequestSequenceBlock.proto";
+import "partnerNotifyOfPeeredModified.proto";
 
 message GeneralMessage
 {
-        enum MessageType {
-             PARTNER_NOTIFY_READY = 0;
-             PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE = 1;
-             PARTNER_REQUEST_SEQUENCE_BLOCK = 2;
-        }
+    enum MessageType {
+        PARTNER_NOTIFY_READY = 0;
+        PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE = 1;
+        PARTNER_REQUEST_SEQUENCE_BLOCK = 2;
+        PARTNER_NOTIFY_OF_PEERED_MODIFIED = 3;
+    }
 
-        required MessageType message_type = 1;
-        optional PartnerNotifyReady notify_ready = 2;
-        optional PartnerNotifyOfPeeredModifiedResponse notify_of_peered_modified_resp = 3;
-        optional PartnerRequestSequenceBlock request_sequence_block = 4;
+    required MessageType message_type = 1;
+    optional PartnerNotifyReady notify_ready = 2;
+    optional PartnerNotifyOfPeeredModifiedResponse notify_of_peered_modified_resp = 3;
+    optional PartnerRequestSequenceBlock request_sequence_block = 4;
+    optional PartnerNotifyOfPeeredModified notify_of_peered_modified = 5;
+    
 }

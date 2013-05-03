@@ -235,38 +235,6 @@ class _PartnerFirstPhaseResultMessage(_Message):
             msg[_PartnerFirstPhaseResultMessage.CHILDREN_EVENT_ENDPOINT_UUIDS_FIELD])
         
 
-class _PartnerNotifyOfPeeredModified(_Message):
-    '''
-    @see waldoActiveEvent.wait_if_modified_peered    
-    '''
-    MSG_TYPE = 'partner_notify_of_peered_modified'
-
-    REPLY_WITH_UUID_FIELD = 'reply_with_uuid'
-    PEERED_DELTAS_FIELD = 'peered_deltas'
-
-    def __init__(
-        self,event_uuid,reply_with_uuid,peered_deltas):
-        self.event_uuid = event_uuid
-        self.reply_with_uuid = reply_with_uuid
-        self.peered_deltas = peered_deltas
-
-    def msg_to_map(self):
-        return {
-            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
-            _Message.EVENT_UUID_FIELD: self.event_uuid,
-
-            self.REPLY_WITH_UUID_FIELD: self.reply_with_uuid,
-            self.PEERED_DELTAS_FIELD: self.peered_deltas,
-            }
-
-    @staticmethod
-    def map_to_msg(msg):
-        return _PartnerNotifyOfPeeredModified(
-            msg[_Message.EVENT_UUID_FIELD],
-            msg[_PartnerNotifyOfPeeredModified.REPLY_WITH_UUID_FIELD],
-            msg[_PartnerNotifyOfPeeredModified.PEERED_DELTAS_FIELD])
-
-
 
 _Message.SUBTYPE_MAP[
     _PartnerCommitRequestMessage.MSG_TYPE] = _PartnerCommitRequestMessage
@@ -280,5 +248,3 @@ _Message.SUBTYPE_MAP[
     _PartnerAdditionalSubscriberMessage.MSG_TYPE] = _PartnerAdditionalSubscriberMessage
 _Message.SUBTYPE_MAP[
     _PartnerFirstPhaseResultMessage.MSG_TYPE] = _PartnerFirstPhaseResultMessage
-_Message.SUBTYPE_MAP[
-    _PartnerNotifyOfPeeredModified.MSG_TYPE] = _PartnerNotifyOfPeeredModified

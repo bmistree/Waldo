@@ -308,10 +308,10 @@ class _ReceivePeeredModifiedMsg(_Action):
         self.msg = msg
 
     def service(self):
-        event_uuid = self.msg.event_uuid
+        event_uuid = self.msg.event_uuid.data
         event = self.local_endpoint._act_event_map.get_or_create_partner_event(event_uuid)
         event.generate_partner_modified_peered_response(self.msg)
-
+        
 
 class _ReceivePeeredModifiedResponseMsg(_Action):
     def __init__(self,local_endpoint, msg):
