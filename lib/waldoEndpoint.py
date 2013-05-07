@@ -231,6 +231,18 @@ class _Endpoint(object):
             self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_msg(
                 general_msg.notify_of_peered_modified)
 
+        elif general_msg.HasField('first_phase_result'):
+            if general_msg.first_phase_result.successful:
+                self._receive_first_phase_commit_successful(
+                    general_msg.first_phase_result.event_uuid.data,
+                    general_msg.first_phase_result.sending_endpoint_uuid.data,
+                    [x.data for x  in general_msg.first_phase_result.children_event_endpoint_uuids])
+            else:
+                self._receive_first_phase_commit_unsuccessful(
+                    general_msg.first_phase_result.event_uuid.data,
+                    general_msg.first_phase_result.sending_endpoint_uuid.data)
+
+
             
     def _receive_msg_from_partner(self,string_msg):
         '''
@@ -272,15 +284,6 @@ class _Endpoint(object):
             self._receive_additional_subscriber(
                 msg.event_uuid, msg.additional_subscriber_uuid,
                 msg.host_uuid,msg.resource_uuid)
-
-        elif isinstance(msg,waldoMessages._PartnerFirstPhaseResultMessage):
-            if msg.successful:
-                self._receive_first_phase_commit_successful(
-                    msg.event_uuid,msg.sending_endpoint_uuid,
-                    msg.children_event_endpoint_uuids)
-            else:
-                self._receive_first_phase_commit_unsuccessful(
-                    msg.event_uuid,msg.sending_endpoint_uuid)
             
         else:
             #### DEBUG
@@ -315,6 +318,7 @@ class _Endpoint(object):
             event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid)
         self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
 
+
     def _forward_first_phase_commit_unsuccessful(
         self,event_uuid,endpoint_uuid):
         '''
@@ -327,9 +331,14 @@ class _Endpoint(object):
         endpoint_uuid (and therefore, it and everything along the path
         should roll back their commits).
         '''
-        msg = waldoMessages._PartnerFirstPhaseResultMessage(
-            event_uuid,endpoint_uuid,False)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_FIRST_PHASE_RESULT
+        first_phase_result = general_message.first_phase_result
+        first_phase_result.event_uuid.data = event_uuid
+        first_phase_result.sending_endpoint_uuid.data = endpoint_uuid
+        first_phase_result.successful = False
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
 
     def _forward_first_phase_commit_successful(
         self,event_uuid,endpoint_uuid,children_event_endpoint_uuids):
@@ -348,10 +357,19 @@ class _Endpoint(object):
         children_event_endpoint_uuids have confirmed that they are
         clear to commit.
         '''
-        msg = waldoMessages._PartnerFirstPhaseResultMessage(
-            event_uuid,endpoint_uuid,True,
-            children_event_endpoint_uuids)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_FIRST_PHASE_RESULT
+        first_phase_result = general_message.first_phase_result
+        first_phase_result.event_uuid.data = event_uuid
+        first_phase_result.sending_endpoint_uuid.data = endpoint_uuid
+        first_phase_result.successful = True
+
+        for child_event_uuid in children_event_endpoint_uuids:
+            child_event_uuid_msg = first_phase_result.children_event_endpoint_uuids.add()
+            child_event_uuid_msg.data = child_event_uuid
+        
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
         
     def _notify_partner_of_additional_subscriber(
         self,event_uuid,additional_subscriber_uuid,host_uuid,resource_uuid):
