@@ -681,29 +681,3 @@ class _ReferenceVersion(object):
         util.logger_assert(
             'modified is pure virtual in _ReferenceVersion class.')
         
-
-    def serializable_for_network_data(self):
-        '''
-        The dirty map's version object must be serialized and passed
-        to the partner endpoint for deserialization so that the
-        partner endpoint knows which fields were changed on
-        serializer's side.
-        '''
-        # FIXME: Lots of overhead in pickling entire class instead of
-        # just the necessary data.
-        util.logger_assert(
-            'Serializable for network data is pure virtual ' +
-            'in waldoReferenceBase.')
-
-
-    @staticmethod
-    def deserialize_version_obj_from_network_data(
-        version_network_data):
-        '''
-        @param {Currently string} version_network_data --- The result
-        of a call to serilizable_for_network_data on a version object.
-        '''
-        util.logger_assert(
-            'Deserialization is pure virtual in waldoReferenceBase.')
-    
-    
