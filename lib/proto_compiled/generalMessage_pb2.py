@@ -13,11 +13,12 @@ import partnerRequestSequenceBlock_pb2
 import partnerNotifyOfPeeredModified_pb2
 import partnerFirstPhaseResultMessage_pb2
 import partnerAdditionalSubscriber_pb2
+import partnerRemovedSubscriber_pb2
 
 DESCRIPTOR = descriptor.FileDescriptor(
   name='generalMessage.proto',
   package='',
-  serialized_pb='\n\x14generalMessage.proto\x1a\x18partnerNotifyReady.proto\x1a+partnerNotifyOfPeeredModifiedResponse.proto\x1a!partnerRequestSequenceBlock.proto\x1a#partnerNotifyOfPeeredModified.proto\x1a$partnerFirstPhaseResultMessage.proto\x1a!partnerAdditionalSubscriber.proto\"\xa1\x05\n\x0eGeneralMessage\x12\x31\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x1b.GeneralMessage.MessageType\x12)\n\x0cnotify_ready\x18\x02 \x01(\x0b\x32\x13.PartnerNotifyReady\x12N\n\x1enotify_of_peered_modified_resp\x18\x03 \x01(\x0b\x32&.PartnerNotifyOfPeeredModifiedResponse\x12<\n\x16request_sequence_block\x18\x04 \x01(\x0b\x32\x1c.PartnerRequestSequenceBlock\x12\x41\n\x19notify_of_peered_modified\x18\x05 \x01(\x0b\x32\x1e.PartnerNotifyOfPeeredModified\x12;\n\x12\x66irst_phase_result\x18\x06 \x01(\x0b\x32\x1f.PartnerFirstPhaseResultMessage\x12;\n\x15\x61\x64\x64itional_subscriber\x18\x07 \x01(\x0b\x32\x1c.PartnerAdditionalSubscriber\"\xe5\x01\n\x0bMessageType\x12\x18\n\x14PARTNER_NOTIFY_READY\x10\x00\x12.\n*PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE\x10\x01\x12\"\n\x1ePARTNER_REQUEST_SEQUENCE_BLOCK\x10\x02\x12%\n!PARTNER_NOTIFY_OF_PEERED_MODIFIED\x10\x03\x12\x1e\n\x1aPARTNER_FIRST_PHASE_RESULT\x10\x04\x12!\n\x1dPARTNER_ADDITIONAL_SUBSCRIBER\x10\x05')
+  serialized_pb='\n\x14generalMessage.proto\x1a\x18partnerNotifyReady.proto\x1a+partnerNotifyOfPeeredModifiedResponse.proto\x1a!partnerRequestSequenceBlock.proto\x1a#partnerNotifyOfPeeredModified.proto\x1a$partnerFirstPhaseResultMessage.proto\x1a!partnerAdditionalSubscriber.proto\x1a\x1epartnerRemovedSubscriber.proto\"\xf8\x05\n\x0eGeneralMessage\x12\x31\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x1b.GeneralMessage.MessageType\x12)\n\x0cnotify_ready\x18\x02 \x01(\x0b\x32\x13.PartnerNotifyReady\x12N\n\x1enotify_of_peered_modified_resp\x18\x03 \x01(\x0b\x32&.PartnerNotifyOfPeeredModifiedResponse\x12<\n\x16request_sequence_block\x18\x04 \x01(\x0b\x32\x1c.PartnerRequestSequenceBlock\x12\x41\n\x19notify_of_peered_modified\x18\x05 \x01(\x0b\x32\x1e.PartnerNotifyOfPeeredModified\x12;\n\x12\x66irst_phase_result\x18\x06 \x01(\x0b\x32\x1f.PartnerFirstPhaseResultMessage\x12;\n\x15\x61\x64\x64itional_subscriber\x18\x07 \x01(\x0b\x32\x1c.PartnerAdditionalSubscriber\x12\x35\n\x12removed_subscriber\x18\x08 \x01(\x0b\x32\x19.PartnerRemovedSubscriber\"\x85\x02\n\x0bMessageType\x12\x18\n\x14PARTNER_NOTIFY_READY\x10\x00\x12.\n*PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE\x10\x01\x12\"\n\x1ePARTNER_REQUEST_SEQUENCE_BLOCK\x10\x02\x12%\n!PARTNER_NOTIFY_OF_PEERED_MODIFIED\x10\x03\x12\x1e\n\x1aPARTNER_FIRST_PHASE_RESULT\x10\x04\x12!\n\x1dPARTNER_ADDITIONAL_SUBSCRIBER\x10\x05\x12\x1e\n\x1aPARTNER_REMOVED_SUBSCRIBER\x10\x06')
 
 
 
@@ -51,11 +52,15 @@ _GENERALMESSAGE_MESSAGETYPE = descriptor.EnumDescriptor(
       name='PARTNER_ADDITIONAL_SUBSCRIBER', index=5, number=5,
       options=None,
       type=None),
+    descriptor.EnumValueDescriptor(
+      name='PARTNER_REMOVED_SUBSCRIBER', index=6, number=6,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=685,
-  serialized_end=914,
+  serialized_start=772,
+  serialized_end=1033,
 )
 
 
@@ -115,6 +120,13 @@ _GENERALMESSAGE = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    descriptor.FieldDescriptor(
+      name='removed_subscriber', full_name='GeneralMessage.removed_subscriber', index=7,
+      number=8, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -125,8 +137,8 @@ _GENERALMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=241,
-  serialized_end=914,
+  serialized_start=273,
+  serialized_end=1033,
 )
 
 _GENERALMESSAGE.fields_by_name['message_type'].enum_type = _GENERALMESSAGE_MESSAGETYPE
@@ -136,6 +148,7 @@ _GENERALMESSAGE.fields_by_name['request_sequence_block'].message_type = partnerR
 _GENERALMESSAGE.fields_by_name['notify_of_peered_modified'].message_type = partnerNotifyOfPeeredModified_pb2._PARTNERNOTIFYOFPEEREDMODIFIED
 _GENERALMESSAGE.fields_by_name['first_phase_result'].message_type = partnerFirstPhaseResultMessage_pb2._PARTNERFIRSTPHASERESULTMESSAGE
 _GENERALMESSAGE.fields_by_name['additional_subscriber'].message_type = partnerAdditionalSubscriber_pb2._PARTNERADDITIONALSUBSCRIBER
+_GENERALMESSAGE.fields_by_name['removed_subscriber'].message_type = partnerRemovedSubscriber_pb2._PARTNERREMOVEDSUBSCRIBER
 _GENERALMESSAGE_MESSAGETYPE.containing_type = _GENERALMESSAGE;
 DESCRIPTOR.message_types_by_name['GeneralMessage'] = _GENERALMESSAGE
 

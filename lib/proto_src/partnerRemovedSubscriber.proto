@@ -1,0 +1,13 @@
+import "util.proto";
+
+message PartnerRemovedSubscriber
+{
+    /**
+       See partnerAddedSubscriber.proto
+     */
+    required UUID event_uuid = 1;
+    required UUID removed_subscriber_uuid = 2;
+    required UUID host_uuid = 3;
+    required UUID resource_uuid = 4;
+}
+

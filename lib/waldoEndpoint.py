@@ -248,8 +248,14 @@ class _Endpoint(object):
                 general_msg.additional_subscriber.additional_subscriber_uuid.data,
                 general_msg.additional_subscriber.host_uuid.data,
                 general_msg.additional_subscriber.resource_uuid.data)
-                
 
+        elif general_msg.HasField('removed_subscriber'):
+            self._receive_removed_subscriber(
+                general_msg.removed_subscriber.event_uuid.data,
+                general_msg.removed_subscriber.removed_subscriber_uuid.data,
+                general_msg.removed_subscriber.host_uuid.data,
+                general_msg.removed_subscriber.resource_uuid.data)
+            
             
     def _receive_msg_from_partner(self,string_msg):
         '''
@@ -282,11 +288,6 @@ class _Endpoint(object):
             self._endpoint_service_thread_pool.receive_partner_request_complete_commit(msg)
         elif isinstance(msg,waldoMessages._PartnerBackoutCommitRequestMessage):
             self._receive_request_backout(msg.event_uuid,util.PARTNER_ENDPOINT_SENTINEL)
-        elif isinstance(msg,waldoMessages._PartnerRemovedSubscriberMessage):
-            self._receive_removed_subscriber(
-                msg.event_uuid, msg.removed_subscriber_uuid,
-                msg.host_uuid,msg.resource_uuid)
-            
         else:
             #### DEBUG
             util.logger_assert(
@@ -316,10 +317,17 @@ class _Endpoint(object):
         Send a message to partner that a subscriber is no longer
         holding a lock on a resource to commit it.
         '''
-        msg = waldoMessages._PartnerRemovedSubscriberMessage(
-            event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_REMOVED_SUBSCRIBER
+        
+        removed_subscriber = general_message.removed_subscriber
+        removed_subscriber.event_uuid.data = event_uuid
+        removed_subscriber.removed_subscriber_uuid.data = removed_subscriber_uuid
+        removed_subscriber.host_uuid.data = host_uuid
+        removed_subscriber.resource_uuid.data = resource_uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
 
+        
 
     def _forward_first_phase_commit_unsuccessful(
         self,event_uuid,endpoint_uuid):

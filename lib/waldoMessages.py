@@ -99,39 +99,6 @@ class _PartnerBackoutCommitRequestMessage(_Message):
         return _PartnerBackoutCommitRequestMessage(
             msg_map[_Message.EVENT_UUID_FIELD])
 
-    
-
-class _PartnerRemovedSubscriberMessage(_Message):
-    MSG_TYPE = 'partner_removed_subscriber_message'
-    REMOVED_SUBSCRIBER_UUID_FIELD = 'removed_subscriber_uuid_field'
-    HOST_UUID_FIELD = 'host_uuid_field'    
-    RESOURCE_UUID_FIELD = 'resource_uuid_field'
-    
-    def __init__(
-        self,event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid):
-        _Message.__init__(self,event_uuid)
-        self.removed_subscriber_uuid = removed_subscriber_uuid
-        self.host_uuid = host_uuid
-        self.resource_uuid = resource_uuid
-        
-    def msg_to_map(self):
-        return {
-            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
-            _Message.EVENT_UUID_FIELD: self.event_uuid,
-
-            self.REMOVED_SUBSCRIBER_UUID_FIELD: self.removed_subscriber_uuid,
-            self.HOST_UUID_FIELD: self.host_uuid,            
-            self.RESOURCE_UUID_FIELD: self.resource_uuid,
-            }
-
-    @staticmethod
-    def map_to_msg(msg_map):
-        return _PartnerRemovedSubscriberMessage(
-            msg_map[_Message.EVENT_UUID_FIELD],
-            msg_map[_PartnerRemovedSubscriberMessage.REMOVED_SUBSCRIBER_UUID_FIELD],
-            msg_map[_PartnerRemovedSubscriberMessage.HOST_UUID_FIELD],            
-            msg_map[_PartnerRemovedSubscriberMessage.RESOURCE_UUID_FIELD]
-            )
 
 _Message.SUBTYPE_MAP[
     _PartnerCommitRequestMessage.MSG_TYPE] = _PartnerCommitRequestMessage
@@ -139,5 +106,3 @@ _Message.SUBTYPE_MAP[
     _PartnerCompleteCommitRequestMessage.MSG_TYPE] = _PartnerCompleteCommitRequestMessage
 _Message.SUBTYPE_MAP[
     _PartnerBackoutCommitRequestMessage.MSG_TYPE] = _PartnerBackoutCommitRequestMessage
-_Message.SUBTYPE_MAP[
-    _PartnerRemovedSubscriberMessage.MSG_TYPE] = _PartnerRemovedSubscriberMessage
