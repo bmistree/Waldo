@@ -5,6 +5,7 @@ import "partnerNotifyOfPeeredModified.proto";
 import "partnerFirstPhaseResultMessage.proto";
 import "partnerAdditionalSubscriber.proto";
 import "partnerRemovedSubscriber.proto";
+import "partnerBackoutCommitRequest.proto";
 
 message GeneralMessage
 {
@@ -16,6 +17,7 @@ message GeneralMessage
         PARTNER_FIRST_PHASE_RESULT = 4;
         PARTNER_ADDITIONAL_SUBSCRIBER = 5;
         PARTNER_REMOVED_SUBSCRIBER = 6;
+        PARTNER_BACKOUT_COMMIT_REQUEST = 7;
     }
 
     required MessageType message_type = 1;
@@ -26,5 +28,6 @@ message GeneralMessage
     optional PartnerFirstPhaseResultMessage first_phase_result = 6;
     optional PartnerAdditionalSubscriber additional_subscriber = 7;
     optional PartnerRemovedSubscriber removed_subscriber = 8;
+    optional PartnerBackoutCommitRequest backout_commit_request = 9;
     
 }

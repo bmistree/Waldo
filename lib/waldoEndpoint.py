@@ -255,6 +255,12 @@ class _Endpoint(object):
                 general_msg.removed_subscriber.removed_subscriber_uuid.data,
                 general_msg.removed_subscriber.host_uuid.data,
                 general_msg.removed_subscriber.resource_uuid.data)
+
+        elif general_msg.HasField('backout_commit_request'):
+            self._receive_request_backout(
+                general_msg.backout_commit_request.event_uuid.data,
+                util.PARTNER_ENDPOINT_SENTINEL)
+
             
             
     def _receive_msg_from_partner(self,string_msg):
@@ -286,8 +292,6 @@ class _Endpoint(object):
             
         elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
             self._endpoint_service_thread_pool.receive_partner_request_complete_commit(msg)
-        elif isinstance(msg,waldoMessages._PartnerBackoutCommitRequestMessage):
-            self._receive_request_backout(msg.event_uuid,util.PARTNER_ENDPOINT_SENTINEL)
         else:
             #### DEBUG
             util.logger_assert(
@@ -562,7 +566,6 @@ class _Endpoint(object):
         '''
         @see waldoActiveEvent.wait_if_modified_peered
         '''
-
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_NOTIFY_OF_PEERED_MODIFIED
         notify_of_peered_modified = general_message.notify_of_peered_modified
@@ -617,7 +620,7 @@ class _Endpoint(object):
         the event we will forward a backout request to our partner
         for.
         '''
-        msg = waldoMessages._PartnerBackoutCommitRequestMessage(active_event.uuid)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
-
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_BACKOUT_COMMIT_REQUEST
+        general_message.backout_commit_request.event_uuid.data = active_event.uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
