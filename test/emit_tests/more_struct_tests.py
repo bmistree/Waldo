@@ -23,8 +23,13 @@ def run_test():
         print '\nErr: getting struct from endpoint call'
         return False
 
-    if sideA.get_partner_struct(in_val) != in_val:
+    gotten_val = sideA.get_partner_struct(in_val)
+    if gotten_val != in_val:    
+    # if sideA.get_partner_struct(in_val) != in_val:
         print '\nErr: getting struct from partner'
+        print gotten_val
+        print in_val
+        print '\n\n'
         return False
         
 

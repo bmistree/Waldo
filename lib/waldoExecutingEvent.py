@@ -421,7 +421,7 @@ class _ExecutingEventContext(object):
             # need to check if we need to wrap it first.
             lhs.get_val(active_event).write_val_on_key(active_event,raw_key,rhs)
             
-            
+
         return True
 
     def get_val_on_key(self,to_get_from,key,active_event):

@@ -66,7 +66,6 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         # val
 
         # FIXME: This looks horribly inefficient
-        
         self.append_val(invalid_listener,val)
 
         len_list = self.get_len(invalid_listener)
@@ -86,7 +85,10 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             if list_action.container_action == VarStoreDeltas.ContainerAction.WRITE_VALUE:
                 
                 container_written_action = list_action.write_key
-                index_to_write_to = container_written_action.write_key_num
+                # added because when serializing and deserializing data with
+                # protobufs, not using integer indices, using double indices.
+                # This causes a problem on the range commadn below.
+                index_to_write_to = int(container_written_action.write_key_num)
 
                 if container_written_action.HasField('what_written_text'):
                     new_val = container_written_action.what_written_text
@@ -98,13 +100,21 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
                 elif container_written_action.HasField('what_written_map'):
                     new_val = constructors.map_constructor('',self.host_uuid,True)
                     single_map_delta = container_written_action.what_written_map
+                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER                    
                     new_val.incorporate_deltas(single_map_delta,active_event)
                     
-                elif list_action.HasField('what_written_list'):
+                elif container_written_action.HasField('what_written_list'):
                     new_val = constructors.list_constructor('',self.host_uuid,True)
-                    single_map_delta = container_written_action.what_written_map
-                    new_val.incorporate_deltas(single_map_delta,active_event)
-                
+                    single_list_delta = container_written_action.what_written_list
+                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER                    
+                    new_val.incorporate_deltas(single_list_delta,active_event)
+
+                elif container_written_action.HasField('what_written_struct'):
+                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
+                    single_struct_delta = container_written_action.what_written_struct
+                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+                    new_val.incorporate_deltas(single_struct_delta,active_event)
+                    
                     
                 # actually put new value in list
                 self.write_val_on_key(active_event,index_to_write_to,new_val,False)
@@ -113,7 +123,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             elif list_action.container_action == VarStoreDeltas.ContainerAction.ADD_KEY:
                 container_added_action = list_action.added_key
                 
-                index_to_add_to = container_added_action.added_key_num
+                index_to_add_to = int(container_added_action.added_key_num)
 
                 if container_added_action.HasField('added_what_text'):
                     new_val = container_added_action.added_what_text
@@ -125,18 +135,27 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
                 elif container_added_action.HasField('added_what_map'):
                     new_val = constructors.map_constructor('',self.host_uuid,True)
                     single_map_delta = container_added_action.added_what_map
+                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER
                     new_val.incorporate_deltas(single_map_delta,active_event)
 
                 elif container_added_action.HasField('added_what_list'):
                     new_val = constructors.list_constructor('',self.host_uuid,True)
-                    single_map_delta = container_added_action.added_what_list
-                    new_val.incorporate_deltas(single_map_delta,active_event)
+                    single_list_delta = container_added_action.added_what_list
+                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
+                    new_val.incorporate_deltas(single_list_delta,active_event)
 
+                elif container_added_action.HasField('added_what_struct'):
+                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
+                    single_struct_delta = container_added_action.added_what_struct
+                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+                    new_val.incorporate_deltas(single_struct_delta,active_event)
+
+                    
                 self.insert_into(active_event,index_to_add_to,new_val,False)
 
             elif list_action.container_action == VarStoreDeltas.ContainerAction.DELETE_KEY:
                 container_deleted_action = list_action.deleted_key
-                index_to_del_from = container_deleted_action.deleted_key_num
+                index_to_del_from = int(container_deleted_action.deleted_key_num)
                 self.del_key_called(active_event,index_to_del_from)
 
                 
@@ -399,7 +418,12 @@ class _InternalListVersion(
                         list_val,waldoReferenceBase._ReferenceBase):
                         
                         list_val.serializable_var_tuple_for_network(
-                            add_action,'',action_event)
+                            add_action,'',action_event,
+                            # true here because if anything is written
+                            # or added, then we must force the entire
+                            # copy of it.                            
+                            True)
+
                     #### DEBUG
                     else:
                         util.logger_assert('Unknown list value type when serializing')
@@ -426,7 +450,12 @@ class _InternalListVersion(
                     elif isinstance(
                         list_val,waldoReferenceBase._ReferenceBase):
                         list_val.serializable_var_tuple_for_network(
-                            write_action,'',action_event)
+                            write_action,'',action_event,
+                            # true here because if anything is written
+                            # or added, then we must force the entire
+                            # copy of it.                            
+                            True)
+
                     #### DEBUG
                     else:
                         util.logger_assert('Unknown list type')

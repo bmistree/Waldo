@@ -659,10 +659,9 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
     # touches when write value on key.
     def write_val_on_key(self,key):
         self.written_values_keys[key] = self.commit_num
-
         # FIXME: should only append to change log if peered.
         self.partner_change_log.append(write_key_tuple(key))
-
+        
         
     def add_key(self,key_added):
         self.added_keys[key_added] = self.commit_num

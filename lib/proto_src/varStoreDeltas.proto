@@ -16,6 +16,8 @@ message VarStoreDeltas
         CONTAINER_WRITTEN = 7;
 
         SUB_ELEMENT_ACTION= 8;
+
+        STRUCT_CONTAINER = 9;
     }
     
     message SingleNumberDelta
@@ -77,6 +79,7 @@ message VarStoreDeltas
 
             optional SingleMapDelta what_written_map = 8;
             optional SingleListDelta what_written_list = 9;
+            optional SingleMapDelta what_written_struct = 10;            
         }
 
         message ContainerAddedKey
@@ -94,6 +97,7 @@ message VarStoreDeltas
             
             optional SingleMapDelta added_what_map = 8;
             optional SingleListDelta added_what_list = 9;
+            optional SingleMapDelta added_what_struct = 10;
         }
 
         // used to distinguish len/keys
@@ -169,6 +173,7 @@ message VarStoreDeltas
         
         optional SingleMapDelta map_delta = 6;
         optional SingleListDelta list_delta = 7;
+        optional SingleMapDelta struct_delta = 8;
     }
     
     
@@ -178,6 +183,7 @@ message VarStoreDeltas
     repeated SingleTrueFalseDelta true_false_deltas = 4;
     repeated SingleMapDelta map_deltas = 5;
     repeated SingleListDelta list_deltas = 6;
+    repeated SingleMapDelta struct_deltas = 7;
     
     // cannot access internal map or internal list from base of
     // varStoreDelta because can only reach these through lists and

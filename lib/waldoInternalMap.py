@@ -113,8 +113,17 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         for map_action in internal_map_delta.map_actions:
             if map_action.container_action == VarStoreDeltas.ContainerAction.WRITE_VALUE:
                 container_written_action = map_action.write_key
-                
-                index_to_write_to = container_written_action.write_key_num
+
+                if container_written_action.HasField('write_key_text'):
+                    index_to_write_to = container_written_action.write_key_text
+                elif container_written_action.HasField('write_key_num'):
+                    index_to_write_to = container_written_action.write_key_num
+                elif container_written_action.HasField('write_key_tf'):
+                    index_to_write_to = container_written_action.write_key_tf
+                #### DEBUG
+                else:
+                    util.logger_assert('Unknown map index')
+                #### END DEBUG
 
                 if container_written_action.HasField('what_written_text'):
                     new_val = container_written_action.what_written_text
@@ -126,21 +135,40 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
                 elif container_written_action.HasField('what_written_map'):
                     new_val = constructors.map_constructor('',self.host_uuid,True)
                     single_map_delta = container_written_action.what_written_map
+                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER                    
                     new_val.incorporate_deltas(single_map_delta,constructors,active_event)
                     
                 elif container_written_action.HasField('what_written_list'):
                     new_val = constructors.list_constructor('',self.host_uuid,True)
-                    single_map_delta = container_written_action.what_written_map
-                    new_val.incorporate_deltas(single_map_delta,consructors,active_event)
-                
+                    single_list_delta = container_written_action.what_written_map
+                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
+                    new_val.incorporate_deltas(single_list_delta,consructors,active_event)
+
+                elif container_written_action.HasField('what_written_struct'):
+                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
+                    single_struct_delta = container_written_action.what_written_struct
+                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+                    new_val.incorporate_deltas(single_struct_delta,consructors,active_event)
+                    
                 # actually put new value in map
                 self.write_val_on_key(active_event,index_to_write_to,new_val,False)
-                
+
 
             elif map_action.container_action == VarStoreDeltas.ContainerAction.ADD_KEY:
                 container_added_action = map_action.added_key
-                index_to_add_to = container_added_action.added_key_num
 
+                if container_added_action.HasField('added_key_text'):
+                    index_to_add_to = container_added_action.added_key_text
+                elif container_added_action.HasField('added_key_num'):
+                    index_to_add_to = container_added_action.added_key_num
+                elif container_added_action.HasField('added_key_tf'):
+                    index_to_add_to = container_added_action.added_key_tf
+                #### DEBUG
+                else:
+                    util.logger_assert('Unknown map index')
+                #### END DEBUG
+                
+                
                 if container_added_action.HasField('added_what_text'):
                     new_val = container_added_action.added_what_text
                 elif container_added_action.HasField('added_what_num'):
@@ -151,13 +179,21 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
                 elif container_added_action.HasField('added_what_map'):
                     new_val = constructors.map_constructor('',self.host_uuid,True)
                     single_map_delta = container_added_action.added_what_map
+                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER                    
                     new_val.incorporate_deltas(single_map_delta,constructors,active_event)
 
                 elif container_added_action.HasField('added_what_list'):
                     new_val = constructors.list_constructor('',self.host_uuid,True)
-                    single_map_delta = container_added_action.added_what_list
-                    new_val.incorporate_deltas(single_map_delta,constructors,active_event)
+                    single_list_delta = container_added_action.added_what_list
+                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER                    
+                    new_val.incorporate_deltas(single_list_delta,constructors,active_event)
 
+                elif container_written_action.HasField('added_what_struct'):
+                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
+                    single_struct_delta = container_written_action.added_what_struct
+                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+                    new_val.incorporate_deltas(single_struct_delta,consructors,active_event)
+                    
                 self.write_val_on_key(active_event,index_to_add_to,new_val,False)
 
             elif map_action.container_action == VarStoreDeltas.ContainerAction.DELETE_KEY:
@@ -288,7 +324,7 @@ class _InternalMapVersion(
             
             # FIXME: no need to transmit overwrites.  but am doing
             # that currently.
-            map_action = delta_to_add_to.map_action.add()
+            map_action = delta_to_add_to.map_actions.add()
 
             if is_delete_key_tuple(partner_change):
                 map_action.container_action = VarStoreDeltas.ContainerAction.DELETE_KEY
@@ -343,7 +379,11 @@ class _InternalMapVersion(
                     elif isinstance(
                         map_val,waldoReferenceBase._ReferenceBase):
                         map_val.serializable_var_tuple_for_network(
-                            add_action,'',action_event)
+                            add_action,'',action_event,
+                            # true here because if anything is written
+                            # or added, then we must force the entire
+                            # copy of it.
+                            True)
                     #### DEBUG
                     else:
                         util.logger_assert('Unknown map value type when serializing')
@@ -352,6 +392,7 @@ class _InternalMapVersion(
 
             elif is_write_key_tuple(partner_change):
                 key = partner_change[1]
+
                 keys_affected[key] = True
                 if key in current_internal_val:
                     # note, key may not be in internal val, for
@@ -385,7 +426,12 @@ class _InternalMapVersion(
                     elif isinstance(
                         map_val,waldoReferenceBase._ReferenceBase):
                         map_val.serializable_var_tuple_for_network(
-                            write_action,'',action_event)
+                            write_action,'',action_event,
+                            # true here because if anything is written
+                            # or added, then we must force the entire
+                            # copy of it.                            
+                            True)
+
                     #### DEBUG
                     else:
                         util.logger_assert('Unknown map value type when serializing')
@@ -425,5 +471,5 @@ class _InternalMapVersion(
         # these changes to partner, so can just reset after sending
         # once.
         self.partner_change_log = []
-        
+
         return changes_made

@@ -139,6 +139,10 @@ def recursive_map_list(val,name,host_uuid,peered):
     val (@param val above) and check if it's a dict or a list.  If it
     is, then, check all the elements of the dict/list and create
     variables out of them.
+
+    Returns a WaldoMapVariable or a WaldoListVariable, *NOT* an
+    InternalMap or InternalList.
+    
     '''
 
     # FIXME: here's probably a lot of overhead to this approach.  If
@@ -204,7 +208,7 @@ class WaldoMapVariable(_WaldoExternalVariable):
         if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
             is_var_store = True
             map_delta = parent_delta.map_deltas.add()
-        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_WRITTEN:
+        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_WRITTEN:            
             map_delta = parent_delta.what_written_map
         elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_ADDED:
             map_delta = parent_delta.added_what_map
@@ -212,25 +216,28 @@ class WaldoMapVariable(_WaldoExternalVariable):
             map_delta = parent_delta.map_delta
         else:
             util.logger_assert('Unexpected parent container type when serializing map')
-
+            
+        map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER            
         map_delta.var_name = var_name
         map_delta.has_been_written = dirty_element.has_been_written_since_last_message
 
-        var_data = dirty_element.val
-        internal_has_been_written = var_data.serializable_var_tuple_for_network(
-            map_delta,'',invalid_listener,force)
-
-        # FIXME: check to ensure that second part of condition will
-        # still hide elements that do not change
-        if (not internal_has_been_written) and is_var_store:
-            # remove the newly added map delta because there were no
-            # changes that it encoded
-            del parent_delta.map_deltas[-1]
-
-        
         # reset has been written to
         written_since_last_message = dirty_element.has_been_written_since_last_message
         dirty_element.has_been_written_since_last_message = False
+        
+        var_data = dirty_element.val
+        internal_has_been_written = var_data.serializable_var_tuple_for_network(
+            map_delta,'',invalid_listener,
+            # must force the write when we have written a new value over list
+            force or written_since_last_message)
+
+        
+        # FIXME: check to ensure that second part of condition will
+        # still hide elements that do not change
+        if (not internal_has_been_written) and is_var_store and (not written_since_last_message):
+            # remove the newly added map delta because there were no
+            # changes that it encoded
+            del parent_delta.map_deltas[-1]
 
         return internal_has_been_written or written_since_last_message or force
         
@@ -238,10 +245,9 @@ class WaldoMapVariable(_WaldoExternalVariable):
         '''
         @param {SingleMapDelta} map_delta --- @see varStoreDeltas.proto
         '''
-
         if map_delta.has_been_written:
             # create a new internal
-            internal_map = recursive_map_list({},self.name,self.host_uuid,True)
+            internal_map = recursive_map_list({},self.name,self.host_uuid,True).get_val(None)
             internal_map.incorporate_deltas(
                 map_delta.internal_map_delta,constructors,active_event)
 
@@ -274,14 +280,14 @@ class WaldoMapVariable(_WaldoExternalVariable):
         return internal_val
 
 
-    def write_val(self,invalid_listener,new_val):
+    def write_val(self,invalid_listener,new_val,copy_if_peered=True):
         '''
         When writing a value to a peered container, we need to be
         careful that the new value also becomes peered.  Otherwise, we
         could have a peered variable holding a reference to a
         non-peered InternalMap or InternalList.
         '''
-        if self.peered:
+        if self.peered and copy_if_peered:
             if isinstance(new_val,waldoReferenceBase._ReferenceBase):
                 new_val = new_val.copy(invalid_listener,True)
         super(WaldoMapVariable,self).write_val(invalid_listener,new_val)
@@ -328,26 +334,28 @@ class WaldoListVariable(_WaldoExternalVariable):
         else:
             util.logger_assert('Unexpected parent container type when serializing list')
 
-
+        list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
         list_delta.var_name = var_name
         list_delta.has_been_written = dirty_element.has_been_written_since_last_message
 
-        var_data = dirty_element.val
-        internal_has_been_written = var_data.serializable_var_tuple_for_network(
-            list_delta,'',invalid_listener,force)
-
-        # FIXME: check to ensure that second part of condition will
-        # still hide elements that do not change
-        if (not internal_has_been_written) and is_var_store:
-            # remove the newly added list delta because there were no
-            # changes that it encoded
-            del parent_delta.list_deltas[-1]
-            
-        
         # reset has been written to
         written_since_last_message = dirty_element.has_been_written_since_last_message
         dirty_element.has_been_written_since_last_message = False
 
+        var_data = dirty_element.val
+        internal_has_been_written = var_data.serializable_var_tuple_for_network(
+            list_delta,'',invalid_listener,
+            # must force the write when we have written a new value over list
+            force or written_since_last_message)
+
+
+        # FIXME: check to ensure that second part of condition will
+        # still hide elements that do not change
+        if (not internal_has_been_written) and is_var_store and (not written_since_last_message):
+            # remove the newly added list delta because there were no
+            # changes that it encoded
+            del parent_delta.list_deltas[-1]
+        
         return internal_has_been_written or written_since_last_message or force
 
     def incorporate_deltas(self,list_delta,constructors,active_event):
@@ -356,7 +364,7 @@ class WaldoListVariable(_WaldoExternalVariable):
         '''
         if list_delta.has_been_written:
             # create a new internal
-            internal_list = recursive_map_list([],self.name,self.host_uuid,True)
+            internal_list = recursive_map_list([],self.name,self.host_uuid,True).get_val(None)
             internal_list.incorporate_deltas(
                 list_delta.internal_list_delta,constructors,active_event)
 
@@ -391,11 +399,11 @@ class WaldoListVariable(_WaldoExternalVariable):
             return internal_val.de_waldoify(invalid_listener)
         return internal_val
 
-    def write_val(self,invalid_listener,new_val):
+    def write_val(self,invalid_listener,new_val,copy_if_peered=True):
         '''
         @see write_val in WaldoMapVariable
         '''
-        if self.peered:
+        if self.peered and copy_if_peered:
             if isinstance(new_val,waldoReferenceBase._ReferenceBase):
                 new_val = new_val.copy(invalid_listener,True)
         super(WaldoListVariable,self).write_val(invalid_listener,new_val)
@@ -419,54 +427,7 @@ class WaldoUserStructVariable(WaldoMapVariable):
                 'Otherwise, not initializing struct data')
     
         WaldoMapVariable.__init__(self,name,host_uuid,peered,init_val)
-
-    def serializable_var_tuple_for_network(
-        self,parent_delta,var_name,invalid_listener,force):
-        '''
-        @see waldoReferenceBase.serializable_var_tuple_for_network
-        '''
-        self._lock()
-        self._add_invalid_listener(invalid_listener)
-        dirty_element = self._dirty_map[invalid_listener.uuid]
-        self._unlock()
-
-        version_obj = dirty_element.version_obj
-
-        is_var_store = False
-        if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
-            map_delta = parent_delta.map_deltas.add()
-            is_var_store = True
-        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_WRITTEN:
-            map_delta = parent_delta.what_written_map
-        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_ADDED:
-            map_delta = parent_delta.added_what_map
-        elif parent_delta.parent_type == VarStoreDeltas.SUB_ELEMENT_ACTION:
-            map_delta = parent_delta.map_delta
-        else:
-            util.logger_assert('Unexpected parent container type when serializing struct')
-
-        map_delta.var_name = var_name
-        map_delta.has_been_written = dirty_element.has_been_written_since_last_message
-
-        var_data = dirty_element.val
-        internal_has_been_written = var_data.serializable_var_tuple_for_network(
-            map_delta,'',invalid_listener,force)
-
-        # FIXME: check to ensure that second part of condition will
-        # still hide elements that do not change
-        if (not internal_has_been_written) and is_var_store:
-            # remove the newly added map delta because there were no
-            # changes that it encoded
-            del parent_delta.map_deltas[-1]
-
-        
-        # reset has been written to
-        written_since_last_message = dirty_element.has_been_written_since_last_message
-        dirty_element.has_been_written_since_last_message = False
-
-        return internal_has_been_written or written_since_last_message or force
-
-        
+    
     @staticmethod
     def var_type():
         return 'WaldoUserStructVariable'
@@ -488,6 +449,57 @@ class WaldoUserStructVariable(WaldoMapVariable):
             self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered))
         return to_return
 
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,invalid_listener,force):
+        '''
+        @see waldoReferenceBase.serializable_var_tuple_for_network
+        '''
+        self._lock()
+        self._add_invalid_listener(invalid_listener)
+        dirty_element = self._dirty_map[invalid_listener.uuid]
+        self._unlock()
+
+        version_obj = dirty_element.version_obj
+
+        is_var_store = False
+        if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+            is_var_store = True
+            struct_delta = parent_delta.struct_deltas.add()
+        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_WRITTEN:            
+            struct_delta = parent_delta.what_written_map
+        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_ADDED:
+            struct_delta = parent_delta.added_what_map
+        elif parent_delta.parent_type == VarStoreDeltas.SUB_ELEMENT_ACTION:
+            struct_delta = parent_delta.struct_delta
+        else:
+            util.logger_assert('Unexpected parent container type when serializing map')
+            
+        struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+        struct_delta.var_name = var_name
+        struct_delta.has_been_written = dirty_element.has_been_written_since_last_message
+
+        # reset has been written to
+        written_since_last_message = dirty_element.has_been_written_since_last_message
+        dirty_element.has_been_written_since_last_message = False
+
+        
+        var_data = dirty_element.val
+        internal_has_been_written = var_data.serializable_var_tuple_for_network(
+            struct_delta,'',invalid_listener,
+            # must force the write when we have written a new value over list
+            force or written_since_last_message)
+        
+
+        # FIXME: check to ensure that second part of condition will
+        # still hide elements that do not change
+        if (not internal_has_been_written) and is_var_store and (not written_since_last_message):
+            # remove the newly added map delta because there were no
+            # changes that it encoded
+            del parent_delta.struct_deltas[-1]
+
+        return internal_has_been_written or written_since_last_message or force
+
+    
 
 class WaldoFunctionVariable(_WaldoVariable):
     def __init__(

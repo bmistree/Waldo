@@ -138,6 +138,8 @@ class _ReferenceBase(object):
         @returns {bool} --- True if some subelement was modified,
         False otherwise.
         '''
+
+        
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
@@ -149,6 +151,7 @@ class _ReferenceBase(object):
         # values.
         var_data = dirty_element.val
 
+        
         if (not force) and (not dirty_element.has_been_written_since_last_message):
             if (isinstance(var_data,numbers.Number) or
                 util.is_string(var_data) or isinstance(var_data,bool)):
@@ -196,6 +199,7 @@ class _ReferenceBase(object):
                 sub_element_modified = version_obj.add_to_delta_list(
                     map_delta,var_data,invalid_listener)
 
+                
         else:
             # creating deltas for cases where internal data are waldo
             # references.... should have been overridden in
@@ -207,8 +211,7 @@ class _ReferenceBase(object):
         
     def py_val_serialize(self,parent,var_data,var_name):
         '''
-        @param {} parent --- Either a SingleMapDelta, SingleListDelta,
-        SingleHolderDelta or a VarStoreDeltas.
+        @param {} parent --- Either a ContainerAction a VarStoreDeltas.
 
         FIXME: unclear if actually need var_name for all elements
         py_serialize-ing, or just py variables that are in the
@@ -227,10 +230,10 @@ class _ReferenceBase(object):
             # an added key
             if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
                 delta = parent.num_deltas.add()
-            elif parent.parent_type == VarStoreDeltas.HOLDER_CONTAINER:
-                parent.num_delta = var_data
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED_KEY:
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
                 parent.added_what_num = var_data
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
+                parent.what_written_num = var_data
             #### DEBUG
             else:
                 util.logger_assert('Unexpected parent type in py_serialize')
@@ -241,10 +244,11 @@ class _ReferenceBase(object):
         elif util.is_string(var_data):
             if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
                 delta = parent.text_deltas.add()
-            elif parent.parent_type == VarStoreDeltas.HOLDER_CONTAINER:
-                parent.text_delta = var_data
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED_KEY:
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
                 parent.added_what_text = var_data
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
+                parent.what_written_text = var_data
+                
             #### DEBUG
             else:
                 util.logger_assert('Unexpected parent type in py_serialize')
@@ -255,10 +259,10 @@ class _ReferenceBase(object):
         elif isinstance(var_data,bool):
             if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
                 delta = parent.true_false_deltas.add()
-            elif parent.parent_type == VarStoreDeltas.HOLDER_CONTAINER:
-                parent.true_false_delta = var_data
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED_KEY:
-                parent.added_what_true_false = var_data
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
+                parent.added_what_tf = var_data
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
+                parent.what_written_tf = var_data                
             #### DEBUG
             else:
                 util.logger_assert('Unexpected parent type in py_serialize')
