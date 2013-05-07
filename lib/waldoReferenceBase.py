@@ -625,8 +625,6 @@ class _ReferenceVersion(object):
     determine if an update from a dirtyElement will apply cleanly, or
     need to be backed out.
     '''
-    REFERENCE_VALUE_VERSION = 1
-    REFERENCE_CONTAINER_VERSION = 2
     
     @abstractmethod
     def copy(self):
