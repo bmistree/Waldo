@@ -261,7 +261,10 @@ class _Endpoint(object):
                 general_msg.backout_commit_request.event_uuid.data,
                 util.PARTNER_ENDPOINT_SENTINEL)
 
-            
+        elif general_msg.HasField('complete_commit_request'):
+            self._endpoint_service_thread_pool.receive_partner_request_complete_commit(
+                general_msg.complete_commit_request)
+
             
     def _receive_msg_from_partner(self,string_msg):
         '''
@@ -290,8 +293,6 @@ class _Endpoint(object):
         if isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
             self._endpoint_service_thread_pool.receive_partner_request_commit(msg)
             
-        elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
-            self._endpoint_service_thread_pool.receive_partner_request_complete_commit(msg)
         else:
             #### DEBUG
             util.logger_assert(
@@ -610,10 +611,11 @@ class _Endpoint(object):
         wants you to tell partner endpoint as well to complete its
         commit.
         '''
-        msg = waldoMessages._PartnerCompleteCommitRequestMessage(active_event.uuid)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
-        
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_COMPLETE_COMMIT_REQUEST
+        general_message.complete_commit_request.event_uuid.data = active_event.uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
     def _forward_backout_request_partner(self,active_event):
         '''
         @param {_ActiveEvent} active_event --- Has the same uuid as

@@ -6,6 +6,7 @@ import "partnerFirstPhaseResultMessage.proto";
 import "partnerAdditionalSubscriber.proto";
 import "partnerRemovedSubscriber.proto";
 import "partnerBackoutCommitRequest.proto";
+import "partnerCompleteCommitRequest.proto";
 
 message GeneralMessage
 {
@@ -18,6 +19,7 @@ message GeneralMessage
         PARTNER_ADDITIONAL_SUBSCRIBER = 5;
         PARTNER_REMOVED_SUBSCRIBER = 6;
         PARTNER_BACKOUT_COMMIT_REQUEST = 7;
+        PARTNER_COMPLETE_COMMIT_REQUEST = 8;
     }
 
     required MessageType message_type = 1;
@@ -29,5 +31,5 @@ message GeneralMessage
     optional PartnerAdditionalSubscriber additional_subscriber = 7;
     optional PartnerRemovedSubscriber removed_subscriber = 8;
     optional PartnerBackoutCommitRequest backout_commit_request = 9;
-    
+    optional PartnerCompleteCommitRequest complete_commit_request = 10;
 }

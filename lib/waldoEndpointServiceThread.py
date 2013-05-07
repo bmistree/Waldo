@@ -163,11 +163,11 @@ class _EndpointServiceThreadPool():
         
     def receive_partner_request_complete_commit(self,msg):
         '''
-        @param {_PartnerCommitRequestMessage} msg
+        @param {PartnerCompleteCommitRequest.proto} msg
         '''
         partner_request_complete_commit_action = (
             waldoServiceActions._ReceiveRequestCompleteCommitAction(
-                self.endpoint,msg.event_uuid,True))
+                self.endpoint,msg.event_uuid.data,True))
         self.threadsafe_queue.put(partner_request_complete_commit_action)
 
         

@@ -1,0 +1,6 @@
+import "util.proto";
+
+message PartnerCompleteCommitRequest
+{
+    required UUID event_uuid = 1;
+}
