@@ -59,17 +59,3 @@ class _Message(object):
         return msg_subtype.map_to_msg(msg_map)
 
     
-class _PartnerCommitRequestMessage(_Message):
-    MSG_TYPE = 'partner_commit_request_message'
-    def msg_to_map(self):
-        return {
-            _Message.MESSAGE_TYPE_FIELD: self.MSG_TYPE,
-            _Message.EVENT_UUID_FIELD: self.event_uuid
-            }
-
-    @staticmethod
-    def map_to_msg(msg_map):
-        return _PartnerCommitRequestMessage(msg_map[_Message.EVENT_UUID_FIELD])
-
-_Message.SUBTYPE_MAP[
-    _PartnerCommitRequestMessage.MSG_TYPE] = _PartnerCommitRequestMessage

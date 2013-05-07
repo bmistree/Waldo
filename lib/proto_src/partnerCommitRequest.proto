@@ -2,9 +2,9 @@ import "util.proto";
 
 /*
   Sent by root endpoint (and forwarded by subsequent endpoints) to
-  finish second phase of commit.
+  begin first phase of transaction.
  */
-message PartnerCompleteCommitRequest
+message PartnerCommitRequest
 {
     required UUID event_uuid = 1;
 }

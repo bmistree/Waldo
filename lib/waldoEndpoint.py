@@ -213,8 +213,20 @@ class _Endpoint(object):
                   # endpoint.
             )
 
-        
-    def _receive_proto_msg(self,string_msg):
+            
+    def _receive_msg_from_partner(self,string_msg):
+        '''
+        Called by the connection object.
+
+        @param {String} string_msg --- A raw byte string sent from
+        partner.  Should be able to deserialize it, convert it into a
+        message, and dispatch it as an event.
+
+        Can receive a variety of messages from partner: request to
+        execute a sequence block, request to commit a change to a
+        peered variable, request to backout an event, etc.  In this
+        function, we dispatch depending on message we receive.
+        '''
         general_msg = GeneralMessage()
         general_msg.ParseFromString(string_msg)
 
@@ -265,41 +277,20 @@ class _Endpoint(object):
             self._endpoint_service_thread_pool.receive_partner_request_complete_commit(
                 general_msg.complete_commit_request)
 
+        elif general_msg.HasField('commit_request'):
+            self._endpoint_service_thread_pool.receive_partner_request_commit(
+                general_msg.commit_request)
             
-    def _receive_msg_from_partner(self,string_msg):
-        '''
-        Called by the connection object.
-
-        @param {String} string_msg --- A raw byte string sent from
-        partner.  Should be able to deserialize it, convert it into a
-        message, and dispatch it as an event.
-
-        Can receive a variety of messages from partner: request to
-        execute a sequence block, request to commit a change to a
-        peered variable, request to backout an event, etc.  In this
-        function, we dispatch depending on message we receive.
-        '''
-        counter = 0
-        try:
-            msg_map = pickle.loads(string_msg)
-        except:
-            # was a protocol buffer message
-            self._receive_proto_msg(string_msg)
-            return
-
-            
-        msg = waldoMessages._Message.map_to_msg(msg_map)
-            
-        if isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
-            self._endpoint_service_thread_pool.receive_partner_request_commit(msg)
-            
+        #### DEBUG
         else:
-            #### DEBUG
             util.logger_assert(
                 'Do not know how to convert message to event action ' +
                 'in _receive_msg_from_partner.')
-            #### END DEBUG
+        #### END DEBUG
 
+
+
+        
     def _receive_partner_ready(self,partner_uuid = None):
         self._endpoint_service_thread_pool.receive_partner_ready()
         self._set_partner_uuid(partner_uuid)
@@ -556,10 +547,10 @@ class _Endpoint(object):
         '''
         # FIXME: may be a way to piggyback commit with final event in
         # sequence.
-
-        msg = waldoMessages._PartnerCommitRequestMessage(active_event.uuid)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_COMMIT_REQUEST
+        general_message.commit_request.event_uuid.data = active_event.uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
 
 
     def _notify_partner_peered_before_return(
