@@ -264,6 +264,10 @@ class _InternalListDirtyMapElement(
 
     def del_key(self,key):
         self.version_obj.del_key_list(key,len(self.val))
+        if not self.written_at_least_once:
+            self.written_at_least_once = True
+            self.val = self.waldo_reference._non_waldo_copy()
+        
         del self.val[key]
         
     def append_val(self,new_val,invalid_listener,peered):
@@ -289,6 +293,10 @@ class _InternalListDirtyMapElement(
                 else:
                     new_val = new_val.copy(invalid_listener,True)
 
+        if not self.written_at_least_once:
+            self.written_at_least_once = True
+            self.val = self.waldo_reference._non_waldo_copy()
+                    
         self.val.append(new_val)
 
         

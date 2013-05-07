@@ -341,7 +341,7 @@ class _ReferenceBase(object):
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
                 self.val,
-                invalid_listener)
+                invalid_listener,self)
 
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
@@ -520,7 +520,7 @@ class _DirtyMapElement(object):
     _DirtyMapElement.  
     '''
     
-    def __init__(self,version_obj,val,invalidation_listener):
+    def __init__(self,version_obj,val,invalidation_listener,waldo_reference):
         '''
         @param {_WaldoObjVersion} version_obj --- The version of the
         Waldo object that the dirty map element
@@ -528,12 +528,16 @@ class _DirtyMapElement(object):
         @param {Anything} val --- The dirty val that the invalidation
         listener is using.
 
-        @param {_InvalidationListener} invalidation_listener --- 
+        @param {_InvalidationListener} invalidation_listener ---
+
+        @param {Any subtype of _ReferenceBase} waldo_reference
         '''
         self.version_obj = version_obj
         self.val = val
         self.invalidation_listener = invalidation_listener
 
+        self.waldo_reference = waldo_reference
+        
         # For container types (maps, lists, structs), we need to keep
         # track of whether the internal value that each of these are
         # pointing to has been overwritten with a new internal

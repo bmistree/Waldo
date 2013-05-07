@@ -186,14 +186,13 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         '''
         if invalid_listener.uuid not in self._dirty_map:
             
-            # FIXME: may only want to make a copy of val on write
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
-                # self.val,
-                # this copy has a huge performance affect!
-                self._non_waldo_copy(),
-                invalid_listener)
-
+                # note: passing value directly.  the dirty map element
+                # will copy the value over if it detects a write.
+                self.val,
+                invalid_listener,self)
+            
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
         
@@ -206,6 +205,10 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         '''
         waldoReferenceBase._DirtyMapElement.__init__(self,*args)
 
+        # Adding copy on write semantics.  Only copy value if we have
+        # written to it.
+        self.written_at_least_once = False
+        
         
     def get_val_on_key(self,key):
         self.version_obj.get_val_on_key(key)
@@ -218,6 +221,11 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
     # touches when write value on key.
     def write_val_on_key(self,key,new_val):
         self.version_obj.write_val_on_key(key)
+
+        if not self.written_at_least_once:
+            self.written_at_least_once = True
+            self.val = self.waldo_reference._non_waldo_copy()
+        
         self.val[key] = new_val
         self.has_been_written_since_last_message = True
 
@@ -252,16 +260,23 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
                 #     new_val,waldoReferenceContainerBase._ReferenceContainer):
                 #     new_val = new_val.copy(invalid_listener,peered)
 
+        if not self.written_at_least_once:
+            self.written_at_least_once = True
+            self.val = self.waldo_reference._non_waldo_copy()
+
+                    
         self.val[key] = new_val
-
-
 
     def clear_partner_change_log(self):
         self.version_obj.clear_partner_change_log()
         
     def del_key(self,key):
         self.has_been_written_since_last_message = True
-        self.version_obj.del_key(key)        
+        self.version_obj.del_key(key)
+        if not self.written_at_least_once:
+            self.written_at_least_once = True
+            self.val = self.waldo_reference._non_waldo_copy()
+        
         del self.val[key]
 
     def get_len(self):
