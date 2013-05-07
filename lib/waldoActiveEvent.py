@@ -971,7 +971,7 @@ class _ActiveEvent(_InvalidationListener):
         self.set_breakout()
         for obj_id in self.holding_locks_on:
             to_backout_obj = self.objs_touched[obj_id]
-            to_backout_obj.backout(self,True)
+            to_backout_obj.backout(self)
         self.holding_locks_on = []
 
         

@@ -416,27 +416,14 @@ class _ReferenceBase(object):
 
 
     
-    def backout(self,invalid_listener,release_lock_after):
+    def backout(self,invalid_listener):
         '''
         @param {_InvalidListener} invalid_listener ---
-
-        @param {bool} release_lock_after --- If true, then it means
-        that the invalid_listener that called in was holding a commit
-        lock on the object.  We should release that commit lock
-        afterwards.
         '''
         self.notification_map.remove_invalidation_listener(invalid_listener)
-        
-        if not release_lock_after:
-            self._lock()
-            
         del self._dirty_map[invalid_listener.uuid]
+        self._unlock()
 
-        if release_lock_after:
-            self._unlock()
-            pass
-        else:
-            self._unlock()
     
     def complete_commit(self,invalid_listener):
         '''
