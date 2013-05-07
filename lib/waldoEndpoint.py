@@ -1,11 +1,8 @@
 import util
 import waldoEndpointServiceThread
-import pickle
 import waldoActiveEventMap
-import waldoMessages
 from util import Queue
 import threading
-import logging
 
 from lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 
@@ -575,7 +572,7 @@ class _Endpoint(object):
     def _notify_partner_peered_before_return_response(
         self,event_uuid,reply_to_uuid,invalidated):
         '''
-        @see waldoMessages._PartnerNotifyOfPeeredModifiedResponse
+        @see PartnerNotifyOfPeeredModifiedResponse.proto
         '''
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE

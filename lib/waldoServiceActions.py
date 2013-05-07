@@ -2,7 +2,7 @@ import util
 import waldoCallResults
 import threading
 import waldoExecutingEvent
-import logging
+
 
 class _Action(object):
     '''
@@ -302,7 +302,7 @@ class _ReceiveFirstPhaseCommitMessage(_Action):
 class _ReceivePeeredModifiedMsg(_Action):
     def __init__(self,local_endpoint, msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModified} msg
+        @param {PartnerNotifyOfPeeredModified.proto} msg
         '''
         self.local_endpoint = local_endpoint
         self.msg = msg

@@ -320,7 +320,7 @@ class _ActiveEvent(_InvalidationListener):
 
     def generate_partner_modified_peered_response(self,msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModified} msg
+        @param {PartnerNotifyOfPeeredModified.proto} msg
 
         Should attempt to update peered and sequence global data
         contained in message and reply with a partner modified peered

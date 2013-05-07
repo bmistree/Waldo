@@ -1,7 +1,6 @@
 from util import Queue
 import threading
 import waldoServiceActions
-import logging
 import util
 
 
@@ -193,7 +192,7 @@ class _EndpointServiceThreadPool():
         
     def receive_partner_notify_of_peered_modified_rsp_msg(self,msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse} msg
+        @param {PartnerNotifyOfPeeredModifiedResponse.proto} msg
         '''
         action = waldoServiceActions._ReceivePeeredModifiedResponseMsg(
             self.endpoint,msg)
