@@ -3,7 +3,7 @@ from util import Queue
 import threading
 import socket
 import struct
-import zlib
+
 
 class _WaldoConnectionObject(object):
 
@@ -162,12 +162,12 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         Note: _decapsulate_msg(_encapsulate_msg_str(msg_str)) equals
         the original message.
         '''
-        str_to_escape = zlib.compress(str_to_escape)
         size_of_msg = len(str_to_escape) + _WaldoTCPConnectionObj.HEADER_LEN_OCTETS
 
         # lower order indices contain the lower order values
         # header_as_list = [0]*_WaldoTCPConnectionObj.HEADER_LEN_OCTETS
         header = struct.pack('L',size_of_msg)
+        
         return header + str_to_escape
 
     @staticmethod
@@ -199,7 +199,6 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
             return None,None
 
         msg = to_try_to_decapsulate[_WaldoTCPConnectionObj.HEADER_LEN_OCTETS:full_size]
-        msg = zlib.decompress(msg)
         rest_of_msg = to_try_to_decapsulate[full_size:]
 
         return msg, rest_of_msg
