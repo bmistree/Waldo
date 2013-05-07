@@ -242,6 +242,13 @@ class _Endpoint(object):
                     general_msg.first_phase_result.event_uuid.data,
                     general_msg.first_phase_result.sending_endpoint_uuid.data)
 
+        elif general_msg.HasField('additional_subscriber'):
+            self._receive_additional_subscriber(
+                general_msg.additional_subscriber.event_uuid.data,
+                general_msg.additional_subscriber.additional_subscriber_uuid.data,
+                general_msg.additional_subscriber.host_uuid.data,
+                general_msg.additional_subscriber.resource_uuid.data)
+                
 
             
     def _receive_msg_from_partner(self,string_msg):
@@ -278,11 +285,6 @@ class _Endpoint(object):
         elif isinstance(msg,waldoMessages._PartnerRemovedSubscriberMessage):
             self._receive_removed_subscriber(
                 msg.event_uuid, msg.removed_subscriber_uuid,
-                msg.host_uuid,msg.resource_uuid)
-
-        elif isinstance(msg,waldoMessages._PartnerAdditionalSubscriberMessage):
-            self._receive_additional_subscriber(
-                msg.event_uuid, msg.additional_subscriber_uuid,
                 msg.host_uuid,msg.resource_uuid)
             
         else:
@@ -377,10 +379,17 @@ class _Endpoint(object):
         Send a message to partner that a subscriber has just started
         holding a lock on a resource to commit it.
         '''
-        msg = waldoMessages._PartnerAdditionalSubscriberMessage(
-            event_uuid,additional_subscriber_uuid,host_uuid,resource_uuid)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
-        
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_ADDITIONAL_SUBSCRIBER
+
+        additional_subscriber = general_message.additional_subscriber
+        additional_subscriber.event_uuid.data = event_uuid
+        additional_subscriber.additional_subscriber_uuid.data = additional_subscriber_uuid
+        additional_subscriber.host_uuid.data = host_uuid
+        additional_subscriber.resource_uuid.data = resource_uuid
+
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
         
     def _receive_additional_subscriber(
         self,event_uuid,subscriber_event_uuid,host_uuid,resource_uuid):

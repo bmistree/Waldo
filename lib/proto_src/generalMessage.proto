@@ -3,6 +3,7 @@ import "partnerNotifyOfPeeredModifiedResponse.proto";
 import "partnerRequestSequenceBlock.proto";
 import "partnerNotifyOfPeeredModified.proto";
 import "partnerFirstPhaseResultMessage.proto";
+import "partnerAdditionalSubscriber.proto";
 
 message GeneralMessage
 {
@@ -12,6 +13,7 @@ message GeneralMessage
         PARTNER_REQUEST_SEQUENCE_BLOCK = 2;
         PARTNER_NOTIFY_OF_PEERED_MODIFIED = 3;
         PARTNER_FIRST_PHASE_RESULT = 4;
+        PARTNER_ADDITIONAL_SUBSCRIBER = 5;
     }
 
     required MessageType message_type = 1;
@@ -20,4 +22,6 @@ message GeneralMessage
     optional PartnerRequestSequenceBlock request_sequence_block = 4;
     optional PartnerNotifyOfPeeredModified notify_of_peered_modified = 5;
     optional PartnerFirstPhaseResultMessage first_phase_result = 6;
+
+    optional PartnerAdditionalSubscriber additional_subscriber = 7;
 }
