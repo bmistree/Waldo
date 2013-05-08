@@ -88,7 +88,6 @@ def logger_warn(warn_msg,logging_info=None):
 
 
 class BackoutException(Exception):
-    # FIXME: not actually catching backout exception anywhere.
     pass
 
 
