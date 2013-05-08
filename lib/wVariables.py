@@ -219,11 +219,12 @@ class WaldoMapVariable(_WaldoExternalVariable):
             
         map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER            
         map_delta.var_name = var_name
-        map_delta.has_been_written = dirty_element.has_been_written_since_last_message
+        version_obj = dirty_element.version_obj
+        map_delta.has_been_written = version_obj.has_been_written_since_last_message
 
         # reset has been written to
-        written_since_last_message = dirty_element.has_been_written_since_last_message
-        dirty_element.has_been_written_since_last_message = False
+        written_since_last_message = version_obj.has_been_written_since_last_message
+        version_obj.has_been_written_since_last_message = False
         
         var_data = dirty_element.val
         internal_has_been_written = var_data.serializable_var_tuple_for_network(
@@ -336,11 +337,12 @@ class WaldoListVariable(_WaldoExternalVariable):
 
         list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
         list_delta.var_name = var_name
-        list_delta.has_been_written = dirty_element.has_been_written_since_last_message
+        version_obj = dirty_element.version_obj
+        list_delta.has_been_written = version_obj.has_been_written_since_last_message
 
         # reset has been written to
-        written_since_last_message = dirty_element.has_been_written_since_last_message
-        dirty_element.has_been_written_since_last_message = False
+        written_since_last_message = version_obj.has_been_written_since_last_message
+        version_obj.has_been_written_since_last_message = False
 
         var_data = dirty_element.val
         internal_has_been_written = var_data.serializable_var_tuple_for_network(
@@ -476,11 +478,12 @@ class WaldoUserStructVariable(WaldoMapVariable):
             
         struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
         struct_delta.var_name = var_name
-        struct_delta.has_been_written = dirty_element.has_been_written_since_last_message
+        version_obj = dirty_element.version_obj
+        struct_delta.has_been_written = version_obj.has_been_written_since_last_message
 
         # reset has been written to
-        written_since_last_message = dirty_element.has_been_written_since_last_message
-        dirty_element.has_been_written_since_last_message = False
+        written_since_last_message = version_obj.has_been_written_since_last_message
+        version_obj.has_been_written_since_last_message = False
 
         
         var_data = dirty_element.val

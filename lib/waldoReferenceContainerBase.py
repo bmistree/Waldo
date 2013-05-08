@@ -182,7 +182,6 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
             self.val = self.waldo_reference._non_waldo_copy()
         
         self.val[key] = new_val
-        self.has_been_written_since_last_message = True
 
         
     def add_key(self,key,new_val,invalid_listener,peered):
@@ -193,7 +192,6 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         # already have the semantics that they will be copied on read.
         # (And we throw an error if a peered variable has a container
         # with externals inside of it.)
-        self.has_been_written_since_last_message = True
         
         if peered:
             if isinstance(
@@ -224,9 +222,8 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
 
     def clear_partner_change_log(self):
         self.version_obj.clear_partner_change_log()
-        
+
     def del_key(self,key):
-        self.has_been_written_since_last_message = True
         self.version_obj.del_key(key)
         if not self.written_at_least_once:
             self.written_at_least_once = True
@@ -284,6 +281,18 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         # key identifier.  See helper functions at bottom of file for
         # tuples.
         self.partner_change_log = []
+
+        # For container types (maps, lists, structs), we need to keep
+        # track of whether the internal value that each of these are
+        # pointing to has been overwritten with a new internal
+        # map/list/struct altogether or whether it hasn't.  This way,
+        # the other side knows whether the internal deltas it receives
+        # are for a brand new internal container or should be applied
+        # to the old, existing one.  Any time calling write_val on
+        # this _ReferenceBase, set to True.  Any time call
+        # serialize..., set to False.
+        self.has_been_written_since_last_message = False
+
         
     def clear_partner_change_log(self):
         self.partner_change_log = []
@@ -629,13 +638,16 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
     # touches when write value on key.
     def write_val_on_key(self,key):
         self.written_values_keys[key] = self.commit_num
+        self.has_been_written_since_last_message = True
         # FIXME: should only append to change log if peered.
         self.partner_change_log.append(write_key_tuple(key))
+
         
         
     def add_key(self,key_added):
         self.added_keys[key_added] = self.commit_num
-
+        self.has_been_written_since_last_message = True
+        
         # FIXME: should only append to change log if peered.
         self.partner_change_log.append(add_key_tuple(key_added))
 
@@ -658,6 +670,8 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
     def del_key(self,key_deleted):
         self.deleted_keys[key_deleted] = self.commit_num
 
+        self.has_been_written_since_last_message = True
+        
         # FIXME: should only append to change log if peered.
         self.partner_change_log.append(delete_key_tuple(key_deleted))
 

@@ -152,7 +152,7 @@ class _ReferenceBase(object):
         var_data = dirty_element.val
 
         
-        if (not force) and (not dirty_element.has_been_written_since_last_message):
+        if (not force) and (not version_obj.has_been_written_since_last_message):
             if (isinstance(var_data,numbers.Number) or
                 util.is_string(var_data) or isinstance(var_data,bool)):
                 # nothing to do because this value has not been
@@ -206,7 +206,7 @@ class _ReferenceBase(object):
             # wVariables.py
             util.logger_assert('Serializing unknown type.')
 
-        dirty_element.has_been_written_since_last_message = False
+        version_obj.has_been_written_since_last_message = False
         return sub_element_modified
         
     def py_val_serialize(self,parent,var_data,var_name):
@@ -525,17 +525,6 @@ class _DirtyMapElement(object):
 
         self.waldo_reference = waldo_reference
         
-        # For container types (maps, lists, structs), we need to keep
-        # track of whether the internal value that each of these are
-        # pointing to has been overwritten with a new internal
-        # map/list/struct altogether or whether it hasn't.  This way,
-        # the other side knows whether the internal deltas it receives
-        # are for a brand new internal container or should be applied
-        # to the old, existing one.  Any time calling write_val on
-        # this _ReferenceBase, set to True.  Any time call
-        # serialize..., set to False.
-        self.has_been_written_since_last_message = False
-        
         
     def set_version_obj_and_val(self,version_obj,val):
         '''
@@ -545,7 +534,6 @@ class _DirtyMapElement(object):
         self.val = val
 
     def set_has_been_written_to(self,new_val):
-        self.has_been_written_since_last_message = True
         self.version_obj.set_has_been_written_to()
         self.val = new_val
 

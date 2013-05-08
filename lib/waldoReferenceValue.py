@@ -25,11 +25,25 @@ class _ReferenceValueVersion(waldoReferenceBase._ReferenceVersion):
         self.version_num = init_version_num
         self.has_been_written_to = False
 
+        # For container types (maps, lists, structs), we need to keep
+        # track of whether the internal value that each of these are
+        # pointing to has been overwritten with a new internal
+        # map/list/struct altogether or whether it hasn't.  This way,
+        # the other side knows whether the internal deltas it receives
+        # are for a brand new internal container or should be applied
+        # to the old, existing one.  Any time calling write_val on
+        # this _ReferenceBase, set to True.  Any time call
+        # serialize..., set to False.
+        self.has_been_written_since_last_message = False
+
+        
     def copy(self):
         return _ReferenceValueVersion(self.version_num)
         
     def set_has_been_written_to(self):
         self.has_been_written_to = True
+        self.has_been_written_since_last_message = True
+                
         
     def update(self,dirty_vtype_version_obj):
         if dirty_vtype_version_obj.has_been_written_to:
