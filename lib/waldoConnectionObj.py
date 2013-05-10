@@ -74,43 +74,7 @@ class _WaldoSameHostConnectionObject(_WaldoConnectionObject,threading.Thread):
 
 
 class _WaldoTCPConnectionObj(_WaldoConnectionObject):
-
-    HEADER_LEN_OCTETS = 8
-    
-    DELIMITER_A = 'a'
-    DELIMITER_B = 'b'
-    # every message ends with this delimiter
-    MSG_DELIMITER = DELIMITER_A + DELIMITER_B
-    # every message begins with this letter
-    MSG_HEAD = 'm'
-
-    # messages are constructed in such a way that we replace every
-    # occurrence of the delimiter in the message body with duplicates
-    # of the delimiter.  For example, message
-    #
-    # acb
-    #
-    # would turn into
-    #
-    # aacbb
-    # 
-    # We then glue on the MSG_HEAD and MSG_DELIMITER onto the message:
-    #
-    # maacbbab
-    #
-    # To decode, it is not enough that we only check that the message
-    # ends with ab.  Consider the following original mesasge:
-    # ab
-    # translates to
-    # maabbab
-    # Would decode as a: m(a)ab
-    #
-    # We need to ensure that ends with ab and there are only an even
-    # number of a-s before ab.  We can do this with the following regex:
-    # [^a](?aa)*ab
-    # Note the inclusion of the [^a] at the beginning will still work
-    # for empty messages because we add the MSG_HEAD to the front.
-
+    HEADER_LEN_OCTETS = 4
     
     def __init__(self,dst_host,dst_port,sock=None):
         '''
@@ -162,28 +126,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         the original message.
         '''
         size_of_msg = len(str_to_escape) + _WaldoTCPConnectionObj.HEADER_LEN_OCTETS
-
-        # lower order indices contain the lower order values
-        # header_as_list = [0]*_WaldoTCPConnectionObj.HEADER_LEN_OCTETS
-        header = struct.pack('L',size_of_msg)
-        
-        # # each iteration of this loop, we grab an the lowest order
-        # # octet from size_of_msg that has not yet been read and put it
-        # # into header_as_list.
-        # for i in range(0,_WaldoTCPConnectionObj.HEADER_LEN_OCTETS):
-
-        #     # moves the bits of interest into the lowest order of the
-        #     # integer.
-        #     lower_order_shifted_bits = (size_of_msg) >> (i*8)
-        #     octet_val = lower_order_shifted_bits & (0xFF)
-            
-        #     header_as_list[i] = chr(octet_val)
-
-        # # header = reduce(
-        # #     lambda x,y : x + chr(y),
-        # #     header_as_list,'')
-        # header = ''.join(header_as_list)
-            
+        header = struct.pack('I',size_of_msg)
         return header + str_to_escape
 
     @staticmethod
@@ -206,8 +149,9 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         if len(to_try_to_decapsulate) < _WaldoTCPConnectionObj.HEADER_LEN_OCTETS:
             return None, None
 
+        
         full_size = struct.unpack(
-            'L',
+            'I',
             to_try_to_decapsulate[0:_WaldoTCPConnectionObj.HEADER_LEN_OCTETS])[0]
 
 
