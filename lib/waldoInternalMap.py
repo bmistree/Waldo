@@ -105,151 +105,54 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         new_internal_map._unlock()
         return internal_dict
 
-    
-    def incorporate_deltas(self,internal_map_delta,constructors,active_event):
-        '''
-        @param {SingleInternalMapDelta} internal_map_delta
-        '''
-        for map_action in internal_map_delta.map_actions:
-            if map_action.container_action == VarStoreDeltas.ContainerAction.WRITE_VALUE:
-                container_written_action = map_action.write_key
 
-                if container_written_action.HasField('write_key_text'):
-                    index_to_write_to = container_written_action.write_key_text
-                elif container_written_action.HasField('write_key_num'):
-                    index_to_write_to = container_written_action.write_key_num
-                elif container_written_action.HasField('write_key_tf'):
-                    index_to_write_to = container_written_action.write_key_tf
-                #### DEBUG
-                else:
-                    util.logger_assert('Unknown map index')
-                #### END DEBUG
+    def get_write_key_incorporate_deltas(self,container_written_action):
+        if container_written_action.HasField('write_key_text'):
+            index_to_write_to = container_written_action.write_key_text
+        elif container_written_action.HasField('write_key_num'):
+            index_to_write_to = container_written_action.write_key_num
+        elif container_written_action.HasField('write_key_tf'):
+            index_to_write_to = container_written_action.write_key_tf
+        #### DEBUG
+        else:
+            util.logger_assert('Unknown map index')
+        #### END DEBUG
 
-                if container_written_action.HasField('what_written_text'):
-                    new_val = container_written_action.what_written_text
-                elif container_written_action.HasField('what_written_num'):
-                    new_val = container_written_action.what_written_num
-                elif container_written_action.HasField('what_written_tf'):
-                    new_val = container_written_action.what_written_tf
-                    
-                elif container_written_action.HasField('what_written_map'):
-                    new_val = constructors.map_constructor('',self.host_uuid,True)
-                    single_map_delta = container_written_action.what_written_map
-                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER                    
-                    new_val.incorporate_deltas(single_map_delta,constructors,active_event)
-                    
-                elif container_written_action.HasField('what_written_list'):
-                    new_val = constructors.list_constructor('',self.host_uuid,True)
-                    single_list_delta = container_written_action.what_written_map
-                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
-                    new_val.incorporate_deltas(single_list_delta,consructors,active_event)
-
-                elif container_written_action.HasField('what_written_struct'):
-                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
-                    single_struct_delta = container_written_action.what_written_struct
-                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
-                    new_val.incorporate_deltas(single_struct_delta,consructors,active_event)
-                    
-                # actually put new value in map
-                self.write_val_on_key(active_event,index_to_write_to,new_val,False)
+        return index_to_write_to
 
 
-            elif map_action.container_action == VarStoreDeltas.ContainerAction.ADD_KEY:
-                container_added_action = map_action.added_key
-
-                if container_added_action.HasField('added_key_text'):
-                    index_to_add_to = container_added_action.added_key_text
-                elif container_added_action.HasField('added_key_num'):
-                    index_to_add_to = container_added_action.added_key_num
-                elif container_added_action.HasField('added_key_tf'):
-                    index_to_add_to = container_added_action.added_key_tf
-                #### DEBUG
-                else:
-                    util.logger_assert('Unknown map index')
-                #### END DEBUG
-                
-                
-                if container_added_action.HasField('added_what_text'):
-                    new_val = container_added_action.added_what_text
-                elif container_added_action.HasField('added_what_num'):
-                    new_val = container_added_action.added_what_num
-                elif container_added_action.HasField('added_what_tf'):
-                    new_val = container_added_action.added_what_tf
-                    
-                elif container_added_action.HasField('added_what_map'):
-                    new_val = constructors.map_constructor('',self.host_uuid,True)
-                    single_map_delta = container_added_action.added_what_map
-                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER                    
-                    new_val.incorporate_deltas(single_map_delta,constructors,active_event)
-
-                elif container_added_action.HasField('added_what_list'):
-                    new_val = constructors.list_constructor('',self.host_uuid,True)
-                    single_list_delta = container_added_action.added_what_list
-                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER                    
-                    new_val.incorporate_deltas(single_list_delta,constructors,active_event)
-
-                elif container_written_action.HasField('added_what_struct'):
-                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
-                    single_struct_delta = container_written_action.added_what_struct
-                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
-                    new_val.incorporate_deltas(single_struct_delta,consructors,active_event)
-                    
-                self.write_val_on_key(active_event,index_to_add_to,new_val,False)
-
-            elif map_action.container_action == VarStoreDeltas.ContainerAction.DELETE_KEY:
-                container_deleted_action = map_action.deleted_key
-
-                if container_deleted_action.HasField('deleted_key_text'):
-                    index_to_del_from = container_deleted_action.deleted_key_text
-                elif container_deleted_action.HasField('deleted_key_num'):
-                    index_to_del_from = container_deleted_action.deleted_key_num
-                elif container_deleted_action.HasField('deleted_key_tf'):
-                    index_to_del_from = container_deleted_action.deleted_key_tf
-                #### DEBUG
-                else:
-                    util.logger_assert('Error in delete: unknown key type.')
-                #### END DEBUG
-                    
-                    
-                self.del_key_called(active_event,index_to_del_from)
-
-
-        for sub_element_action in internal_map_delta.sub_element_update_actions:
-            if sub_element_action.HasField('key_text'):
-                index = sub_element_action.key_text
-            elif sub_element_action.HasField('key_num'):
-                index = sub_element_action.key_num
-            elif sub_element_action.HasField('key_tf'):
-                index = sub_element_action.key_tf
-            #### DEBUG
-            else:
-                util.logger_assert('Unknown index type in subelments')
-            #### END DEBUG
+    def get_add_key_incorporate_deltas(self,container_added_action):
+        if container_added_action.HasField('added_key_text'):
+            index_to_add_to = container_added_action.added_key_text
+        elif container_added_action.HasField('added_key_num'):
+            index_to_add_to = container_added_action.added_key_num
+        elif container_added_action.HasField('added_key_tf'):
+            index_to_add_to = container_added_action.added_key_tf
+        #### DEBUG
+        else:
+            util.logger_assert('Unknown map index')
+        #### END DEBUG
             
-
-            if sub_element_action.HasField('map_delta'):
-                to_incorporate = sub_element_action.map_delta
-            elif sub_element_action.HasField('list_delta'):
-                to_incorporate = sub_element_action.list_delta
-            #### DEBUG
-            else:
-                util.logger_assert('Unkwnown action type in subelements')
-            #### END DEBUG
-
-            self.get_val_on_key(active_event,index).incorporate_deltas(
-                to_incorporate,constructors,active_event)
-            
-
-        self._lock()
-        self._add_invalid_listener(active_event)
-        dirty_elem = self._dirty_map[active_event.uuid]
-        self._unlock()
-            
-        # do not want to send the same information back to the other side.
-        dirty_elem.clear_partner_change_log()
+        return index_to_add_to
 
 
+    def get_delete_key_incorporate_deltas(self,container_deleted_action):
+        if container_deleted_action.HasField('deleted_key_text'):
+            index_to_del_from = container_deleted_action.deleted_key_text
+        elif container_deleted_action.HasField('deleted_key_num'):
+            index_to_del_from = container_deleted_action.deleted_key_num
+        elif container_deleted_action.HasField('deleted_key_tf'):
+            index_to_del_from = container_deleted_action.deleted_key_tf
+        #### DEBUG
+        else:
+            util.logger_assert('Error in delete: unknown key type.')
+        #### END DEBUG
 
+        return index_to_del_from
+
+    def handle_added_key_incorporate_deltas(
+        self,active_event,index_to_add_to,new_val):
+        self.write_val_on_key(active_event,index_to_add_to,new_val,False)
 
     
 class _InternalMapDirtyMapElement(

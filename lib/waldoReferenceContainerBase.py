@@ -39,11 +39,121 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._unlock()
 
 
-    def incorporate_deltas(self,delta_to_incorporate,active_event):
-        util.logger_assert(
-            'Error: incorporate_deltas in waldoReferenceContainerBase ' +
-            'is pure virtual')
+    def incorporate_deltas(self,delta_to_incorporate,constructors,active_event):
 
+        '''
+        @param {SingleInternalListDelta} internal_list_delta
+        '''
+        if delta_to_incorporate.parent_type == VarStoreDeltas.INTERNAL_LIST_CONTAINER:
+            to_iter_over = delta_to_incorporate.list_actions
+        else:
+            to_iter_over = delta_to_incorporate.map_actions
+
+        for action in to_iter_over:
+            if action.container_action == VarStoreDeltas.ContainerAction.WRITE_VALUE:
+                
+                container_written_action = action.write_key
+                # added because when serializing and deserializing data with
+                # protobufs, not using integer indices, using double indices.
+                # This causes a problem on the range commadn below.
+                index_to_write_to = self.get_write_key_incorporate_deltas(
+                    container_written_action)
+
+                if container_written_action.HasField('what_written_text'):
+                    new_val = container_written_action.what_written_text
+                elif container_written_action.HasField('what_written_num'):
+                    new_val = container_written_action.what_written_num
+                elif container_written_action.HasField('what_written_tf'):
+                    new_val = container_written_action.what_written_tf
+                    
+                elif container_written_action.HasField('what_written_map'):
+                    new_val = constructors.map_constructor('',self.host_uuid,True)
+                    single_map_delta = container_written_action.what_written_map
+                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER                    
+                    new_val.incorporate_deltas(single_map_delta,constructors,active_event)
+                    
+                elif container_written_action.HasField('what_written_list'):
+                    new_val = constructors.list_constructor('',self.host_uuid,True)
+                    single_list_delta = container_written_action.what_written_list
+                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER                    
+                    new_val.incorporate_deltas(single_list_delta,constructors,active_event)
+
+                elif container_written_action.HasField('what_written_struct'):
+                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
+                    single_struct_delta = container_written_action.what_written_struct
+                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+                    new_val.incorporate_deltas(single_struct_delta,constructors,active_event)
+                    
+                # actually put new value in list
+                self.write_val_on_key(active_event,index_to_write_to,new_val,False)
+                
+
+            elif action.container_action == VarStoreDeltas.ContainerAction.ADD_KEY:
+                container_added_action = action.added_key
+
+                index_to_add_to = self.get_add_key_incorporate_deltas(container_added_action)
+
+                if container_added_action.HasField('added_what_text'):
+                    new_val = container_added_action.added_what_text
+                elif container_added_action.HasField('added_what_num'):
+                    new_val = container_added_action.added_what_num
+                elif container_added_action.HasField('added_what_tf'):
+                    new_val = container_added_action.added_what_tf
+                    
+                elif container_added_action.HasField('added_what_map'):
+                    new_val = constructors.map_constructor('',self.host_uuid,True)
+                    single_map_delta = container_added_action.added_what_map
+                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER
+                    new_val.incorporate_deltas(single_map_delta,constructors,active_event)
+
+                elif container_added_action.HasField('added_what_list'):
+                    new_val = constructors.list_constructor('',self.host_uuid,True)
+                    single_list_delta = container_added_action.added_what_list
+                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
+                    new_val.incorporate_deltas(single_list_delta,constructors,active_event)
+
+                elif container_added_action.HasField('added_what_struct'):
+                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
+                    single_struct_delta = container_added_action.added_what_struct
+                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+                    new_val.incorporate_deltas(single_struct_delta,constructors,active_event)
+
+                self.handle_added_key_incorporate_deltas(
+                    active_event,index_to_add_to,new_val)
+
+
+            elif action.container_action == VarStoreDeltas.ContainerAction.DELETE_KEY:
+                container_deleted_action = action.deleted_key
+                index_to_del_from = self.get_delete_key_incorporate_deltas(
+                    container_deleted_action)
+                self.del_key_called(active_event,index_to_del_from)
+
+                
+        for sub_element_action in delta_to_incorporate.sub_element_update_actions:
+            index = sub_element_action.key_num
+
+            if sub_element_action.HasField('map_delta'):
+                to_incorporate = sub_element_action.map_delta
+            elif sub_element_action.HasField('list_delta'):
+                to_incorporate = sub_element_action.list_delta
+            #### DEBUG
+            else:
+                util.logger_assert('Unkwnown action type in subelements')
+            #### END DEBUG
+
+            self.get_val_on_key(active_event,index).incorporate_deltas(
+                to_incorporate,constructors,active_event)
+            
+
+        self._lock()
+        self._add_invalid_listener(active_event)
+        dirty_elem = self._dirty_map[active_event.uuid]
+        self._unlock()
+            
+        # do not want to send the same information back to the other side.
+        dirty_elem.clear_partner_change_log()
+
+        
 
     def del_key_called(self,invalid_listener,key_deleted):
         self._lock()
