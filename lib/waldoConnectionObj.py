@@ -93,6 +93,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         else:
             self.sock = sock
 
+        self.sock.setblocking(1)
         self.received_data = b''
         self.local_endpoint = None
         
@@ -198,7 +199,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         other.
         '''
         msg_str_to_send = self._encapsulate_msg_str(msg_str_to_write)
-        self.sock.send(msg_str_to_send)
+        self.sock.sendall(msg_str_to_send)
 
 
         
