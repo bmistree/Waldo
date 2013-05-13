@@ -35,8 +35,6 @@ For API documentation of the Waldo module, go [here]
 
 Installation
 ----------------
-    pip install -r requirements.txt
-
 If you have installed correctly, running test/runAllTests.py from the
 command line should produce all SUCCESS-es.
 

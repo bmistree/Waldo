@@ -1,6 +1,10 @@
 #!/usr/bin/python
+import os,sys
 
-from ply import lex
+deps_path = os.path.join(
+    os.path.dirname(__file__),'..')
+sys.path.append(deps_path)
+from deps.ply.ply import lex
 
 ONCREATE_TOKEN =  "onCreate";
 ONCOMPLETE_TOKEN = 'onComplete';
