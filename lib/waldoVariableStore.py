@@ -69,7 +69,12 @@ class _VariableStore(object):
             self.list_constructor = wVariables.WaldoListVariable
             self.map_constructor = wVariables.WaldoMapVariable
             self.struct_constructor = wVariables.WaldoUserStructVariable
-    
+
+            # self.single_thread_list_constructor = wVariables.WaldoSingleThreadListVariable
+            # self.single_thread_map_constructor = wVariables.WaldoSingleThreadMapVariable
+            # self.single_thread_struct_constructor = wVariables.WaldoSingleThreadStructVariable
+            
+            
     var_constructors = VarConstructors()
 
     

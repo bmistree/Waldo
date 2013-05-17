@@ -42,7 +42,8 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     def incorporate_deltas(self,delta_to_incorporate,constructors,active_event):
 
         '''
-        @param {SingleInternalListDelta} internal_list_delta
+        @param {SingleInternalListDelta or SingleInternalMapDelta}
+        delta_to_incorporate
         '''
         if delta_to_incorporate.parent_type == VarStoreDeltas.INTERNAL_LIST_CONTAINER:
             to_iter_over = delta_to_incorporate.list_actions
@@ -222,7 +223,8 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         return dirty_val
         
     
-    def write_val_on_key(self,invalid_listener,key,new_val,copy_if_peered=True):
+    def write_val_on_key(
+        self,invalid_listener,key,new_val,copy_if_peered=True,multi_threaded=True):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         
@@ -237,7 +239,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
             # able to share the reference to the inner list between
             # many machines.
             if isinstance(new_val,waldoReferenceBase._ReferenceBase):
-                new_val = new_val.copy(invalid_listener,True)
+                new_val = new_val.copy(invalid_listener,True,multi_threaded)
             
         dirty_elem.write_val_on_key(key,new_val)
         if self.peered:
@@ -294,7 +296,7 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         self.val[key] = new_val
 
         
-    def add_key(self,key,new_val,invalid_listener,peered):
+    def add_key(self,key,new_val,invalid_listener,peered,multi_threaded=True):
         self.version_obj.add_key(key)
         # if we are peered, then we want to assign into ourselves a
         # copy of the object, not the object itself.  This will only
@@ -306,7 +308,7 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         if peered:
             if isinstance(
                 new_val,_ReferenceContainer):
-                new_val = new_val.copy(invalid_listener,True)
+                new_val = new_val.copy(invalid_listener,True,multi_threaded)
 
             elif isinstance(
                 new_val,waldoReferenceBase._ReferenceBase):
@@ -314,7 +316,7 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
                 if new_val.is_value_type():
                     new_val = new_val.get_val(invalid_listener)
                 else:
-                    new_val = new_val.copy(invalid_listener,True)
+                    new_val = new_val.copy(invalid_listener,True,multi_threaded)
 
                 
                 # # need to check again in case it's a

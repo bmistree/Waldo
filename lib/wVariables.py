@@ -38,7 +38,7 @@ class WaldoEndpointVariable(_WaldoVariable):
     def is_value_type(self):
         return False
     
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         return WaldoEndpointVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
@@ -67,7 +67,7 @@ class WaldoNumVariable(_WaldoVariable):
         return True
 
     
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         return WaldoNumVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
@@ -92,7 +92,7 @@ class WaldoTextVariable(_WaldoVariable):
     def is_value_type(self):
         return True
 
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         return WaldoTextVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
@@ -117,7 +117,7 @@ class WaldoTrueFalseVariable(_WaldoVariable):
     def is_value_type(self):
         return True
 
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         return WaldoTrueFalseVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
@@ -265,10 +265,10 @@ class WaldoMapVariable(_WaldoExternalVariable):
     def is_value_type(self):
         return False
 
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         return WaldoMapVariable(
             self.name,self.host_uuid,peered,
-            self.get_val(invalid_listener).copy(invalid_listener,peered))
+            self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded))
 
     def de_waldoify(self,invalid_listener):
         '''
@@ -281,7 +281,7 @@ class WaldoMapVariable(_WaldoExternalVariable):
         return internal_val
 
 
-    def write_val(self,invalid_listener,new_val,copy_if_peered=True):
+    def write_val(self,invalid_listener,new_val,copy_if_peered=True,multi_threaded=True):
         '''
         When writing a value to a peered container, we need to be
         careful that the new value also becomes peered.  Otherwise, we
@@ -290,7 +290,7 @@ class WaldoMapVariable(_WaldoExternalVariable):
         '''
         if self.peered and copy_if_peered:
             if isinstance(new_val,waldoReferenceBase._ReferenceBase):
-                new_val = new_val.copy(invalid_listener,True)
+                new_val = new_val.copy(invalid_listener,True,multi_threaded)
         super(WaldoMapVariable,self).write_val(invalid_listener,new_val)
 
 
@@ -384,10 +384,10 @@ class WaldoListVariable(_WaldoExternalVariable):
     def is_value_type(self):
         return False
 
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         return WaldoListVariable(
             self.name,self.host_uuid,peered,
-            self.get_val(invalid_listener).copy(invalid_listener,peered))
+            self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded))
 
     def de_waldoify(self,invalid_listener):
         '''
@@ -401,13 +401,13 @@ class WaldoListVariable(_WaldoExternalVariable):
             return internal_val.de_waldoify(invalid_listener)
         return internal_val
 
-    def write_val(self,invalid_listener,new_val,copy_if_peered=True):
+    def write_val(self,invalid_listener,new_val,copy_if_peered=True,multi_threaded=True):
         '''
         @see write_val in WaldoMapVariable
         '''
         if self.peered and copy_if_peered:
             if isinstance(new_val,waldoReferenceBase._ReferenceBase):
-                new_val = new_val.copy(invalid_listener,True)
+                new_val = new_val.copy(invalid_listener,True,multi_threaded)
         super(WaldoListVariable,self).write_val(invalid_listener,new_val)
 
 
@@ -445,10 +445,10 @@ class WaldoUserStructVariable(WaldoMapVariable):
         to_return = internal_map.de_waldoify(invalid_listener)
         return to_return
 
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         to_return = WaldoUserStructVariable(
             self.name,self.host_uuid,peered,
-            self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered))
+            self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered,multi_threaded))
         return to_return
 
     def serializable_var_tuple_for_network(
@@ -548,7 +548,7 @@ class WaldoFunctionVariable(_WaldoVariable):
     def is_value_type(self):
         return True
 
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         new_func_variable = WaldoFunctionVariable(
             self.name,self.host_uuid,peered,self.get_val(invalid_listener))
         return new_func_variable.set_external_args_array(self.ext_args_array)
@@ -565,8 +565,8 @@ class _WaldoExternalValueType(_WaldoExternalVariable):
     def is_value_type(self):
         return False
 
-    def copy(self,invalid_listener,peered):
-        return self.get_val(invalid_listener).copy(invalid_listener,peered)
+    def copy(self,invalid_listener,peered,multi_threaded):
+        return self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded)
         
     def de_waldoify(self,invalid_listener):
         '''

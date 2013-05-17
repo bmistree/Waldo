@@ -165,7 +165,8 @@ class _ExecutingEventContext(object):
         
 
     def turn_into_waldo_var(
-        self,val,force_copy,active_event, host_uuid,new_peered=False):
+        self,val,force_copy,active_event, host_uuid,new_peered=False,
+        new_multi_threaded=True):
         '''
         @param {Anything} val
 
@@ -207,7 +208,7 @@ class _ExecutingEventContext(object):
             if force_copy:
                 # means that it was a WaldoVariable: just call its copy
                 # method
-                return val.copy(active_event,new_peered)
+                return val.copy(active_event,new_peered,new_multi_threaded)
             # otherwise, just return val
             return val
 
@@ -245,7 +246,8 @@ class _ExecutingEventContext(object):
             )
 
     def func_turn_into_waldo_var(
-        self,val,force_copy,active_event, host_uuid,new_peered,ext_args_array):
+        self,val,force_copy,active_event, host_uuid,new_peered,
+        ext_args_array,new_multi_threaded=True):
         '''
         turn_into_waldo_var works for all non-function types.
         function-types require additional information (which arguments
@@ -256,7 +258,7 @@ class _ExecutingEventContext(object):
             if force_copy:
                 # means that it was a WaldoVariable: just call its copy
                 # method
-                return val.copy(active_event,new_peered)
+                return val.copy(active_event,new_peered,new_multi_threaded)
             # otherwise, just return val
             return val
         elif hasattr(val,'__call__'):

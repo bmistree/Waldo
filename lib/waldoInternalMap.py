@@ -16,15 +16,6 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
             self,host_uuid,peered,init_val,_InternalMapVersion(),
             _InternalMapDirtyMapElement)
 
-    def copy_if_peered(self,invalid_listener):
-        '''
-        @see waldoReferenceContainerBase._ReferenceContainer
-        '''
-        if not self.peered:
-            return self
-
-        return self.copy(invalid_listener,False)
-
     
     def de_waldoify(self,invalid_listener):
         '''
@@ -46,9 +37,20 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
     @staticmethod
     def var_type():
         return 'internal map'
+
+
     
-    def copy(self,invalid_listener,peered):
+    def copy(self,invalid_listener,peered,multi_threaded):
         '''
+        @param {} invalid_listener
+
+        @param {bool} peered --- Should the returned copy be peered or
+        un-peered
+
+        @param {bool} multi_threaded --- Do we need to use locking on
+        the object.  Ie., can the object be accessed from multiple
+        threads simultaneously?  (True if yes, False if no.)
+        
         Returns a deep copy of the object.
         '''
         # will be used as initial_val when constructing copied
@@ -72,14 +74,14 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
 
             if isinstance(
                 to_copy,waldoReferenceContainerBase._ReferenceContainer):
-                to_copy = to_copy.copy(invalid_listener,peered)
+                to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
             elif isinstance(
                 to_copy,waldoReferenceBase._ReferenceBase):
 
                 if to_copy.is_value_type():
                     to_copy = to_copy.get_val(invalid_listener)
                 else:
-                    to_copy = to_copy.copy(invalid_listener,peered)
+                    to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
                 
             new_internal_val[key] = to_copy
             
@@ -89,16 +91,15 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         return InternalMap(self.host_uuid,peered,new_internal_val)
 
 
-    def copy_internal_val(self,invalid_listener,peered):
+    def copy_internal_val(self,invalid_listener,peered,multi_threaded):
         '''
         Used by WaldoUserStruct when copying it.
 
         @returns {dict} --- Just want to return a copy of the internal
         dict of this InternalMap.
         '''
-
         # FIXME: very ugly.
-        new_internal_map = self.copy(invalid_listener,peered)
+        new_internal_map = self.copy(invalid_listener,peered,multi_threaded)
         new_internal_map._lock()
         new_internal_map._add_invalid_listener(invalid_listener)
         internal_dict =  new_internal_map._dirty_map[invalid_listener.uuid].val
