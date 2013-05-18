@@ -1,7 +1,11 @@
 #!/usr/bin/python
 
-import sys;
-import os;
+import sys,os
+import os
+
+deps_path = os.path.join(
+    os.path.dirname(__file__),'..')
+sys.path.append(deps_path)
 
 
 from lexer.waldoLex import tokens;
@@ -15,7 +19,9 @@ from typeCheck.typeCheckUtil import getErrorEncountered as astGetErrorEncountere
 from typeCheck.typeCheckUtil import resetErrorEncountered as astResetErrorEncountered;
 from typeCheck.typeCheckUtil import setErrorEncountered;
 
-import ply.yacc as yacc;
+
+import deps.ply.ply.yacc as yacc
+
 from parserUtil import errPrint;
 from parserUtil import setOutputErrorsTo;
 
