@@ -1,7 +1,7 @@
 import waldoReferenceBase
 import util
 from abc import abstractmethod
-import itertools, numbers
+import itertools
 
 from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
@@ -221,7 +221,12 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         dirty_val = dirty_elem.get_val_on_key(key)
         self._unlock()
         return dirty_val
-        
+
+
+# FIXME: not actually correct if turning a single threaded object into
+# a multi-threaded object, must change that too.  probably the best
+# time to do this is during commit.
+
     
     def write_val_on_key(
         self,invalid_listener,key,new_val,copy_if_peered=True,multi_threaded=True):
