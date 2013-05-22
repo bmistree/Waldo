@@ -2,14 +2,14 @@ import waldoReferenceContainerBase
 import util
 import waldoReferenceBase
 import singleThreadReference
-import singleThreadContainerBase
+from waldoReferenceContainerBase import is_reference_container
 
 import waldoExecutingEvent
 from waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
 from waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
 from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
 import numbers
-from  waldoObj import WaldoObj
+from waldoObj import WaldoObj
 
 from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
@@ -173,8 +173,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             # if it's not a _ReferenceContainer, then it must just
             # have a value type.  (See comment after
             # new_internal_val.)
-            if isinstance(
-                to_copy,waldoReferenceContainerBase._ReferenceContainer):
+            if is_reference_container(to_copy):
                 to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
 
             elif isinstance(to_copy, WaldoObj):
@@ -224,14 +223,7 @@ class _InternalListDirtyMapElement(
         # (And we throw an error if a peered variable has a container
         # with externals inside of it.)
         if peered:
-            if (isinstance(
-                    new_val,waldoReferenceContainerBase._ReferenceContainer)
-
-                or
-                
-                isinstance(
-                    new_val,singleThreadContainerBase._SingleThreadReferenceContainer)):
-
+            if is_reference_container(new_val):
                 new_val = new_val.copy(invalid_listener,True,True)
 
             elif isinstance(new_val, WaldoObj):
@@ -452,10 +444,10 @@ class _InternalListVersion(
 
 
 class SingleThreadInternalList(
-    singleThreadContainerBase._SingleThreadReferenceContainer):
+    waldoReferenceContainerBase._SingleThreadReferenceContainer):
 
     def __init__(self,host_uuid,peered,init_val):
-        singleThreadContainerBase._SingleThreadReferenceContainer.__init__(
+        waldoReferenceContainerBaes._SingleThreadReferenceContainer.__init__(
             self,host_uuid,peered,init_val,_InternalListVersion())
 
     def add_key(self,invalid_listener,key,new_val):
@@ -536,14 +528,8 @@ class SingleThreadInternalList(
         # (And we throw an error if a peered variable has a container
         # with externals inside of it.)
         if self.peered:
-            if (isinstance(
-                    new_val,waldoReferenceContainerBase._ReferenceContainer)
 
-                or
-                
-                isinstance(
-                    new_val,singleThreadContainerBase._SingleThreadReferenceContainer)):
-
+            if is_reference_container(new_val):
                 new_val = new_val.copy(invalid_listener,True,True)
 
             elif isinstance(new_val,WaldoObj):
@@ -572,8 +558,7 @@ class SingleThreadInternalList(
             # if it's not a _ReferenceContainer, then it must just
             # have a value type.  (See comment after
             # new_internal_val.)
-            if isinstance(
-                to_copy,waldoReferenceContainerBase._ReferenceContainer):
+            if is_reference_container(to_copy):
 
                 to_copy = to_copy.copy(
                     invalid_listener,peered,multi_threaded)

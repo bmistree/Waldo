@@ -6,6 +6,7 @@ import singleThreadContainerBase
 from waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
 from waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
 from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
+from waldoReferenceContainerBase import is_reference_container
 
 import numbers
 import util
@@ -141,8 +142,7 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         for key in val_to_copy:
             to_copy = val_to_copy[key]
 
-            if isinstance(
-                to_copy,waldoReferenceContainerBase._ReferenceContainer):
+            if is_reference_container(to_copy):
                 to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
             elif isinstance(to_copy,WaldoObj):
 
@@ -427,8 +427,7 @@ class SingleThreadInternalMap(
         for key in val_to_copy:
             to_copy = val_to_copy[key]
 
-            if isinstance(
-                to_copy,waldoReferenceContainerBase._ReferenceContainer):
+            if is_reference_container(to_copy):
                 to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
             elif isinstance(to_copy,WaldoObj):
 

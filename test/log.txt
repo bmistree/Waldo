@@ -64,3 +64,39 @@ CRITICAL : 11:48:30.414.385080: NEW : NEW
      ***** New *****
 CRITICAL : 11:48:47.852.977037: NEW : NEW 
      ***** New *****
+CRITICAL : 12:07:10.305.145025: NEW : NEW 
+     ***** New *****
+CRITICAL : 12:07:27.829.090118: NEW : NEW 
+     ***** New *****
+CRITICAL : 12:44:38.545.882940: NEW : NEW 
+     ***** New *****
+CRITICAL : 12:44:56.136.362076: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:13:16.157.315016: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:13:33.785.444021: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:14:01.440.201998: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:14:18.869.584084: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:15:08.184.206009: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:15:25.691.823006: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:23:00.504.509926: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:31:16.436.430931: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:31:46.865.436077: NEW : NEW 
+     ***** New *****
+CRITICAL : 01:32:04.513.761044: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:33:52.805.727005: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:34:10.274.245977: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:40:58.30.489922: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:41:15.641.067028: NEW : NEW 
+     ***** New *****
