@@ -10,7 +10,7 @@ from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
 import numbers
 import util
 from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
-
+from waldoObj import WaldoObj
 
 def _map_get_write_key_incorporate_deltas(container_written_action):
     if container_written_action.HasField('write_key_text'):
@@ -144,8 +144,7 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
             if isinstance(
                 to_copy,waldoReferenceContainerBase._ReferenceContainer):
                 to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
-            elif isinstance(
-                to_copy,waldoReferenceBase._ReferenceBase):
+            elif isinstance(to_copy,WaldoObj):
 
                 if to_copy.is_value_type():
                     to_copy = to_copy.get_val(invalid_listener)
@@ -226,9 +225,7 @@ class _InternalMapVersion(
             elif isinstance(map_val,bool):
                 add_action.added_what_tf = map_val
 
-            elif isinstance(
-                map_val,waldoReferenceBase._ReferenceBase):
-
+            elif isinstance(map_val,WaldoObj):
                 map_val.serializable_var_tuple_for_network(
                     add_action,'',action_event,True)
     
@@ -304,8 +301,7 @@ class _InternalMapVersion(
                     elif isinstance(map_val,bool):
                         add_action.added_what_tf = map_val
 
-                    elif isinstance(
-                        map_val,waldoReferenceBase._ReferenceBase):
+                    elif isinstance(map_val,WaldoObj):
                         map_val.serializable_var_tuple_for_network(
                             add_action,'',action_event,
                             # true here because if anything is written
@@ -351,8 +347,7 @@ class _InternalMapVersion(
                     elif isinstance(map_val,bool):
                         write_action.what_written_tf = map_val
 
-                    elif isinstance(
-                        map_val,waldoReferenceBase._ReferenceBase):
+                    elif isinstance(map_val,WaldoObj):
                         map_val.serializable_var_tuple_for_network(
                             write_action,'',action_event,
                             # true here because if anything is written
@@ -374,7 +369,7 @@ class _InternalMapVersion(
 
         for map_key in current_internal_val:
             map_val = current_internal_val[map_key]
-            if not isinstance(map_val,waldoReferenceBase._ReferenceBase):
+            if not isinstance(map_val,WaldoObj):
                 break
 
             if map_key not in keys_affected:
@@ -435,8 +430,7 @@ class SingleThreadInternalMap(
             if isinstance(
                 to_copy,waldoReferenceContainerBase._ReferenceContainer):
                 to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
-            elif isinstance(
-                to_copy,waldoReferenceBase._ReferenceBase):
+            elif isinstance(to_copy,WaldoObj):
 
                 if to_copy.is_value_type():
                     to_copy = to_copy.get_val(invalid_listener)

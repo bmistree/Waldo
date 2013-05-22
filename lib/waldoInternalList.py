@@ -9,6 +9,7 @@ from waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
 from waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
 from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
 import numbers
+from  waldoObj import WaldoObj
 
 from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
@@ -176,8 +177,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
                 to_copy,waldoReferenceContainerBase._ReferenceContainer):
                 to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
 
-            elif isinstance(
-                to_copy,waldoReferenceBase._ReferenceBase):
+            elif isinstance(to_copy, WaldoObj):
 
                 if to_copy.is_value_type():
                     to_copy = to_copy.get_val(invalid_listener)
@@ -234,12 +234,7 @@ class _InternalListDirtyMapElement(
 
                 new_val = new_val.copy(invalid_listener,True,True)
 
-            elif (isinstance(
-                    new_val,waldoReferenceBase._ReferenceBase)
-                  
-                  or
-
-                  isinstance(new_val,singleThreadReference._SingleThreadReferenceBase)):
+            elif isinstance(new_val, WaldoObj):
                 
                 if new_val.is_value_type():
                     new_val = new_val.get_val(invalid_listener)
@@ -315,8 +310,7 @@ class _InternalListVersion(
             elif isinstance(list_val,bool):
                 add_action.added_what_tf = list_val
 
-            elif isinstance(
-                list_val,waldoReferenceBase._ReferenceBase):
+            elif isinstance(list_val,WaldoObj):
 
                 list_val.serializable_var_tuple_for_network(
                     add_action,'',action_event,True)
@@ -377,8 +371,7 @@ class _InternalListVersion(
                     elif isinstance(list_val,bool):
                         add_action.added_what_tf = list_val
 
-                    elif isinstance(
-                        list_val,waldoReferenceBase._ReferenceBase):
+                    elif isinstance(list_val,WaldoObj):
                         
                         list_val.serializable_var_tuple_for_network(
                             add_action,'',action_event,
@@ -410,8 +403,7 @@ class _InternalListVersion(
                         write_action.what_written_text = list_val
                     elif isinstance(list_val,bool):
                         write_action.what_written_tf = list_val
-                    elif isinstance(
-                        list_val,waldoReferenceBase._ReferenceBase):
+                    elif isinstance(list_val,WaldoObj):
                         list_val.serializable_var_tuple_for_network(
                             write_action,'',action_event,
                             # true here because if anything is written
@@ -433,7 +425,7 @@ class _InternalListVersion(
         for index in range(0,len(current_internal_val)):
             list_val = current_internal_val[index]
 
-            if not isinstance(list_val,waldoReferenceBase._ReferenceBase):
+            if not isinstance(list_val,WaldoObj):
                 break
             
             if index not in modified_indices:
@@ -554,12 +546,7 @@ class SingleThreadInternalList(
 
                 new_val = new_val.copy(invalid_listener,True,True)
 
-            elif (isinstance(
-                    new_val,waldoReferenceBase._ReferenceBase)
-                  
-                  or
-
-                  isinstance(new_val,singleThreadReferenceBase._SingleThreadReferenceBase)):
+            elif isinstance(new_val,WaldoObj):
                 
                 if new_val.is_value_type():
                     new_val = new_val.get_val(invalid_listener)
@@ -587,12 +574,11 @@ class SingleThreadInternalList(
             # new_internal_val.)
             if isinstance(
                 to_copy,waldoReferenceContainerBase._ReferenceContainer):
-                
+
                 to_copy = to_copy.copy(
                     invalid_listener,peered,multi_threaded)
 
-            elif isinstance(
-                to_copy,waldoReferenceBase._ReferenceBase):
+            elif isinstance(to_copy,WaldoObj):
 
                 if to_copy.is_value_type():
                     to_copy = to_copy.get_val(invalid_listener)

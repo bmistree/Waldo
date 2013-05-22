@@ -6,6 +6,7 @@ import util
 import waldoReferenceBase
 import numbers
 from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
+from waldoObj import WaldoObj
 
 from singleThreadReferenceValue import _SingleThreadReferenceValue
 
@@ -312,8 +313,7 @@ class _WaldoExternalVariable(_WaldoVariable):
         '''
         internal_val = self.get_val(invalid_listener)
 
-        if (isinstance(internal_val,waldoReferenceBase._ReferenceBase) or
-            isinstance(internal_val,singleThreadReference._SingleThreadReferenceBase)):
+        if isinstance(internal_val,WaldoObj):
             return internal_val.de_waldoify(invalid_listener)
         return internal_val
 
@@ -328,8 +328,7 @@ class _WaldoSingleThreadExternalVariable(_WaldoSingleThreadVariable):
         '''
         internal_val = self.get_val(invalid_listener)
 
-        if (isinstance(internal_val,waldoReferenceBase._ReferenceBase) or
-            isinstance(internal_val,singleThreadReference._SingleThreadReferenceBase)):
+        if isinstance(internal_val,WaldoObj):
             return internal_val.de_waldoify(invalid_listener)
         return internal_val
 
@@ -442,8 +441,7 @@ class WaldoMapVariable(_WaldoExternalVariable):
         non-peered InternalMap or InternalList.
         '''
         if self.peered and copy_if_peered:
-            if (isinstance(new_val,waldoReferenceBase._ReferenceBase) or
-                isinstance(new_val,singleThreadReference._SingleThreadReferenceBase)):
+            if isinstance(new_val,WaldoObj):
                 new_val = new_val.copy(invalid_listener,True,multi_threaded)
         super(WaldoMapVariable,self).write_val(invalid_listener,new_val)
 
@@ -550,8 +548,7 @@ class WaldoListVariable(_WaldoExternalVariable):
         @see write_val in WaldoMapVariable
         '''
         if self.peered and copy_if_peered:
-            if (isinstance(new_val,waldoReferenceBase._ReferenceBase) or
-                isinstance(new_val,singleThreadReference._SingleThreadReferenceBase)):
+            if isinstance(new_val,WaldoObj):
                 new_val = new_val.copy(invalid_listener,True,True)
         super(WaldoListVariable,self).write_val(invalid_listener,new_val)
 
@@ -718,7 +715,7 @@ class _WaldoExternalValueType(_WaldoExternalVariable):
         '''
         internal_val = self.get_val(invalid_listener)
 
-        if isinstance(internal_val,waldoReferenceBase._ReferenceBase):
+        if isinstance(internal_val,WaldoObj):
             return internal_val.de_waldoify(invalid_listener)
         return internal_val
 
@@ -877,8 +874,7 @@ class WaldoSingleThreadMapVariable(_WaldoSingleThreadExternalVariable):
         non-peered InternalMap or InternalList.
         '''
         if self.peered and copy_if_peered:
-            if (isinstance(new_val,waldoReferenceBase._ReferenceBase) or
-                isinstance(new_val,singleThreadReference._SingleThreadReferenceBase)):
+            if isinstance(new_val,WaldoObj):
                 new_val = new_val.copy(invalid_listener,True,multi_threaded)
                 
         super(WaldoSingleThreadMapVariable,self).write_val(invalid_listener,new_val)
@@ -977,9 +973,7 @@ class WaldoSingleThreadListVariable(_WaldoSingleThreadExternalVariable):
         @see write_val in WaldoMapVariable
         '''
         if self.peered and copy_if_peered:
-            if (isinstance(new_val,waldoReferenceBase._ReferenceBase) or
-                isinstance(new_val,singleThreadReference._SingleThreadReferenceBase)):
-
+            if isinstance(new_val,WaldoObj):
                 new_val = new_val.copy(invalid_listener,True,False)
         super(WaldoListVariable,self).write_val(invalid_listener,new_val)
         

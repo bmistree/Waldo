@@ -1,7 +1,7 @@
 import singleThreadReference
 import util
 from abc import abstractmethod
-
+from waldoObj import WaldoObj
 from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
 class _SingleThreadReferenceContainer(
@@ -42,9 +42,9 @@ class _SingleThreadReferenceContainer(
             if (isinstance(new_val,_ReferenceContainer) or
                 isinstance(new_val,_SingleThreadReferenceContainer)):
                 new_val = new_val.copy(invalid_listener,True,False)
-                
-            elif (isinstance(new_val,waldoReferenceBase._ReferenceBase) or
-                  isinstance(new_val,waldoReferenceBase._SingleThreadReferenceBase)):
+
+
+            elif isinstance(new_val, WaldoObj):
                 if new_val.is_value_type():
                     new_val = new_val.get_val(invalid_listener)
                 else:
@@ -208,7 +208,7 @@ class _SingleThreadReferenceContainer(
             # want to insert copy of list.  If did not, then might be
             # able to share the reference to the inner list between
             # many machines.
-            if isinstance(new_val,waldoReferenceBase._ReferenceBase):
+            if isinstance(new_val,WaldoObj):
                 new_val = new_val.copy(invalid_listener,True,False)
 
         self.val[key] = new_val

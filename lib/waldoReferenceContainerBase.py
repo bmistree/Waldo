@@ -4,6 +4,7 @@ from abc import abstractmethod
 import itertools
 
 from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
+from waldoObj import WaldoObj
 
 class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     '''
@@ -243,7 +244,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
             # want to insert copy of list.  If did not, then might be
             # able to share the reference to the inner list between
             # many machines.
-            if isinstance(new_val,waldoReferenceBase._ReferenceBase):
+            if isinstance(new_val,WaldoObj):
                 new_val = new_val.copy(invalid_listener,True,multi_threaded)
             
         dirty_elem.write_val_on_key(key,new_val)
@@ -311,12 +312,10 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         # with externals inside of it.)
         
         if peered:
-            if isinstance(
-                new_val,_ReferenceContainer):
+            if isinstance(new_val,_ReferenceContainer):
                 new_val = new_val.copy(invalid_listener,True,multi_threaded)
 
-            elif isinstance(
-                new_val,waldoReferenceBase._ReferenceBase):
+            elif isinstance(new_val,WaldoObj):
 
                 if new_val.is_value_type():
                     new_val = new_val.get_val(invalid_listener)

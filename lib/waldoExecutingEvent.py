@@ -6,6 +6,7 @@ import wVariables
 import util
 import waldoEndpoint, waldoInternalMap, waldoInternalList
 from util import Queue
+from waldoObj import WaldoObj
 
 class _ExecutingEventContext(object):
     def __init__(self,global_store,sequence_local_store):
@@ -98,11 +99,12 @@ class _ExecutingEventContext(object):
         return prev_initialized_bit
 
     def write_val(self,to_write_to,to_write,active_event):
-        if isinstance(to_write_to, waldoReferenceBase._ReferenceBase):
+        if isinstance(to_write_to, WaldoObj):
             to_write_to.write_val(active_event,to_write)
             return to_write_to
         return to_write
-                      
+
+
 
     #### UTILITY FUNCTIONS  ####
     # all of these could be static: they don't touch any internal
@@ -140,7 +142,7 @@ class _ExecutingEventContext(object):
         '''
         if isinstance(val,wVariables._WaldoExternalValueType):
             return val.get_val(active_event).get_val(active_event)
-        elif isinstance(val,waldoReferenceBase._ReferenceBase):
+        elif isinstance(val,WaldoObj):
             return val.get_val(active_event)
         return val
 
@@ -152,7 +154,7 @@ class _ExecutingEventContext(object):
 
         Otherwise, return the value and variable keeps Python form.
         '''
-        if (isinstance(val,waldoReferenceBase._ReferenceBase) or
+        if (isinstance(val,WaldoObj) or
             isinstance(val,dict) or
             isinstance(val,list)):
             # note: when converting from external, we may need to copy
@@ -204,7 +206,7 @@ class _ExecutingEventContext(object):
         
         '''
 
-        if isinstance(val,waldoReferenceBase._ReferenceBase):
+        if isinstance(val,WaldoObj):
             if force_copy:
                 # means that it was a WaldoVariable: just call its copy
                 # method
@@ -387,7 +389,7 @@ class _ExecutingEventContext(object):
         False otherwise.
         '''
         
-        if not isinstance(lhs,waldoReferenceBase._ReferenceBase):
+        if not isinstance(lhs,WaldoObj):
             return False
 
         lhs.write_val(active_event,self.get_val_if_waldo(rhs,active_event))
@@ -398,7 +400,7 @@ class _ExecutingEventContext(object):
         '''
         For bracket statements + struct statements
         '''
-        if not isinstance(lhs,waldoReferenceBase._ReferenceBase):
+        if not isinstance(lhs,WaldoObj):
             return False
 
         raw_key = self.get_val_if_waldo(key,active_event)
@@ -429,7 +431,7 @@ class _ExecutingEventContext(object):
     def get_val_on_key(self,to_get_from,key,active_event):
         raw_key = self.get_val_if_waldo(key,active_event)
         
-        if not isinstance(to_get_from,waldoReferenceBase._ReferenceBase):
+        if not isinstance(to_get_from,WaldoObj):
             return to_get_from[raw_key]
 
         # handle text + ext text
@@ -499,7 +501,7 @@ class _ExecutingEventContext(object):
         '''
         @returns {Python String}
         '''
-        if not isinstance(what_to_call_to_text_on,waldoReferenceBase._ReferenceBase):
+        if not isinstance(what_to_call_to_text_on,WaldoObj):
             return str(what_to_call_to_text_on)
 
         # strings for waldo variable value types
@@ -567,8 +569,6 @@ class _ExecutingEventContext(object):
         if (isinstance(what_calling_len_on, dict) or
             isinstance(what_calling_len_on, list) or
             util.is_string(what_calling_len_on)):
-            # isinstance(what_calling_len_on, basestring)):
-            # isinstance(what_calling_len_on, basestring)):
             return len(what_calling_len_on)
 
         if isinstance(what_calling_len_on,wVariables.WaldoTextVariable):
@@ -622,7 +622,6 @@ class _ExecutingEventContext(object):
 
         # handles Python string case
         if util.is_string(rhs):
-        # if isinstance(rhs,basestring):
             return lhs_val in rhs
 
         elif isinstance(rhs,wVariables.WaldoTextVariable):
@@ -645,7 +644,7 @@ def de_waldoify(val,active_event):
     When returning a value to non-Waldo code, need to convert the
     value to a regular python type.  This function handles that.
     '''
-    if isinstance(val,waldoReferenceBase._ReferenceBase):
+    if isinstance(val,WaldoObj):
         return val.de_waldoify(active_event)
     if isinstance(val,tuple):
         # means that we are trying to dewaldoify a function call's
@@ -657,15 +656,12 @@ def de_waldoify(val,active_event):
 
     return val
     
-    
-    
 '''
 When either external code or another endpoint asks us to execute a
 function, we create an active event to use to execute that function.
 We want to execute it in its own separate thread.  This class provides
 that separate thread and executes the function.
 '''
-#class _ExecutingEvent(threading.Thread):
 class _ExecutingEvent(object):
 
     def __init__(self,to_exec,active_event,ctx,result_queue,*to_exec_args):

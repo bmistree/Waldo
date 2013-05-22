@@ -50,3 +50,17 @@ CRITICAL : 06:35:48.338.133097: NEW : NEW
      ***** New *****
 CRITICAL : 06:36:05.827.403069: NEW : NEW 
      ***** New *****
+CRITICAL : 10:11:48.851.222038: NEW : NEW 
+     ***** New *****
+CRITICAL : 10:12:06.351.552963: NEW : NEW 
+     ***** New *****
+CRITICAL : 11:23:29.772.568941: NEW : NEW 
+     ***** New *****
+CRITICAL : 11:23:47.406.635046: NEW : NEW 
+     ***** New *****
+CRITICAL : 11:47:30.842.881918: NEW : NEW 
+     ***** New *****
+CRITICAL : 11:48:30.414.385080: NEW : NEW 
+     ***** New *****
+CRITICAL : 11:48:47.852.977037: NEW : NEW 
+     ***** New *****

@@ -2,7 +2,10 @@ import threading, numbers
 import util
 from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
-class _SingleThreadReferenceBase(object):
+from waldoObj import WaldoObj
+
+
+class _SingleThreadReferenceBase(WaldoObj):
     '''
     Only one thread of control can access this variable.  Example:
     local variables or sequence peered variables.  Antonyms: peered
