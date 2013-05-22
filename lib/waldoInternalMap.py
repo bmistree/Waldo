@@ -1,7 +1,6 @@
 import waldoReferenceContainerBase
 import waldoReferenceBase
 import waldoExecutingEvent
-import singleThreadContainerBase
 
 from waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
 from waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
@@ -401,7 +400,7 @@ class _InternalMapVersion(
 #### SINGLE THREADED VERSION #####
 
 class SingleThreadInternalMap(
-    singleThreadContainerBase._SingleThreadReferenceContainer):
+    waldoReferenceContainerBase._SingleThreadReferenceContainer):
     
     def __init__(self,host_uuid,peered,init_val):
         singleThreadContainerBase._SingleThreadReferenceContainer.__init__(
