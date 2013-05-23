@@ -65,8 +65,11 @@ class WaldoSingleThreadEndpointVariable(_WaldoSingleThreadVariable):
         return False
     
     def copy(self,invalid_listener,peered,multi_threaded):
-        util.logger_assert('Copy constructor of single thread endpoint variable undefined.')
-
+        if multi_threaded:
+            return WaldoEndpointVariable(self.name,self.host_uuid,peered,self.val)
+        else:
+            return WaldoSingleEndpointVariable(self.name,self.host_uuid,peered,self.val)
+        
     def de_waldoify(self,invalid_listener):
         return self.get_val(invalid_listener)
 
@@ -113,7 +116,10 @@ class WaldoSingleThreadNumVariable(_WaldoSingleThreadVariable):
         return True
     
     def copy(self,invalid_listener,peered,multi_threaded):
-        util.logger_assert('No copy constructor for single thread num variable')
+        if multi_threaded:
+            return WaldoNumVariable(self.name,self.host_uuid,peered,self.val)
+        else:
+            return WaldoSingleThreadNumVariable(self.name,self.host_uuid,peered,self.val)
 
     def de_waldoify(self,invalid_listener):
         '''
@@ -172,7 +178,10 @@ class WaldoSingleThreadTextVariable(_WaldoSingleThreadVariable):
         return True
 
     def copy(self,invalid_listener,peered,multi_threaded):
-        util.logger_assert('No copy method in single threaded text variable')
+        if multi_threaded:
+            return WaldoTextVariable(self.name,self.host_uuid,peered,self.val)
+        else:
+            return WaldoSingleThreadTextVariable(self.name,self.host_uuid,peered,self.val)
 
     def de_waldoify(self,invalid_listener):
         '''
@@ -201,7 +210,7 @@ class WaldoTextVariable(_WaldoVariable):
             return WaldoTextVariable(
                 self.name,self.host_uuid,peered,self.get_val(invalid_listener))
         else:
-            return WaldoSingleThreadedTextVariable(
+            return WaldoSingleThreadTextVariable(
                 self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
     def de_waldoify(self,invalid_listener):
@@ -230,7 +239,10 @@ class WaldoSingleThreadTrueFalseVariable(_WaldoSingleThreadVariable):
         return True
 
     def copy(self,invalid_listener,peered,multi_threaded):
-        util.logger_assert('No copy constructor for single thread')
+        if multi_threaded:
+            return WaldoTrueFalseVariable(self.name,self.host_uuid,peered,self.val)
+        else:
+            return WaldoSingleThreadTrueFalseVariable(self.name,self.host_uuid,peered,self.val)
 
     def de_waldoify(self,invalid_listener):
         '''
