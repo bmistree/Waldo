@@ -138,8 +138,6 @@ class _ReferenceBase(object):
         @returns {bool} --- True if some subelement was modified,
         False otherwise.
         '''
-
-        
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
