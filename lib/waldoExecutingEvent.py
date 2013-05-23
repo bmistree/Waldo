@@ -148,8 +148,10 @@ class _ExecutingEventContext(object):
             return val.get_val(active_event)
         return val
 
+
     def turn_into_waldo_var_if_was_var(
-        self,val,force_copy,active_event, host_uuid,new_peered=False):
+        self,val,force_copy,active_event, host_uuid,
+        new_peered,new_multi_threaded):
         '''
         @see turn_into_waldo_var, except that we will only turn into a
         Waldo variable if the previous value had been a Waldo variable.
@@ -163,14 +165,15 @@ class _ExecutingEventContext(object):
             # list and dict reference types so that changes to them do
             # not interfere with actual values in Python.
             return self.turn_into_waldo_var(
-                val,force_copy,active_event,host_uuid,new_peered)
+                val,force_copy,active_event,host_uuid,new_peered,
+                new_multi_threaded)
 
         return val
         
 
     def turn_into_waldo_var(
-        self,val,force_copy,active_event, host_uuid,new_peered=False,
-        new_multi_threaded=True):
+        self,val,force_copy,active_event, host_uuid,new_peered,
+        new_multi_threaded):
         '''
         @param {Anything} val
 
@@ -221,30 +224,60 @@ class _ExecutingEventContext(object):
 
         # means that val was not a reference object.... turn it into one.
         constructor = None
-        if util.is_string(val):
-            # not using isinstance here because python 3 and python
-            # 2.7 have different ways of testing for string.
-            constructor = wVariables.WaldoTextVariable
-        elif isinstance(val,numbers.Number):
-            constructor = wVariables.WaldoNumVariable
-        elif isinstance(val,bool):
-            constructor = wVariables.WaldoTrueFalseVariable
-        elif isinstance(val,dict):
-            constructor = wVariables.WaldoMapVariable
-        elif isinstance(val,list):
-            constructor = wVariables.WaldoListVariable
-        elif isinstance(val,waldoEndpoint._Endpoint):
-            constructor = wVariables.WaldoEndpointVariable
-        #### DEBUG
-        elif hasattr(val,'__call__'):
-            # checks if is function
-            util.logger_assert(
-                'Should use special call func_turn_into_waldo_var for function objects')
+
+        if new_multi_threaded:
+
+            if util.is_string(val):
+                # not using isinstance here because python 3 and python
+                # 2.7 have different ways of testing for string.
+                constructor = wVariables.WaldoTextVariable
+            elif isinstance(val,numbers.Number):
+                constructor = wVariables.WaldoNumVariable
+            elif isinstance(val,bool):
+                constructor = wVariables.WaldoTrueFalseVariable
+            elif isinstance(val,dict):
+                constructor = wVariables.WaldoMapVariable
+            elif isinstance(val,list):
+                constructor = wVariables.WaldoListVariable
+            elif isinstance(val,waldoEndpoint._Endpoint):
+                constructor = wVariables.WaldoEndpointVariable
+            #### DEBUG
+            elif hasattr(val,'__call__'):
+                # checks if is function
+                util.logger_assert(
+                    'Should use special call func_turn_into_waldo_var for function objects')
+            else:
+                util.logger_assert(
+                    'Unknown object type to call turn_into_waldo_var on')
+            #### END DEBUG
+
+                
         else:
-            util.logger_assert(
-                'Unknown object type to call turn_into_waldo_var on')
-        #### END DEBUG
-        
+            if util.is_string(val):
+                # not using isinstance here because python 3 and python
+                # 2.7 have different ways of testing for string.
+                constructor = wVariables.WaldoSingleThreadTextVariable
+            elif isinstance(val,numbers.Number):
+                constructor = wVariables.WaldoSingleThreadNumVariable
+            elif isinstance(val,bool):
+                constructor = wVariables.WaldoSingleThreadTrueFalseVariable
+            elif isinstance(val,dict):
+                constructor = wVariables.WaldoSingleThreadMapVariable
+            elif isinstance(val,list):
+                constructor = wVariables.WaldoSingleThreadListVariable
+            elif isinstance(val,waldoEndpoint._Endpoint):
+                constructor = wVariables.WaldoSingleThreadEndpointVariable
+            #### DEBUG
+            elif hasattr(val,'__call__'):
+                # checks if is function
+                util.logger_assert(
+                    'Should use special call func_turn_into_waldo_var for function objects')
+            else:
+                util.logger_assert(
+                    'Unknown object type to call turn_into_waldo_var on')
+            #### END DEBUG
+            
+                
         return constructor(
             'garbage', # actual name of variable isn't important
             host_uuid,
@@ -254,7 +287,7 @@ class _ExecutingEventContext(object):
 
     def func_turn_into_waldo_var(
         self,val,force_copy,active_event, host_uuid,new_peered,
-        ext_args_array,new_multi_threaded=True):
+        ext_args_array,new_multi_threaded):
         '''
         turn_into_waldo_var works for all non-function types.
         function-types require additional information (which arguments
@@ -329,7 +362,12 @@ class _ExecutingEventContext(object):
         local data space.
         '''
         return self.turn_into_waldo_var(
-            val,True,active_event,host_uuid,True)
+            val,True,active_event,host_uuid,
+            # will be peered because used between both sides
+            True,
+            # will not be multi-threaded, because only can be accessed
+            # from one thread of control at a time.
+            False)
 
 
     def de_waldoify(self,val,active_event):

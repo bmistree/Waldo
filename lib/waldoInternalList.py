@@ -73,16 +73,18 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_elem = self._dirty_map[invalid_listener.uuid]
+        self._unlock()
+
         # essentially, just iterate through each element of list
         # looking for a matching val.
         for i in range(0,dirty_elem.get_len()):
             if dirty_elem.get_val_on_key(i) == val:
                 found=True
                 break
-        self._unlock()
+
 
         return found
-
+    
     def insert_into(self,invalid_listener, index, val,copy_if_peered=True):
         # this will get overwritten later.  for now, just append some
         # val
@@ -95,7 +97,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             self.write_val_on_key(
                 invalid_listener,
                 i,self.get_val_on_key(invalid_listener,i-1))
-            
+
         self.write_val_on_key(invalid_listener,index,val)
 
     def get_write_key_incorporate_deltas(self,container_written_action):
@@ -192,7 +194,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             return InternalList(
                 self.host_uuid,peered,new_internal_val)
         else:
-            return singleThreadInternalList._SingleThreadInternalList(
+            return SingleThreadInternalList(
                 self.host_uuid,peered,new_internal_val)            
 
     
@@ -240,8 +242,6 @@ class _InternalListDirtyMapElement(
         self.val.append(new_val)
 
 
-
-        
 class _InternalListVersion(
     waldoReferenceContainerBase._ReferenceContainerVersion):
     
@@ -447,7 +447,7 @@ class SingleThreadInternalList(
     waldoReferenceContainerBase._SingleThreadReferenceContainer):
 
     def __init__(self,host_uuid,peered,init_val):
-        waldoReferenceContainerBaes._SingleThreadReferenceContainer.__init__(
+        waldoReferenceContainerBase._SingleThreadReferenceContainer.__init__(
             self,host_uuid,peered,init_val,_InternalListVersion())
 
     def add_key(self,invalid_listener,key,new_val):
@@ -473,7 +473,7 @@ class SingleThreadInternalList(
         # essentially, just iterate through each element of list
         # looking for a matching val.
         for i in range(0,self.get_len(invalid_listener)):
-            if dirty_elem.get_val_on_key(i) == val:
+            if self.get_val_on_key(invalid_listener,i) == val:
                 found=True
                 break
 
@@ -483,10 +483,10 @@ class SingleThreadInternalList(
         return _list_get_write_key_incorporate_deltas(container_written_action)
 
     def get_add_key_incorporate_deltas(self,container_added_action):
-        return get_add_key_incorporate_deltas(container_added_action)
+        return _list_get_add_key_incorporate_deltas(container_added_action)
 
     def get_delete_key_incorporate_deltas(self,container_deleted_action):
-        return get_delete_key_incorporate_deltas(container_deleted_action)
+        return _list_get_delete_key_incorporate_deltas(container_deleted_action)
     
     def handle_added_key_incorporate_deltas(
         self,active_event,index_to_add_to,new_val):
@@ -578,5 +578,10 @@ class SingleThreadInternalList(
             return InternalList(
                 self.host_uuid,peered,new_internal_val)
         else:
-            return _SingleThreadInternalList(
-                self.host_uuid,peered,new_internal_val)            
+            return SingleThreadInternalList(
+                self.host_uuid,peered,new_internal_val)
+        
+    def del_key_called(self,invalid_listener,key_deleted):
+        self.version_obj.del_key_list(key_deleted,len(self.val))
+        del self.val[key_deleted]
+

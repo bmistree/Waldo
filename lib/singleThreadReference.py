@@ -24,6 +24,10 @@ class _SingleThreadReferenceBase(WaldoObj):
         self.version_obj = version_obj        
         self.peered = peered
 
+
+    def is_peered(self):
+        return self.peered
+        
     def serializable_var_tuple_for_network(
         self,parent_delta,var_name,invalid_listener,force):
         '''
@@ -83,7 +87,7 @@ class _SingleThreadReferenceBase(WaldoObj):
 
             if force:
                 # perform each operation as a write...
-                version_obj.add_all_data_to_delta_list(
+                self.version_obj.add_all_data_to_delta_list(
                     list_delta,var_data,invalid_listener)
                 sub_element_modified = True
             else:
@@ -91,9 +95,8 @@ class _SingleThreadReferenceBase(WaldoObj):
                 # do not need to keep track of these changes.
                 # wVariable.waldoMap, wVariable.waldoList, or
                 # wVariable.WaldoUserStruct will get rid of it later.
-                sub_element_modified = version_obj.add_to_delta_list(
+                sub_element_modified = self.version_obj.add_to_delta_list(
                     list_delta,var_data,invalid_listener)
-
 
         elif isinstance(var_data,dict):
             map_delta = parent_delta.internal_map_delta
@@ -101,7 +104,7 @@ class _SingleThreadReferenceBase(WaldoObj):
 
             if force:
                 # perform each operation as a write...
-                version_obj.add_all_data_to_delta_list(
+                self.version_obj.add_all_data_to_delta_list(
                     map_delta,var_data,invalid_listener)
                 sub_element_modified = True
             else:
@@ -109,7 +112,7 @@ class _SingleThreadReferenceBase(WaldoObj):
                 # do not need to keep track of these changes.
                 # wVariable.waldoMap, wVariable.waldoList, or
                 # wVariable.WaldoUserStruct will get rid of it later.
-                sub_element_modified = version_obj.add_to_delta_list(
+                sub_element_modified = self.version_obj.add_to_delta_list(
                     map_delta,var_data,invalid_listener)
 
                 

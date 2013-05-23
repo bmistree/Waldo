@@ -77,7 +77,7 @@ def _map_copy_internal_val(map_obj,invalid_listener,peered):
     return internal_dict
 
 
-def _map_dewaldoify(map_obj,invalid_listener):
+def _map_de_waldoify(map_obj,invalid_listener):
     '''
     @see _ReferenceBase.de_waldoify
     '''
@@ -103,7 +103,7 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
             _InternalMapDirtyMapElement)
 
     def de_waldoify(self,invalid_listener):
-        return _map_dewaldoify(self,invalid_listener)
+        return _map_de_waldoify(self,invalid_listener)
     
     @staticmethod
     def var_type():
@@ -403,7 +403,7 @@ class SingleThreadInternalMap(
     waldoReferenceContainerBase._SingleThreadReferenceContainer):
     
     def __init__(self,host_uuid,peered,init_val):
-        singleThreadContainerBase._SingleThreadReferenceContainer.__init__(
+        waldoReferenceContainerBase._SingleThreadReferenceContainer.__init__(
             self,host_uuid,peered,init_val,_InternalMapVersion())
         
     def de_waldoify(self,invalid_listener):
@@ -439,10 +439,10 @@ class SingleThreadInternalMap(
             new_internal_val[key] = to_copy
 
         if multi_threaded:
-            return waldoInternalMap.InternalMap(
+            return InternalMap(
                 self.host_uuid,peered,new_internal_val)
         else:
-            return _SingleThreadInternalMap(
+            return SingleThreadInternalMap(
                 self.host_uuid,peered,new_internal_val)
 
     def copy_internal_val(self,invalid_listener,peered):

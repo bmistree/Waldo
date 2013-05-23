@@ -1002,11 +1002,11 @@ class WaldoSingleThreadListVariable(_WaldoSingleThreadExternalVariable):
         if multi_threaded:
             return WaldoListVariable(
                 self.name,self.host_uuid,peered,
-                self.get_val(invalid_listener).copy(invalid_listener,peered, True,multi_threaded))
+                self.get_val(invalid_listener).copy(invalid_listener,peered, True))
         else:
             return WaldoSingleThreadListVariable(
                 self.name,self.host_uuid,peered,
-                self.get_val(invalid_listener).copy(invalid_listener,peered,False,multi_threaded))
+                self.get_val(invalid_listener).copy(invalid_listener,peered,False))
 
     def write_val(self,invalid_listener,new_val,copy_if_peered=True):
         '''
@@ -1015,8 +1015,8 @@ class WaldoSingleThreadListVariable(_WaldoSingleThreadExternalVariable):
         if self.peered and copy_if_peered:
             if isinstance(new_val,WaldoObj):
                 new_val = new_val.copy(invalid_listener,True,False)
-        super(WaldoListVariable,self).write_val(invalid_listener,new_val)
-        
+        super(WaldoSingleThreadListVariable,self).write_val(invalid_listener,new_val)
+
 
 
 class WaldoSingleThreadUserStructVariable(WaldoSingleThreadMapVariable):
@@ -1060,7 +1060,7 @@ class WaldoSingleThreadUserStructVariable(WaldoSingleThreadMapVariable):
         '''
         @see waldoReferenceBase.serializable_var_tuple_for_network
         '''
-        version_obj = dirty_element.version_obj
+        version_obj = self.version_obj
 
         is_var_store = False
         if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
@@ -1084,7 +1084,7 @@ class WaldoSingleThreadUserStructVariable(WaldoSingleThreadMapVariable):
         version_obj.has_been_written_since_last_message = False
 
         
-        var_data = dirty_element.val
+        var_data = self.val
         internal_has_been_written = var_data.serializable_var_tuple_for_network(
             struct_delta,'',invalid_listener,
             # must force the write when we have written a new value over list
