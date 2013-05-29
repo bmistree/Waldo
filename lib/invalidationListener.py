@@ -19,7 +19,23 @@ class _InvalidationListener(object):
 
         @param {uuid} uuid --- If uuid is None, generates a new uuid.
         Otherwise, uses old one.
-        '''        
+        '''
+
+
+        # keeps track of all objects that were read/written to during
+        # the course of this event.  we distinguish two types of
+        # objects during the course of completing a commit.  The first
+        # is a priority object.  We will run complete commit on all of
+        # these before running complete commit on the lower priority
+        # objects.  The reason for distinguishing objects into high
+        # and low priority tiers is that some objects may wrap
+        # additional data.  For instance, a folder map object may wrap
+        # many files.  At commit time, we want to serialize the
+        # changes to a variable so that can replay those changes on
+        # the file system.  However, for this to work, we need to
+        # ensure that the folder object is complete_commit-ed before
+        # any of the subfiles are.
+        self.priority_touched_objs = {}        
         self.objs_touched = {}
 
         self.peered_modified = False
@@ -88,14 +104,17 @@ class _InvalidationListener(object):
         # method.
         pass
 
-    def add_touch(self,what_touched):
+    def add_touch(self,what_touched,priority=False):
         '''
         @param {_WaldoObj} what_touched --- The object that was
         touched by this python object.  Any time we read or write to
         an object, we register it as having been "touched" by this
         InvalidationListener.
         '''
-        self.objs_touched[what_touched.uuid] = what_touched
+        if priority:
+            self.priority_touched_objs[what_touched.uuid] = what_touched
+        else:
+            self.objs_touched[what_touched.uuid] = what_touched
 
     def add_peered_modified(self):
         self.peered_modified = True
