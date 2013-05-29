@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import os,sys
 
 deps_path = os.path.join(
@@ -332,7 +331,7 @@ def t_EQUALS(t):
 
 
 def t_SPACE(t):
-    '[ ]+'
+    '[ \t]+'
     return mStateMachine.addToken(t);
 
 def t_NEWLINE(t):
