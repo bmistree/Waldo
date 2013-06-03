@@ -125,7 +125,7 @@ def SideA (_waldo_classes,_host_uuid,_conn_obj,*args):
 
                 pass
 
-            (self._partner_endpoint_msg_func_call_prefix__waldo__start_basic_exchange(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None)
+            (self._partner_endpoint_msg_func_call_prefix__waldo__basic_exchange(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None)
 
             if _returning_to_public_ext_array != None:
                 # must de-waldo-ify objects before passing back
@@ -175,7 +175,7 @@ def SideA (_waldo_classes,_host_uuid,_conn_obj,*args):
 
                 pass
 
-            (self._partner_endpoint_msg_func_call_prefix__waldo__extended_1(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None)
+            (self._partner_endpoint_msg_func_call_prefix__waldo__extended_exchange(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None)
 
             if _returning_to_public_ext_array != None:
                 # must de-waldo-ify objects before passing back
@@ -191,7 +191,7 @@ def SideA (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         ### User-defined message send blocks ###
 
-        def _partner_endpoint_msg_func_call_prefix__waldo__start_basic_exchange(self,_active_event,_context,_returning_to_public_ext_array=None):
+        def _partner_endpoint_msg_func_call_prefix__waldo__basic_exchange(self,_active_event,_context,_returning_to_public_ext_array=None):
 
             _first_msg = False
             if not _context.set_msg_send_initialized_bit_true():
@@ -251,7 +251,7 @@ def SideA (_waldo_classes,_host_uuid,_conn_obj,*args):
 
             return 
 
-        def _partner_endpoint_msg_func_call_prefix__waldo__extended_1(self,_active_event,_context,_returning_to_public_ext_array=None):
+        def _partner_endpoint_msg_func_call_prefix__waldo__extended_exchange(self,_active_event,_context,_returning_to_public_ext_array=None):
 
             _first_msg = False
             if not _context.set_msg_send_initialized_bit_true():

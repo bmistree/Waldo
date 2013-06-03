@@ -66,7 +66,7 @@ SideA
     Public Function input_struct_sequence(Number inc1, Number inc2) returns Number
     {
         Struct SomeStruct ss;
-        ss = start_input_struct(ss,inc1,inc2);
+        ss = InputStruct(ss,inc1,inc2);
         return ss.a;
     }
     
@@ -87,13 +87,13 @@ SideA
 
     Public Function get_partner_struct(Number init_val) returns Number
     {
-        Struct SomeStruct s_struct = start_test(init_val);
+        Struct SomeStruct s_struct = Test(init_val);
         return s_struct.a;
     }
 
     Public Function test_struct_map(Text index, Number num) returns Number
     {
-        Struct SomeStruct ss = start_test(num + 23);
+        Struct SomeStruct ss = Test(num + 23);
         struct_map[index] = ss;
         0 + 4;
         struct_map[index].a = num;
@@ -111,7 +111,7 @@ SideA
         Map(from: Text, to: Struct SomeStruct) mapper;
         mapper['hi'] = ss;
         
-        start_map_of_structs(mapper,'wow');
+        MapOfStructsTest(mapper,'wow');
     }
     
 }

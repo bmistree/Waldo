@@ -28,7 +28,7 @@ from parserUtil import setOutputErrorsTo;
 
 from astBuilderCommon import * 
 
-
+#Trace is a deprecated term for Sequences
 
 def p_RootExpression(p):
     '''
@@ -148,6 +148,8 @@ def p_MessageSequence(p):
     
     p[0] = AstNode(AST_MESSAGE_SEQUENCE,p[2].lineNo,p[2].linePos);
     seq_args = p[4]
+
+    #name of sequence is saved into the 3rd child
     seq_name = p[2]
     seq_returns = p[6]
     p[0].addChildren([seq_name,seq_args])
@@ -160,8 +162,9 @@ def p_MessageSequence(p):
         seq_globs = p[8]
         seq_functions= p[9];
 
-    p[0].addChildren([seq_globs,seq_functions]);
+    p[0].addChildren([seq_globs,seq_functions])
     p[0].addChildren([seq_returns])
+
 
 
 def p_MessageSequenceReturns(p):

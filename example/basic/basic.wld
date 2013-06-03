@@ -28,7 +28,7 @@ Requester
     Public Function increment(Number to_increment) returns Number
     {
         // issue a sequence call to partner endpoint
-        return request_increment(to_increment);
+        return other_side_increment(to_increment);
     }
 }
 

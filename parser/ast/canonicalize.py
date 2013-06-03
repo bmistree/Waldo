@@ -63,6 +63,7 @@ def preprocess(astNode,progText):
     move_sequence_function_return_types(astNode)
 
 
+
 def handle_symmetric(ast_node):
     alias_section_node = ast_node.children[1]
     endpoint_section_node = ast_node.children[4]
@@ -291,6 +292,8 @@ def move_sequence_function_return_types (ast_node):
         #### END DEBUG
 
         msg_send_func_node = msg_seq_funcs_node.children[0]
+        
+
         #### DEBUG
         if msg_send_func_node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
             err_msg = '\nBehram error in canonicalize.  Expecting send message '
@@ -317,6 +320,7 @@ def move_sequence_function_return_types (ast_node):
             # add new decl_node at the end of declarations in
             # msg_seq_globs section.
             msg_seq_globs_node.addChild(decl_node)
+
             
 
     
@@ -359,4 +363,33 @@ def move_sequence_function_args(ast_node):
 
         msg_send_func_node.children.insert(
             2,func_args_node)
+
+       
+        #lefthand side is the original function, and the right hand side is the name of the sequence
+
+
+
+        for sequence in range(len(ast_node.children[6].children)):
+            name_of_send_func = msg_send_func_node.children[1].value
+            seq = ast_node.children[6].children[sequence]
+            message_sequences = seq.children[-2]
+            message_send_seq_func_node = message_sequences.children[0]
+            seq_send_func = message_send_seq_func_node.children[1]
+            if name_of_send_func == seq_send_func.value:
+                name_of_seq = seq.children[0].value
+                seq_send_func.value = name_of_seq
+        
+        for definition in range(len(ast_node.children[2].children)):
+            alias_part = ast_node.children[2].children[definition]
+            node_of_seq_in_alias = alias_part.children[0]
+            if node_of_seq_in_alias.value == msg_send_func_node.children[1].value:
+               # print "Changing Trace"
+               # print ast_node.children[2].children[definition].children[1].children[1].value + " to " + ast_node.children[2].children[definition].children[0].value
+               trace_line = alias_part.children[1]
+               node_for_func_name = trace_line.children[1]
+               node_for_func_name.value = alias_part.children[0].value
+
+        #ast_node.children[6].children[0].children[2].children[0].children[1].value = ast_node.children[6].children[0].children[0].value
+
+        #ast_node.children[2].children[0].children[1].children[1].value = ast_node.children[2].children[0].children[0].value
     

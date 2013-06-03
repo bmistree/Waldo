@@ -1,0 +1,67 @@
+SequenceExternals
+
+Endpoint SideA;
+Endpoint SideB;
+
+Sequences{
+  arguments_check_exchange:
+    SideA.start_arguments_check_exchange ->
+    SideB.receive_arguments_check_exchange;
+
+  other:
+    SideB.start_other -> SideA.handle_other;
+}
+
+Peered
+{
+}
+
+/**
+   Tests coercing externals to value types when passing into sequence
+   data and functions.
+ */
+
+Sequence other ()
+{
+    SideB.start_other{}
+    SideA.handle_other{}
+}
+
+
+Sequence arguments_check_exchange(
+    Number some_number,Number amt_to_increment) returns Number to_return
+{
+    SideA.start_arguments_check_exchange
+    {
+        some_number += amt_to_increment;
+    }
+    SideB.receive_arguments_check_exchange
+    {
+        to_return = some_number;
+    }
+}
+
+SideA
+{
+    External Number num;
+
+    Public Function load_ext_num(External Number to_load)
+    {
+        extAssign to_load to num;
+        something(num);
+    }
+
+    Public Function test_seq_arg(Number amt_to_increment) returns Number,Number
+    {
+        return arguments_check_exchange(num,amt_to_increment), num;
+    }
+
+    Public Function something(Number a)
+    {
+    }
+    
+}
+
+SideB
+{
+}
