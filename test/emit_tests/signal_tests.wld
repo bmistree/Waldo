@@ -32,7 +32,7 @@ SideA
     }
     Public Function run_signal(Number input_num)
     {
-        a(input_num);
+        signal_test_seq(input_num);
     }
 }
 

@@ -18,6 +18,13 @@ def preprocess(astNode,progText):
 
     Big changes:
 
+        * A user calls a sequence's name to begin the sequence.
+          However, the emitter, slicer, and type checker expect that
+          the user is actually calling the name of the first sequence
+          block of each method.
+
+          This method changes the mapping between the two.  It
+          re-names the first sequence block with the sequence name.
 
         * To handle symmetric nodes:
         
@@ -56,13 +63,68 @@ def preprocess(astNode,progText):
     '''
 
     # first star above
-    handle_symmetric(astNode)
+    rename_sequences(astNode)
     # second star    
+    handle_symmetric(astNode)
+    # third star    
     move_sequence_function_args(astNode)
-    # third star
+    # fourth star    
     move_sequence_function_return_types(astNode)
 
+    
+    
+def rename_sequences(ast_root_node):
+    '''
+    A user calls a sequence's name to begin the sequence.  However,
+    the emitter, slicer, and type checker expect that the user is
+    actually calling the name of the first sequence block of each
+    method.
 
+    This method changes the mapping between the two.  It re-names the
+    first sequence block with the sequence name.
+    '''
+
+    # First, iterate through sequences section, which declares all
+    # sequences
+    msg_sequence_dec_node = ast_root_node.children[2]
+    
+    # lefthand side is the original function, and the right hand side
+    # is the name of the sequence
+    for sequence_line in msg_sequence_dec_node.children:
+        # get the name of the sequence line
+        seq_name_node = sequence_line.children[0]
+        seq_name = seq_name_node.value
+        
+        # get all the declared sequence blocks
+        seq_send_node = sequence_line.children[1]
+        send_name_node = seq_send_node.children[1]
+        
+        # exchange the sequence name with the send name
+        send_name_node.value = seq_name
+
+        
+    # Second, iterate through actual sequence block definitions
+    msg_sequences_node = ast_root_node.children[5]
+    # debug
+    if msg_sequences_node.label != AST_MESSAGE_SEQUENCE_SECTION:
+        err_msg = '\nIncorrect label on message sequences node.\n'
+        print msg_sequences_node.label
+        import pdb
+        pdb.set_trace()
+        print err_msg
+        assert (False)
+    # end debug
+
+    for sequence_node in msg_sequences_node.children:
+        sequence_name_node = sequence_node.children[0]
+        sequence_block_nodes = sequence_node.children[3]
+        sequence_send_block_node = sequence_block_nodes.children[0]
+        sequence_send_name_node = sequence_send_block_node.children[1]
+
+        # exchange sequence name with sequence send
+        sequence_send_name_node.value = sequence_name_node.value
+        
+    
 
 def handle_symmetric(ast_node):
     alias_section_node = ast_node.children[1]
@@ -361,35 +423,6 @@ def move_sequence_function_args(ast_node):
         # insert it into msg send func node
         msg_send_func_node = msg_seq_functions_node.children[0]
 
-        msg_send_func_node.children.insert(
-            2,func_args_node)
+        msg_send_func_node.children.insert(2,func_args_node)
 
        
-        #lefthand side is the original function, and the right hand side is the name of the sequence
-
-
-
-        for sequence in range(len(ast_node.children[6].children)):
-            name_of_send_func = msg_send_func_node.children[1].value
-            seq = ast_node.children[6].children[sequence]
-            message_sequences = seq.children[-2]
-            message_send_seq_func_node = message_sequences.children[0]
-            seq_send_func = message_send_seq_func_node.children[1]
-            if name_of_send_func == seq_send_func.value:
-                name_of_seq = seq.children[0].value
-                seq_send_func.value = name_of_seq
-        
-        for definition in range(len(ast_node.children[2].children)):
-            alias_part = ast_node.children[2].children[definition]
-            node_of_seq_in_alias = alias_part.children[0]
-            if node_of_seq_in_alias.value == msg_send_func_node.children[1].value:
-               # print "Changing Trace"
-               # print ast_node.children[2].children[definition].children[1].children[1].value + " to " + ast_node.children[2].children[definition].children[0].value
-               trace_line = alias_part.children[1]
-               node_for_func_name = trace_line.children[1]
-               node_for_func_name.value = alias_part.children[0].value
-
-        #ast_node.children[6].children[0].children[2].children[0].children[1].value = ast_node.children[6].children[0].children[0].value
-
-        #ast_node.children[2].children[0].children[1].children[1].value = ast_node.children[2].children[0].children[0].value
-    

@@ -43,8 +43,8 @@ SideA
     Public Function test_two_sequences(Text seq_one_txt, Text seq_two_txt)
         returns Text, Text
     {
-        Text return1 = start_seq_a(seq_one_txt);
-        Text return2 = start_seq_b(seq_two_txt);
+        Text return1 = SeqA(seq_one_txt);
+        Text return2 = SeqB(seq_two_txt);
         
         return return1, return2;
     }
