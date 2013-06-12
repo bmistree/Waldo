@@ -1,0 +1,6 @@
+import "util.proto";
+
+message PartnerNotifyReady
+{
+        required UUID endpoint_uuid = 1;
+}

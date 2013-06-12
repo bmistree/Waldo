@@ -97,6 +97,12 @@ class _ExecutingEventContext(object):
         self.msg_send_initialized_bit = True
         return prev_initialized_bit
 
+    def write_val(self,to_write_to,to_write,active_event):
+        if isinstance(to_write_to, waldoReferenceBase._ReferenceBase):
+            to_write_to.write_val(active_event,to_write)
+            return to_write_to
+        return to_write
+                      
 
     #### UTILITY FUNCTIONS  ####
     # all of these could be static: they don't touch any internal
@@ -159,7 +165,8 @@ class _ExecutingEventContext(object):
         
 
     def turn_into_waldo_var(
-        self,val,force_copy,active_event, host_uuid,new_peered=False):
+        self,val,force_copy,active_event, host_uuid,new_peered=False,
+        new_multi_threaded=True):
         '''
         @param {Anything} val
 
@@ -201,7 +208,7 @@ class _ExecutingEventContext(object):
             if force_copy:
                 # means that it was a WaldoVariable: just call its copy
                 # method
-                return val.copy(active_event,new_peered)
+                return val.copy(active_event,new_peered,new_multi_threaded)
             # otherwise, just return val
             return val
 
@@ -239,7 +246,8 @@ class _ExecutingEventContext(object):
             )
 
     def func_turn_into_waldo_var(
-        self,val,force_copy,active_event, host_uuid,new_peered,ext_args_array):
+        self,val,force_copy,active_event, host_uuid,new_peered,
+        ext_args_array,new_multi_threaded=True):
         '''
         turn_into_waldo_var works for all non-function types.
         function-types require additional information (which arguments
@@ -250,7 +258,7 @@ class _ExecutingEventContext(object):
             if force_copy:
                 # means that it was a WaldoVariable: just call its copy
                 # method
-                return val.copy(active_event,new_peered)
+                return val.copy(active_event,new_peered,new_multi_threaded)
             # otherwise, just return val
             return val
         elif hasattr(val,'__call__'):
@@ -415,7 +423,7 @@ class _ExecutingEventContext(object):
             # need to check if we need to wrap it first.
             lhs.get_val(active_event).write_val_on_key(active_event,raw_key,rhs)
             
-            
+
         return True
 
     def get_val_on_key(self,to_get_from,key,active_event):
@@ -481,9 +489,11 @@ class _ExecutingEventContext(object):
 
 
             return iter(to_return)
-        
-        util.emit_assert(
+
+        util.logger_assert(
             'Calling get_for_iter on an object that does not support iteration')
+
+        
         
     def to_text(self,what_to_call_to_text_on,active_event):
         '''
@@ -655,7 +665,8 @@ function, we create an active event to use to execute that function.
 We want to execute it in its own separate thread.  This class provides
 that separate thread and executes the function.
 '''
-class _ExecutingEvent(threading.Thread):
+#class _ExecutingEvent(threading.Thread):
+class _ExecutingEvent(object):
 
     def __init__(self,to_exec,active_event,ctx,result_queue,*to_exec_args):
         '''
@@ -689,29 +700,12 @@ class _ExecutingEvent(threading.Thread):
 
         self.result_queue = result_queue
         
-        threading.Thread.__init__(self)
-        self.daemon = True
+        # threading.Thread.__init__(self)
+        # self.daemon = True
         
 
     def run(self):
-        logging_info = {
-            'mod': 'ExecutingEvent',
-            'endpoint_string': self.active_event.local_endpoint._endpoint_uuid_str
-            }
-        if __debug__:
-            log_msg = (
-                'Starting executing event %s.' % str(self.active_event.uuid))
-            util.get_logger().debug(log_msg,extra=logging_info)
-
-        
         result = self.to_exec(self.active_event,self.ctx,*self.to_exec_args)
-
-        if __debug__:
-            log_msg = (
-                'Result from executing event %s: %s.' %
-                (str(self.active_event.local_endpoint._uuid),(str(result))))
-            util.get_logger().debug(log_msg,extra=logging_info)
-
         
         if self.result_queue == None:
             return
@@ -720,12 +714,6 @@ class _ExecutingEvent(threading.Thread):
         # have, then send an update message to partner and wait for
         # ack of message before returning.
         completed = self.active_event.wait_if_modified_peered()
-
-        if __debug__:
-            log_msg = (
-                'Completed waiting on modified peered for %s.' %
-                str(self.active_event.uuid))
-            util.get_logger().debug(log_msg,extra=logging_info)
         
         if not completed:
             self.result_queue.put(

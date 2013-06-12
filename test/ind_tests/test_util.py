@@ -46,6 +46,12 @@ class DummyEndpoint(waldoEndpoint._Endpoint):
             wVariables.WaldoTextVariable(
                 self.peered_list_var_name,host_uuid,True))
 
+        self.peered_map_var_name = 'some map'
+        glob_var_store.add_var(
+            self.peered_map_var_name,
+            wVariables.WaldoMapVariable('some map',host_uuid,True))
+
+        
         waldoEndpoint._Endpoint.__init__(
             self,Waldo._waldo_classes,
             host_uuid,conn_obj,glob_var_store)

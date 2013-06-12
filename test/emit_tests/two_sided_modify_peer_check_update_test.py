@@ -63,10 +63,18 @@ def run_test():
     for index,inner_map_to_add in to_add_list:
         modifier.add_inner_map(index,inner_map_to_add)
 
-        if data_reader.read_inner_map(index) != inner_map_to_add:
+        read_value = data_reader.read_inner_map(index) 
+        
+        # if data_reader.read_inner_map(index) != inner_map_to_add:
+        if read_value != inner_map_to_add:
+            print '\n\n'
+            print index
+            print read_value
             print '\nErr: problem with updating peered nested map'
             return False
 
+# here is what i think the bug is: the update for with the internal list is not getting sent to other side.
+        
     return True
 
 

@@ -1,13 +1,13 @@
 from invalidationListener import _InvalidationListener
 import util
-import threading
+import threading, pickle, time
 import waldoCallResults
 import waldoExecutingEvent
 from abc import abstractmethod
 from util import Queue
 import waldoDeadlockDetector
-import time
-import logging
+
+
 
 class _SubscribedToElement(object):
     '''
@@ -119,7 +119,12 @@ class _ActiveEvent(_InvalidationListener):
         # that we *may* be able to commit our changes.
         self.is_invalidated = False
 
-        self.signal_queue = Queue.Queue()
+
+        # keeps a list of functions that we should exec when we
+        # complete.  Starts as None, because unlikely to use.  If we
+        # do use, then turn it into a proper Queue.Queue().  
+        # self.signal_queue = Queue.Queue()
+        self.signal_queue = None
 
         
         # True if this event initiated a sequence between both sides,
@@ -315,40 +320,41 @@ class _ActiveEvent(_InvalidationListener):
 
     def generate_partner_modified_peered_response(self,msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModified} msg
+        @param {PartnerNotifyOfPeeredModified.proto} msg
 
         Should attempt to update peered and sequence global data
         contained in message and reply with a partner modified peered
         response.
         '''
         self.local_endpoint._global_var_store.incorporate_deltas(
-            self,msg.peered_deltas)
+            self,msg.glob_deltas)
 
         # FIXME: should check here whether the delta changes have
         # already been invalidated.
 
-        # FIXME: ensure that I eally do not need locks around
+        # FIXME: ensure that I really do not need locks around
         # incorporate deltas.
         
         self.local_endpoint._notify_partner_peered_before_return_response(
-            self.uuid,msg.reply_with_uuid, False)
+            self.uuid,msg.reply_with_uuid.data, False)
 
 
     def add_signal_call(self,signaler):
+        if self.signal_queue == None:
+            self.signal_queue = Queue.Queue()
         self.signal_queue.put(signaler)
     
     def receive_partner_modified_peered_response(self,resp_msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse}
-        resp_msg
+        @param {PartnerNotifyOfPeeredModifiedResponse.proto} resp_msg
         
         @see wait_if_modified_peered.  Unlocks queue being waited on
         in that function.
         '''
         self._lock()
         queue_waiting_on =  (
-            self.message_listening_queues_map[resp_msg.reply_to_uuid])
-        del self.message_listening_queues_map[resp_msg.reply_to_uuid]
+            self.message_listening_queues_map[resp_msg.reply_to_uuid.data])
+        del self.message_listening_queues_map[resp_msg.reply_to_uuid.data]
 
         self._unlock()
 
@@ -407,10 +413,10 @@ class _ActiveEvent(_InvalidationListener):
             
             # send update message 
             must_send_update = True
-            glob_deltas = self.local_endpoint._global_var_store.generate_deltas(
-                self)
+
         self._unlock()
 
+        
         if must_send_update:
             # send update message and block until we receive a
             # response
@@ -420,7 +426,7 @@ class _ActiveEvent(_InvalidationListener):
                 reply_with_uuid] = waiting_queue
 
             self.local_endpoint._notify_partner_peered_before_return(
-                self.uuid,reply_with_uuid,glob_deltas)
+                self.uuid,reply_with_uuid,self)
             
             peered_mod_get = waiting_queue.get()
             if isinstance(
@@ -590,17 +596,17 @@ class _ActiveEvent(_InvalidationListener):
 
         self._unlock()
 
+
     def recv_partner_sequence_call_msg(self,msg):
         '''
-        @param {_PartnerMessageRequestSequenceBlockAction} msg --- 
+        @param {PartnerMessageRequestSequenceBlock.proto} msg --- 
         '''
-        reply_to_uuid = msg.reply_to_uuid
-        reply_with_uuid = msg.reply_with_uuid
-
         # can be None... if it is means that the other side wants us
         # to decide what to do next (eg, the other side performed its
         # last message sequence action)
-        name_of_block_to_exec_next = msg.name_of_block_requesting
+        name_of_block_to_exec_next = None
+        if msg.HasField('name_of_block_requesting'):
+            name_of_block_to_exec_next = msg.name_of_block_requesting
         
         # update peered data based on data contents of message.
         # (Note: still must update sequence local data from deltas
@@ -609,12 +615,13 @@ class _ActiveEvent(_InvalidationListener):
         # FIXME: pretty sure that do not need to incorporate deltas within
         # lock, but should check
         self.local_endpoint._global_var_store.incorporate_deltas(
-            self,msg.global_var_store_deltas)
+            self,msg.peered_var_store_deltas)
 
+        
         exec_event = None
 
         self._lock()
-        if reply_to_uuid == None:
+        if not msg.HasField('reply_to_uuid'):
             # means that the other side has generated a first message
             # create a new context to execute that message and do so
             # in a new thread.
@@ -641,15 +648,16 @@ class _ActiveEvent(_InvalidationListener):
                     'Error in _ActiveEvent.  Received a request to ' +
                     'perform an unknown sequence step.')
             #### END MAYBE DEBUG
-                           
+
             to_exec = getattr(self.local_endpoint,block_to_exec_internal_name)
 
             ### SET UP CONTEXT FOR EXECUTING
+            # FIXME: re-arrange code to avoid this import
             import waldoVariableStore
             seq_local_var_store = waldoVariableStore._VariableStore(
                 self.local_endpoint._host_uuid)
 
-            
+            # FIXME: eventually, want to remove pickle-ing here
             seq_local_var_store.incorporate_deltas(
                 self,msg.sequence_local_var_store_deltas)
             
@@ -659,7 +667,7 @@ class _ActiveEvent(_InvalidationListener):
                 self.local_endpoint._global_var_store,
                 seq_local_var_store)
 
-            evt_ctx.set_to_reply_with(reply_with_uuid)
+            evt_ctx.set_to_reply_with(msg.reply_with_uuid.data)
             
             # used to actually start execution of context thread at end
             # of loop.  must start event outside of locks.  That way,
@@ -674,30 +682,34 @@ class _ActiveEvent(_InvalidationListener):
 
         else:
             #### DEBUG
-            if reply_to_uuid not in self.message_listening_queues_map:
+            if msg.reply_to_uuid.data not in self.message_listening_queues_map:
                 util.logger_assert(
                     'Error: partner response message responding to ' +
                     'unknown _ActiveEvent message.')
             #### END DEBUG
                 
             # unblock waiting listening queue.
-            self.message_listening_queues_map[reply_to_uuid].put(
+            self.message_listening_queues_map[msg.reply_to_uuid.data].put(
                 waldoCallResults._SequenceMessageCallResult(
-                    reply_with_uuid,
+                    msg.reply_with_uuid.data,
                     name_of_block_to_exec_next,
                     # as soon as read from the listening message
                     # queue, populate sequence local data from context
                     # using sequence_local_var_store_deltas.
-                    msg.sequence_local_var_store_deltas))
 
+                    # FIXME: eventaully, want to move away from
+                    # pickle-ing here.
+                    msg.sequence_local_var_store_deltas))
+            
             # no need holding onto queue waiting on a message response.
-            del self.message_listening_queues_map[reply_to_uuid]
+            del self.message_listening_queues_map[msg.reply_to_uuid.data]
 
         self._unlock()
 
         if exec_event != None:
             ### ACTUALLY START EXECUTION CONTEXT THREAD
-            exec_event.start()
+            exec_event.run()
+
 
         
     def notify_removed_subscriber(
@@ -959,7 +971,7 @@ class _ActiveEvent(_InvalidationListener):
         self.set_breakout()
         for obj_id in self.holding_locks_on:
             to_backout_obj = self.objs_touched[obj_id]
-            to_backout_obj.backout(self,True)
+            to_backout_obj.backout(self)
         self.holding_locks_on = []
 
         
@@ -971,13 +983,15 @@ class _ActiveEvent(_InvalidationListener):
         for touched_obj in self.objs_touched.values():
             touched_obj.complete_commit(self)
 
-        while True:
-            try:
-                signaler = self.signal_queue.get_nowait()
-                self.local_endpoint._signal_queue.put(signaler)
-            except Queue.Empty:
-                break
-            
+        if self.signal_queue != None:
+            while True:
+                try:
+                    signaler = self.signal_queue.get_nowait()
+                    self.local_endpoint._signal_queue.put(signaler)
+                except Queue.Empty:
+                    break
+
+                
     def set_breakout(self):
         self._breakout_mutex.acquire()
         self.breakout = True

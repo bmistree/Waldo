@@ -4,6 +4,7 @@ import threading
 import socket
 import struct
 
+
 class _WaldoConnectionObject(object):
 
     def register_endpoint(self,endpoint):
@@ -87,7 +88,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         if sock == None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            self.sock.connect((dst_host,dst_port))
+            self.sock.connect((dst_host,int(dst_port)))
 
             
         else:
@@ -128,6 +129,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         '''
         size_of_msg = len(str_to_escape) + _WaldoTCPConnectionObj.HEADER_LEN_OCTETS
         header = struct.pack('I',size_of_msg)
+
         return header + str_to_escape
 
     @staticmethod
@@ -286,7 +288,7 @@ class _TCPAcceptThread(threading.Thread):
         self.endpoint_constructor = endpoint_constructor
         self.waldo_classes = waldo_classes
         self.host_listen_on = host_listen_on
-        self.port_listen_on = port_listen_on
+        self.port_listen_on = int(port_listen_on)
         self.cb = cb
         self.host_uuid = host_uuid
         

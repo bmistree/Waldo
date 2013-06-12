@@ -1,3 +1,10 @@
+import sys,os,threading,logging
+
+# pickup local dependencies instead of system dependencies.
+deps_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), '..','deps')
+sys.path.insert(0,deps_dir)
+
 import util
 import waldoConnectionObj
 from util import Queue
@@ -6,9 +13,11 @@ import waldoCallResults
 import waldoEndpoint
 import waldoExecutingEvent
 import waldoVariableStore
-import threading
 import shim.get_math_endpoint
-import logging
+import waldoReferenceBase
+
+
+
 
 _host_uuid = util.generate_uuid()
 _threadsafe_stoppable_cleanup_queue = Queue.Queue()
@@ -39,7 +48,7 @@ _waldo_classes = {
     'ExecutingEventContext': waldoExecutingEvent._ExecutingEventContext,
     'VariableStore': waldoVariableStore._VariableStore,
     'BackoutException': util.BackoutException,
-    'logger': util.get_logger()
+    'logger': util.get_logger(),
     }
 
 def _setup_logging():

@@ -285,7 +285,7 @@ def emit_value_type_default(type_dict):
 
 
     #### DEBUG
-    emit_assert('Unknown type requested default of.')
+    emit_assert('Unknown type requested default of ' + str(type_dict))
     #### END DEBUG
     
 

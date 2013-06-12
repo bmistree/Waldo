@@ -1,40 +1,37 @@
 from util import Queue
 import threading
 import waldoServiceActions
-import logging
 import util
 
-class _EndpointServiceThread(threading.Thread):
-    def __init__(self,endpoint):
+
+class WorkerThread(threading.Thread):
+    def __init__(self,queue):
+        self.queue = queue
+        threading.Thread.__init__(self)
+        self.daemon = True
+        
+    def run(self):
+        while True:
+            to_service = self.queue.get()
+            to_service.service()
+
+class _EndpointServiceThreadPool():
+    def __init__(self,endpoint,num_workers):
         '''
         @param {_Endpoint object} endpoint
         '''
         self.endpoint = endpoint
-
         # each element is an _Action (@see
         # waldoServiceActions._Action).
-        self.threadsafe_queue = Queue.Queue()        
-        threading.Thread.__init__(self)
-        self.daemon = True
+        self.threadsafe_queue = Queue.Queue()
 
-        self.logging_info = {
-            'mod': 'EndpointServiceThread',
-            'endpoint_string': self.endpoint._endpoint_uuid_str
-            }
+        self.workers = []
+        for i in range(0,num_workers):
+            worker = WorkerThread(self.threadsafe_queue)
+            self.workers.append(worker)
+            worker.start()
         
-    def run(self):
-        '''
-        Event loop.  Keep on reading off queue and servicing.
-        '''
-        while True:
-            service_action = self.threadsafe_queue.get()
-            if __debug__:
-                util.get_logger().debug(
-                    ('Servicing action.  Remaining queue size: %s' %
-                     str(self.threadsafe_queue.qsize())),
-                    extra= self.logging_info)
-            service_action.service()
-
+            
     def receive_request_backout(self,uuid,requesting_endpoint):
         '''
         @param {uuid} uuid --- The uuid of the _ActiveEvent that we
@@ -165,17 +162,17 @@ class _EndpointServiceThread(threading.Thread):
         
     def receive_partner_request_complete_commit(self,msg):
         '''
-        @param {_PartnerCommitRequestMessage} msg
+        @param {PartnerCompleteCommitRequest.proto} msg
         '''
         partner_request_complete_commit_action = (
             waldoServiceActions._ReceiveRequestCompleteCommitAction(
-                self.endpoint,msg.event_uuid,True))
+                self.endpoint,msg.event_uuid.data,True))
         self.threadsafe_queue.put(partner_request_complete_commit_action)
 
         
     def receive_partner_request_message_sequence_block(self,msg):
         '''
-        @param {_PartnerRequestSequenceBlockMessage} msg --- Contains
+        @param {PartnerRequestSequenceBlock.proto} msg --- Contains
         all the information for the request partner made.
         '''
         partner_request_sequence_block_action = (
@@ -186,15 +183,16 @@ class _EndpointServiceThread(threading.Thread):
 
     def receive_partner_notify_of_peered_modified_msg(self,msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModified} msg
+        @param {PartnerNotifyOfPeeredModified.proto} msg
         '''
         action = waldoServiceActions._ReceivePeeredModifiedMsg(
             self.endpoint,msg)
         self.threadsafe_queue.put(action)
 
+        
     def receive_partner_notify_of_peered_modified_rsp_msg(self,msg):
         '''
-        @param {waldoMessages._PartnerNotifyOfPeeredModifiedResponse} msg
+        @param {PartnerNotifyOfPeeredModifiedResponse.proto} msg
         '''
         action = waldoServiceActions._ReceivePeeredModifiedResponseMsg(
             self.endpoint,msg)
@@ -202,11 +200,11 @@ class _EndpointServiceThread(threading.Thread):
 
     def receive_partner_request_commit(self,msg):
         '''
-        @param {_PartnerCommitRequestMessage} msg
+        @param {PartnerCommitRequest.proto} msg
         '''
         partner_request_commit_action = (
             waldoServiceActions._ReceiveRequestCommitAction(
-                self.endpoint,msg.event_uuid,True))
+                self.endpoint,msg.event_uuid.data,True))
         self.threadsafe_queue.put(partner_request_commit_action)
         
     def receive_request_commit_from_endpoint(self,uuid,requesting_endpoint):

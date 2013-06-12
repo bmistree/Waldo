@@ -309,15 +309,29 @@ def emit_statement(
                 False, # variable is not peered
                 endpoint_name,
                 ast_root,fdep_dict,emit_ctx)
-        else:
+        elif (emit_utils.is_reference_type_type_dict(var_type_node.type) or
+              TypeCheck.templateUtil.is_endpoint(var_type_node.type) or
+              TypeCheck.templateUtil.is_basic_function_type(var_type_node.type)):
             decl_txt,var_name = non_struct_rhs_declaration(
                 statement_node,'self._host_uuid',
                 False, # variable is not peered
                 endpoint_name,
                 ast_root,fdep_dict,emit_ctx)
+            
+        else:
+            # value types do not need to be wrapped
+            decl_txt = emit_utils.emit_value_type_default(var_type_node.type)
+            initializer_node = emit_utils.get_var_initializer_from_decl(statement_node)
+            if initializer_node != None:
+                decl_txt =(
+                    '_context.get_val_if_waldo(%s,_active_event)' %
+                    emit_statement(
+                        initializer_node, endpoint_name,ast_root,fdep_dict,emit_ctx))
+                
+        statement_txt = var_name_waldo_src + ' = ' + decl_txt 
 
-        statement_txt = var_name_waldo_src + ' = ' + decl_txt + '\n'
 
+        
     elif statement_node.label == AST_RETURN_STATEMENT:
         statement_txt = _emit_return_statement(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -1334,10 +1348,14 @@ def emit_for(
     for_txt += (
         'for %s in _context.get_for_iter(%s,_active_event):\n' %
         (inter_iter_name,to_iterate_txt))
-    
-    for_body_txt = emit_statement(
+
+    iter_id_txt = emit_statement(
         identifier_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-    for_body_txt += '.write_val(_active_event,%s)\n' % inter_iter_name
+    
+    for_body_txt = (
+        '%s = _context.write_val(%s,%s,_active_event)\n' %
+        (iter_id_txt, iter_id_txt, inter_iter_name))
+    # for_body_txt += '.write_val(_active_event,%s)\n' % inter_iter_name
 
     for_body_txt += emit_statement(
         for_body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)

@@ -1,11 +1,12 @@
 import util
 import waldoEndpointServiceThread
-import pickle
 import waldoActiveEventMap
-import waldoMessages
 from util import Queue
 import threading
-import logging
+
+from lib.proto_compiled.generalMessage_pb2 import GeneralMessage
+
+
 
 class _Endpoint(object):
     '''
@@ -47,8 +48,13 @@ class _Endpoint(object):
         # variables.
         self._global_var_store = global_var_store
 
-        self._endpoint_service_thread = waldoEndpointServiceThread._EndpointServiceThread(self)
-        self._endpoint_service_thread.start()
+        # self._endpoint_service_thread = waldoEndpointServiceThread._EndpointServiceThread(self)
+        # self._endpoint_service_thread.start()
+
+        self._endpoint_service_thread_pool = (
+            waldoEndpointServiceThread._EndpointServiceThreadPool(
+                self,util.SIZE_THREAD_POOL))
+
 
         self._host_uuid = host_uuid
 
@@ -173,14 +179,14 @@ class _Endpoint(object):
         '''
         @see _EndpointServiceThread.request_commit
         '''
-        self._endpoint_service_thread.request_commit(
+        self._endpoint_service_thread_pool.request_commit(
             uuid,requesting_endpoint)
 
     def _receive_request_backout(self,uuid,requesting_endpoint):
         '''
         @see _EndpointServiceThread.receive_request_backout
         '''
-        self._endpoint_service_thread.receive_request_backout(
+        self._endpoint_service_thread_pool.receive_request_backout(
             uuid,requesting_endpoint)
 
     def _receive_request_commit(self,uuid,requesting_endpoint):
@@ -189,7 +195,7 @@ class _Endpoint(object):
         to begin the first phase of the commit of the active event
         with uuid "uuid."
         '''
-        self._endpoint_service_thread.receive_request_commit_from_endpoint(
+        self._endpoint_service_thread_pool.receive_request_commit_from_endpoint(
             uuid,requesting_endpoint)
         
     def _receive_request_complete_commit(self,uuid):
@@ -198,12 +204,13 @@ class _Endpoint(object):
         to finish the second phase of the commit of active event with
         uuid "uuid."
         '''
-        self._endpoint_service_thread.receive_request_complete_commit(
+        self._endpoint_service_thread_pool.receive_request_complete_commit(
             uuid,
             False # complete commit request was not from partner
                   # endpoint.
             )
 
+            
     def _receive_msg_from_partner(self,string_msg):
         '''
         Called by the connection object.
@@ -217,86 +224,103 @@ class _Endpoint(object):
         peered variable, request to backout an event, etc.  In this
         function, we dispatch depending on message we receive.
         '''
-        counter = 0
-        while True:
-            try:
-                msg_map = pickle.loads(string_msg)
-                break
-            except:
-                # import pdb
-                # pdb.set_trace()
-                counter +=1
-                # util.get_logger().critical('error',extra=self._logging_info)
-                if counter > 10:
-                    raise 
-        msg = waldoMessages._Message.map_to_msg(msg_map)
-            
-        if isinstance(msg,waldoMessages._PartnerRequestSequenceBlockMessage):
-            self._endpoint_service_thread.receive_partner_request_message_sequence_block(
-                msg)
-        elif isinstance(msg,waldoMessages._PartnerCommitRequestMessage):
-            self._endpoint_service_thread.receive_partner_request_commit(msg)
-            
-        elif isinstance(msg,waldoMessages._PartnerCompleteCommitRequestMessage):
-            self._endpoint_service_thread.receive_partner_request_complete_commit(msg)
-        elif isinstance(msg,waldoMessages._PartnerBackoutCommitRequestMessage):
-            self._receive_request_backout(msg.event_uuid,util.PARTNER_ENDPOINT_SENTINEL)
-        elif isinstance(msg,waldoMessages._PartnerRemovedSubscriberMessage):
-            self._receive_removed_subscriber(
-                msg.event_uuid, msg.removed_subscriber_uuid,
-                msg.host_uuid,msg.resource_uuid)
+        general_msg = GeneralMessage()
+        general_msg.ParseFromString(string_msg)
 
-        elif isinstance(msg,waldoMessages._PartnerAdditionalSubscriberMessage):
-            self._receive_additional_subscriber(
-                msg.event_uuid, msg.additional_subscriber_uuid,
-                msg.host_uuid,msg.resource_uuid)
+        if general_msg.HasField('notify_ready'):
+            endpoint_uuid = general_msg.notify_ready.endpoint_uuid
+            self._receive_partner_ready(endpoint_uuid.data)
+        elif general_msg.HasField('notify_of_peered_modified_resp'):
+            self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_rsp_msg(
+                general_msg.notify_of_peered_modified_resp)
+        elif general_msg.HasField('request_sequence_block'):
+            self._endpoint_service_thread_pool.receive_partner_request_message_sequence_block(
+                general_msg.request_sequence_block)
+        elif general_msg.HasField('notify_of_peered_modified'):
+            self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_msg(
+                general_msg.notify_of_peered_modified)
 
-        elif isinstance(msg,waldoMessages._PartnerFirstPhaseResultMessage):
-            if msg.successful:
+        elif general_msg.HasField('first_phase_result'):
+            if general_msg.first_phase_result.successful:
                 self._receive_first_phase_commit_successful(
-                    msg.event_uuid,msg.sending_endpoint_uuid,
-                    msg.children_event_endpoint_uuids)
+                    general_msg.first_phase_result.event_uuid.data,
+                    general_msg.first_phase_result.sending_endpoint_uuid.data,
+                    [x.data for x  in general_msg.first_phase_result.children_event_endpoint_uuids])
             else:
                 self._receive_first_phase_commit_unsuccessful(
-                    msg.event_uuid,msg.sending_endpoint_uuid)
+                    general_msg.first_phase_result.event_uuid.data,
+                    general_msg.first_phase_result.sending_endpoint_uuid.data)
 
-        elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModified):
-            self._endpoint_service_thread.receive_partner_notify_of_peered_modified_msg(msg)
-            
-        elif isinstance(msg,waldoMessages._PartnerNotifyOfPeeredModifiedResponse):
-            self._endpoint_service_thread.receive_partner_notify_of_peered_modified_rsp_msg(msg)
+        elif general_msg.HasField('additional_subscriber'):
+            self._receive_additional_subscriber(
+                general_msg.additional_subscriber.event_uuid.data,
+                general_msg.additional_subscriber.additional_subscriber_uuid.data,
+                general_msg.additional_subscriber.host_uuid.data,
+                general_msg.additional_subscriber.resource_uuid.data)
 
-        elif isinstance(msg,waldoMessages._PartnerNotifyReady):
-            self._receive_partner_ready(msg.endpoint_uuid)
+        elif general_msg.HasField('removed_subscriber'):
+            self._receive_removed_subscriber(
+                general_msg.removed_subscriber.event_uuid.data,
+                general_msg.removed_subscriber.removed_subscriber_uuid.data,
+                general_msg.removed_subscriber.host_uuid.data,
+                general_msg.removed_subscriber.resource_uuid.data)
+
+        elif general_msg.HasField('backout_commit_request'):
+            self._receive_request_backout(
+                general_msg.backout_commit_request.event_uuid.data,
+                util.PARTNER_ENDPOINT_SENTINEL)
+
+        elif general_msg.HasField('complete_commit_request'):
+            self._endpoint_service_thread_pool.receive_partner_request_complete_commit(
+                general_msg.complete_commit_request)
+
+        elif general_msg.HasField('commit_request'):
+            self._endpoint_service_thread_pool.receive_partner_request_commit(
+                general_msg.commit_request)
             
+        #### DEBUG
         else:
-            #### DEBUG
             util.logger_assert(
                 'Do not know how to convert message to event action ' +
                 'in _receive_msg_from_partner.')
-            #### END DEBUG
+        #### END DEBUG
 
+
+
+        
     def _receive_partner_ready(self,partner_uuid = None):
-        self._endpoint_service_thread.receive_partner_ready()
+        self._endpoint_service_thread_pool.receive_partner_ready()
         self._set_partner_uuid(partner_uuid)
         
     def _notify_partner_ready(self):
         '''
         Tell partner endpoint that I have completed my onReady action.
         '''
-        msg = waldoMessages._PartnerNotifyReady(self._uuid)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_NOTIFY_READY
+        partner_notify_ready = general_message.notify_ready
+        endpoint_uuid = partner_notify_ready.endpoint_uuid
+        endpoint_uuid.data = self._uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
 
-            
+        
     def _notify_partner_removed_subscriber(
         self,event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
         Send a message to partner that a subscriber is no longer
         holding a lock on a resource to commit it.
         '''
-        msg = waldoMessages._PartnerRemovedSubscriberMessage(
-            event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_REMOVED_SUBSCRIBER
+        
+        removed_subscriber = general_message.removed_subscriber
+        removed_subscriber.event_uuid.data = event_uuid
+        removed_subscriber.removed_subscriber_uuid.data = removed_subscriber_uuid
+        removed_subscriber.host_uuid.data = host_uuid
+        removed_subscriber.resource_uuid.data = resource_uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
+        
 
     def _forward_first_phase_commit_unsuccessful(
         self,event_uuid,endpoint_uuid):
@@ -310,9 +334,14 @@ class _Endpoint(object):
         endpoint_uuid (and therefore, it and everything along the path
         should roll back their commits).
         '''
-        msg = waldoMessages._PartnerFirstPhaseResultMessage(
-            event_uuid,endpoint_uuid,False)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_FIRST_PHASE_RESULT
+        first_phase_result = general_message.first_phase_result
+        first_phase_result.event_uuid.data = event_uuid
+        first_phase_result.sending_endpoint_uuid.data = endpoint_uuid
+        first_phase_result.successful = False
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
 
     def _forward_first_phase_commit_successful(
         self,event_uuid,endpoint_uuid,children_event_endpoint_uuids):
@@ -331,10 +360,19 @@ class _Endpoint(object):
         children_event_endpoint_uuids have confirmed that they are
         clear to commit.
         '''
-        msg = waldoMessages._PartnerFirstPhaseResultMessage(
-            event_uuid,endpoint_uuid,True,
-            children_event_endpoint_uuids)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_FIRST_PHASE_RESULT
+        first_phase_result = general_message.first_phase_result
+        first_phase_result.event_uuid.data = event_uuid
+        first_phase_result.sending_endpoint_uuid.data = endpoint_uuid
+        first_phase_result.successful = True
+
+        for child_event_uuid in children_event_endpoint_uuids:
+            child_event_uuid_msg = first_phase_result.children_event_endpoint_uuids.add()
+            child_event_uuid_msg.data = child_event_uuid
+        
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
         
     def _notify_partner_of_additional_subscriber(
         self,event_uuid,additional_subscriber_uuid,host_uuid,resource_uuid):
@@ -342,10 +380,17 @@ class _Endpoint(object):
         Send a message to partner that a subscriber has just started
         holding a lock on a resource to commit it.
         '''
-        msg = waldoMessages._PartnerAdditionalSubscriberMessage(
-            event_uuid,additional_subscriber_uuid,host_uuid,resource_uuid)
-        self._conn_obj.write(pickle.dumps(msg.msg_to_map()),self)
-        
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_ADDITIONAL_SUBSCRIBER
+
+        additional_subscriber = general_message.additional_subscriber
+        additional_subscriber.event_uuid.data = event_uuid
+        additional_subscriber.additional_subscriber_uuid.data = additional_subscriber_uuid
+        additional_subscriber.host_uuid.data = host_uuid
+        additional_subscriber.resource_uuid.data = resource_uuid
+
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
         
     def _receive_additional_subscriber(
         self,event_uuid,subscriber_event_uuid,host_uuid,resource_uuid):
@@ -361,7 +406,7 @@ class _Endpoint(object):
 
         @see notify_additional_subscriber (in _ActiveEvent.py)
         '''
-        self._endpoint_service_thread.receive_additional_subscriber(
+        self._endpoint_service_thread_pool.receive_additional_subscriber(
             event_uuid,subscriber_event_uuid,host_uuid,resource_uuid)
 
     def _receive_removed_subscriber(
@@ -369,7 +414,7 @@ class _Endpoint(object):
         '''
         @see _receive_additional_subscriber
         '''
-        self._endpoint_service_thread.receive_removed_subscriber(
+        self._endpoint_service_thread_pool.receive_removed_subscriber(
             event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid)
 
     def _receive_endpoint_call(
@@ -380,7 +425,7 @@ class _Endpoint(object):
         Non-blocking.  Requests the endpoint_service_thread to perform
         the endpoint function call listed as func_name.
         '''
-        self._endpoint_service_thread.receive_endpoint_call(
+        self._endpoint_service_thread_pool.receive_endpoint_call(
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
 
 
@@ -402,7 +447,7 @@ class _Endpoint(object):
         
         Forward the message on to the root.  
         '''
-        self._endpoint_service_thread.receive_first_phase_commit_message(
+        self._endpoint_service_thread_pool.receive_first_phase_commit_message(
             event_uuid,endpoint_uuid,True,children_event_endpoint_uuids)
         
 
@@ -411,7 +456,7 @@ class _Endpoint(object):
         '''
         @see _receive_first_phase_commit_successful
         '''
-        self._endpoint_service_thread.receive_first_phase_commit_message(
+        self._endpoint_service_thread_pool.receive_first_phase_commit_message(
             event_uuid,endpoint_uuid,False)
 
 
@@ -461,20 +506,35 @@ class _Endpoint(object):
         local data to be transmitted whether or not it was modified.
         
         '''
-        glob_deltas = self._global_var_store.generate_deltas(
-            invalidation_listener)
-        sequence_local_deltas = sequence_local_store.generate_deltas(
-            invalidation_listener,first_msg)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_REQUEST_SEQUENCE_BLOCK
+
+        request_sequence_block_msg = general_message.request_sequence_block
+
+        # event uuid
+        request_sequence_block_msg.event_uuid.data = event_uuid
         
-        msg_to_send = waldoMessages._PartnerRequestSequenceBlockMessage(
-            event_uuid,block_name,reply_with_uuid,reply_to_uuid,
-            glob_deltas,sequence_local_deltas)
+        # name of block requesting
+        if block_name != None:
+            request_sequence_block_msg.name_of_block_requesting = block_name
+            
+        # reply with uuid
+        reply_with_uuid_msg = request_sequence_block_msg.reply_with_uuid
+        reply_with_uuid_msg.data = reply_with_uuid
 
-        msg_map = msg_to_send.msg_to_map()
+        # reply to uuid
+        if reply_to_uuid != None:
+            reply_to_uuid_msg = request_sequence_block_msg.reply_to_uuid
+            reply_to_uuid_msg.data = reply_to_uuid
 
-        sending_msg_str = pickle.dumps(msg_map)
-        msg_len = len(sending_msg_str)
-        self._conn_obj.write(sending_msg_str,self)
+        sequence_local_deltas = sequence_local_store.generate_deltas(
+            invalidation_listener,first_msg,request_sequence_block_msg.sequence_local_var_store_deltas)
+                
+        glob_deltas = self._global_var_store.generate_deltas(
+            invalidation_listener,False,request_sequence_block_msg.peered_var_store_deltas)
+
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
 
         
     def _forward_commit_request_partner(self,active_event):
@@ -484,31 +544,53 @@ class _Endpoint(object):
         '''
         # FIXME: may be a way to piggyback commit with final event in
         # sequence.
-
-        msg = waldoMessages._PartnerCommitRequestMessage(active_event.uuid)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_COMMIT_REQUEST
+        general_message.commit_request.event_uuid.data = active_event.uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
 
 
     def _notify_partner_peered_before_return(
-        self,event_uuid,reply_with_uuid,peered_deltas):
+        self,event_uuid,reply_with_uuid,active_event):
         '''
         @see waldoActiveEvent.wait_if_modified_peered
         '''
-        msg = waldoMessages._PartnerNotifyOfPeeredModified(
-            event_uuid,reply_with_uuid,peered_deltas)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_NOTIFY_OF_PEERED_MODIFIED
+        notify_of_peered_modified = general_message.notify_of_peered_modified
+
+        glob_deltas = notify_of_peered_modified.glob_deltas
+        self._global_var_store.generate_deltas(
+            active_event,False,glob_deltas)
+
+        notify_of_peered_modified.event_uuid.data = event_uuid
+        notify_of_peered_modified.reply_with_uuid.data = reply_with_uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
+        
         
     def _notify_partner_peered_before_return_response(
         self,event_uuid,reply_to_uuid,invalidated):
         '''
-        @see waldoMessages._PartnerNotifyOfPeeredModifiedResponse
+        @see PartnerNotifyOfPeeredModifiedResponse.proto
         '''
-        msg = waldoMessages._PartnerNotifyOfPeeredModifiedResponse(
-            event_uuid,reply_to_uuid,invalidated)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE
+
+        notify_of_peered_modified_resp = general_message.notify_of_peered_modified_resp
+
+        # load event uuid
+        msg_event_uuid = notify_of_peered_modified_resp.event_uuid
+        msg_event_uuid.data = event_uuid
+
+        # load reply_to_uuid
+        msg_reply_to_uuid = notify_of_peered_modified_resp.reply_to_uuid
+        msg_reply_to_uuid.data = reply_to_uuid
+
+        # load invalidated
+        notify_of_peered_modified_resp.invalidated = invalidated
+        
+        self._conn_obj.write(general_message.SerializeToString(),self)
         
 
     def _forward_complete_commit_request_partner(self,active_event):
@@ -517,17 +599,18 @@ class _Endpoint(object):
         wants you to tell partner endpoint as well to complete its
         commit.
         '''
-        msg = waldoMessages._PartnerCompleteCommitRequestMessage(active_event.uuid)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
-        
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_COMPLETE_COMMIT_REQUEST
+        general_message.complete_commit_request.event_uuid.data = active_event.uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
     def _forward_backout_request_partner(self,active_event):
         '''
         @param {_ActiveEvent} active_event --- Has the same uuid as
         the event we will forward a backout request to our partner
         for.
         '''
-        msg = waldoMessages._PartnerBackoutCommitRequestMessage(active_event.uuid)
-        msg_map = msg.msg_to_map()
-        self._conn_obj.write(pickle.dumps(msg_map),self)
-
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_BACKOUT_COMMIT_REQUEST
+        general_message.backout_commit_request.event_uuid.data = active_event.uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)

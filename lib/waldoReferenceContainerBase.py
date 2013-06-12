@@ -1,7 +1,9 @@
 import waldoReferenceBase
 import util
 from abc import abstractmethod
-import itertools
+import itertools, numbers
+
+from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
 class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     '''
@@ -37,6 +39,123 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._unlock()
 
 
+    def incorporate_deltas(self,delta_to_incorporate,constructors,active_event):
+
+        '''
+        @param {SingleInternalListDelta or SingleInternalMapDelta}
+        delta_to_incorporate
+        '''
+        if delta_to_incorporate.parent_type == VarStoreDeltas.INTERNAL_LIST_CONTAINER:
+            to_iter_over = delta_to_incorporate.list_actions
+        else:
+            to_iter_over = delta_to_incorporate.map_actions
+
+        for action in to_iter_over:
+            if action.container_action == VarStoreDeltas.ContainerAction.WRITE_VALUE:
+                
+                container_written_action = action.write_key
+                # added because when serializing and deserializing data with
+                # protobufs, not using integer indices, using double indices.
+                # This causes a problem on the range commadn below.
+                index_to_write_to = self.get_write_key_incorporate_deltas(
+                    container_written_action)
+
+                if container_written_action.HasField('what_written_text'):
+                    new_val = container_written_action.what_written_text
+                elif container_written_action.HasField('what_written_num'):
+                    new_val = container_written_action.what_written_num
+                elif container_written_action.HasField('what_written_tf'):
+                    new_val = container_written_action.what_written_tf
+                    
+                elif container_written_action.HasField('what_written_map'):
+                    new_val = constructors.map_constructor('',self.host_uuid,True)
+                    single_map_delta = container_written_action.what_written_map
+                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER                    
+                    new_val.incorporate_deltas(single_map_delta,constructors,active_event)
+                    
+                elif container_written_action.HasField('what_written_list'):
+                    new_val = constructors.list_constructor('',self.host_uuid,True)
+                    single_list_delta = container_written_action.what_written_list
+                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER                    
+                    new_val.incorporate_deltas(single_list_delta,constructors,active_event)
+
+                elif container_written_action.HasField('what_written_struct'):
+                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
+                    single_struct_delta = container_written_action.what_written_struct
+                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+                    new_val.incorporate_deltas(single_struct_delta,constructors,active_event)
+                    
+                # actually put new value in list
+                self.write_val_on_key(active_event,index_to_write_to,new_val,False)
+                
+
+            elif action.container_action == VarStoreDeltas.ContainerAction.ADD_KEY:
+                container_added_action = action.added_key
+
+                index_to_add_to = self.get_add_key_incorporate_deltas(container_added_action)
+
+                if container_added_action.HasField('added_what_text'):
+                    new_val = container_added_action.added_what_text
+                elif container_added_action.HasField('added_what_num'):
+                    new_val = container_added_action.added_what_num
+                elif container_added_action.HasField('added_what_tf'):
+                    new_val = container_added_action.added_what_tf
+                    
+                elif container_added_action.HasField('added_what_map'):
+                    new_val = constructors.map_constructor('',self.host_uuid,True)
+                    single_map_delta = container_added_action.added_what_map
+                    single_map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER
+                    new_val.incorporate_deltas(single_map_delta,constructors,active_event)
+
+                elif container_added_action.HasField('added_what_list'):
+                    new_val = constructors.list_constructor('',self.host_uuid,True)
+                    single_list_delta = container_added_action.added_what_list
+                    single_list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
+                    new_val.incorporate_deltas(single_list_delta,constructors,active_event)
+
+                elif container_added_action.HasField('added_what_struct'):
+                    new_val = constructors.struct_constructor('',self.host_uuid,True,{})
+                    single_struct_delta = container_added_action.added_what_struct
+                    single_struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+                    new_val.incorporate_deltas(single_struct_delta,constructors,active_event)
+
+                self.handle_added_key_incorporate_deltas(
+                    active_event,index_to_add_to,new_val)
+
+
+            elif action.container_action == VarStoreDeltas.ContainerAction.DELETE_KEY:
+                container_deleted_action = action.deleted_key
+                index_to_del_from = self.get_delete_key_incorporate_deltas(
+                    container_deleted_action)
+                self.del_key_called(active_event,index_to_del_from)
+
+                
+        for sub_element_action in delta_to_incorporate.sub_element_update_actions:
+            index = sub_element_action.key_num
+
+            if sub_element_action.HasField('map_delta'):
+                to_incorporate = sub_element_action.map_delta
+            elif sub_element_action.HasField('list_delta'):
+                to_incorporate = sub_element_action.list_delta
+            #### DEBUG
+            else:
+                util.logger_assert('Unkwnown action type in subelements')
+            #### END DEBUG
+
+            self.get_val_on_key(active_event,index).incorporate_deltas(
+                to_incorporate,constructors,active_event)
+            
+
+        self._lock()
+        self._add_invalid_listener(active_event)
+        dirty_elem = self._dirty_map[active_event.uuid]
+        self._unlock()
+            
+        # do not want to send the same information back to the other side.
+        dirty_elem.clear_partner_change_log()
+
+        
+
     def del_key_called(self,invalid_listener,key_deleted):
         self._lock()
         self._add_invalid_listener(invalid_listener)
@@ -63,51 +182,6 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         '''
         pass
 
-    def update_val_of_key_during_deserialize(
-        self,invalid_listener,key,val):
-        '''
-        @param {Text,Number,TrueFalse} key --- The index of the
-        internal map or list (if list, then key is just a number)
-
-        @param {Anything} val --- Can be a python value or pointers to
-        additional Waldo variables.
-
-        Called when deserializing nested maps/lists.  See case 4 in
-        the comments for the method
-        waldoNetworkSerializer.deserialize_peered_object_into_variables.
-        '''
-        #### DEBUG
-        # note only should be serializing and deserializing peered data
-        if not self.peered:
-            util.logger_assert(
-                'Should not be updating value and version for a ' +
-                'non-peered data item.')
-        #### END DEBUG
-        self._lock()
-        self._add_invalid_listener(invalid_listener)
-        dirty_element = self._dirty_map[invalid_listener.uuid]
-        dirty_element.val[key] = val
-        self._unlock()
-
-    def update_version_obj_during_deserialize(
-        self,invalid_listener,new_version_obj):
-        '''
-        @see update_val_of_key_during_deserialize
-        '''
-        #### DEBUG        
-        # note only should be serializing and deserializing peered data
-        if not self.peered:
-            util.logger_assert(
-                'Should not be updating value and version for a ' +
-                'non-peered data item.')
-        #### END DEBUG
-        self._lock()
-        self._add_invalid_listener(invalid_listener)
-        dirty_element = self._dirty_map[invalid_listener.uuid]
-        dirty_element.version_obj = new_version_obj
-        self._unlock()
-
-    
     def get_len(self,invalid_listener):
         self._lock()
         self._add_invalid_listener(invalid_listener)
@@ -148,14 +222,15 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._unlock()
         return dirty_val
         
-
-    def write_val_on_key(self,invalid_listener,key,new_val):
+    
+    def write_val_on_key(
+        self,invalid_listener,key,new_val,copy_if_peered=True,multi_threaded=True):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         
         dirty_elem = self._dirty_map[invalid_listener.uuid]
 
-        if self.peered:
+        if self.peered and copy_if_peered:
             # copy the data that's being written in: peereds do not
             # hold references.  If they did, could be trying to
             # synchronize references across multiple hosts.  Eg., if
@@ -164,7 +239,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
             # able to share the reference to the inner list between
             # many machines.
             if isinstance(new_val,waldoReferenceBase._ReferenceBase):
-                new_val = new_val.copy(invalid_listener,True)
+                new_val = new_val.copy(invalid_listener,True,multi_threaded)
             
         dirty_elem.write_val_on_key(key,new_val)
         if self.peered:
@@ -178,11 +253,12 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         '''
         if invalid_listener.uuid not in self._dirty_map:
             
-            # FIXME: may only want to make a copy of val on write
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
-                self._non_waldo_copy(),
-                invalid_listener)
+                # note: passing value directly.  the dirty map element
+                # will copy the value over if it detects a write.
+                self.val,
+                invalid_listener,self)
             
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
@@ -196,6 +272,11 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         '''
         waldoReferenceBase._DirtyMapElement.__init__(self,*args)
 
+        # Adding copy on write semantics.  Only copy value if we have
+        # written to it.
+        self.written_at_least_once = False
+        
+        
     def get_val_on_key(self,key):
         self.version_obj.get_val_on_key(key)
         return self.val[key]
@@ -207,9 +288,15 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
     # touches when write value on key.
     def write_val_on_key(self,key,new_val):
         self.version_obj.write_val_on_key(key)
+
+        if not self.written_at_least_once:
+            self.written_at_least_once = True
+            self.val = self.waldo_reference._non_waldo_copy()
+        
         self.val[key] = new_val
 
-    def add_key(self,key,new_val,invalid_listener,peered):
+        
+    def add_key(self,key,new_val,invalid_listener,peered,multi_threaded=True):
         self.version_obj.add_key(key)
         # if we are peered, then we want to assign into ourselves a
         # copy of the object, not the object itself.  This will only
@@ -217,10 +304,11 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
         # already have the semantics that they will be copied on read.
         # (And we throw an error if a peered variable has a container
         # with externals inside of it.)
+        
         if peered:
             if isinstance(
                 new_val,_ReferenceContainer):
-                new_val = new_val.copy(invalid_listener,True)
+                new_val = new_val.copy(invalid_listener,True,multi_threaded)
 
             elif isinstance(
                 new_val,waldoReferenceBase._ReferenceBase):
@@ -228,7 +316,7 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
                 if new_val.is_value_type():
                     new_val = new_val.get_val(invalid_listener)
                 else:
-                    new_val = new_val.copy(invalid_listener,True)
+                    new_val = new_val.copy(invalid_listener,True,multi_threaded)
 
                 
                 # # need to check again in case it's a
@@ -237,11 +325,22 @@ class _ReferenceContainerDirtyMapElement(waldoReferenceBase._DirtyMapElement):
                 #     new_val,waldoReferenceContainerBase._ReferenceContainer):
                 #     new_val = new_val.copy(invalid_listener,peered)
 
+        if not self.written_at_least_once:
+            self.written_at_least_once = True
+            self.val = self.waldo_reference._non_waldo_copy()
+
+                    
         self.val[key] = new_val
 
-        
+    def clear_partner_change_log(self):
+        self.version_obj.clear_partner_change_log()
+
     def del_key(self,key):
-        self.version_obj.del_key(key)        
+        self.version_obj.del_key(key)
+        if not self.written_at_least_once:
+            self.written_at_least_once = True
+            self.val = self.waldo_reference._non_waldo_copy()
+        
         del self.val[key]
 
     def get_len(self):
@@ -287,6 +386,29 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         self.added_keys ={}
         self.deleted_keys = {}
 
+        # keeps track of what has not yet been sent over the network
+        # to partner.  Each element should be a 2-tuple.  The first
+        # element of the 2-tuple should be the relevant operation
+        # type: WRITE, ADD, DELETE.  The second element should be the
+        # key identifier.  See helper functions at bottom of file for
+        # tuples.
+        self.partner_change_log = []
+
+        # For container types (maps, lists, structs), we need to keep
+        # track of whether the internal value that each of these are
+        # pointing to has been overwritten with a new internal
+        # map/list/struct altogether or whether it hasn't.  This way,
+        # the other side knows whether the internal deltas it receives
+        # are for a brand new internal container or should be applied
+        # to the old, existing one.  Any time calling write_val on
+        # this _ReferenceBase, set to True.  Any time call
+        # serialize..., set to False.
+        self.has_been_written_since_last_message = False
+
+        
+    def clear_partner_change_log(self):
+        self.partner_change_log = []
+        
     def modified(self,invalidation_listener):
         '''
         @returns {bool} true if has been modified; false otherwise
@@ -574,7 +696,6 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
         @returns {map} --- Indices are keys that need to be copied on
         update.  Values don't matter.
-        
         '''
         
         updated_fields = {}
@@ -629,13 +750,44 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
     # touches when write value on key.
     def write_val_on_key(self,key):
         self.written_values_keys[key] = self.commit_num
+        self.has_been_written_since_last_message = True
+        # FIXME: should only append to change log if peered.
+        self.partner_change_log.append(write_key_tuple(key))
 
+        
+        
     def add_key(self,key_added):
         self.added_keys[key_added] = self.commit_num
+        self.has_been_written_since_last_message = True
+        
+        # FIXME: should only append to change log if peered.
+        self.partner_change_log.append(add_key_tuple(key_added))
 
+    def add_to_delta_list(self,delta_to_add_to,current_internal_val,action_event):
+        '''
+        @param delta_to_add_to --- Either
+        varStoreDeltas.SingleMapDelta or
+        varStoreDeltas.SingleListDelta
+
+        We log all operations on this variable 
+        '''
+        util.logger_assert(
+            'Pure virutal add_to_delta_list in waldoReferenceContainerBase')
+
+    def add_all_data_to_delta_list(
+        self,delta_to_add_to,current_internal_val,action_event):
+        util.logger_assert(
+            'Pure virutal add_all_data_to_delta_list in waldoReferenceContainerBase')
+        
     def del_key(self,key_deleted):
         self.deleted_keys[key_deleted] = self.commit_num
 
+        self.has_been_written_since_last_message = True
+        
+        # FIXME: should only append to change log if peered.
+        self.partner_change_log.append(delete_key_tuple(key_deleted))
+
+        
     def get_len(self):
         self.len_called = self.commit_num
 
@@ -651,3 +803,22 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
     def set_has_been_written_to(self,new_val):
         util.logger_assert('In _DirtyMapContainerElement, should never get ' +
                            'a call to set_has_been_written_to.')
+
+
+DELETE_FLAG = 0
+ADD_FLAG = 1
+WRITE_FLAG = 2
+def delete_key_tuple(key):
+    return (DELETE_FLAG,key)
+def is_delete_key_tuple(tup):
+    return tup[0] == DELETE_FLAG
+
+def add_key_tuple(key):
+    return (ADD_FLAG,key)
+def is_add_key_tuple(tup):
+    return tup[0] == ADD_FLAG
+
+def write_key_tuple(key):
+    return (WRITE_FLAG,key)
+def is_write_key_tuple(tup):
+    return tup[0] == WRITE_FLAG

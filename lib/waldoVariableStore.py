@@ -1,6 +1,6 @@
 import util
-import pickle
-import waldoNetworkSerializer
+from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
+import wVariables
 
 '''
 _VariableStore keeps track of peered data, sequence local data (which
@@ -60,6 +60,23 @@ class _VariableStore(object):
     Can query the variable store with the unique name of a variable to
     get the variable back for use.
     '''
+
+
+    # Pass constructors for waldo variables through to help with
+    # serialization and deserialization.
+    class VarConstructors(object):
+        def __init__(self):
+            self.list_constructor = wVariables.WaldoListVariable
+            self.map_constructor = wVariables.WaldoMapVariable
+            self.struct_constructor = wVariables.WaldoUserStructVariable
+
+            # self.single_thread_list_constructor = wVariables.WaldoSingleThreadListVariable
+            # self.single_thread_map_constructor = wVariables.WaldoSingleThreadMapVariable
+            # self.single_thread_struct_constructor = wVariables.WaldoSingleThreadStructVariable
+            
+            
+    var_constructors = VarConstructors()
+
     
     def __init__(self,host_uuid):
 
@@ -101,8 +118,9 @@ class _VariableStore(object):
         for key in self._name_to_var_map.keys():
             print (key)
         print ('\n')
-        
-    def generate_deltas(self,invalidation_listener,force=False):
+
+
+    def generate_deltas(self,invalidation_listener,force,all_deltas=None):
         '''
         Create a map with an entry for each piece of peered data that
         was modified.  The entry should contain a
@@ -131,37 +149,31 @@ class _VariableStore(object):
         unless we force serialization of deltas for all sequence local
         data on the first message we send.
         
-        @returns{string} --- After this, pickle map into string and
-        return it.
+        @returns {VarStoreDeltas} @see varStoreDeltas.proto
         
-        This string should be deserializable and appliable from
+        Should be deserializable and appliable from
         incorporate_deltas.
         '''
-        changed_map = {}
-        
+        if all_deltas == None:
+            all_deltas = VarStoreDeltas()
+
+        all_deltas.parent_type = VarStoreDeltas.VAR_STORE_DELTA
+
         for key in self._name_to_var_map.keys():
             waldo_variable = self._name_to_var_map[key]
 
-            should_serialize = False
-            if force:
-                should_serialize = True
-            else:
-                # peered data that has been modified
-                should_serialize = (
-                    waldo_variable.is_peered() and
-                    waldo_variable.modified(invalidation_listener))
+            if waldo_variable.is_peered():
+                waldo_variable.serializable_var_tuple_for_network(
+                    all_deltas,key,invalidation_listener,force)
 
-            if should_serialize:
-                changed_map[key] = waldo_variable.serializable_var_tuple_for_network(
-                    key,invalidation_listener)
+        return all_deltas
 
-        return changed_map
-
-
-    def incorporate_deltas(self,invalidation_listener,delta_map):
+    def incorporate_deltas(self,invalidation_listener,var_store_deltas):
         '''
         @param {_InvalidationListener} invalidation_listener ---
 
+        @param {varStoreDeltas.VarStoreDeltas message}
+        
         @param {map} delta_map --- Produced from generate_deltas on
         partner endpoint.  Take this map, and incorporate the changes
         to each variable.  Indices are strings (unique names of Waldo
@@ -169,18 +181,66 @@ class _VariableStore(object):
         gennerated from util._generate_serialization_named_tuple for
         each waldo variable.
         '''
-        # if it is sequence local data, it could be that we have no
-        # entries in our name_to_var_map and must write in the changes
-        # from the other side.
-        for key in delta_map.keys():
-            if key not in self._name_to_var_map:
-                # need to create a new variable of the same type.
-                # then, need to apply that variable's changes.
-                new_var = waldoNetworkSerializer.create_new_variable_wrapper_from_serialized(
-                    self.host_uuid,delta_map[key])
-                self._name_to_var_map[key] = new_var
-                
-            waldoNetworkSerializer.deserialize_peered_object_into_variable(
-                self.host_uuid,delta_map[key],invalidation_listener,
-                self._name_to_var_map[key])
+        
+        # incorporate all numbers
+        for num_delta in var_store_deltas.num_deltas:
+            if num_delta.var_name not in self._name_to_var_map:
+                # means that the variable was not in the variable
+                # store already.  This could happen for instance if we
+                # are creating a sequence local variable for the first
+                # time.
+                self._name_to_var_map[num_delta.var_name] = wVariables.WaldoNumVariable(
+                    num_delta.var_name,self.host_uuid,True,num_delta.var_data)
 
+            else:
+                self._name_to_var_map[num_delta.var_name].write_if_different(
+                    invalidation_listener,num_delta.var_data)
+
+        # incorporate all texts
+        for text_delta in var_store_deltas.text_deltas:
+            if text_delta.var_name not in self._name_to_var_map:
+                self._name_to_var_map[text_delta.var_name] = wVariables.WaldoTextVariable(
+                    text_delta.var_name,self.host_uuid,True,text_delta.var_data)
+            else:
+                self._name_to_var_map[text_delta.var_name].write_if_different(
+                    invalidation_listener,text_delta.var_data)
+
+                
+        # incorporate all true false-s
+        for true_false_delta in var_store_deltas.true_false_deltas:
+            if true_false_delta.var_name not in self._name_to_var_map:
+                self._name_to_var_map[true_false_delta.var_name] = wVariables.WaldoTrueFalseVariable(
+                    true_false_delta.var_name,self.host_uuid,True,true_false_delta.var_data)
+            else:
+                self._name_to_var_map[true_false_delta.var_name].write_if_different(
+                    invalidation_listener,true_false_delta.var_data)
+
+        # incorporate all maps
+        for map_delta in var_store_deltas.map_deltas:
+            if map_delta.var_name not in self._name_to_var_map:
+                # need to create a new map and put all values in
+                self._name_to_var_map[map_delta.var_name] = wVariables.WaldoMapVariable(
+                    map_delta.var_name,self.host_uuid,True)
+            self._name_to_var_map[map_delta.var_name].incorporate_deltas(
+                map_delta,self.var_constructors,invalidation_listener)
+
+        # incorporate all lists
+        for list_delta in var_store_deltas.list_deltas:
+            if list_delta.var_name not in self._name_to_var_map:
+                # need to create a new map and put all values in
+                self._name_to_var_map[list_delta.var_name] = wVariables.WaldoListVariable(
+                    list_delta.var_name,self.host_uuid,True)
+            self._name_to_var_map[list_delta.var_name].incorporate_deltas(
+                list_delta,self.var_constructors,invalidation_listener)
+
+
+        # incorporate all structs
+        for struct_delta in var_store_deltas.struct_deltas:
+            if struct_delta.var_name not in self._name_to_var_map:
+                # need to create a new map and put all values in
+                self._name_to_var_map[struct_delta.var_name] = wVariables.WaldoUserStructVariable(
+                    struct_delta.var_name,self.host_uuid,True,{})
+            self._name_to_var_map[struct_delta.var_name].incorporate_deltas(
+                struct_delta,self.var_constructors,invalidation_listener)
+
+            

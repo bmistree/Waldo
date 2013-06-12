@@ -1,8 +1,8 @@
-import threading
+import threading, numbers
 import util
 from abc import abstractmethod
-import pickle
 import waldoNotificationMap
+from lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
 
 class _ReferenceBase(object):
@@ -33,6 +33,7 @@ class _ReferenceBase(object):
         self._dirty_map = {}
         self._mutex = threading.Lock()
 
+        
     def _lock(self,blocking=True):
         to_return = self._mutex.acquire(blocking)
         return to_return
@@ -100,10 +101,9 @@ class _ReferenceBase(object):
         '''
         util.logger_assert(
             'is_value_type is pure virtual in _ReferenceBase.')
-        
-        
+
     def serializable_var_tuple_for_network(
-        self,var_name,invalid_listener):
+        self,parent_delta,var_name,invalid_listener,force):
         '''
         The runtime automatically synchronizes data between both
         endpoints.  When one side has updated a peered variable, the
@@ -121,6 +121,9 @@ class _ReferenceBase(object):
         Note: we only serialize peered data.  No other data gets sent
         over the network; therefore, it should not be serialized.
 
+        @param {*Delta or VarStoreDeltas} parent_delta --- Append any
+        message that we create here to this message.
+        
         @param {String} var_name --- Both sides of the connection need
         to agree on a common name for the variable being serialized.
         This is to ensure that when the data are received by the other
@@ -128,61 +131,152 @@ class _ReferenceBase(object):
         only really necessary for the outermost wrapping of the named
         type tuple, but we pass it through anyways.
 
-        @returns serializable_named_tuple
+        @param {bool} force --- True if regardless of whether modified
+        or not we should serialize.  False otherwise.  (We migth want
+        to force for instance the first time we send sequence data.)
         
+        @returns {bool} --- True if some subelement was modified,
+        False otherwise.
         '''
 
-        # FIXME: eventually want to do serialize deltas of variables
-        # and version objects instead of full things.
-
-        if __debug__:
-            #### DEBUG
-            if not self.peered:
-                util.logger_assert(
-                    'Should not be serializing a non-peered data item.')
-            #### END DEBUG
-
-            
+        
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
         self._unlock()
-
+        version_obj = dirty_element.version_obj
 
         # a val can either point to a waldo reference, a python value,
         # or a list/map of waldo references or a list/map of python
         # values.
         var_data = dirty_element.val
-        if isinstance(var_data,_ReferenceBase):
-            var_data = dirty_element.val.serializable_var_tuple_for_network(
-                var_name,invalid_listener)
+
+        
+        if (not force) and (not version_obj.has_been_written_since_last_message):
+            if (isinstance(var_data,numbers.Number) or
+                util.is_string(var_data) or isinstance(var_data,bool)):
+                # nothing to do because this value has not been
+                # written.  NOTE: for list/dict types, must actually
+                # go through to ensure no subelements were written.
+                return False
+
+        sub_element_modified = False
+        if self.py_val_serialize(parent_delta,var_data,var_name):
+            sub_element_modified = True
+        
         elif isinstance(var_data,list):
-            new_var_data = []
-            for index in range(0,len(var_data)):
-                if isinstance(var_data[index], _ReferenceBase):
-                    new_var_data.append(
-                        var_data[index].serializable_var_tuple_for_network(
-                            var_name,invalid_listener))
-                else:
-                    new_var_data.append(var_data[index])
-            var_data = new_var_data
-            
+            list_delta = parent_delta.internal_list_delta
+            list_delta.parent_type = VarStoreDeltas.INTERNAL_LIST_CONTAINER
+
+            if force:
+                # perform each operation as a write...
+                version_obj.add_all_data_to_delta_list(
+                    list_delta,var_data,invalid_listener)
+                sub_element_modified = True
+            else:
+                # if all subelements have not been modified, then we
+                # do not need to keep track of these changes.
+                # wVariable.waldoMap, wVariable.waldoList, or
+                # wVariable.WaldoUserStruct will get rid of it later.
+                sub_element_modified = version_obj.add_to_delta_list(
+                    list_delta,var_data,invalid_listener)
+
+
         elif isinstance(var_data,dict):
-            new_var_data = {}
-            for index in var_data.keys():
-                if isinstance(var_data[index],_ReferenceBase):
-                    new_var_data[index] = var_data[index].serializable_var_tuple_for_network(
-                        var_name,invalid_listener)
-                else:
-                    new_var_data[index] = var_data[index]
-            var_data = new_var_data
+            map_delta = parent_delta.internal_map_delta
+            map_delta.parent_type = VarStoreDeltas.INTERNAL_MAP_CONTAINER
 
-        version_obj_data = dirty_element.version_obj.serializable_for_network_data()
+            if force:
+                # perform each operation as a write...
+                version_obj.add_all_data_to_delta_list(
+                    map_delta,var_data,invalid_listener)
+                sub_element_modified = True
+            else:
+                # if all subelements have not been modified, then we
+                # do not need to keep track of these changes.
+                # wVariable.waldoMap, wVariable.waldoList, or
+                # wVariable.WaldoUserStruct will get rid of it later.
+                sub_element_modified = version_obj.add_to_delta_list(
+                    map_delta,var_data,invalid_listener)
 
+                
+        else:
+            # creating deltas for cases where internal data are waldo
+            # references.... should have been overridden in
+            # wVariables.py
+            util.logger_assert('Serializing unknown type.')
 
-        to_return = util._generate_serialization_named_tuple(
-            var_name,self.var_type(),var_data,version_obj_data)
-        return to_return
+        version_obj.has_been_written_since_last_message = False
+        return sub_element_modified
+        
+    def py_val_serialize(self,parent,var_data,var_name):
+        '''
+        @param {} parent --- Either a ContainerAction a VarStoreDeltas.
+
+        FIXME: unclear if actually need var_name for all elements
+        py_serialize-ing, or just py variables that are in the
+        top-level.
+
+        @returns {bool} --- True if var_data was a python value type
+        and we put it into parent.  False otherwise.
+        
+        If is python value type, then adds a delta message to
+        parent.  Otherwise, does nothing.
+        '''
+        is_value_type = False
+        delta = None
+        if isinstance(var_data, numbers.Number):
+            # can only add a pure number to var store a holder or to
+            # an added key
+            if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+                delta = parent.num_deltas.add()
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
+                parent.added_what_num = var_data
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
+                parent.what_written_num = var_data
+            #### DEBUG
+            else:
+                util.logger_assert('Unexpected parent type in py_serialize')
+            #### END DEBUG
+                
+            is_value_type = True
+            
+        elif util.is_string(var_data):
+            if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+                delta = parent.text_deltas.add()
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
+                parent.added_what_text = var_data
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
+                parent.what_written_text = var_data
+                
+            #### DEBUG
+            else:
+                util.logger_assert('Unexpected parent type in py_serialize')
+            #### END DEBUG                
+                
+            is_value_type = True
+            
+        elif isinstance(var_data,bool):
+            if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+                delta = parent.true_false_deltas.add()
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
+                parent.added_what_tf = var_data
+            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
+                parent.what_written_tf = var_data                
+            #### DEBUG
+            else:
+                util.logger_assert('Unexpected parent type in py_serialize')
+            #### END DEBUG                
+
+                
+            is_value_type = True
+
+        if delta != None:
+            # all value types have same format
+            delta.var_name = var_name
+            delta.var_data = var_data
+            
+        return is_value_type
 
         
     def _non_waldo_copy(self):
@@ -247,11 +341,12 @@ class _ReferenceBase(object):
             to_add = self.dirty_element_constructor(
                 self.version_obj.copy(),
                 self.val,
-                invalid_listener)
+                invalid_listener,self)
 
             self._dirty_map[invalid_listener.uuid] = to_add
             invalid_listener.add_touch(self)
 
+            
     def get_val(self,invalid_listener):
         '''
         Requests a copy of the internal
@@ -272,9 +367,18 @@ class _ReferenceBase(object):
         dirty_val = self._dirty_map[invalid_listener.uuid].val
         self._unlock()
         return dirty_val
-    
 
-    def write_val(self,invalid_listener,new_val):
+    def write_if_different(self,invalid_listener,new_val):
+        self._lock()
+        self._add_invalid_listener(invalid_listener)
+        dirty_element = self._dirty_map[invalid_listener.uuid]
+        if dirty_element.val != new_val:
+            self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
+            if self.peered:
+                invalid_listener.add_peered_modified()
+        self._unlock()
+
+    def write_val(self,invalid_listener,new_val,copy_if_peered=True):
         '''
         Writes to a copy of internal val, dirtying it
         '''
@@ -283,8 +387,9 @@ class _ReferenceBase(object):
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
         if self.peered:
             invalid_listener.add_peered_modified()
+
         self._unlock()
-        
+
 
     def check_commit_hold_lock(self,invalid_listener,blocking=True):
         '''
@@ -311,27 +416,14 @@ class _ReferenceBase(object):
 
 
     
-    def backout(self,invalid_listener,release_lock_after):
+    def backout(self,invalid_listener):
         '''
         @param {_InvalidListener} invalid_listener ---
-
-        @param {bool} release_lock_after --- If true, then it means
-        that the invalid_listener that called in was holding a commit
-        lock on the object.  We should release that commit lock
-        afterwards.
         '''
         self.notification_map.remove_invalidation_listener(invalid_listener)
-        
-        if not release_lock_after:
-            self._lock()
-            
         del self._dirty_map[invalid_listener.uuid]
+        self._unlock()
 
-        if release_lock_after:
-            self._unlock()
-            pass
-        else:
-            self._unlock()
     
     def complete_commit(self,invalid_listener):
         '''
@@ -415,7 +507,7 @@ class _DirtyMapElement(object):
     _DirtyMapElement.  
     '''
     
-    def __init__(self,version_obj,val,invalidation_listener):
+    def __init__(self,version_obj,val,invalidation_listener,waldo_reference):
         '''
         @param {_WaldoObjVersion} version_obj --- The version of the
         Waldo object that the dirty map element
@@ -423,12 +515,16 @@ class _DirtyMapElement(object):
         @param {Anything} val --- The dirty val that the invalidation
         listener is using.
 
-        @param {_InvalidationListener} invalidation_listener --- 
+        @param {_InvalidationListener} invalidation_listener ---
+
+        @param {Any subtype of _ReferenceBase} waldo_reference
         '''
         self.version_obj = version_obj
         self.val = val
         self.invalidation_listener = invalidation_listener
 
+        self.waldo_reference = waldo_reference
+        
         
     def set_version_obj_and_val(self,version_obj,val):
         '''
@@ -558,28 +654,3 @@ class _ReferenceVersion(object):
         util.logger_assert(
             'modified is pure virtual in _ReferenceVersion class.')
         
-
-    def serializable_for_network_data(self):
-        '''
-        The dirty map's version object must be serialized and passed
-        to the partner endpoint for deserialization so that the
-        partner endpoint knows which fields were changed on
-        serializer's side.
-        '''
-
-        # FIXME: Lots of overhead in pickling entire class instead of
-        # just the necessary data.
-        return pickle.dumps(self)
-
-    @staticmethod
-    def deserialize_version_obj_from_network_data(
-        version_network_data):
-        '''
-        @param {Currently string} version_network_data --- The result
-        of a call to serilizable_for_network_data on a version object.
-        '''
-        return pickle.loads(version_network_data)
-        
-
-    
-    
