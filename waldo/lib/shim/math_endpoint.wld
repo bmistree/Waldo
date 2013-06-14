@@ -1,0 +1,51 @@
+MathStruct
+Endpoint MathEndpoint;
+
+Struct Math
+{
+    Function (in: List(element: Number); returns: Number) min_func;
+    Function (in: List(element: Number); returns: Number) max_func;
+    Function (in: Number, Number; returns: Number) mod_func;
+    Function (in: Number, Number; returns: Number) rand_int_func;
+}
+
+MathEndpoint
+{
+    Struct Math math;
+    
+    onCreate(
+        Function (in: List(element: Number); returns: Number) in_min_func,
+        Function (in: List(element: Number); returns: Number) in_max_func,
+        Function (in: Number, Number; returns: Number) in_mod_func,
+        Function (in: Number, Number; returns: Number) in_rand_int_func)
+    {
+        math.min_func = in_min_func;
+        math.max_func = in_max_func;
+        math.mod_func = in_mod_func;
+        math.rand_int_func = in_rand_int_func;
+    }
+
+    Public Function min_func(List(element: Number) in_nums) returns Number
+    {
+        return math.min_func(in_nums);
+    }
+
+    Public Function max_func(List(element: Number) in_nums) returns Number
+    {
+        return math.max_func(in_nums);
+    }
+
+    Public Function mod_func(Number lhs, Number rhs) returns Number
+    {
+        return math.mod_func(lhs,rhs);
+    }
+
+    /**
+     * @returns {Number} --- Returns random integer in the range [a,b]
+     */
+    Public Function rand_int_func(Number a, Number b) returns Number
+    {
+        return math.rand_int_func(a,b);
+    }
+    
+}

@@ -1,0 +1,7 @@
+import "util.proto";
+
+message PartnerBackoutCommitRequest
+{
+    required UUID event_uuid = 1;
+}
+
