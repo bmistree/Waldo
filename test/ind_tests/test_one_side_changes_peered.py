@@ -4,9 +4,9 @@ import os, sys, Queue, time, threading, test_util
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..',)
 sys.path.append(base_dir)
-from lib import wVariables, util, wVariables, waldoEndpoint
-from lib import waldoVariableStore, util, waldoActiveEvent
-from lib import waldoExecutingEvent, waldoCallResults
+from waldo.lib import wVariables, util, wVariables, waldoEndpoint
+from waldo.lib import waldoVariableStore, util, waldoActiveEvent
+from waldo.lib import waldoExecutingEvent, waldoCallResults
 
 
 '''

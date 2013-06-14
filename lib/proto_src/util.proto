@@ -1,5 +1,0 @@
-
-message UUID
-{
-        required bytes data = 1;
-}

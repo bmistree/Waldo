@@ -2,9 +2,9 @@ import sys,os
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..',)
 sys.path.append(base_dir)
-from lib import Waldo, util,waldoEndpoint,waldoVariableStore,wVariables,waldoConnectionObj
+from waldo.lib import Waldo, util,waldoEndpoint,waldoVariableStore,wVariables,waldoConnectionObj
 import threading
-from lib.util import Queue
+from waldo.lib.util import Queue
 
 
 class DummyConnectionObj(waldoConnectionObj._WaldoSameHostConnectionObject):

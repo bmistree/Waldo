@@ -1,6 +1,0 @@
-I downloaded d3 from github from
-http://mbostock.github.com/d3/
-
-I'm only adding that actual js for it into this project (stripping
-examples, etc.).  I copied the original added d3 license into this
-folder (LICENSE).

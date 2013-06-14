@@ -4,7 +4,7 @@ import os, sys, time, test_util
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..',)
 sys.path.append(base_dir)
-from lib import wVariables, util
+from waldo.lib import wVariables, util
 
 
 class SingleSide(test_util.DummyEndpoint):

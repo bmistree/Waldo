@@ -4,9 +4,9 @@ import os, sys, test_util, time, threading, Queue
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..',)
 sys.path.append(base_dir)
-from lib import wVariables, waldoEndpoint, waldoVariableStore
-from lib import util, waldoActiveEvent, waldoExecutingEvent
-from lib import waldoCallResults
+from waldo.lib import wVariables, waldoEndpoint, waldoVariableStore
+from waldo.lib import util, waldoActiveEvent, waldoExecutingEvent
+from waldo.lib import waldoCallResults
 
 '''
 Check to ensure that when two root events conflict, the runtime

@@ -7,9 +7,10 @@ from sequence_plus_externals_tests_v4 import SideB
 import sys,os
 lib_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..',
-    '..','lib')
+    '..')
 sys.path.append(lib_dir)
-import Waldo
+from waldo.lib import Waldo
+
     
 
 '''

@@ -4,7 +4,7 @@ import os
 import sys
 import subprocess
 sys.path.append(
-    os.path.join('..','lib'))
+    os.path.join('..','waldo','lib'))
 
 
 

@@ -4,7 +4,7 @@ import os, sys
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..',)
 sys.path.append(base_dir)
-from lib import wVariables, waldoExecutingEvent, util
+from waldo.lib import wVariables, waldoExecutingEvent, util
 import test_util
 host_uuid = util.generate_uuid()
 
