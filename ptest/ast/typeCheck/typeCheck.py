@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-import sys, os
+import sys;
+import os;
 
 
-from waldo.parser.ast.astLabels import *;
+from parser.ast.astLabels import *;
 from astTypeCheckStack import TypeCheckContextStack;
 from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH;
 from astTypeCheckStack import FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH;
@@ -11,7 +12,7 @@ from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST;
 from astTypeCheckStack import MESSAGE_TYPE_CHECK_SUCCEED;
 from astTypeCheckStack import createFuncMatchObjFromFuncTypeDict
-from waldo.parser.ast.parserUtil import errPrint;
+from parser.ast.parserUtil import errPrint;
 
 from typeCheckUtil import *
 from templateUtil import *

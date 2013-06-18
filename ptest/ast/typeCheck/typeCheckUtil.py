@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from waldo.parser.ast.astLabels import *
-from waldo.parser.ast.parserUtil import *
+from parser.ast.astLabels import *
+from parser.ast.parserUtil import *
 
 
 TYPE_ERROR_ENCOUNTERED = False;
@@ -53,6 +53,7 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
         for s in range(lowerLineNum, upperLineNum):
             errorText = '';
             errorText += str(s+1);
+
             if (s + 1 <= 9):
                 errorText += ' ';
             if (s == errorLine -1):
