@@ -44,8 +44,6 @@ _waldo_classes = {
     'BackoutBeforeReceiveMessageResult': waldoCallResults._BackoutBeforeReceiveMessageResult,
     'EndpointCallResult': waldoCallResults._EndpointCallResult,
 
-    
-
     # misc
     'Endpoint': waldoEndpoint._Endpoint,
     'Queue': Queue,

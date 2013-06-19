@@ -50,8 +50,10 @@ class _EndpointServiceThreadPool():
         req_backout_action = waldoServiceActions._ReceiveRequestBackoutAction(
             self.endpoint,uuid,requesting_endpoint)
         self.threadsafe_queue.put(req_backout_action)
-        
 
+    def receive_partner_stop_msg(self):
+        self.endpoint.stop(True)
+        
     def receive_partner_ready(self):
         partner_ready_action = waldoServiceActions._ReceivePartnerReadyAction(
             self.endpoint)
