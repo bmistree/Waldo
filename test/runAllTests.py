@@ -128,6 +128,7 @@ def run_emit_tests():
     import emit_tests.more_struct_tests
     import emit_tests.multiple_sequences
     import emit_tests.signal_tests
+    import emit_tests.single_side_stop
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -214,6 +215,10 @@ def run_emit_tests():
 
         ('Tests signal code',
          emit_tests.signal_tests.run_test),
+
+        ('Tests single side stop',
+         emit_tests.single_side_stop.run_test),
+        
         ]
 
     run_tests(emit_tests_to_run)

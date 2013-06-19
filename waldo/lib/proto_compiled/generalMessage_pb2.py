@@ -17,11 +17,12 @@ import partnerRemovedSubscriber_pb2
 import partnerBackoutCommitRequest_pb2
 import partnerCompleteCommitRequest_pb2
 import partnerCommitRequest_pb2
+import partnerStop_pb2
 
 DESCRIPTOR = descriptor.FileDescriptor(
   name='generalMessage.proto',
   package='',
-  serialized_pb='\n\x14generalMessage.proto\x1a\x18partnerNotifyReady.proto\x1a+partnerNotifyOfPeeredModifiedResponse.proto\x1a!partnerRequestSequenceBlock.proto\x1a#partnerNotifyOfPeeredModified.proto\x1a$partnerFirstPhaseResultMessage.proto\x1a!partnerAdditionalSubscriber.proto\x1a\x1epartnerRemovedSubscriber.proto\x1a!partnerBackoutCommitRequest.proto\x1a\"partnerCompleteCommitRequest.proto\x1a\x1apartnerCommitRequest.proto\"\x8a\x08\n\x0eGeneralMessage\x12\x31\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x1b.GeneralMessage.MessageType\x12)\n\x0cnotify_ready\x18\x02 \x01(\x0b\x32\x13.PartnerNotifyReady\x12N\n\x1enotify_of_peered_modified_resp\x18\x03 \x01(\x0b\x32&.PartnerNotifyOfPeeredModifiedResponse\x12<\n\x16request_sequence_block\x18\x04 \x01(\x0b\x32\x1c.PartnerRequestSequenceBlock\x12\x41\n\x19notify_of_peered_modified\x18\x05 \x01(\x0b\x32\x1e.PartnerNotifyOfPeeredModified\x12;\n\x12\x66irst_phase_result\x18\x06 \x01(\x0b\x32\x1f.PartnerFirstPhaseResultMessage\x12;\n\x15\x61\x64\x64itional_subscriber\x18\x07 \x01(\x0b\x32\x1c.PartnerAdditionalSubscriber\x12\x35\n\x12removed_subscriber\x18\x08 \x01(\x0b\x32\x19.PartnerRemovedSubscriber\x12<\n\x16\x62\x61\x63kout_commit_request\x18\t \x01(\x0b\x32\x1c.PartnerBackoutCommitRequest\x12>\n\x17\x63omplete_commit_request\x18\n \x01(\x0b\x32\x1d.PartnerCompleteCommitRequest\x12-\n\x0e\x63ommit_request\x18\x0b \x01(\x0b\x32\x15.PartnerCommitRequest\"\xea\x02\n\x0bMessageType\x12\x18\n\x14PARTNER_NOTIFY_READY\x10\x00\x12.\n*PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE\x10\x01\x12\"\n\x1ePARTNER_REQUEST_SEQUENCE_BLOCK\x10\x02\x12%\n!PARTNER_NOTIFY_OF_PEERED_MODIFIED\x10\x03\x12\x1e\n\x1aPARTNER_FIRST_PHASE_RESULT\x10\x04\x12!\n\x1dPARTNER_ADDITIONAL_SUBSCRIBER\x10\x05\x12\x1e\n\x1aPARTNER_REMOVED_SUBSCRIBER\x10\x06\x12\"\n\x1ePARTNER_BACKOUT_COMMIT_REQUEST\x10\x07\x12#\n\x1fPARTNER_COMPLETE_COMMIT_REQUEST\x10\x08\x12\x1a\n\x16PARTNER_COMMIT_REQUEST\x10\t')
+  serialized_pb='\n\x14generalMessage.proto\x1a\x18partnerNotifyReady.proto\x1a+partnerNotifyOfPeeredModifiedResponse.proto\x1a!partnerRequestSequenceBlock.proto\x1a#partnerNotifyOfPeeredModified.proto\x1a$partnerFirstPhaseResultMessage.proto\x1a!partnerAdditionalSubscriber.proto\x1a\x1epartnerRemovedSubscriber.proto\x1a!partnerBackoutCommitRequest.proto\x1a\"partnerCompleteCommitRequest.proto\x1a\x1apartnerCommitRequest.proto\x1a\x11partnerStop.proto\"\xb8\x08\n\x0eGeneralMessage\x12\x31\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x1b.GeneralMessage.MessageType\x12)\n\x0cnotify_ready\x18\x02 \x01(\x0b\x32\x13.PartnerNotifyReady\x12N\n\x1enotify_of_peered_modified_resp\x18\x03 \x01(\x0b\x32&.PartnerNotifyOfPeeredModifiedResponse\x12<\n\x16request_sequence_block\x18\x04 \x01(\x0b\x32\x1c.PartnerRequestSequenceBlock\x12\x41\n\x19notify_of_peered_modified\x18\x05 \x01(\x0b\x32\x1e.PartnerNotifyOfPeeredModified\x12;\n\x12\x66irst_phase_result\x18\x06 \x01(\x0b\x32\x1f.PartnerFirstPhaseResultMessage\x12;\n\x15\x61\x64\x64itional_subscriber\x18\x07 \x01(\x0b\x32\x1c.PartnerAdditionalSubscriber\x12\x35\n\x12removed_subscriber\x18\x08 \x01(\x0b\x32\x19.PartnerRemovedSubscriber\x12<\n\x16\x62\x61\x63kout_commit_request\x18\t \x01(\x0b\x32\x1c.PartnerBackoutCommitRequest\x12>\n\x17\x63omplete_commit_request\x18\n \x01(\x0b\x32\x1d.PartnerCompleteCommitRequest\x12-\n\x0e\x63ommit_request\x18\x0b \x01(\x0b\x32\x15.PartnerCommitRequest\x12\x1a\n\x04stop\x18\x0c \x01(\x0b\x32\x0c.PartnerStop\"\xfc\x02\n\x0bMessageType\x12\x18\n\x14PARTNER_NOTIFY_READY\x10\x00\x12.\n*PARTNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE\x10\x01\x12\"\n\x1ePARTNER_REQUEST_SEQUENCE_BLOCK\x10\x02\x12%\n!PARTNER_NOTIFY_OF_PEERED_MODIFIED\x10\x03\x12\x1e\n\x1aPARTNER_FIRST_PHASE_RESULT\x10\x04\x12!\n\x1dPARTNER_ADDITIONAL_SUBSCRIBER\x10\x05\x12\x1e\n\x1aPARTNER_REMOVED_SUBSCRIBER\x10\x06\x12\"\n\x1ePARTNER_BACKOUT_COMMIT_REQUEST\x10\x07\x12#\n\x1fPARTNER_COMPLETE_COMMIT_REQUEST\x10\x08\x12\x1a\n\x16PARTNER_COMMIT_REQUEST\x10\t\x12\x10\n\x0cPARTNER_STOP\x10\n')
 
 
 
@@ -71,11 +72,15 @@ _GENERALMESSAGE_MESSAGETYPE = descriptor.EnumDescriptor(
       name='PARTNER_COMMIT_REQUEST', index=9, number=9,
       options=None,
       type=None),
+    descriptor.EnumValueDescriptor(
+      name='PARTNER_STOP', index=10, number=10,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=1044,
-  serialized_end=1406,
+  serialized_start=1091,
+  serialized_end=1471,
 )
 
 
@@ -163,6 +168,13 @@ _GENERALMESSAGE = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    descriptor.FieldDescriptor(
+      name='stop', full_name='GeneralMessage.stop', index=11,
+      number=12, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -173,8 +185,8 @@ _GENERALMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=372,
-  serialized_end=1406,
+  serialized_start=391,
+  serialized_end=1471,
 )
 
 _GENERALMESSAGE.fields_by_name['message_type'].enum_type = _GENERALMESSAGE_MESSAGETYPE
@@ -188,6 +200,7 @@ _GENERALMESSAGE.fields_by_name['removed_subscriber'].message_type = partnerRemov
 _GENERALMESSAGE.fields_by_name['backout_commit_request'].message_type = partnerBackoutCommitRequest_pb2._PARTNERBACKOUTCOMMITREQUEST
 _GENERALMESSAGE.fields_by_name['complete_commit_request'].message_type = partnerCompleteCommitRequest_pb2._PARTNERCOMPLETECOMMITREQUEST
 _GENERALMESSAGE.fields_by_name['commit_request'].message_type = partnerCommitRequest_pb2._PARTNERCOMMITREQUEST
+_GENERALMESSAGE.fields_by_name['stop'].message_type = partnerStop_pb2._PARTNERSTOP
 _GENERALMESSAGE_MESSAGETYPE.containing_type = _GENERALMESSAGE;
 DESCRIPTOR.message_types_by_name['GeneralMessage'] = _GENERALMESSAGE
 

@@ -16,7 +16,7 @@ import waldoVariableStore
 import shim.get_math_endpoint
 import waldoReferenceBase
 
-
+StoppedException = util.StoppedException
 
 
 _host_uuid = util.generate_uuid()
@@ -39,8 +39,12 @@ _waldo_classes = {
     
     # call results
     'CompleteRootCallResult': waldoCallResults._CompleteRootCallResult,
+    'StopRootCallResult' : waldoCallResults._StopRootCallResult,
+    
     'BackoutBeforeReceiveMessageResult': waldoCallResults._BackoutBeforeReceiveMessageResult,
     'EndpointCallResult': waldoCallResults._EndpointCallResult,
+
+    
 
     # misc
     'Endpoint': waldoEndpoint._Endpoint,
@@ -48,6 +52,8 @@ _waldo_classes = {
     'ExecutingEventContext': waldoExecutingEvent._ExecutingEventContext,
     'VariableStore': waldoVariableStore._VariableStore,
     'BackoutException': util.BackoutException,
+    'StoppedException': util.StoppedException,
+    
     'logger': util.get_logger(),
     }
 

@@ -631,7 +631,13 @@ class _Endpoint(object):
         general_message.backout_commit_request.event_uuid.data = active_event.uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
 
+    def _notify_partner_stop(self):
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_STOP
+        general_message.stop
+        self._conn_obj.write(general_message.SerializeToString(),self)
 
+        
     def add_stop_listener(self, to_exec_on_stop):
         '''
         @param {callable} to_exec_on_stop --- When this endpoint

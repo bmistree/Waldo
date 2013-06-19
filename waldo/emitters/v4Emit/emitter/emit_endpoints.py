@@ -629,12 +629,18 @@ while True:  # FIXME: currently using infinite retry
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
         return _to_return
+    elif isinstance(_commit_resp,%s):
+        raise %s()
+
 ''' % (emit_utils.library_transform('ExecutingEventContext'),
        emit_utils.library_transform('VariableStore'),
        internal_method_name,
        comma_sep_arg_names,
        str(list_return_external_positions),
-       emit_utils.library_transform('CompleteRootCallResult'))
+       emit_utils.library_transform('CompleteRootCallResult'),
+       emit_utils.library_transform('StopRootCallResult'),
+       emit_utils.library_transform('StoppedException')
+       )
 
     return public_header + emit_utils.indent_str(public_body)
 
@@ -830,7 +836,7 @@ if %s != None:
     next_sequence_txt += '''
 
     if isinstance(_queue_elem,%s):
-        # back everything out
+        # back everything out: 
         raise %s()
 
     _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
