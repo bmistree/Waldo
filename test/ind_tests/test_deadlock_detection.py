@@ -234,13 +234,14 @@ class TryCommit(threading.Thread):
     def __init__(self,act_event):
         self.act_event = act_event
         threading.Thread.__init__(self)
+        self.daemon = True
     def run(self):
         self.act_event.request_commit()
         queue_elem = self.act_event.event_complete_queue.get()
 
 
 def run_test():
-    # run 100 times to exercise different timings
+    # run 10 times to exercise different timings
     for i in range(0,10):
         if not basic_setup():
             return False
