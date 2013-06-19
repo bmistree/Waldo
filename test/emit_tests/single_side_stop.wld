@@ -1,0 +1,8 @@
+Stopper
+Endpoint SingleSide;
+
+SingleSide
+{
+    Public Function do_nothing()
+    {}
+}

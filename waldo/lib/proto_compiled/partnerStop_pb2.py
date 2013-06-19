@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerStop.proto',
   package='',
-  serialized_pb='\n\x11partnerStop.proto\"\r\n\x0bPartnerStop')
+  serialized_pb='\n\x11partnerStop.proto\"\x1c\n\x0bPartnerStop\x12\r\n\x05\x64ummy\x18\x01 \x02(\x08')
 
 
 
@@ -23,6 +23,13 @@ _PARTNERSTOP = descriptor.Descriptor(
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
+    descriptor.FieldDescriptor(
+      name='dummy', full_name='PartnerStop.dummy', index=0,
+      number=1, type=8, cpp_type=7, label=2,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -33,7 +40,7 @@ _PARTNERSTOP = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=21,
-  serialized_end=34,
+  serialized_end=49,
 )
 
 DESCRIPTOR.message_types_by_name['PartnerStop'] = _PARTNERSTOP

@@ -249,6 +249,10 @@ class _Endpoint(object):
             self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_msg(
                 general_msg.notify_of_peered_modified)
 
+        elif general_msg.HasField('stop'):
+            self._endpoint_service_thread_pool.receive_partner_stop_msg()
+
+            
         elif general_msg.HasField('first_phase_result'):
             if general_msg.first_phase_result.successful:
                 self._receive_first_phase_commit_successful(
@@ -634,7 +638,7 @@ class _Endpoint(object):
     def _notify_partner_stop(self):
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_STOP
-        general_message.stop
+        general_message.stop.dummy = True
         self._conn_obj.write(general_message.SerializeToString(),self)
 
         
@@ -668,13 +672,14 @@ class _Endpoint(object):
         self._stop_listeners.pop(stop_id,None)
         self._stop_unlock()
     
-    def stop(self):
+    def stop(self,from_partner=False):
         '''
         Called from python.  Eventually, want to get to a point where
         can call this from inside of Waldo as well.
         '''
         self._act_event_map.initiate_stop(self._stop_complete)
-        self._notify_partner_stop()
+        if not from_partner:
+            self._notify_partner_stop()
         
     def _stop_complete(self):
         '''
