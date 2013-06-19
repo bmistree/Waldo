@@ -89,5 +89,7 @@ def logger_warn(warn_msg,logging_info=None):
 
 class BackoutException(Exception):
     pass
+class StoppedException(Exception):
+    pass
 
 

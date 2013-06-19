@@ -236,6 +236,29 @@ class _ActiveEvent(_InvalidationListener):
 
         self._state = _ActiveEvent.STATE_COMPLETED_COMMIT
 
+    def stop(self,skip_partner):
+        '''
+        If not in first or second phase of commit, then backout.
+        '''
+        self._lock()
+        if not self.in_running_phase():
+            # do not stop an event unless it is in the running phase.
+            # (if it's midway through 2-phase commit, then if we stop
+            # ourselves, we could screw up the entire commit on all
+            # committers.
+            self._unlock()
+            return
+
+        self.forward_backout_request_and_backout_self(
+            skip_partner,
+            # already_backed_out,
+            False,
+            # stop message
+            True )
+
+        self._unlock()
+
+        
         
     def must_check_partner(self):
         '''
@@ -539,7 +562,7 @@ class _ActiveEvent(_InvalidationListener):
         return endpoint_call_requested
 
     def forward_backout_request_and_backout_self(
-        self,skip_partner=False,already_backed_out=False):
+        self,skip_partner=False,already_backed_out=False,stop_request=False):
         '''
         @param {bool} skip_partner --- @see forward_commit_request
 
@@ -547,6 +570,9 @@ class _ActiveEvent(_InvalidationListener):
         out the commit through commit manager, and is calling this
         function primarily to forward the backout message.  No need to
         do so again inside of function.
+
+        @param {bool} stop_request --- True if this backout is a
+        product of a stop request.  False otherwise.
         
         When this is called, we want to disable all further additions
         to self.subscribed_to and self.message_sent.  (Ie, after we
@@ -1075,11 +1101,19 @@ class RootActiveEvent(_ActiveEvent):
         self._unlock()
 
     def forward_backout_request_and_backout_self(
-        self,skip_partner=False,already_backed_out=False):
+        self,skip_partner=False,already_backed_out=False,stop_request=False):
+        
         # whenever we backout, we must also reschedule
         super(RootActiveEvent,self).forward_backout_request_and_backout_self(
             skip_partner,already_backed_out)
-        self.reschedule()
+
+        if stop_request:
+            # notify queue that we have stopped and are not processing
+            # any more
+            self.event_complete_queue.put(
+                waldoCallResults._StopRootCallResult())
+        else:
+            self.reschedule()
         
         
     def receive_successful_first_phase_commit_msg(

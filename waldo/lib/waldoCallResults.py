@@ -16,7 +16,10 @@ class _EndpointCallResult(object):
         
 class _BackoutBeforeEndpointCallResult(object):
     pass
-        
+
+class _StopAlreadyCalledEndpointCallResult(object):
+    pass
+
 class _EndpointCallError(object):
     '''
     If we get an error in the midst of an endpoint call, then we
@@ -75,6 +78,9 @@ class _ModifiedUpdatedMessageResult(object):
 # the requester of a root event listens on a threadsafe queue until
 # the event completes.  it listens for objects of these types.
 class _RescheduleRootCallResult(object):
+    pass
+
+class _StopRootCallResult(object):
     pass
 
 class _CompleteRootCallResult(object):

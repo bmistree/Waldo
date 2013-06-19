@@ -35,11 +35,15 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
         self.partner_request_block_msg = partner_request_block_msg
 
     def service(self):
-        
-        evt = self.local_endpoint._act_event_map.get_or_create_partner_event(
-            self.partner_request_block_msg.event_uuid.data)
-        
-        evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
+        try:
+            evt = self.local_endpoint._act_event_map.get_or_create_partner_event(
+                self.partner_request_block_msg.event_uuid.data)
+            evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
+        except util.StoppedException:
+            # FIXME: Think through, should I send message to other
+            # side that I am stopped?  Right now, I don't think that I
+            # need to.
+            return
         
 
 
@@ -243,8 +247,14 @@ class _ReceiveEndpointCallAction(_Action):
 
     def service(self):        
         act_evt_map = self.local_endpoint._act_event_map
-        act_event = act_evt_map.get_or_create_endpoint_called_event(
-            self.endpoint_making_call,self.event_uuid,self.result_queue)
+
+        try:
+            act_event = act_evt_map.get_or_create_endpoint_called_event(
+                self.endpoint_making_call,self.event_uuid,self.result_queue)
+        except util.StoppedException:
+            self.result_queue.put(
+                waldoCallResults._StopAlreadyCalledEndpointCallResult())
+            return
         
         import waldoVariableStore
         evt_ctx = waldoExecutingEvent._ExecutingEventContext(

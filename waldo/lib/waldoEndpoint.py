@@ -81,7 +81,16 @@ class _Endpoint(object):
 
         self._conn_obj.register_endpoint(self)
 
+        self._stop_mutex = threading.Lock()
+        self._stop_called = False
+        
+    def _stop_lock(self):
+        self._stop_mutex.acquire()
+        
+    def _stop_unlock(self):
+        self._stop_mutex.release()
 
+        
     def _ready_waiting_list_lock(self,additional):
         self._ready_waiting_list_mutex.acquire()
 
@@ -425,6 +434,15 @@ class _Endpoint(object):
         Non-blocking.  Requests the endpoint_service_thread to perform
         the endpoint function call listed as func_name.
         '''
+        self._stop_lock()
+        # check if should short-circuit processing 
+        if self._stop_called:
+            result_queue.push(
+                waldoCallResults._StopAlreadyCalledEndpointCallResult())
+            self._stop_unlock()
+            return
+        self._stop_unlock()
+        
         self._endpoint_service_thread_pool.receive_endpoint_call(
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
 
@@ -567,8 +585,6 @@ class _Endpoint(object):
         notify_of_peered_modified.reply_with_uuid.data = reply_with_uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
 
-        
-        
     def _notify_partner_peered_before_return_response(
         self,event_uuid,reply_to_uuid,invalidated):
         '''
@@ -614,3 +630,54 @@ class _Endpoint(object):
         general_message.message_type = GeneralMessage.PARTNER_BACKOUT_COMMIT_REQUEST
         general_message.backout_commit_request.event_uuid.data = active_event.uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
+
+
+    def add_stop_listener(self, to_exec_on_stop):
+        '''
+        @param {callable} to_exec_on_stop --- When this endpoint
+        stops, we execute to_exec_on_stop and any other
+        stop listeners that were waiting.
+
+        @returns {int or None} --- int id should be passed back inot
+        remove_stop_listener to remove associated stop
+        listener.
+        '''
+        self._stop_lock()
+        if self._has_been_stoped:
+            self._stop_unlock()
+            return None
+
+        stop_id = self._stop_id
+        self._stop_id += 1
+        self._stop_listeners[stop_id] = to_exec_on_stop
+        self._stop_unlock()
+
+        return stop_id
+        
+    def remove_stop_listener(self, stop_id):
+        '''
+        int returned from add_stop_listener
+        '''
+        self._stop_lock()
+        self._stop_listeners.pop(stop_id,None)
+        self._stop_unlock()
+    
+    def stop(self):
+        '''
+        Called from python.  Eventually, want to get to a point where
+        can call this from inside of Waldo as well.
+        '''
+        self._act_event_map.initiate_stop(self._stop_complete)
+        self._notify_partner_stop()
+        
+    def _stop_complete(self):
+        '''
+        Means that we no longer have any running events and we can now
+        shut down and execute any stop listeners that we had
+        '''
+        # FIXME: chance of getting deadlock if one of the stop
+        # listeners tries to remove itself.
+        self._stop_lock()
+        for stop_listener in self._stop_listeners.values():
+            stop_listener()
+        self._stop_lock()
