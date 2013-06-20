@@ -53,13 +53,10 @@ def errorFunction(errorString,astNodes,lineNumbers,progText):
         for s in range(lowerLineNum, upperLineNum):
             errorText = '';
             errorText += str(s+1);
-            if (s + 1 <= 9):
-                errorText += ' ';
             if (s == errorLine -1):
-                errorText += '*   ';
-            else:
-                errorText += '    ';
-                    
+                errorText += '*';
+			
+            errorText += '\t';
             errorText += programTextArray[s];
             errPrint(errorText);
 
