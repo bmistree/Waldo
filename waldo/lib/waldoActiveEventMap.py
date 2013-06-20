@@ -28,7 +28,12 @@ class _ActiveEventMap(object):
         self.stop_callback = stop_callback
         for evt in self.map.values():
             evt.stop()
+        len_map = len(self.map)
         self._unlock()
+
+        # handles case where we called stop when we had no outstanding events.
+        if len_map == 0:
+            stop_callback()
         
         
     def create_root_event(self):

@@ -83,6 +83,8 @@ class _Endpoint(object):
 
         self._stop_mutex = threading.Lock()
         self._stop_called = False
+        self._stop_listener_id_assigner = 0
+        self._stop_listeners = {}
         
     def _stop_lock(self):
         self._stop_mutex.acquire()
@@ -251,7 +253,6 @@ class _Endpoint(object):
 
         elif general_msg.HasField('stop'):
             self._endpoint_service_thread_pool.receive_partner_stop_msg()
-
             
         elif general_msg.HasField('first_phase_result'):
             if general_msg.first_phase_result.successful:
@@ -653,12 +654,12 @@ class _Endpoint(object):
         listener.
         '''
         self._stop_lock()
-        if self._has_been_stoped:
+        if self._stop_called:
             self._stop_unlock()
             return None
 
-        stop_id = self._stop_id
-        self._stop_id += 1
+        stop_id = self._stop_listener_id_assigner
+        self._stop_listener_id_assigner += 1
         self._stop_listeners[stop_id] = to_exec_on_stop
         self._stop_unlock()
 
@@ -677,10 +678,13 @@ class _Endpoint(object):
         Called from python.  Eventually, want to get to a point where
         can call this from inside of Waldo as well.
         '''
+        self._stop_lock()
+        self._stop_called = True
+        self._stop_unlock()
         self._act_event_map.initiate_stop(self._stop_complete)
         if not from_partner:
             self._notify_partner_stop()
-        
+
     def _stop_complete(self):
         '''
         Means that we no longer have any running events and we can now
@@ -691,4 +695,5 @@ class _Endpoint(object):
         self._stop_lock()
         for stop_listener in self._stop_listeners.values():
             stop_listener()
-        self._stop_lock()
+        self._stop_unlock()
+
