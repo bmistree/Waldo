@@ -3,7 +3,6 @@ import waldoEndpointServiceThread
 import waldoActiveEventMap
 from util import Queue
 import threading
-
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 
 
@@ -82,7 +81,15 @@ class _Endpoint(object):
         self._conn_obj.register_endpoint(self)
 
         self._stop_mutex = threading.Lock()
+        # has stop been called locally, on the partner, and have we
+        # performed cleanup, respectively
         self._stop_called = False
+        self._partner_stop_called = False
+        self._stop_complete = False
+        
+        self._stop_blocking_queues = []
+
+        # holds callbacks to call when stop is complete
         self._stop_listener_id_assigner = 0
         self._stop_listeners = {}
         
@@ -252,7 +259,8 @@ class _Endpoint(object):
                 general_msg.notify_of_peered_modified)
 
         elif general_msg.HasField('stop'):
-            self._endpoint_service_thread_pool.receive_partner_stop_msg()
+            t = threading.Thread(target= self._handle_partner_stop_msg,args=(general_msg.stop,))
+            t.start()
             
         elif general_msg.HasField('first_phase_result'):
             if general_msg.first_phase_result.successful:
@@ -639,7 +647,7 @@ class _Endpoint(object):
     def _notify_partner_stop(self):
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_STOP
-        general_message.stop.dummy = True
+        general_message.stop.dummy = False
         self._conn_obj.write(general_message.SerializeToString(),self)
 
         
@@ -672,28 +680,107 @@ class _Endpoint(object):
         self._stop_lock()
         self._stop_listeners.pop(stop_id,None)
         self._stop_unlock()
-    
-    def stop(self,from_partner=False):
+
+        
+        
+    def stop(self):
         '''
-        Called from python.  Eventually, want to get to a point where
-        can call this from inside of Waldo as well.
+        Called from python or called when partner requests stop
         '''
         self._stop_lock()
+
+        if self._stop_complete:
+            # means that user called stop after we had already
+            # stopped.  Do nothing
+            self._stop_unlock()
+            return
+
+        # call to stop from external code should block until all
+        # queues have unblocked
+        blocking_queue = util.Queue.Queue()
+
+        self._stop_blocking_queues.append(blocking_queue)
+
+        stop_already_called = self._stop_called
         self._stop_called = True
+
+        # if we have stopped and our partner has stopped, then request callback
+        request_callback = self._partner_stop_called and self._stop_called
+            
         self._stop_unlock()
-        self._act_event_map.initiate_stop(self._stop_complete)
-        if not from_partner:
+        
+        # act event map filters duplicate stop calls automatically
+        self._act_event_map.initiate_stop()
+
+        if not stop_already_called:
+            # we do not want to send multiple stop messages to our
+            # partner.  just one.  this check ensures that we don't
+            # infinitely send messages back and forth.
             self._notify_partner_stop()
 
-    def _stop_complete(self):
+        # 4 from above as well
+        if request_callback:
+            self._act_event_map.callback_when_stopped(self._stop_complete_cb)
+
+        # blocking wait until ready to shut down.
+        blocking_queue.get()
+            
+            
+    def _stop_complete_cb(self):
         '''
-        Means that we no longer have any running events and we can now
-        shut down and execute any stop listeners that we had
+        Passed in as callback arugment to active event map, which calls it.
+        
+        When this is executed:
+           1) Stop was called on this side
+           
+           2) Stop was called on the other side
+           
+           3) There are no longer any running events in active event
+              map
+
+        Close the connection between both sides.  Unblock the stop call.
         '''
         # FIXME: chance of getting deadlock if one of the stop
         # listeners tries to remove itself.
         self._stop_lock()
-        for stop_listener in self._stop_listeners.values():
-            stop_listener()
+        self._stop_complete = True
         self._stop_unlock()
 
+        for stop_listener in self._stop_listeners.values():
+            stop_listener()
+        self._conn_obj.close()
+            
+        # flush stop queues so that all stop calls unblock.  Note:
+        # does not matter what value put into the queues.
+        for q in self._stop_blocking_queues:
+            q.put(None)
+
+
+    def _handle_partner_stop_msg(self,msg):
+        '''
+        @param {PartnerStop message object} --- Has a single boolean
+        field, which is meaningless.
+                
+        Received a stop message from partner:
+          1) Label partner stop as having been called
+          2) Initiate stop locally
+          3) If have already called stop myself then tell active event
+             map we're ready for a shutdown when it is
+        '''
+        self._stop_lock()
+
+        # 2 from above
+        self._partner_stop_called = True
+
+        # 3 from above
+        t = threading.Thread(target = self.stop)
+        t.start()
+
+        # 4 from above
+        request_callback = self._partner_stop_called and self._stop_called
+        
+        self._stop_unlock()
+
+        # 4 from above as well
+        if request_callback:
+            self._act_event_map.callback_when_stopped(self._stop_complete_cb)

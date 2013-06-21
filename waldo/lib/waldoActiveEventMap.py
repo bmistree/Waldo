@@ -15,22 +15,37 @@ class _ActiveEventMap(object):
         self._mutex = threading.Lock()
         self.local_endpoint = local_endpoint
         self.in_stop_phase = False
+        self.in_stop_complete_phase = False
         self.stop_callback = None
         self.waiting_on_stop = {}
-        
-    def initiate_stop(self,stop_callback):
+    
+
+    def initiate_stop(self):
         '''
         When the endpoint that this is on has said to start
         stoping, then
         '''
         self._lock()
-        self.in_stop_phase = True
-        self.stop_callback = stop_callback
+        
+        if self.in_stop_phase:
+            # can happen if simultaneously attempt to stop connection
+            # on both ends or if programmer calls stop twice.
+            self._unlock()
+            return 
+
         for evt in self.map.values():
             evt.stop()
+        
+        self.in_stop_phase = True
+        self._unlock()
+        
+    def callback_when_stopped(self,stop_callback):
+        self._lock()
+        self.in_stop_complete_phase = True
+        self.stop_callback = stop_callback
         len_map = len(self.map)
         self._unlock()
-
+        
         # handles case where we called stop when we had no outstanding events.
         if len_map == 0:
             stop_callback()
@@ -58,7 +73,7 @@ class _ActiveEventMap(object):
         self._lock()
         to_remove = self.map.pop(event_uuid,None)
         fire_stop_complete_callback = False
-        if (len(self.map) == 0) and (self.in_stop_phase):
+        if (len(self.map) == 0) and (self.in_stop_complete_phase):
             fire_stop_complete_callback = True
             
         self._unlock()

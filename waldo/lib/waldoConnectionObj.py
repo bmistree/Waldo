@@ -17,6 +17,10 @@ class _WaldoConnectionObject(object):
             'Error write in _WaldoConnectionObject is pure ' +
             'virtual.')
 
+    def close(self):
+        pass
+
+        
 class _WaldoSingleSideConnectionObject(_WaldoConnectionObject):
 
     def __init__(self):
