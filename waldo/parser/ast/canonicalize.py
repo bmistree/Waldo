@@ -2,7 +2,7 @@
 
 from astNode import *
 from astLabels import *
-import astBuilderCommon
+import astBuilder
 import pickle
 
 def preprocess(astNode,progText):
@@ -135,7 +135,7 @@ def handle_symmetric(ast_node):
             err_msg = 'For non-symmetric declaration, require '
             err_msg += 'one or two endpoint definitions.'
             endpoint_section_node.value = 'Endpoint'
-            raise astBuilderCommon.WaldoParseException(
+            raise astBuilder.WaldoParseException(
                 endpoint_section_node,err_msg)
 
         if len(endpoint_section_node.children) == 1:
@@ -145,7 +145,7 @@ def handle_symmetric(ast_node):
                 err_msg += 'but only defined one at bottom.  Maybe use '
                 err_msg += 'Symmetric instead?'
                 endpoint_section_node.value = 'Endpoint'
-                raise astBuilderCommon.WaldoParseException(
+                raise astBuilder.WaldoParseException(
                     endpoint_section_node,err_msg)
                 
             
@@ -190,7 +190,7 @@ def handle_symmetric(ast_node):
                 err_msg = 'Defined two endpoints in file, but only declared '
                 err_msg += 'one at top.'
                 endpoint_section_node.value = 'Endpoint'
-                raise astBuilderCommon.WaldoParseException(
+                raise astBuilder.WaldoParseException(
                     endpoint_section_node,err_msg)
 
             
@@ -212,7 +212,7 @@ def handle_symmetric(ast_node):
             err_msg += 'endpoint definition.  Received '
             err_msg += str(num_endpoint_definitions) + '.'
             endpoint_section_node.value = name_1 + '|' + name_2
-            raise astBuilderCommon.WaldoParseException(
+            raise astBuilder.WaldoParseException(
                 endpoint_section_node,err_msg)
 
         defined_endpoint_node = endpoint_section_node.children[0]

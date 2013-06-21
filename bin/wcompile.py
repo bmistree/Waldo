@@ -8,9 +8,9 @@ sys.path.insert(0, base_path)
 
 import waldo.parser
 import waldo.parser.ast.canonicalize as canonicalize
-from waldo.parser.ast.astBuilder_v2 import getParser as v2GetParser
-from waldo.parser.ast.astBuilder_v2 import getErrorEncountered as v2GetErrorEncountered
-from waldo.parser.ast.astBuilder_v2 import resetErrorEncountered as v2ResetErrorEncountered
+from waldo.parser.ast.astBuilder import getParser as v2GetParser
+from waldo.parser.ast.astBuilder import getErrorEncountered as v2GetErrorEncountered
+from waldo.parser.ast.astBuilder import resetErrorEncountered as v2ResetErrorEncountered
 
 def getParser(suppress_warnings,progText,outputErrsTo,versionNum):
     return v2GetParser(suppress_warnings,progText,outputErrsTo);
@@ -26,7 +26,7 @@ import json
 from waldo.emitters.v4Emit.emitter import ast_emit as v4Emit
 
 
-from waldo.parser.ast.astBuilderCommon import WaldoParseException;
+from waldo.parser.ast.astBuilder import WaldoParseException;
 from waldo.lexer.waldoLex import WaldoLexException
 
 

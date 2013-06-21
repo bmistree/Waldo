@@ -1,33 +1,98 @@
 #!/usr/bin/python
 
-import os
-import sys
+import sys,os
 
-from waldo.parser.ast.typeCheck.typeCheckUtil import setErrorEncountered
+from waldo.lexer.waldoLex import tokens
+from waldo.lexer.waldoLex import ONCREATE_TOKEN
+from waldo.lexer.waldoLex import constructLexer
+from astLabels import *
+from astNode import AstNode
 
 
+from typeCheck.typeCheckUtil import getErrorEncountered as astGetErrorEncountered
+from typeCheck.typeCheckUtil import resetErrorEncountered as astResetErrorEncountered
+from typeCheck.typeCheckUtil import setErrorEncountered
 
-from astLabels import *;
-from astNode import AstNode;
-from waldo.lexer.waldoLex import ONCREATE_TOKEN;
-from parserUtil import errPrint;
+
+import waldo.deps.ply.ply.yacc as yacc
+
+from parserUtil import errPrint
+from parserUtil import setOutputErrorsTo
+
 
 #Program text that we are parsing.  Set in getParser function.  Allows
 #us to output surrounding lines when reporting an error.
 ProgramText = None;
 ERROR_NUM_LINES_EITHER_SIDE = 4;
 
-#note: otherwise, starts at first rule.  
+#note: global variable used by yacc.  Without this set, otherwise,
+#starts at first rule.
 start = 'RootExpression';
 #need to have something named lexer for parser to chew into
 lexer = None;
 
+
+
+def p_RootExpression(p):
+    '''
+    RootExpression : NameSection EndpointAliasSection TraceStructSharedSection MessageSequenceSection EndpointDefinitionSection
+                   | NameSection EndpointAliasSection TraceStructSharedSection EndpointDefinitionSection
+    '''
+    # ends up producing
+    #   name_section
+    #   endpoint_alias_section
+    #   trace_section
+    #   shared section
+    #   endpoint definition section
+    #     (containing one endpoint or two endpoints)
+    #   msg seq section
+    #   struct section
+
+    # Canonicalize however turns it into
+    #   name_section
+    #   endpoint_alias_section
+    #   trace_section
+    #   shared section
+    #   endpoint1 section
+    #   endpoint2 section
+    #   msg seq section
+    #   struct section
+
+    p[0] = AstNode(AST_ROOT,p[1].lineNo,p[1].linePos);
+
+    name_section = p[1]
+    endpoint_alias_section = p[2]
+    trace_struct_shared_section = p[3]
+
+    trace_section = trace_struct_shared_section.children[0]
+    struct_section = trace_struct_shared_section.children[1]
+    shared_section = trace_struct_shared_section.children[2]
+    
+    
+    p[0].addChildren(
+        [name_section,endpoint_alias_section,trace_section,shared_section]);
+
+    msg_seq_section = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[4].lineNo,p[4].linePos);
+    endpoint_definition_section = p[4]
+    
+    if len(p) == 6:
+        msg_seq_section = p[4]
+        endpoint_definition_section = p[5]
+
+    p[0].addChildren([
+            endpoint_definition_section,msg_seq_section,struct_section])
+
+
+############################## Waldo file name declaration ###################
+### Contains the name for the overall file    
 def p_NameSection(p):
     'NameSection : Identifier'
     p[0] = p[1];
     p[0].setNote(AST_PROT_OBJ_NAME);
 
 
+#######################Endpoint declaration section ###########################
+### Wraps one or both endpoints at the top of the file
 def p_EndpointAliasSection(p):
     '''
     EndpointAliasSection : ENDPOINT Identifier SEMI_COLON
@@ -51,142 +116,13 @@ def p_EndpointAliasSection(p):
         endpoint_name_node_b = p[4]
         p[0].addChildren([endpoint_name_node_a,endpoint_name_node_b])
 
-    
-def p_TraceSection(p):
-    '''
-    TraceSection : TRACES CURLY_LEFT TraceBodySection CURLY_RIGHT
-                 | TRACES CURLY_LEFT CURLY_RIGHT
-    '''
-    
-    #note: this is an intermediate production, and will get skipped.
-    p[0] = AstNode(AST_TRACE_SECTION,p.lineno(1),p.lexpos(1));
-
-    if len(p) == 4:
-        pass;
-        # # throw error if no code in traces body section.
-        # p[0].value = p[1]; # WaldoParseException requires a value field.
-        # errMsg = '\nERROR: you must enter code into the "' + p[1] + '" ';
-        # errMsg += 'section before you can compile.\n';
-        # raise WaldoParseException(p[0],errMsg);
-
-    else:
-        # getting TraceBodySection's children removes it as an intermediate node.
-        p[0].addChildren(p[3].getChildren());
 
 
-def p_Garbage(p):
-    '''
-    Garbage : SINGLE_LINE_COMMENT
-            | NEWLINE
-            | TAB
-            | MULTI_LINE_COMMENT_BEGIN            
-            | MULTI_LINE_COMMENT_END
-            | SPACE
-            | ALL_ELSE
-    '''
-    # note that this rule should never actually be matched.  It's just
-    # included to avoid ply warnings caused by not having a rule to
-    # match these tokens.
-    err_msg = '\nBehram error: Should never actually attempt to '
-    err_msg += 'parse rules for any of these tokens.  Just have '
-    err_msg += 'a parsing rule here to avoid ply warnings.\n'
-    print err_msg
-    assert(False)
-    
-
-def p_TraceItem(p):
-    'TraceItem : Identifier DOT Identifier'
-    #Each TraceItem is connected by arrows in Trace section
-    # TraceItem -> TraceItem -> TraceItem;
-    p[0] = AstNode(AST_TRACE_ITEM,p[1].lineNo,p[1].linePos);
-    p[0].addChildren([p[1],p[3]]);
-
-def p_TraceLine(p):
-    '''TraceLine : TraceItem  SEND_ARROW TraceLine
-                 | TraceItem  '''
-
-    p[0] = AstNode(AST_TRACE_LINE,p[1].lineNo,p[1].linePos);
-    p[0].addChild(p[1]);
-    if (len(p) == 4):
-        #have additional parts of trace body to grab.
-        p[0].addChildren(p[3].getChildren());
-
-
-def p_Jump(p):
-    '''
-    Jump : JUMP Identifier DOT Identifier
-         | FINISH LEFT_PAREN RIGHT_PAREN
-    '''
-
-    if len(p) == 4:
-        p[0] = AstNode(AST_JUMP_COMPLETE,p.lineno(1),p.lexpos(1));
-    else:
-        p[0] = AstNode(AST_JUMP,p.lineno(1),p.lexpos(1));
-        p[0].addChildren([p[2],p[4]]);
+############### Sequence, struct, and peered variable declarations ##############
         
-
-def p_SharedSection(p):
-    '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
-                     | SHARED CURLY_LEFT CURLY_RIGHT''';
-
-    p[0] = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1));
-    if len(p) == 5:
-        p[0].addChildren(p[3].getChildren());
-
-            
-def p_SharedBodySection(p):
-    '''SharedBodySection : AnnotatedDeclaration SEMI_COLON SharedBodySection
-                         | AnnotatedDeclaration SEMI_COLON'''
-    p[0] = AstNode(AST_SHARED_BODY_SECTION, p[1].lineNo,p[1].linePos);
-    p[0].addChild(p[1]);
-    if (len(p) == 4):
-        p[0].addChildren(p[3].getChildren());
-
-        
-def p_AnnotatedDeclaration(p):
-    '''AnnotatedDeclaration : Identifier CONTROLS Type Identifier 
-                            | Identifier CONTROLS Type Identifier EQUALS TerminalReturnable
-                            | NOTHING_TYPE CONTROLS Type Identifier
-                            | NOTHING_TYPE CONTROLS Type Identifier EQUALS TerminalReturnable
-                            | Declaration
-                            '''
-
-    if (p[1] == TYPE_NOTHING):
-        # create an Identifier with controls as nothing
-        p[1] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
-
-    p[0] = AstNode(AST_ANNOTATED_DECLARATION,p[1].lineNo,p[1].linePos);
-
-    if len(p) == 2:
-        # means that we do not have any annotation on the variable,
-        # ie, change it to Nothing Controls
-        declaration_node = p[1]
-        declared_type_node = declaration_node.children[0]
-        declared_name_node = declaration_node.children[1]
-
-        # create an Identifier with controls as nothing
-        nothing_controller_identifier_node = AstNode(
-            AST_IDENTIFIER,declaration_node.lineNo,
-            declaration_node.linePos,TYPE_NOTHING)
-
-        p[0].addChildren(
-            [nothing_controller_identifier_node,declared_type_node,
-             declared_name_node])
-
-        if len(declaration_node.children) == 3:
-            # means that there's some initializer that we need to add
-            initialization_node = declaration_node.children[2]
-            p[0].addChild(initialization_node)
-        
-        return
-    
-
-    p[0].addChildren([p[1],p[3],p[4]]);
-    
-    if (len(p) == 7):
-        #have an initialization statement to perform
-        p[0].addChild(p[6]);
-
+### Following naming the Waldo file and naming the endpoints, we
+### declare any sequences (sometimes termed "traces" in the backend
+### code), structs, and shared data that we'll use.
 def p_TraceStructSharedSection(p):
     '''
     TraceStructSharedSection : TraceSection StructSection SharedSection
@@ -245,8 +181,93 @@ def p_TraceStructSharedSection(p):
     p[0].addChildren(
         [trace_section_node,struct_section_node, shared_section_node])
 
+##### Trace declaration parsing #####
+    
+# Contains the declaration of any traces (sequences) that we will use
+# in the Waldo file.
+def p_TraceSection(p):
+    '''
+    TraceSection : TRACES CURLY_LEFT TraceBodySection CURLY_RIGHT
+                 | TRACES CURLY_LEFT CURLY_RIGHT
+    '''
+    
+    #note: this is an intermediate production, and will get skipped.
+    p[0] = AstNode(AST_TRACE_SECTION,p.lineno(1),p.lexpos(1));
+
+    if len(p) == 4:
+        pass;
+        # # throw error if no code in traces body section.
+        # p[0].value = p[1]; # WaldoParseException requires a value field.
+        # errMsg = '\nERROR: you must enter code into the "' + p[1] + '" ';
+        # errMsg += 'section before you can compile.\n';
+        # raise WaldoParseException(p[0],errMsg);
+
+    else:
+        # getting TraceBodySection's children removes it as an intermediate node.
+        p[0].addChildren(p[3].getChildren());
+
+    
+def p_TraceBodySection(p):
+    '''
+    TraceBodySection : Identifier COLON TraceLine SEMI_COLON TraceBodySection
+                     | Identifier COLON TraceLine SEMI_COLON
+    '''
+
+    # produces many children.  Each child has format:
+    #   Identifier (name of trace line/message sequence)
+    #   Message sequence block name
+    #   Message sequence block name
+    #   ...
+    
+    p[0] = AstNode(AST_TRACE_BODY_SECTION,p[1].lineNo,p[1].linePos);
+    p[3].prependChild(p[1]);
+    p[0].addChild(p[3]);
+    if(len(p) == 6):
+        #flattens all TraceLines into siblings
+        p[0].addChildren(p[5].getChildren());
+
+    
+
+def p_TraceItem(p):
+    'TraceItem : Identifier DOT Identifier'
+    #Each TraceItem is connected by arrows in Trace section
+    # TraceItem -> TraceItem -> TraceItem;
+    p[0] = AstNode(AST_TRACE_ITEM,p[1].lineNo,p[1].linePos);
+    p[0].addChildren([p[1],p[3]]);
+
+def p_TraceLine(p):
+    '''TraceLine : TraceItem  SEND_ARROW TraceLine
+                 | TraceItem  '''
+
+    p[0] = AstNode(AST_TRACE_LINE,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        #have additional parts of trace body to grab.
+        p[0].addChildren(p[3].getChildren());
+
+        
+
+### Peered/Shared declaration parsing ###
+def p_SharedSection(p):
+    '''SharedSection : SHARED CURLY_LEFT SharedBodySection CURLY_RIGHT
+                     | SHARED CURLY_LEFT CURLY_RIGHT''';
+
+    p[0] = AstNode(AST_SHARED_SECTION,p.lineno(1),p.lexpos(1));
+    if len(p) == 5:
+        p[0].addChildren(p[3].getChildren());
 
             
+def p_SharedBodySection(p):
+    '''SharedBodySection : AnnotatedDeclaration SEMI_COLON SharedBodySection
+                         | AnnotatedDeclaration SEMI_COLON'''
+    p[0] = AstNode(AST_SHARED_BODY_SECTION, p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        p[0].addChildren(p[3].getChildren());
+
+
+### Struct declaration parsing ###
+        
 def p_StructSection(p):
     '''
     StructSection : Struct
@@ -291,6 +312,410 @@ def p_StructBody(p):
         assert(False)
 
     p[0].addChild(decl_node)
+
+        
+
+#################### Message sequence definitions #######################
+# Contains the parsing code for all message sequence definitions
+def p_MessageSequenceSection(p):
+    '''MessageSequenceSection : MessageSequence MessageSequenceSection
+                              | MessageSequence
+    '''
+    
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE_SECTION,p[1].lineNo,p[1].linePos);
+    
+    if not isEmptyNode(p[1]):
+        p[0].addChild(p[1]);
+    
+    if (len(p) == 3):
+        #flattens all message sequences into siblings
+        kids = p[2].getChildren();
+        for kid in kids:
+            if isEmptyNode(kid):
+                continue;
+            p[0].addChild(kid);
+            
+
+
+def p_MessageSequence(p):
+    '''
+    MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN MessageSequenceReturns CURLY_LEFT MessageSequenceGlobalSection MessageSequenceFunctions CURLY_RIGHT
+    MessageSequence : SEQUENCE Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN MessageSequenceReturns CURLY_LEFT MessageSequenceFunctions CURLY_RIGHT
+    '''
+    # syntax:
+    #    Sequence <some name> (<some arguments>) returns Text msg, TrueFalse succeeded (returns optional)
+    #    {
+    #        <some sequence globals> (optional)
+    #        <some sequence functions>
+    #    }
+
+    # children produced:
+    #   Identifier: <some name>
+    #   FunctionDeclArgList: <some arguments>
+    #   SEQUENCE GLOBALS: <some sequence globals>
+    #   MessageSequenceFunctions: <some sequence functions>
+    #   return statements
+    
+    # note that canonicalize moves FunctionDeclArgList from child of
+    # AST_MESSAGE_SEQUENCE to child of the first message send
+    # function.
+    
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE,p[2].lineNo,p[2].linePos);
+    seq_args = p[4]
+    seq_name = p[2]
+    seq_returns = p[6]
+    p[0].addChildren([seq_name,seq_args])
+
+    
+    # default to empty message sequence globals section if not defined
+    seq_globs = AstNode(AST_MESSAGE_SEQUENCE_GLOBALS,p[2].lineNo,p[2].linePos);
+    seq_functions = p[8]
+    if len(p) == 11:
+        seq_globs = p[8]
+        seq_functions= p[9];
+
+    p[0].addChildren([seq_globs,seq_functions]);
+    p[0].addChildren([seq_returns])
+
+
+def p_MessageSequenceReturns(p):
+    '''
+    MessageSequenceReturns : Empty
+                           | RETURNS FunctionDeclArgList
+    '''
+    if len(p) == 2:
+        # means that we are empty, create an empty function decl
+        # arglist and use it for child
+        p[0] = AstNode(AST_FUNCTION_DECL_ARGLIST,p[1].lineNo,p[1].linePos)
+    else:
+        p[0] = p[2]
+        
+    
+def p_MessageSequenceGlobalSection(p):
+    '''MessageSequenceGlobalSection : Declaration SEMI_COLON MessageSequenceGlobalSection
+                                    | Declaration SEMI_COLON '''
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE_GLOBALS,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        p[0].addChildren(p[3].getChildren());
+
+        
+def p_MessageSequenceFunctions(p):
+    '''
+    MessageSequenceFunctions : MessageSendSequenceFunction MessageReceiveSequenceFunctions
+    '''
+    
+    p[0] = AstNode(AST_MESSAGE_SEQUENCE_FUNCTIONS,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    p[0].addChildren(p[2].getChildren());
+
+    
+def p_MessageSendSequenceFunction(p):
+    '''
+    MessageSendSequenceFunction : Identifier DOT Identifier CURLY_LEFT CURLY_RIGHT
+                                | Identifier DOT Identifier CURLY_LEFT FunctionBody CURLY_RIGHT
+    '''
+    # Syntax
+    #    <endpoint name>.<function name>
+    #    {
+    #        <function body> (optional)
+    #    }
+
+    # Children produced
+    #    Identifier: <endpoint name>
+    #    Identifier: <function name>
+    #    FunctionBody: <function body>
+    
+    # note: canonicalize inserts a FunctionDeclArgList as a child for
+    # this between function name and endpoint body
+
+    # note, note: canonicalize also inserts a functiondeclarglist with
+    # return types at the end
+    
+    p[0] = AstNode(AST_MESSAGE_SEND_SEQUENCE_FUNCTION,p[1].lineNo,p[1].linePos);
+    endpoint_name = p[1]
+    func_name = p[3]
+    
+    # imposter function body in case this was a noop.
+    func_body = AstNode(AST_FUNCTION_BODY,p[1].lineNo,p[1].linePos)
+    if len(p) == 7:
+        func_body = p[5]
+
+    p[0].addChildren([endpoint_name,func_name,func_body])
+
+        
+def p_MessageReceiveSequenceFunctions(p):
+    '''
+    MessageReceiveSequenceFunctions : MessageReceiveSequenceFunction MessageReceiveSequenceFunctions
+                                    | MessageReceiveSequenceFunction
+    '''
+    # intermediate ast node, will get removed by above parsing layer
+    p[0] = AstNode(AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTIONS, p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    if (len(p) == 3):
+        p[0].addChildren(p[2].getChildren());
+
+        
+def p_MessageReceiveSequenceFunction(p):
+    '''
+    MessageReceiveSequenceFunction : Identifier DOT Identifier CURLY_LEFT CURLY_RIGHT
+                                   | Identifier DOT Identifier CURLY_LEFT FunctionBody CURLY_RIGHT
+
+                                   | Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT CURLY_RIGHT
+                                   | Identifier DOT Identifier LEFT_PAREN FunctionDeclArgList RIGHT_PAREN CURLY_LEFT FunctionBody CURLY_RIGHT
+                                   | OnCompleteFunction
+                                   
+    '''
+
+    if len(p) == 2:
+        # means it was an on complete function.  just use that directly
+        p[0] = p[1];
+        return;
+    
+    p[0] = AstNode(AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION,p[1].lineNo,p[1].linePos);
+
+    # specifically parsing for error of putting parens at end of message receive statement
+    if (len(p) == 9) or (len(p) == 10):
+        funcName = p[1].value + p[2] + p[3].value;
+        errMsg = '\nError in MessageSequence on "' + funcName + '".  ';
+        errMsg += 'Only the first function can take in arguments.  ';
+        errMsg += 'Subsequent functions are automatically called by ';
+        errMsg += 'the system.  You should remove the parentheses at the end of ';
+        errMsg += 'the function.\n';
+        p[0].value = funcName;
+        raise WaldoParseException(p[0],errMsg);
+    
+    p[0].addChildren([p[1],p[3]]);
+    if (len(p) == 7):
+        p[0].addChild(p[5]);
+    else:
+        p[0].addChild(AstNode(AST_FUNCTION_BODY, p[1].lineNo,p[1].linePos));
+
+    
+        
+#################### Definition of each endpoint in the connection ##################
+        
+def p_EndpointDefinitionSection(p):
+    '''
+    EndpointDefinitionSection : EndpointDefinitionSection EndpointSection
+                              | EndpointSection
+    '''
+    p[0] = AstNode(AST_ENDPOINT_DEFINITION_SECTION,p[1].lineNo,p[1].linePos)
+
+    # order of first and second section does not matter
+
+    if len(p) == 3:
+        end_def_sec_node = p[1]
+        second_section = p[2]
+        p[0].addChildren(end_def_sec_node.getChildren())
+        p[0].addChild(second_section)
+    else:
+        first_section = p[1]
+        p[0].addChild(first_section)
+
+    if len(p[0].children) > 2:
+        err_msg = 'Parse error.  Can have at most 2 endpoints per connection.'
+        raise WaldoParseException(p[0],err_msg)
+
+def p_EndpointSection(p):
+    '''EndpointSection : Identifier CURLY_LEFT EndpointBodySection CURLY_RIGHT
+                       | Identifier CURLY_LEFT CURLY_RIGHT'''
+    p[0] = AstNode(AST_ENDPOINT,p[1].lineNo,p[1].linePos);
+
+    p[0].addChild(p[1]);
+    if (len(p) == 5):
+        p[0].addChild(p[3]);
+    elif len(p) == 4:
+        # means that we had nothing defined in the endpoint create
+        # empty versions so that type checking gets what it expects.
+        bodySecChild = AstNode(AST_ENDPOINT_BODY_SECTION,p[1].lineNo,p[1].linePos);
+        bodyGlobSec = AstNode(AST_ENDPOINT_GLOBAL_SECTION,p[1].lineNo,p[1].linePos);
+        funcGlobSec = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos);
+        bodySecChild.addChildren([bodyGlobSec,funcGlobSec]);
+        p[0].addChild(bodySecChild);
+
+
+def p_EndpointBodySection(p):
+    '''EndpointBodySection : EndpointGlobalSection EndpointFunctionSection
+                           | EndpointFunctionSection
+                           | EndpointGlobalSection
+                           '''
+
+    p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p[1].lineNo,p[1].linePos);
+    if (len(p) == 3):
+        p[0].addChildren([p[1],p[2]]);
+    elif len(p) == 2:
+        # check that had no globals, but had a function:
+        if p[1].label == AST_ENDPOINT_FUNCTION_SECTION:
+            # means that we had no globals.  add them
+            p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linePos));
+            p[0].addChild(p[1]);
+        else:
+            # menas that there were globals, but no functions.  add
+            # empty functions.
+            p[0].addChild(p[1]);
+            p[0].addChild(AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos));
+    else:
+        errPrint('\nError in endpoint body section.  Got an unusual number of arguments.\n');
+        assert(False);
+    
+
+def p_EndpointGlobalSection(p):
+    '''EndpointGlobalSection : Declaration SEMI_COLON EndpointGlobalSection
+                             | Declaration SEMI_COLON'''
+    p[0] = AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+    if (len(p) == 4):
+        p[0].addChildren(p[3].getChildren());
+
+
+def p_EndpointFunctionSection(p):
+    '''EndpointFunctionSection :  PublicFunction EndpointFunctionSection
+                               |  PublicFunction
+                               |  Function EndpointFunctionSection
+                               |  Function
+                               |  OnCreateFunction EndpointFunctionSection
+                               |  OnCreateFunction 
+                               '''
+    
+    p[0] = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos);
+    
+    p[0].addChild(p[1]);
+        
+    if (len(p) == 3):
+        p[0].addChildren(p[2].getChildren());
+
+
+    
+
+
+################## Helpers ##########################
+    
+def p_FunctionBodyStatement(p):
+    '''FunctionBodyStatement : Declaration SEMI_COLON
+                             | AssignmentStatement SEMI_COLON
+                             | ConditionStatement
+                             | ForStatement
+                             | WhileStatement
+                             | PlusEqual SEMI_COLON
+                             | MinusEqual SEMI_COLON
+                             | DivideEqual SEMI_COLON
+                             | MultiplyEqual SEMI_COLON                             
+                             | ReturnableExpression SEMI_COLON
+                             | ReturnStatement SEMI_COLON
+                             | BreakStatement SEMI_COLON
+                             | ContinueStatement SEMI_COLON
+    '''
+    p[0] = AstNode(AST_FUNCTION_BODY_STATEMENT,p[1].lineNo,p[1].linePos);
+    p[0].addChild(p[1]);
+
+
+
+    
+def p_NonOperatableOn(p):
+    '''
+    NonOperatableOn : PrintCall
+                    | RefreshCall
+                    | Jump
+                    | ExtAssign
+                    | ExtCopy
+    '''
+    #cannot use operators between PrintCall and message literal (they
+    #are not operatable on).  Everything in OperatableOn we can put
+    #operators between (except for == ).  Gets rid of reduce/reduce
+    #conflict from having a minus sign after a message literal to
+    #separate into terminal returnable, nonoperatableon, and
+    #operatableon.
+    p[0] = p[1];
+    
+
+
+
+
+
+
+def p_Garbage(p):
+    '''
+    Garbage : SINGLE_LINE_COMMENT
+            | NEWLINE
+            | TAB
+            | MULTI_LINE_COMMENT_BEGIN            
+            | MULTI_LINE_COMMENT_END
+            | SPACE
+            | ALL_ELSE
+    '''
+    # note that this rule should never actually be matched.  It's just
+    # included to avoid ply warnings caused by not having a rule to
+    # match these tokens.
+    err_msg = '\nBehram error: Should never actually attempt to '
+    err_msg += 'parse rules for any of these tokens.  Just have '
+    err_msg += 'a parsing rule here to avoid ply warnings.\n'
+    print err_msg
+    assert(False)
+
+
+def p_Jump(p):
+    '''
+    Jump : JUMP Identifier DOT Identifier
+         | FINISH LEFT_PAREN RIGHT_PAREN
+    '''
+
+    if len(p) == 4:
+        p[0] = AstNode(AST_JUMP_COMPLETE,p.lineno(1),p.lexpos(1));
+    else:
+        p[0] = AstNode(AST_JUMP,p.lineno(1),p.lexpos(1));
+        p[0].addChildren([p[2],p[4]]);
+        
+
+
+        
+def p_AnnotatedDeclaration(p):
+    '''AnnotatedDeclaration : Identifier CONTROLS Type Identifier 
+                            | Identifier CONTROLS Type Identifier EQUALS TerminalReturnable
+                            | NOTHING_TYPE CONTROLS Type Identifier
+                            | NOTHING_TYPE CONTROLS Type Identifier EQUALS TerminalReturnable
+                            | Declaration
+                            '''
+
+    if (p[1] == TYPE_NOTHING):
+        # create an Identifier with controls as nothing
+        p[1] = AstNode(AST_IDENTIFIER,p.lineno(1),p.lexpos(1),p[1]);
+
+    p[0] = AstNode(AST_ANNOTATED_DECLARATION,p[1].lineNo,p[1].linePos);
+
+    if len(p) == 2:
+        # means that we do not have any annotation on the variable,
+        # ie, change it to Nothing Controls
+        declaration_node = p[1]
+        declared_type_node = declaration_node.children[0]
+        declared_name_node = declaration_node.children[1]
+
+        # create an Identifier with controls as nothing
+        nothing_controller_identifier_node = AstNode(
+            AST_IDENTIFIER,declaration_node.lineNo,
+            declaration_node.linePos,TYPE_NOTHING)
+
+        p[0].addChildren(
+            [nothing_controller_identifier_node,declared_type_node,
+             declared_name_node])
+
+        if len(declaration_node.children) == 3:
+            # means that there's some initializer that we need to add
+            initialization_node = declaration_node.children[2]
+            p[0].addChild(initialization_node)
+        
+        return
+    
+
+    p[0].addChildren([p[1],p[3],p[4]]);
+    
+    if (len(p) == 7):
+        #have an initialization statement to perform
+        p[0].addChild(p[6]);
+
+
+
+            
     
 
 def p_Type(p):
@@ -335,6 +760,7 @@ def p_StructType(p):
     '''
     p[0] = AstNode(AST_TYPE,p.lineno(1),p.lexpos(1),TYPE_STRUCT)
     p[0].addChild(p[2])
+
 
     
 # def p_ExtAssignForTuple(p):
@@ -732,57 +1158,6 @@ def p_Identifier(p):
 def p_Self(p):
     'Self : SELF'
     p[0] = AstNode(AST_SELF,p.lineno(1),p.lexpos(1))
-
-def p_EndpointSection(p):
-    '''EndpointSection : Identifier CURLY_LEFT EndpointBodySection CURLY_RIGHT
-                       | Identifier CURLY_LEFT CURLY_RIGHT'''
-    p[0] = AstNode(AST_ENDPOINT,p[1].lineNo,p[1].linePos);
-
-    p[0].addChild(p[1]);
-    if (len(p) == 5):
-        p[0].addChild(p[3]);
-    elif len(p) == 4:
-        # means that we had nothing defined in the endpoint create
-        # empty versions so that type checking gets what it expects.
-        bodySecChild = AstNode(AST_ENDPOINT_BODY_SECTION,p[1].lineNo,p[1].linePos);
-        bodyGlobSec = AstNode(AST_ENDPOINT_GLOBAL_SECTION,p[1].lineNo,p[1].linePos);
-        funcGlobSec = AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos);
-        bodySecChild.addChildren([bodyGlobSec,funcGlobSec]);
-        p[0].addChild(bodySecChild);
-
-
-def p_EndpointBodySection(p):
-    '''EndpointBodySection : EndpointGlobalSection EndpointFunctionSection
-                           | EndpointFunctionSection
-                           | EndpointGlobalSection
-                           '''
-
-    p[0] = AstNode(AST_ENDPOINT_BODY_SECTION,p[1].lineNo,p[1].linePos);
-    if (len(p) == 3):
-        p[0].addChildren([p[1],p[2]]);
-    elif len(p) == 2:
-        # check that had no globals, but had a function:
-        if p[1].label == AST_ENDPOINT_FUNCTION_SECTION:
-            # means that we had no globals.  add them
-            p[0].addChild(AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linePos));
-            p[0].addChild(p[1]);
-        else:
-            # menas that there were globals, but no functions.  add
-            # empty functions.
-            p[0].addChild(p[1]);
-            p[0].addChild(AstNode(AST_ENDPOINT_FUNCTION_SECTION,p[1].lineNo,p[1].linePos));
-    else:
-        errPrint('\nError in endpoint body section.  Got an unusual number of arguments.\n');
-        assert(False);
-    
-
-def p_EndpointGlobalSection(p):
-    '''EndpointGlobalSection : Declaration SEMI_COLON EndpointGlobalSection
-                             | Declaration SEMI_COLON'''
-    p[0] = AstNode(AST_ENDPOINT_GLOBAL_SECTION, p[1].lineNo,p[1].linePos);
-    p[0].addChild(p[1]);
-    if (len(p) == 4):
-        p[0].addChildren(p[3].getChildren());
 
 
 def p_Function(p):
@@ -1364,3 +1739,28 @@ class WaldoParseException(Exception):
    def __str__(self):
        return repr(self.value);
     
+
+
+def getParser(suppress_warnings,programText=None,outputErrsTo=sys.stderr):
+    global lexer;
+    lexer = constructLexer();
+
+    global ProgramText;
+    
+    if suppress_warnings:
+        returner = yacc.yacc(errorlog=yacc.NullLogger())
+    else:
+        returner = yacc.yacc()
+        
+    ProgramText = programText;
+
+    setOutputErrorsTo(outputErrsTo);
+    
+    return returner;
+
+
+def getErrorEncountered():
+    return astGetErrorEncountered();
+
+def resetErrorEncountered():
+    return astResetErrorEncountered();
