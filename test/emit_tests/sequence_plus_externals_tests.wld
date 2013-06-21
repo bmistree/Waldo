@@ -44,7 +44,7 @@ SideA
 
     Public Function test_seq_arg(Number amt_to_increment) returns Number,Number
     {
-        return start_arguments_check_exchange(num,amt_to_increment), num;
+        return arguments_check_exchange(num,amt_to_increment), num;
     }
 
     Public Function something(Number a)

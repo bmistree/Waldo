@@ -3,8 +3,8 @@ import sys,os,Queue, time, threading,test_util
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..',)
 sys.path.append(base_dir)
-from lib import wVariables, waldoEndpoint, waldoVariableStore
-from lib import util, waldoActiveEvent, waldoExecutingEvent, waldoCallResults
+from waldo.lib import wVariables, waldoEndpoint, waldoVariableStore
+from waldo.lib import util, waldoActiveEvent, waldoExecutingEvent, waldoCallResults
 
 '''
 Have two endpoints on the same host.  Testing:

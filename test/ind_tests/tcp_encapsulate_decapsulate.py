@@ -4,7 +4,7 @@ import os, sys, random,time
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..',)
 sys.path.append(base_dir)
-from lib import waldoConnectionObj
+from waldo.lib import waldoConnectionObj
 
 
 NUM_RANDOM_STRINGS = 100

@@ -9,7 +9,7 @@ base_dir = os.path.join(
 sys.path.append(base_dir)
 
 # contains Waldo utilities
-import lib.Waldo
+import waldo.lib.Waldo
 
 
 '''
@@ -19,7 +19,7 @@ Starts 100 threads to increment a shared atomic variable.
 def run_example():
 
     # create an AtomicInt "endpoint" with no partner
-    atomic_int = lib.Waldo.no_partner_create(AtomicInt, 0)
+    atomic_int = waldo.lib.Waldo.no_partner_create(AtomicInt, 0)
     
     all_threads = []
     for i in range(0,100):

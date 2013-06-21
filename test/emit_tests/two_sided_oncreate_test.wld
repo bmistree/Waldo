@@ -44,7 +44,7 @@ SideA
 
     Public Function read_b_text() returns Text
     {
-        return start_get_b_text();
+        return GetBText();
     }
     
 }

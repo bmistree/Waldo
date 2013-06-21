@@ -7,7 +7,7 @@ import sys,os,Queue
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..')
 sys.path.append(base_dir)
-from lib import Waldo
+from waldo.lib import Waldo
 
 
 '''

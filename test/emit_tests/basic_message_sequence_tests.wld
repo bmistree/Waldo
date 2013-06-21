@@ -93,13 +93,13 @@ SideA
 
     Public Function basic_exchange_test() returns Number
     {
-        start_basic_exchange();
+        basic_exchange();
         return peered_num;
     }
 
     Public Function extended_exchange_test() returns Number
     {
-        extended_1();
+        extended_exchange();
         return peered_num;
     }
 }

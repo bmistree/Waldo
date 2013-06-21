@@ -188,7 +188,7 @@ SideA
         Number arg_num, Text arg_text, TrueFalse arg_tf)
         returns Number, Text, TrueFalse
     {
-        start_arguments_check_exchange(arg_num,arg_text,arg_tf);
+        arguments_check_exchange(arg_num,arg_text,arg_tf);
         return read_peered_value_types();
     }
 
@@ -196,7 +196,7 @@ SideA
         Map(from: Text, to: Number) map_, Number to_increment_by)
         returns Number
     {
-        Number total_plus_increment = start_plus_equals_on_map_exchange(
+        Number total_plus_increment = plus_equals_on_map_exchange(
             map_,to_increment_by);
         return total_plus_increment;
     }
@@ -205,13 +205,13 @@ SideA
     Public Function returns_check()
         returns Number, Text, TrueFalse
     {
-        return start_returns_check_exchange();
+        return returns_check_exchange();
     }
 
     Public Function non_arg_return_seq_local_data_check()
         returns Number, Text
     {
-        return start_non_arg_return_seq_local_data_check_exchange();
+        return non_arg_return_seq_local_data_check_exchange();
     }
 
     Public Function arguments_check_references() returns TrueFalse
@@ -223,7 +223,7 @@ SideA
         List(element: Text) list_ = ['m','n','o'];
 
 
-        TrueFalse sequence_checks_passed = start_arguments_check_references_exchange(map_,list_);
+        TrueFalse sequence_checks_passed = arguments_check_references_exchange(map_,list_);
         
         
         // FIXME: the additional parens around sequence_checks_passed are
@@ -243,7 +243,7 @@ SideA
         Map(from: Number, to: Number) map_;
         List(element: Text) list_;
         
-        map_, list_ = start_returns_check_references_exchange();
+        map_, list_ = returns_check_references_exchange();
 
         Map(from: Number, to: Number) other_map;
         List(element: Text) other_list;
@@ -268,7 +268,7 @@ SideA
     Public Function return_reference_index(
         List(element:Number)l, Number index) returns Number
     {
-        return start_returns_single_reference_exchange(l)[index];
+        return returns_single_reference_exchange(l)[index];
     }
 
         

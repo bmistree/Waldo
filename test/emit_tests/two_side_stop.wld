@@ -1,0 +1,9 @@
+TwoSidedStop
+
+Symmetric SideA, SideB;
+
+SideA
+{
+    Public Function do_nothing()
+    {}
+}

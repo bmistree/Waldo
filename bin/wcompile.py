@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
-import sys;
-import os;
+import sys, os
 
 
-base_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..');
-sys.path.insert(0, base_path);
+base_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
+sys.path.insert(0, base_path)
 
-import parser
-import parser.ast.canonicalize as canonicalize
-from parser.ast.astBuilder_v2 import getParser as v2GetParser;
-from parser.ast.astBuilder_v2 import getErrorEncountered as v2GetErrorEncountered;
-from parser.ast.astBuilder_v2 import resetErrorEncountered as v2ResetErrorEncountered;
+import waldo.parser
+import waldo.parser.ast.canonicalize as canonicalize
+from waldo.parser.ast.astBuilder import getParser as v2GetParser
+from waldo.parser.ast.astBuilder import getErrorEncountered as v2GetErrorEncountered
+from waldo.parser.ast.astBuilder import resetErrorEncountered as v2ResetErrorEncountered
 
 def getParser(suppress_warnings,progText,outputErrsTo,versionNum):
     return v2GetParser(suppress_warnings,progText,outputErrsTo);
@@ -24,11 +23,11 @@ def resetErrorEncountered(versionNum):
 
 import re
 import json
-from emitters.v4Emit.emitter import ast_emit as v4Emit
+from waldo.emitters.v4Emit.emitter import ast_emit as v4Emit
 
 
-from parser.ast.astBuilderCommon import WaldoParseException;
-from lexer.waldoLex import WaldoLexException
+from waldo.parser.ast.astBuilder import WaldoParseException;
+from waldo.lexer.waldoLex import WaldoLexException
 
 
 def getEmitter(versionNum):
@@ -83,9 +82,9 @@ def genAst(progText,outputErrsTo,versionNum,suppress_warnings):
     @param {bool} suppress_warnings --- True if we tell the parser not
     to emit parsing warnings, False otherwise.
     '''
-    progText = stripWindowsLineEndings(progText);
-    parser = getParser(suppress_warnings,progText,outputErrsTo,versionNum);
-    astNode = parser.parse(progText);
+    progText = stripWindowsLineEndings(progText)
+    parser = getParser(suppress_warnings,progText,outputErrsTo,versionNum)
+    astNode = parser.parse(progText)
     if versionNum == 1:
         pass;
     elif (versionNum == 2) or (versionNum == 4): 
@@ -94,8 +93,7 @@ def genAst(progText,outputErrsTo,versionNum,suppress_warnings):
     else:
         print('\nError, no version information provided\n');
         assert(False);
-
-    return astNode,progText;
+    return astNode,progText
 
 def compileText(progText,outputErrStream,versionNum,suppress_warnings):
     '''
@@ -138,7 +136,7 @@ def lexAndParse(progText,outputErrStream,versionNum,suppress_warnings):
     except WaldoParseException as excep:
         print >> outputErrStream, excep.value;
         return None;
-    except parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
+    except waldo.parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
         print >> errOutputStream, excep.value;
         return None;
 
@@ -150,7 +148,7 @@ def lexAndParse(progText,outputErrStream,versionNum,suppress_warnings):
 
     try:
         astRootNode.typeCheck(progText);
-    except parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
+    except waldo.parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
         resetErrorEncountered(versionNum);
         return None;
 
@@ -179,7 +177,7 @@ def handleArgs(
     except WaldoParseException as excep:
         print >> errOutputStream, excep.value;
         return;
-    except parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
+    except waldo.parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
         print >> errOutputStream, excep.value;
         return;
     
@@ -201,7 +199,7 @@ def handleArgs(
         if(typeCheckArg):
             try:
                 astRootNode.typeCheck(fileText)
-            except parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
+            except waldo.parser.ast.typeCheck.typeCheckUtil.WaldoTypeCheckException as excep:
                 pass;
                 
         if (emitArg != None):

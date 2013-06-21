@@ -41,12 +41,12 @@ SideA
     
     Public Function get_other_val() returns Number
     {
-        return start_get();
+        return GetVal();
     }
 
     Public Function set_other_val(Number new_val) 
     {
-        start_set(new_val);
+        SetVal(new_val);
     }
     
 }

@@ -4,7 +4,7 @@ import os
 import sys
 import subprocess
 sys.path.append(
-    os.path.join('..','lib'))
+    os.path.join('..','waldo','lib'))
 
 
 
@@ -128,6 +128,9 @@ def run_emit_tests():
     import emit_tests.more_struct_tests
     import emit_tests.multiple_sequences
     import emit_tests.signal_tests
+    import emit_tests.single_side_stop
+    import emit_tests.two_side_stop
+    import emit_tests.two_side_stop_callbacks
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -214,6 +217,16 @@ def run_emit_tests():
 
         ('Tests signal code',
          emit_tests.signal_tests.run_test),
+
+        ('Tests single side stop',
+         emit_tests.single_side_stop.run_test),
+
+        ('Tests to ensure stop message sent to other side',
+          emit_tests.two_side_stop.run_test),
+
+        ('Tests to ensure fires stop callbacks',
+          emit_tests.two_side_stop_callbacks.run_test)
+        
         ]
 
     run_tests(emit_tests_to_run)
