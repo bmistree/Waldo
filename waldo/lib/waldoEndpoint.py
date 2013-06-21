@@ -648,7 +648,7 @@ class _Endpoint(object):
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_STOP
         general_message.stop.dummy = False
-        self._conn_obj.write(general_message.SerializeToString(),self)
+        self._conn_obj.write_stop(general_message.SerializeToString(),self)
 
         
     def add_stop_listener(self, to_exec_on_stop):
@@ -743,6 +743,10 @@ class _Endpoint(object):
         # FIXME: chance of getting deadlock if one of the stop
         # listeners tries to remove itself.
         self._stop_lock()
+        if self._stop_complete:
+            self._stop_unlock()
+            return
+        
         self._stop_complete = True
         self._stop_unlock()
 
@@ -775,7 +779,7 @@ class _Endpoint(object):
         # 3 from above
         t = threading.Thread(target = self.stop)
         t.start()
-
+        
         # 4 from above
         request_callback = self._partner_stop_called and self._stop_called
         

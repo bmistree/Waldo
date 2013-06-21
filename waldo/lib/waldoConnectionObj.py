@@ -16,6 +16,10 @@ class _WaldoConnectionObject(object):
         util.logger_assert(
             'Error write in _WaldoConnectionObject is pure ' +
             'virtual.')
+        
+    def write_stop(self,string_to_write,endpoint_writing):
+        util.logger_assert(
+            'Error write_stop in _WaldoConnectionObject is pure virtual')
 
     def close(self):
         pass
@@ -33,6 +37,10 @@ class _WaldoSingleSideConnectionObject(_WaldoConnectionObject):
         # other side's onCreate has completed
         self.endpoint._receive_partner_ready(None)
 
+    def write_stop(self,string_to_write,endpoint_writing):
+        # write same message back to self
+        self.endpoint._receive_msg_from_partner(string_to_write)
+        
     def write(self,to_write,endpoint_writing):
         pass
 
@@ -62,7 +70,10 @@ class _WaldoSameHostConnectionObject(_WaldoConnectionObject,threading.Thread):
             self.start()
 
         self.endpoint_mutex.release()
-            
+
+    def write_stop(self,string_to_write,endpoint_writing):
+        # write same message back to self
+        self.queue.put( ( string_to_write , endpoint_writing ))
 
     def write(self,msg,endpoint):
         self.queue.put((msg,endpoint))
@@ -194,8 +205,12 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         # recurse in case received more than two messages worth of
         # information simultaneously.
         self._decapsulate_msg_and_dispatch()
-        
 
+    def write_stop(self,string_to_write,endpoint_writing):
+        # write same message back to self
+        self.write(string_to_write,endpoint_writing)
+        
+        
     def write(self,msg_str_to_write,sender_endpoint_obj):
         '''
         @param {String} msg_str_to_write

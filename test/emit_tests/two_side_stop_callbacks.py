@@ -55,8 +55,8 @@ def run_test():
     time.sleep(1)
 
     if sidea_stop_counter != 1:
-        print sidea_stop_counter
         return False
+    
     if sideb_stop_counter != 3:
         return False
 

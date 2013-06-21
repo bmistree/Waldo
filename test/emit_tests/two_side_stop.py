@@ -27,7 +27,6 @@ def run_test():
 
     sidea = sidea_wait_queue.get()
 
-
     sidea.do_nothing()
     sideb.do_nothing()
 
