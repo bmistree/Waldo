@@ -1,6 +1,4 @@
 import threading
-import logging
-import util
 
 class _DeadlockDetector(object):
     '''
@@ -38,11 +36,6 @@ class _DeadlockDetector(object):
         #               }
         #       }
         self.other_event_hosts = {}
-
-        self.logging_info = {
-            'mod': 'DeadlockDetector',
-            'endpoint_string': self.root_active_event.local_endpoint._endpoint_uuid_str
-            }
         
         
     # FIXME: may not need locks in this class if will always be used
@@ -50,15 +43,10 @@ class _DeadlockDetector(object):
     # subscription is not.)
         
     def _lock(self):
-        if __debug__:
-            util.lock_log('Acquire in deadlock detector ' + str(self.mutex))
         self.mutex.acquire()
-        if __debug__:
-            util.lock_log('Has acquired in deadlock detector ' + str(self.mutex))
+
     def _unlock(self):
         self.mutex.release()
-        if __debug__:
-            util.lock_log('Released in deadlock detector ' + str(self.mutex))
         
 
     def _potential_deadlock(self,subscriber_uuid):

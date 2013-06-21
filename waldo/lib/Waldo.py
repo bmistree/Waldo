@@ -1,4 +1,4 @@
-import sys,os,threading,logging
+import sys,os,threading
 
 # pickup local dependencies instead of system dependencies.
 deps_dir = os.path.join(
@@ -50,44 +50,9 @@ _waldo_classes = {
     'ExecutingEventContext': waldoExecutingEvent._ExecutingEventContext,
     'VariableStore': waldoVariableStore._VariableStore,
     'BackoutException': util.BackoutException,
-    'StoppedException': util.StoppedException,
-    
-    'logger': util.get_logger(),
+    'StoppedException': util.StoppedException
     }
 
-def _setup_logging():
-    '''
-    Internal function.  Not to be used by programmer.
-    '''
-    DEFAULT_LOG_FILENAME = 'log.txt'
-    DEFAULT_LOGGING_LEVEL = logging.CRITICAL
-    
-    format_ = (
-        '%(levelname)s : %(asctime)s.%(msecs)f: %(endpoint_string)s : %(mod)s \n     %(message)s')
-        # '%(levelname)s : %(asctime)s.%(msecs).03d: %(endpoint_string)s : %(mod)s \n     %(message)s')
-    logging.basicConfig(
-        format=format_, filename=DEFAULT_LOG_FILENAME, level=DEFAULT_LOGGING_LEVEL,
-        datefmt='%I:%M:%S')
-
-    util.get_logger().critical(
-        '***** New *****', extra={'mod': 'NEW', 'endpoint_string': 'NEW'})
-
-    util.lock_log('***** New *****')
-
-    
-_setup_logging()
-    
-def set_logging_level(level):
-    '''
-    Programmer can set level of logging he/she desires.  Note: mostly used
-    internally for compiler development.
-
-    Args: 
-      level (int): See Python's internal logging module.
-      Options are logging.CRITICAL, logging.INFO, logging.DEBUG, etc.    
-    '''
-
-    util.get_logger().setLevel(level)
     
 
 def tcp_connect(constructor,host,port,*args):
