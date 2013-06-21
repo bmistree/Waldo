@@ -9,7 +9,7 @@ from waldo.lib import Waldo
 from two_side_stop_v4 import SideA,SideB
 
 SIDEA_HOST = '127.0.0.1'
-SIDEA_PORT = 6961
+SIDEA_PORT = 6964
 
 sidea_wait_queue = Queue.Queue()
 

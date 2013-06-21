@@ -128,10 +128,29 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
 
     def _start_listening_loop(self):
         while 1:
-            data = self.sock.recv(1024)
-            self.received_data += data
-            self._decapsulate_msg_and_dispatch()
+            try:
+                data = self.sock.recv(1024)
+                if not data:
+                    # socket closed: note: may want to catch this error to
+                    # ensure it happened because close had been called
+                    break
 
+                self.received_data += data
+                self._decapsulate_msg_and_dispatch()
+            except:
+                # FIXME:
+                
+                # also catching a bad file descriptor error on server
+                # after close connection.  Unclear why that wasn't
+                # caught in the receive loop under if not data???
+
+                # FIXME: may also want to check to ensure that the
+                # error was raised after close was called so that we
+                # know whether to throw separate partition error.
+                break
+        
+
+        
 
     @staticmethod
     def _encapsulate_msg_str(str_to_escape):
@@ -181,7 +200,11 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
 
         return msg, rest_of_msg
         
-
+    def close(self):
+        '''
+        Actually close the socket
+        '''
+        self.sock.close()
         
     def _decapsulate_msg_and_dispatch(self):
         '''
@@ -320,6 +343,7 @@ class _TCPAcceptThread(threading.Thread):
 
         
     def run(self):
+        
         sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         # turn off Nagle's
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -341,7 +365,6 @@ class _TCPAcceptThread(threading.Thread):
 
                 conn, addr = sock.accept()
                 tcp_conn_obj = _WaldoTCPConnectionObj(None,None,conn)
-
                 created_endpoint = self.endpoint_constructor(
                     self.waldo_classes,self.host_uuid,tcp_conn_obj,*self.args)
 
