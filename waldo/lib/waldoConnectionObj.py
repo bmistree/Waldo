@@ -1,6 +1,7 @@
 import util
 from util import Queue
 import threading
+import thread
 import socket
 import struct
 
@@ -367,10 +368,10 @@ class _TCPAcceptThread(threading.Thread):
                 tcp_conn_obj = _WaldoTCPConnectionObj(None,None,conn)
                 created_endpoint = self.endpoint_constructor(
                     self.waldo_classes,self.host_uuid,tcp_conn_obj,*self.args)
-
+					
                 if self.cb != None:
-                    self.cb(created_endpoint)
-
+                    thread.start_new_thread(self.cb, (created_endpoint,))
+				
                 if self.stoppable.is_stopped():
                     break
                     

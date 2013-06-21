@@ -2481,7 +2481,7 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
 
     
     if not isValueType(un_function_called_index_type):
-        errMsg = '\nYou can only index into a map using Text, Numer, ';
+        errMsg = '\nYou can only index into a map using Text, TrueFalse, ';
         errMsg += 'or Number.  Instead, your index has type '
         errMsg += dict_type_to_str(un_function_called_index_type) + '.\n';
         astErrorNodes = [ index ];
