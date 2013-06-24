@@ -381,10 +381,7 @@ class WaldoMapVariable(_WaldoExternalVariable):
         elif isinstance(init_val, InternalMap):
             pass
         elif isinstance(init_val, SingleThreadInternalMap):
-            # FIXME: need to handle non-single thread initializers in
-            # single thread map variable.
-            util.logger_assert(
-                'FIXME: single thread internal map received in map variable')
+            init_val = recursive_map_list(init_val.val,name,host_uuid,peered,True)
         else:
             init_val = recursive_map_list(init_val,name,host_uuid,peered,True)
             init_val = init_val.get_val(None)
@@ -500,10 +497,7 @@ class WaldoListVariable(_WaldoExternalVariable):
         elif isinstance(init_val, InternalList):
             pass
         elif isinstance(init_val, SingleThreadInternalList):
-            # FIXME: need to handle non-single thread initializers in
-            # single thread map variable.
-            util.logger_assert(
-                'FIXME: single thread internal list received in list variable')
+            init_val = recursive_map_list(init_val.val,name,host_uuid,peered,True)
         else:
             init_val = recursive_map_list(init_val,name,host_uuid,peered,True)
             init_val = init_val.get_val(None)
@@ -828,10 +822,7 @@ class WaldoSingleThreadMapVariable(_WaldoSingleThreadExternalVariable):
             init_val = recursive_map_list({},name,host_uuid,peered,False)
             init_val = init_val.get_val(None)
         elif isinstance(init_val, InternalMap):
-            # FIXME: need to handle non-single thread initializers in
-            # single thread map variable.
-            util.logger_assert(
-                'FIXME: internal map received in single thread map variable')
+            pass
         elif isinstance(init_val, SingleThreadInternalMap):
             pass
         else:
@@ -932,15 +923,12 @@ class WaldoSingleThreadMapVariable(_WaldoSingleThreadExternalVariable):
 class WaldoSingleThreadListVariable(_WaldoSingleThreadExternalVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         # see comments in recursive_map_list
-        if init_val == None:
+        if init_val is None:
             init_val = recursive_map_list([],name,host_uuid,peered,False)
             init_val = init_val.get_val(None)
 
         elif isinstance(init_val, InternalList):
-            # FIXME: need to handle non-single thread initializers in
-            # single thread map variable.
-            util.logger_assert(
-                'FIXME: internal map received in single thread map variable')
+            pass
         elif isinstance(init_val, SingleThreadInternalList):
             pass
         else:

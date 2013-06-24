@@ -289,11 +289,11 @@ def create_wvariables_array(
         if TypeCheck.templateUtil.is_struct(decl_node.type):
             var_declaration,var_name = emit_statement.struct_rhs_declaration(
                 decl_node,host_uuid_var_name,peered,
-                endpoint_name,ast_root,fdep_dict,emit_ctx)
+                endpoint_name,ast_root,fdep_dict,emit_ctx,True)
         else:
             var_declaration,var_name = emit_statement.non_struct_rhs_declaration(
                 decl_node,host_uuid_var_name,peered,
-                endpoint_name,ast_root,fdep_dict,emit_ctx)
+                endpoint_name,ast_root,fdep_dict,emit_ctx,True)
 
         wvar_load_text += '''
 self._global_var_store.add_var(

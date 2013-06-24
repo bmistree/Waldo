@@ -36,6 +36,16 @@ _waldo_classes = {
     'WaldoExtNumVariable': wVariables.WaldoExtNumVariable,
     'WaldoExtTrueFalseVariable': wVariables.WaldoExtTrueFalseVariable,
     'WaldoExtTextVariable': wVariables.WaldoExtTextVariable,
+
+    # single thread variables
+    'WaldoSingleThreadNumVariable': wVariables.WaldoSingleThreadNumVariable,
+    'WaldoSingleThreadTextVariable': wVariables.WaldoSingleThreadTextVariable,
+    'WaldoSingleThreadTrueFalseVariable': wVariables.WaldoSingleThreadTrueFalseVariable,
+    'WaldoSingleThreadMapVariable': wVariables.WaldoSingleThreadMapVariable,
+    'WaldoSingleThreadListVariable': wVariables.WaldoSingleThreadListVariable,
+    'WaldoSingleThreadUserStructVariable': wVariables.WaldoSingleThreadUserStructVariable,
+    'WaldoSingleThreadEndpointVariable': wVariables.WaldoSingleThreadEndpointVariable,
+    
     
     # call results
     'CompleteRootCallResult': waldoCallResults._CompleteRootCallResult,

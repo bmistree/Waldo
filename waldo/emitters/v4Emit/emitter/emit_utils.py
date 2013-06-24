@@ -195,11 +195,14 @@ def is_endpoint_method_call(node):
     return False
 
 
-def get_var_type_txt_from_type_dict(var_type_dict):
+def get_var_type_txt_from_type_dict(var_type_dict,multithreaded=True):
     '''
     @param {dict} var_type_dict --- Gotten from an AstNode's .type
     field.
 
+    @param {bool} multithreaded --- True if the variable we are
+    creating may be accessed by multiple threads.  False otherwise.
+    
     @returns {2-tuple} (a,b)
 
         a{String} --- The translated name of the constructor for the
@@ -210,46 +213,89 @@ def get_var_type_txt_from_type_dict(var_type_dict):
     '''
     is_func = False
     
-    # FIXME: still need to add entries for function, endpoint, and
-    # user struct types.
-    if TypeCheck.templateUtil.is_number(var_type_dict):
-        if TypeCheck.templateUtil.is_external(var_type_dict):
-            variable_type_str = library_transform('WaldoExtNumVariable')
-        else:
-            variable_type_str = library_transform('WaldoNumVariable')
-    elif TypeCheck.templateUtil.is_true_false(var_type_dict):
-        if TypeCheck.templateUtil.is_external(var_type_dict):
-            variable_type_str = library_transform('WaldoExtTrueFalseVariable')
-        else:
-            variable_type_str = library_transform('WaldoTrueFalseVariable')
-    elif TypeCheck.templateUtil.is_text(var_type_dict):
-        if TypeCheck.templateUtil.is_external(var_type_dict):
-            variable_type_str = library_transform('WaldoExtTextVariable')
-        else:
-            variable_type_str = library_transform('WaldoTextVariable')
 
-    elif TypeCheck.templateUtil.is_basic_function_type(var_type_dict):
-        is_func = True
-        
-        if TypeCheck.templateUtil.is_external(var_type_dict):
+    if multithreaded:
+        if TypeCheck.templateUtil.is_number(var_type_dict):
+            if TypeCheck.templateUtil.is_external(var_type_dict):
+                variable_type_str = library_transform('WaldoExtNumVariable')
+            else:
+                variable_type_str = library_transform('WaldoNumVariable')
+        elif TypeCheck.templateUtil.is_true_false(var_type_dict):
+            if TypeCheck.templateUtil.is_external(var_type_dict):
+                variable_type_str = library_transform('WaldoExtTrueFalseVariable')
+            else:
+                variable_type_str = library_transform('WaldoTrueFalseVariable')
+        elif TypeCheck.templateUtil.is_text(var_type_dict):
+            if TypeCheck.templateUtil.is_external(var_type_dict):
+                variable_type_str = library_transform('WaldoExtTextVariable')
+            else:
+                variable_type_str = library_transform('WaldoTextVariable')
+
+        elif TypeCheck.templateUtil.is_basic_function_type(var_type_dict):
+            is_func = True
+
+            if TypeCheck.templateUtil.is_external(var_type_dict):
+                emit_assert(
+                    'Have not yet begun emitting for external function objects')
+            else:
+                variable_type_str = library_transform('WaldoFunctionVariable')
+
+        elif TypeCheck.templateUtil.isListType(var_type_dict):
+            variable_type_str = library_transform('WaldoListVariable')
+        elif TypeCheck.templateUtil.isMapType(var_type_dict):
+            variable_type_str = library_transform('WaldoMapVariable')
+        elif TypeCheck.templateUtil.is_endpoint(var_type_dict):
+            variable_type_str = library_transform('WaldoEndpointVariable')
+
+        #### DEBUG
+        else:
             emit_assert(
-                'Have not yet begun emitting for external function objects')
-        else:
-            variable_type_str = library_transform('WaldoFunctionVariable')
-
-    elif TypeCheck.templateUtil.isListType(var_type_dict):
-        variable_type_str = library_transform('WaldoListVariable')
-    elif TypeCheck.templateUtil.isMapType(var_type_dict):
-        variable_type_str = library_transform('WaldoMapVariable')
-    elif TypeCheck.templateUtil.is_endpoint(var_type_dict):
-        variable_type_str = library_transform('WaldoEndpointVariable')
-        
-    #### DEBUG
+                'Unknown type in create_wvariables_array')
+        #### END DEBUG
     else:
-        emit_assert(
-            'Unknown type in create_wvariables_array')
-    #### END DEBUG
+        # single multithreaded
 
+        # FIXME: still using multithreaded ext num, ext text, ext tf, func
+        
+        if TypeCheck.templateUtil.is_number(var_type_dict):
+            if TypeCheck.templateUtil.is_external(var_type_dict):
+
+                variable_type_str = library_transform('WaldoExtNumVariable')
+            else:
+                variable_type_str = library_transform('WaldoSingleThreadNumVariable')
+        elif TypeCheck.templateUtil.is_true_false(var_type_dict):
+            if TypeCheck.templateUtil.is_external(var_type_dict):
+                variable_type_str = library_transform('WaldoExtTrueFalseVariable')
+            else:
+                variable_type_str = library_transform('WaldoSingleThreadTrueFalseVariable')
+        elif TypeCheck.templateUtil.is_text(var_type_dict):
+            if TypeCheck.templateUtil.is_external(var_type_dict):
+                variable_type_str = library_transform('WaldoExtTextVariable')
+            else:
+                variable_type_str = library_transform('WaldoSingleThreadTextVariable')
+
+        elif TypeCheck.templateUtil.is_basic_function_type(var_type_dict):
+            is_func = True
+
+            if TypeCheck.templateUtil.is_external(var_type_dict):
+                emit_assert(
+                    'Have not yet begun emitting for external function objects')
+            else:
+                variable_type_str = library_transform('WaldoFunctionVariable')
+
+        elif TypeCheck.templateUtil.isListType(var_type_dict):
+            variable_type_str = library_transform('WaldoSingleThreadListVariable')
+        elif TypeCheck.templateUtil.isMapType(var_type_dict):
+            variable_type_str = library_transform('WaldoSingleThreadMapVariable')
+        elif TypeCheck.templateUtil.is_endpoint(var_type_dict):
+            variable_type_str = library_transform('WaldoSingleThreadEndpointVariable')
+
+        #### DEBUG
+        else:
+            emit_assert(
+                'Unknown type in create_wvariables_array')
+        #### END DEBUG
+            
     return variable_type_str,is_func
         
 def is_method_call(node):
