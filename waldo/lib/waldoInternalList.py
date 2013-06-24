@@ -15,16 +15,20 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         waldoReferenceContainerBase._ReferenceContainer.__init__(
             self,host_uuid,peered,init_val,_InternalListVersion(),
             _InternalListDirtyMapElement)
-    
+
     def add_key(self,invalid_listener,key,new_val):
         util.logger_assert('Cannot call add_key on a list')
 
     def get_keys(self,invalid_listener):
         util.logger_assert('Cannot call get_keys on a list')
-        
+
     @staticmethod
     def var_type():
         return 'internal list'
+
+    def get_val_on_key(self,invalid_listener,key):
+        key = int(key)
+        return super(InternalList, self).get_val_on_key(invalid_listener,key)
 
     def de_waldoify(self,invalid_listener):
         '''
@@ -36,9 +40,9 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             val = self.get_val_on_key(invalid_listener,index)
             de_waldoed_val = waldoExecutingEvent.de_waldoify(
                 val, invalid_listener)
-            
+
             to_return.append(de_waldoed_val)
-            
+
         return to_return
 
     def contains_val_called(self,invalid_listener,val):
@@ -47,7 +51,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         equal to val.  (Note == will only work with value types.)
         '''
         found = False
-        
+
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_elem = self._dirty_map[invalid_listener.uuid]
@@ -73,26 +77,26 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
             self.write_val_on_key(
                 invalid_listener,
                 i,self.get_val_on_key(invalid_listener,i-1))
-            
+
         self.write_val_on_key(invalid_listener,index,val)
 
     def get_write_key_incorporate_deltas(self,container_written_action):
         return int(container_written_action.write_key_num)
 
     def get_add_key_incorporate_deltas(self,container_added_action):
-        return int(container_added_action.added_key_num)    
+        return int(container_added_action.added_key_num)
 
     def get_delete_key_incorporate_deltas(self,container_deleted_action):
         return int(container_deleted_action.deleted_key_num)
-    
+
     def handle_added_key_incorporate_deltas(
         self,active_event,index_to_add_to,new_val):
         self.insert_into(active_event,index_to_add_to,new_val,False)
-    
+
     def contains_key(self,invalid_listener, key):
         util.logger_assert(
             'Cannot call contains_key on list')
-        
+
     def append_val(self,invalid_listener,new_val):
         '''
         When we append, we insert at the end of the list.
@@ -103,7 +107,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         dirty_elem = self._dirty_map[invalid_listener.uuid]
         dirty_elem.append_val(new_val,invalid_listener,self.peered,True)
         if self.peered:
-            invalid_listener.add_peered_modified()        
+            invalid_listener.add_peered_modified()
         self._unlock()
 
     def copy(self,invalid_listener,peered,multi_threaded):
@@ -116,14 +120,14 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         @param {bool} multi_threaded --- Do we need to use locking on
         the object.  Ie., can the object be accessed from multiple
         threads simultaneously?  (True if yes, False if no.)
-        
+
         Returns a deep copy of the object.
         '''
-        
+
         # will be used as initial_val when constructing copied
         # InternalMap that we return.
         new_internal_val = []
-        
+
         # a peered internal map may point to values or it may point to
         # _ReferenceContainers.  (It may not point to non
         # _ReferenceContainer _WaldoObjects because we disallow
@@ -134,7 +138,7 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
         if invalid_listener.uuid in self._dirty_map:
             self_to_copy = False
             val_to_copy = self._dirty_map[invalid_listener.uuid].val
-            
+
         # if copying from internal: stay within the lock so that
         # nothing else can write to internal while we are.
         if not self_to_copy:
@@ -155,18 +159,18 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
                     to_copy = to_copy.get_val(invalid_listener)
                 else:
                     to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
-                
+
             new_internal_val.append(to_copy)
-            
+
         if self_to_copy:
             self._unlock()
 
         return InternalList(self.host_uuid,peered,new_internal_val)
 
-    
+
 
 class _InternalListDirtyMapElement(
-    waldoReferenceContainerBase._ReferenceContainerDirtyMapElement):    
+    waldoReferenceContainerBase._ReferenceContainerDirtyMapElement):
 
     def add_key(self,key,new_val,invalid_listener):
         util.logger_assert(
@@ -177,9 +181,9 @@ class _InternalListDirtyMapElement(
         if not self.written_at_least_once:
             self.written_at_least_once = True
             self.val = self.waldo_reference._non_waldo_copy()
-        
+
         del self.val[key]
-        
+
     def append_val(self,new_val,invalid_listener,peered,multi_threaded):
         # adding key at end.
         self.version_obj.add_key(len(self.val))
@@ -197,7 +201,7 @@ class _InternalListDirtyMapElement(
 
             elif isinstance(
                 new_val,waldoReferenceBase._ReferenceBase):
-                
+
                 if new_val.is_value_type():
                     new_val = new_val.get_val(invalid_listener)
                 else:
@@ -206,13 +210,13 @@ class _InternalListDirtyMapElement(
         if not self.written_at_least_once:
             self.written_at_least_once = True
             self.val = self.waldo_reference._non_waldo_copy()
-                    
+
         self.val.append(new_val)
 
-        
+
 class _InternalListVersion(
     waldoReferenceContainerBase._ReferenceContainerVersion):
-    
+
     def del_key(self,to_del):
         util.logger_assert(
             'Cannot call del_key on list.  Use del_key_list instead.')
@@ -229,7 +233,7 @@ class _InternalListVersion(
         '''
         When we delete an element:
           * add a delete on del_index
-          
+
           * make a write from all elements from del_index until
             length_of_list_before_del - 1.  This is because when you
             delete a value from the middle of a list all the other
@@ -240,10 +244,10 @@ class _InternalListVersion(
 
         # FIXME: should only append to change log if peered.
         self.partner_change_log.append(delete_key_tuple(del_index))
-        
+
         for shifted_write_index in range(del_index,length_of_list_before_del):
             self.deleted_keys[shifted_write_index] = self.commit_num
-            
+
 
     def add_all_data_to_delta_list(
         self,delta_to_add_to,current_internal_val,action_event):
@@ -255,7 +259,7 @@ class _InternalListVersion(
             list_action = delta_to_add_to.list_actions.add()
 
             list_action.container_action = VarStoreDeltas.ContainerAction.ADD_KEY
-            
+
             add_action = list_action.added_key
             add_action.parent_type = VarStoreDeltas.CONTAINER_ADDED
             add_action.added_key_num = key
@@ -275,7 +279,7 @@ class _InternalListVersion(
 
                 list_val.serializable_var_tuple_for_network(
                     add_action,'',action_event,True)
-            
+
 
     def add_to_delta_list(self,delta_to_add_to,current_internal_val,action_event):
         '''
@@ -284,22 +288,22 @@ class _InternalListVersion(
         @param {list} current_internal_val --- The internal val of the action event.
 
         @param {_InvalidationListener} action_event
-        
+
         @returns {bool} --- Returns true if have any changes to add false otherwise.
         '''
         modified_indices = {}
-        
+
         changes_made = False
-        
+
         # FIXME: only need to keep track of change log for peered
         # variables.  May be expensive to otherwise.
         for partner_change in self.partner_change_log:
             changes_made = True
-            
+
             # FIXME: no need to transmit overwrites.  but am doing
             # that currently.
             list_action = delta_to_add_to.list_actions.add()
-            
+
             if is_delete_key_tuple(partner_change):
                 list_action.container_action = VarStoreDeltas.ContainerAction.DELETE_KEY
                 delete_action = list_action.deleted_key
@@ -307,11 +311,11 @@ class _InternalListVersion(
                 modified_indices[key] = True
                 delete_action.deleted_key_num = key
 
-                
+
             elif is_add_key_tuple(partner_change):
                 key = partner_change[1]
                 modified_indices[key] = True
-                
+
                 if key < len(current_internal_val):
                     # note, key may not be in internal val, for
                     # instance if we had deleted it after adding.
@@ -334,12 +338,12 @@ class _InternalListVersion(
 
                     elif isinstance(
                         list_val,waldoReferenceBase._ReferenceBase):
-                        
+
                         list_val.serializable_var_tuple_for_network(
                             add_action,'',action_event,
                             # true here because if anything is written
                             # or added, then we must force the entire
-                            # copy of it.                            
+                            # copy of it.
                             True)
 
                     #### DEBUG
@@ -350,11 +354,11 @@ class _InternalListVersion(
             elif is_write_key_tuple(partner_change):
                 key = partner_change[1]
                 modified_indices[key] = True
-                
+
                 if key < len(current_internal_val):
                     list_action.container_action = VarStoreDeltas.ContainerAction.WRITE_VALUE
                     write_action = list_action.write_key
-                    
+
                     write_action.parent_type = VarStoreDeltas.CONTAINER_WRITTEN
                     write_action.write_key_num = key
 
@@ -371,7 +375,7 @@ class _InternalListVersion(
                             write_action,'',action_event,
                             # true here because if anything is written
                             # or added, then we must force the entire
-                            # copy of it.                            
+                            # copy of it.
                             True)
 
                     #### DEBUG
@@ -379,7 +383,7 @@ class _InternalListVersion(
                         util.logger_assert('Unknown list type')
                     #### END DEBUG
 
-                        
+
             #### DEBUG
             else:
                 util.logger_assert('Unknown container operation')
@@ -390,24 +394,23 @@ class _InternalListVersion(
 
             if not isinstance(list_val,waldoReferenceBase._ReferenceBase):
                 break
-            
+
             if index not in modified_indices:
                 # create action
                 sub_element_action = delta_to_add_to.sub_element_update_actions.add()
                 sub_element_action.parent_type = VarStoreDeltas.SUB_ELEMENT_ACTION
 
                 sub_element_action.key_num = index
-                
+
                 if map_val.serializable_var_tuple_for_network(sub_element_action,'',action_event,False):
                     changes_made = True
                 else:
                     # no change made to subtree: go ahead and delete added subaction
                     del delta_to_add_to.sub_element_update_actions[-1]
-                
+
 
         # clean out change log: do not need to re-send updates for
         # these changes to partner, so can just reset after sending
         # once.
         self.partner_change_log = []
         return changes_made
-
