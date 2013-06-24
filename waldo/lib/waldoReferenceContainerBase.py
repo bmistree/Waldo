@@ -228,11 +228,6 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._unlock()
         return dirty_val
 
-
-# FIXME: not actually correct if turning a single threaded object into
-# a multi-threaded object, must change that too.  probably the best
-# time to do this is during commit.
-
     
     def write_val_on_key(
         self,invalid_listener,key,new_val,copy_if_peered=True,multi_threaded=True):
@@ -452,7 +447,13 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                         # that case, we cannot delete it.
                         del w_obj.val[field_to_update]
                 else:
-                    w_obj.val[field_to_update] = val[field_to_update]
+                    if isinstance(
+                        val[field_to_update],_SingleThreadReferenceContainer):
+
+                        w_obj.val[field_to_update] = (
+                            val[field_to_update].promote_multithreaded(self.peered))
+                    else:
+                        w_obj.val[field_to_update] = val[field_to_update]
 
                     
         elif isinstance(val,list):
@@ -477,8 +478,14 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     # this is fine.
                     to_append = [None]*num_elements_to_append
                     w_obj.val += to_append
-                
-                w_obj.val[field_to_update] = val[field_to_update]
+
+                if isinstance(
+                    val[field_to_update],_SingleThreadReferenceContainer):
+
+                    w_obj.val[field_to_update] = (
+                        val[field_to_update].promote_multithreaded(self.peered))
+                else:
+                    w_obj.val[field_to_update] = val[field_to_update]
 
 
     def copy(self):
@@ -847,10 +854,35 @@ class _SingleThreadReferenceContainer(
     def __init__(
         self,host_uuid,peered,init_val,version_obj):
 
+        self.multithreaded = None
+        
         singleThreadReference._SingleThreadReferenceBase.__init__(
             self,host_uuid,peered,init_val,version_obj)
 
         
+
+    def promote_multithreaded(self,peered):
+        '''
+        Whenever we assign a single threaded variable, A, into a
+        multithreaded variable, B, we need to "promote" the single
+        threaded variable to be a multithreaded variable.  This is so
+        that reads/writes to A.B from multiple threads do not cause
+        read-write conflicts.
+
+        This method returns a multithreaded version of this variable
+        containing the same data within it.
+
+        Importantly, it does not genearte a new multithreaded version
+        of itself each time.  This is to account for assigning the
+        same single threaded variable to more than one multithreaded
+        connection.
+        '''
+
+        util.logger_assert(
+            'In Waldo single threaded container, promote_multithreaded ' +
+            'is pure virtual.  Must overload.')
+        
+    
     def get_val(self,invalid_listener):
         util.logger_assert(
             'In WaldoValueContainer, get_val disallowed.')

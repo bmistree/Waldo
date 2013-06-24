@@ -24,10 +24,9 @@ class _SingleThreadReferenceBase(WaldoObj):
         self.version_obj = version_obj        
         self.peered = peered
 
-
     def is_peered(self):
         return self.peered
-        
+    
     def serializable_var_tuple_for_network(
         self,parent_delta,var_name,invalid_listener,force):
         '''

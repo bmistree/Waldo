@@ -29,7 +29,9 @@ class _WaldoSingleThreadVariable(_SingleThreadReferenceValue):
         util.logger_assert(
             'Cannot call pure virtual method var_type ' +
             'on _WaldoSingleThreadVariable.')        
-    
+
+
+        
 class _WaldoVariable(_ReferenceValue):
     def __init__(self,name,host_uuid,peered,init_val):
         self.name = name
@@ -73,6 +75,7 @@ class WaldoSingleThreadEndpointVariable(_WaldoSingleThreadVariable):
     def de_waldoify(self,invalid_listener):
         return self.get_val(invalid_listener)
 
+    
 class WaldoEndpointVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)

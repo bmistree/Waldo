@@ -407,6 +407,18 @@ class SingleThreadInternalMap(
     def de_waldoify(self,invalid_listener):
         return _map_de_waldoify(self,invalid_listener)
 
+
+    def promote_multithreaded(self,peered):
+        '''
+        @see promote_multithreaded in waldoReferenceContainerBase.py
+        '''
+        if self.multithreaded is None:
+            self.multithreaded = InternalMap(
+                self.host_uuid,peered,self.val)
+            
+        return self.multithreaded
+
+    
     @staticmethod
     def var_type():
         return 'single thread internal map'
