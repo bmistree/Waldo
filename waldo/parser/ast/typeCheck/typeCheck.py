@@ -1317,7 +1317,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             if func_name_node.label in [AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT]:
                 if len(func_arg_list_node.children) != 1:
-                    which_func = 'append' if node.label == AST_APEND_STATEMENT else 'remove'
+                    which_func = 'append' if node.label == AST_APPEND_STATEMENT else 'remove'
 
                     err_msg = 'Error when calling ' + which_func + '.  '
                     err_msg += which_func + ' takes 1 argument.  You '
