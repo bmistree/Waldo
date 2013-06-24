@@ -131,7 +131,8 @@ def run_emit_tests():
     import emit_tests.single_side_stop
     import emit_tests.two_side_stop
     import emit_tests.two_side_stop_callbacks
-    
+
+
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
          emit_tests.set_get_value_test.run_test),

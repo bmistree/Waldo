@@ -4,6 +4,7 @@ import threading
 import thread
 import socket
 import struct
+import ssl
 
 
 class _WaldoConnectionObject(object):
@@ -246,8 +247,36 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         msg_str_to_send = self._encapsulate_msg_str(msg_str_to_write)
         self.sock.sendall(msg_str_to_send)
 
-
+class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
+    HEADER_LEN_OCTETS = 4
+    def __init__(self, dst_host, dst_port, sock=None, cfile=None, key=None):
+        '''
+        Either dst_host + dst_port are None or sock is None.
         
+        @param {socket} sock --- If not passed in a socket, then
+        create a new connection to dst_host, dst_port.
+        '''
+
+        if sock == None:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            self.sock = ssl.wrap_socket(self.sock,
+                           certfile=cfile,
+                           keyfile=key,
+                           ca_certs=None)
+            self.sock.connect((dst_host,int(dst_port)))
+
+            
+        else:
+            self.sock = sock
+            self.sock = ssl.wrap_socket(self.sock,
+                           certfile=cfile,
+                           keyfile=key)
+
+        self.sock.setblocking(1)
+        self.received_data = b''
+        self.local_endpoint = None
+
 class _TCPListeningStoppable(object):
     '''
     Need a way to escape from listening for TCP connections.  Every
@@ -286,6 +315,106 @@ class _TCPListeningThread(threading.Thread):
         
     def run(self):
         self.tcp_connection_object._start_listening_loop()
+
+class _STCPAcceptThread(threading.Thread):
+
+    def __init__(
+        self, stoppable, endpoint_constructor, waldo_classes, host_listen_on,
+        port_listen_on, cb, host_uuid, synchronization_listening_queue, certfile, keyfile, ca_certs,
+        *args):
+        '''
+        @param{_TCPListeningStoppable object} stoppable --- Every 1s,
+        breaks out of listening for new connections and checks if
+        should stop waiting on connections.
+        
+        @param{function}endpoint_constructor --- An _Endpoint object's
+        constructor.  It takes in a tcp connection object, reservation
+        manager object, and any additional arguments specified in its
+        oncreate method.
+        
+        @param{String} host_listen_on --- The ip/host to listen for
+        new connections on.
+
+        @param{int} port_listen_on --- The prot to listen for new
+        connections on.
+
+        @param {function or Non} cb --- When receive a new connection,
+        execute the callback, passing in a new Endpoint object in its
+        callback.  
+
+        @param{UUID} host_uuid ---
+
+        
+        @param {Queue.Queue} synchronization_listening_queue --- The
+        thread that began this thread blocks waiting for a value on
+        this queue so that it does not return before this thread has
+        started to listen for the connection.
+        
+        @param{*args} --- Any other arguments to pass into the
+        oncreate argument of the endpoint constructor.
+
+        '''
+        
+        self.stoppable= stoppable
+        self.endpoint_constructor = endpoint_constructor
+        self.waldo_classes = waldo_classes
+        self.host_listen_on = host_listen_on
+        self.port_listen_on = int(port_listen_on)
+        self.cb = cb
+        self.host_uuid = host_uuid
+        self.cert = certfile
+        self.key = keyfile
+        self.ca = ca_certs
+        
+        self.synchronization_listening_queue = synchronization_listening_queue
+        
+        self.args = args
+
+        threading.Thread.__init__(self)
+        self.daemon = True
+
+    def run(self):
+        
+        sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        # turn off Nagle's
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
+        # we do not want to listen for the connection forever.  every
+        # 1s, if we do not get a connection check if we should stop listening
+        sock.settimeout(1)
+
+        try: 
+          sock.bind((self.host_listen_on, self.port_listen_on))
+        except socket.error, ex:
+          print ex[1] # print error message from socket error
+
+        sock.listen(1)
+        self.synchronization_listening_queue.put(True)
+        while True:
+
+            try:
+
+                conn, addr = sock.accept()
+                conn = ssl.wrap_socket(conn,
+                                 server_side=True,
+                                 ca_certs=self.ca,
+                                 certfile=self.cert,
+                                 keyfile=self.key,
+                                 ssl_version=ssl.PROTOCOL_SSLv23)
+                tcp_conn_obj = _WaldoTCPConnectionObj(None,None,conn)
+                created_endpoint = self.endpoint_constructor(
+                    self.waldo_classes,self.host_uuid,tcp_conn_obj,*self.args)
+                    
+                if self.cb != None:
+                    thread.start_new_thread(self.cb, (created_endpoint,))
+                
+                if self.stoppable.is_stopped():
+                    break
+                    
+            except socket.timeout:
+                if self.stoppable.is_stopped():
+                    break
+                
 
 
 class _TCPAcceptThread(threading.Thread):

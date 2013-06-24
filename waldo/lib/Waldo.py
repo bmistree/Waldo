@@ -90,6 +90,35 @@ def set_logging_level(level):
     util.get_logger().setLevel(level)
     
 
+def stcp_connect(constructor,host,port,certfile,keyfile,*args):
+    '''
+    Tries to connect an endpoint to another endpoint via a TCP
+    connection.
+
+    Args:
+    
+      constructor (Endpoint Constructor): The constructor of the endpoint to
+      create upon connection.  Should be imported from the compiled Waldo file.
+
+      host (String): The name of the host to connect to.
+
+      port (int): The TCP port to try to connect to.
+
+      *args (*args):  Any arguments that should get passed to
+      the endpoint's onCreate method for initialization.
+
+    Returns:
+
+      Endpoint object: --- Can call any Public method of this
+      object.
+    '''
+    stcp_connection_obj = waldoConnectionObj._WaldoSTCPConnectionObj(
+        host,port,cfile=certfile, key=keyfile)
+
+    endpoint = constructor(
+        _waldo_classes,_host_uuid,stcp_connection_obj,*args)
+    return endpoint
+
 def tcp_connect(constructor,host,port,*args):
     '''
     Tries to connect an endpoint to another endpoint via a TCP
@@ -119,6 +148,64 @@ def tcp_connect(constructor,host,port,*args):
         _waldo_classes,_host_uuid,tcp_connection_obj,*args)
     return endpoint
 
+
+def stcp_accept(constructor, host, port, certfile=None, keyfile=None, ca_certs=None, *args, **kwargs):
+    '''
+    Non-blocking function that listens for TCP connections and creates
+    endpoints for each new connection.
+
+    Args:
+    
+      constructor(Endpoint Constructor): The constructor of
+      the endpoint to create upon connection.  Should be imported from
+      the compiled Waldo file.
+
+      host (String): The name of the host to listen for
+      connections on.
+
+      port(int): The TCP port to listen for connections on.
+
+      *args(*args): Any arguments that should get passed to
+      the endpoint's onCreate method for initialization.
+
+    Kwargs:
+
+      connected_callback(function): Use kwarg "connected_callback."  When a
+      connection is received and we create an endpoint, callback gets executed,
+      passing in newly-created endpoint object as argument.
+
+    Returns:
+    
+      Stoppable object: Can call stop method on this to stop listening for
+      additional connections.  Note: listeners will not stop instantly, but
+      probably within the next second or two.
+    '''
+    
+    connected_callback = kwargs.get('connected_callback',None)
+
+    stoppable = waldoConnectionObj._TCPListeningStoppable()
+
+    # TCP listenener starts in a separate thread.  We must wait for
+    # the calling thread to actually be listening for connections
+    # before returning.
+    synchronization_queue = Queue.Queue()
+    
+    tcp_accept_thread = waldoConnectionObj._STCPAcceptThread(
+        stoppable, constructor,_waldo_classes,host,port,
+        connected_callback,
+        _host_uuid,synchronization_queue,certfile,keyfile,ca_certs,*args)
+    tcp_accept_thread.start()
+
+    # once this returns, we know that we are listening on the
+    # host:port pair.
+    synchronization_queue.get()
+
+    
+    # the user can call stop directly on the returned object, but we
+    # still put it into the cleanup queue.  This is because there is
+    # no disadvantage to calling stop multiple times.
+    _threadsafe_stoppable_cleanup_queue.put(stoppable)
+    return stoppable
 
 def tcp_accept(constructor,host,port,*args,**kwargs):
     '''

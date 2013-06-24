@@ -1,0 +1,64 @@
+CRITICAL : 02:03:25.14.934063: NEW : NEW 
+     ***** New *****
+CRITICAL : 02:03:56.352.358103: NEW : NEW 
+     ***** New *****
+CRITICAL : 02:11:36.519.241095: NEW : NEW 
+     ***** New *****
+CRITICAL : 02:12:40.398.454905: NEW : NEW 
+     ***** New *****
+CRITICAL : 02:43:48.785.840034: NEW : NEW 
+     ***** New *****
+CRITICAL : 02:57:32.378.917933: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:00:00.714.986086: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:01:11.25.829077: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:02:44.930.573940: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:07:23.734.111071: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:10:01.439.552069: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:13:00.110.673904: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:15:16.475.534916: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:16:07.963.953972: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:24:12.566.961050: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:25:29.256.958961: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:30:32.533.878088: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:33:12.242.762089: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:41:17.724.694014: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:42:32.612.838030: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:45:30.514.519930: NEW : NEW 
+     ***** New *****
+CRITICAL : 03:50:26.217.397928: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:21:43.694.086075: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:31:53.736.259937: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:38:38.482.359886: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:42:25.324.949980: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:43:40.304.727077: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:44:51.957.235098: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:46:49.281.502008: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:47:30.944.273949: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:52:27.583.795071: NEW : NEW 
+     ***** New *****
+CRITICAL : 04:53:53.129.435062: NEW : NEW 
+     ***** New *****
