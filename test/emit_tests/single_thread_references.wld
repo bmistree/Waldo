@@ -1,0 +1,31 @@
+Garbage
+
+Endpoint SingleSide;
+
+
+SingleSide
+{
+    List (element:
+        List(element: Number)) list_a;
+    List (element:
+        List(element: Number)) list_b;
+
+
+    Public Function populate_lists()
+    {
+        List(element: Number) used_to_populate = [1,2,3,4];
+        list_a.append(used_to_populate);
+        list_b.append(used_to_populate);
+        list_b.append(used_to_populate);
+    }
+
+    Public Function change_one()
+    {
+        list_a[0].remove(2);
+    }
+
+    Public Function get_len_lists () returns Number,Number,Number
+    {
+        return len(list_a[0]), len(list_b[0]), len(list_b[1]);
+    }
+}
