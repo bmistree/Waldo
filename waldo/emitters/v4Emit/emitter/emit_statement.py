@@ -5,6 +5,12 @@ import waldo.parser.ast.typeCheck as TypeCheck
 import waldo.lib.util as lib_util
 from waldo.parser.ast.astNode import AstNode
 
+# Constant Dict representing Waldo's builtin endpoint methods. Maps from
+# method names to emitted code.
+ENDPOINT_BUILTIN_METHODS = {
+  'id' : 'self.id()'            # returns the endpoint's unique id
+}
+
 def emit_statement(
     statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''
@@ -569,8 +575,15 @@ def emit_func_object_call(
     @param {AstNode} method_call_node --- 
     '''
     function_obj_node = method_call_node.children[0]
+
+    # Lookup method name in endpoint builtins
+    method_call_name = function_obj_node.value
+    if ENDPOINT_BUILTIN_METHODS.get(method_call_name) != None:
+        return ENDPOINT_BUILTIN_METHODS.get(method_call_name);
+
     function_obj_txt = emit_statement(
         function_obj_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
 
     # contains the arguments passed into the function.
     func_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
