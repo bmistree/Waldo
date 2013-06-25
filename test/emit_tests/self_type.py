@@ -15,18 +15,18 @@ def run_test():
     '''
     Returns true on success.
     '''
-    firstEndpoint = Waldo.same_host_create(SelfTester)
+    firstEndpoint = Waldo.no_partner_create(SelfTester)
     secondEndpoint = firstEndpoint.get_self()
     if firstEndpoint != secondEndpoint:
-        return false
+        return False
     elif secondEndpoint.test_input_output(NUM) != NUM:
-        return false
+        return False
     else:
-        return true
+        return True
 
 if __name__ == "__main__":
     print 'Testing self type...\t\t\t'
-    if run_test:
+    if run_test():
         print 'Success.\n'
     else:
         print 'Failure.\n'
