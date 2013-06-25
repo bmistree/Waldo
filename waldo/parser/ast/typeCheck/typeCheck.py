@@ -17,7 +17,6 @@ from typeCheckUtil import *
 from templateUtil import *
 
 
-
 def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     '''
     avoidFunctionObjects {Bool} --- True if should add function
@@ -266,7 +265,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             return
 
     elif node.label == AST_SELF:
-        node.type = create_wildcard_type()
+        node.type = generate_type_as_dict(TYPE_ENDPOINT, False)
         
     elif ((node.label == AST_BREAK) or
           (node.label == AST_CONTINUE)):
