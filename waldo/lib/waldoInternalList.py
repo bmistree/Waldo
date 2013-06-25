@@ -468,8 +468,18 @@ class SingleThreadInternalList(
         @see promote_multithreaded in waldoReferenceContainerBase.py
         '''
         if self.multithreaded is None:
+            promoted_list = []
+            for ind_val in self.val:
+                if isinstance(
+                    ind_val,
+                    waldoReferenceContainerBase._SingleThreadReferenceContainer):
+                    
+                    ind_val = ind_val.promote_multithreaded(peered)
+                    
+                promoted_list.append(ind_val)          
+
             self.multithreaded = InternalList(
-                self.host_uuid,peered,self.val)
+                self.host_uuid,peered,promoted_list)
 
         return self.multithreaded
     

@@ -413,11 +413,23 @@ class SingleThreadInternalMap(
         @see promote_multithreaded in waldoReferenceContainerBase.py
         '''
         if self.multithreaded is None:
-            self.multithreaded = InternalMap(
-                self.host_uuid,peered,self.val)
-            
-        return self.multithreaded
+            promoted_map = {}
 
+            for ind_key in self.val:
+                ind_val = self.val[ind_key]
+                if isinstance(
+                    ind_val,
+                    waldoReferenceContainerBase._SingleThreadReferenceContainer):
+                    
+                    ind_val = ind_val.promote_multithreaded(peered)
+                    
+                promoted_map[ind_key] = ind_val
+
+            self.multithreaded = InternalMap(
+                self.host_uuid,peered,promoted_map)
+
+        return self.multithreaded
+            
     
     @staticmethod
     def var_type():

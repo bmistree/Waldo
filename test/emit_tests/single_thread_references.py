@@ -19,6 +19,14 @@ def run_test():
     if (len_a != 3) or (len_b1 != 3) or (len_b2 != 3):
         return False
 
+    ### Now test deep lists
+    single_side.deep_populate_lists()
+    single_side.deep_change_one()
+    deep_len_a, deep_len_b1, deep_len_b2, deep_helper_len = single_side.deep_get_len_lists()
+
+    if (deep_len_a != 2) or (deep_len_b1 != 2) or (deep_len_b2 != 2) or (deep_helper_len != 2):
+        return False
+
     return True
 
 
