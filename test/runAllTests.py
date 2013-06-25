@@ -133,6 +133,8 @@ def run_emit_tests():
     import emit_tests.two_side_stop
     import emit_tests.two_side_stop_callbacks
     import emit_tests.single_thread_references
+    import emit_tests.self_type
+    ###import emit_tests.id_method
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -231,7 +233,12 @@ def run_emit_tests():
 
         ('Tests that can promote a singly-threaded list to being multithreaded',
          emit_tests.single_thread_references.run_test),
-        
+
+        ('Tests self type.',
+         emit_tests.self_type.run_test),
+
+#        ('Tests id method.',
+#         emit_tests.id_method.run_test),
         ]
 
     run_tests(emit_tests_to_run)

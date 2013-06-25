@@ -1,0 +1,16 @@
+SelfType
+
+Endpoint SelfTester;
+
+SelfTester
+{
+  Public Function test_input_output(Number num) returns Number
+  {
+    return num;
+  }
+
+  Public Function get_self() returns Endpoint
+  {
+    return self;
+  }
+}
