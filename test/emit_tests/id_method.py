@@ -15,7 +15,7 @@ ID_LEN = 16
 def run_test():
     id_tester = Waldo.no_partner_create(IdTester)
     id = id_tester.id()
-    if len(id) != 16:
+    if id != id_tester._uuid:
         return False
     elif id_tester.get_id() != id_tester.id():
         return False
