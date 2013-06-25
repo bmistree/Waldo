@@ -92,7 +92,7 @@ class TypeCheckContextStack(object):
         self.struct_type_dict = {}
         
         # initialize endpoint builtin methods
-        initBuiltinMethods();
+        self.initBuiltinMethods();
 
     def initBuiltinMethods(self):
         '''
