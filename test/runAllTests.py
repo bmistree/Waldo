@@ -20,7 +20,8 @@ import ind_tests.test_single_request_block_between_endpoints_peered_data
 import ind_tests.test_reschedule_on_conflict
 import ind_tests.test_one_side_changes_peered
 import ind_tests.test_endpoint_calls
-import ind_tests.test_deadlock_detection
+# import ind_tests.test_deadlock_detection
+import ind_tests.dd_wrapper
 import ind_tests.test_de_waldoified
 import ind_tests.tcp_encapsulate_decapsulate
 
@@ -60,7 +61,7 @@ def run_lib_tests():
          ind_tests.test_endpoint_calls.run_test),
 
         ('Test deadlock detection and rollback',
-         ind_tests.test_deadlock_detection.run_test),
+         ind_tests.dd_wrapper.run_test),
 
         ('Test tcp message encapsulation and decapsulation',
          ind_tests.tcp_encapsulate_decapsulate.run_test),
