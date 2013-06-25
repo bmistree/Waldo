@@ -249,12 +249,20 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
 
 class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
     HEADER_LEN_OCTETS = 4
+    '''
+    Inherits from _WaldoTCPConnectionObj. The only difference is in the initialization, so
+    we can perform SSL there.
+    '''
     def __init__(self, dst_host, dst_port, sock=None, cfile=None, key=None):
         '''
         Either dst_host + dst_port are None or sock is None.
         
         @param {socket} sock --- If not passed in a socket, then
         create a new connection to dst_host, dst_port.
+
+        @param {string} cfile, key -- These are the filepathnames to the 
+        certificate file and keyfile. If the key is the certificate file,
+        then key should be None.
         '''
 
         if sock == None:
@@ -349,9 +357,18 @@ class _STCPAcceptThread(threading.Thread):
         thread that began this thread blocks waiting for a value on
         this queue so that it does not return before this thread has
         started to listen for the connection.
+
+        @param {string} cfile, key -- These are the filepathnames to the 
+        certificate file and keyfile. If the key is the certificate file,
+        then key should be None.
+
+        @param {string} ca_certs -- A list of valid CAs that you trust.
+        Put None in if you want any certificate to pass.
         
         @param{*args} --- Any other arguments to pass into the
         oncreate argument of the endpoint constructor.
+
+        @param
 
         '''
         
@@ -450,6 +467,7 @@ class _TCPAcceptThread(threading.Thread):
         thread that began this thread blocks waiting for a value on
         this queue so that it does not return before this thread has
         started to listen for the connection.
+
         
         @param{*args} --- Any other arguments to pass into the
         oncreate argument of the endpoint constructor.

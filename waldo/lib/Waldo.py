@@ -93,7 +93,7 @@ def set_logging_level(level):
 def stcp_connect(constructor,host,port,certfile,keyfile,*args):
     '''
     Tries to connect an endpoint to another endpoint via a TCP
-    connection.
+    connection though SSL.
 
     Args:
     
@@ -103,6 +103,10 @@ def stcp_connect(constructor,host,port,certfile,keyfile,*args):
       host (String): The name of the host to connect to.
 
       port (int): The TCP port to try to connect to.
+
+      certfile (String): The file path of the certificate file
+
+      keyfile (String): The file path of the keyfile
 
       *args (*args):  Any arguments that should get passed to
       the endpoint's onCreate method for initialization.
@@ -164,6 +168,12 @@ def stcp_accept(constructor, host, port, certfile=None, keyfile=None, ca_certs=N
       connections on.
 
       port(int): The TCP port to listen for connections on.
+
+      certfile (String): The file path of the certificate file
+
+      keyfile (String): The file path of the keyfile. Leave as None if key is in certfile
+
+      ca_certs (String): List of CAs you trust. If your certificates aren't verified, leave as None.
 
       *args(*args): Any arguments that should get passed to
       the endpoint's onCreate method for initialization.
