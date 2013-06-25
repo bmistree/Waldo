@@ -48,8 +48,6 @@ class _Endpoint(object):
         # variables.
         self._global_var_store = global_var_store
 
-        # self._endpoint_service_thread = waldoEndpointServiceThread._EndpointServiceThread(self)
-        # self._endpoint_service_thread.start()
 
         self._endpoint_service_thread_pool = (
             waldoEndpointServiceThread._EndpointServiceThreadPool(
