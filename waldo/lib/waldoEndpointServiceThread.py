@@ -3,6 +3,29 @@ import threading
 import waldoServiceActions
 import util
 
+'''
+Previous Waldo design used a thread pool.  Each thread would read from
+the threadsafe queue it was passed in and then it would service the
+service action that it was passed in.
+
+This design instead creates a new thread for each service action
+provided, servicing the service action in the new thread.
+
+Compared to previous approach, this approach has a lot of overhead
+because thread creation in python is relatively expensive.  However,
+for test cases that do not clean up after themselves, had to have very
+large threadpools (~50 threads per endpoint).  On lower end laptops,
+this meant that users would get a resource exhaustion error ("cannot
+create more threads").  Until ensure that cleaning up enough that can
+have smaller thread pools, going back to strategy of one thread per
+service action.
+
+(Note: from benchmark with dht code, code that used to take ~26s to
+run with a thread pool now takes ~32s.)
+
+'''
+
+
 
 class WorkerThread(threading.Thread):
     def __init__(self,queue):
@@ -13,7 +36,10 @@ class WorkerThread(threading.Thread):
     def run(self):
         while True:
             to_service = self.queue.get()
-            to_service.service()
+            t = threading.Thread(target=to_service.service)
+            t.daemon = True
+            t.start()
+
 
 class _EndpointServiceThreadPool():
     def __init__(self,endpoint,num_workers):
