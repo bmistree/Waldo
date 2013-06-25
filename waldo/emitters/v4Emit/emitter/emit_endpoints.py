@@ -289,11 +289,11 @@ def create_wvariables_array(
         if TypeCheck.templateUtil.is_struct(decl_node.type):
             var_declaration,var_name = emit_statement.struct_rhs_declaration(
                 decl_node,host_uuid_var_name,peered,
-                endpoint_name,ast_root,fdep_dict,emit_ctx)
+                endpoint_name,ast_root,fdep_dict,emit_ctx,True)
         else:
             var_declaration,var_name = emit_statement.non_struct_rhs_declaration(
                 decl_node,host_uuid_var_name,peered,
-                endpoint_name,ast_root,fdep_dict,emit_ctx)
+                endpoint_name,ast_root,fdep_dict,emit_ctx,True)
 
         wvar_load_text += '''
 self._global_var_store.add_var(
@@ -507,9 +507,12 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
         
         if not sequence_local:
             force_copy = 'True'
+
+            multi_threaded= 'False'
             
             if TypeCheck.templateUtil.is_external(func_decl_arg_node.type):
                 force_copy = 'False'
+                multi_threaded = 'True'
             
             if ((not is_endpoint_call) and
                 emit_utils.is_reference_type(func_decl_arg_node)):
@@ -527,12 +530,14 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
                 converted_args_string += (
                     arg_name + ' = ' +
                     '_context.func_turn_into_waldo_var(' + arg_name +
-                    ',%s,_active_event,self._host_uuid,False,%s)\n' % (force_copy,ext_args_array_txt))
+                    ',%s,_active_event,self._host_uuid,False,%s,%s)\n' %
+                    (force_copy,ext_args_array_txt,multi_threaded))
+
             else:
                 converted_args_string += (
                     arg_name + ' = ' +
                     '_context.turn_into_waldo_var_if_was_var(' + arg_name +
-                    ',%s,_active_event,self._host_uuid,False)\n' % force_copy)
+                    ',%s,_active_event,self._host_uuid,False,%s)\n' % (force_copy,multi_threaded))
 
         else:
 
