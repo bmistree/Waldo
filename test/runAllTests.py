@@ -20,7 +20,6 @@ import ind_tests.test_single_request_block_between_endpoints_peered_data
 import ind_tests.test_reschedule_on_conflict
 import ind_tests.test_one_side_changes_peered
 import ind_tests.test_endpoint_calls
-# import ind_tests.test_deadlock_detection
 import ind_tests.dd_wrapper
 import ind_tests.test_de_waldoified
 import ind_tests.tcp_encapsulate_decapsulate
@@ -134,6 +133,7 @@ def run_emit_tests():
     import emit_tests.two_side_stop_callbacks
     import emit_tests.single_thread_references
     import emit_tests.self_type
+    import emit_tests.foreign_func_in_sequence
     ###import emit_tests.id_method
     
     emit_tests_to_run = [
@@ -236,9 +236,10 @@ def run_emit_tests():
 
         ('Tests self type.',
          emit_tests.self_type.run_test),
+        
+        ('Tests calling a foreign function in the midst of a sequence',
+         emit_tests.foreign_func_in_sequence.run_test),
 
-#        ('Tests id method.',
-#         emit_tests.id_method.run_test),
         ]
 
     run_tests(emit_tests_to_run)
