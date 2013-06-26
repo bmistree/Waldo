@@ -2499,8 +2499,8 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
     indexType = un_function_called_index_type;
     if checkTypeMismatch(index,toReadFromIndexType,indexType,typeStack,progText):
         errMsg = '\nError reading from map.  You were supposed to index into the ';
-        errMsg += 'map with an indexer of type [ ' + toReadFromIndexType + ' ].  ';
-        errMsg += 'Instead, you indexed in with type [ ' + indexType + ' ].\n';
+        errMsg += 'map with an indexer of type [ ' + dict_type_to_str(toReadFromIndexType) + ' ].  ';
+        errMsg += 'Instead, you indexed in with type [ ' + dict_type_to_str(indexType) + ' ].\n';
         astErrorNodes = [ toReadFrom, index ];
         return True, None, errMsg, astErrorNodes;
     

@@ -1,0 +1,10 @@
+IdTest
+Endpoint IdTester;
+
+IdTester
+{
+  Public Function get_id() returns Text {
+    return id();
+  }
+}
+

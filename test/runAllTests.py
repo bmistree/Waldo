@@ -134,7 +134,8 @@ def run_emit_tests():
     import emit_tests.single_thread_references
     import emit_tests.self_type
     import emit_tests.foreign_func_in_sequence
-    ###import emit_tests.id_method
+    import emit_tests.id_method
+
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -239,6 +240,9 @@ def run_emit_tests():
         
         ('Tests calling a foreign function in the midst of a sequence',
          emit_tests.foreign_func_in_sequence.run_test),
+
+        ('Tests id method.',
+         emit_tests.id_method.run_test),
 
         ]
 
