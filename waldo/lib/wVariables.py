@@ -70,7 +70,7 @@ class WaldoSingleThreadEndpointVariable(_WaldoSingleThreadVariable):
         if multi_threaded:
             return WaldoEndpointVariable(self.name,self.host_uuid,peered,self.val)
         else:
-            return WaldoSingleEndpointVariable(self.name,self.host_uuid,peered,self.val)
+            return WaldoSingleThreadEndpointVariable(self.name,self.host_uuid,peered,self.val)
         
     def de_waldoify(self,invalid_listener):
         return self.get_val(invalid_listener)
