@@ -347,10 +347,27 @@ class _ExecutingEventContext(object):
 
             call_arg_list.append(to_append)
 
-            
         internal_func = func_obj.get_val(active_event)
-        return internal_func(
+        returned_val = internal_func(
             active_event.local_endpoint,*call_arg_list)
+
+        if isinstance(returned_val,list):
+            return wVariables.WaldoSingleThreadListVariable(
+                'garbage', # actual name of variable isn't important
+                active_event.local_endpoint._host_uuid,
+                False, # not peered
+                returned_val# used as initial value
+                )
+
+        elif isinstance(returned_val,dict):
+            return wVariables.WaldoSingleThreadMapVariable(
+                'garbage', # actual name of variable isn't important
+                active_event.local_endpoint._host_uuid,
+                False, # not peered
+                returned_val# used as initial value
+                )        
+        
+        return returned_val
 
     
     def convert_for_seq_local(self,val,active_event,host_uuid):
