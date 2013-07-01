@@ -751,16 +751,25 @@ class _ExecutingEvent(object):
         self.ctx = ctx
 
         self.result_queue = result_queue
-        
+
         # threading.Thread.__init__(self)
         # self.daemon = True
         
 
     def run(self):
+        if len(self.to_exec_args) > 0:
+            print 'BEFORE', ':'.join(ch.encode('hex') for ch in self.to_exec_args[0].id())
+
         result = self.to_exec(self.active_event,self.ctx,*self.to_exec_args)
+
+        if len(self.to_exec_args) > 0:
+            print 'AFTER', ':'.join(ch.encode('hex') for ch in self.to_exec_args[0].id())
+
         
         if self.result_queue == None:
             return
+
+
         
         # check if the active event has touched any peered data.  if
         # have, then send an update message to partner and wait for
