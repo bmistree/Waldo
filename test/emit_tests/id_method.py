@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from id_method_v4 import IdTester
+from id_method_v4 import IdTester, Manager
 #from emitted import SelfTester
 
 import os,sys
@@ -15,12 +15,19 @@ ID_LEN = 16
 def run_test():
     id_tester = Waldo.no_partner_create(IdTester)
     id = id_tester.id()
-    if id != id_tester._uuid:
+    manager = Waldo.no_partner_create(Manager)
+    manager_id = manager.id()
+    manager.add_endpoint(id_tester)
+    if id != id_tester._uuid or manager_id != manager._uuid:
         return False
-    elif id_tester.get_id() != id_tester.id():
+    elif id_tester.get_id() != id_tester.id() or manager.get_id() != manager.id():
+        return False
+    elif id != manager.get_managed_endpoint_id():
         return False
     else:
         return True
+    
+    
     
 
 if __name__ == '__main__':
