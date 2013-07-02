@@ -92,9 +92,6 @@ class _Endpoint(object):
         self._stop_listener_id_assigner = 0
         self._stop_listeners = {}
 
-    def id(self):
-        return self._uuid
-        
     def _stop_lock(self):
         self._stop_mutex.acquire()
         
@@ -456,11 +453,6 @@ class _Endpoint(object):
             self._stop_unlock()
             return
         self._stop_unlock()
-        # add support for .id endpoint call
-        if func_name == 'id':
-            result_queue.put(
-                waldoCallResults._EndpointCallResult(endpoint_making_call._uuid))
-            return
         self._endpoint_service_thread_pool.receive_endpoint_call(
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
 
@@ -793,3 +785,13 @@ class _Endpoint(object):
         # 4 from above as well
         if request_callback:
             self._act_event_map.callback_when_stopped(self._stop_complete_cb)
+
+    # Builtin Endpoint Function Calls
+    def _endpoint_func_call_prefix__waldo__id(self, *args):
+        '''
+        This is the builtin .id() endpoint function, although the name is
+        mangled to match the generated endpoint function call names.
+
+        Returns the endpoint's uuid. 
+        '''
+        return self._uuid

@@ -643,7 +643,6 @@ class _ExecutingEventContext(object):
         self,active_event,context,endpoint_obj,method_name,*args):
 
         threadsafe_result_queue = Queue.Queue()
-        
         active_event.issue_endpoint_object_call(
             endpoint_obj,method_name,threadsafe_result_queue,*args)
 
@@ -757,14 +756,7 @@ class _ExecutingEvent(object):
         
 
     def run(self):
-        if len(self.to_exec_args) > 0:
-            print 'BEFORE', ':'.join(ch.encode('hex') for ch in self.to_exec_args[0].id())
-
         result = self.to_exec(self.active_event,self.ctx,*self.to_exec_args)
-
-        if len(self.to_exec_args) > 0:
-            print 'AFTER', ':'.join(ch.encode('hex') for ch in self.to_exec_args[0].id())
-
         
         if self.result_queue == None:
             return

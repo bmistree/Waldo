@@ -576,14 +576,8 @@ def emit_func_object_call(
     '''
     function_obj_node = method_call_node.children[0]
 
-    # Lookup method name in endpoint builtins
-    method_call_name = function_obj_node.value
-    if ENDPOINT_BUILTIN_METHODS.get(method_call_name) != None:
-        return ENDPOINT_BUILTIN_METHODS.get(method_call_name);
-
     function_obj_txt = emit_statement(
         function_obj_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-
 
     # contains the arguments passed into the function.
     func_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
