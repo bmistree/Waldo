@@ -5,6 +5,7 @@ import thread
 import socket
 import struct
 import ssl
+import os
 
 
 class _WaldoConnectionObject(object):
@@ -266,16 +267,40 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         '''
 
         if sock == None:
-            if key == None:
+            if cfile == None:
                 import OpenSSL
                 from OpenSSL import crypto
+
+
                 key = crypto.PKey()
                 key.generate_key(crypto.TYPE_RSA,2048)
-                key = crypto.dump_privatekey(crypto.FILETYPE_PEM,k1)
+                keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,key)
                 f = open("key.pem", "w")
-                f.write(key)
+                f.write(keytext)
                 f.close()
-                key = "key.pem"
+                
+
+                cfile = crypto.X509()
+                cfile.get_subject().C = "US"
+                cfile.get_subject().ST = "Minnesota"
+                cfile.get_subject().L = "Minnetonka"
+                cfile.get_subject().O = "my company"
+                cfile.get_subject().OU = "my organization"
+                cfile.get_subject().CN = "something"
+                cfile.set_serial_number(1000)
+                cfile.gmtime_adj_notBefore(0)
+                cfile.gmtime_adj_notAfter(10*365*24*60*60)
+                cfile.set_issuer(cfile.get_subject())
+                cfile.set_pubkey(key)
+                cfile.sign(key, 'sha1')
+
+                f = open("certificate.pem", "w")
+                cfile = crypto.dump_certificate(crypto.FILETYPE_PEM, cfile)
+                key = 'key.pem'
+                f.write(cfile)
+                cfile = 'certificate.pem'
+                f.close()
+                
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             self.sock = ssl.wrap_socket(self.sock,
@@ -420,16 +445,41 @@ class _STCPAcceptThread(threading.Thread):
         while True:
 
             try:
-                if self.key == None:
+                if self.cert == None:
                     import OpenSSL
                     from OpenSSL import crypto
+
+
                     self.key = crypto.PKey()
                     self.key.generate_key(crypto.TYPE_RSA,2048)
-                    self.key = crypto.dump_privatekey(crypto.FILETYPE_PEM,self.key)
-                    f = open("key.pem", "w")
-                    f.write(self.key)
+                    keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,self.key)
+                    f = open("key2.pem", "w")
+                    f.write(keytext)
                     f.close()
-                    self.key = "key.pem"
+                
+
+                    self.cert = crypto.X509()
+                    self.cert.get_subject().C = "US"
+                    self.cert.get_subject().ST = "Minnesota"
+                    self.cert.get_subject().L = "Minnetonka"
+                    self.cert.get_subject().O = "my company"
+                    self.cert.get_subject().OU = "my organization"
+                    self.cert.get_subject().CN = "something"
+                    self.cert.set_serial_number(1000)
+                    self.cert.gmtime_adj_notBefore(0)
+                    self.cert.gmtime_adj_notAfter(10*365*24*60*60)
+                    self.cert.set_issuer(self.cert.get_subject())
+                    self.cert.set_pubkey(self.key)
+                    self.cert.sign(self.key, 'sha1')
+
+                    f = open("certificate2.pem", "w")
+                    self.cert = crypto.dump_certificate(crypto.FILETYPE_PEM, self.cert)
+                    self.key =  "key2.pem"
+
+                    f.write(self.cert)
+                    self.cert ='certificate2.pem'
+                    f.close()
+                
                 conn, addr = sock.accept()
                 conn = ssl.wrap_socket(conn,
                                  server_side=True,
