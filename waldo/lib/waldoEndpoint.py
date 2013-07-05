@@ -1,6 +1,7 @@
 import util
 import waldoEndpointServiceThread
 import waldoActiveEventMap
+import waldoCallResults
 from util import Queue
 import threading
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
@@ -47,8 +48,6 @@ class _Endpoint(object):
         # variables.
         self._global_var_store = global_var_store
 
-        # self._endpoint_service_thread = waldoEndpointServiceThread._EndpointServiceThread(self)
-        # self._endpoint_service_thread.start()
 
         self._endpoint_service_thread_pool = (
             waldoEndpointServiceThread._EndpointServiceThreadPool(
@@ -92,6 +91,9 @@ class _Endpoint(object):
         # holds callbacks to call when stop is complete
         self._stop_listener_id_assigner = 0
         self._stop_listeners = {}
+
+    def id(self):
+        return self._uuid
         
     def _stop_lock(self):
         self._stop_mutex.acquire()
@@ -99,7 +101,6 @@ class _Endpoint(object):
     def _stop_unlock(self):
         self._stop_mutex.release()
 
-        
     def _ready_waiting_list_lock(self,additional):
         self._ready_waiting_list_mutex.acquire()
 
@@ -455,7 +456,7 @@ class _Endpoint(object):
             self._stop_unlock()
             return
         self._stop_unlock()
-        
+
         self._endpoint_service_thread_pool.receive_endpoint_call(
             endpoint_making_call,event_uuid,func_name,result_queue,*args)
 
@@ -788,3 +789,9 @@ class _Endpoint(object):
         # 4 from above as well
         if request_callback:
             self._act_event_map.callback_when_stopped(self._stop_complete_cb)
+
+    def _endpoint_func_call_prefix__waldo__id(self, *args):
+        '''
+        Builtin id method. Returns the endpoint's uuid.
+        '''
+        return self._uuid

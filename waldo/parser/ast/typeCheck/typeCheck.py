@@ -17,7 +17,6 @@ from typeCheckUtil import *
 from templateUtil import *
 
 
-
 def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     '''
     avoidFunctionObjects {Bool} --- True if should add function
@@ -266,7 +265,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
             return
 
     elif node.label == AST_SELF:
-        node.type = create_wildcard_type()
+        node.type = generate_type_as_dict(TYPE_ENDPOINT, False)
         
     elif ((node.label == AST_BREAK) or
           (node.label == AST_CONTINUE)):
@@ -1317,7 +1316,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
             if func_name_node.label in [AST_APPEND_STATEMENT,AST_REMOVE_STATEMENT]:
                 if len(func_arg_list_node.children) != 1:
-                    which_func = 'append' if node.label == AST_APEND_STATEMENT else 'remove'
+                    which_func = 'append' if node.label == AST_APPEND_STATEMENT else 'remove'
 
                     err_msg = 'Error when calling ' + which_func + '.  '
                     err_msg += which_func + ' takes 1 argument.  You '
@@ -2500,8 +2499,8 @@ def typeCheckMapBracket(toReadFrom,index,typeStack,progText):
     indexType = un_function_called_index_type;
     if checkTypeMismatch(index,toReadFromIndexType,indexType,typeStack,progText):
         errMsg = '\nError reading from map.  You were supposed to index into the ';
-        errMsg += 'map with an indexer of type [ ' + toReadFromIndexType + ' ].  ';
-        errMsg += 'Instead, you indexed in with type [ ' + indexType + ' ].\n';
+        errMsg += 'map with an indexer of type [ ' + dict_type_to_str(toReadFromIndexType) + ' ].  ';
+        errMsg += 'Instead, you indexed in with type [ ' + dict_type_to_str(indexType) + ' ].\n';
         astErrorNodes = [ toReadFrom, index ];
         return True, None, errMsg, astErrorNodes;
     

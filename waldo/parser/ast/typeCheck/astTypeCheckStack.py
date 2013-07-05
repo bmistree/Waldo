@@ -23,6 +23,7 @@ import pickle
 FUNC_CALL_ARG_MATCH_ERROR_NUM_ARGS_MISMATCH = 0;
 FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
 
+ID = 'id';
 
 # used as return values for fieldAgreesWithIncomingMessage and
 # fieldAgreesWithOutgoingMessage.  TYPE_MISMATCH means that user is
@@ -34,7 +35,6 @@ FUNC_CALL_ARG_MATCH_ERROR_TYPE_MISMATCH = 1;
 MESSAGE_TYPE_CHECK_ERROR_TYPE_MISMATCH = 0;
 MESSAGE_TYPE_CHECK_ERROR_NAME_DOES_NOT_EXIST = 1;
 MESSAGE_TYPE_CHECK_SUCCEED = 2;
-
 
 
 
@@ -90,7 +90,19 @@ class TypeCheckContextStack(object):
         # indices are the struct names.  values are the types of the
         # struct with that name
         self.struct_type_dict = {}
+        
+        # initialize endpoint builtin methods
+        self.initBuiltinMethods();
 
+    def initBuiltinMethods(self):
+        '''
+        Initializes built-in endpoint methods by adding them to the 
+        function stack.
+        '''
+        endpointBuiltinMethodContext = FuncContext();
+        endpointBuiltinMethodContext.addFuncIdentifier(
+            ID, [{JSON_TYPE_FIELD : TYPE_STRING}], [], None, None);
+        self.funcStack.append(endpointBuiltinMethodContext);
         
     def setRootNode(self,root):
         if self.rootNode != None:

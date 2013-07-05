@@ -2,7 +2,6 @@ from waldoActiveEvent import PartnerActiveEvent
 from waldoActiveEvent import EndpointCalledActiveEvent
 from waldoActiveEvent import RootActiveEvent
 import threading
-import logging
 import util
 
 class _ActiveEventMap(object):

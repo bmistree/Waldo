@@ -1,6 +1,6 @@
-import uuid, os, logging
+import uuid, os
 
-SIZE_THREAD_POOL = 50
+SIZE_THREAD_POOL = 2
 
 # Queue was changed to queue in Python 3.  
 try:
@@ -15,8 +15,6 @@ PARTNER_ENDPOINT_SENTINEL = -1
 # time and then try to re-acquire the lock (if we haven't already been
 # told to back out).
 TIME_TO_SLEEP_BEFORE_ATTEMPT_TO_ACQUIRE_VAR_FIRST_PHASE_LOCK = .2
-LOGGER_NAME = 'Waldo'
-LOCK_LOGGER_NAME = 'locker'
 
 def is_string(obj):
     '''
@@ -27,13 +25,6 @@ def is_string(obj):
     except NameError:
         return isinstance(obj, str)
 
-    
-def get_logger():
-    return logging.getLogger(LOGGER_NAME)
-
-def lock_log(msg):
-    return logging.getLogger(LOCK_LOGGER_NAME).debug(
-        msg, extra={'mod': 'none', 'endpoint_string': 'none'})
 
 def endpoint_call_func_name(func_name):
     '''
@@ -64,26 +55,13 @@ def generate_uuid():
 
 
 
-def logger_assert(assert_msg,logging_info=None):
+def logger_assert(assert_msg):
     assert_msg = 'Compiler error: ' + assert_msg
     print (assert_msg)
-
-    if logging_info == None:
-        logging_info = {
-            'mod': 'unknown',
-            'endpoint_string': 'unknown'
-            }
-    logging.critical(assert_msg, extra=logging_info)
     assert(False)
 
-def logger_warn(warn_msg,logging_info=None):
+def logger_warn(warn_msg):
     warn_msg = 'Compiler warn: ' + warn_msg
-    if logging_info == None:
-        logging_info = {
-            'mod': 'unknown',
-            'endpoint_string': 'unknown'
-            }
-    logging.critical(warn_msg, extra=logging_info)
     print (warn_msg)
 
 

@@ -114,7 +114,6 @@ def create_wildcard_type():
         }
     return to_return
     
-
 def get_struct_name_from_type(struct_type_dict):
     if not is_struct(struct_type_dict):
         err_msg = '\nBehram error.  Attempting to get the struct name '

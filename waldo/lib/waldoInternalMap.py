@@ -5,10 +5,94 @@ import waldoExecutingEvent
 from waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
 from waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
 from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
+from waldoReferenceContainerBase import is_reference_container
 
 import numbers
 import util
+
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
+from waldoObj import WaldoObj
+
+def _map_get_write_key_incorporate_deltas(container_written_action):
+    if container_written_action.HasField('write_key_text'):
+        index_to_write_to = container_written_action.write_key_text
+    elif container_written_action.HasField('write_key_num'):
+        index_to_write_to = container_written_action.write_key_num
+    elif container_written_action.HasField('write_key_tf'):
+        index_to_write_to = container_written_action.write_key_tf
+    #### DEBUG
+    else:
+        util.logger_assert('Unknown map index')
+    #### END DEBUG
+
+    return index_to_write_to
+
+
+def _map_get_add_key_incorporate_deltas(container_added_action):
+    if container_added_action.HasField('added_key_text'):
+        index_to_add_to = container_added_action.added_key_text
+    elif container_added_action.HasField('added_key_num'):
+        index_to_add_to = container_added_action.added_key_num
+    elif container_added_action.HasField('added_key_tf'):
+        index_to_add_to = container_added_action.added_key_tf
+    #### DEBUG
+    else:
+        util.logger_assert('Unknown map index')
+    #### END DEBUG
+
+    return index_to_add_to
+
+
+def _map_get_delete_key_incorporate_deltas(container_deleted_action):
+    if container_deleted_action.HasField('deleted_key_text'):
+        index_to_del_from = container_deleted_action.deleted_key_text
+    elif container_deleted_action.HasField('deleted_key_num'):
+        index_to_del_from = container_deleted_action.deleted_key_num
+    elif container_deleted_action.HasField('deleted_key_tf'):
+        index_to_del_from = container_deleted_action.deleted_key_tf
+    #### DEBUG
+    else:
+        util.logger_assert('Error in delete: unknown key type.')
+    #### END DEBUG
+
+    return index_to_del_from
+
+def _map_handle_added_key_incorporate_deltas(
+    map_to_write_on,active_event,index_to_add_to,new_val):
+    map_to_write_on.write_val_on_key(active_event,index_to_add_to,new_val,False)
+
+def _map_copy_internal_val(map_obj,invalid_listener,peered):
+    '''
+    Used by WaldoUserStruct when copying it.
+
+    @returns {dict} --- Just want to return a copy of the internal
+    dict of this InternalMap.
+    '''
+    # FIXME: very ugly.
+
+    # always trying to just get internal data from map.  so create
+    # a variable that is single threaded. always.    
+    single_thread_new_internal_map = map_obj.copy(
+        invalid_listener,peered,False)
+    internal_dict =  single_thread_new_internal_map.val
+    return internal_dict
+
+
+def _map_de_waldoify(map_obj,invalid_listener):
+    '''
+    @see _ReferenceBase.de_waldoify
+    '''
+    keys = map_obj.get_keys(invalid_listener)
+    to_return = {}
+
+    for key in keys:
+        key = waldoExecutingEvent.de_waldoify(key,invalid_listener)
+        val = waldoExecutingEvent.de_waldoify(
+            map_obj.get_val_on_key(invalid_listener,key),invalid_listener)
+
+        to_return[key] = val
+
+    return to_return
 
 class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
     def __init__(self,host_uuid,peered,init_val):
@@ -16,30 +100,13 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
             self,host_uuid,peered,init_val,_InternalMapVersion(),
             _InternalMapDirtyMapElement)
 
-    
     def de_waldoify(self,invalid_listener):
-        '''
-        @see _ReferenceBase.de_waldoify
-        '''
-        keys = self.get_keys(invalid_listener)
-        to_return = {}
-
-        for key in keys:
-            key = waldoExecutingEvent.de_waldoify(key,invalid_listener)
-            val = waldoExecutingEvent.de_waldoify(
-                self.get_val_on_key(invalid_listener,key),invalid_listener)
-
-            to_return[key] = val
-            
-        return to_return
-
+        return _map_de_waldoify(self,invalid_listener)
     
     @staticmethod
     def var_type():
         return 'internal map'
 
-
-    
     def copy(self,invalid_listener,peered,multi_threaded):
         '''
         @param {} invalid_listener
@@ -72,11 +139,9 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         for key in val_to_copy:
             to_copy = val_to_copy[key]
 
-            if isinstance(
-                to_copy,waldoReferenceContainerBase._ReferenceContainer):
+            if is_reference_container(to_copy):
                 to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
-            elif isinstance(
-                to_copy,waldoReferenceBase._ReferenceBase):
+            elif isinstance(to_copy,WaldoObj):
 
                 if to_copy.is_value_type():
                     to_copy = to_copy.get_val(invalid_listener)
@@ -88,73 +153,28 @@ class InternalMap(waldoReferenceContainerBase._ReferenceContainer):
         if self_to_copy:
             self._unlock()
 
-        return InternalMap(self.host_uuid,peered,new_internal_val)
+        if multi_threaded:
+            return InternalMap(self.host_uuid,peered,new_internal_val)
+        else:
+            return SingleThreadInternalMap(
+                self.host_uuid,peered,new_internal_val)
 
-
-    def copy_internal_val(self,invalid_listener,peered,multi_threaded):
-        '''
-        Used by WaldoUserStruct when copying it.
-
-        @returns {dict} --- Just want to return a copy of the internal
-        dict of this InternalMap.
-        '''
-        # FIXME: very ugly.
-        new_internal_map = self.copy(invalid_listener,peered,multi_threaded)
-        new_internal_map._lock()
-        new_internal_map._add_invalid_listener(invalid_listener)
-        internal_dict =  new_internal_map._dirty_map[invalid_listener.uuid].val
-        new_internal_map._unlock()
-        return internal_dict
-
+    def copy_internal_val(self,invalid_listener,peered):
+        return _map_copy_internal_val(self,invalid_listener,peered)
 
     def get_write_key_incorporate_deltas(self,container_written_action):
-        if container_written_action.HasField('write_key_text'):
-            index_to_write_to = container_written_action.write_key_text
-        elif container_written_action.HasField('write_key_num'):
-            index_to_write_to = container_written_action.write_key_num
-        elif container_written_action.HasField('write_key_tf'):
-            index_to_write_to = container_written_action.write_key_tf
-        #### DEBUG
-        else:
-            util.logger_assert('Unknown map index')
-        #### END DEBUG
-
-        return index_to_write_to
-
+        return _map_get_write_key_incorporate_deltas(container_written_action)
 
     def get_add_key_incorporate_deltas(self,container_added_action):
-        if container_added_action.HasField('added_key_text'):
-            index_to_add_to = container_added_action.added_key_text
-        elif container_added_action.HasField('added_key_num'):
-            index_to_add_to = container_added_action.added_key_num
-        elif container_added_action.HasField('added_key_tf'):
-            index_to_add_to = container_added_action.added_key_tf
-        #### DEBUG
-        else:
-            util.logger_assert('Unknown map index')
-        #### END DEBUG
-            
-        return index_to_add_to
-
+        return _map_get_add_key_incorporate_deltas(container_added_action)
 
     def get_delete_key_incorporate_deltas(self,container_deleted_action):
-        if container_deleted_action.HasField('deleted_key_text'):
-            index_to_del_from = container_deleted_action.deleted_key_text
-        elif container_deleted_action.HasField('deleted_key_num'):
-            index_to_del_from = container_deleted_action.deleted_key_num
-        elif container_deleted_action.HasField('deleted_key_tf'):
-            index_to_del_from = container_deleted_action.deleted_key_tf
-        #### DEBUG
-        else:
-            util.logger_assert('Error in delete: unknown key type.')
-        #### END DEBUG
-
-        return index_to_del_from
+        return _map_get_delete_key_incorporate_deltas(container_deleted_action)
 
     def handle_added_key_incorporate_deltas(
         self,active_event,index_to_add_to,new_val):
-        self.write_val_on_key(active_event,index_to_add_to,new_val,False)
-
+        return _map_handle_added_key_incorporate_deltas(
+            self,active_event,index_to_add_to,new_val)
     
 class _InternalMapDirtyMapElement(
     waldoReferenceContainerBase._ReferenceContainerDirtyMapElement):
@@ -202,9 +222,7 @@ class _InternalMapVersion(
             elif isinstance(map_val,bool):
                 add_action.added_what_tf = map_val
 
-            elif isinstance(
-                map_val,waldoReferenceBase._ReferenceBase):
-
+            elif isinstance(map_val,WaldoObj):
                 map_val.serializable_var_tuple_for_network(
                     add_action,'',action_event,True)
     
@@ -280,8 +298,7 @@ class _InternalMapVersion(
                     elif isinstance(map_val,bool):
                         add_action.added_what_tf = map_val
 
-                    elif isinstance(
-                        map_val,waldoReferenceBase._ReferenceBase):
+                    elif isinstance(map_val,WaldoObj):
                         map_val.serializable_var_tuple_for_network(
                             add_action,'',action_event,
                             # true here because if anything is written
@@ -327,8 +344,7 @@ class _InternalMapVersion(
                     elif isinstance(map_val,bool):
                         write_action.what_written_tf = map_val
 
-                    elif isinstance(
-                        map_val,waldoReferenceBase._ReferenceBase):
+                    elif isinstance(map_val,WaldoObj):
                         map_val.serializable_var_tuple_for_network(
                             write_action,'',action_event,
                             # true here because if anything is written
@@ -350,7 +366,7 @@ class _InternalMapVersion(
 
         for map_key in current_internal_val:
             map_val = current_internal_val[map_key]
-            if not isinstance(map_val,waldoReferenceBase._ReferenceBase):
+            if not isinstance(map_val,WaldoObj):
                 break
 
             if map_key not in keys_affected:
@@ -377,3 +393,93 @@ class _InternalMapVersion(
         self.partner_change_log = []
 
         return changes_made
+
+
+#### SINGLE THREADED VERSION #####
+
+class SingleThreadInternalMap(
+    waldoReferenceContainerBase._SingleThreadReferenceContainer):
+    
+    def __init__(self,host_uuid,peered,init_val):
+        waldoReferenceContainerBase._SingleThreadReferenceContainer.__init__(
+            self,host_uuid,peered,init_val,_InternalMapVersion())
+        
+    def de_waldoify(self,invalid_listener):
+        return _map_de_waldoify(self,invalid_listener)
+
+
+    def promote_multithreaded(self,peered):
+        '''
+        @see promote_multithreaded in waldoReferenceContainerBase.py
+        '''
+        if self.multithreaded is None:
+            promoted_map = {}
+
+            for ind_key in self.val:
+                ind_val = self.val[ind_key]
+                if isinstance(
+                    ind_val,
+                    waldoReferenceContainerBase._SingleThreadReferenceContainer):
+                    
+                    ind_val = ind_val.promote_multithreaded(peered)
+                    
+                promoted_map[ind_key] = ind_val
+
+            self.multithreaded = InternalMap(
+                self.host_uuid,peered,promoted_map)
+
+        return self.multithreaded
+            
+    
+    @staticmethod
+    def var_type():
+        return 'single thread internal map'
+    
+    def copy(self,invalid_listener,peered,multi_threaded):
+        '''
+        Returns a deep copy of the object.
+        '''
+        # will be used as initial_val when constructing copied
+        # InternalMap that we return.
+        new_internal_val = {}
+
+        val_to_copy = self.val
+            
+        for key in val_to_copy:
+            to_copy = val_to_copy[key]
+
+            if is_reference_container(to_copy):
+                to_copy = to_copy.copy(invalid_listener,peered,multi_threaded)
+            elif isinstance(to_copy,WaldoObj):
+
+                if to_copy.is_value_type():
+                    to_copy = to_copy.get_val(invalid_listener)
+                else:
+                    to_copy = to_copy.copy(
+                        invalid_listener,peered,multi_threaded)
+                
+            new_internal_val[key] = to_copy
+
+        if multi_threaded:
+            return InternalMap(
+                self.host_uuid,peered,new_internal_val)
+        else:
+            return SingleThreadInternalMap(
+                self.host_uuid,peered,new_internal_val)
+
+    def copy_internal_val(self,invalid_listener,peered):
+        return _map_copy_internal_val(self,invalid_listener,peered)
+    
+    def get_write_key_incorporate_deltas(self,container_written_action):
+        return _map_get_write_key_incorporate_deltas(container_written_action)
+
+    def get_add_key_incorporate_deltas(self,container_added_action):
+        return _map_get_add_key_incorporate_deltas(container_added_action)
+
+    def get_delete_key_incorporate_deltas(self,container_deleted_action):
+        return _map_get_delete_key_incorporate_deltas(container_deleted_action)
+
+    def handle_added_key_incorporate_deltas(
+        self,active_event,index_to_add_to,new_val):
+        return _map_handle_added_key_incorporate_deltas(
+            self,active_event,index_to_add_to,new_val)

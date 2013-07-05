@@ -1,0 +1,37 @@
+FFTest
+Endpoint Pt1;
+Endpoint Pt2;
+
+Sequences
+{
+  Seq: Pt1.createList -> Pt2.printListTest;
+}
+
+Sequence Seq() returns List (element: Text) list1
+{
+    Pt1.createList
+    {
+        list1 = createList();
+    }
+    Pt2.printListTest
+    {
+        list1.append('wo');
+    }
+}
+
+Pt1
+{
+    Function(returns: List (element: Text)) createList;
+    //Creates a list with the elements "hi" and "hello"
+    onCreate(Function(returns: List (element: Text)) create)
+    {
+        createList = create;
+    }
+    Public Function start_seq() returns List(element: Text)
+    {
+        return Seq();
+    }
+}
+
+Pt2
+{}

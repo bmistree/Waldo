@@ -1,0 +1,27 @@
+IdTest
+Endpoint IdTester;
+Endpoint Manager;
+
+Manager
+{
+  Endpoint endpt;
+
+  Public Function get_id() returns Text {
+    return id();
+  }
+
+  Public Function add_endpoint(Endpoint endpt_in) {
+    endpt = endpt_in;
+  }
+
+  Public Function get_managed_endpoint_id() returns Text {
+    return endpt.id();
+  }
+}
+
+IdTester
+{
+  Public Function get_id() returns Text {
+    return self.id();
+  }
+}

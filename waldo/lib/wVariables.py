@@ -1,13 +1,37 @@
 from waldoReferenceValue import _ReferenceValue
-from waldoInternalList import InternalList
-from waldoInternalMap import InternalMap
+from waldoInternalList import InternalList, SingleThreadInternalList
+from waldoInternalMap import InternalMap, SingleThreadInternalMap
 from abc import abstractmethod
 import util
 import waldoReferenceBase
 import numbers
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
+from waldoObj import WaldoObj
+
+from singleThreadReferenceValue import _SingleThreadReferenceValue
+
+class _WaldoSingleThreadVariable(_SingleThreadReferenceValue):
+    '''
+    On single thread variables, do not need locks.
+    '''
+    def __init__(self,name,host_uuid,peered,init_val):
+        self.name = name
+        _SingleThreadReferenceValue.__init__(self,host_uuid,peered,init_val)
+
+    @abstractmethod
+    def is_value_type(self):
+        util.logger_assert(
+            'Cannot call pure virtual method is_value_type ' +
+            'on _WaldoSingleThreadVariable.')
+
+    @staticmethod
+    def var_type():
+        util.logger_assert(
+            'Cannot call pure virtual method var_type ' +
+            'on _WaldoSingleThreadVariable.')        
 
 
+        
 class _WaldoVariable(_ReferenceValue):
     def __init__(self,name,host_uuid,peered,init_val):
         self.name = name
@@ -26,7 +50,32 @@ class _WaldoVariable(_ReferenceValue):
             'on _WaldoVariable.')        
 
 
-### Pointer to endpoint
+#### POINTERS TO ENDPOITNS #####
+def is_non_ext_endpoint_var (to_check):
+    return (isinstance(to_check,WaldoSingleThreadEndpointVariable) or
+            isinstance(to_check,WaldoEndpointVariable))
+        
+class WaldoSingleThreadEndpointVariable(_WaldoSingleThreadVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        _WaldoSingleThreadVariable.__init__(self,name,host_uuid,peered,init_val)
+
+    @staticmethod
+    def var_type():
+        return 'SingleThreadWaldoEndpointVariable'
+
+    def is_value_type(self):
+        return False
+    
+    def copy(self,invalid_listener,peered,multi_threaded):
+        if multi_threaded:
+            return WaldoEndpointVariable(self.name,self.host_uuid,peered,self.val)
+        else:
+            return WaldoSingleThreadEndpointVariable(self.name,self.host_uuid,peered,self.val)
+        
+    def de_waldoify(self,invalid_listener):
+        return self.get_val(invalid_listener)
+
+    
 class WaldoEndpointVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
@@ -48,10 +97,40 @@ class WaldoEndpointVariable(_WaldoVariable):
         '''
         return self.get_val(invalid_listener)
 
-    
 
 
 ### VALUE TYPES
+def is_non_ext_num_var (to_check):
+    return (isinstance(to_check,WaldoSingleThreadNumVariable) or
+            isinstance(to_check,WaldoNumVariable))
+            
+class WaldoSingleThreadNumVariable(_WaldoSingleThreadVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        if init_val == None:
+            init_val = 0
+        
+        _WaldoSingleThreadVariable.__init__(self,name,host_uuid,peered,init_val)
+        
+    @staticmethod
+    def var_type():
+        return 'WaldoSingleThreadNumVariable'
+
+    def is_value_type(self):
+        return True
+    
+    def copy(self,invalid_listener,peered,multi_threaded):
+        if multi_threaded:
+            return WaldoNumVariable(self.name,self.host_uuid,peered,self.val)
+        else:
+            return WaldoSingleThreadNumVariable(self.name,self.host_uuid,peered,self.val)
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        return self.get_val(invalid_listener)
+
+        
 class WaldoNumVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         if init_val == None:
@@ -68,14 +147,51 @@ class WaldoNumVariable(_WaldoVariable):
 
     
     def copy(self,invalid_listener,peered,multi_threaded):
-        return WaldoNumVariable(
-            self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+        if multi_threaded:
+            return WaldoNumVariable(
+                self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+        else:
+            return WaldoSingleThreadNumVariable(
+                self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
     def de_waldoify(self,invalid_listener):
         '''
         @see _ReferenceBase.de_waldoify
         '''
         return self.get_val(invalid_listener)
+
+
+def is_non_ext_text_var (to_check):
+    return (isinstance(to_check,WaldoSingleThreadTextVariable) or
+            isinstance(to_check,WaldoTextVariable))
+
+            
+class WaldoSingleThreadTextVariable(_WaldoSingleThreadVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        if init_val == None:
+            init_val = ''
+        
+        _WaldoSingleThreadVariable.__init__(self,name,host_uuid,peered,init_val)
+
+    @staticmethod
+    def var_type():
+        return 'WaldoSingleThreadTextVariable'
+
+    def is_value_type(self):
+        return True
+
+    def copy(self,invalid_listener,peered,multi_threaded):
+        if multi_threaded:
+            return WaldoTextVariable(self.name,self.host_uuid,peered,self.val)
+        else:
+            return WaldoSingleThreadTextVariable(self.name,self.host_uuid,peered,self.val)
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        return self.get_val(invalid_listener)
+
     
     
 class WaldoTextVariable(_WaldoVariable):
@@ -93,8 +209,12 @@ class WaldoTextVariable(_WaldoVariable):
         return True
 
     def copy(self,invalid_listener,peered,multi_threaded):
-        return WaldoTextVariable(
-            self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+        if multi_threaded:
+            return WaldoTextVariable(
+                self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+        else:
+            return WaldoSingleThreadTextVariable(
+                self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
     def de_waldoify(self,invalid_listener):
         '''
@@ -103,6 +223,37 @@ class WaldoTextVariable(_WaldoVariable):
         return self.get_val(invalid_listener)
 
 
+def is_non_ext_true_false_var (to_check):
+    return (isinstance(to_check,WaldoSingleThreadTrueFalseVariable) or
+            isinstance(to_check,WaldoTrueFalseVariable))
+
+            
+class WaldoSingleThreadTrueFalseVariable(_WaldoSingleThreadVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        if init_val == None:
+            init_val = False
+        _WaldoSingleThreadVariable.__init__(self,name,host_uuid,peered,init_val)
+        
+    @staticmethod
+    def var_type():
+        return 'WaldoSingleThreadTrueFalseVariable'
+
+    def is_value_type(self):
+        return True
+
+    def copy(self,invalid_listener,peered,multi_threaded):
+        if multi_threaded:
+            return WaldoTrueFalseVariable(self.name,self.host_uuid,peered,self.val)
+        else:
+            return WaldoSingleThreadTrueFalseVariable(self.name,self.host_uuid,peered,self.val)
+
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        return self.get_val(invalid_listener)
+
+    
     
 class WaldoTrueFalseVariable(_WaldoVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
@@ -118,8 +269,12 @@ class WaldoTrueFalseVariable(_WaldoVariable):
         return True
 
     def copy(self,invalid_listener,peered,multi_threaded):
-        return WaldoTrueFalseVariable(
-            self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+        if multi_threaded:
+            return WaldoTrueFalseVariable(
+                self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+        else:
+            return WaldoSingleThreadTrueFalseVariable(
+                self.name,self.host_uuid,peered,self.get_val(invalid_listener))
 
     def de_waldoify(self,invalid_listener):
         '''
@@ -128,7 +283,7 @@ class WaldoTrueFalseVariable(_WaldoVariable):
         return self.get_val(invalid_listener)
 
 
-def recursive_map_list(val,name,host_uuid,peered):
+def recursive_map_list(val,name,host_uuid,peered,multi_threaded):
     '''
     Challenge is that both list and map types can take in
     arbitrarily-nested dicts and lists.  Eg.,
@@ -142,7 +297,6 @@ def recursive_map_list(val,name,host_uuid,peered):
 
     Returns a WaldoMapVariable or a WaldoListVariable, *NOT* an
     InternalMap or InternalList.
-    
     '''
 
     # FIXME: here's probably a lot of overhead to this approach.  If
@@ -153,43 +307,86 @@ def recursive_map_list(val,name,host_uuid,peered):
         copy = {}
         for key in val:
             dict_entry = val[key]
-            copy[key] = recursive_map_list(dict_entry,name,host_uuid,peered)
+            copy[key] = recursive_map_list(dict_entry,name,host_uuid,peered,multi_threaded)
+        
+        if multi_threaded:
+            copy = InternalMap(host_uuid,peered,copy)
+            return WaldoMapVariable(name,host_uuid,peered,copy)
 
-        copy = InternalMap(host_uuid,peered,copy)
-        return WaldoMapVariable(name,host_uuid,peered,copy)
+        copy = SingleThreadInternalMap(host_uuid,peered,copy)
+        return WaldoSingleThreadMapVariable(name,host_uuid,peered,copy)
+            
             
     elif isinstance(val,list):
         copy = []
         for element in val:
-            copy.append( recursive_map_list(element,name,host_uuid,peered))
+            copy.append( recursive_map_list(element,name,host_uuid,peered,multi_threaded))
 
-        copy = InternalList(host_uuid,peered,copy)            
-        return WaldoListVariable(name,host_uuid,peered,copy)
+        if multi_threaded:
+            copy = InternalList(host_uuid,peered,copy)            
+            return WaldoListVariable(name,host_uuid,peered,copy)
+            
+        copy = SingleThreadInternalList(host_uuid,peered,copy)
+        return WaldoSingleThreadListVariable(name,host_uuid,peered,copy)
+            
 
     # neither a Python map or list type, and therefore can be used as
     # itself.
     return val
 
 
+
 ### CONTAINER TYPES
 ## External types
 class _WaldoExternalVariable(_WaldoVariable):
-    pass
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        internal_val = self.get_val(invalid_listener)
+
+        if isinstance(internal_val,WaldoObj):
+            return internal_val.de_waldoify(invalid_listener)
+        return internal_val
+
+    def is_value_type(self):
+        return False
 
 
+class _WaldoSingleThreadExternalVariable(_WaldoSingleThreadVariable):
+    def de_waldoify(self,invalid_listener):
+        '''
+        @see _ReferenceBase.de_waldoify
+        '''
+        internal_val = self.get_val(invalid_listener)
+
+        if isinstance(internal_val,WaldoObj):
+            return internal_val.de_waldoify(invalid_listener)
+        return internal_val
+
+    def is_value_type(self):
+        return False
+
+def is_non_ext_map_var (to_check):
+    return (isinstance(to_check,WaldoMapVariable) or
+            isinstance(to_check,WaldoSingleThreadMapVariable))
+
+    
 class WaldoMapVariable(_WaldoExternalVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         # see comments in recursive_map_list
         if init_val == None:
-            init_val = recursive_map_list({},name,host_uuid,peered)
+            init_val = recursive_map_list({},name,host_uuid,peered,True)
             init_val = init_val.get_val(None)
         elif isinstance(init_val, InternalMap):
             pass
+        elif isinstance(init_val, SingleThreadInternalMap):
+            init_val = recursive_map_list(init_val.val,name,host_uuid,peered,True)
         else:
-            init_val = recursive_map_list(init_val,name,host_uuid,peered)
+            init_val = recursive_map_list(init_val,name,host_uuid,peered,True)
             init_val = init_val.get_val(None)
-                
-        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+
+        _WaldoExternalVariable.__init__(self,name,host_uuid,peered,init_val)
 
 
     def serializable_var_tuple_for_network(
@@ -219,7 +416,6 @@ class WaldoMapVariable(_WaldoExternalVariable):
             
         map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER            
         map_delta.var_name = var_name
-        version_obj = dirty_element.version_obj
         map_delta.has_been_written = version_obj.has_been_written_since_last_message
 
         # reset has been written to
@@ -248,7 +444,7 @@ class WaldoMapVariable(_WaldoExternalVariable):
         '''
         if map_delta.has_been_written:
             # create a new internal
-            internal_map = recursive_map_list({},self.name,self.host_uuid,True).get_val(None)
+            internal_map = recursive_map_list({},self.name,self.host_uuid,True,True).get_val(None)
             internal_map.incorporate_deltas(
                 map_delta.internal_map_delta,constructors,active_event)
 
@@ -262,26 +458,19 @@ class WaldoMapVariable(_WaldoExternalVariable):
     def var_type():
         return 'WaldoMapVariable'
 
-    def is_value_type(self):
-        return False
 
     def copy(self,invalid_listener,peered,multi_threaded):
-        return WaldoMapVariable(
-            self.name,self.host_uuid,peered,
-            self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded))
+        if multi_threaded:
+            return WaldoMapVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded))
+        else:
+            return WaldoSingleThreadMapVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded))
 
-    def de_waldoify(self,invalid_listener):
-        '''
-        @see _ReferenceBase.de_waldoify
-        '''
-        internal_val = self.get_val(invalid_listener)
-
-        if isinstance(internal_val,waldoReferenceBase._ReferenceBase):
-            return internal_val.de_waldoify(invalid_listener)
-        return internal_val
-
-
-    def write_val(self,invalid_listener,new_val,copy_if_peered=True,multi_threaded=True):
+    def write_val(
+        self,invalid_listener,new_val,copy_if_peered=True,multi_threaded=True):
         '''
         When writing a value to a peered container, we need to be
         careful that the new value also becomes peered.  Otherwise, we
@@ -289,25 +478,31 @@ class WaldoMapVariable(_WaldoExternalVariable):
         non-peered InternalMap or InternalList.
         '''
         if self.peered and copy_if_peered:
-            if isinstance(new_val,waldoReferenceBase._ReferenceBase):
+            if isinstance(new_val,WaldoObj):
                 new_val = new_val.copy(invalid_listener,True,multi_threaded)
         super(WaldoMapVariable,self).write_val(invalid_listener,new_val)
 
 
+def is_non_ext_list_var (to_check):
+    return (isinstance(to_check,WaldoListVariable) or
+            isinstance(to_check,WaldoSingleThreadListVariable))
+            
     
 class WaldoListVariable(_WaldoExternalVariable):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         # see comments in recursive_map_list
         if init_val == None:
-            init_val = recursive_map_list([],name,host_uuid,peered)
+            init_val = recursive_map_list([],name,host_uuid,peered,True)
             init_val = init_val.get_val(None)
         elif isinstance(init_val, InternalList):
             pass
+        elif isinstance(init_val, SingleThreadInternalList):
+            init_val = recursive_map_list(init_val.val,name,host_uuid,peered,True)
         else:
-            init_val = recursive_map_list(init_val,name,host_uuid,peered)
+            init_val = recursive_map_list(init_val,name,host_uuid,peered,True)
             init_val = init_val.get_val(None)
             
-        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+        _WaldoExternalVariable.__init__(self,name,host_uuid,peered,init_val)
 
 
     def serializable_var_tuple_for_network(
@@ -337,7 +532,6 @@ class WaldoListVariable(_WaldoExternalVariable):
 
         list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
         list_delta.var_name = var_name
-        version_obj = dirty_element.version_obj
         list_delta.has_been_written = version_obj.has_been_written_since_last_message
 
         # reset has been written to
@@ -366,7 +560,7 @@ class WaldoListVariable(_WaldoExternalVariable):
         '''
         if list_delta.has_been_written:
             # create a new internal
-            internal_list = recursive_map_list([],self.name,self.host_uuid,True).get_val(None)
+            internal_list = recursive_map_list([],self.name,self.host_uuid,True,True).get_val(None)
             internal_list.incorporate_deltas(
                 list_delta.internal_list_delta,constructors,active_event)
 
@@ -375,39 +569,28 @@ class WaldoListVariable(_WaldoExternalVariable):
             self.get_val(active_event).incorporate_deltas(
                 list_delta.internal_list_delta,constructors,active_event)
 
-
-    
     @staticmethod
     def var_type():
         return 'WaldoListVariable'
 
-    def is_value_type(self):
-        return False
 
     def copy(self,invalid_listener,peered,multi_threaded):
-        return WaldoListVariable(
-            self.name,self.host_uuid,peered,
-            self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded))
-
-    def de_waldoify(self,invalid_listener):
-        '''
-        @see _ReferenceBase.de_waldoify
-        '''
-        # FIXME: this will not work if we want userstructs to return
-        # as dicts.
-        internal_val = self.get_val(invalid_listener)
-
-        if isinstance(internal_val,waldoReferenceBase._ReferenceBase):
-            return internal_val.de_waldoify(invalid_listener)
-        return internal_val
-
-    def write_val(self,invalid_listener,new_val,copy_if_peered=True,multi_threaded=True):
+        if multi_threaded:
+            return WaldoListVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy(invalid_listener,peered, True))
+        else:
+            return WaldoSingleThreadListVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy(invalid_listener,peered,False))
+        
+    def write_val(self,invalid_listener,new_val,copy_if_peered=True):
         '''
         @see write_val in WaldoMapVariable
         '''
         if self.peered and copy_if_peered:
-            if isinstance(new_val,waldoReferenceBase._ReferenceBase):
-                new_val = new_val.copy(invalid_listener,True,multi_threaded)
+            if isinstance(new_val,WaldoObj):
+                new_val = new_val.copy(invalid_listener,True,True)
         super(WaldoListVariable,self).write_val(invalid_listener,new_val)
 
 
@@ -434,21 +617,17 @@ class WaldoUserStructVariable(WaldoMapVariable):
     def var_type():
         return 'WaldoUserStructVariable'
 
-    def is_value_type(self):
-        return False
-
-    def de_waldoify(self,invalid_listener):
-        '''
-        @see _ReferenceBase.de_waldoify
-        '''
-        internal_map = self.get_val(invalid_listener)
-        to_return = internal_map.de_waldoify(invalid_listener)
-        return to_return
 
     def copy(self,invalid_listener,peered,multi_threaded):
-        to_return = WaldoUserStructVariable(
-            self.name,self.host_uuid,peered,
-            self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered,multi_threaded))
+        if multi_threaded:
+            to_return = WaldoUserStructVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered))
+        else:
+            to_return = WaldoSingleThreadUserStructVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered))
+            
         return to_return
 
     def serializable_var_tuple_for_network(
@@ -478,7 +657,6 @@ class WaldoUserStructVariable(WaldoMapVariable):
             
         struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
         struct_delta.var_name = var_name
-        version_obj = dirty_element.version_obj
         struct_delta.has_been_written = version_obj.has_been_written_since_last_message
 
         # reset has been written to
@@ -548,9 +726,14 @@ class WaldoFunctionVariable(_WaldoVariable):
     def is_value_type(self):
         return True
 
-    def copy(self,invalid_listener,peered,multi_threaded):
-        new_func_variable = WaldoFunctionVariable(
-            self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+    def copy(self,invalid_listener,peered, multi_threaded):
+        if multi_threaded:
+            new_func_variable = WaldoFunctionVariable(
+                self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+        else:
+            new_func_variable = WaldoSingleThreadFunctionVariable(
+                self.name,self.host_uuid,peered,self.get_val(invalid_listener))
+            
         return new_func_variable.set_external_args_array(self.ext_args_array)
 
     def de_waldoify(self,invalid_listener):
@@ -558,7 +741,6 @@ class WaldoFunctionVariable(_WaldoVariable):
         @see _ReferenceBase.de_waldoify
         '''
         return self.get_val(invalid_listener)
-
 
 
 class _WaldoExternalValueType(_WaldoExternalVariable):
@@ -574,7 +756,7 @@ class _WaldoExternalValueType(_WaldoExternalVariable):
         '''
         internal_val = self.get_val(invalid_listener)
 
-        if isinstance(internal_val,waldoReferenceBase._ReferenceBase):
+        if isinstance(internal_val,WaldoObj):
             return internal_val.de_waldoify(invalid_listener)
         return internal_val
 
@@ -589,13 +771,13 @@ class WaldoExtNumVariable(_WaldoExternalValueType):
         else:
             init_val = WaldoNumVariable(name,host_uuid,False,init_val)
                  
-        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+        _WaldoExternalValueType.__init__(self,name,host_uuid,peered,init_val)
         
     def var_type():
         return 'WaldoExternalNumVariable'
 
     
-class WaldoExtTextVariable(_WaldoExternalVariable):
+class WaldoExtTextVariable(_WaldoExternalValueType):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
 
         if init_val == None:
@@ -605,7 +787,7 @@ class WaldoExtTextVariable(_WaldoExternalVariable):
         else:
             init_val = WaldoTextVariable(name,host_uuid,False,init_val)
                  
-        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+        _WaldoExternalValueType.__init__(self,name,host_uuid,peered,init_val)
         
             
     def var_type():
@@ -613,7 +795,7 @@ class WaldoExtTextVariable(_WaldoExternalVariable):
 
     
 
-class WaldoExtTrueFalseVariable(_WaldoExternalVariable):
+class WaldoExtTrueFalseVariable(_WaldoExternalValueType):
     def __init__(self,name,host_uuid,peered=False,init_val=None):
 
         if init_val == None:
@@ -623,8 +805,305 @@ class WaldoExtTrueFalseVariable(_WaldoExternalVariable):
         else:
             init_val = WaldoTextVariable(name,host_uuid,False,init_val)
                  
-        _WaldoVariable.__init__(self,name,host_uuid,peered,init_val)
+        _WaldoExternalValueType.__init__(self,name,host_uuid,peered,init_val)
         
             
     def var_type():
-        return 'WaldoExternalTextVariable'
+        return 'WaldoExternalTrueFalseVariable'
+
+
+
+
+#### SINGLE THREAD CONTAINER VARIABLES ####
+class WaldoSingleThreadMapVariable(_WaldoSingleThreadExternalVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        # see comments in recursive_map_list
+        if init_val == None:
+            init_val = recursive_map_list({},name,host_uuid,peered,False)
+            init_val = init_val.get_val(None)
+        elif isinstance(init_val, InternalMap):
+            pass
+        elif isinstance(init_val, SingleThreadInternalMap):
+            pass
+        else:
+            init_val = recursive_map_list(init_val,name,host_uuid,peered,False)
+            init_val = init_val.get_val(None)
+                
+        _WaldoSingleThreadExternalVariable.__init__(self,name,host_uuid,peered,init_val)
+
+        
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,invalid_listener,force):
+        '''
+        @see waldoReferenceBase.serializable_var_tuple_for_network
+        '''
+        version_obj = self.version_obj
+
+        is_var_store = False
+        if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+            is_var_store = True
+            map_delta = parent_delta.map_deltas.add()
+        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_WRITTEN:            
+            map_delta = parent_delta.what_written_map
+        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_ADDED:
+            map_delta = parent_delta.added_what_map
+        elif parent_delta.parent_type == VarStoreDeltas.SUB_ELEMENT_ACTION:
+            map_delta = parent_delta.map_delta
+        else:
+            util.logger_assert('Unexpected parent container type when serializing map')
+            
+        map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER            
+        map_delta.var_name = var_name
+        map_delta.has_been_written = version_obj.has_been_written_since_last_message
+
+        # reset has been written to
+        written_since_last_message = version_obj.has_been_written_since_last_message
+        version_obj.has_been_written_since_last_message = False
+        
+        var_data = self.val
+        internal_has_been_written = var_data.serializable_var_tuple_for_network(
+            map_delta,'',invalid_listener,
+            # must force the write when we have written a new value over list
+            force or written_since_last_message)
+
+        
+        # FIXME: check to ensure that second part of condition will
+        # still hide elements that do not change
+        if (not internal_has_been_written) and is_var_store and (not written_since_last_message):
+            # remove the newly added map delta because there were no
+            # changes that it encoded
+            del parent_delta.map_deltas[-1]
+
+        return internal_has_been_written or written_since_last_message or force
+        
+    def incorporate_deltas(self,map_delta,constructors,active_event):
+        '''
+        @param {SingleMapDelta} map_delta --- @see varStoreDeltas.proto
+        '''
+        if map_delta.has_been_written:
+            # create a new internal
+            internal_map = recursive_map_list({},self.name,self.host_uuid,True,False).get_val(None)
+            internal_map.incorporate_deltas(
+                map_delta.internal_map_delta,constructors,active_event)
+
+            self.write_val(active_event,internal_map,False)
+        else:
+            self.get_val(active_event).incorporate_deltas(
+                map_delta.internal_map_delta,constructors,active_event)
+
+    
+    @staticmethod
+    def var_type():
+        return 'SingleThreadWaldoMapVariable'
+
+    def copy(self,invalid_listener,peered,multi_threaded):
+        if multi_threaded:
+            return WaldoMapVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded))
+        else:
+            return WaldoSingleThreadMapVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy(invalid_listener,peered,multi_threaded))
+
+    def write_val(self,invalid_listener,new_val,copy_if_peered=True,multi_threaded=True):
+        '''
+        When writing a value to a peered container, we need to be
+        careful that the new value also becomes peered.  Otherwise, we
+        could have a peered variable holding a reference to a
+        non-peered InternalMap or InternalList.
+        '''
+        if self.peered and copy_if_peered:
+            if isinstance(new_val,WaldoObj):
+                new_val = new_val.copy(invalid_listener,True,multi_threaded)
+                
+        super(WaldoSingleThreadMapVariable,self).write_val(invalid_listener,new_val)
+
+
+class WaldoSingleThreadListVariable(_WaldoSingleThreadExternalVariable):
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        # see comments in recursive_map_list
+        if init_val is None:
+            init_val = recursive_map_list([],name,host_uuid,peered,False)
+            init_val = init_val.get_val(None)
+
+        elif isinstance(init_val, InternalList):
+            pass
+        elif isinstance(init_val, SingleThreadInternalList):
+            pass
+        else:
+            init_val = recursive_map_list(init_val,name,host_uuid,peered,False)
+            init_val = init_val.get_val(None)
+            
+        _WaldoSingleThreadExternalVariable.__init__(self,name,host_uuid,peered,init_val)
+
+
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,invalid_listener,force):
+        '''
+        @see waldoReferenceBase.serializable_var_tuple_for_network
+        '''
+        version_obj = self.version_obj
+
+        is_var_store = False
+        if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+            is_var_store = True
+            list_delta = parent_delta.list_deltas.add()
+        elif parent_delta.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
+            list_delta = parent_delta.what_written_list
+        elif parent_delta.parent_type == VarStoreDeltas.CONTAINER_ADDED:
+            list_delta = parent_delta.added_what_list
+        elif parent_delta.parent_type == VarStoreDeltas.SUB_ELEMENT_ACTION:
+            list_delta = parent_delta.list_delta
+        else:
+            util.logger_assert('Unexpected parent container type when serializing list')
+
+        list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER
+        list_delta.var_name = var_name
+        list_delta.has_been_written = version_obj.has_been_written_since_last_message
+
+        # reset has been written to
+        written_since_last_message = version_obj.has_been_written_since_last_message
+        version_obj.has_been_written_since_last_message = False
+
+        var_data = self.val
+        internal_has_been_written = var_data.serializable_var_tuple_for_network(
+            list_delta,'',invalid_listener,
+            # must force the write when we have written a new value over list
+            force or written_since_last_message)
+
+
+        # FIXME: check to ensure that second part of condition will
+        # still hide elements that do not change
+        if (not internal_has_been_written) and is_var_store and (not written_since_last_message):
+            # remove the newly added list delta because there were no
+            # changes that it encoded
+            del parent_delta.list_deltas[-1]
+        
+        return internal_has_been_written or written_since_last_message or force
+
+    def incorporate_deltas(self,list_delta,constructors,active_event):
+        '''
+        @param {SingleListDelta} list_delta --- @see varStoreDeltas.proto
+        '''
+        if list_delta.has_been_written:
+            # create a new internal
+            internal_list = recursive_map_list([],self.name,self.host_uuid,True,False).get_val(None)
+            internal_list.incorporate_deltas(
+                list_delta.internal_list_delta,constructors,active_event)
+
+            self.write_val(active_event,internal_list,False)
+        else:
+            self.get_val(active_event).incorporate_deltas(
+                list_delta.internal_list_delta,constructors,active_event)
+
+    @staticmethod
+    def var_type():
+        return 'WaldoSingleThreadListVariable'
+
+    def copy(self,invalid_listener,peered,multi_threaded):
+        if multi_threaded:
+            return WaldoListVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy(invalid_listener,peered, True))
+        else:
+            return WaldoSingleThreadListVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy(invalid_listener,peered,False))
+
+    def write_val(self,invalid_listener,new_val,copy_if_peered=True):
+        '''
+        @see write_val in WaldoMapVariable
+        '''
+        if self.peered and copy_if_peered:
+            if isinstance(new_val,WaldoObj):
+                new_val = new_val.copy(invalid_listener,True,False)
+        super(WaldoSingleThreadListVariable,self).write_val(invalid_listener,new_val)
+
+
+
+class WaldoSingleThreadUserStructVariable(WaldoSingleThreadMapVariable):
+    '''
+    Under the hood, user structs in Waldo are really just maps indexed
+    by text.
+    '''
+
+    def __init__(self,name,host_uuid,peered=False,init_val=None):
+        '''
+        @param {dict} init_val --- Required to be non-None.  Contains
+        a mapping of names to WaldoVariables.  Each name corresponds
+        to one of the variable fields in the struct.  
+        '''
+        if not isinstance(init_val,dict):
+            util.logger_assert(
+                'User structs must always have init_vals.  ' +
+                'Otherwise, not initializing struct data')
+    
+        WaldoSingleThreadMapVariable.__init__(self,name,host_uuid,peered,init_val)
+    
+    @staticmethod
+    def var_type():
+        return 'WaldoSingleThreadUserStructVariable'
+
+
+    def copy(self,invalid_listener,peered,multi_threaded):
+        if multi_threaded:
+            to_return = WaldoUserStructVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered))
+        else:
+            to_return = WaldoSingleThreadUserStructVariable(
+                self.name,self.host_uuid,peered,
+                self.get_val(invalid_listener).copy_internal_val(invalid_listener,peered))
+            
+        return to_return
+
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,invalid_listener,force):
+        '''
+        @see waldoReferenceBase.serializable_var_tuple_for_network
+        '''
+        version_obj = self.version_obj
+
+        is_var_store = False
+        if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+            is_var_store = True
+            struct_delta = parent_delta.struct_deltas.add()
+        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_WRITTEN:            
+            struct_delta = parent_delta.what_written_map
+        elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_ADDED:
+            struct_delta = parent_delta.added_what_map
+        elif parent_delta.parent_type == VarStoreDeltas.SUB_ELEMENT_ACTION:
+            struct_delta = parent_delta.struct_delta
+        else:
+            util.logger_assert('Unexpected parent container type when serializing map')
+            
+        struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER
+        struct_delta.var_name = var_name
+        struct_delta.has_been_written = version_obj.has_been_written_since_last_message
+
+        # reset has been written to
+        written_since_last_message = version_obj.has_been_written_since_last_message
+        version_obj.has_been_written_since_last_message = False
+
+        
+        var_data = self.val
+        internal_has_been_written = var_data.serializable_var_tuple_for_network(
+            struct_delta,'',invalid_listener,
+            # must force the write when we have written a new value over list
+            force or written_since_last_message)
+        
+
+        # FIXME: check to ensure that second part of condition will
+        # still hide elements that do not change
+        if (not internal_has_been_written) and is_var_store and (not written_since_last_message):
+            # remove the newly added map delta because there were no
+            # changes that it encoded
+            del parent_delta.struct_deltas[-1]
+
+        return internal_has_been_written or written_since_last_message or force
+    
+
+
+
+

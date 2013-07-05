@@ -5,6 +5,12 @@ import waldo.parser.ast.typeCheck as TypeCheck
 import waldo.lib.util as lib_util
 from waldo.parser.ast.astNode import AstNode
 
+# Constant Dict representing Waldo's builtin endpoint methods. Maps from
+# method names to emitted code.
+ENDPOINT_BUILTIN_METHODS = {
+  'id' : 'self.id()'            # returns the endpoint's unique id
+}
+
 def emit_statement(
     statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''
@@ -81,9 +87,9 @@ def emit_statement(
             limit_range_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
         increment_range_txt = emit_statement(
             increment_range_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-        
+
         statement_txt = (
-            '%s("garbage",self._host_uuid,False,' % emit_utils.library_transform('WaldoListVariable') +
+            '%s("garbage",self._host_uuid,False,' % emit_utils.library_transform('WaldoSingleThreadListVariable') +
             'list(range(_context.get_val_if_waldo(%s,_active_event),' % base_range_txt +
             '_context.get_val_if_waldo(%s,_active_event),' % limit_range_txt +
             '_context.get_val_if_waldo(%s,_active_event))))' % increment_range_txt )
@@ -308,15 +314,21 @@ def emit_statement(
                 statement_node,'self._host_uuid',
                 False, # variable is not peered
                 endpoint_name,
-                ast_root,fdep_dict,emit_ctx)
+                ast_root,fdep_dict,emit_ctx,
+                # not multithreaded => pass in false
+                False)
+            
         elif (emit_utils.is_reference_type_type_dict(var_type_node.type) or
               TypeCheck.templateUtil.is_endpoint(var_type_node.type) or
               TypeCheck.templateUtil.is_basic_function_type(var_type_node.type)):
+            
             decl_txt,var_name = non_struct_rhs_declaration(
                 statement_node,'self._host_uuid',
                 False, # variable is not peered
                 endpoint_name,
-                ast_root,fdep_dict,emit_ctx)
+                ast_root,fdep_dict,emit_ctx,
+                # not multithreaded => pass in false
+                False)
             
         else:
             # value types do not need to be wrapped
@@ -356,7 +368,7 @@ def emit_statement(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
     elif statement_node.label == AST_MAP:
-        variable_type_str = emit_utils.library_transform('WaldoMapVariable')
+        variable_type_str = emit_utils.library_transform('WaldoSingleThreadMapVariable')
 
         map_item_str = ''
         for map_literal_item_node in statement_node.children:
@@ -390,7 +402,7 @@ def emit_statement(
 
 
     elif statement_node.label == AST_LIST:
-        variable_type_str = emit_utils.library_transform('WaldoListVariable')
+        variable_type_str = emit_utils.library_transform('WaldoSingleThreadListVariable')
 
         list_item_str = ''
         for list_literal_item_node in statement_node.children:
@@ -563,8 +575,15 @@ def emit_func_object_call(
     @param {AstNode} method_call_node --- 
     '''
     function_obj_node = method_call_node.children[0]
+
+    # Lookup method name in endpoint builtins
+    method_call_name = function_obj_node.value
+    if ENDPOINT_BUILTIN_METHODS.get(method_call_name) != None:
+        return ENDPOINT_BUILTIN_METHODS.get(method_call_name);
+
     function_obj_txt = emit_statement(
         function_obj_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
 
     # contains the arguments passed into the function.
     func_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
@@ -1067,8 +1086,12 @@ def emit_ext_assign(
 
 def struct_rhs_declaration(
     decl_node,host_uuid_var_name,peered,endpoint_name,ast_root,
-    fdep_dict,emit_ctx):
+    fdep_dict,emit_ctx,multithreaded):
     '''
+    @param {bool} multithreaded --- True if the variable that we are
+    going to create could be accessed by multiple threads (eg., is an
+    endpoint variable or peered variable).  False otherwise.
+    
     Used to emit the right hand side of a declaration of a struct
     type.  A struct type *must* have an initializer that populates the
     struct's fields with Waldo variables.
@@ -1094,19 +1117,23 @@ def struct_rhs_declaration(
 
     struct_type_variable_txt = struct_type_emit_declaration(
         var_type,var_name,host_uuid_var_name,peered,endpoint_name,ast_root,
-        fdep_dict,emit_ctx, initializer_str)
+        fdep_dict,emit_ctx, initializer_str,multithreaded)
     
     return struct_type_variable_txt,var_name
 
 
 def struct_type_emit_declaration(
     var_type,var_name,host_uuid_var_name,peered,endpoint_name,ast_root,
-    fdep_dict,emit_ctx, initializer_str):
+    fdep_dict,emit_ctx, initializer_str,multithreaded):
     '''
     @param {type dict} var_type --- Should be the type dict for a user
     struct.
     
     @param {String} var_name --- The name of the Waldo 
+
+    @param {bool} multithreaded --- True if the variable that we are
+    going to create could be accessed by multiple threads (eg., is an
+    endpoint variable or peered variable).  False otherwise.
     
     @returns {String} --- The string for a WaldoUserStructVariable
     with initialization vector or with assignment to new value.
@@ -1139,7 +1166,7 @@ def struct_type_emit_declaration(
             
             field_var_decl = non_struct_type_emit_declaration(
                 field_type_dict,field_name,host_uuid_var_name,peered,
-                endpoint_name,ast_root,fdep_dict,emit_ctx,'None')
+                endpoint_name,ast_root,fdep_dict,emit_ctx,'None',multithreaded)
         else:
             # means it is just a value type.  Load its default value
             field_var_decl = emit_utils.emit_value_type_default(field_type_dict)
@@ -1151,9 +1178,13 @@ def struct_type_emit_declaration(
     init_val_dict_str += '}'
             
     peered_str = str(peered)
-            
+
+    waldo_type = emit_utils.library_transform('WaldoUserStructVariable')
+    if multithreaded is False:
+        waldo_type = emit_utils.library_transform('WaldoSingleThreadUserStructVariable')
+    
     struct_waldo_var_txt = (
-        emit_utils.library_transform('WaldoUserStructVariable') +
+        waldo_type +
         '("%s",%s,%s,%s)' % (var_name,host_uuid_var_name,peered_str,init_val_dict_str))
 
     return struct_waldo_var_txt
@@ -1161,17 +1192,22 @@ def struct_type_emit_declaration(
 
 def non_struct_rhs_declaration(
     decl_node,host_uuid_var_name,peered,endpoint_name,ast_root,
-    fdep_dict,emit_ctx):
+    fdep_dict,emit_ctx,multithreaded):
     '''
     @param {AstNode} decl_node --- Can either be labeled
     AST_ANNOTATED_DECLARATION or AST_DECLARATION.  Should not be the
     declaration of a struct.  Use struct_declaration function for
     that.
 
+    @param {bool} multithreaded --- True if the variable that we are
+    going to create could be accessed by multiple threads (eg., is an
+    endpoint variable or peered variable).  False otherwise.
+    
     @returns {2-tuple} (a,b)
     
        a {String} --- Emitted text for the creation of the Waldo
                       variable declared by decl_node.
+
        b {String} --- Name of the variable
     '''
 
@@ -1216,19 +1252,19 @@ def non_struct_rhs_declaration(
     wvar_load_txt = non_struct_type_emit_declaration(
         var_type,var_name,host_uuid_var_name,peered,
         endpoint_name,ast_root,fdep_dict,emit_ctx,
-        initializer_str)
+        initializer_str,multithreaded)
     
     return wvar_load_txt,var_name
 
 
 def non_struct_type_emit_declaration(
     type_dict,var_name,host_uuid_var_name,peered,
-    endpoint_name,ast_root,fdep_dict,emit_ctx,initializer_str):
+    endpoint_name,ast_root,fdep_dict,emit_ctx,initializer_str,multithreaded):
 
     peered_str = 'True' if peered else 'False'
     
     variable_type_str,is_func = emit_utils.get_var_type_txt_from_type_dict(
-        type_dict)
+        type_dict,multithreaded)
 
     wvar_load_text = '''%s(  # the type of waldo variable to create
     '%s', # variable's name
