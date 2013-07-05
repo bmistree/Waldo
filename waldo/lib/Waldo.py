@@ -116,6 +116,8 @@ def stcp_connect(constructor,host,port,certfile,keyfile,*args):
       Endpoint object: --- Can call any Public method of this
       object.
     '''
+
+
     stcp_connection_obj = waldoConnectionObj._WaldoSTCPConnectionObj(
         host,port,cfile=certfile, key=keyfile)
 

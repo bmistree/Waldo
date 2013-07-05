@@ -266,6 +266,16 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         '''
 
         if sock == None:
+            if key == None:
+                import OpenSSL
+                from OpenSSL import crypto
+                key = crypto.PKey()
+                key.generate_key(crypto.TYPE_RSA,2048)
+                key = crypto.dump_privatekey(crypto.FILETYPE_PEM,k1)
+                f = open("key.pem", "w")
+                f.write(key)
+                f.close()
+                key = "key.pem"
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             self.sock = ssl.wrap_socket(self.sock,
@@ -410,7 +420,16 @@ class _STCPAcceptThread(threading.Thread):
         while True:
 
             try:
-
+                if self.key == None:
+                    import OpenSSL
+                    from OpenSSL import crypto
+                    self.key = crypto.PKey()
+                    self.key.generate_key(crypto.TYPE_RSA,2048)
+                    self.key = crypto.dump_privatekey(crypto.FILETYPE_PEM,self.key)
+                    f = open("key.pem", "w")
+                    f.write(self.key)
+                    f.close()
+                    self.key = "key.pem"
                 conn, addr = sock.accept()
                 conn = ssl.wrap_socket(conn,
                                  server_side=True,
