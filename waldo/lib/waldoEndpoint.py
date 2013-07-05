@@ -92,9 +92,6 @@ class _Endpoint(object):
         self._stop_listener_id_assigner = 0
         self._stop_listeners = {}
 
-    def id(self):
-        return self._uuid
-        
     def _stop_lock(self):
         self._stop_mutex.acquire()
         
@@ -790,8 +787,20 @@ class _Endpoint(object):
         if request_callback:
             self._act_event_map.callback_when_stopped(self._stop_complete_cb)
 
+    # Builtin Endpoint Functions
     def _endpoint_func_call_prefix__waldo__id(self, *args):
         '''
         Builtin id method. Returns the endpoint's uuid.
+
+        For use within Waldo code.
         '''
         return self._uuid
+
+    def id(self):
+        '''
+        Builtin id method. Returns the endpoint's uuid.
+
+        For use on endpoints within Python code.
+        '''
+        return self._uuid
+        
