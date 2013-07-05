@@ -663,8 +663,10 @@ class FuncMatchObject():
                 
         '''
 
-        #check if have the same number of arguments
-        numArgsExpected = len(self.element.funcArgTypes );
+        # Check if the number of args expected matches the number of args
+        # provided. Args of type Nothing should not be counted.
+        numArgsExpected = sum([1 for type_dict in self.element.funcArgTypes if 
+                type_dict[JSON_TYPE_FIELD] != TYPE_NOTHING])
         numArgsProvided = len(funcArgTypes);
         if (numArgsExpected != numArgsProvided):
             returner = FuncCallArgMatchError(
