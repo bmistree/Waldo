@@ -148,6 +148,7 @@ def run_emit_tests():
     import emit_tests.id_method
 
     import security_tests.symmetric_test
+    import security_tests.symmetric_test_no_key
     import security_tests.two_side_stop
 
 
@@ -266,7 +267,12 @@ def run_emit_tests():
          security_tests.symmetric_test.run_test),
 
         ('Tests to ensure secure stop message sent to other side',
-          security_tests.two_side_stop.run_test)
+          security_tests.two_side_stop.run_test),
+
+        ('Test secure no key symmetric compile ',
+         security_tests.symmetric_test_no_key.run_test)
+
+        
 
         ]
 
