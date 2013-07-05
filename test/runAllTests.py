@@ -26,6 +26,8 @@ import ind_tests.tcp_encapsulate_decapsulate
 
 emit_test_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), 'emit_tests')
+security_test_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), 'security_tests')
 
 
 def run_lib_tests():
@@ -93,12 +95,21 @@ def call_make_in_emit_test_folder():
     subprocess.call(['make','v4'])
     os.chdir(cwd)
 
+def call_make_in_security_test_folder():
+    cwd = os.getcwd()
+    os.chdir(security_test_dir)
+    subprocess.call(['make','clean'])
+    subprocess.call(['make','v4'])
+    os.chdir(cwd)
+
     
 def run_emit_tests():
     '''
     Must be run after 
     '''
     call_make_in_emit_test_folder()
+    call_make_in_security_test_folder()
+
 
     import emit_tests.set_get_value_test
     import emit_tests.binary_operator_tests
@@ -135,6 +146,10 @@ def run_emit_tests():
     import emit_tests.self_type
     import emit_tests.foreign_func_in_sequence
     import emit_tests.id_method
+
+    import security_tests.symmetric_test
+    import security_tests.two_side_stop
+
 
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -245,12 +260,42 @@ def run_emit_tests():
 
         ]
 
+    security_tests_to_run = [
+
+        ('Test secure symmetric compile',
+         security_tests.symmetric_test.run_test),
+
+        ('Tests to ensure secure stop message sent to other side',
+          security_tests.two_side_stop.run_test)
+
+        ]
+
     run_tests(emit_tests_to_run)
+    run_tests(security_tests_to_run)
+    
+def clean_emit_test():
+    cwd = os.getcwd()
+    os.chdir(emit_test_dir)
+    subprocess.call(['make','clean'])
+    os.chdir(cwd)
+
+def clean_security_test():
+    cwd = os.getcwd()
+    os.chdir(security_test_dir)
+    subprocess.call(['make','clean'])
+    os.chdir(cwd)
+
+def clean_up():
+    clean_emit_test()
+    clean_security_test()
     
 
 def run_all():
     run_lib_tests()
     run_emit_tests()
+    clean_up()
+
+
 
 if __name__ == '__main__':
     run_all()

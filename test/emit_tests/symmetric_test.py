@@ -15,7 +15,7 @@ Test to ensure that
 '''
 
 SIDEA_HOST = '127.0.0.1'
-SIDEA_PORT = 6921
+SIDEA_PORT = 6923
 
 
 sidea_wait_queue = Queue.Queue()
@@ -29,6 +29,7 @@ def run_test():
     original_sideb_num = 135.1
     
     accept_stoppable = Waldo.tcp_accept(
+        #SideA, SIDEA_HOST, SIDEA_PORT,"/Users/alaruba/Waldo/test/security_tests/cert.pem", "/Users/alaruba/Waldo/test/security_tests/privatekey.pem",None,original_sidea_num,
         SideA, SIDEA_HOST, SIDEA_PORT,original_sidea_num,
         connected_callback=sidea_connected)
     

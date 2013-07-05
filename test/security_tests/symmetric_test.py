@@ -15,7 +15,7 @@ Test to ensure that
 '''
 
 SIDEA_HOST = '127.0.0.1'
-SIDEA_PORT = 6923
+SIDEA_PORT = 6920
 
 
 sidea_wait_queue = Queue.Queue()
