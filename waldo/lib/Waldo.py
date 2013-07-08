@@ -65,7 +65,7 @@ _waldo_classes = {
 
     
 
-def stcp_connect(constructor,host,port,certfile,keyfile,*args):
+def stcp_connect(constructor,host,port,certfile,keyfile,*args, **kwargs):
     '''
     Tries to connect an endpoint to another endpoint via a TCP
     connection though SSL.
@@ -94,7 +94,7 @@ def stcp_connect(constructor,host,port,certfile,keyfile,*args):
 
 
     stcp_connection_obj = waldoConnectionObj._WaldoSTCPConnectionObj(
-        host,port,cfile=certfile, key=keyfile)
+        host,port,cfile=certfile, key=keyfile, **kwargs)
 
     endpoint = constructor(
         _waldo_classes,_host_uuid,stcp_connection_obj,*args)
@@ -180,7 +180,7 @@ def stcp_accept(constructor, host, port, certfile=None, keyfile=None, ca_certs=N
     tcp_accept_thread = waldoConnectionObj._STCPAcceptThread(
         stoppable, constructor,_waldo_classes,host,port,
         connected_callback,
-        _host_uuid,synchronization_queue,certfile,keyfile,ca_certs,*args)
+        _host_uuid,synchronization_queue,certfile,keyfile,ca_certs,*args,**kwargs)
     tcp_accept_thread.start()
 
     # once this returns, we know that we are listening on the

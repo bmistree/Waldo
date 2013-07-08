@@ -19,11 +19,11 @@ def sidea_connected(sidea_endpoint):
 
 def run_test():
     accept_stoppable = Waldo.stcp_accept(
-        SideA, SIDEA_HOST, SIDEA_PORT,"security_tests/cert.pem", "security_tests/privatekey.pem", None,
+        SideA, SIDEA_HOST, SIDEA_PORT,None, None, None,
         connected_callback=sidea_connected)
     
     sideb = Waldo.stcp_connect(
-        SideB,SIDEA_HOST,SIDEA_PORT,"security_tests/cert.pem", "security_tests/privatekey.pem")
+        SideB,SIDEA_HOST,SIDEA_PORT,None, None)
 
     sidea = sidea_wait_queue.get()
 

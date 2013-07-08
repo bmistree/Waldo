@@ -254,7 +254,7 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
     Inherits from _WaldoTCPConnectionObj. The only difference is in the initialization, so
     we can perform SSL there.
     '''
-    def __init__(self, dst_host, dst_port, sock=None, cfile=None, key=None):
+    def __init__(self, dst_host, dst_port, sock=None, cfile=None, key=None, **kwargs):
         '''
         Either dst_host + dst_port are None or sock is None.
         
@@ -279,20 +279,22 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
                 f.write(keytext)
                 f.close()
                 
+                if cfile == None:
+                    cfile = crypto.X509()
+               
+                    cfile.get_subject().C = kwargs.get('countryName','US')
+                    cfile.get_subject().ST = kwargs.get('stateOrProvinceName','California')
+                    cfile.get_subject().L = kwargs.get('localityName','NA')
+                    cfile.get_subject().O = kwargs.get('organizationName','NA')
+                    cfile.get_subject().OU = kwargs.get('organizationalUnitName','NA')
+                    cfile.get_subject().CN = kwargs.get('commonName','NA')
 
-                cfile = crypto.X509()
-                cfile.get_subject().C = "US"
-                cfile.get_subject().ST = "Minnesota"
-                cfile.get_subject().L = "Minnetonka"
-                cfile.get_subject().O = "my company"
-                cfile.get_subject().OU = "my organization"
-                cfile.get_subject().CN = "something"
-                cfile.set_serial_number(1000)
-                cfile.gmtime_adj_notBefore(0)
-                cfile.gmtime_adj_notAfter(10*365*24*60*60)
-                cfile.set_issuer(cfile.get_subject())
-                cfile.set_pubkey(key)
-                cfile.sign(key, 'sha1')
+                    cfile.set_serial_number(1000)
+                    cfile.gmtime_adj_notBefore(0)
+                    cfile.gmtime_adj_notAfter(10*365*24*60*60)
+                    cfile.set_issuer(cfile.get_subject())
+                    cfile.set_pubkey(key)
+                    cfile.sign(key, 'sha256')
 
                 f = open("certificate.pem", "w")
                 cfile = crypto.dump_certificate(crypto.FILETYPE_PEM, cfile)
@@ -363,8 +365,7 @@ class _STCPAcceptThread(threading.Thread):
 
     def __init__(
         self, stoppable, endpoint_constructor, waldo_classes, host_listen_on,
-        port_listen_on, cb, host_uuid, synchronization_listening_queue, certfile, keyfile, ca_certs,
-        *args):
+        port_listen_on, cb, host_uuid, synchronization_listening_queue, certfile, keyfile, ca_certs,*args, **kwargs):
         '''
         @param{_TCPListeningStoppable object} stoppable --- Every 1s,
         breaks out of listening for new connections and checks if
@@ -417,6 +418,15 @@ class _STCPAcceptThread(threading.Thread):
         self.cert = certfile
         self.key = keyfile
         self.ca = ca_certs
+
+        self.countryName  = kwargs.get('countryName','US')
+        self.stateOrProvinceName = kwargs.get('stateOrProvinceName','California')
+        self.localityName = kwargs.get('localityName','NA')
+        self.organizationName = kwargs.get('organizationName','NA')
+        self.organizationalUnitName = kwargs.get('organizationalUnitName','NA')
+        self.commonName = kwargs.get('commonName','NA')
+        self.emailAddress = kwargs.get('emailAddress', 'NA')
+
         
         self.synchronization_listening_queue = synchronization_listening_queue
         
@@ -457,20 +467,21 @@ class _STCPAcceptThread(threading.Thread):
                     f.write(keytext)
                     f.close()
                 
-
-                    self.cert = crypto.X509()
-                    self.cert.get_subject().C = "US"
-                    self.cert.get_subject().ST = "Minnesota"
-                    self.cert.get_subject().L = "Minnetonka"
-                    self.cert.get_subject().O = "my company"
-                    self.cert.get_subject().OU = "my organization"
-                    self.cert.get_subject().CN = "something"
-                    self.cert.set_serial_number(1000)
-                    self.cert.gmtime_adj_notBefore(0)
-                    self.cert.gmtime_adj_notAfter(10*365*24*60*60)
-                    self.cert.set_issuer(self.cert.get_subject())
-                    self.cert.set_pubkey(self.key)
-                    self.cert.sign(self.key, 'sha1')
+                    if self.cert == None:
+                        self.cert = crypto.X509()
+                        self.cert.get_subject().C = self.countryName
+                        self.cert.get_subject().ST = self.stateOrProvinceName
+                        self.cert.get_subject().L = self.localityName
+                        self.cert.get_subject().O = self.organizationName
+                        self.cert.get_subject().OU = self.organizationalUnitName
+                        self.cert.get_subject().CN = self.commonName
+                  
+                        self.cert.set_serial_number(1000)
+                        self.cert.gmtime_adj_notBefore(0)
+                        self.cert.gmtime_adj_notAfter(10*365*24*60*60)
+                        self.cert.set_issuer(self.cert.get_subject())
+                        self.cert.set_pubkey(self.key)
+                        self.cert.sign(self.key, 'sha256')
 
                     f = open("certificate2.pem", "w")
                     self.cert = crypto.dump_certificate(crypto.FILETYPE_PEM, self.cert)
