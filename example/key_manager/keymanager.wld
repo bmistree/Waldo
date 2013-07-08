@@ -1,0 +1,98 @@
+Keymanager
+
+Endpoint Manager;
+Endpoint Client;
+
+Sequences
+{
+  get_new_cert_and_key:
+    Client.request_key ->
+    Manager.give_key;
+  get_key:
+    Client.ask_key ->
+    Manager.send_key;
+  evaluate_key:
+    Client.question_key ->
+    Manager.send_information;
+  revoke_key:
+    Client.send_key ->
+    Manager.exchange_key;
+}
+
+Struct Secret
+{
+    Text certificate;
+    Text key;
+}
+
+Sequence get_new_cert_and_key(Text uuid, Text countryName, Text stateOrProvinceName, Text localityName, Text organizationName, Text organizationalUnitName,
+Text commonName)
+    returns Struct Secret cert_and_key
+{
+    Client.request_key{}
+    Manager.give_key
+    {
+        Text certificate;
+        Text key;
+        certificate, key= generate(countryName, stateOrProvinceName, localityName, organizationName, organizationalUnitName, commonName);
+        Struct Secret entry;
+        entry.certificate = certificate;
+        entry.key = key;
+        certificates[uuid] = entry;
+        cert_and_key = entry;
+    }
+}
+
+Sequence get_key(Text uuid)
+    returns Struct Secret cert_and_key
+{
+    Client.ask_key{}
+    Manager.send_key
+    {
+        cert_and_key = certificates[uuid];
+    }
+}
+
+Sequence evaluate_key(Text uuid)
+    returns Struct Secret cert_and_key
+{
+    Client.question_key{}
+    Manager.send_information
+    {
+        cert_and_key = certificates[uuid];
+    }
+}
+
+Sequence revoke_key(Text uuid)
+    returns Struct Secret cert_and_key
+{
+    Client.send_key{}
+    Manager.exchange_key
+    {
+        cert_and_key = certificates[uuid];
+    }
+}
+
+Client
+{
+    Public Function get_new_key(Text uuid, Text countryName, Text stateOrProvinceName, Text localityName, Text organizationName, Text organizationalUnitName, Text commonName) returns Struct Secret
+    {
+        return get_new_cert_and_key(uuid, countryName, stateOrProvinceName, localityName, organizationName, organizationalUnitName,
+        commonName);
+    }
+    
+
+}
+
+Manager
+{
+    Map(from: Text, to: Struct Secret) certificates;
+
+    Function (in: Text, Text, Text, Text, Text, Text; returns: Text, Text) generate;
+
+    // initializes 
+    onCreate(Function (in: Text, Text, Text, Text, Text, Text; returns: Text, Text) outside_generate)
+    {
+        generate = outside_generate;
+    }
+}

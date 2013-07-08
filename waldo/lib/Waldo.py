@@ -63,7 +63,8 @@ _waldo_classes = {
     'StoppedException': util.StoppedException
     }
 
-    
+def uuid():
+  return _host_uuid
 
 def stcp_connect(constructor,host,port,certfile,keyfile,*args, **kwargs):
     '''

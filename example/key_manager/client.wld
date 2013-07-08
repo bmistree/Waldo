@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+
+import os,sys, Queue, time
+base_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), '..','..')
+sys.path.append(base_dir)
+from waldo.lib import Waldo
+
+from keymanager_v4 import Client,Manager
+
+MANAGER_HOST = '127.0.0.1'
+MANAGER_PORT = 6980
+
+
+
+client = Waldo.stcp_connect(
+        Client, MANAGER_HOST, MANAGER_PORT, None)
+
+
+uuid = Waldo.uuid()
+cert_and_key = client.get_new_cert_and_key(uuid, 'US','Cali','North','Stanford','Computer Science','SING')
+print(cert_and_key)
+
