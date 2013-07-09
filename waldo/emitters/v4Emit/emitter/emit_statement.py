@@ -63,7 +63,14 @@ def emit_statement(
         statement_txt = (
             pre_dot_txt + '.get_val(_active_event)' +
             ('.get_val_on_key(_active_event,"%s")' % post_dot_name))
-        
+
+    elif statement_node.label == AST_PRINT:
+        statement_txt = 'print'
+        statement_txt += ' '
+        print_body_node = statement_node.children[0]
+        statement_txt += emit_statement(
+            print_body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
     elif statement_node.label == AST_EMPTY:
         pass
 
