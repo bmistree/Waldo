@@ -584,7 +584,7 @@ def emit_public_method_interface(
         method_arg_names,'')
 
     public_header = '''
-def %s(self%s):
+def %s(self%s, **kwargs):
 ''' % (method_name, comma_sep_arg_names)
 
     # wait until ready initialization for node has completed before
@@ -621,6 +621,8 @@ while True:  # FIXME: currently using infinite retry
         # not using sequence local store
         %s(self._host_uuid))
 
+    _retry_cb = kwargs.get('retry_cb',None)
+
     # call internal function... note True as last param tells internal
     # version of function that it needs to de-waldo-ify all return
     # arguments (while inside transaction) so that this method may
@@ -637,6 +639,10 @@ while True:  # FIXME: currently using infinite retry
     elif isinstance(_commit_resp,%s):
         raise %s()
 
+    if _retry_cb is not None:
+        if not _retry_cb(self):
+            raise %s()
+
 ''' % (emit_utils.library_transform('ExecutingEventContext'),
        emit_utils.library_transform('VariableStore'),
        internal_method_name,
@@ -644,7 +650,8 @@ while True:  # FIXME: currently using infinite retry
        str(list_return_external_positions),
        emit_utils.library_transform('CompleteRootCallResult'),
        emit_utils.library_transform('StopRootCallResult'),
-       emit_utils.library_transform('StoppedException')
+       emit_utils.library_transform('StoppedException'),
+       emit_utils.library_transform('RetryCanceledException')
        )
 
     return public_header + emit_utils.indent_str(public_body)

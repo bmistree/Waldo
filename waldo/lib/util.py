@@ -69,5 +69,6 @@ class BackoutException(Exception):
     pass
 class StoppedException(Exception):
     pass
-
+class RetryCanceledException(Exception):
+    pass
 

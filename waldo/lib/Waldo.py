@@ -60,7 +60,8 @@ _waldo_classes = {
     'ExecutingEventContext': waldoExecutingEvent._ExecutingEventContext,
     'VariableStore': waldoVariableStore._VariableStore,
     'BackoutException': util.BackoutException,
-    'StoppedException': util.StoppedException
+    'StoppedException': util.StoppedException,
+    'RetryCanceledException': util.RetryCanceledException,
     }
 
     
