@@ -135,7 +135,7 @@ def run_emit_tests():
     import emit_tests.self_type
     import emit_tests.foreign_func_in_sequence
     import emit_tests.id_method
-
+    import emit_tests.retry_cb
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -235,15 +235,18 @@ def run_emit_tests():
         ('Tests that can promote a singly-threaded list to being multithreaded',
          emit_tests.single_thread_references.run_test),
 
-        ('Tests self type.',
+        ('Tests self type',
          emit_tests.self_type.run_test),
         
         ('Tests calling a foreign function in the midst of a sequence',
          emit_tests.foreign_func_in_sequence.run_test),
 
-        ('Tests id method.',
+        ('Tests id method',
          emit_tests.id_method.run_test),
 
+        ('Tests retry callbacks',
+         emit_tests.retry_cb.run_test),
+        
         ]
 
     run_tests(emit_tests_to_run)
