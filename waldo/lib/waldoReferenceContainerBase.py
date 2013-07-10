@@ -454,7 +454,6 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             val[field_to_update].promote_multithreaded(self.peered))
                     else:
                         w_obj.val[field_to_update] = val[field_to_update]
-
                     
         elif isinstance(val,list):
             if len(w_obj.val) > len(val):
@@ -770,8 +769,6 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         # FIXME: should only append to change log if peered.
         self.partner_change_log.append(write_key_tuple(key))
 
-        
-        
     def add_key(self,key_added):
         self.added_keys[key_added] = self.commit_num
         self.has_been_written_since_last_message = True

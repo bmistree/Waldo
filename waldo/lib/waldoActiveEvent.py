@@ -953,11 +953,14 @@ class _ActiveEvent(_InvalidationListener):
         A acquires in order alpha, beta, gamma
         B acquires in order alpha, beta, gamma
         '''
-        sorted_touched_obj_ids = sorted(list(self.objs_touched.keys()))
-
+        sorted_touched_obj_ids = (
+            sorted(list(self.priority_touched_objs.keys() ) + sorted(list(self.objs_touched.keys()))))
         self.holding_locks_on = []
         for obj_id in sorted_touched_obj_ids:
-            touched_obj = self.objs_touched[obj_id]
+
+            touched_obj = self.objs_touched.get(obj_id,None)
+            if touched_obj is None:
+                touched_obj = self.priority_touched_objs[obj_id]
 
             obj_can_commit = None
 
@@ -996,7 +999,9 @@ class _ActiveEvent(_InvalidationListener):
         '''
         self.set_breakout()
         for obj_id in self.holding_locks_on:
-            to_backout_obj = self.objs_touched[obj_id]
+            to_backout_obj = self.objs_touched.get(obj_id,None)
+            if to_backout_obj is None:
+                to_backout_obj = self.priority_touched_objs[obj_id]
             to_backout_obj.backout(self)
         self.holding_locks_on = []
 
@@ -1006,6 +1011,9 @@ class _ActiveEvent(_InvalidationListener):
         Should only be called if hold_can_commit returned True.  Runs
         through all touched objects and completes their commits.
         '''
+        for touched_obj in self.priority_touched_objs.values():
+            touched_obj.complete_commit(self)
+        
         for touched_obj in self.objs_touched.values():
             touched_obj.complete_commit(self)
 
