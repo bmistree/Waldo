@@ -597,6 +597,7 @@ def p_FunctionBodyStatement(p):
                              | ConditionStatement
                              | ForStatement
                              | WhileStatement
+                             | TryCatchStatement
                              | PlusEqual SEMI_COLON
                              | MinusEqual SEMI_COLON
                              | DivideEqual SEMI_COLON
@@ -1066,6 +1067,10 @@ def p_Number(p):
         assert(False);
         
     p[0].type = TYPE_NUMBER;
+
+def p_Exception(p):
+    '''Exception : EXCEPTION'''
+    p[0] = AstNode(AST_EXCEPTION,p.lineno(1),p.lexpos(1),p[1])
     
 def p_String(p):
     '''String : MULTI_LINE_STRING
@@ -1316,7 +1321,27 @@ def p_ForStatement (p):
         print(errMsg);
         assert(False);
 
-        
+def p_TryCatchStatement(p):
+    '''
+    TryCatchStatement : TRY SingleLineOrMultilineCurliedBlock CATCH LEFT_PAREN ExceptionBinding RIGHT_PAREN SingleLineOrMultilineCurliedBlock
+                      | TRY SingleLineOrMultilineCurliedBlock CATCH LEFT_PAREN ExceptionBinding RIGHT_PAREN SingleLineOrMultilineCurliedBlock FINALLY SingleLineOrMultilineCurliedBlock
+    '''
+    p[0] = AstNode(AST_TRY_CATCH_STATEMENT,p.lineno(1),p.lexpos(1));
+    if len(p) == 8: 
+        # Try-catch without finally
+        p[0].addChildren([p[2],p[5],p[7]])
+    elif len(p) == 10:
+        # Includes finally
+        p[0].addChildren([p[2],p[5],p[7],p[9]])
+
+def p_ExceptionBinding(p):
+    '''
+    ExceptionBinding : Exception AS Identifier
+    '''
+    p[0] = AstNode(AST_EXCEPTION_BINDING,p.lineno(1),p.lexpos(1));
+    p[0].addChildren([p[1],p[3]])
+
+
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
     
