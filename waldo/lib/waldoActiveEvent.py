@@ -241,6 +241,7 @@ class _ActiveEvent(_InvalidationListener):
         If not in first or second phase of commit, then backout.
         '''
         self._lock()
+
         if not self.in_running_phase():
             # do not stop an event unless it is in the running phase.
             # (if it's midway through 2-phase commit, then if we stop
@@ -248,14 +249,14 @@ class _ActiveEvent(_InvalidationListener):
             # committers.
             self._unlock()
             return
-
+        
         self.forward_backout_request_and_backout_self(
             skip_partner,
             # already_backed_out,
             False,
             # stop message
             True )
-
+        
         self._unlock()
 
         
@@ -581,8 +582,8 @@ class _ActiveEvent(_InvalidationListener):
         work for this event.)
         '''
         self.set_breakout()
-
         self._lock()
+
         if self.in_request_backout_phase():
             self._unlock()
             return
@@ -590,11 +591,11 @@ class _ActiveEvent(_InvalidationListener):
         ##### remove event from active event map
         self.local_endpoint._act_event_map.remove_event_if_exists(
             self.uuid)
-
+        
         if not already_backed_out:
             self.backout_commit()
-
         self.set_request_backout_phase()
+        
         for endpoint_uuid in self.subscribed_to.keys():
             subscribed_to_element = self.subscribed_to[endpoint_uuid]
 
