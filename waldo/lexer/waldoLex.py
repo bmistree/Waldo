@@ -405,7 +405,6 @@ def t_MULTIPLY(t):
     '\*';
     return mStateMachine.addToken(t);
 
-
 def t_PLUS(t):
     '\+';
     return mStateMachine.addToken(t);
@@ -414,11 +413,9 @@ def t_MINUS(t):
     '\-';
     return mStateMachine.addToken(t);
 
-
 def t_DOT(t):
     '[.]';
     return mStateMachine.addToken(t);
-
 
 def t_NUMBER(t):
     '\d+(\.\d*)?'
@@ -440,7 +437,6 @@ def t_MULTI_LINE_STRING(t):
 def t_SINGLE_LINE_STRING(t):
     r'[\']'
     return mStateMachine.addToken(t);
-
 
 def t_ALL_ELSE(t):
     '.'
