@@ -1323,24 +1323,31 @@ def p_ForStatement (p):
 
 def p_TryCatchStatement(p):
     '''
-    TryCatchStatement : TRY SingleLineOrMultilineCurliedBlock CATCH LEFT_PAREN ExceptionBinding RIGHT_PAREN SingleLineOrMultilineCurliedBlock
-                      | TRY SingleLineOrMultilineCurliedBlock CATCH LEFT_PAREN ExceptionBinding RIGHT_PAREN SingleLineOrMultilineCurliedBlock FINALLY SingleLineOrMultilineCurliedBlock
+    TryCatchStatement : TryBlock CatchBlock
+                      | TryBlock CatchBlock FinallyBlock
     '''
     p[0] = AstNode(AST_TRY_CATCH_STATEMENT,p.lineno(1),p.lexpos(1));
-    if len(p) == 8: 
+    if len(p) == 3:
         # Try-catch without finally
-        p[0].addChildren([p[2],p[5],p[7]])
-    elif len(p) == 10:
+        p[0].addChildren([p[1],p[2]])
+    elif len(p) == 4:
         # Includes finally
-        p[0].addChildren([p[2],p[5],p[7],p[9]])
+        p[0].addChildren([p[1],p[2],p[3]])
 
-def p_ExceptionBinding(p):
-    '''
-    ExceptionBinding : Exception AS Identifier
-    '''
-    p[0] = AstNode(AST_EXCEPTION_BINDING,p.lineno(1),p.lexpos(1));
-    p[0].addChildren([p[1],p[3]])
+def p_TryBlock(p):
+    '''TryBlock : TRY SingleLineOrMultilineCurliedBlock'''
+    p[0] = AstNode(AST_TRY_BLOCK,p.lineno(1),p.lexpos(1))
+    p[0].addChild(p[2])
 
+def p_CatchBlock(p):
+    '''CatchBlock : CATCH LEFT_PAREN Exception AS Identifier RIGHT_PAREN SingleLineOrMultilineCurliedBlock'''
+    p[0] = AstNode(AST_CATCH_BLOCK,p.lineno(1),p.lexpos(1))
+    p[0].addChildren([p[3],p[5],p[7]])
+
+def p_FinallyBlock(p):
+    '''FinallyBlock : FINALLY SingleLineOrMultilineCurliedBlock'''
+    p[0] = AstNode(AST_FINALLY_BLOCK,p.lineno(1),p.lexpos(1))
+    p[0].addChild(p[2])
 
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
