@@ -114,6 +114,7 @@ tokens = [
     "DOT",
     
     "NUMBER",
+    "EXCEPTION",
     IDENTIFIER_TOKEN,
     'HOLDER',
     
@@ -421,6 +422,10 @@ def t_NUMBER(t):
     '\d+(\.\d*)?'
     return mStateMachine.addToken(t);
 
+def t_EXCEPTION(t):
+    'exception' # placeholder
+    return mStateMachine.addToken(t)
+
 def t_IDENTIFIER(t):
     r'[a-zA-Z][a-zA-Z_0-9_]*';
     t.type = reserved.get(t.value,IDENTIFIER_TOKEN);    # Check for reserved words
@@ -444,6 +449,7 @@ def t_ALL_ELSE(t):
 
 def t_error(t):
     raise WaldoLexException("Unknown text '%s'  at line number '%s'" % (t.value,t.lexer.lineno));
+
 
 
 class WaldoLexException(Exception):
