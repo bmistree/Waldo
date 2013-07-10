@@ -295,6 +295,16 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         
         body.typeCheck(progText,typeStack,avoidFunctionObjects)
         
+    elif node.label == AST_TRY_CATCH_STATEMENT:
+        tryNode = node.children[0]
+        tryNode.typeCheck(progText,typeStack,avoidFunctionObjects)
+        # TODO: give bound identifier correct exception type in check_exception_binding node
+        catchNode = node.children[2]
+        catchNode.typeCheck(progText,typeStack,avoidFunctionObjects)
+        if len(node.children) == 4:
+            finallyNode = node.children[3]
+            finallyNode.typeCheck(progText,typeStack,avoidFunctionObjects)
+
 
     # FIXME: hae disabled tuple assignment with extAssign and extCopy
     # elif node.label in [AST_EXT_ASSIGN_FOR_TUPLE, AST_EXT_COPY_FOR_TUPLE]:
