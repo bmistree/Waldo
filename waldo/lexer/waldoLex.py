@@ -56,6 +56,10 @@ reserved = {
     'Struct': 'STRUCT',
     'self': 'SELF',
     'Symmetric': 'SYMMETRIC',
+    'try': 'TRY',
+    'catch': 'CATCH',
+    'finally': 'FINALLY',
+    'as': 'AS',
     };
 
 
