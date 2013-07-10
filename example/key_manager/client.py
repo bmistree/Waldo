@@ -19,7 +19,7 @@ client = Waldo.stcp_connect(
 print "get uuid"
 uuid = Waldo.uuid()
 print "get certificates"
-cert_and_key = client.get_new_key(uuid, 'US','Cali','North','Stanford','Computer Science','SING')
+key = client.gen_key(uuid)
 print "got stuff"
-print(cert_and_key)
+print(key)
 

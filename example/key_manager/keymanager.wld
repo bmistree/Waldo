@@ -5,12 +5,11 @@ Endpoint Client;
 
 Sequences
 {
+  get_key:
+    Client.ask_key -> Manager.generate_key;
   get_new_cert_and_key:
     Client.request_key ->
     Manager.give_key;
-  get_key:
-    Client.ask_key ->
-    Manager.send_key;
   evaluate_key:
     Client.question_key ->
     Manager.send_information;
@@ -23,6 +22,14 @@ Struct Secret
 {
     Text certificate;
     Text key;
+}
+
+Sequence get_key(Text uuid) returns Text key
+{
+    Client.ask_key{}
+    Manager.generate_key{
+        key = gkey();
+    }
 }
 
 Sequence get_new_cert_and_key(Text uuid, Text countryName, Text stateOrProvinceName, Text localityName, Text organizationName, Text organizationalUnitName,
@@ -40,16 +47,6 @@ Text commonName)
         entry.key = key;
         certificates[uuid] = entry;
         cert_and_key = entry;
-    }
-}
-
-Sequence get_key(Text uuid)
-    returns Struct Secret cert_and_key
-{
-    Client.ask_key{}
-    Manager.send_key
-    {
-        cert_and_key = certificates[uuid];
     }
 }
 
@@ -75,13 +72,17 @@ Sequence revoke_key(Text uuid)
 
 Client
 {
-    Public Function get_new_key(Text uuid, Text countryName, Text stateOrProvinceName, Text localityName, Text organizationName, Text organizationalUnitName, Text commonName) returns Struct Secret
+    Public Function get_new_cert_key(Text uuid, Text countryName, Text stateOrProvinceName, Text localityName, Text organizationName, Text organizationalUnitName, Text commonName) returns Struct Secret
     {
         return get_new_cert_and_key(uuid, countryName, stateOrProvinceName, localityName, organizationName, organizationalUnitName,
         commonName);
     }
-    
 
+    Public Function gen_key(Text uuid) returns Text
+    {
+        return get_key(uuid);
+    }
+    
 }
 
 Manager
@@ -89,10 +90,12 @@ Manager
     Map(from: Text, to: Struct Secret) certificates;
 
     Function (in: Text, Text, Text, Text, Text, Text; returns: Text, Text) generate;
+    Function (in: Nothing; returns: Text) gkey;
 
     // initializes 
-    onCreate(Function (in: Text, Text, Text, Text, Text, Text; returns: Text, Text) outside_generate)
+    onCreate(Function (in: Text, Text, Text, Text, Text, Text; returns: Text, Text) outside_generate, Function(in: Nothing; returns: Text) getkey)
     {
         generate = outside_generate;
+        gkey = getkey;
     }
 }
