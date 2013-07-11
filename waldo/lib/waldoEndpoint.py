@@ -722,7 +722,6 @@ class _Endpoint(object):
 
         # blocking wait until ready to shut down.
         blocking_queue.get()
-        
 
             
     def _stop_complete_cb(self):
