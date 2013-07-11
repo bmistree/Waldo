@@ -7,9 +7,9 @@ Sequences
 {
   get_key:
     Client.ask_key -> Manager.generate_key;
-  get_new_cert_and_key:
-    Client.request_key ->
-    Manager.give_key;
+  get_cert_from_req:
+    Client.send_req ->
+    Manager.gen_cert;
   evaluate_key:
     Client.question_key ->
     Manager.send_information;
@@ -28,25 +28,16 @@ Sequence get_key(Text uuid) returns Text key
 {
     Client.ask_key{}
     Manager.generate_key{
-        key = gkey();
     }
 }
 
-Sequence get_new_cert_and_key(Text uuid, Text countryName, Text stateOrProvinceName, Text localityName, Text organizationName, Text organizationalUnitName,
-Text commonName)
-    returns Struct Secret cert_and_key
+Sequence get_cert_from_req(Text req)
+    returns Text cert
 {
-    Client.request_key{}
-    Manager.give_key
+    Client.send_req{}
+    Manager.gen_cert
     {
-        Text certificate;
-        Text key;
-        certificate, key= generate(countryName, stateOrProvinceName, localityName, organizationName, organizationalUnitName, commonName);
-        Struct Secret entry;
-        entry.certificate = certificate;
-        entry.key = key;
-        certificates[uuid] = entry;
-        cert_and_key = entry;
+        cert = getCertFromReq(req);
     }
 }
 
@@ -71,31 +62,23 @@ Sequence revoke_key(Text uuid)
 }
 
 Client
-{
-    Public Function get_new_cert_key(Text uuid, Text countryName, Text stateOrProvinceName, Text localityName, Text organizationName, Text organizationalUnitName, Text commonName) returns Struct Secret
+{    
+    Public Function req_to_cert(Text req) returns Text
     {
-        return get_new_cert_and_key(uuid, countryName, stateOrProvinceName, localityName, organizationName, organizationalUnitName,
-        commonName);
+        return get_cert_from_req(req);
     }
-
-    Public Function gen_key(Text uuid) returns Text
-    {
-        return get_key(uuid);
-    }
-    
 }
 
 Manager
 {
     Map(from: Text, to: Struct Secret) certificates;
 
-    Function (in: Text, Text, Text, Text, Text, Text; returns: Text, Text) generate;
-    Function (in: Nothing; returns: Text) gkey;
+    Function (in: Text; returns: Text) getCertFromReq;
+    
 
     // initializes 
-    onCreate(Function (in: Text, Text, Text, Text, Text, Text; returns: Text, Text) outside_generate, Function(in: Nothing; returns: Text) getkey)
+    onCreate(Function (in: Text; returns: Text) getCert)
     {
-        generate = outside_generate;
-        gkey = getkey;
+        getCertFromReq = getCert;
     }
 }

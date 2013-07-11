@@ -13,12 +13,12 @@ from Crypto.Util import asn1
 from emitted import Manager, Client
 
 MANAGER_HOST = '127.0.0.1'
-MANAGER_PORT = 6981
+MANAGER_PORT = 6979
 
 ca_cert=None
 ca_key=None
 
-def generate_ca_certificate(Endpoint):
+def generate_ca_certificate():
     key = OpenSSL.crypto.PKey()
     key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
@@ -40,7 +40,10 @@ def generate_ca_certificate(Endpoint):
       ])
     ca.sign(key, "sha256")
 
+    global ca_cert
     ca_cert=ca
+    print(type(ca_cert))
+    global ca_key
     ca_key=key
 
 def sign_cert(Endpoint, C, ST, L, O, OU, CN, key):
@@ -54,12 +57,17 @@ def sign_cert(Endpoint, C, ST, L, O, OU, CN, key):
     cert.set_serial_number()
     cert.gmtime_adj_notBefore(0)
     cert.gmtime_adj_notAfter(24 * 60 * 60)
+    global ca_cert
     cert.set_issuer(ca_cert.get_subject())
     cert.set_pubkey(key)
     cert.sign(ca_key, "sha256")
     return cert
 
 def generate_request(Endpoint, C, ST, L, O, OU, CN, key):
+    f = open('temp.pem', 'w+')
+    f.write(key)
+    f.close()
+    key = crypto.load
     req = OpenSSL.crypto.X509Req()
     req.get_subject().C = C
     req.get_subject().ST = ST
@@ -72,15 +80,24 @@ def generate_request(Endpoint, C, ST, L, O, OU, CN, key):
 
     return req
 
-def generate_cert_from_request(Endpoint, C, ST, L, O, OU, CN, key, req):
+def generate_cert_from_request(Endpoint, req):
+    f = open('temp.pem', 'w+')
+    f.write(req)
+    f.close()
+    global ca_cert
+    global ca_key
+    print(type(ca_cert))
+    req = crypto.load_certificate_request(crypto.FILETYPE_PEM,open('temp.pem').read())
     cert = crypto.X509()
-    cert.get_subject(req.get_subject())
-    cert.set_serial_number()
+    cert.set_subject(req.get_subject())
+    cert.set_serial_number(1000)
     cert.gmtime_adj_notBefore(0)
     cert.gmtime_adj_notAfter(24 * 60 * 60)
     cert.set_issuer(ca_cert.get_subject())
     cert.set_pubkey(req.get_pubkey())
     cert.sign(ca_key, "sha256")
+
+    cert = crypto.dump_certificate(crypto.FILETYPE_PEM,cert)
     return cert
 
 def verify_cert(Endpoint,cert):
@@ -166,8 +183,9 @@ def generate_cert_and_key(Endpoint, C, ST, L, O, OU, CN):
     certificate = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
     return certificate, keytext
 
+generate_ca_certificate()
 key_manager = Waldo.stcp_accept(
-        Manager, MANAGER_HOST, MANAGER_PORT, None, None, None, generate_cert_and_key, get_key)
+        Manager, MANAGER_HOST, MANAGER_PORT, None, None, None, generate_cert_from_request)
 
 while True:
     pass
