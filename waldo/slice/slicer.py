@@ -166,6 +166,18 @@ def slicer(node,functionDeps=None,typeStack=None):
                 finallyNode = node.children[3]
                 slicer(finallyNode,functionDeps,typeStack)
 
+    elif node.label == AST_TRY_BLOCK:
+        tryBody = node.children[0]
+        slicer(tryBody,functionDeps,typeStack)
+
+    elif node.label == AST_CATCH_BLOCK:
+        catchBody = node.children[2]
+        slicer(catchBody,functionDeps,typeStack)
+
+    elif node.label == AST_FINALLY_BLOCK:
+        finallyBody = node.children[0]
+        slicer(finallyBody,functionDeps,typeStack)
+
     elif node.label == AST_IN_STATEMENT:
         lhsNode = node.children[0];
         rhsNode = node.children[1];
