@@ -1071,6 +1071,7 @@ def p_Number(p):
 def p_Exception(p):
     '''Exception : EXCEPTION'''
     p[0] = AstNode(AST_EXCEPTION,p.lineno(1),p.lexpos(1),p[1])
+    p[0].type = TYPE_EXCEPTION
     
 def p_String(p):
     '''String : MULTI_LINE_STRING

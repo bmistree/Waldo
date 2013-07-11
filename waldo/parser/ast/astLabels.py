@@ -150,6 +150,7 @@ TYPE_LIST = 'List';
 TYPE_MAP = 'Map';
 TYPE_STRUCT = 'Struct'
 TYPE_ENDPOINT = 'Endpoint'
+TYPE_EXCEPTION = 'Exception'
 
 TYPE_RETURNED_TUPLE = 'Tuple'
 
