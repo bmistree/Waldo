@@ -173,3 +173,10 @@ AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION = 'MessageReceiveSequenceFunction';
 
 # endpoint function call
 TYPE_ENDPOINT_FUNCTION_CALL = 'EndpointFunctionCall'
+
+# List of Waldo Exception types used in type-checking. Currently filled
+# with placeholders as a concrete list of Waldo exceptions has not been
+# devised.
+EXCEPTIONS = [
+    'ZeroDivisionError', # for testing purposes.
+]

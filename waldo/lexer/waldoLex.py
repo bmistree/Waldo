@@ -114,7 +114,6 @@ tokens = [
     "DOT",
     
     "NUMBER",
-    "EXCEPTION",
     IDENTIFIER_TOKEN,
     'HOLDER',
     
@@ -421,10 +420,6 @@ def t_DOT(t):
 def t_NUMBER(t):
     '\d+(\.\d*)?'
     return mStateMachine.addToken(t);
-
-def t_EXCEPTION(t):
-    'exception' # placeholder
-    return mStateMachine.addToken(t)
 
 def t_IDENTIFIER(t):
     r'[a-zA-Z][a-zA-Z_0-9_]*';

@@ -312,13 +312,24 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
 
     elif node.label == AST_CATCH_BLOCK:
         exception = node.children[0]
-        exception.type = generate_type_as_dict(TYPE_EXCEPTION,False)
+        exception.typeCheck(progText,typeStack,avoidFunctionObjects)
         identifier = node.children[1]
         block = node.children[2]
         typeStack.pushContext() # Add type binding for exception to identifier
         typeStack.addIdentifier(identifier.value,exception.type,None,node,node.lineNo)
         block.typeCheck(progText,typeStack,avoidFunctionObjects)
         typeStack.popContext()
+
+    elif node.label == AST_EXCEPTION:
+        if not node.value in EXCEPTIONS:
+            err_msg = 'Error in Catch block. Exception type '
+            err_msg += node.value
+            err_msg += ' not recognized as valid exception type.'
+            err_nodes = [node]
+            err_line_nos = [node.lineNo]
+            errorFunction(err_msg,err_nodes,err_line_nos,progText)
+        node.type = generate_type_as_dict(TYPE_EXCEPTION,False)
+        
 
 
     # FIXME: hae disabled tuple assignment with extAssign and extCopy

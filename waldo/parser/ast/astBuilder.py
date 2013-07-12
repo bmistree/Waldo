@@ -1068,11 +1068,6 @@ def p_Number(p):
         
     p[0].type = TYPE_NUMBER;
 
-def p_Exception(p):
-    '''Exception : EXCEPTION'''
-    p[0] = AstNode(AST_EXCEPTION,p.lineno(1),p.lexpos(1),p[1])
-    p[0].type = TYPE_EXCEPTION
-    
 def p_String(p):
     '''String : MULTI_LINE_STRING
               | SINGLE_LINE_STRING''';
@@ -1344,6 +1339,12 @@ def p_CatchBlock(p):
     '''CatchBlock : CATCH LEFT_PAREN Exception AS Identifier RIGHT_PAREN SingleLineOrMultilineCurliedBlock'''
     p[0] = AstNode(AST_CATCH_BLOCK,p.lineno(1),p.lexpos(1))
     p[0].addChildren([p[3],p[5],p[7]])
+
+def p_Exception(p):
+    '''Exception : Identifier'''
+    p[0] = AstNode(AST_EXCEPTION,p.lineno(1),p.lexpos(1),p[1])
+    p[0].value = p[1].value
+    p[0].type = TYPE_EXCEPTION
 
 def p_FinallyBlock(p):
     '''FinallyBlock : FINALLY SingleLineOrMultilineCurliedBlock'''
