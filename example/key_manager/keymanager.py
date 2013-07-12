@@ -38,13 +38,19 @@ def generate_ca_certificate():
       OpenSSL.crypto.X509Extension("subjectKeyIdentifier", False, "hash",
                                    subject=ca),
       ])
-    ca.sign(key, "sha256")
+    ca.sign(key, "sha1")
 
     global ca_cert
     ca_cert=ca
     print(type(ca_cert))
     global ca_key
     ca_key=key
+    f = open("cacertificate.pem", "w")
+    f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert))
+    f.close()
+    f = open("cakey.pem", "w")
+    f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, ca_key))
+    f.close()
 
 def sign_cert(Endpoint, C, ST, L, O, OU, CN, key):
     cert = crypto.X509()
@@ -185,7 +191,7 @@ def generate_cert_and_key(Endpoint, C, ST, L, O, OU, CN):
 
 generate_ca_certificate()
 key_manager = Waldo.stcp_accept(
-        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, cert="certificate.pem", key="key.pem")
+        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, cert="certificate.pem", key="key.pem", ca_certs="use_ca_cert.pem")
 
 while True:
     pass

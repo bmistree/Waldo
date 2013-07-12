@@ -270,7 +270,9 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         from OpenSSL import SSL
         cert = kwargs.get('cert', None)
         key = kwargs.get('key', None)
-        ca_certs = kwargs.get('ca_certs', None)
+        ca_certs = kwargs.get('ca_certs', '')
+        cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
+
 
         if sock == None:
             if cert == None:
@@ -284,35 +286,38 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
                 f.write(keytext)
                 f.close()
                 
-                if cfile == None:
-                    cfile = crypto.X509()
+                cert = crypto.X509()
                
-                    cfile.get_subject().C = kwargs.get('countryName','US')
-                    cfile.get_subject().ST = kwargs.get('stateOrProvinceName','California')
-                    cfile.get_subject().L = kwargs.get('localityName','NA')
-                    cfile.get_subject().O = kwargs.get('organizationName','NA')
-                    cfile.get_subject().OU = kwargs.get('organizationalUnitName','NA')
-                    cfile.get_subject().CN = kwargs.get('commonName','NA')
+                cert.get_subject().C = kwargs.get('countryName','US')
+                cert.get_subject().ST = kwargs.get('stateOrProvinceName','California')
+                cert.get_subject().L = kwargs.get('localityName','NA')
+                cert.get_subject().O = kwargs.get('organizationName','NA')
+                cert.get_subject().OU = kwargs.get('organizationalUnitName','NA')
+                cert.get_subject().CN = kwargs.get('commonName','NA')
 
-                    cfile.set_serial_number(1000)
-                    cfile.gmtime_adj_notBefore(0)
-                    cfile.gmtime_adj_notAfter(10*365*24*60*60)
-                    cfile.set_issuer(cfile.get_subject())
-                    cfile.set_pubkey(key)
-                    cfile.sign(key, 'sha256')
+                cert.set_serial_number(1000)
+                cert.gmtime_adj_notBefore(0)
+                cert.gmtime_adj_notAfter(10*365*24*60*60)
+                cert.set_issuer(cfile.get_subject())
+                cert.set_pubkey(key)
+                cert.sign(key, 'sha1')
 
                 f = open("certificate.pem", "w")
-                cfile = crypto.dump_certificate(crypto.FILETYPE_PEM, cfile)
+                cert = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
                 key = 'key.pem'
-                f.write(cfile)
-                cfile = 'certificate.pem'
+                f.write(cert)
+                cert = 'certificate.pem'
                 f.close()
                 
 
             context = SSL.Context(SSL.SSLv23_METHOD)
-            context.set_verify(SSL.VERIFY_NONE, lambda a,b,c,d,e: True)
+            context.set_verify(SSL.VERIFY_PEER, lambda a,b,c,d,e: True)
+            print(cert)
+            print(key)
             context.use_certificate_file(os.path.join("./", cert))
             context.use_privatekey_file(os.path.join("./", key))
+            if len(ca_certs) > 1:
+                context.load_verify_locations(None, os.path.join("./", ca_certs))
             self.sock = SSL.Connection(context, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 
 
@@ -320,9 +325,9 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
             self.sock = ssl.wrap_socket(self.sock,
                            certfile=cert,
                            keyfile=key,
-                           ca_certs=None,
+                           ca_certs=ca_certs,
                            ssl_version=ssl.PROTOCOL_SSLv23,
-                           cert_reqs=ssl.CERT_NONE)
+                           cert_reqs=cert_reqs)
             self.sock.connect((dst_host,int(dst_port)))
 
             
@@ -421,7 +426,8 @@ class _STCPAcceptThread(threading.Thread):
         @param
 
         '''
-        
+        from OpenSSL import SSL
+
         self.stoppable= stoppable
         self.endpoint_constructor = endpoint_constructor
         self.waldo_classes = waldo_classes
@@ -440,7 +446,8 @@ class _STCPAcceptThread(threading.Thread):
 
         self.cert = kwargs.get('cert', None)
         self.key = kwargs.get('key', None)
-        self.ca_certs = kwargs.get('ca_certs', None)
+        self.ca_certs = kwargs.get('ca_certs', '')
+        self.cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
 
         
         self.synchronization_listening_queue = synchronization_listening_queue
@@ -453,9 +460,11 @@ class _STCPAcceptThread(threading.Thread):
     def run(self):
         from OpenSSL import SSL
         context = SSL.Context(SSL.SSLv23_METHOD)
-        context.set_verify(SSL.VERIFY_NONE, lambda a,b,c,d,e: True)
+        context.set_verify(SSL.VERIFY_PEER, lambda a,b,c,d,e: True)
         context.use_certificate_file(os.path.join("./", self.cert))
         context.use_privatekey_file(os.path.join("./", self.key))
+        if len(self.ca_certs) > 1:
+            context.load_verify_locations(None, os.path.join("./", self.ca_certs))
 
         sock = SSL.Connection(context, socket.socket(socket.AF_INET,socket.SOCK_STREAM))
         # turn off Nagle's
@@ -486,7 +495,7 @@ class _STCPAcceptThread(threading.Thread):
                                  certfile=self.cert,
                                  keyfile=self.key,
                                  ssl_version=ssl.PROTOCOL_SSLv23,
-                                 cert_reqs=ssl.CERT_NONE)
+                                 cert_reqs=self.cert_reqs)
                 print type(conn)
                 #change this to _WalcoTCPConnectionObj once that is fixed
                 tcp_conn_obj = _WaldoTCPConnectionObj(None,None,conn)
