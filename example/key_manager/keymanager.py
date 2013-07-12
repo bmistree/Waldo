@@ -191,7 +191,7 @@ def generate_cert_and_key(Endpoint, C, ST, L, O, OU, CN):
 
 generate_ca_certificate()
 key_manager = Waldo.stcp_accept(
-        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, cert="certificate.pem", key="key.pem", ca_certs="use_ca_cert.pem")
+        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, cert=None, key=None, ca_certs="use_ca_cert.pem")
 
 while True:
     pass

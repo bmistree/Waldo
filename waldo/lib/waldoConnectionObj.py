@@ -273,42 +273,38 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         ca_certs = kwargs.get('ca_certs', '')
         cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
 
+        if cert == None:
+                
+
+
+            key = crypto.PKey()
+            key.generate_key(crypto.TYPE_RSA,2048)
+            keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,key)
+            f = open("key.pem", "w")
+            f.write(keytext)
+            f.close()
+                
+            cert = crypto.X509()
+               
+            cert.get_subject().CN = kwargs.get('commonName','Anonymous')
+
+            cert.set_serial_number(1000)
+            cert.gmtime_adj_notBefore(0)
+            cert.gmtime_adj_notAfter(10*365*24*60*60)
+            cert.set_issuer(cert.get_subject())
+            cert.set_pubkey(key)
+            cert.sign(key, 'sha1')
+
+            f = open("certificate.pem", "w")
+            cert = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+            key = 'key.pem'
+            f.write(cert)
+            cert = 'certificate.pem'
+            f.close()
+                
+
 
         if sock == None:
-            if cert == None:
-                
-
-
-                key = crypto.PKey()
-                key.generate_key(crypto.TYPE_RSA,2048)
-                keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,key)
-                f = open("key.pem", "w")
-                f.write(keytext)
-                f.close()
-                
-                cert = crypto.X509()
-               
-                cert.get_subject().C = kwargs.get('countryName','US')
-                cert.get_subject().ST = kwargs.get('stateOrProvinceName','California')
-                cert.get_subject().L = kwargs.get('localityName','NA')
-                cert.get_subject().O = kwargs.get('organizationName','NA')
-                cert.get_subject().OU = kwargs.get('organizationalUnitName','NA')
-                cert.get_subject().CN = kwargs.get('commonName','NA')
-
-                cert.set_serial_number(1000)
-                cert.gmtime_adj_notBefore(0)
-                cert.gmtime_adj_notAfter(10*365*24*60*60)
-                cert.set_issuer(cfile.get_subject())
-                cert.set_pubkey(key)
-                cert.sign(key, 'sha1')
-
-                f = open("certificate.pem", "w")
-                cert = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
-                key = 'key.pem'
-                f.write(cert)
-                cert = 'certificate.pem'
-                f.close()
-                
 
             context = SSL.Context(SSL.SSLv23_METHOD)
             context.set_verify(SSL.VERIFY_PEER, lambda a,b,c,d,e: True)
@@ -436,13 +432,8 @@ class _STCPAcceptThread(threading.Thread):
         self.cb = cb
         self.host_uuid = host_uuid
 
-        self.countryName  = kwargs.get('countryName','US')
-        self.stateOrProvinceName = kwargs.get('stateOrProvinceName','California')
-        self.localityName = kwargs.get('localityName','NA')
-        self.organizationName = kwargs.get('organizationName','NA')
-        self.organizationalUnitName = kwargs.get('organizationalUnitName','NA')
         self.commonName = kwargs.get('commonName','NA')
-        self.emailAddress = kwargs.get('emailAddress', 'NA')
+       
 
         self.cert = kwargs.get('cert', None)
         self.key = kwargs.get('key', None)
@@ -453,12 +444,46 @@ class _STCPAcceptThread(threading.Thread):
         self.synchronization_listening_queue = synchronization_listening_queue
         
         self.args = args
+        self.kwargs = kwargs
 
         threading.Thread.__init__(self)
         self.daemon = True
 
     def run(self):
         from OpenSSL import SSL
+        print "Rybbubg"
+        print self.cert
+        print type(self.cert)
+        if self.cert == None:
+            from OpenSSL import crypto
+            print "generate cert"
+            self.key = crypto.PKey()
+            self.key.generate_key(crypto.TYPE_RSA,2048)
+            keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,self.key)
+            f = open("key.pem", "w")
+            f.write(keytext)
+            f.close()
+                
+            self.cert = crypto.X509()
+               
+            self.cert.get_subject().CN = self.kwargs.get('commonName','Anonymous')
+
+            self.cert.set_serial_number(1000)
+            self.cert.gmtime_adj_notBefore(0)
+            self.cert.gmtime_adj_notAfter(10*365*24*60*60)
+            self.cert.set_issuer(self.cert.get_subject())
+            self.cert.set_pubkey(self.key)
+            self.cert.sign(self.key, 'sha1')
+
+            f = open("certificate.pem", "w")
+            self.cert = crypto.dump_certificate(crypto.FILETYPE_PEM, self.cert)
+            f.write(self.cert)
+            f.close()
+            self.key = 'key.pem'
+            self.cert = 'certificate.pem'
+
+
+
         context = SSL.Context(SSL.SSLv23_METHOD)
         context.set_verify(SSL.VERIFY_PEER, lambda a,b,c,d,e: True)
         context.use_certificate_file(os.path.join("./", self.cert))

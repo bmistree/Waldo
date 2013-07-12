@@ -40,7 +40,7 @@ def generate_request(C, ST, L, O, OU, CN, key):
 
 
 client = Waldo.stcp_connect(
-        Client, MANAGER_HOST, MANAGER_PORT, cert="certificate.pem", key="key.pem", ca_certs="use_ca_cert.pem")
+        Client, MANAGER_HOST, MANAGER_PORT, cert=None, key=None, ca_certs="use_ca_cert.pem")
 
 uuid = Waldo.uuid()
 print "get certificates"
