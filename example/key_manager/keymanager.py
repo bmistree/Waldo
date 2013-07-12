@@ -60,7 +60,7 @@ def sign_cert(Endpoint, C, ST, L, O, OU, CN, key):
     global ca_cert
     cert.set_issuer(ca_cert.get_subject())
     cert.set_pubkey(key)
-    cert.sign(ca_key, "sha256")
+    cert.sign(ca_key, "sha1")
     return cert
 
 def generate_request(Endpoint, C, ST, L, O, OU, CN, key):
@@ -76,7 +76,7 @@ def generate_request(Endpoint, C, ST, L, O, OU, CN, key):
     req.get_subject().OU = OU
     req.get_subject().CN = CN
     req.set_pubkey(key)
-    req.sign(key, "sha256")
+    req.sign(key, "sha1")
 
     return req
 
@@ -95,7 +95,7 @@ def generate_cert_from_request(Endpoint, req):
     cert.gmtime_adj_notAfter(24 * 60 * 60)
     cert.set_issuer(ca_cert.get_subject())
     cert.set_pubkey(req.get_pubkey())
-    cert.sign(ca_key, "sha256")
+    cert.sign(ca_key, "sha1")
 
     cert = crypto.dump_certificate(crypto.FILETYPE_PEM,cert)
     return cert
@@ -177,7 +177,7 @@ def generate_cert_and_key(Endpoint, C, ST, L, O, OU, CN):
     cert.gmtime_adj_notAfter(10*365*24*60*60)
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(key)
-    cert.sign(key, 'sha256')
+    cert.sign(key, 'sha1')
     print "signed certificates"
 
     certificate = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)

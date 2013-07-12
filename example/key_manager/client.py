@@ -34,7 +34,7 @@ def generate_request(C, ST, L, O, OU, CN, key):
     req.get_subject().OU = OU
     req.get_subject().CN = CN
     req.set_pubkey(key)
-    req.sign(key, "sha256")
+    req.sign(key, "sha1")
     req = crypto.dump_certificate_request(crypto.FILETYPE_PEM, req)
     return req
 

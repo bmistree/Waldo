@@ -254,7 +254,7 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
     Inherits from _WaldoTCPConnectionObj. The only difference is in the initialization, so
     we can perform SSL there.
     '''
-    def __init__(self, dst_host, dst_port, sock=None, cfile=None, key=None, **kwargs):
+    def __init__(self, dst_host, dst_port, sock=None, **kwargs):
         '''
         Either dst_host + dst_port are None or sock is None.
         
@@ -265,11 +265,16 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         certificate file and keyfile. If the key is the certificate file,
         then key should be None.
         '''
+        import OpenSSL
+        from OpenSSL import crypto
+        from OpenSSL import SSL
+        cert = kwargs.get('cert', None)
+        key = kwargs.get('key', None)
+        ca_certs = kwargs.get('ca_certs', None)
 
         if sock == None:
-            if cfile == None:
-                import OpenSSL
-                from OpenSSL import crypto
+            if cert == None:
+                
 
 
                 key = crypto.PKey()
@@ -303,10 +308,17 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
                 cfile = 'certificate.pem'
                 f.close()
                 
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
+            context = SSL.Context(SSL.SSLv23_METHOD)
+            context.set_verify(SSL.VERIFY_NONE, lambda a,b,c,d,e: True)
+            context.use_certificate_file(os.path.join("./", cert))
+            context.use_privatekey_file(os.path.join("./", key))
+            self.sock = SSL.Connection(context, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+
+
+           # self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             self.sock = ssl.wrap_socket(self.sock,
-                           certfile=cfile,
+                           certfile=cert,
                            keyfile=key,
                            ca_certs=None,
                            ssl_version=ssl.PROTOCOL_SSLv23,
@@ -439,8 +451,13 @@ class _STCPAcceptThread(threading.Thread):
         self.daemon = True
 
     def run(self):
-        
-        sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        from OpenSSL import SSL
+        context = SSL.Context(SSL.SSLv23_METHOD)
+        context.set_verify(SSL.VERIFY_NONE, lambda a,b,c,d,e: True)
+        context.use_certificate_file(os.path.join("./", self.cert))
+        context.use_privatekey_file(os.path.join("./", self.key))
+
+        sock = SSL.Connection(context, socket.socket(socket.AF_INET,socket.SOCK_STREAM))
         # turn off Nagle's
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
@@ -470,6 +487,8 @@ class _STCPAcceptThread(threading.Thread):
                                  keyfile=self.key,
                                  ssl_version=ssl.PROTOCOL_SSLv23,
                                  cert_reqs=ssl.CERT_NONE)
+                print type(conn)
+                #change this to _WalcoTCPConnectionObj once that is fixed
                 tcp_conn_obj = _WaldoTCPConnectionObj(None,None,conn)
                 created_endpoint = self.endpoint_constructor(
                     self.waldo_classes,self.host_uuid,tcp_conn_obj,*self.args)
