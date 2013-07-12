@@ -13,7 +13,7 @@ from Crypto.Util import asn1
 from emitted import Manager, Client
 
 MANAGER_HOST = '127.0.0.1'
-MANAGER_PORT = 6979
+MANAGER_PORT = 6974
 
 ca_cert=None
 ca_key=None
@@ -185,7 +185,7 @@ def generate_cert_and_key(Endpoint, C, ST, L, O, OU, CN):
 
 generate_ca_certificate()
 key_manager = Waldo.stcp_accept(
-        Manager, MANAGER_HOST, MANAGER_PORT, None, None, None, generate_cert_from_request)
+        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, cert="certificate.pem", key="key.pem")
 
 while True:
     pass

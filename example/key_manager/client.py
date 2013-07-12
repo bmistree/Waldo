@@ -11,7 +11,7 @@ from OpenSSL import crypto
 from emitted import Client,Manager
 
 MANAGER_HOST = '127.0.0.1'
-MANAGER_PORT = 6979
+MANAGER_PORT = 6974
 
 def get_key():
     key = crypto.PKey()
@@ -40,7 +40,7 @@ def generate_request(C, ST, L, O, OU, CN, key):
 
 
 client = Waldo.stcp_connect(
-        Client, MANAGER_HOST, MANAGER_PORT, cert=None, key=None)
+        Client, MANAGER_HOST, MANAGER_PORT, cert="certificate.pem", key="key.pem")
 
 uuid = Waldo.uuid()
 print "get certificates"

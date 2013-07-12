@@ -308,7 +308,9 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
             self.sock = ssl.wrap_socket(self.sock,
                            certfile=cfile,
                            keyfile=key,
-                           ca_certs=None)
+                           ca_certs=None,
+                           ssl_version=ssl.PROTOCOL_SSLv23,
+                           cert_reqs=ssl.CERT_NONE)
             self.sock.connect((dst_host,int(dst_port)))
 
             
@@ -365,7 +367,7 @@ class _STCPAcceptThread(threading.Thread):
 
     def __init__(
         self, stoppable, endpoint_constructor, waldo_classes, host_listen_on,
-        port_listen_on, cb, host_uuid, synchronization_listening_queue, certfile, keyfile, ca_certs,*args, **kwargs):
+        port_listen_on, cb, host_uuid, synchronization_listening_queue,*args, **kwargs):
         '''
         @param{_TCPListeningStoppable object} stoppable --- Every 1s,
         breaks out of listening for new connections and checks if
@@ -415,9 +417,6 @@ class _STCPAcceptThread(threading.Thread):
         self.port_listen_on = int(port_listen_on)
         self.cb = cb
         self.host_uuid = host_uuid
-        self.cert = certfile
-        self.key = keyfile
-        self.ca = ca_certs
 
         self.countryName  = kwargs.get('countryName','US')
         self.stateOrProvinceName = kwargs.get('stateOrProvinceName','California')
@@ -461,12 +460,16 @@ class _STCPAcceptThread(threading.Thread):
             try:
                 
                 conn, addr = sock.accept()
+                print self.ca_certs
+                print self.cert 
+                print self.key
                 conn = ssl.wrap_socket(conn,
                                  server_side=True,
-                                 ca_certs=self.ca,
+                                 ca_certs=self.ca_certs,
                                  certfile=self.cert,
                                  keyfile=self.key,
-                                 ssl_version=ssl.PROTOCOL_SSLv23)
+                                 ssl_version=ssl.PROTOCOL_SSLv23,
+                                 cert_reqs=ssl.CERT_NONE)
                 tcp_conn_obj = _WaldoTCPConnectionObj(None,None,conn)
                 created_endpoint = self.endpoint_constructor(
                     self.waldo_classes,self.host_uuid,tcp_conn_obj,*self.args)
