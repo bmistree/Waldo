@@ -427,6 +427,10 @@ class _STCPAcceptThread(threading.Thread):
         self.commonName = kwargs.get('commonName','NA')
         self.emailAddress = kwargs.get('emailAddress', 'NA')
 
+        self.cert = kwargs.get('cert', None)
+        self.key = kwargs.get('key', None)
+        self.ca_certs = kwargs.get('ca_certs', None)
+
         
         self.synchronization_listening_queue = synchronization_listening_queue
         
