@@ -363,9 +363,15 @@ def emit_statement(
         interior_bracket_txt = emit_statement(
             rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-        statement_txt = (
-            '%s.get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event))'
-            %  (exterior_bracket_txt, interior_bracket_txt))
+
+        if TypeCheck.templateUtil.is_text(lhs_node.type):
+            statement_txt = (
+                '%s.get_val(_active_event)[_context.get_val_if_waldo(%s,_active_event)]'
+                %  (exterior_bracket_txt, interior_bracket_txt))
+        else:
+            statement_txt = (
+                '%s.get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event))'
+                %  (exterior_bracket_txt, interior_bracket_txt))
 
         
     elif emit_utils.is_method_call(statement_node):

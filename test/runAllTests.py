@@ -6,8 +6,6 @@ import subprocess
 sys.path.append(
     os.path.join('..','waldo','lib'))
 
-
-
 import ind_tests.test_nested_list
 import ind_tests.test_num
 import ind_tests.test_value_list
@@ -135,7 +133,7 @@ def run_emit_tests():
     import emit_tests.self_type
     import emit_tests.foreign_func_in_sequence
     import emit_tests.id_method
-
+    import emit_tests.str_index_test
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -243,8 +241,11 @@ def run_emit_tests():
 
         ('Tests id method.',
          emit_tests.id_method.run_test),
-
+        
+        ('Tests that you can get an index from a Text',
+         emit_tests.str_index_test.run_test),
         ]
+
 
     run_tests(emit_tests_to_run)
     
