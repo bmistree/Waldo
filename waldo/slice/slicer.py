@@ -158,12 +158,11 @@ def slicer(node,functionDeps=None,typeStack=None):
     elif node.label == AST_TRY_CATCH_STATEMENT:
         if len(node.children) in [3,4]:
             tryNode = node.children[0]
-            catchExceptionBinding = node.children[1]
-            catchNode = node.children[2]
+            catchNode = node.children[1]
             slicer(tryNode,functionDeps,typeStack)
             slicer(catchNode,functionDeps,typeStack)
-            if len(node.children) == 4:
-                finallyNode = node.children[3]
+            if len(node.children) == 3:
+                finallyNode = node.children[2]
                 slicer(finallyNode,functionDeps,typeStack)
 
     elif node.label == AST_TRY_BLOCK:
@@ -171,6 +170,11 @@ def slicer(node,functionDeps=None,typeStack=None):
         slicer(tryBody,functionDeps,typeStack)
 
     elif node.label == AST_CATCH_BLOCK:
+        exceptionType, exceptionIdentifier = node.children[0], node.children[1]
+        isMute = isMutable(exceptionType)
+        typeStack.addIdentifier(exceptionIdentifier.value,isMute,exceptionType)
+        typeStack.annotateNode(exceptionIdentifier,exceptionIdentifier.value)
+        print exceptionIdentifier.sliceAnnotationName
         catchBody = node.children[2]
         slicer(catchBody,functionDeps,typeStack)
 
