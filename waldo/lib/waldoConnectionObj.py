@@ -459,41 +459,6 @@ class _STCPAcceptThread(threading.Thread):
         while True:
 
             try:
-                if self.cert == None:
-                    import OpenSSL
-                    from OpenSSL import crypto
-
-
-                    self.key = crypto.PKey()
-                    self.key.generate_key(crypto.TYPE_RSA,2048)
-                    keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,self.key)
-                    f = open("key2.pem", "w")
-                    f.write(keytext)
-                    f.close()
-                
-                    if self.cert == None:
-                        self.cert = crypto.X509()
-                        self.cert.get_subject().C = self.countryName
-                        self.cert.get_subject().ST = self.stateOrProvinceName
-                        self.cert.get_subject().L = self.localityName
-                        self.cert.get_subject().O = self.organizationName
-                        self.cert.get_subject().OU = self.organizationalUnitName
-                        self.cert.get_subject().CN = self.commonName
-                  
-                        self.cert.set_serial_number(1000)
-                        self.cert.gmtime_adj_notBefore(0)
-                        self.cert.gmtime_adj_notAfter(10*365*24*60*60)
-                        self.cert.set_issuer(self.cert.get_subject())
-                        self.cert.set_pubkey(self.key)
-                        self.cert.sign(self.key, 'sha256')
-
-                    f = open("certificate2.pem", "w")
-                    self.cert = crypto.dump_certificate(crypto.FILETYPE_PEM, self.cert)
-                    self.key =  "key2.pem"
-
-                    f.write(self.cert)
-                    self.cert ='certificate2.pem'
-                    f.close()
                 
                 conn, addr = sock.accept()
                 conn = ssl.wrap_socket(conn,
