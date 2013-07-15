@@ -358,7 +358,7 @@ class _TCPAcceptThread(threading.Thread):
         except socket.error, ex:
           print ex[1] # print error message from socket error
 
-        sock.listen(1)
+        sock.listen(5)
         self.synchronization_listening_queue.put(True)
         while True:
 
