@@ -103,7 +103,7 @@ def emit_statement(
         exception = statement_node.children[0] 
         identifier = statement_node.children[1]
         catch_body = statement_node.children[2]
-        statement_txt = ('except ' + exception.value + 
+        statement_txt = ('except ' + '(' + EXCEPTIONS[exception.value] + ')' + 
             ' as ' + identifier.value + ':\n')
         catch_body_txt = emit_statement(catch_body,endpoint_name,ast_root,
             fdep_dict,emit_ctx)
