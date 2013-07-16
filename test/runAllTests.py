@@ -135,6 +135,8 @@ def run_emit_tests():
     import emit_tests.id_method
     import emit_tests.str_index_test
     import emit_tests.string_pass
+    import emit_tests.application_exception_test
+
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -248,6 +250,9 @@ def run_emit_tests():
         
         ('Tests passing strings in a variety of ways',
          emit_tests.string_pass.run_test),
+
+        ('Tests application exception may be thrown and caught.',
+         emit_tests.application_exception_test.run_test),
 
         ]
 
