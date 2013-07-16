@@ -156,7 +156,7 @@ def slicer(node,functionDeps=None,typeStack=None):
         slicer (forBodyNode,functionDeps,typeStack);
 
     elif node.label == AST_TRY_CATCH_STATEMENT:
-        if len(node.children) in [3,4]:
+        if len(node.children) in [2,3]:
             tryNode = node.children[0]
             catchNode = node.children[1]
             slicer(tryNode,functionDeps,typeStack)
@@ -174,7 +174,6 @@ def slicer(node,functionDeps=None,typeStack=None):
         isMute = isMutable(exceptionType)
         typeStack.addIdentifier(exceptionIdentifier.value,isMute,exceptionType)
         typeStack.annotateNode(exceptionIdentifier,exceptionIdentifier.value)
-        print exceptionIdentifier.sliceAnnotationName
         catchBody = node.children[2]
         slicer(catchBody,functionDeps,typeStack)
 
