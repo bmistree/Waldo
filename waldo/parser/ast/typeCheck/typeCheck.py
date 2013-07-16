@@ -2240,6 +2240,7 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         node.children[funcBodyIndex].typeCheck(progText,typeStack,avoidFunctionObjects);
 
         ## remove the created type context
+        typeStack.removeCurrentFunctionNode();
         typeStack.popContext();
 
     elif(node.label == AST_FUNCTION_BODY):
@@ -2703,6 +2704,7 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
             # function so can ensure return type is valid.
             typeStack.addCurrentFunctionNode(msgSeqFuncNode);
             msgBodyNode.typeCheck(progText,typeStack,False);
+            typeStack.removeCurrentFunctionNode();
             typeStack.popContext();
 
             if msgSeqFuncNode.label == AST_ONCOMPLETE_FUNCTION:
