@@ -174,7 +174,11 @@ AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION = 'MessageReceiveSequenceFunction';
 # endpoint function call
 TYPE_ENDPOINT_FUNCTION_CALL = 'EndpointFunctionCall'
 
-# Dict of Waldo exception names to string lists of corresponding Python errors
+# Dict of Waldo exception names to lists of corresponding Python errors.
+# Values are strings of comma-delimited lists of Python errors.
 EXCEPTIONS = {
-    'Exception' : 'BaseException', # mostly for testing purposes
+    'Exception' : 'BaseException',  # mostly for testing purposes
+    'ApplicationException' : 'Exception', # FIXME: ApplicationException 
+                                          # includes Network Exception since
+    'NetworkException' : 'socket.error,socket.herror,socket.gaierror,socket.timeout'
 }
