@@ -308,8 +308,7 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
 
             context = SSL.Context(SSL.SSLv23_METHOD)
             context.set_verify(SSL.VERIFY_PEER, lambda a,b,c,d,e: True)
-            print(cert)
-            print(key)
+            
             context.use_certificate_file(os.path.join("./", cert))
             context.use_privatekey_file(os.path.join("./", key))
             if len(ca_certs) > 1:
@@ -359,7 +358,7 @@ class _TCPListeningStoppable(object):
         to_return = self._stopped
         self._mutex.release()
         return to_return
-        
+
         
 class _TCPListeningThread(threading.Thread):
     '''
@@ -451,12 +450,10 @@ class _STCPAcceptThread(threading.Thread):
 
     def run(self):
         from OpenSSL import SSL
-        print "Rybbubg"
-        print self.cert
-        print type(self.cert)
+        
         if self.cert == None:
             from OpenSSL import crypto
-            print "generate cert"
+
             self.key = crypto.PKey()
             self.key.generate_key(crypto.TYPE_RSA,2048)
             keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,self.key)
@@ -511,9 +508,7 @@ class _STCPAcceptThread(threading.Thread):
             try:
                 
                 conn, addr = sock.accept()
-                print self.ca_certs
-                print self.cert 
-                print self.key
+                
                 conn = ssl.wrap_socket(conn,
                                  server_side=True,
                                  ca_certs=self.ca_certs,
@@ -521,7 +516,7 @@ class _STCPAcceptThread(threading.Thread):
                                  keyfile=self.key,
                                  ssl_version=ssl.PROTOCOL_SSLv23,
                                  cert_reqs=self.cert_reqs)
-                print type(conn)
+
                 #change this to _WalcoTCPConnectionObj once that is fixed
                 tcp_conn_obj = _WaldoTCPConnectionObj(None,None,conn)
                 created_endpoint = self.endpoint_constructor(

@@ -11,50 +11,17 @@ from OpenSSL import crypto
 from emitted import Client,Manager
 
 MANAGER_HOST = '127.0.0.1'
-MANAGER_PORT = 6974
-
-def get_key():
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA,2048)
-    keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,key)
-
-    return keytext
-
-def generate_request(C, ST, L, O, OU, CN, key):
-    f = open('temp.pem', 'w+')
-    f.write(key)
-    f.close()
-    #DELETE KEYFILE
-    key = crypto.load_privatekey(crypto.FILETYPE_PEM,open('temp.pem').read())
-    req = OpenSSL.crypto.X509Req()
-    req.get_subject().C = C
-    req.get_subject().ST = ST
-    req.get_subject().L = L
-    req.get_subject().O = O
-    req.get_subject().OU = OU
-    req.get_subject().CN = CN
-    req.set_pubkey(key)
-    req.sign(key, "sha1")
-    req = crypto.dump_certificate_request(crypto.FILETYPE_PEM, req)
-    return req
-
+MANAGER_PORT = 6971
 
 client = Waldo.stcp_connect(
-        Client, MANAGER_HOST, MANAGER_PORT, cert=None, key=None, ca_certs="use_ca_cert.pem")
+        Client, MANAGER_HOST, MANAGER_PORT)
 
-uuid = Waldo.uuid()
-print "get certificates"
-key = get_key()
-req = generate_request("US", "AS", "DSds", "SDSD", "DSDS", "Waldo", key)
-print "got req"
-cert = client.req_to_cert(req)
+print "Get Key"
+key = Waldo.get_key()
+print "Get get_certificate"
+cert = Waldo.get_certificate("Gavin", '127.0.0.1', 6981, key)
 
-f = open("test.pem", "w")
-f.write(cert)
-f.close()
-f = open("testkey.pem", "w")
-f.write(key)
-f.close()
-
-print(cert)
+print "Test"
+print crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+print crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 

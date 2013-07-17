@@ -15,6 +15,9 @@ import waldoExecutingEvent
 import waldoVariableStore
 import shim.get_math_endpoint
 import waldoReferenceBase
+import WaldoSSL
+from WaldoSSL import secure
+from WaldoSSL import keymanager
 
 StoppedException = util.StoppedException
 
@@ -65,6 +68,16 @@ _waldo_classes = {
 
 def uuid():
   return _host_uuid
+
+def get_key():
+  return secure.get_key()
+
+def get_certificate(CN, host, port, key=None):
+  return secure.get_certificate(CN, host, port, key)
+
+def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None):
+  keymanager.start_ca(generate, certfile, keyfile, host, port)
+
 
 def stcp_connect(constructor,host,port,*args, **kwargs):
     '''

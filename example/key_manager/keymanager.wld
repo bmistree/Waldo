@@ -5,80 +5,31 @@ Endpoint Client;
 
 Sequences
 {
-  get_key:
-    Client.ask_key -> Manager.generate_key;
-  get_cert_from_req:
-    Client.send_req ->
-    Manager.gen_cert;
-  evaluate_key:
-    Client.question_key ->
-    Manager.send_information;
-  revoke_key:
-    Client.send_key ->
-    Manager.exchange_key;
+  c:
+    Client.send -> Manager.send_back;
 }
 
-Struct Secret
+Sequence c()
+    returns Text msg
 {
-    Text certificate;
-    Text key;
-}
-
-Sequence get_key(Text uuid) returns Text key
-{
-    Client.ask_key{}
-    Manager.generate_key{
-    }
-}
-
-Sequence get_cert_from_req(Text req)
-    returns Text cert
-{
-    Client.send_req{}
-    Manager.gen_cert
+    Client.send{}
+    Manager.send_back
     {
-        cert = getCertFromReq(req);
+        msg = "Works";
     }
 }
 
-Sequence evaluate_key(Text uuid)
-    returns Struct Secret cert_and_key
-{
-    Client.question_key{}
-    Manager.send_information
-    {
-        cert_and_key = certificates[uuid];
-    }
-}
-
-Sequence revoke_key(Text uuid)
-    returns Struct Secret cert_and_key
-{
-    Client.send_key{}
-    Manager.exchange_key
-    {
-        cert_and_key = certificates[uuid];
-    }
-}
 
 Client
 {    
-    Public Function req_to_cert(Text req) returns Text
+    Public Function confirm() returns Text
     {
-        return get_cert_from_req(req);
+        return c();
     }
 }
 
 Manager
 {
-    Map(from: Text, to: Struct Secret) certificates;
 
-    Function (in: Text; returns: Text) getCertFromReq;
-    
-
-    // initializes 
-    onCreate(Function (in: Text; returns: Text) getCert)
-    {
-        getCertFromReq = getCert;
-    }
 }
+
