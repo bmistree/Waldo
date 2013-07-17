@@ -5,6 +5,7 @@ import thread
 import socket
 import struct
 
+ACCEPTING_TIMEOUT = 1
 
 class _WaldoConnectionObject(object):
 
@@ -350,8 +351,9 @@ class _TCPAcceptThread(threading.Thread):
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         # we do not want to listen for the connection forever.  every
-        # 1s, if we do not get a connection check if we should stop listening
-        sock.settimeout(1)
+        # ACCEPTING_TIMEOUT seconds, if we do not get a connection check if we 
+        # should stop listening
+        sock.settimeout(ACCEPTING_TIMEOUT)
 
         try: 
           sock.bind((self.host_listen_on, self.port_listen_on))
