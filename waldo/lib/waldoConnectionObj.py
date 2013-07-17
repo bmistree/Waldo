@@ -128,7 +128,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         listening_thread.start()
 
     def _start_listening_loop(self):
-        while 1:
+        while True:
             try:
                 data = self.sock.recv(1024)
                 if not data:
