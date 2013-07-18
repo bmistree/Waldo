@@ -10,7 +10,7 @@ Sequences
   get_cert_from_req:
     Client.send_req ->
     Manager.gen_cert;
-  add_ca_to_list:
+  get_ca:
     Client.ask_cert -> Manager.return_cert;
 }
 
@@ -31,7 +31,7 @@ Sequence get_cert_from_req(Text req)
     }
 }
 
-Sequence add_ca_to_list() returns Text cert
+Sequence get_ca() returns Text cert
 {
     Client.ask_cert{}
     Manager.return_cert{
@@ -39,17 +39,15 @@ Sequence add_ca_to_list() returns Text cert
     }
 }
 
-
-
 Client
 {    
     Public Function req_to_cert(Text req) returns Text
     {
         return get_cert_from_req(req);
     }
-    Public Function add_ca() returns Text
+    Public Function get_cacert() returns Text
     {
-        return add_ca_to_list();
+        return get_ca();
     }
 }
 

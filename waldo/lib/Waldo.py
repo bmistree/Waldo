@@ -80,7 +80,7 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
 
 def add_ca_to_list(ca_file, host, port):
   print "Trying to add ca to list"
-  ca_cert = secure.add_ca_to_list(host, port)
+  ca_cert = secure.get_cacert(host, port)
   print "Save it"
   f = open("temp.pem")
   f.write(ca_cert)

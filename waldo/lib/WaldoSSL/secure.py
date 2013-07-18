@@ -12,19 +12,35 @@ from emitted import Manager, Client
 MANAGER_HOST = '127.0.0.1'
 MANAGER_PORT = 6974
 def set_hostname(name):
+    '''
+    Args:
+        name (String) - set hostname of CA to this
+    Pass in the name of hostname of the CA
+    '''
     global MANAGER_HOST
     MANAGER_HOST = name
 
 def set_port(port):
+    '''
+    Args:
+        port (int) - set port of CA to this
+    Pass in the port number of the CA
+    '''
     global MANAGER_PORT
     MANAGER_PORT = port
 
 def get_key():
+    '''
+    Generates a random key and returns a key object
+    '''
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA,2048)
     return key
 
 def make_temp():
+    '''
+    Makes a temporary directory if it doesn't exist already
+    '''
     filename = "./tmp/"
     temp = os.path.dirname(filename)
     try:
@@ -34,7 +50,12 @@ def make_temp():
 
 
 def generate_request(CN, key):
-
+    '''
+    Args:
+        CN (String) - identity to be put on the certificate
+        key (crypto.PKey) - key going to be associated with a certificate
+    Generates a certificate request that will paired with a key
+    '''
     req = OpenSSL.crypto.X509Req()
     req.get_subject().CN = CN
     req.set_pubkey(key)
@@ -42,19 +63,33 @@ def generate_request(CN, key):
     req = crypto.dump_certificate_request(crypto.FILETYPE_PEM, req)
     return req
 
-def add_ca_to_list(host, port):
+def get_cacert(host, port):
+    '''
+    Args:
+        host (String) - hostname of the CA
+        port (int) - port of the CA
+    Returns the CA certificate in text format
+    '''
     print "Connect"
     client = Waldo.stcp_connect(
         Client, host, port)
     print "Add CA"
-    ca_cert = client.add_ca()
+    ca_cert = client.get_cacert()
     print "Stop"
     client.stop()
     print "return"
     return ca_cert
 
 def get_certificate(CN, host, port, key=None):
-
+    '''
+    Args:
+        CN (String) - name on the certificate
+        host (String) - hostname of the CA
+        port (int) - port of the CA
+        key (crypto.PKey) - key to associate with the certificate
+    Call this to get the a certificate from the CA. If no key is specified. It will
+    generate one then and return that.
+    '''
     client = Waldo.stcp_connect(
         Client, host, port)
 

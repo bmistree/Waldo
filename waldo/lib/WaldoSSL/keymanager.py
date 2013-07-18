@@ -24,21 +24,33 @@ keyfilep = ""
 key_manager = None
 
 def set_hostname(name):
+    '''
+    Args:
+        name (String) - set hostname of CA to this
+    Pass in the name of hostname of the CA
+    '''
     global MANAGER_HOST
     MANAGER_HOST = name
 
 def set_port(port):
+    '''
+    Args:
+        port (int) - set port of CA to this
+    Pass in the port number of the CA
+    '''
     global MANAGER_PORT
     MANAGER_PORT = port
 
-def start_ca(generate=False):
-    if generate:
-        generate_ca_certificate()
-    key_manager = Waldo.stcp_accept(
-        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request)
-
-
 def generate_ca_certificate(certfilepath, keyfilepath):
+    '''
+    Generate a CA certificate and key for the CA.
+    Args:
+        certfilepath (String) - where the CA certificate will be stored
+        keyfilepath (String) - where the keyfile will be stored
+    
+    This function generates a key and matching certificate and 
+    writes it to the files specified.
+    '''
     key = OpenSSL.crypto.PKey()
     key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
@@ -72,18 +84,39 @@ def generate_ca_certificate(certfilepath, keyfilepath):
     f.close()
 
 def load_ca_certificate(certfilepath, keyfilepath):
+    '''
+    Args:
+        certfilepath (String) - where the certfile is stored
+        keyfilepath (String) - where the keyfile is stored
+
+    This function just loads a stored certificate and key and puts them in global variables
+    '''
     global ca_cert
     ca_cert=crypto.load_certificate(crypto.FILETYPE_PEM,open(certfilepath).read())
     global ca_key
     ca_key=crypto.load_privatekey(crypto.FILETYPE_PEM,open(keyfilepath).read())
 
-def dump_cert():
+def dump_cert(Endpoint):
+    '''
+    This function returns the CA certificate in text form
+    '''
+    print "In foreign function"
     global ca_cert
     print ca_cert
     return crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert)
 
 def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None):
+    '''
+    Args:
+        generate (boolean) - Tells it where to generate a certificate or not
+        certfile (String) - where the CA certificate is or will be stored
+        keyfile (String) - where the keyfile is or will be stored
+        host (String) - hostname of the CA
+        port (int) - port of the CA
 
+    Call this function to start a CA. You can specify it to generate a certificate or use a preloaded one
+
+    '''
     if generate is True:
         generate_ca_certificate(certfile, keyfile)
     else:
@@ -99,21 +132,37 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
         Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, dump_cert)
 
 def save_key(key, path):
+    '''
+    Args:
+        key (crypto.PKey) - key object to store
+        path (String) - where you will store it
+    Stores key into path
+    '''
     f = open(path, "w+")
     f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
     f.close()
 
 def save_certificate(cert, path):
+    '''
+    Args:
+        cert (crypto.X509) - certificate object to store
+        path (String) - where you will store it
+    Stores certificate into path
+    '''
     f = open(cert, "w+")
     f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
     f.close()
 
 
 def turn_off_ca():
+    '''
+    Call this to have the CA stop running
+    '''
     global key_manager
     key_manager.stop()
 
 def sign_cert(Endpoint, CN, key):
+
     cert = crypto.X509()
     cert.get_subject().CN = CN
     cert.set_serial_number()
@@ -126,6 +175,9 @@ def sign_cert(Endpoint, CN, key):
     return cert
 
 def make_temp():
+    '''
+    Makes a temporary directory if it doesn't exist already
+    '''
     filename = "./tmp/"
     temp = os.path.dirname(filename)
     try:
@@ -134,6 +186,12 @@ def make_temp():
         os.mkdir(temp)
 
 def generate_cert_from_request(Endpoint, req):
+    '''
+    Args:
+        Endpoint - this is to be used in conjunction with a Waldo file
+        req (crypto.X509Request) - this is a certificate request object that will be be turned into a certificate
+    Pass in a request and it will be turned into a certificate
+    '''
     make_temp()
     f = open('tmp/temp.pem', 'w+')
     f.write(req)
@@ -156,6 +214,7 @@ def generate_cert_from_request(Endpoint, req):
     return cert
 
 def get_key(Endpoint):
+
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA,2048)
     keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,key)

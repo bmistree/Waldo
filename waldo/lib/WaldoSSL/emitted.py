@@ -49,7 +49,11 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # return them....if it were false, might just get back refrences
                 # to Waldo variables, and de-waldo-ifying them outside of the
                 # transaction might return over-written/inconsistent values.
-                _to_return = self._onCreate(_root_event,_ctx ,getCert,dump_crypto,[])
+                try:
+                    _to_return = self._onCreate(_root_event,_ctx ,getCert,dump_crypto,[])
+                except self._waldo_classes["BackoutException"]:
+                    pass
+
                 # try committing root event
                 _root_event.request_commit()
                 _commit_resp = _root_event.event_complete_queue.get()
@@ -268,7 +272,11 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # return them....if it were false, might just get back refrences
                 # to Waldo variables, and de-waldo-ifying them outside of the
                 # transaction might return over-written/inconsistent values.
-                _to_return = self._endpoint_func_call_prefix__waldo__req_to_cert(_root_event,_ctx ,req,[])
+                try:
+                    _to_return = self._endpoint_func_call_prefix__waldo__req_to_cert(_root_event,_ctx ,req,[])
+                except self._waldo_classes["BackoutException"]:
+                    pass
+
                 # try committing root event
                 _root_event.request_commit()
                 _commit_resp = _root_event.event_complete_queue.get()
@@ -303,32 +311,33 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
 
 
 
-        def add_ca(self):
-            print "Check if ready"
+        def get_cacert(self):
+
             # ensure that both sides have completed their onCreate calls
             # before continuing
             self._block_ready()
-            print "Entering loop"
+
             while True:  # FIXME: currently using infinite retry 
-                print "Shit Cray"
                 _root_event = self._act_event_map.create_root_event()
                 _ctx = self._waldo_classes["ExecutingEventContext"](
                     self._global_var_store,
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
-                print "Call internal functions"
+
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
                 # arguments (while inside transaction) so that this method may
                 # return them....if it were false, might just get back refrences
                 # to Waldo variables, and de-waldo-ifying them outside of the
                 # transaction might return over-written/inconsistent values.
-                _to_return = self._endpoint_func_call_prefix__waldo__add_ca(_root_event,_ctx ,[])
+                try:
+                    _to_return = self._endpoint_func_call_prefix__waldo__get_cacert(_root_event,_ctx ,[])
+                except self._waldo_classes["BackoutException"]:
+                    pass
+
                 # try committing root event
-                print "Commit root event"
                 _root_event.request_commit()
                 _commit_resp = _root_event.event_complete_queue.get()
-                print "Returning"
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
                     return _to_return
@@ -337,7 +346,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
 
 
 
-        def _endpoint_func_call_prefix__waldo__add_ca(self,_active_event,_context,_returning_to_public_ext_array=None):
+        def _endpoint_func_call_prefix__waldo__get_cacert(self,_active_event,_context,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
 
                 pass
@@ -349,11 +358,11 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
 
             if _returning_to_public_ext_array != None:
                 # must de-waldo-ify objects before passing back
-                return _context.flatten_into_single_return_tuple((self._partner_endpoint_msg_func_call_prefix__waldo__add_ca_to_list(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None) if 0 in _returning_to_public_ext_array else _context.de_waldoify((self._partner_endpoint_msg_func_call_prefix__waldo__add_ca_to_list(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None),_active_event))
+                return _context.flatten_into_single_return_tuple((self._partner_endpoint_msg_func_call_prefix__waldo__get_ca(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None) if 0 in _returning_to_public_ext_array else _context.de_waldoify((self._partner_endpoint_msg_func_call_prefix__waldo__get_ca(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None),_active_event))
 
 
             # otherwise, use regular return mechanism... do not de-waldo-ify
-            return _context.flatten_into_single_return_tuple((self._partner_endpoint_msg_func_call_prefix__waldo__add_ca_to_list(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None))
+            return _context.flatten_into_single_return_tuple((self._partner_endpoint_msg_func_call_prefix__waldo__get_ca(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None))
 
 
 
@@ -495,7 +504,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
 
             return _context.sequence_local_store.get_var_if_exists("15__cert")
 
-        def _partner_endpoint_msg_func_call_prefix__waldo__add_ca_to_list(self,_active_event,_context,_returning_to_public_ext_array=None):
+        def _partner_endpoint_msg_func_call_prefix__waldo__get_ca(self,_active_event,_context,_returning_to_public_ext_array=None):
 
             _first_msg = False
             if not _context.set_msg_send_initialized_bit_true():
