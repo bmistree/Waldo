@@ -70,14 +70,10 @@ def get_cacert(host, port):
         port (int) - port of the CA
     Returns the CA certificate in text format
     '''
-    print "Connect"
     client = Waldo.stcp_connect(
         Client, host, port)
-    print "Add CA"
     ca_cert = client.get_cacert()
-    print "Stop"
     client.stop()
-    print "return"
     return ca_cert
 
 def get_certificate(CN, host, port, key=None):

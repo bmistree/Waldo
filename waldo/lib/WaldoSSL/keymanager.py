@@ -100,9 +100,8 @@ def dump_cert(Endpoint):
     '''
     This function returns the CA certificate in text form
     '''
-    print "In foreign function"
+  
     global ca_cert
-    print ca_cert
     return crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert)
 
 def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None):

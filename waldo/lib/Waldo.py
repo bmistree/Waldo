@@ -18,6 +18,7 @@ import waldoReferenceBase
 import WaldoSSL
 from WaldoSSL import secure
 from WaldoSSL import keymanager
+import shutil
 
 StoppedException = util.StoppedException
 
@@ -79,14 +80,12 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
   keymanager.start_ca(generate, certfile, keyfile, host, port)
 
 def add_ca_to_list(ca_file, host, port):
-  print "Trying to add ca to list"
   ca_cert = secure.get_cacert(host, port)
-  print "Save it"
-  f = open("temp.pem")
+  f = open("temp.pem", "w+")
   f.write(ca_cert)
   f.close()
   destination = open(ca_file,'wb')
-  shutil.copyfileobj(open(certfile,'rb'), destination)
+  shutil.copyfileobj(open(ca_file,'rb'), destination)
   shutil.copyfileobj(open("temp.pem",'rb'), destination)
   destination.close()
 
