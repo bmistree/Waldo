@@ -78,6 +78,17 @@ def get_certificate(CN, host, port, key=None):
 def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None):
   keymanager.start_ca(generate, certfile, keyfile, host, port)
 
+def add_ca_to_list(ca_file, host, port):
+  print "Trying to add ca to list"
+  ca_cert = secure.add_ca_to_list(host, port)
+  print "Save it"
+  f = open("temp.pem")
+  f.write(ca_cert)
+  f.close()
+  destination = open(ca_file,'wb')
+  shutil.copyfileobj(open(certfile,'rb'), destination)
+  shutil.copyfileobj(open("temp.pem",'rb'), destination)
+  destination.close()
 
 def stcp_connect(constructor,host,port,*args, **kwargs):
     '''

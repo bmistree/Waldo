@@ -13,6 +13,8 @@ from emitted import Client,Manager
 MANAGER_HOST = '127.0.0.1'
 MANAGER_PORT = 6971
 
+CLIENT2_PORT = 6972
+
 client = Waldo.stcp_connect(
         Client, MANAGER_HOST, MANAGER_PORT)
 
@@ -24,4 +26,8 @@ cert = Waldo.get_certificate("Gavin", '127.0.0.1', 6981, key)
 print "Test"
 print crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 print crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+
+secondConnect = Waldo.stcp_connect(
+        Client, MANAGER_HOST, MANAGER_PORT+1, cert=cert, key=key)
+
 

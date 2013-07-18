@@ -10,18 +10,8 @@ Sequences
   get_cert_from_req:
     Client.send_req ->
     Manager.gen_cert;
-  evaluate_key:
-    Client.question_key ->
-    Manager.send_information;
-  revoke_key:
-    Client.send_key ->
-    Manager.exchange_key;
-}
-
-Struct Secret
-{
-    Text certificate;
-    Text key;
+  add_ca_to_list:
+    Client.ask_cert -> Manager.return_cert;
 }
 
 Sequence get_key(Text uuid) returns Text key
@@ -41,25 +31,15 @@ Sequence get_cert_from_req(Text req)
     }
 }
 
-Sequence evaluate_key(Text uuid)
-    returns Struct Secret cert_and_key
+Sequence add_ca_to_list() returns Text cert
 {
-    Client.question_key{}
-    Manager.send_information
-    {
-        cert_and_key = certificates[uuid];
+    Client.ask_cert{}
+    Manager.return_cert{
+        cert = return_crypto_cert();
     }
 }
 
-Sequence revoke_key(Text uuid)
-    returns Struct Secret cert_and_key
-{
-    Client.send_key{}
-    Manager.exchange_key
-    {
-        cert_and_key = certificates[uuid];
-    }
-}
+
 
 Client
 {    
@@ -67,18 +47,22 @@ Client
     {
         return get_cert_from_req(req);
     }
+    Public Function add_ca() returns Text
+    {
+        return add_ca_to_list();
+    }
 }
 
 Manager
 {
-    Map(from: Text, to: Struct Secret) certificates;
-
     Function (in: Text; returns: Text) getCertFromReq;
     
+    Function (in: Nothing; returns: Text) return_crypto_cert;
 
     // initializes 
-    onCreate(Function (in: Text; returns: Text) getCert)
+    onCreate(Function (in: Text; returns: Text) getCert, Function (in: Nothing; returns: Text) dump_crypto)
     {
         getCertFromReq = getCert;
+        return_crypto_cert = dump_crypto;
     }
 }

@@ -12,13 +12,18 @@ import ssl
 from emitted import Client,Manager
 
 CLIENT2_HOST = '127.0.0.1'
-CLIENT2_PORT = 6983
+CLIENT2_PORT = 6972
 
-def generate_cert_from_request(Endpoint, req):
-    pass
+MANAGER_HOST = '127.0.0.1'
+MANAGER_PORT = 6971
 
-key_manager = Waldo.stcp_accept(
-        Manager, CLIENT2_HOST, CLIENT2_PORT, generate_cert_from_request, cert="test.pem", key="testkey.pem", ca_certs="pleasework.pem", cert_reqs=ssl.CERT_OPTIONAL)
+Waldo.add_ca_to_list("pleasework.pem", MANAGER_HOST, MANAGER_PORT)
+
+#key = Waldo.get_key()
+#cert = Waldo.get_certificate("Client2", '127.0.0.1', 6981, key)
+
+#key_manager = Waldo.stcp_accept(
+ #       Manager, CLIENT2_HOST, CLIENT2_PORT, cert=cert, key=key, ca_certs="pleasework.pem", cert_reqs=ssl.CERT_OPTIONAL)
 
 while True:
     pass

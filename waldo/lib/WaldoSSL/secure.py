@@ -42,6 +42,17 @@ def generate_request(CN, key):
     req = crypto.dump_certificate_request(crypto.FILETYPE_PEM, req)
     return req
 
+def add_ca_to_list(host, port):
+    print "Connect"
+    client = Waldo.stcp_connect(
+        Client, host, port)
+    print "Add CA"
+    ca_cert = client.add_ca()
+    print "Stop"
+    client.stop()
+    print "return"
+    return ca_cert
+
 def get_certificate(CN, host, port, key=None):
 
     client = Waldo.stcp_connect(
@@ -60,6 +71,7 @@ def get_certificate(CN, host, port, key=None):
     f.close()
 
     cert = crypto.load_certificate(crypto.FILETYPE_PEM,open('tmp/temp.pem').read())
+    #client.stop()
     if noKey is None:
         return cert, key
     else:

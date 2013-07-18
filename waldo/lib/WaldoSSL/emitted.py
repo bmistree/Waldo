@@ -3,7 +3,7 @@
 
 def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
     class _Manager (_waldo_classes["Endpoint"]):
-        def __init__(self,_waldo_classes,_host_uuid,_conn_obj,getCert):
+        def __init__(self,_waldo_classes,_host_uuid,_conn_obj,getCert,dump_crypto):
 
             # a little ugly in that need to pre-initialize _host_uuid, because
             # code used for initializing variable store may rely on it.  (Eg., if
@@ -18,16 +18,16 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
                 self._waldo_classes["VariableStore"](_host_uuid))
 
             self._global_var_store.add_var(
-                '3__certificates',self._waldo_classes["WaldoMapVariable"](  # the type of waldo variable to create
-                '3__certificates', # variable's name
+                '5__getCertFromReq',self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
+                '5__getCertFromReq', # variable's name
                 _host_uuid, # host uuid var name
                 False,  # if peered, True, otherwise, False
                 
-            ))
+            ).set_external_args_array([]))
 
             self._global_var_store.add_var(
-                '4__getCertFromReq',self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
-                '4__getCertFromReq', # variable's name
+                '6__return_crypto_cert',self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
+                '6__return_crypto_cert', # variable's name
                 _host_uuid, # host uuid var name
                 False,  # if peered, True, otherwise, False
                 
@@ -49,7 +49,7 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # return them....if it were false, might just get back refrences
                 # to Waldo variables, and de-waldo-ifying them outside of the
                 # transaction might return over-written/inconsistent values.
-                _to_return = self._onCreate(_root_event,_ctx ,getCert,[])
+                _to_return = self._onCreate(_root_event,_ctx ,getCert,dump_crypto,[])
                 # try committing root event
                 _root_event.request_commit()
                 _commit_resp = _root_event.event_complete_queue.get()
@@ -70,19 +70,25 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         ### OnCreate method
 
-        def _onCreate(self,_active_event,_context,getCert,_returning_to_public_ext_array=None):
+        def _onCreate(self,_active_event,_context,getCert,dump_crypto,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
                 getCert = _context.func_turn_into_waldo_var(getCert,True,_active_event,self._host_uuid,False,[],False)
+                dump_crypto = _context.func_turn_into_waldo_var(dump_crypto,True,_active_event,self._host_uuid,False,[],False)
 
                 pass
 
             else:
                 getCert = _context.func_turn_into_waldo_var(getCert,True,_active_event,self._host_uuid,False,[],False)
+                dump_crypto = _context.func_turn_into_waldo_var(dump_crypto,True,_active_event,self._host_uuid,False,[],False)
 
                 pass
 
             _tmp0 = getCert
-            if not _context.assign(_context.global_store.get_var_if_exists("4__getCertFromReq"),_tmp0,_active_event):
+            if not _context.assign(_context.global_store.get_var_if_exists("5__getCertFromReq"),_tmp0,_active_event):
+                pass
+
+            _tmp0 = dump_crypto
+            if not _context.assign(_context.global_store.get_var_if_exists("6__return_crypto_cert"),_tmp0,_active_event):
                 pass
 
         ### USER DEFINED METHODS ###
@@ -132,8 +138,8 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def _partner_endpoint_msg_func_call_prefix__waldo__gen_cert(self,_active_event,_context,_returning_to_public_ext_array=None):
 
-            _tmp0 = _context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("4__getCertFromReq"),_context.sequence_local_store.get_var_if_exists("11__req"))
-            if not _context.assign(_context.sequence_local_store.get_var_if_exists("12__cert"),_tmp0,_active_event):
+            _tmp0 = _context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("5__getCertFromReq"),_context.sequence_local_store.get_var_if_exists("14__req"))
+            if not _context.assign(_context.sequence_local_store.get_var_if_exists("15__cert"),_tmp0,_active_event):
                 pass
 
 
@@ -171,51 +177,10 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
                     _to_exec(_active_event,_context)
 
 
-        def _partner_endpoint_msg_func_call_prefix__waldo__send_information(self,_active_event,_context,_returning_to_public_ext_array=None):
+        def _partner_endpoint_msg_func_call_prefix__waldo__return_cert(self,_active_event,_context,_returning_to_public_ext_array=None):
 
-            _tmp0 = _context.global_store.get_var_if_exists("3__certificates").get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(_context.sequence_local_store.get_var_if_exists("16__uuid"),_active_event))
-            if not _context.assign(_context.sequence_local_store.get_var_if_exists("17__cert_and_key"),_tmp0,_active_event):
-                pass
-
-
-
-
-            _threadsafe_queue = self._waldo_classes["Queue"].Queue()
-            _active_event.issue_partner_sequence_block_call(
-                _context,None,_threadsafe_queue,False)
-            # must wait on the result of the call before returning
-
-            if None != None:
-                # means that we have another sequence item to execute next
-
-                _queue_elem = _threadsafe_queue.get()
-
-
-
-
-                if isinstance(_queue_elem,self._waldo_classes["BackoutBeforeReceiveMessageResult"]):
-                    # back everything out: 
-                    raise self._waldo_classes["BackoutException"]()
-
-                _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
-
-                # apply changes to sequence variables.  Note: that
-                # the system has already applied deltas for global data.
-                _context.sequence_local_store.incorporate_deltas(
-                    _active_event,_queue_elem.sequence_local_var_store_deltas)
-
-                # send more messages
-                _to_exec_next = _queue_elem.to_exec_next_name_msg_field
-                if _to_exec_next != None:
-                    # means that we do not have any additional functions to exec
-                    _to_exec = getattr(self,_to_exec_next)
-                    _to_exec(_active_event,_context)
-
-
-        def _partner_endpoint_msg_func_call_prefix__waldo__exchange_key(self,_active_event,_context,_returning_to_public_ext_array=None):
-
-            _tmp0 = _context.global_store.get_var_if_exists("3__certificates").get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(_context.sequence_local_store.get_var_if_exists("20__uuid"),_active_event))
-            if not _context.assign(_context.sequence_local_store.get_var_if_exists("21__cert_and_key"),_tmp0,_active_event):
+            _tmp0 = _context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("6__return_crypto_cert"))
+            if not _context.assign(_context.sequence_local_store.get_var_if_exists("19__cert"),_tmp0,_active_event):
                 pass
 
 
@@ -337,6 +302,61 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
 
 
 
+
+        def add_ca(self):
+            print "Check if ready"
+            # ensure that both sides have completed their onCreate calls
+            # before continuing
+            self._block_ready()
+            print "Entering loop"
+            while True:  # FIXME: currently using infinite retry 
+                print "Shit Cray"
+                _root_event = self._act_event_map.create_root_event()
+                _ctx = self._waldo_classes["ExecutingEventContext"](
+                    self._global_var_store,
+                    # not using sequence local store
+                    self._waldo_classes["VariableStore"](self._host_uuid))
+                print "Call internal functions"
+                # call internal function... note True as last param tells internal
+                # version of function that it needs to de-waldo-ify all return
+                # arguments (while inside transaction) so that this method may
+                # return them....if it were false, might just get back refrences
+                # to Waldo variables, and de-waldo-ifying them outside of the
+                # transaction might return over-written/inconsistent values.
+                _to_return = self._endpoint_func_call_prefix__waldo__add_ca(_root_event,_ctx ,[])
+                # try committing root event
+                print "Commit root event"
+                _root_event.request_commit()
+                _commit_resp = _root_event.event_complete_queue.get()
+                print "Returning"
+                if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
+                    # means it isn't a backout message: we're done
+                    return _to_return
+                elif isinstance(_commit_resp,self._waldo_classes["StopRootCallResult"]):
+                    raise self._waldo_classes["StoppedException"]()
+
+
+
+        def _endpoint_func_call_prefix__waldo__add_ca(self,_active_event,_context,_returning_to_public_ext_array=None):
+            if _context.check_and_set_from_endpoint_call_false():
+
+                pass
+
+            else:
+
+                pass
+
+
+            if _returning_to_public_ext_array != None:
+                # must de-waldo-ify objects before passing back
+                return _context.flatten_into_single_return_tuple((self._partner_endpoint_msg_func_call_prefix__waldo__add_ca_to_list(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None) if 0 in _returning_to_public_ext_array else _context.de_waldoify((self._partner_endpoint_msg_func_call_prefix__waldo__add_ca_to_list(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None),_active_event))
+
+
+            # otherwise, use regular return mechanism... do not de-waldo-ify
+            return _context.flatten_into_single_return_tuple((self._partner_endpoint_msg_func_call_prefix__waldo__add_ca_to_list(_active_event,_context,) if _context.set_msg_send_initialized_bit_false() else None))
+
+
+
         ### USER DEFINED SEQUENCE BLOCKS ###
 
         ### User-defined message send blocks ###
@@ -354,7 +374,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 if _context.check_and_set_from_endpoint_call_false():
 
                     _context.sequence_local_store.add_var(
-                        "7__uuid", _context.convert_for_seq_local(uuid,_active_event,self._host_uuid)
+                        "10__uuid", _context.convert_for_seq_local(uuid,_active_event,self._host_uuid)
                     )
 
                     pass
@@ -362,14 +382,14 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 else:
 
                     _context.sequence_local_store.add_var(
-                        "7__uuid", _context.convert_for_seq_local(uuid,_active_event,self._host_uuid)
+                        "10__uuid", _context.convert_for_seq_local(uuid,_active_event,self._host_uuid)
                     )
 
                     pass
 
                 key = ""
                 _context.sequence_local_store.add_var(
-                    "8__key",_context.convert_for_seq_local(key,_active_event,self._host_uuid))
+                    "11__key",_context.convert_for_seq_local(key,_active_event,self._host_uuid))
 
                 pass
 
@@ -406,7 +426,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _context.reset_to_reply_with()
 
 
-            return _context.sequence_local_store.get_var_if_exists("8__key")
+            return _context.sequence_local_store.get_var_if_exists("11__key")
 
         def _partner_endpoint_msg_func_call_prefix__waldo__get_cert_from_req(self,_active_event,_context,req=None,_returning_to_public_ext_array=None):
 
@@ -421,7 +441,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 if _context.check_and_set_from_endpoint_call_false():
 
                     _context.sequence_local_store.add_var(
-                        "11__req", _context.convert_for_seq_local(req,_active_event,self._host_uuid)
+                        "14__req", _context.convert_for_seq_local(req,_active_event,self._host_uuid)
                     )
 
                     pass
@@ -429,14 +449,14 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 else:
 
                     _context.sequence_local_store.add_var(
-                        "11__req", _context.convert_for_seq_local(req,_active_event,self._host_uuid)
+                        "14__req", _context.convert_for_seq_local(req,_active_event,self._host_uuid)
                     )
 
                     pass
 
                 cert = ""
                 _context.sequence_local_store.add_var(
-                    "12__cert",_context.convert_for_seq_local(cert,_active_event,self._host_uuid))
+                    "15__cert",_context.convert_for_seq_local(cert,_active_event,self._host_uuid))
 
                 pass
 
@@ -473,9 +493,9 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _context.reset_to_reply_with()
 
 
-            return _context.sequence_local_store.get_var_if_exists("12__cert")
+            return _context.sequence_local_store.get_var_if_exists("15__cert")
 
-        def _partner_endpoint_msg_func_call_prefix__waldo__evaluate_key(self,_active_event,_context,uuid=None,_returning_to_public_ext_array=None):
+        def _partner_endpoint_msg_func_call_prefix__waldo__add_ca_to_list(self,_active_event,_context,_returning_to_public_ext_array=None):
 
             _first_msg = False
             if not _context.set_msg_send_initialized_bit_true():
@@ -487,23 +507,15 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _first_msg = True
                 if _context.check_and_set_from_endpoint_call_false():
 
-                    _context.sequence_local_store.add_var(
-                        "16__uuid", _context.convert_for_seq_local(uuid,_active_event,self._host_uuid)
-                    )
-
                     pass
 
                 else:
 
-                    _context.sequence_local_store.add_var(
-                        "16__uuid", _context.convert_for_seq_local(uuid,_active_event,self._host_uuid)
-                    )
-
                     pass
 
-                cert_and_key = self._waldo_classes["WaldoSingleThreadUserStructVariable"]("17__cert_and_key",self._host_uuid,False,{"certificate": "", "key": "", })
+                cert = ""
                 _context.sequence_local_store.add_var(
-                    "17__cert_and_key",_context.convert_for_seq_local(cert_and_key,_active_event,self._host_uuid))
+                    "19__cert",_context.convert_for_seq_local(cert,_active_event,self._host_uuid))
 
                 pass
 
@@ -511,7 +523,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
 
             _threadsafe_queue = self._waldo_classes["Queue"].Queue()
             _active_event.issue_partner_sequence_block_call(
-                _context,'send_information',_threadsafe_queue, '_first_msg')
+                _context,'return_cert',_threadsafe_queue, '_first_msg')
             _queue_elem = _threadsafe_queue.get()
 
             if isinstance(_queue_elem,self._waldo_classes["BackoutBeforeReceiveMessageResult"]):
@@ -540,74 +552,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _context.reset_to_reply_with()
 
 
-            return _context.sequence_local_store.get_var_if_exists("17__cert_and_key")
-
-        def _partner_endpoint_msg_func_call_prefix__waldo__revoke_key(self,_active_event,_context,uuid=None,_returning_to_public_ext_array=None):
-
-            _first_msg = False
-            if not _context.set_msg_send_initialized_bit_true():
-                # we must load all arguments into sequence local data and perform
-                # initialization on sequence local data....start by loading
-                # arguments into sequence local data
-                # below tells the message send that it must serialize and
-                # send all sequence local data.
-                _first_msg = True
-                if _context.check_and_set_from_endpoint_call_false():
-
-                    _context.sequence_local_store.add_var(
-                        "20__uuid", _context.convert_for_seq_local(uuid,_active_event,self._host_uuid)
-                    )
-
-                    pass
-
-                else:
-
-                    _context.sequence_local_store.add_var(
-                        "20__uuid", _context.convert_for_seq_local(uuid,_active_event,self._host_uuid)
-                    )
-
-                    pass
-
-                cert_and_key = self._waldo_classes["WaldoSingleThreadUserStructVariable"]("21__cert_and_key",self._host_uuid,False,{"certificate": "", "key": "", })
-                _context.sequence_local_store.add_var(
-                    "21__cert_and_key",_context.convert_for_seq_local(cert_and_key,_active_event,self._host_uuid))
-
-                pass
-
-
-
-            _threadsafe_queue = self._waldo_classes["Queue"].Queue()
-            _active_event.issue_partner_sequence_block_call(
-                _context,'exchange_key',_threadsafe_queue, '_first_msg')
-            _queue_elem = _threadsafe_queue.get()
-
-            if isinstance(_queue_elem,self._waldo_classes["BackoutBeforeReceiveMessageResult"]):
-                raise self._waldo_classes["BackoutException"]()
-
-            _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
-
-            # apply changes to sequence variables.  (There shouldn't
-            # be any, but it's worth getting in practice.)  Note: that
-            # the system has already applied deltas for global data.
-            _context.sequence_local_store.incorporate_deltas(
-                _active_event,_queue_elem.sequence_local_var_store_deltas)
-
-            # send more messages
-            _to_exec_next = _queue_elem.to_exec_next_name_msg_field
-            if _to_exec_next != None:
-                # means that we do not have any additional functions to exec
-                _to_exec = getattr(self,_to_exec_next)
-                _to_exec(_active_event,_context)
-            else:
-                # end of sequence: reset to_reply_with_uuid in context.  we do
-                # this so that if we go on to execute another message sequence
-                # following this one, then the message sequence will be viewed as
-                # a new message sequence, rather than the continuation of a
-                # previous one.
-                _context.reset_to_reply_with()
-
-
-            return _context.sequence_local_store.get_var_if_exists("21__cert_and_key")
+            return _context.sequence_local_store.get_var_if_exists("19__cert")
 
         ### User-defined message receive blocks ###
 

@@ -7,6 +7,13 @@ import struct
 import ssl
 import os
 
+def make_temp():
+    filename = "./tmp/"
+    temp = os.path.dirname(filename)
+    try:
+        os.stat(temp)
+    except:
+        os.mkdir(temp)
 
 class _WaldoConnectionObject(object):
 
@@ -254,6 +261,8 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
     Inherits from _WaldoTCPConnectionObj. The only difference is in the initialization, so
     we can perform SSL there.
     '''
+
+    
     def __init__(self, dst_host, dst_port, sock=None, **kwargs):
         '''
         Either dst_host + dst_port are None or sock is None.
@@ -272,6 +281,20 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         key = kwargs.get('key', None)
         ca_certs = kwargs.get('ca_certs', '')
         cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
+
+        if isinstance(cert, crypto.X509) == True:
+            make_temp()
+            f = open("tmp/tempcert.pem","w+")
+            f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+            f.close()
+            cert = "tmp/tempcert.pem"
+
+        if isinstance(key, crypto.PKey) == True:
+            make_temp()
+            f = open("tmp/tempkey.pem","w+")
+            f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
+            f.close()
+            key = "tmp/tempkey.pem"
 
         if cert == None:
                 
@@ -422,6 +445,7 @@ class _STCPAcceptThread(threading.Thread):
 
         '''
         from OpenSSL import SSL
+        from OpenSSL import crypto
 
         self.stoppable= stoppable
         self.endpoint_constructor = endpoint_constructor
@@ -435,7 +459,21 @@ class _STCPAcceptThread(threading.Thread):
        
 
         self.cert = kwargs.get('cert', None)
+        if isinstance(self.cert, crypto.X509) == True:
+            make_temp()
+            f = open("tmp/tempcert.pem","w+")
+            f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, self.cert))
+            f.close()
+            self.cert = "tmp/tempcert.pem"
+
+        
         self.key = kwargs.get('key', None)
+        if isinstance(self.key, crypto.PKey) == True:
+            make_temp()
+            f = open("tmp/tempkey.pem","w+")
+            f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, self.key))
+            f.close()
+            self.key = "tmp/tempkey.pem"
         self.ca_certs = kwargs.get('ca_certs', '')
         self.cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
 
