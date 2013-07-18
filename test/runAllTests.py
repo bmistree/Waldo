@@ -6,8 +6,6 @@ import subprocess
 sys.path.append(
     os.path.join('..','waldo','lib'))
 
-
-
 import ind_tests.test_nested_list
 import ind_tests.test_num
 import ind_tests.test_value_list
@@ -152,6 +150,8 @@ def run_emit_tests():
     import security_tests.two_side_stop
 
 
+    import emit_tests.str_index_test
+    
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
          emit_tests.set_get_value_test.run_test),
@@ -258,7 +258,9 @@ def run_emit_tests():
 
         ('Tests id method.',
          emit_tests.id_method.run_test),
-
+        
+        ('Tests that you can get an index from a Text',
+         emit_tests.str_index_test.run_test),
         ]
 
     security_tests_to_run = [
@@ -275,6 +277,7 @@ def run_emit_tests():
         
 
         ]
+
 
     run_tests(emit_tests_to_run)
     run_tests(security_tests_to_run)

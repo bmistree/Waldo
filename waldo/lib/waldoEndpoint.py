@@ -646,6 +646,7 @@ class _Endpoint(object):
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_STOP
         general_message.stop.dummy = False
+
         self._conn_obj.write_stop(general_message.SerializeToString(),self)
 
         
@@ -680,13 +681,12 @@ class _Endpoint(object):
         self._stop_unlock()
 
         
-        
-    def stop(self):
+
+    def stop(self,_skip_partner=False):
         '''
         Called from python or called when partner requests stop
         '''
         self._stop_lock()
-
         if self._stop_complete:
             # means that user called stop after we had already
             # stopped.  Do nothing
@@ -706,23 +706,23 @@ class _Endpoint(object):
         request_callback = self._partner_stop_called and self._stop_called
             
         self._stop_unlock()
-        
+
         # act event map filters duplicate stop calls automatically
-        self._act_event_map.initiate_stop()
+        self._act_event_map.initiate_stop(_skip_partner)
 
         if not stop_already_called:
             # we do not want to send multiple stop messages to our
             # partner.  just one.  this check ensures that we don't
             # infinitely send messages back and forth.
             self._notify_partner_stop()
-
+            
         # 4 from above as well
         if request_callback:
             self._act_event_map.callback_when_stopped(self._stop_complete_cb)
 
         # blocking wait until ready to shut down.
         blocking_queue.get()
-            
+
             
     def _stop_complete_cb(self):
         '''
@@ -775,9 +775,9 @@ class _Endpoint(object):
         self._partner_stop_called = True
 
         # 3 from above
-        t = threading.Thread(target = self.stop)
+        t = threading.Thread(target = self.stop, args=(True,))
         t.start()
-        
+
         # 4 from above
         request_callback = self._partner_stop_called and self._stop_called
         

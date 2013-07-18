@@ -183,7 +183,11 @@ while True:  # FIXME: currently using infinite retry
     # return them....if it were false, might just get back refrences
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
-    _to_return = self.%s(_root_event,_ctx %s,[])
+    try:
+        _to_return = self.%s(_root_event,_ctx %s,[])
+    except %s:
+        pass
+
     # try committing root event
     _root_event.request_commit()
     _commit_resp = _root_event.event_complete_queue.get()
@@ -200,6 +204,7 @@ while True:  # FIXME: currently using infinite retry
            emit_utils.library_transform('VariableStore'),
            lib_util.internal_oncreate_func_call_name('onCreate'),
            comma_sep_arg_names,
+           emit_utils.library_transform('BackoutException'),
            emit_utils.library_transform('CompleteRootCallResult'))
 
     else:
@@ -627,7 +632,11 @@ while True:  # FIXME: currently using infinite retry
     # return them....if it were false, might just get back refrences
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
-    _to_return = self.%s(_root_event,_ctx %s,%s)
+    try:
+        _to_return = self.%s(_root_event,_ctx %s,%s)
+    except %s:
+        pass
+
     # try committing root event
     _root_event.request_commit()
     _commit_resp = _root_event.event_complete_queue.get()
@@ -642,6 +651,7 @@ while True:  # FIXME: currently using infinite retry
        internal_method_name,
        comma_sep_arg_names,
        str(list_return_external_positions),
+       emit_utils.library_transform('BackoutException'),
        emit_utils.library_transform('CompleteRootCallResult'),
        emit_utils.library_transform('StopRootCallResult'),
        emit_utils.library_transform('StoppedException')

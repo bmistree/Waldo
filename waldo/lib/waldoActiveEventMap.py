@@ -11,7 +11,7 @@ class _ActiveEventMap(object):
     
     def __init__(self,local_endpoint):
         self.map = {}
-        self._mutex = threading.Lock()
+        self._mutex = threading.RLock()
         self.local_endpoint = local_endpoint
         self.in_stop_phase = False
         self.in_stop_complete_phase = False
@@ -19,24 +19,27 @@ class _ActiveEventMap(object):
         self.waiting_on_stop = {}
     
 
-    def initiate_stop(self):
+    def initiate_stop(self,skip_partner):
         '''
         When the endpoint that this is on has said to start
         stoping, then
         '''
         self._lock()
-        
         if self.in_stop_phase:
             # can happen if simultaneously attempt to stop connection
             # on both ends or if programmer calls stop twice.
             self._unlock()
             return 
-
-        for evt in self.map.values():
-            evt.stop()
         
+        # note that when we stop events, they may try to remove
+        # themselves from the map.  To prevent invalidating the map as
+        # we iterate over it, we first copy all the elements into a
+        # list, then iterate.
+        map_list = list(self.map.values())
         self.in_stop_phase = True
         self._unlock()
+        for evt in map_list:
+            evt.stop(skip_partner)
         
     def callback_when_stopped(self,stop_callback):
         self._lock()

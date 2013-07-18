@@ -14,6 +14,7 @@ def make_temp():
         os.stat(temp)
     except:
         os.mkdir(temp)
+ACCEPTING_TIMEOUT = 1
 
 class _WaldoConnectionObject(object):
 
@@ -137,7 +138,7 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         listening_thread.start()
 
     def _start_listening_loop(self):
-        while 1:
+        while True:
             try:
                 data = self.sock.recv(1024)
                 if not data:
@@ -635,15 +636,16 @@ class _TCPAcceptThread(threading.Thread):
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         # we do not want to listen for the connection forever.  every
-        # 1s, if we do not get a connection check if we should stop listening
-        sock.settimeout(1)
+        # ACCEPTING_TIMEOUT seconds, if we do not get a connection check if we 
+        # should stop listening
+        sock.settimeout(ACCEPTING_TIMEOUT)
 
         try: 
           sock.bind((self.host_listen_on, self.port_listen_on))
         except socket.error, ex:
           print ex[1] # print error message from socket error
 
-        sock.listen(1)
+        sock.listen(5)
         self.synchronization_listening_queue.put(True)
         while True:
 

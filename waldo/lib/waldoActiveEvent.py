@@ -241,6 +241,7 @@ class _ActiveEvent(_InvalidationListener):
         If not in first or second phase of commit, then backout.
         '''
         self._lock()
+
         if not self.in_running_phase():
             # do not stop an event unless it is in the running phase.
             # (if it's midway through 2-phase commit, then if we stop
@@ -255,7 +256,7 @@ class _ActiveEvent(_InvalidationListener):
             False,
             # stop message
             True )
-
+        
         self._unlock()
 
         
@@ -581,8 +582,8 @@ class _ActiveEvent(_InvalidationListener):
         work for this event.)
         '''
         self.set_breakout()
-
         self._lock()
+
         if self.in_request_backout_phase():
             self._unlock()
             return
@@ -590,11 +591,11 @@ class _ActiveEvent(_InvalidationListener):
         ##### remove event from active event map
         self.local_endpoint._act_event_map.remove_event_if_exists(
             self.uuid)
-
+        
         if not already_backed_out:
             self.backout_commit()
-
         self.set_request_backout_phase()
+        
         for endpoint_uuid in self.subscribed_to.keys():
             subscribed_to_element = self.subscribed_to[endpoint_uuid]
 
@@ -609,13 +610,21 @@ class _ActiveEvent(_InvalidationListener):
             # waiting and not to perform any more operations.
             res_queues_array = subscribed_to_element.result_queues
             for res_queue in res_queues_array:
-                res_queue.put(
-                    waldoCallResults._BackoutBeforeEndpointCallResult())
+                if stop_request:
+                    queue_feeder = waldoCallResults._StopAlreadyCalledEndpointCallResult()
+                else:
+                    queue_feeder = waldoCallResults._BackoutBeforeEndpointCallResult()
+
+                res_queue.put(queue_feeder)
 
         for reply_with_uuid in self.message_listening_queues_map.keys():
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
-            message_listening_queue.put(
-                waldoCallResults._BackoutBeforeReceiveMessageResult())
+            if stop_request:
+                queue_feeder =  waldoCallResults._StopRootCallResult()
+            else:
+                queue_feeder = waldoCallResults._BackoutBeforeReceiveMessageResult()
+            message_listening_queue.put(queue_feeder)
+
 
         if ((not skip_partner) and self.must_check_partner()):
             self.local_endpoint._forward_backout_request_partner(self)
