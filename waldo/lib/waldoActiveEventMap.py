@@ -174,8 +174,6 @@ class _ActiveEventMap(object):
         active event map while setting stop_request=True to indicate that the
         event should not be retried.
         '''
-        print should_skip_partner, reason_for_backout, event
-
         event.forward_backout_request_and_backout_self(
             skip_partner=should_skip_partner,reason=reason_for_backout,
             stop_request=True,network_failure=True) # Set stop_request since 
