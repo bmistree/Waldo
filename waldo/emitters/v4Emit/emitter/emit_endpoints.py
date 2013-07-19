@@ -640,7 +640,8 @@ while True:  # FIXME: currently using infinite retry
     # try committing root event
     _root_event.request_commit()
     _commit_resp = _root_event.event_complete_queue.get()
-    if isinstance(_commit_resp,%s):
+    if (isinstance(_commit_resp,%s) or
+        isinstance(_commit_resp,%s)):
         # means it isn't a backout message: we're done
         return _to_return
     elif isinstance(_commit_resp,%s):
@@ -653,6 +654,7 @@ while True:  # FIXME: currently using infinite retry
        str(list_return_external_positions),
        emit_utils.library_transform('BackoutException'),
        emit_utils.library_transform('CompleteRootCallResult'),
+       emit_utils.library_transform('NetworkFailureCallResult'),
        emit_utils.library_transform('StopRootCallResult'),
        emit_utils.library_transform('StoppedException')
        )
@@ -914,6 +916,8 @@ _queue_elem = _threadsafe_queue.get()
 
 if isinstance(_queue_elem,%s):
     raise %s()
+elif isinstance(_queue_elem,%s):
+    raise %s()
 
 _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
 
@@ -943,6 +947,8 @@ else:
        issue_call_is_first_txt,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
        emit_utils.library_transform('BackoutException'),
+       emit_utils.library_transform('BackoutDueToNetworkFailure'),
+       emit_utils.library_transform('NetworkException')
        )
 
                                    
