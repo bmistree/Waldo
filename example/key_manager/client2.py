@@ -23,7 +23,7 @@ key = Waldo.get_key()
 cert = Waldo.get_certificate("Client2", '127.0.0.1', 6981, key)
 
 key_manager = Waldo.stcp_accept(
-        Manager, CLIENT2_HOST, CLIENT2_PORT, cert=cert, key=key, ca_certs="pleasework.pem", cert_reqs=ssl.CERT_OPTIONAL)
+        Manager, CLIENT2_HOST, CLIENT2_PORT, cert=cert, key=key, ca_certs="pleasework.pem", cert_reqs=ssl.CERT_REQUIRED)
 
 while True:
     pass

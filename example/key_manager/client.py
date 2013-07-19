@@ -15,9 +15,6 @@ MANAGER_PORT = 6971
 
 CLIENT2_PORT = 6972
 
-client = Waldo.stcp_connect(
-        Client, MANAGER_HOST, MANAGER_PORT)
-
 print "Get Key"
 key = Waldo.get_key()
 print "Get get_certificate"
@@ -27,7 +24,19 @@ print "Test"
 print crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 print crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
-secondConnect = Waldo.stcp_connect(
-        Client, MANAGER_HOST, MANAGER_PORT+1, cert=cert, key=key)
+f = open("tmp/t.pem", "w+")
+f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+f.close()
 
+f = open("tmp/t1.pem", "w+")
+f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
+f.close()
+
+
+secondConnect = Waldo.stcp_connect(
+        Client, MANAGER_HOST, CLIENT2_PORT, cert="tmp/t.pem", key="tmp/t1.pem")
+
+while True:
+	print secondConnect.confirm()
+	pass
 

@@ -89,6 +89,10 @@ def add_ca_to_list(ca_file, host, port):
   shutil.copyfileobj(open("temp.pem",'rb'), destination)
   destination.close()
 
+def cleanup(certfile, keyfile=None):
+  os.remove(certfile)
+  os.remove(keyfile)
+
 def stcp_connect(constructor,host,port,*args, **kwargs):
     '''
     Tries to connect an endpoint to another endpoint via a TCP

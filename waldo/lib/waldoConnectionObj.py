@@ -282,32 +282,34 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         key = kwargs.get('key', None)
         ca_certs = kwargs.get('ca_certs', '')
         cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
-
+        deleteCert = False
         if isinstance(cert, crypto.X509) == True:
             make_temp()
             f = open("tmp/tempcert.pem","w+")
             f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
             f.close()
             cert = "tmp/tempcert.pem"
-
+            deleteCert = True
+        deleteKey = False
         if isinstance(key, crypto.PKey) == True:
             make_temp()
             f = open("tmp/tempkey.pem","w+")
             f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
             f.close()
             key = "tmp/tempkey.pem"
+            deleteKey = True
 
         if cert == None:
                 
 
-
+            make_temp()
             key = crypto.PKey()
             key.generate_key(crypto.TYPE_RSA,2048)
             keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,key)
-            f = open("key.pem", "w")
+            f = open("tmp/key.pem", "w")
             f.write(keytext)
             f.close()
-                
+
             cert = crypto.X509()
                
             cert.get_subject().CN = kwargs.get('commonName','Anonymous')
@@ -319,11 +321,11 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
             cert.set_pubkey(key)
             cert.sign(key, 'sha1')
 
-            f = open("certificate.pem", "w")
+            f = open("tmp/certificate.pem", "w")
             cert = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
-            key = 'key.pem'
+            key = 'tmp/key.pem'
             f.write(cert)
-            cert = 'certificate.pem'
+            cert = 'tmp/certificate.pem'
             f.close()
                 
 
@@ -353,12 +355,17 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         else:
             self.sock = sock
             self.sock = ssl.wrap_socket(self.sock,
-                           certfile=cfile,
+                           certfile=cert,
                            keyfile=key)
 
         self.sock.setblocking(1)
         self.received_data = b''
         self.local_endpoint = None
+        if deleteCert is True:
+            os.remove(cert)
+        if deleteKey is True:
+            os.remove(key)
+
 
 class _TCPListeningStoppable(object):
     '''
@@ -460,21 +467,25 @@ class _STCPAcceptThread(threading.Thread):
        
 
         self.cert = kwargs.get('cert', None)
+        deleteCert = False
         if isinstance(self.cert, crypto.X509) == True:
             make_temp()
             f = open("tmp/tempcert.pem","w+")
             f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, self.cert))
             f.close()
             self.cert = "tmp/tempcert.pem"
+            deleteCert = True
 
         
         self.key = kwargs.get('key', None)
+        deleteKey = False
         if isinstance(self.key, crypto.PKey) == True:
             make_temp()
             f = open("tmp/tempkey.pem","w+")
             f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, self.key))
             f.close()
             self.key = "tmp/tempkey.pem"
+            deleteKey = True
         self.ca_certs = kwargs.get('ca_certs', '')
         self.cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
 
@@ -486,6 +497,10 @@ class _STCPAcceptThread(threading.Thread):
 
         threading.Thread.__init__(self)
         self.daemon = True
+        if deleteCert is True:
+            os.remove(self.cert)
+        if deleteKey is True:
+            os.remove(self.key)
 
     def run(self):
         from OpenSSL import SSL

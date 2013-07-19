@@ -15,9 +15,6 @@ from emitted import Manager, Client
 MANAGER_HOST = '127.0.0.1'
 MANAGER_PORT = 6971
 
-key_manager = Waldo.stcp_accept(
-        Manager, MANAGER_HOST, MANAGER_PORT)
-
 Waldo.start_ca(True, host='127.0.0.1', port=6981)
 
 while True:
