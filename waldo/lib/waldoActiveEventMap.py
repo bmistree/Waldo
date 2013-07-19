@@ -1,6 +1,7 @@
 from waldoActiveEvent import PartnerActiveEvent
 from waldoActiveEvent import EndpointCalledActiveEvent
 from waldoActiveEvent import RootActiveEvent
+from waldoActiveEvent import NETWORK,BACKOUT
 import threading
 import util
 
@@ -152,6 +153,41 @@ class _ActiveEventMap(object):
         to_return = self.map.get(uuid,None)
         self._unlock()
         return to_return        
+
+    def _map(self,func,dict):
+        '''
+        Applies the supplied function to each active event in the map.
+
+        Assumes that if modification is going to be made to the map then the
+        supplied function will lock and release the mutex.
+
+        @arg {dict} -- map of argument names to values. Unpacked when passed to
+        the provided function.
+        '''
+        event_list = [pair[1] for pair in self.map.items()]
+        for event in event_list:
+            func(event,**dict)
+        
+    def _stop_event(self,event,should_skip_partner,reason_for_backout):
+        '''
+        Backs out the event with the provided reason and removes it from the
+        active event map while setting stop_request=True to indicate that the
+        event should not be retried.
+        '''
+        print should_skip_partner, reason_for_backout, event
+
+        event.forward_backout_request_and_backout_self(
+            skip_partner=should_skip_partner,reason=reason_for_backout,
+            stop_request=True,network_failure=True) # Set stop_request since 
+
+        remove_event_if_exists(event.uuid)
+
+    def backout_from_all_events(self,skip_partner=False,reason=BACKOUT):
+        '''
+        Iterates through each active event in the map and backs out from each.
+        '''
+        dict = {'should_skip_partner':skip_partner,'reason_for_backout':reason}
+        self._map(self._stop_event,dict)
 
     def _lock(self):
         self._mutex.acquire()

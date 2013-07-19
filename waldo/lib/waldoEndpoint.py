@@ -1,5 +1,6 @@
 import util
 import waldoEndpointServiceThread
+import waldoActiveEvent
 import waldoActiveEventMap
 import waldoCallResults
 from util import Queue
@@ -226,6 +227,18 @@ class _Endpoint(object):
                   # endpoint.
             )
 
+    def _raise_network_exception(self):
+        '''
+        Called by the connection object when a network error is detected.
+
+        Right now this method is very naive. It simply iterates through 
+        all active events and sends each a network exception.
+        
+        In the future it would make more sense to avoid backing out from
+        local events.
+        '''
+        self._act_event_map.backout_from_all_events(
+            skip_partner=True,reason=waldoActiveEvent.NETWORK)
             
     def _receive_msg_from_partner(self,string_msg):
         '''

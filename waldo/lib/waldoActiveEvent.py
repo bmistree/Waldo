@@ -7,7 +7,8 @@ from abc import abstractmethod
 from util import Queue
 import waldoDeadlockDetector
 
-
+NETWORK = 'NETWORK'
+BACKOUT = 'BACKOUT'
 
 class _SubscribedToElement(object):
     '''
@@ -563,7 +564,8 @@ class _ActiveEvent(_InvalidationListener):
         return endpoint_call_requested
 
     def forward_backout_request_and_backout_self(
-        self,skip_partner=False,already_backed_out=False,stop_request=False):
+        self,skip_partner=False,already_backed_out=False,stop_request=False,
+        reason=BACKOUT):
         '''
         @param {bool} skip_partner --- @see forward_commit_request
 
@@ -612,19 +614,22 @@ class _ActiveEvent(_InvalidationListener):
             for res_queue in res_queues_array:
                 if stop_request:
                     queue_feeder = waldoCallResults._StopAlreadyCalledEndpointCallResult()
+                elif reason == NETWORK:
+                    queue_feeder = waldoCallResults._BackoutDueToNetworkFailure()
                 else:
-                    queue_feeder = waldoCallResults._BackoutBeforeEndpointCallResult()
-
+                    queue_feeder = waldoCallResults._BackoutBeforeReceiveMessageResult()
                 res_queue.put(queue_feeder)
 
         for reply_with_uuid in self.message_listening_queues_map.keys():
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
             if stop_request:
-                queue_feeder =  waldoCallResults._StopRootCallResult()
+                queue_feeder = waldoCallResults._StopAlreadyCalledEndpointCallResult()
+            elif reason == NETWORK:
+                message_listening_queue.put(
+                    waldoCallResults._BackoutDueToNetworkFailure())
             else:
                 queue_feeder = waldoCallResults._BackoutBeforeReceiveMessageResult()
             message_listening_queue.put(queue_feeder)
-
 
         if ((not skip_partner) and self.must_check_partner()):
             self.local_endpoint._forward_backout_request_partner(self)
@@ -1118,13 +1123,20 @@ class RootActiveEvent(_ActiveEvent):
         self._unlock()
 
     def forward_backout_request_and_backout_self(
-        self,skip_partner=False,already_backed_out=False,stop_request=False):
-        
+        self,skip_partner=False,already_backed_out=False,stop_request=False,
+        reason=BACKOUT,network_failure=False):
+
         # whenever we backout, we must also reschedule
         super(RootActiveEvent,self).forward_backout_request_and_backout_self(
-            skip_partner,already_backed_out)
+            skip_partner,already_backed_out,reason=reason)
 
-        if stop_request:
+        if network_failure:
+            # on network failure we don't want to reschedule since restarting
+            # the event will immediately result in a socket exception so we 
+            # notify the queue that we have stopped due to a network failure
+            self.event_complete_queue.put(
+                waldoCallResults._NetworkFailureCallResult())
+        elif stop_request:
             # notify queue that we have stopped and are not processing
             # any more
             self.event_complete_queue.put(
