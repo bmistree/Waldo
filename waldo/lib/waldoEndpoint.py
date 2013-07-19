@@ -680,9 +680,13 @@ class _Endpoint(object):
         self._stop_listeners.pop(stop_id,None)
         self._stop_unlock()
 
-        
+    def is_stopped(self):
+        '''
+        Returns whether the endpoint is stopped.
+        '''
+        return self._stop_complete
 
-    def stop(self,_skip_partner=False):
+    def stop(self):
         '''
         Called from python or called when partner requests stop
         '''
