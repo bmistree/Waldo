@@ -50,8 +50,9 @@ _waldo_classes = {
     # call results
     'CompleteRootCallResult': waldoCallResults._CompleteRootCallResult,
     'StopRootCallResult' : waldoCallResults._StopRootCallResult,
-
+    'NetworkFailureCallResult' : waldoCallResults._NetworkFailureCallResult,
     'BackoutBeforeReceiveMessageResult': waldoCallResults._BackoutBeforeReceiveMessageResult,
+    'BackoutDueToNetworkFailure': waldoCallResults._BackoutDueToNetworkFailure,
     'EndpointCallResult': waldoCallResults._EndpointCallResult,
 
     # misc
