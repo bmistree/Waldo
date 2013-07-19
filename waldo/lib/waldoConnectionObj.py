@@ -6,6 +6,7 @@ import socket
 import struct
 
 ACCEPTING_TIMEOUT = 1
+CONNECTING_TIMEOUT = 2
 
 class _WaldoConnectionObject(object):
 
@@ -101,10 +102,11 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         @param {socket} sock --- If not passed in a socket, then
         create a new connection to dst_host, dst_port.
         '''
-
+        
         if sock == None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            self.sock.settimeout(CONNECTING_TIMEOUT)
             self.sock.connect((dst_host,int(dst_port)))
 
             
