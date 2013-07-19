@@ -135,8 +135,10 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
             try:
                 data = self.sock.recv(1024)
                 if not data:
-                    # socket closed: note: may want to catch this error to
-                    # ensure it happened because close had been called
+                    if not self.local_endpoint.is_stopped():
+                        # Socket is closed but the partners have not stopped
+                        # communicating, so we want to back out
+                        self.local_endpoint._raise_network_exception()
                     break
 
                 self.received_data += data
