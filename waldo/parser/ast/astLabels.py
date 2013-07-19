@@ -177,8 +177,10 @@ TYPE_ENDPOINT_FUNCTION_CALL = 'EndpointFunctionCall'
 # Dict of Waldo exception names to lists of corresponding Python errors.
 # Values are strings of comma-delimited lists of Python errors.
 EXCEPTIONS = {
-    'Exception' : 'BaseException',  # mostly for testing purposes
+    'Exception' : 'BaseException',    # mostly for testing purposes
     'ApplicationException' : 'Exception', # FIXME: ApplicationException 
-                                          # includes Network Exception since
-    'NetworkException' : 'socket.error,socket.herror,socket.gaierror,socket.timeout'
+                                      # includes Network Exception
+    'NetworkException' : 'self._waldo_classes["NetworkException"]'
+                                      # FIXME: this exact string is also
+                                      # emitted by a function in emit_utils.
 }
