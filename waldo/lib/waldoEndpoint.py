@@ -107,6 +107,27 @@ class _Endpoint(object):
 
     def _ready_waiting_list_unlock(self,additional):
         self._ready_waiting_list_mutex.release()        
+
+    def set_conn_failed(self):
+        '''
+        Sets the _conn_failed flag in the endpoint to True.
+
+        Should be called when Waldo detects that the endpoint's connection 
+        with its partner has been closed.
+        '''
+        self._conn_status_mutex.acquire()
+        self._conn_failed = True
+        self._conn_status_mutex.release()
+
+    def conn_failed(self):
+        '''
+        Returns a boolean representing whether or not Waldo has detected that
+        the endpoint's connection with its partner has been closed.
+        '''
+        self._conn_status_mutex.acquire()
+        conn_failed = self._conn_failed
+        self._conn_status_mutex.release()
+        return conn_failed
         
     def _block_ready(self):
         '''
