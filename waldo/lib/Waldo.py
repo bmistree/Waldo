@@ -89,6 +89,19 @@ def add_ca_to_list(ca_file, host, port):
   shutil.copyfileobj(open("temp.pem",'rb'), destination)
   destination.close()
 
+def encrypt_keytext(key, passphrase, cipher=None):
+  import OpenSSL
+  from OpenSSL import crypto
+  if cipher is None:
+    return crypto.dump_privatekey(crypto.FILETYPE_PEM, key, "DES3", passphrase)
+  else:
+    return crypto.dump_privatekey(crypto.FILETYPE_PEM, key, cipher, passphrase)
+
+def decrypt_keytext(keytext, passphrase):
+  import OpenSSL
+  from OpenSSL import crypto
+  return crypto.load_privatekey(crypto.FILETYPE_PEM, keytext, passphrase)
+
 def cleanup(certfile, keyfile=None):
   os.remove(certfile)
   os.remove(keyfile)

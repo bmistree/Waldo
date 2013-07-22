@@ -17,6 +17,12 @@ CLIENT2_PORT = 6972
 
 print "Get Key"
 key = Waldo.get_key()
+ekey = Waldo.encrypt_keytext(key, "YOLO")
+print ekey
+key2 = Waldo.decrypt_keytext(ekey, "YOLO")
+print crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+print crypto.dump_privatekey(crypto.FILETYPE_PEM, key2)
+print crypto.dump_privatekey(crypto.FILETYPE_PEM, key)== crypto.dump_privatekey(crypto.FILETYPE_PEM, key2)
 print "Get get_certificate"
 cert = Waldo.get_certificate("Gavin", '127.0.0.1', 6981, key)
 
