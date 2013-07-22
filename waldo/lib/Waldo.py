@@ -107,7 +107,7 @@ def cleanup(certfile, keyfile=None):
   os.remove(keyfile)
 
 def salt():
-  return uuid
+  return uuid()
 
 def hash(password):
   import hashlib
