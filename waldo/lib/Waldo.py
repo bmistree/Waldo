@@ -106,6 +106,15 @@ def cleanup(certfile, keyfile=None):
   os.remove(certfile)
   os.remove(keyfile)
 
+def salt():
+  return uuid
+
+def hash(password):
+  import hashlib
+  return hashlib.sha224(str(salt()) + password)
+
+
+
 def stcp_connect(constructor,host,port,*args, **kwargs):
     '''
     Tries to connect an endpoint to another endpoint via a TCP
