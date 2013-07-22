@@ -191,14 +191,11 @@ def generate_cert_from_request(Endpoint, req):
         req (crypto.X509Request) - this is a certificate request object that will be be turned into a certificate
     Pass in a request and it will be turned into a certificate
     '''
-    make_temp()
-    f = open('tmp/temp.pem', 'w+')
-    f.write(req)
-    f.close()
+
     global ca_cert
     global ca_key
 
-    req = crypto.load_certificate_request(crypto.FILETYPE_PEM,open('tmp/temp.pem').read())
+    req = crypto.load_certificate_request(crypto.FILETYPE_PEM,req)
     os.remove('tmp/temp.pem')
     cert = crypto.X509()
     cert.set_subject(req.get_subject())

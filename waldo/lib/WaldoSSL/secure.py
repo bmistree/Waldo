@@ -96,12 +96,8 @@ def get_certificate(CN, host, port, key=None):
         key = get_key()
     req = generate_request(CN, key)
     cert = client.req_to_cert(req)
-    make_temp()
-    f = open('tmp/temp.pem', 'w+')
-    f.write(cert)
-    f.close()
 
-    cert = crypto.load_certificate(crypto.FILETYPE_PEM,open('tmp/temp.pem').read())
+    cert = crypto.load_certificate(crypto.FILETYPE_PEM,cert)
     #client.stop()
     if noKey is None:
         return cert, key

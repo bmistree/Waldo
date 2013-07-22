@@ -21,6 +21,7 @@ Waldo.add_ca_to_list("pleasework.pem", MANAGER_HOST, 6981)
 
 key = Waldo.get_key()
 cert = Waldo.get_certificate("Client2", '127.0.0.1', 6981, key)
+print cert
 
 key_manager = Waldo.stcp_accept(
         Manager, CLIENT2_HOST, CLIENT2_PORT, cert=cert, key=key, ca_certs="pleasework.pem", cert_reqs=ssl.CERT_REQUIRED)

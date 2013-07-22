@@ -497,10 +497,7 @@ class _STCPAcceptThread(threading.Thread):
 
         threading.Thread.__init__(self)
         self.daemon = True
-        if deleteCert is True:
-            os.remove(self.cert)
-        if deleteKey is True:
-            os.remove(self.key)
+        
 
     def run(self):
         from OpenSSL import SSL
@@ -532,7 +529,6 @@ class _STCPAcceptThread(threading.Thread):
             f.close()
             self.key = 'key.pem'
             self.cert = 'certificate.pem'
-
 
 
         context = SSL.Context(SSL.SSLv23_METHOD)
@@ -585,7 +581,10 @@ class _STCPAcceptThread(threading.Thread):
             except socket.timeout:
                 if self.stoppable.is_stopped():
                     break
-                
+        if deleteCert is True:
+            os.remove(self.cert)
+        if deleteKey is True:
+            os.remove(self.key)
 
 
 class _TCPAcceptThread(threading.Thread):
