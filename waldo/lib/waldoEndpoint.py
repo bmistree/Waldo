@@ -74,6 +74,7 @@ class _Endpoint(object):
         self._ready_lock_ = threading.Lock()
         self._this_side_ready_bool = False
         self._other_side_ready_bool = False
+        self._conn_failed = False
 
         self._ready_waiting_list_mutex = threading.Lock()
         self._ready_waiting_list = []
