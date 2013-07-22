@@ -74,7 +74,6 @@ class _Endpoint(object):
         self._ready_lock_ = threading.Lock()
         self._this_side_ready_bool = False
         self._other_side_ready_bool = False
-        self._conn_failed = False
 
         self._ready_waiting_list_mutex = threading.Lock()
         self._ready_waiting_list = []
@@ -93,6 +92,9 @@ class _Endpoint(object):
         # holds callbacks to call when stop is complete
         self._stop_listener_id_assigner = 0
         self._stop_listeners = {}
+
+        self._conn_failed = False
+        self._conn_status_mutex = threading.Lock()
 
     def _stop_lock(self):
         self._stop_mutex.acquire()
