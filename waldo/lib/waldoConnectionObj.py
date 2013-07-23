@@ -283,6 +283,9 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         ca_certs = kwargs.get('ca_certs', '')
         cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
         deleteCert = False
+        print "Got certificate"
+        print type(cert)
+        print cert
         if isinstance(cert, crypto.X509) == True:
             print "Writing certificate"
             make_temp()
