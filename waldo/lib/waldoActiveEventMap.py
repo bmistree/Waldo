@@ -178,7 +178,7 @@ class _ActiveEventMap(object):
             skip_partner=should_skip_partner,reason=reason_for_backout,
             stop_request=True,network_failure=True) # Set stop_request since 
 
-        remove_event_if_exists(event.uuid)
+        self.remove_event_if_exists(event.uuid)
 
     def backout_from_all_events(self,skip_partner=False,reason=BACKOUT):
         '''
