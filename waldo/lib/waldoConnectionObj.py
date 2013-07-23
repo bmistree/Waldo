@@ -111,7 +111,6 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         else:
             self.sock = sock
 
-        self.sock.setblocking(1)
         self.received_data = b''
         self.local_endpoint = None
         
