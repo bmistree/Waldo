@@ -111,7 +111,9 @@ def salt():
 
 def hash(password, salt):
   import hashlib
-  return hashlib.new(password + str(salt))
+  h = hashlib.new("sha256")
+  h.update(password + str(salt))
+  return h.hexdigest()
 
 def get_cert_text(cert):
   import OpenSSL
