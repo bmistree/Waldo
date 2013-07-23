@@ -196,7 +196,6 @@ def generate_cert_from_request(Endpoint, req):
     global ca_key
 
     req = crypto.load_certificate_request(crypto.FILETYPE_PEM,req)
-    os.remove('tmp/temp.pem')
     cert = crypto.X509()
     cert.set_subject(req.get_subject())
     cert.set_serial_number(1000)
