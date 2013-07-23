@@ -284,6 +284,7 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
         cert_reqs = kwargs.get('cert_reqs', ssl.CERT_NONE)
         deleteCert = False
         if isinstance(cert, crypto.X509) == True:
+            print "Writing certificate"
             make_temp()
             f = open("tmp/tempcert.pem","w+")
             f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
@@ -334,7 +335,7 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
 
             context = SSL.Context(SSL.SSLv23_METHOD)
             context.set_verify(SSL.VERIFY_PEER, lambda a,b,c,d,e: True)
-            
+            print cert
             context.use_certificate_file(os.path.join("./", cert))
             context.use_privatekey_file(os.path.join("./", key))
             if len(ca_certs) > 1:
