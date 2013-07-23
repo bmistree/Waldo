@@ -113,6 +113,8 @@ def hash(password, salt):
   import hashlib
   return hashlib.new(password + str(salt))
 
+def get_cert_text(cert):
+  return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
 
 def stcp_connect(constructor,host,port,*args, **kwargs):
