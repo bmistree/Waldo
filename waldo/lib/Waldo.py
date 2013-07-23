@@ -114,6 +114,8 @@ def hash(password, salt):
   return hashlib.new(password + str(salt))
 
 def get_cert_text(cert):
+  import OpenSSL
+  from OpenSSL import crypto
   return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
 
