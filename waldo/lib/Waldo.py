@@ -120,6 +120,10 @@ def get_cert_text(cert):
   from OpenSSL import crypto
   return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
+def get_cert_from_text(certtext):
+  import OpenSSL
+  from OpenSSL import crypto
+  return crypto.load_certificate(crypto.FILETYPE_PEM, certtext)
 
 def stcp_connect(constructor,host,port,*args, **kwargs):
     '''
