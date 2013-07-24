@@ -219,7 +219,7 @@ def generate_cert_from_request(Endpoint, req):
     cert.set_subject(req.get_subject())
     cert.set_serial_number(1000)
     global certificate_exp_start
-    ig
+
     cert.gmtime_adj_notBefore(certificate_exp_start)
     global certificate_exp_end
     certificate_exp_end += certificate_exp_start
