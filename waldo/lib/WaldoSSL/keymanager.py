@@ -130,7 +130,6 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
     if cert_end is None:
         global certificate_exp_end
         certificate_exp_end = 30*24*60*60
-    if cert_end is None:
 
     if generate is True:
         generate_ca_certificate(certfile, keyfile, start_time, end_time)
