@@ -112,7 +112,7 @@ def dump_cert(Endpoint):
     global ca_cert
     return crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert)
 
-def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time, end_time, cert_start, cert_end):
+def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time=None, end_time=None, cert_start=None, cert_end=None):
     '''
     Args:
         generate (boolean) - Tells it where to generate a certificate or not
