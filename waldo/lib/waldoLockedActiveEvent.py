@@ -83,7 +83,7 @@ class EventParent(object):
         
 class RootEventParent(EventParent):
     def __init__(self):
-        self.uuid = util.get_uuid()
+        self.uuid = util.generate_uuid()
     def get_uuid(self):
         return self.uuid
 
@@ -109,14 +109,18 @@ class LockedActiveEvent(object):
     STATE_SECOND_PHASE_COMMITTED = 3
     STATE_BACKED_OUT = 4
     
-    def __init__(self,event_parent):
+    def __init__(self,event_parent,event_map):
         '''
         @param {EventParent} event_parent
+        
+        @param {WaldoActiveEventMap} event_map
         '''
         self.uuid = event_parent.get_uuid()
         self.mutex = threading.Lock()
         self.state = LockedActiveEvent.STATE_RUNNING
 
+        self.event_map = event_map
+        
         # a dict containing all local objects that this event has
         # touched while executing.  On commit, must run through each
         # and complete commit.  On backout, must run through each and

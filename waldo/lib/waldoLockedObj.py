@@ -1,5 +1,6 @@
 import threading
-from util import Queue
+import util
+
 
 def gte_uuid(uuida,uuidb):
     '''
@@ -26,7 +27,7 @@ class WaitingElement(object):
         # when add a waiting element, that waiting element's read or
         # write blocks.  The way that it blocks is by listening at a
         # threadsafe queue.  This is that queue.
-        self.queue = Queue.Queue()
+        self.queue = util.Queue.Queue()
         
     def is_read(self):
         return self.read
@@ -59,7 +60,7 @@ class WaitingElement(object):
 class WaldoLockedObj(object):
     def __init__(self,host_uuid,peered,init_val):
 
-        self.uuid = util.get_uuid()
+        self.uuid = util.generate_uuid()
         
         self.host_uuid = host_uuid
         self.peered = peered
