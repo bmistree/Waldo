@@ -98,7 +98,7 @@ class WaldoLockedObj(object):
         else:
             val = self.read_lock_holders.pop(active_event.uuid,None)
             #### DEBUG
-            if val is not None:
+            if val is None:
                 util.logger_assert(
                     'Should not be completing a commit on a missing event')
             #### END DEBUG
@@ -298,7 +298,7 @@ class WaldoLockedObj(object):
         self.write_lock_holder = None
         self.read_lock_holders = {}
         # 3
-        self.read_lock_holders[waiting_event.event.uuid] = waiting_event.event
+        self.read_lock_holders[waiting_event.event.uuid] = waiting_event.event        
         # 4
         waiting_event.unwait(self)
         return True

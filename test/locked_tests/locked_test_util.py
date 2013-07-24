@@ -7,7 +7,7 @@ sys.path.append(
         '..','..'))
 
 from waldo.lib.waldoLockedActiveEvent import RootEventParent,LockedActiveEvent
-
+from waldo.lib.util import generate_uuid
 
 class _DummyActiveEventMap(object):
     def __init__(self):
@@ -23,7 +23,7 @@ class DummyEndpoint(object):
         self.evt_map = _DummyActiveEventMap()
 
     def create_root_event(self):
-        rep = RootEventParent()
+        rep = RootEventParent(generate_uuid())
         return LockedActiveEvent(rep,self.evt_map)
 
 

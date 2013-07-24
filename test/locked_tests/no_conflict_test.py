@@ -29,14 +29,17 @@ def run_test():
     initial_value = -330
     num_var = LockedNumberVariable(Waldo._host_uuid,False,initial_value)
 
-
     read_event = endpoint.create_root_event()
     for i in range(0,10):
         if num_var.get_val(read_event) != initial_value:
             print '\nIncorrect value on read\n'
             print num_var.get_val(read_event)
             return False
-    
+
+    # try to commit the event
+    read_event.begin_first_phase_commit()
+
+        
     return True
 
 

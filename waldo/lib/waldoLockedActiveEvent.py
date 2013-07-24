@@ -16,7 +16,7 @@ class EventParent(object):
         util.logger_assert('get_uuid is pure virtual in EventParent')
 
     def first_phase_transition_success(
-        self,same_host_endpoints_contacted_dict,partner_contacted):
+        self,same_host_endpoints_contacted_dict,partner_contacted,event):
         '''
         @param {dict} same_host_endpoints_contacted_dict --- Keys are
         uuids.  Values are endpoint objects.  
@@ -82,10 +82,54 @@ class EventParent(object):
 # second_phase_transition_success
         
 class RootEventParent(EventParent):
-    def __init__(self):
+    def __init__(self,partner_uuid):
+        '''
+        @param{uuid} partner_uuid --- UUID of the attached neighbor
+        endpoint
+        '''
         self.uuid = util.generate_uuid()
+
+        self.partner_uuid = partner_uuid
+        # indices are event uuids.  Values are bools.  When all values
+        # are true in this dict, then we can transition into second
+        # phase commit.
+        self.endpoints_waiting_on_commit = {}
+        
     def get_uuid(self):
         return self.uuid
+
+    def first_phase_transition_success(
+        self,same_host_endpoints_contacted_dict,partner_contacted,event):
+        '''
+        For arguments, @see EventParent.
+        '''
+        self.event = event
+        
+        # first keep track of all events that we are waiting on
+        # hearing that first phase commit succeeded.
+        if partner_contacted:
+            self.endpoints_waiting_on_commit[self.partner_uuid] = False
+
+        for waiting_on_uuid in same_host_endpoints_contacted_dict.keys():
+            self.endpoints_waiting_on_commit[waiting_on_uuid] = False
+
+        util.logger_warn(
+            'Must write code to forward first phase request message.')
+
+        self.check_transition()
+        
+    def check_transition(self):
+        '''
+        If we are no longer waiting on any endpoint to acknowledge
+        first phase commit, then transition into second phase commit.
+        '''
+        for endpt_transitioned in self.endpoints_waiting_on_commit.values():
+            if not endpt_transitioned:
+                return
+        
+        self.event.second_phase_commit()
+
+    
 
 class PartnerEventParent(EventParent):
     def __init__(self,uuid,local_endpoint):
@@ -204,20 +248,20 @@ class LockedActiveEvent(object):
         # forwards message on to others and affirmatively replies that
         # now in first pahse of commit.
         self.event_parent.first_phase_transition_success(
-            self.other_endpoints_contacted,self.partner_contacted)
+            self.other_endpoints_contacted,self.partner_contacted,self)
 
         
 
     def second_phase_commit(self):
         self._lock()
 
-        if self.state == LockedActive.STATE_SECOND_PHASE_COMMITTED:
+        if self.state == LockedActiveEvent.STATE_SECOND_PHASE_COMMITTED:
             # already committed, already forwarded names along.
             # nothing left to do.
             self._unlock()
             return
 
-        self.state = LockedActive.STATE_SECOND_PHASE_COMMITTED
+        self.state = LockedActiveEvent.STATE_SECOND_PHASE_COMMITTED
         # complete commit on each individual object that we touched
         for obj in self.touched_objs.values():
             obj.complete_commit(self)
