@@ -22,6 +22,8 @@ certfilep = ""
 keyfilep = ""
 
 key_manager = None
+certificate_exp_start = None
+certificate_exp_end = None
 
 def set_hostname(name):
     '''
@@ -41,7 +43,7 @@ def set_port(port):
     global MANAGER_PORT
     MANAGER_PORT = port
 
-def generate_ca_certificate(certfilepath, keyfilepath):
+def generate_ca_certificate(certfilepath, keyfilepath, start_time, end_time):
     '''
     Generate a CA certificate and key for the CA.
     Args:
@@ -58,8 +60,12 @@ def generate_ca_certificate(certfilepath, keyfilepath):
     ca.set_version(3)
     ca.set_serial_number(1)
     ca.get_subject().CN = "Certficate manager"
-    ca.gmtime_adj_notBefore(0)
-    ca.gmtime_adj_notAfter(24 * 60 * 60)
+    if start_time is None:
+        start_time = 0
+    ca.gmtime_adj_notBefore(start_time)
+    if end_time is None:
+        end_time = 365 * 24 * 60 * 60
+    ca.gmtime_adj_notAfter(end_time)
     ca.set_issuer(ca.get_subject())
     ca.set_pubkey(key)
     ca.add_extensions([
@@ -104,7 +110,7 @@ def dump_cert(Endpoint):
     global ca_cert
     return crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert)
 
-def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None):
+def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time=None, end_time=None, cert_start = None, cert_end = None):
     '''
     Args:
         generate (boolean) - Tells it where to generate a certificate or not
@@ -116,8 +122,16 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
     Call this function to start a CA. You can specify it to generate a certificate or use a preloaded one
 
     '''
+    if cert_start is None:
+        global certificate_start_end
+        certificate_start_end = 0
+    if cert_end is None:
+        global certificate_exp_end
+        certificate_exp_end = 30*24*60*60
+    if cert_end is None:
+
     if generate is True:
-        generate_ca_certificate(certfile, keyfile)
+        generate_ca_certificate(certfile, keyfile, start_time, end_time)
     else:
         load_ca_certificate(certfile, keyfile)
     if host is not None:
@@ -199,8 +213,10 @@ def generate_cert_from_request(Endpoint, req):
     cert = crypto.X509()
     cert.set_subject(req.get_subject())
     cert.set_serial_number(1000)
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(24 * 60 * 60)
+    global certificate_exp_start
+    cert.gmtime_adj_notBefore(certificate_exp_start)
+    global certificate_exp_end
+    cert.gmtime_adj_notAfter(certificate_exp_end)
     cert.set_issuer(ca_cert.get_subject())
     cert.set_pubkey(req.get_pubkey())
     cert.sign(ca_key, "sha1")
