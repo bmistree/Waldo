@@ -65,6 +65,8 @@ def generate_ca_certificate(certfilepath, keyfilepath, start_time, end_time):
     ca.gmtime_adj_notBefore(start_time)
     if end_time is None:
         end_time = 365 * 24 * 60 * 60
+    else:
+        end_time += start_time
     ca.gmtime_adj_notAfter(end_time)
     ca.set_issuer(ca.get_subject())
     ca.set_pubkey(key)
@@ -216,6 +218,7 @@ def generate_cert_from_request(Endpoint, req):
     global certificate_exp_start
     cert.gmtime_adj_notBefore(certificate_exp_start)
     global certificate_exp_end
+    certificate_exp_end += certificate_exp_start
     cert.gmtime_adj_notAfter(certificate_exp_end)
     cert.set_issuer(ca_cert.get_subject())
     cert.set_pubkey(req.get_pubkey())
