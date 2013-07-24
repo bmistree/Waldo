@@ -22,8 +22,8 @@ certfilep = ""
 keyfilep = ""
 
 key_manager = None
-certificate_exp_start = None
-certificate_exp_end = None
+certificate_exp_start = 0
+certificate_exp_end = 30*24*60*60
 
 def set_hostname(name):
     '''
@@ -125,11 +125,17 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
 
     '''
     if cert_start is None:
-        global certificate_start_end
-        certificate_start_end = 0
+        global certificate_exp_start
+        certificate_exp_start = 0
+    else:
+        global certificate_exp_start
+        certificate_exp_start = cert_start
     if cert_end is None:
         global certificate_exp_end
         certificate_exp_end = 30*24*60*60
+    else:
+        global certificate_exp_end
+        certificate_exp_end = cert_end
 
     if generate is True:
         generate_ca_certificate(certfile, keyfile, start_time, end_time)
@@ -215,6 +221,7 @@ def generate_cert_from_request(Endpoint, req):
     cert.set_subject(req.get_subject())
     cert.set_serial_number(1000)
     global certificate_exp_start
+    ig
     cert.gmtime_adj_notBefore(certificate_exp_start)
     global certificate_exp_end
     certificate_exp_end += certificate_exp_start
