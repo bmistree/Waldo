@@ -76,8 +76,8 @@ def get_key():
 def get_certificate(CN, host, port, key=None):
   return secure.get_certificate(CN, host, port, key)
 
-def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None):
-  keymanager.start_ca(generate, certfile, keyfile, host, port)
+def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time=None, end_time=None, cert_start = None, cert_end = None):
+  keymanager.start_ca(generate, certfile, keyfile, host, port,start_time, end_time, cert_start, cert_end)
 
 def add_ca_to_list(ca_file, host, port):
   ca_cert = secure.get_cacert(host, port)
