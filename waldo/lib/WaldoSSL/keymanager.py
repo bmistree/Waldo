@@ -124,17 +124,15 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
     Call this function to start a CA. You can specify it to generate a certificate or use a preloaded one
 
     '''
+    global certificate_exp_start
     if cert_start is None:
-        global certificate_exp_start
         certificate_exp_start = 0
     else:
-        global certificate_exp_start
         certificate_exp_start = cert_start
+    global certificate_exp_end
     if cert_end is None:
-        global certificate_exp_end
         certificate_exp_end = 30*24*60*60
     else:
-        global certificate_exp_end
         certificate_exp_end = cert_end
 
     if generate is True:
