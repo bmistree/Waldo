@@ -372,8 +372,10 @@ class LockedActiveEvent(object):
         Called by a WaldoLockedObject to preempt this event.
 
         '''
-        # FIXME: I am pretty sure could get deadlock with this method...
         self._backout(None)
+        # unlock after method
+        self._unlock()
+
         
         
     def obj_request_no_backout_and_release_lock(self):

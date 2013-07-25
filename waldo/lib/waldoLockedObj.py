@@ -519,6 +519,7 @@ class WaldoLockedObj(object):
             to_return = self.dirty_val
             self._unlock()
             return to_return
+
         
         # also check 1 above
         if active_event.uuid in self.read_lock_holders:
