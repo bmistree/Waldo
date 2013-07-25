@@ -4,7 +4,8 @@ import util
 
 def gte_uuid(uuida,uuidb):
     '''
-    Returns true if uuida is greater than or equal to uuidb
+    Returns true if uuida is greater than or equal to uuidb.  That is,
+    returns True if uuida should be able to preempt uuidb.
     '''
     return uuida >= uuidb
 
@@ -190,12 +191,13 @@ class WaldoLockedObj(object):
 
            Return True if all were backed out.  False if they weren't.
         '''
+        
         # Phase 1:
         
         # note: do not have to explicitly include the write lock key
         # here because the event that is writing will be included in
         read_lock_holder_uuids = list(self.read_lock_holders.keys())
-        read_lock_holder_uuids.sort(key=gte_uuid_key)
+        read_lock_holder_uuids.sort(key=gte_uuid_key,reverse=True)
         
         to_backout_list = []
         can_backout_all = True
@@ -241,6 +243,7 @@ class WaldoLockedObj(object):
             
             return False
 
+        
         # check read locks
         for read_lock_uuid in self.read_lock_holders:
             if not gte_uuid(waiting_event_uuid,read_lock_uuid):
@@ -325,7 +328,6 @@ class WaldoLockedObj(object):
         '''
         write_waiting_event = WaitingElement(active_event,False,new_val)
         self._lock()
-
         
         # must be careful to add obj to active_event's touched_objs.
         # That way, if active_event needs to backout, we're guaranteed
@@ -336,9 +338,9 @@ class WaldoLockedObj(object):
             raise util.BackoutException()
 
 
-        
         self.waiting_events[active_event.uuid] = write_waiting_event
         self._unlock()
+
         self.try_next()
 
         # block on the write of this value
@@ -380,6 +382,7 @@ class WaldoLockedObj(object):
                 'Should only pass writes into try_schedule_write_waiting_event')
         #### END DEBUG
 
+            
         # Stage 1 from above
         if self.is_gte_than_lock_holding_events(waiting_event.event.uuid):
             # Stage 2 from above
@@ -427,7 +430,7 @@ class WaldoLockedObj(object):
         # sort event uuids from high to low to determine if should add
         # them.
         waiting_event_uuids = list(self.waiting_events.keys())
-        waiting_event_uuids.sort(key=gte_uuid_key)
+        waiting_event_uuids.sort(key=gte_uuid_key,reverse=True)
 
 
         # Phase 2 from above
