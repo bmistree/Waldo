@@ -22,14 +22,14 @@ def run_test():
     
     endpoint = DummyEndpoint()
     initial_value = 'init_val'
-    num_var = LockedTextVariable(Waldo._host_uuid,False,initial_value)
+    text_var = LockedTextVariable(Waldo._host_uuid,False,initial_value)
 
     ### Check that each can read initial value
     read_event_1 = endpoint.create_root_event()
     read_event_2 = endpoint.create_root_event()
     for i in range(0,10):
-        if ((num_var.get_val(read_event_1) != initial_value) or
-            (num_var.get_val(read_event_2) != initial_value)):
+        if ((text_var.get_val(read_event_1) != initial_value) or
+            (text_var.get_val(read_event_2) != initial_value)):
             print '\nIncorrect value on read\n'
             return False
 
