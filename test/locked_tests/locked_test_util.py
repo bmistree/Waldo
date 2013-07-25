@@ -24,6 +24,7 @@ class DummyEndpoint(object):
 
     def create_root_event(self):
         rep = RootEventParent(generate_uuid())
+        self.evt_map.add_event(rep)
         return LockedActiveEvent(rep,self.evt_map)
 
 

@@ -301,7 +301,7 @@ class LockedActiveEvent(object):
         either endpoint's partner, an endpoint that we called an
         endpoint method on, or an endpoint that called an endpoint
         method on us.
-
+        
         0) If we're already in backed out state, do nothing: we've
            already taken appropriate action.
         
@@ -332,7 +332,7 @@ class LockedActiveEvent(object):
         # 2
         for touched_obj in self.touched_objs.values():
             touched_obj.backout(self)
-
+            
         # 3
         self.rollback_unblock_waiting_queues()
 

@@ -83,7 +83,22 @@ class WaldoLockedObj(object):
 
         # A dict of event ids to WaitingEventTypes
         self.waiting_events = {}
-        self._mutex = threading.Lock()
+
+        # In try_next, can cause events to backout.  If we do cause
+        # other events to backout, then backout calls try_next.  This
+        # (in some cases) can invalidate state that we're already
+        # dealing with in the parent try_next.  Use this flag to keep
+        # track of whether already in try next.  If are, then return
+        # out immediately from future try_next calls.
+        self.in_try_next = False
+        
+        # FIXME: do not have to use reentrant lock here.  The reason
+        # that I am is that when we request an event to release locks
+        # on an object, we do so from within a lock.  Following that,
+        # the event calls into a lock-protected method to remove
+        # itself from the dict.  Could re-write code to trak which obj
+        # requested backout and skip backing that obj out instead.
+        self._mutex = threading.RLock()
 
     def _lock(self):
         self._mutex.acquire()
@@ -134,7 +149,8 @@ class WaldoLockedObj(object):
         # note: there are cases where an active event may try to
         # backout after it's
         self.read_lock_holders.pop(active_event.uuid,None)
-        if self.write_lock_holder.uuid == active_event.uuid:
+        if ((self.write_lock_holder is not None) and 
+            (self.write_lock_holder.uuid == active_event.uuid)):
             self.write_lock_holder = None
 
         # un-jam threadsafe queue waiting for event
@@ -422,10 +438,19 @@ class WaldoLockedObj(object):
         '''
         
         self._lock()
+
+        
         if len(self.waiting_events) == 0:
             self._unlock()
             return
 
+        # see comment in class' __init__ for in_try_next.
+        if self.in_try_next:
+            self._unlock()
+            return
+        self.in_try_next = True
+
+        
         # Phase 1 from above:
         # sort event uuids from high to low to determine if should add
         # them.
@@ -443,13 +468,6 @@ class WaldoLockedObj(object):
             if waiting_event.is_write():
                 if self.try_schedule_write_waiting_event(waiting_event):
                     del self.waiting_events[waiting_event.event.uuid]
-
-                # FIXME: Right now, cannot schedule a read if there's
-                # a write with higher priority.  This is probably
-                # ultimately not the best approach.  The best approach
-                # is going to be allowing shorter reads to go through,
-                # if necessary.
-                    
                 break
                         
             else:
@@ -457,7 +475,8 @@ class WaldoLockedObj(object):
                     del self.waiting_events[waiting_event.event.uuid]
                 else:
                     break
-            
+
+        self.in_try_next = False
         self._unlock()
 
 
