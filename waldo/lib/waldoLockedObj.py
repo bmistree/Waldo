@@ -8,6 +8,13 @@ def gte_uuid(uuida,uuidb):
     '''
     return uuida >= uuidb
 
+def gte_uuid_key(uuida):
+    '''
+    Returns an object that can be compared using >, >=, <, <= in
+    python.
+    '''
+    return uuida
+    
 
 class WaitingElement(object):
     def __init__(self,event,read,val_to_write=None):
@@ -91,7 +98,8 @@ class WaldoLockedObj(object):
         scheduled.
         '''
         self._lock()
-        if active_event.uuid == self.write_lock_holder:
+        if ((self.write_lock_holder is not None) and 
+            (active_event.uuid == self.write_lock_holder.uuid)):
             self.val = self.dirty_val
             self.write_lock_holder = None
             self.read_lock_holders = {}
@@ -125,7 +133,7 @@ class WaldoLockedObj(object):
         # note: there are cases where an active event may try to
         # backout after it's
         self.read_lock_holders.pop(active_event.uuid,None)
-        if self.write_lock_holder == active_event:
+        if self.write_lock_holder.uuid == active_event.uuid:
             self.write_lock_holder = None
 
         # un-jam threadsafe queue waiting for event
@@ -187,7 +195,7 @@ class WaldoLockedObj(object):
         # note: do not have to explicitly include the write lock key
         # here because the event that is writing will be included in
         read_lock_holder_uuids = list(self.read_lock_holders.keys())
-        read_lock_holder_uuids.sort(key=gte_uuid)
+        read_lock_holder_uuids.sort(key=gte_uuid_key)
         
         to_backout_list = []
         can_backout_all = True
@@ -229,7 +237,7 @@ class WaldoLockedObj(object):
 
         # check write lock
         if ((self.write_lock_holder is not None) and
-            (not gte_uuid(waiting_event_uuid,self.write_lock_holder))):
+            (not gte_uuid(waiting_event_uuid,self.write_lock_holder.uuid))):
             
             return False
 
@@ -373,12 +381,12 @@ class WaldoLockedObj(object):
         #### END DEBUG
 
         # Stage 1 from above
-        if self.is_gte_than_lock_holding_events(self,waiting_event.uuid):
+        if self.is_gte_than_lock_holding_events(waiting_event.event.uuid):
             # Stage 2 from above
-            if self.test_and_backout_all(self,waiting_event.uuid):
+            if self.test_and_backout_all(waiting_event.event.uuid):
                 # Stage 3 from above
                 # actually update the read/write lock holders
-                self.read_lock_holders[waiting_event.uuid] = waiting_event.event
+                self.read_lock_holders[waiting_event.event.uuid] = waiting_event.event
                 self.write_lock_holder = waiting_event.event
                 waiting_event.unwait(self)
                 return True
@@ -419,7 +427,7 @@ class WaldoLockedObj(object):
         # sort event uuids from high to low to determine if should add
         # them.
         waiting_event_uuids = list(self.waiting_events.keys())
-        waiting_event_uuids.sort(key=gte_uuid)
+        waiting_event_uuids.sort(key=gte_uuid_key)
 
 
         # Phase 2 from above
@@ -431,7 +439,7 @@ class WaldoLockedObj(object):
 
             if waiting_event.is_write():
                 if self.try_schedule_write_waiting_event(waiting_event):
-                    del self.waiting_events[waiting_event.uuid]
+                    del self.waiting_events[waiting_event.event.uuid]
 
                 # FIXME: Right now, cannot schedule a read if there's
                 # a write with higher priority.  This is probably
@@ -443,7 +451,7 @@ class WaldoLockedObj(object):
                         
             else:
                 if self.try_schedule_read_waiting_event(waiting_event):
-                    del self.waiting_events[waiting_event.uuid]
+                    del self.waiting_events[waiting_event.event.uuid]
                 else:
                     break
             
@@ -482,14 +490,13 @@ class WaldoLockedObj(object):
 
         '''
         self._lock()
-
+        
         # Check 1 above
         if active_event.uuid in self.read_lock_holders:
             # already allowed to read the variable
             to_return = self.val
             self._unlock()
             return to_return
-
 
         # must be careful to add obj to active_event's touched_objs.
         # That way, if active_event needs to backout, we're guaranteed
@@ -500,7 +507,7 @@ class WaldoLockedObj(object):
             raise util.BackoutException()
 
         # Check 2 from above
-
+        
         # check 2a
         if self.write_lock_holder is None:
             to_return = self.val
@@ -527,7 +534,7 @@ class WaldoLockedObj(object):
                 return to_return
 
         # Condition 2c + 3
-
+            
         # create a waiting read element
         waiting_element = WaitingElement(active_event,True)
         
