@@ -31,8 +31,9 @@ def run_test():
     ### Check that each can read initial value
     older_event = endpoint.create_root_event()
     younger_event = endpoint.create_root_event()
-    
-    if older_event.uuid > younger_event.uuid:
+
+    # If older, have larger uuid.  
+    if older_event.uuid < younger_event.uuid:
         tmp = older_event
         older_event = younger_event
         younger_event = tmp
@@ -44,16 +45,13 @@ def run_test():
     preempting_set_val = 4
     num_var.set_val(older_event, preempting_set_val)
 
-
     # try to commit both events
     older_event.begin_first_phase_commit()
-
     time.sleep(1)
     if num_var.get_val(younger_event) != preempting_set_val:
         return False
 
     younger_event.begin_first_phase_commit()
-
     return True
 
 
