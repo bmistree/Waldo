@@ -490,8 +490,15 @@ class WaldoLockedObj(object):
 
         '''
         self._lock()
+
+        # check 1 above
+        if ((self.write_lock_holder is not None) and
+            (active_event.uuid == self.write_lock_holder.uuid)):
+            to_return = self.dirty_val
+            self._unlock()
+            return to_return
         
-        # Check 1 above
+        # also check 1 above
         if active_event.uuid in self.read_lock_holders:
             # already allowed to read the variable
             to_return = self.val
