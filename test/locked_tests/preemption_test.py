@@ -44,14 +44,16 @@ def run_test():
     # now preempt with older event
     preempting_set_val = 4
     num_var.set_val(older_event, preempting_set_val)
-
-    # try to commit both events
     older_event.begin_first_phase_commit()
-    time.sleep(1)
-    if num_var.get_val(younger_event) != preempting_set_val:
-        return False
+    # try to perform operations with younger event
 
-    younger_event.begin_first_phase_commit()
+    try:
+        if num_var.get_val(younger_event) != preempting_set_val:
+            return False
+    except:
+        # expected to get a backout exception
+        pass
+
     return True
 
 
