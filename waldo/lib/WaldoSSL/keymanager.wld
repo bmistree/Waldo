@@ -18,7 +18,7 @@ Sequence get_cert_from_req(Text req)
     Client.send_req{}
     Manager.gen_cert
     {
-        cert = getCertFromReq(req, cert_start_time, cert_length, auth_func);
+        cert = getCertFromReq(req, cert_start_time, cert_length);
     }
 }
 
@@ -56,12 +56,12 @@ Manager
     Function (in: Text; returns: TrueFalse) auth_func;
 
     // initializes 
-    onCreate(Function (in: Text, Number, Number, Function(in: Text; returns: TrueFalse); returns: Text) getCert, Function (in: Nothing; returns: Text) dump_crypto, Number cert_start, Number length, Function (in: Text; returns: TrueFalse) auth)
+    onCreate(Function (in: Text, Number, Number, Function(in: Text; returns: TrueFalse); returns: Text) getCert, Function (in: Nothing; returns: Text) dump_crypto, Number cert_start, Number length)
     {
         getCertFromReq = getCert;
         return_crypto_cert = dump_crypto;
         cert_start_time = cert_start;
         cert_length = length;
-        auth_func = auth;
+       
     }
 }
