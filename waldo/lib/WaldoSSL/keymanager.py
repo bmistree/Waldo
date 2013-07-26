@@ -149,7 +149,7 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
     if authentication_function is None:
         authentication_function = lambda text: True
     key_manager = Waldo.stcp_accept(
-        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, dump_cert, cert_start, cert_end, authentication_function)
+        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, dump_cert, cert_start, cert_end)
 
 
 def turn_off_ca():
@@ -171,7 +171,7 @@ def make_temp():
     except:
         os.mkdir(temp)
 
-def generate_cert_from_request(Endpoint, req, start, end, auth_func):
+def generate_cert_from_request(Endpoint, req, start, end):
     '''
     Args:
         Endpoint - this is to be used in conjunction with a Waldo file
@@ -182,8 +182,7 @@ def generate_cert_from_request(Endpoint, req, start, end, auth_func):
     global ca_cert
     global ca_key
  
-    if auth_func(req.get_subject().commonName()) == False:
-        return None
+
     req = crypto.load_certificate_request(crypto.FILETYPE_PEM,req)
     cert = crypto.X509()
     cert.set_subject(req.get_subject())
