@@ -44,7 +44,7 @@ Client
 
 Manager
 {
-    Function (in: Text, Number, Number, Function(in: Text; returns: TrueFalse); returns: Text) getCertFromReq;
+    Function (in: Text, Number, Number; returns: Text) getCertFromReq;
     
     Function (in: Nothing; returns: Text) return_crypto_cert;
 
@@ -56,7 +56,7 @@ Manager
     Function (in: Text; returns: TrueFalse) auth_func;
 
     // initializes 
-    onCreate(Function (in: Text, Number, Number, Function(in: Text; returns: TrueFalse); returns: Text) getCert, Function (in: Nothing; returns: Text) dump_crypto, Number cert_start, Number length)
+    onCreate(Function (in: Text, Number, Number; returns: Text) getCert, Function (in: Nothing; returns: Text) dump_crypto, Number cert_start, Number length)
     {
         getCertFromReq = getCert;
         return_crypto_cert = dump_crypto;
