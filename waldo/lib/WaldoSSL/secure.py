@@ -92,7 +92,6 @@ def get_certificate(CN, host, port, key):
     client = Waldo.stcp_connect(
         Client, host, port)
 
-    uuid = Waldo.uuid()
     req = generate_request(CN, key)
     cert = client.req_to_cert(req)
 
