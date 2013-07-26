@@ -5,6 +5,7 @@ import waldoActiveEventMap
 import waldoCallResults
 from util import Queue
 import threading
+import time
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 
 
@@ -95,6 +96,19 @@ class _Endpoint(object):
 
         self._conn_failed = False
         self._conn_status_mutex = threading.Lock()
+
+        # start heartbeat thread
+        self._run_hb_thread()
+        
+
+    def _run_hb_thread(self):
+        self._hb_thread = threading.Thread(target=self._run_hb)
+        self._hb_thread.start()
+
+    def _run_hb(self):
+        while True:
+           time.sleep(10) 
+           self._send_heartbeat()
 
     def _stop_lock(self):
         self._stop_mutex.acquire()
@@ -335,6 +349,9 @@ class _Endpoint(object):
             self._endpoint_service_thread_pool.receive_partner_request_commit(
                 general_msg.commit_request)
             
+        elif general_msg.HasField('heartbeat'):
+            self._process_heartbeat(general_msg.heartbeat.msg)
+
         #### DEBUG
         else:
             util.logger_assert(
@@ -685,6 +702,24 @@ class _Endpoint(object):
         general_message.stop.dummy = False
 
         self._conn_obj.write_stop(general_message.SerializeToString(),self)
+
+    def _process_heartbeat(self, msg):
+        '''
+        Called when a heartbeat is received from the partner endpoint,
+        indicating that the partner is still alive and reachable.
+        '''
+        pass
+
+    def _send_heartbeat(self):
+        '''
+        Sends a heartbeat message to the partner endpoint, indicating that 
+        the current endpoint is still alive and reachable.
+        '''
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.HEARTBEAT
+        heartbeat_message = general_message.heartbeat
+        heartbeat_message.msg = 'ping'
+        self._conn_obj.write(general_message.SerializeToString(),self)
 
         
     def add_stop_listener(self, to_exec_on_stop):
