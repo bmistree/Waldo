@@ -5,8 +5,6 @@ Endpoint Client;
 
 Sequences
 {
-  get_key:
-    Client.ask_key -> Manager.generate_key;
   get_cert_from_req:
     Client.send_req ->
     Manager.gen_cert;
@@ -27,7 +25,7 @@ Sequence get_cert_from_req(Text req)
     Client.send_req{}
     Manager.gen_cert
     {
-        cert = getCertFromReq(req);
+        cert = getCertFromReq(req, cert_start_time, cert_length, auth_func);
     }
 }
 
@@ -53,14 +51,27 @@ Client
 
 Manager
 {
-    Function (in: Text; returns: Text) getCertFromReq;
+    Function (in: Text, Number, Number; returns: Text) getCertFromReq;
     
     Function (in: Nothing; returns: Text) return_crypto_cert;
 
+    Number cert_start_time;
+    Number cert_length;
+
+    Number start_time;
+    Number length;
+
+
+
+    Function (in: Text; returns; TrueFalse) auth_func;
+
     // initializes 
-    onCreate(Function (in: Text; returns: Text) getCert, Function (in: Nothing; returns: Text) dump_crypto)
+    onCreate(Function (in: Text, Number, Number, Function(in: Text; returns: TrueFalse); returns: Text) getCert, Function (in: Nothing; returns: Text) dump_crypto, Number cert_start, Number length, Function (in: Text; returns: TrueFalse) auth)
     {
         getCertFromReq = getCert;
         return_crypto_cert = dump_crypto;
+        cert_start_time = cert_start;
+        cert_length = length;
+        auth_func = auth;
     }
 }

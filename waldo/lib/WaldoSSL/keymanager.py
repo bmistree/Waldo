@@ -24,6 +24,8 @@ keyfilep = ""
 key_manager = None
 certificate_exp_start = 0
 certificate_exp_end = 30*24*60*60
+module = None
+a_func = None
 
 def set_hostname(name):
     '''
@@ -112,7 +114,7 @@ def dump_cert(Endpoint):
     global ca_cert
     return crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert)
 
-def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time=None, end_time=None, cert_start=None, cert_end=None):
+def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, ca_start_time=None, ca_end_time=None, cert_start=None, cert_end=None, authentication_function=None):
     '''
     Args:
         generate (boolean) - Tells it where to generate a certificate or not
@@ -124,16 +126,13 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
     Call this function to start a CA. You can specify it to generate a certificate or use a preloaded one
 
     '''
-    global certificate_exp_start
     if cert_start is None:
-        certificate_exp_start = 0
-    else:
-        certificate_exp_start = cert_start
-    global certificate_exp_end
+        cert_start = 0
     if cert_end is None:
-        certificate_exp_end = 30*24*60*60
+        cert_end = cert_start + (30*24*60*60)
     else:
-        certificate_exp_end = cert_end
+        cert_end += cert_start
+
 
     if generate is True:
         generate_ca_certificate(certfile, keyfile, start_time, end_time)
@@ -146,30 +145,11 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
     global key_manager
     global MANAGER_HOST
     global MANAGER_PORT
+
+    if authentication_function is None:
+        authentication_function = lambda text: return True
     key_manager = Waldo.stcp_accept(
-        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, dump_cert)
-
-def save_key(key, path):
-    '''
-    Args:
-        key (crypto.PKey) - key object to store
-        path (String) - where you will store it
-    Stores key into path
-    '''
-    f = open(path, "w+")
-    f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
-    f.close()
-
-def save_certificate(cert, path):
-    '''
-    Args:
-        cert (crypto.X509) - certificate object to store
-        path (String) - where you will store it
-    Stores certificate into path
-    '''
-    f = open(cert, "w+")
-    f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-    f.close()
+        Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, dump_cert, cert_start, cert_end, authentication_function)
 
 
 def turn_off_ca():
@@ -179,18 +159,6 @@ def turn_off_ca():
     global key_manager
     key_manager.stop()
 
-def sign_cert(Endpoint, CN, key):
-
-    cert = crypto.X509()
-    cert.get_subject().CN = CN
-    cert.set_serial_number()
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(24 * 60 * 60)
-    global ca_cert
-    cert.set_issuer(ca_cert.get_subject())
-    cert.set_pubkey(key)
-    cert.sign(ca_key, "sha1")
-    return cert
 
 def make_temp():
     '''
@@ -203,7 +171,7 @@ def make_temp():
     except:
         os.mkdir(temp)
 
-def generate_cert_from_request(Endpoint, req):
+def generate_cert_from_request(Endpoint, req, start, end, auth_func):
     '''
     Args:
         Endpoint - this is to be used in conjunction with a Waldo file
@@ -213,17 +181,16 @@ def generate_cert_from_request(Endpoint, req):
 
     global ca_cert
     global ca_key
-
+ 
+    if auth_func(req.get_subject().commonName()) == False:
+        return None
     req = crypto.load_certificate_request(crypto.FILETYPE_PEM,req)
     cert = crypto.X509()
     cert.set_subject(req.get_subject())
     cert.set_serial_number(1000)
-    global certificate_exp_start
 
-    cert.gmtime_adj_notBefore(certificate_exp_start)
-    global certificate_exp_end
-    certificate_exp_end += certificate_exp_start
-    cert.gmtime_adj_notAfter(certificate_exp_end)
+    cert.gmtime_adj_notBefore(start)
+    cert.gmtime_adj_notAfter(end)
     cert.set_issuer(ca_cert.get_subject())
     cert.set_pubkey(req.get_pubkey())
     cert.sign(ca_key, "sha1")
@@ -231,11 +198,4 @@ def generate_cert_from_request(Endpoint, req):
     cert = crypto.dump_certificate(crypto.FILETYPE_PEM,cert)
     return cert
 
-def get_key(Endpoint):
-
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA,2048)
-    keytext = crypto.dump_privatekey(crypto.FILETYPE_PEM,key)
-
-    return keytext
 
