@@ -1,0 +1,18 @@
+password_server
+
+Endpoint Test;
+
+
+Test {
+    Endpoint CA;
+   
+    onCreate (Endpoint CA_pt) {
+        CA = CA_pt;
+    }
+
+    Public Function print_cert (Text request) returns Text {
+        Text cert = CA.req_to_cert(request);
+        return cert;
+    }
+
+}
