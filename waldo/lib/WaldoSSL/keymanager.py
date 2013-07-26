@@ -147,7 +147,7 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
     global MANAGER_PORT
 
     if authentication_function is None:
-        authentication_function = lambda text: return True
+        authentication_function = lambda text: True
     key_manager = Waldo.stcp_accept(
         Manager, MANAGER_HOST, MANAGER_PORT, generate_cert_from_request, dump_cert, cert_start, cert_end, authentication_function)
 

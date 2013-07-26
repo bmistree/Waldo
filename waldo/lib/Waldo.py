@@ -82,8 +82,18 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
 def get_ca_endpoint(host, port):
   return secure.connect_to_ca(host, port)
 
+def generate_request(CN, key):
+    import OpenSSL
+    from OpenSSL import crypto
+    req = OpenSSL.crypto.X509Req()
+    req.get_subject().CN = CN
+    req.set_pubkey(key)
+    req.sign(key, "sha1")
+    req = crypto.dump_certificate_request(crypto.FILETYPE_PEM, req)
+    return req
+
 def get_certificate(client, CN, key):
-    req = generate_request(CN, key)
+    req = secure.generate_request(CN, key)
     cert = client.req_to_cert(req)
     import OpenSSL
     from OpenSSL import crypto
