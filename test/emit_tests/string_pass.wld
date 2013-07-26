@@ -1,0 +1,49 @@
+Test
+
+Endpoint one_side;
+Endpoint other_side;
+
+Sequences {
+  A: one_side.a -> other_side.b;
+}
+
+Sequence A () returns Text hi
+{
+    one_side.a{
+        hi = 'woei';
+    }
+    other_side.b{}
+}
+
+other_side
+{
+    Text this_one = 'eie';
+    Public Function get_string() returns Text
+    {
+        return this_one;
+    }
+}
+
+one_side
+{
+    Public Function single_string()
+    {
+        Text this_one = A();
+        internal_single_string(this_one);
+    }
+
+    Public Function do_it(Endpoint endpt)
+    {
+        Text st = endpt.get_string();
+        internal_single_string(st);
+    }
+
+    
+    Public Function internal_single_string(Text this_one)
+    {
+        internal_single_string2(this_one);
+    }
+
+    Public Function internal_single_string2(Text this_one)
+    {}
+}

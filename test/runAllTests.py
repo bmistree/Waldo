@@ -134,6 +134,7 @@ def run_emit_tests():
     import emit_tests.foreign_func_in_sequence
     import emit_tests.id_method
     import emit_tests.str_index_test
+    import emit_tests.string_pass
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -244,6 +245,10 @@ def run_emit_tests():
         
         ('Tests that you can get an index from a Text',
          emit_tests.str_index_test.run_test),
+        
+        ('Tests passing strings in a variety of ways',
+         emit_tests.string_pass.run_test),
+
         ]
 
 
