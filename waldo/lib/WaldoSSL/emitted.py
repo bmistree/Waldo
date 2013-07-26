@@ -3,7 +3,7 @@
 
 def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
     class _Manager (_waldo_classes["Endpoint"]):
-        def __init__(self,_waldo_classes,_host_uuid,_conn_obj,getCert,dump_crypto,cert_start,length,auth):
+        def __init__(self,_waldo_classes,_host_uuid,_conn_obj,getCert,dump_crypto,cert_start,length):
 
             # a little ugly in that need to pre-initialize _host_uuid, because
             # code used for initializing variable store may rely on it.  (Eg., if
@@ -74,7 +74,7 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # to Waldo variables, and de-waldo-ifying them outside of the
                 # transaction might return over-written/inconsistent values.
                 try:
-                    _to_return = self._onCreate(_root_event,_ctx ,getCert,dump_crypto,cert_start,length,auth,[])
+                    _to_return = self._onCreate(_root_event,_ctx ,getCert,dump_crypto,cert_start,length,[])
                 except self._waldo_classes["BackoutException"]:
                     pass
 
@@ -98,13 +98,12 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         ### OnCreate method
 
-        def _onCreate(self,_active_event,_context,getCert,dump_crypto,cert_start,length,auth,_returning_to_public_ext_array=None):
+        def _onCreate(self,_active_event,_context,getCert,dump_crypto,cert_start,length,_returning_to_public_ext_array=None):
             if _context.check_and_set_from_endpoint_call_false():
                 getCert = _context.func_turn_into_waldo_var(getCert,True,_active_event,self._host_uuid,False,[],False)
                 dump_crypto = _context.func_turn_into_waldo_var(dump_crypto,True,_active_event,self._host_uuid,False,[],False)
                 cert_start = _context.turn_into_waldo_var_if_was_var(cert_start,True,_active_event,self._host_uuid,False,False)
                 length = _context.turn_into_waldo_var_if_was_var(length,True,_active_event,self._host_uuid,False,False)
-                auth = _context.func_turn_into_waldo_var(auth,True,_active_event,self._host_uuid,False,[],False)
 
                 pass
 
@@ -113,7 +112,6 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
                 dump_crypto = _context.func_turn_into_waldo_var(dump_crypto,True,_active_event,self._host_uuid,False,[],False)
                 cert_start = _context.turn_into_waldo_var_if_was_var(cert_start,True,_active_event,self._host_uuid,False,False)
                 length = _context.turn_into_waldo_var_if_was_var(length,True,_active_event,self._host_uuid,False,False)
-                auth = _context.func_turn_into_waldo_var(auth,True,_active_event,self._host_uuid,False,[],False)
 
                 pass
 
@@ -133,10 +131,6 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
             if not _context.assign(_context.global_store.get_var_if_exists("8__cert_length"),_tmp0,_active_event):
                 pass
 
-            _tmp0 = auth
-            if not _context.assign(_context.global_store.get_var_if_exists("9__auth_func"),_tmp0,_active_event):
-                pass
-
         ### USER DEFINED METHODS ###
         ### USER DEFINED SEQUENCE BLOCKS ###
 
@@ -146,8 +140,8 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         def _partner_endpoint_msg_func_call_prefix__waldo__gen_cert(self,_active_event,_context,_returning_to_public_ext_array=None):
 
-            _tmp0 = _context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("5__getCertFromReq"),_context.sequence_local_store.get_var_if_exists("16__req"),_context.global_store.get_var_if_exists("7__cert_start_time"),_context.global_store.get_var_if_exists("8__cert_length"),_context.global_store.get_var_if_exists("9__auth_func"))
-            if not _context.assign(_context.sequence_local_store.get_var_if_exists("17__cert"),_tmp0,_active_event):
+            _tmp0 = _context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("5__getCertFromReq"),_context.sequence_local_store.get_var_if_exists("15__req"),_context.global_store.get_var_if_exists("7__cert_start_time"),_context.global_store.get_var_if_exists("8__cert_length"))
+            if not _context.assign(_context.sequence_local_store.get_var_if_exists("16__cert"),_tmp0,_active_event):
                 pass
 
 
@@ -188,7 +182,7 @@ def Manager (_waldo_classes,_host_uuid,_conn_obj,*args):
         def _partner_endpoint_msg_func_call_prefix__waldo__return_cert(self,_active_event,_context,_returning_to_public_ext_array=None):
 
             _tmp0 = _context.call_func_obj(_active_event,_context.global_store.get_var_if_exists("6__return_crypto_cert"))
-            if not _context.assign(_context.sequence_local_store.get_var_if_exists("21__cert"),_tmp0,_active_event):
+            if not _context.assign(_context.sequence_local_store.get_var_if_exists("20__cert"),_tmp0,_active_event):
                 pass
 
 
@@ -387,7 +381,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 if _context.check_and_set_from_endpoint_call_false():
 
                     _context.sequence_local_store.add_var(
-                        "16__req", _context.convert_for_seq_local(req,_active_event,self._host_uuid)
+                        "15__req", _context.convert_for_seq_local(req,_active_event,self._host_uuid)
                     )
 
                     pass
@@ -395,14 +389,14 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 else:
 
                     _context.sequence_local_store.add_var(
-                        "16__req", _context.convert_for_seq_local(req,_active_event,self._host_uuid)
+                        "15__req", _context.convert_for_seq_local(req,_active_event,self._host_uuid)
                     )
 
                     pass
 
                 cert = ""
                 _context.sequence_local_store.add_var(
-                    "17__cert",_context.convert_for_seq_local(cert,_active_event,self._host_uuid))
+                    "16__cert",_context.convert_for_seq_local(cert,_active_event,self._host_uuid))
 
                 pass
 
@@ -439,7 +433,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _context.reset_to_reply_with()
 
 
-            return _context.sequence_local_store.get_var_if_exists("17__cert")
+            return _context.sequence_local_store.get_var_if_exists("16__cert")
 
         def _partner_endpoint_msg_func_call_prefix__waldo__get_ca(self,_active_event,_context,_returning_to_public_ext_array=None):
 
@@ -461,7 +455,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
 
                 cert = ""
                 _context.sequence_local_store.add_var(
-                    "21__cert",_context.convert_for_seq_local(cert,_active_event,self._host_uuid))
+                    "20__cert",_context.convert_for_seq_local(cert,_active_event,self._host_uuid))
 
                 pass
 
@@ -498,7 +492,7 @@ def Client (_waldo_classes,_host_uuid,_conn_obj,*args):
                 _context.reset_to_reply_with()
 
 
-            return _context.sequence_local_store.get_var_if_exists("21__cert")
+            return _context.sequence_local_store.get_var_if_exists("20__cert")
 
         ### User-defined message receive blocks ###
 
