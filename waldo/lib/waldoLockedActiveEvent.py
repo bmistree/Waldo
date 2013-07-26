@@ -73,7 +73,7 @@ class EventParent(object):
         a message as part of a sequence to partner.  False otherwise.
 
         Tells all endpoints that we have contacted to rollback their
-        events.
+        events as well.  
         '''
         util.logger_warn('rollback is pure virtual in EventParent')
         
@@ -129,7 +129,21 @@ class RootEventParent(EventParent):
         
         self.event.second_phase_commit()
 
-    
+    def rollback(
+        self,backout_requester_endpoint_uuid,other_endpoints_contacted,
+        partner_contacted):
+
+        # tell any endpoints that we had called endpoint methods on to
+        # back out their changes.
+        for endpoint_to_rollback in other_endpoints_contacted.values():
+            if endpoint_to_rollback.uuid != backout_requester_endpoint_uuid:
+                endpoint_to_rollback._receive_request_backout(self.uuid,self.local_endpoint)
+
+        # tell partner to backout its changes too
+        if (partner_contacted and
+            (backout_requester_endpoint_uuid != self.local_endpoint._partner_uuid)):
+            self.local_endpoint._forward_backout_request_partner(self.uuid)
+        
 
 class PartnerEventParent(EventParent):
     def __init__(self,uuid,local_endpoint):

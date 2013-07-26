@@ -631,15 +631,14 @@ class _Endpoint(object):
         general_message.complete_commit_request.event_uuid.data = active_event.uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
 
-    def _forward_backout_request_partner(self,active_event):
+    def _forward_backout_request_partner(self,active_event_uuid):
         '''
-        @param {_ActiveEvent} active_event --- Has the same uuid as
-        the event we will forward a backout request to our partner
-        for.
+        @param {UUID} active_event_uuid --- The uuid of the event we
+        will forward a backout request to our partner for.
         '''
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_BACKOUT_COMMIT_REQUEST
-        general_message.backout_commit_request.event_uuid.data = active_event.uuid
+        general_message.backout_commit_request.event_uuid.data = active_event_uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
 
     def _notify_partner_stop(self):
