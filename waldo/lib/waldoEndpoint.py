@@ -566,16 +566,16 @@ class _Endpoint(object):
 
 
         
-    def _forward_commit_request_partner(self,active_event):
+    def _forward_commit_request_partner(self,active_event_uuid):
         '''
-        @param {_ActiveEvent} active_event --- Has the same uuid as
-        the event we will forward a commit to our partner for.
+        @param {UUID} active_event_uuid --- The uuid of the event we
+        will forward a commit to our partner for.
         '''
         # FIXME: may be a way to piggyback commit with final event in
         # sequence.
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_COMMIT_REQUEST
-        general_message.commit_request.event_uuid.data = active_event.uuid
+        general_message.commit_request.event_uuid.data = active_event_uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
 
 
