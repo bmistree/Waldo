@@ -24,6 +24,7 @@ message GeneralMessage
         PARTNER_COMPLETE_COMMIT_REQUEST = 8;
         PARTNER_COMMIT_REQUEST = 9;
         PARTNER_STOP = 10;
+        HEARTBEAT = 11;
     }
 
     required MessageType message_type = 1;
