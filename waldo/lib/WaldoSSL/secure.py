@@ -76,7 +76,10 @@ def get_cacert(host, port):
     client.stop()
     return ca_cert
 
-def get_certificate(CN, host, port, key=None):
+def connect_to_ca(host, port):
+    return Waldo.stcp_connect(Client, host, port)
+
+def get_certificate(CN, host, port, key):
     '''
     Args:
         CN (String) - name on the certificate
@@ -90,16 +93,10 @@ def get_certificate(CN, host, port, key=None):
         Client, host, port)
 
     uuid = Waldo.uuid()
-    noKey = False
-    if key is None:
-        noKey = True
-        key = get_key()
     req = generate_request(CN, key)
     cert = client.req_to_cert(req)
 
     cert = crypto.load_certificate(crypto.FILETYPE_PEM,cert)
     #client.stop()
-    if noKey is None:
-        return cert, key
-    else:
-        return cert
+
+    return cert
