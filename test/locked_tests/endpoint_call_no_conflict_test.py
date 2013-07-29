@@ -53,8 +53,8 @@ class DummyEndpointWithCalls(DummyEndpoint):
         # Execute endpoint call back and forth.  Keep doing so until
         # numero is negative.
         endpoint_var = context.global_store.get_var_if_exists(
-            self.endpoint_number_var_name)        
-
+            self.end_global_number_var_name)        
+        
         val = endpoint_var.get_val(active_event)
         return val
 
@@ -108,15 +108,15 @@ def run_test():
     num_var_b = endpoint_b._global_var_store.get_var_if_exists(
         endpoint_b.end_global_number_var_name)
     
-    # # create event for endpoint call
-    # read_endpoint_event_a = endpoint_a.create_root_event()
-    # ctx_a = create_context(endpoint_a)
-    # # perform read on endpoint_a
-    # num_var_a.get_val(read_endpoint_event_a)
+    # create event for endpoint call
+    read_endpoint_event_a = endpoint_a.create_root_event()
+    ctx_a = create_context(endpoint_a)
+    # perform read on endpoint_a
+    num_var_a.get_val(read_endpoint_event_a)
 
-    # # perform endpoint call on endpoint b
-    # val = ctx_a.hide_endpoint_call(
-    #     read_endpoint_event_a,ctx_a,endpoint_b,'endpoint_func')
+    # perform endpoint call on endpoint b
+    val = ctx_a.hide_endpoint_call(
+        read_endpoint_event_a,ctx_a,endpoint_b,'endpoint_func')
     
     return True
 

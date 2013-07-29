@@ -84,13 +84,13 @@ class EventParent(object):
 # second_phase_transition_success
         
 class RootEventParent(EventParent):
-    def __init__(self,partner_uuid):
+    def __init__(self,local_endpoint,partner_uuid):
         '''
         @param{uuid} partner_uuid --- UUID of the attached neighbor
         endpoint
         '''
         self.uuid = util.generate_uuid()
-
+        self.local_endpoint = local_endpoint
         self.partner_uuid = partner_uuid
         # indices are event uuids.  Values are bools.  When all values
         # are true in this dict, then we can transition into second
@@ -160,8 +160,10 @@ class PartnerEventParent(EventParent):
         return self.uuid
 
 class EndpointEventParent(EventParent):
-    def __init__(self,uuid,parent_endpoint):
-        self.uuid = self.parent_endpoint
+    def __init__(self,uuid,parent_endpoint,local_endpoint):
+        self.uuid = uuid
+        self.parent_endpoint = parent_endpoint
+        self.local_endpoint = local_endpoint
     def get_uuid(self):
         return self.uuid
 

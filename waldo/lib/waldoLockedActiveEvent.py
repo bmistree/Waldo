@@ -1,5 +1,6 @@
 import threading
 import util
+from waldoEventSubscribedTo import EventSubscribedTo
 
 class LockedActiveEvent(object):
 
@@ -249,3 +250,69 @@ class LockedActiveEvent(object):
         self._unlock()
 
 
+
+    def issue_endpoint_object_call(
+        self,endpoint_calling,func_name,result_queue,*args):
+        '''
+        @param {Endpoint object} endpoint_calling --- The endpoint to
+        execute the endpoint object call on.
+
+        @param {String} func_name --- The name of the function to
+        execute on the endpoint object.
+
+        @param {Queue.Queue} result_queue --- Threadsafe queue that
+        stores the result 
+        
+        @returns {bool} --- True if the endpoint object call could go
+        through (ie, we were not already requested to backout the
+        event).  False otherwise.
+
+        Adds endpoint as an Endpoint object that we are subscribed to.
+        (We need to keep track of all the endpoint objects that we are
+        subscribed to [ie, have requested endpoint object calls on] so
+        that we know who to forward our commit requests and backout
+        requests to.)
+        '''
+        endpoint_call_requested = False
+        self._lock()
+
+        #### DEBUG
+        if ((self.state == LockedActiveEvent.STATE_FIRST_PHASE_COMMIT) or
+            (self.state == LockedActiveEvent.STATE_SECOND_PHASE_COMMITTED)):
+            # when we have been requested to commit, it means that all
+            # events should have run to completion.  Therefore, it
+            # would not make sense to receive an endpoint call when we
+            # were in the request commit state (it would mean that all
+            # events had not run to completion).
+            util.logger_assert(
+                'Should not be requesting to issue an endpoint ' +
+                'object call when in request commit phase.')
+        #### END DEBUG
+
+        if self.state == LockedActiveEvent.STATE_RUNNING:
+            # we can only execute endpoint object calls if we are
+            # currently running.  Note: we may issue an endpoint call
+            # when we are in the backout phase (if, for instance, we
+            # detected a conflict early and wanted to backout).  In
+            # this case, do not make additional endpoint calls.  
+            
+            endpoint_call_requested = True
+
+            # perform the actual endpoint function call.  note that this
+            # does not block until it completes.  It just schedules the 
+            endpoint_calling._receive_endpoint_call(
+                self.event_parent.local_endpoint,self.uuid,func_name,result_queue,
+                *args)
+
+
+            # add the endpoint to subscribed to
+            if endpoint_calling._uuid not in self.other_endpoints_contacted:
+                self.other_endpoints_contacted[endpoint_calling._uuid] = EventSubscribedTo(
+                    endpoint_calling,result_queue)
+            else:
+                self.other_endpoints_cnotacted[endpoint_calling._uuid].add_result_queue(
+                    result_queue)
+
+        self._unlock()
+        return endpoint_call_requested
+        

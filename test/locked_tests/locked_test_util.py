@@ -50,7 +50,7 @@ class DummyEndpoint(_Endpoint):
             host_uuid,conn_obj,glob_var_store)
 
     def create_root_event(self):
-        rep = RootEventParent(generate_uuid())
+        rep = RootEventParent(self,generate_uuid())
         self.evt_map.add_event(rep)
         return LockedActiveEvent(rep,self.evt_map)
 
