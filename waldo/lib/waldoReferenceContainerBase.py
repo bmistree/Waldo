@@ -433,7 +433,11 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
         @param {val}
         '''
+
+        print "Changes happening to " + str(self) 
+
         fields_to_update = w_obj.version_obj.update(self)
+        print "Fields to update: " + str(fields_to_update)
         # FIXME: probably do not want to overwrite the entire val each
         # time.  could just apply deltas instead.
         if isinstance(val,dict):
@@ -452,15 +456,17 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
                         w_obj.val[field_to_update] = (
                             val[field_to_update].promote_multithreaded(self.peered))
+                        print "Wrote " + field_to_update + " to " + type(w_obj.val)
                     else:
                         w_obj.val[field_to_update] = val[field_to_update]
+                        print "Wrote " + field_to_update + " to " + type(w_obj.val)
                     
         elif isinstance(val,list):
             if len(w_obj.val) > len(val):
                 del w_obj.val[len(val):]
 
             for field_to_update in fields_to_update.keys():
-
+                print "Wrote to index " + str(field_to_update) + " at "+ str(self)
                 if field_to_update >= len(val):
                     # skip this because it means we deleted something
                     # off of val that no longer exists.  it's okay to

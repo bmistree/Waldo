@@ -1098,6 +1098,7 @@ class RootActiveEvent(_ActiveEvent):
 
         # FIXME: there may be instances/topologies where do not have
         # to issue this call.
+        print "Request commit came in"
         self.wait_if_modified_peered()
         self.forward_commit_request_and_try_holding_commit_on_myself()
 
@@ -1116,6 +1117,7 @@ class RootActiveEvent(_ActiveEvent):
             self.forward_backout_request_and_backout_self()
             
         self._unlock()
+        print "Received unsuccessful first phase commit message"
 
     def forward_backout_request_and_backout_self(
         self,skip_partner=False,already_backed_out=False,stop_request=False):
@@ -1131,6 +1133,8 @@ class RootActiveEvent(_ActiveEvent):
                 waldoCallResults._StopRootCallResult())
         else:
             self.reschedule()
+
+        print "Forward backout request and backout"
         
         
     def receive_successful_first_phase_commit_msg(
@@ -1149,6 +1153,7 @@ class RootActiveEvent(_ActiveEvent):
         self.add_waiting_on_first_phase(children_event_endpoint_uuids)
         self.add_received_first_phase(msg_originator_endpoint_uuid)
         self._unlock()
+        print "Receive successful first phase commit message"
 
     def forward_commit_request_and_try_holding_commit_on_myself(
         self,skip_partner=False):
@@ -1177,6 +1182,7 @@ class RootActiveEvent(_ActiveEvent):
                 self.forward_backout_request_and_backout_self(
                     False,True)
         self._unlock()
+        print "Forward commit and try holding a commit on myself"
         return can_commit
         
         
@@ -1199,6 +1205,7 @@ class RootActiveEvent(_ActiveEvent):
         for uuid in endpoint_uuid_array:
             self.waiting_on_commit_map.setdefault(uuid,True)
             
+        print "Add waiting on first phase"
 
     def add_received_first_phase(self,endpoint_uuid):
         '''
@@ -1244,6 +1251,8 @@ class RootActiveEvent(_ActiveEvent):
         if can_transition_to_complete_commit:
             self._request_complete_commit()
 
+        print "Add received first phase"
+
     def reschedule(self):
         '''
         When root backs out, we must attempt to reschedule the event.
@@ -1255,6 +1264,7 @@ class RootActiveEvent(_ActiveEvent):
         self.event_complete_queue.put(
             waldoCallResults._RescheduleRootCallResult())
 
+        print "Rescheduling"
             
     def _request_complete_commit(self):
         '''
@@ -1267,6 +1277,8 @@ class RootActiveEvent(_ActiveEvent):
 
         self.event_complete_queue.put(
             waldoCallResults._CompleteRootCallResult())
+
+        print "Request complete commit"
         
     def notify_additional_subscriber(
         self,additional_subscriber_uuid,host_uuid,resource_uuid):
@@ -1294,6 +1306,9 @@ class RootActiveEvent(_ActiveEvent):
             # the additional subscriber's uuid.
             self.forward_backout_request_and_backout_self()
 
+        print "Notify additional subscriber"
+
+
     def notify_removed_subscriber(
         self,removed_subscriber_uuid,host_uuid,resource_uuid):
         '''
@@ -1303,7 +1318,8 @@ class RootActiveEvent(_ActiveEvent):
         self.deadlock_detector.remove_subscriber(
             removed_subscriber_uuid,host_uuid,resource_uuid)
                         
-        
+        print "Notify removed subscriber"
+
 class PartnerActiveEvent(_ActiveEvent):
     def __init__(self,uuid,local_endpoint):
         _ActiveEvent.__init__(self,uuid,local_endpoint)

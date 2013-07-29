@@ -464,6 +464,7 @@ class _ReferenceBase(WaldoObj):
         # FIXME: May eventually want to send what the conflict was so
         # can determine how much the invalidation listener actually
         # needs to backout.
+
         if len(to_invalidate_list) != 0:
             dirty_notify_thread = _DirtyNotifyThread(
                 self,to_invalidate_list)
@@ -494,6 +495,7 @@ class _DirtyNotifyThread(threading.Thread):
         self.daemon = True
         
     def run(self):
+        print "Notify all subscribers"
         for dirty_map_elem in self.to_notify_list:
             inv_listener = dirty_map_elem.invalidation_listener
             inv_listener.notify_invalidated(self.wld_obj)
@@ -545,6 +547,8 @@ class _DirtyMapElement(object):
         are already inside of w_obj's internal lock.
         '''
         self.version_obj.update_obj_val_and_version(w_obj,self.val)
+        print "Value updating occurring at " + str(self)
+        print "Update targetting " + str(w_obj)
 
     def modified(self,invalidation_listener):
         '''
@@ -561,6 +565,8 @@ class _DirtyMapElement(object):
         # object shows no modification.  That is why we must check a's
         # submaps for modification.
         
+        print "modified"
+
         if self.version_obj.modified(invalidation_listener):
             return True
 
