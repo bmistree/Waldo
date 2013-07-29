@@ -598,3 +598,4 @@ class WaldoLockedObj(object):
 
         in_running_state = active_event.add_touched_obj(self)
         return in_running_state
+

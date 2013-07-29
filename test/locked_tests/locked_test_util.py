@@ -6,7 +6,8 @@ sys.path.append(
         os.path.dirname(os.path.realpath(__file__)),
         '..','..'))
 
-from waldo.lib.waldoLockedActiveEvent import RootEventParent,LockedActiveEvent
+from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
+from waldo.lib.waldoEventParent import RootEventParent
 from waldo.lib.waldoVariableStore import _VariableStore
 from waldo.lib.waldoEndpoint import _Endpoint
 from waldo.lib.util import generate_uuid

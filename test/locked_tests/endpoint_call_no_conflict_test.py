@@ -14,12 +14,22 @@ from waldo.lib.waldoLockedVariables import LockedTrueFalseVariable
 from locked_test_util import DummyEndpoint
 from waldo.lib import util
 
+from waldo.lib.waldoVariableStore import _VariableStore
+from waldo.lib.waldoExecutingEvent import _ExecutingEventContext
+
 '''
 Creates two endpoints.  Each with a single number variable.  Sets the
 number variable on each endpoint to a known value.
 
 Then, start an event which reads both values and commits.  
 '''
+
+def create_context(endpoint):
+    seq_local_store = _VariableStore(endpoint._host_uuid)
+    return _ExecutingEventContext(
+        endpoint._global_var_store,
+        seq_local_store)
+                                  
 
 class DummyEndpointWithCalls(DummyEndpoint): 
     def __init__(self):
@@ -99,11 +109,14 @@ def run_test():
         endpoint_b.end_global_number_var_name)
     
     # # create event for endpoint call
-    # read_endpoint_event = endpoint_a.create_root_event()
+    # read_endpoint_event_a = endpoint_a.create_root_event()
+    # ctx_a = create_context(endpoint_a)
     # # perform read on endpoint_a
-    # num_var_a.get_val(read_endpoint_event)
+    # num_var_a.get_val(read_endpoint_event_a)
 
-
+    # # perform endpoint call on endpoint b
+    # val = ctx_a.hide_endpoint_call(
+    #     read_endpoint_event_a,ctx_a,endpoint_b,'endpoint_func')
     
     return True
 
