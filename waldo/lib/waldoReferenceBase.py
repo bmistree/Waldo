@@ -547,8 +547,8 @@ class _DirtyMapElement(object):
         are already inside of w_obj's internal lock.
         '''
         self.version_obj.update_obj_val_and_version(w_obj,self.val)
-        print "Value updating occurring at " + str(self)
-        print "Update targetting " + str(w_obj)
+        print '"Value updating occurring at "'  + str(self)
+        print '"Update targetting "' + str(w_obj)
 
     def modified(self,invalidation_listener):
         '''
