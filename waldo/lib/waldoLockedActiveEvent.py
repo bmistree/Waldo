@@ -134,7 +134,49 @@ class LockedActiveEvent(object):
         # notify other endpoints to also complete their commits
         self.event_parent.second_phase_transition_success(
             self.other_endpoints_contacted,self.partner_contacted)    
-    
+
+    def wait_if_modified_peered(self):
+        '''
+        For certain topologies, can have a problem with updating
+        peered data:
+
+        root <------> root partner
+        a    <------> a partner
+        
+        root and a are on the same host.  root_partner and a_partner
+        are on the same host.  Could get into a situation in which do
+        not update partner data.  Specifically, if root updates peered
+        data and makes an endpoint call to a, which makes a message
+        call to a partner, which makes an endpoint call to root
+        partner, which modifies peered data, we need a mechanism for
+        root and root partner to exchange the peered data updates.  If
+        we wait until first phase of commit, then can get into trouble
+        because root locks its variables before knowing it also needs
+        to lock root partner's peered variables.  Which could lead to
+        deadlock.
+
+        To avoid this, after every endpoint call and root call, we
+        send a message to our partners with all updated data.  We then
+        wait until we recieve an ack of that message before returning
+        back to the endpoint that called us.
+
+        This function checks if we've modified any peered data.  If we
+        have, then it sends that message to partner and blocks,
+        waiting on a response from partner.
+
+        FIXME: there are (hopefully) better ways to do this.
+
+        FIXME: do I also need to update sequence local data (eg., for
+        oncompletes?)
+
+        @returns {bool} --- True if did not get backed out in the
+        middle.
+        '''
+
+        # FIXME: actually fill this method in
+        return True
+        
+        
     def complete_commit_local(self):
         '''
         Runs through all touched objects and calls their

@@ -18,18 +18,9 @@ from waldo.lib import Waldo
 from waldo.lib.waldoLockedVariables import LockedNumberVariable, LockedTextVariable
 from waldo.lib.waldoLockedVariables import LockedTrueFalseVariable
 
-# class _DummyActiveEventMap(object):
-#     def __init__(self):
-#         self.map = {}
-#     def add_event(self,evt):
-#         self.map[evt.uuid] = evt
-#     def remove_event(self,evt_uuid):
-#         del self.map[evt_uuid]
-        
 
 class DummyEndpoint(_Endpoint):
     def __init__(self,conn_obj=None,host_uuid = None):
-        # self.evt_map = _DummyActiveEventMap()
         
         if conn_obj is None:
             conn_obj = _WaldoSingleSideConnectionObject()
@@ -47,9 +38,4 @@ class DummyEndpoint(_Endpoint):
         _Endpoint.__init__(
             self,Waldo._waldo_classes,
             host_uuid,conn_obj,glob_var_store)
-
-    # def create_root_event(self):
-    #     rep = RootEventParent(self,generate_uuid())
-    #     self.evt_map.add_event(rep)
-    #     return LockedActiveEvent(rep,self.evt_map)
 
