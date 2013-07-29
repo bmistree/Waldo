@@ -1,8 +1,11 @@
-from waldoActiveEvent import PartnerActiveEvent
-from waldoActiveEvent import EndpointCalledActiveEvent
-from waldoActiveEvent import RootActiveEvent
 import threading
 import util
+
+from waldoLockedActiveEvent import LockedActiveEvent
+from waldoEventParent import RootEventParent
+from waldoEventParent import PartnerEventParent
+from waldoEventParent import EndpointEventParent
+
 
 class _ActiveEventMap(object):
     '''
@@ -49,7 +52,6 @@ class _ActiveEventMap(object):
         if len_map == 0:
             stop_callback()
         
-        
     def create_root_event(self):
         '''
         Generates a new active event for events that were begun on
@@ -60,10 +62,11 @@ class _ActiveEventMap(object):
             self._unlock()
             raise util.StoppedException()
 
-        new_event = RootActiveEvent(self.local_endpoint)
-        self.map[new_event.uuid] = new_event
+        rep = RootEventParent(self.local_endpoint,util.generate_uuid())
+        root_event = LockedActiveEvent(rep,self)
+        self.map[rep.get_uuid()] = root_event
         self._unlock()
-        return new_event
+        return root_event
 
     def remove_event(self,event_uuid):
         self.remove_event_if_exists(event_uuid)
@@ -99,10 +102,10 @@ class _ActiveEventMap(object):
                 self._unlock()
                 raise util.StoppedException()
             else:
-                new_event = PartnerActiveEvent(uuid,self.local_endpoint)
+                pep = PartnerEventParent(uuid,self.local_endpoint)
+                new_event = LockedActiveEvent(pep,self)
                 self.map[uuid] = new_event
                 
-
         to_return = self.map[uuid]
         self._unlock()
         return to_return
@@ -122,8 +125,8 @@ class _ActiveEventMap(object):
                 self._unlock()
                 raise util.StoppedException()
             else:
-                new_event = EndpointCalledActiveEvent(
-                    uuid, self.local_endpoint,endpoint,result_queue)
+                eep = EndpointEventParent(uuid,endpoint,self.local_endpoint,result_queue)
+                new_event = LockedActiveEvent(eep,self)
                 self.map[uuid] = new_event
 
         to_return = self.map[uuid]

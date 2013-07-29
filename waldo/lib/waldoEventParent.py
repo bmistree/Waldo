@@ -160,10 +160,11 @@ class PartnerEventParent(EventParent):
         return self.uuid
 
 class EndpointEventParent(EventParent):
-    def __init__(self,uuid,parent_endpoint,local_endpoint):
+    def __init__(self,uuid,parent_endpoint,local_endpoint,result_queue):
         self.uuid = uuid
         self.parent_endpoint = parent_endpoint
         self.local_endpoint = local_endpoint
+        self.result_queue = result_queue
     def get_uuid(self):
         return self.uuid
 

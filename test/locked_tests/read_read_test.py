@@ -25,8 +25,8 @@ def run_test():
     text_var = LockedTextVariable(Waldo._host_uuid,False,initial_value)
 
     ### Check that each can read initial value
-    read_event_1 = endpoint.create_root_event()
-    read_event_2 = endpoint.create_root_event()
+    read_event_1 = endpoint._act_event_map.create_root_event()
+    read_event_2 = endpoint._act_event_map.create_root_event()
     for i in range(0,10):
         if ((text_var.get_val(read_event_1) != initial_value) or
             (text_var.get_val(read_event_2) != initial_value)):

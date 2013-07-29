@@ -68,7 +68,7 @@ def initialize_data(endpoint):
     num_var = endpoint._global_var_store.get_var_if_exists(
         endpoint.end_global_number_var_name)
 
-    write_event = endpoint.create_root_event()
+    write_event = endpoint._act_event_map.create_root_event()
     num_var.set_val(write_event,DATA_INIT_VAL)
     write_event.begin_first_phase_commit()
 
@@ -82,7 +82,7 @@ def check_data_val(endpoint,expected_val):
     num_var = endpoint._global_var_store.get_var_if_exists(
         endpoint.end_global_number_var_name)
     
-    read_event = endpoint.create_root_event()
+    read_event = endpoint._act_event_map.create_root_event()
     gotten = num_var.get_val(read_event)
     read_event.begin_first_phase_commit()
     return (gotten == expected_val)
@@ -109,7 +109,7 @@ def run_test():
         endpoint_b.end_global_number_var_name)
     
     # create event for endpoint call
-    read_endpoint_event_a = endpoint_a.create_root_event()
+    read_endpoint_event_a = endpoint_a._act_event_map.create_root_event()
     ctx_a = create_context(endpoint_a)
     # perform read on endpoint_a
     num_var_a.get_val(read_endpoint_event_a)

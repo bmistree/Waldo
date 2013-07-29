@@ -30,7 +30,7 @@ def run_test():
     num_var = LockedNumberVariable(Waldo._host_uuid,False,initial_value)
 
     ### Check that can read initial value
-    read_event = endpoint.create_root_event()
+    read_event = endpoint._act_event_map.create_root_event()
     for i in range(0,10):
         if num_var.get_val(read_event) != initial_value:
             print '\nIncorrect value on read\n'
@@ -42,7 +42,7 @@ def run_test():
 
     
     ### Check that can write a value
-    write_event = endpoint.create_root_event()
+    write_event = endpoint._act_event_map.create_root_event()
     amount_added = 0
     for i in range(0,10):
         amount_added += i
@@ -54,7 +54,7 @@ def run_test():
 
 
     #### Check final value after write
-    read_event = endpoint.create_root_event()
+    read_event = endpoint._act_event_map.create_root_event()
     if num_var.get_val(read_event) != (initial_value + amount_added):
         return False
 

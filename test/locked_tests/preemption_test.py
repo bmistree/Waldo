@@ -29,8 +29,8 @@ def run_test():
     num_var = LockedNumberVariable(Waldo._host_uuid,False,initial_value)
 
     ### Check that each can read initial value
-    older_event = endpoint.create_root_event()
-    younger_event = endpoint.create_root_event()
+    older_event = endpoint._act_event_map.create_root_event()
+    younger_event = endpoint._act_event_map.create_root_event()
 
     # If older, have larger uuid.  
     if older_event.uuid < younger_event.uuid:
