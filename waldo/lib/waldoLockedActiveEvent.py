@@ -27,8 +27,10 @@ class LockedActiveEvent(object):
         self.touched_objs = {}
 
 
-        # a dict containing all endpoints that this event has issued
-        # commands to while executing.  On commit, must run through
+        # a dict.  keys are uuids, values are EventSubscribedTo
+        # objects, which contain all endpoints that this event has
+        # issued commands to while executing as well as the queues
+        # they may be waiting on to free.  On commit, must run through
         # each and tell it to enter first phase commit.
         self.other_endpoints_contacted = {}
         self.partner_contacted = False

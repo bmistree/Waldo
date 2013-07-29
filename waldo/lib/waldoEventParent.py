@@ -18,7 +18,8 @@ class EventParent(object):
         self,same_host_endpoints_contacted_dict,partner_contacted,event):
         '''
         @param {dict} same_host_endpoints_contacted_dict --- Keys are
-        uuids.  Values are endpoint objects.  
+        uuids.  Values are EventSubscribedTo objects (which wrap
+        endpoint objects).
 
         @param {bool} partner_contacted --- True if the event has sent
         a message as part of a sequence to partner.  False otherwise.
@@ -39,9 +40,10 @@ class EventParent(object):
 
     def second_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted):
-        '''
+        '''        
         @param {dict} same_host_endpoints_contacted_dict --- Keys are
-        uuids.  Values are endpoint objects.  
+        uuids.  Values are EventSubscribedTo objects (which wrap
+        endpoint objects).
 
         @param {bool} partner_contacted --- True if the event has sent
         a message as part of a sequence to partner.  False otherwise.
@@ -64,9 +66,10 @@ class EventParent(object):
         either endpoint's partner, an endpoint that we called an
         endpoint method on, or an endpoint that called an endpoint
         method on us.
-        
+
         @param {dict} same_host_endpoints_contacted_dict --- Keys are
-        uuids.  Values are endpoint objects.  
+        uuids.  Values are EventSubscribedTo objects (which wrap
+        endpoint objects).
 
         @param {bool} partner_contacted --- True if the event has sent
         a message as part of a sequence to partner.  False otherwise.
@@ -117,7 +120,7 @@ class RootEventParent(EventParent):
             # send message to all other endpoints that we made direct
             # endpoint calls on that they should attempt first phase
             # commit
-            endpoint = same_host_endpoints_contacted_dict[waiting_on_uuid]
+            endpoint = same_host_endpoints_contacted_dict[waiting_on_uuid].endpoint_object
             endpoint._receive_request_commit(self.uuid,self.local_endpoint)
 
         self.check_transition()
