@@ -103,6 +103,7 @@ class _Endpoint(object):
 
     def _run_hb_thread(self):
         self._hb_thread = threading.Thread(target=self._run_hb)
+        self._hb_thread.daemon = True
         self._hb_thread.start()
 
     def _run_hb(self):
@@ -718,7 +719,8 @@ class _Endpoint(object):
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.HEARTBEAT
         heartbeat_message = general_message.heartbeat
-        heartbeat_message.msg = 'ping'
+        heartbeat_message.msg = 'ping' ### FIXME: This should probably be a constant,
+              ### whether or not it needs to be a string is debatable.
         self._conn_obj.write(general_message.SerializeToString(),self)
 
         
