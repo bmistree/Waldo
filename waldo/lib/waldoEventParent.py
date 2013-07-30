@@ -15,6 +15,25 @@ class EventParent(object):
         '''
         util.logger_assert('get_uuid is pure virtual in EventParent')
 
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        Using two phase commit.  All committers must report to root
+        that they were successful in first phase of commit before root
+        can tell everyone to complete the commit (second phase).
+
+        In this case, received a message from endpoint that this
+        active event is subscribed to that endpoint with uuid
+        msg_originator_endpoint_uuid was able to commit.  If we have
+        not been told to backout, then forward this message on to the
+        root.  (Otherwise, no point in sending it further and doing
+        wasted work: can just drop it.)
+        '''
+        util.logger_warn(
+            'receive_succesful_first_phase_commit_msg is pure virtual ' +
+            'in event parent.')
+        
     def first_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted,event):
         '''
@@ -98,8 +117,7 @@ class EventParent(object):
         util.logger_warn('rollback is pure virtual in EventParent')
         
         
-# FIXME: must overload rollback, first_phase_transition_success,
-# second_phase_transition_success
+# FIXME: must overload rollback, second_phase_transition_success
         
 class RootEventParent(EventParent):
     def __init__(self,local_endpoint,partner_uuid):
@@ -169,7 +187,6 @@ class RootEventParent(EventParent):
 
         self.event_complete_queue.put(_RescheduleRootCallResult())
 
-        
         # tell any endpoints that we had called endpoint methods on to
         # back out their changes.
         for endpoint_to_rollback in other_endpoints_contacted.values():
@@ -181,6 +198,27 @@ class RootEventParent(EventParent):
             (backout_requester_endpoint_uuid != self.local_endpoint._partner_uuid)):
             self.local_endpoint._forward_backout_request_partner(self.uuid)
 
+
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        @see super class comments
+
+        Update the list of endpoints that we are waiting on
+        committing.  Check whether should transition into second phase
+        of commit.
+        '''
+        self.endpoints_waiting_on_commit[msg_originator_endpoint_uuid] = True
+
+        may_transition = True
+        for end_uuid in children_event_endpoint_uuids:
+            val = self.endpoints_waiting_on_commit.setdefault(end_uuid,False)
+            if not val:
+                may_transition = False
+
+        if may_transition:
+            self.check_transition()
             
 
 class PartnerEventParent(EventParent):
@@ -190,7 +228,13 @@ class PartnerEventParent(EventParent):
     def get_uuid(self):
         return self.uuid
 
-
+    def first_phase_transition_success(
+        self,same_host_endpoints_contacted_dict,partner_contacted,event):
+        # FIXME: Finish method
+        util.logger_warn(
+            'FIXME: must finish first phase transition success ' +
+            'in partner event parent')
+    
     
 class EndpointEventParent(EventParent):
     def __init__(self,uuid,parent_endpoint,local_endpoint,result_queue):
@@ -202,3 +246,20 @@ class EndpointEventParent(EventParent):
     def get_uuid(self):
         return self.uuid
 
+    def first_phase_transition_success(
+        self,same_host_endpoints_contacted_dict,partner_contacted,event):
+        '''
+        For arguments, @see EventParent.
+        '''
+        super(EndpointEventParent,self).first_phase_transition_success(
+            same_host_endpoints_contacted_dict,partner_contacted,event)
+
+        # tell parent endpoint that first phase has gone well and that
+        # it should wait on receiving responses from all the following
+        # endpoint uuids before entering second phase
+        children_endpoints = list(same_host_endpoints_contacted_dict.keys())
+        if partner_contacted:
+            children_endpoints.append(self.local_endpoint._partner_uuid)
+
+        self.parent_endpoint._receive_first_phase_commit_successful(
+            self.uuid,self.local_endpoint._uuid,children_endpoints)

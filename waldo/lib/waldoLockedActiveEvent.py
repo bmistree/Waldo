@@ -246,6 +246,7 @@ class LockedActiveEvent(object):
     def rollback_unblock_waiting_queues(self):
         util.logger_warn(
             'Unfinished method for unblocking waiting queues in waldoLockedActiveEvent.')
+
         
     def backout(self,backout_requester_endpoint_uuid):
         '''
@@ -356,3 +357,23 @@ class LockedActiveEvent(object):
         self._unlock()
         return endpoint_call_requested
         
+
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        Using two phase commit.  All committers must report to root
+        that they were successful in first phase of commit before root
+        can tell everyone to complete the commit (second phase).
+
+        In this case, received a message from endpoint that this
+        active event is subscribed to that endpoint with uuid
+        msg_originator_endpoint_uuid was able to commit.  If we have
+        not been told to backout, then forward this message on to the
+        root.  (Otherwise, no point in sending it further and doing
+        wasted work: can just drop it.)
+
+        '''
+        self.event_parent.receive_successful_first_phase_commit_msg(
+            event_uuid,msg_originator_endpoint_uuid,
+            children_event_endpoint_uuids)
