@@ -99,9 +99,9 @@ class _Endpoint(object):
         self._conn_status_mutex = threading.Lock()
 
         # start heartbeat thread
-        #self._heartbeat = Heartbeat(socket=self._conn_obj, 
-        #    timeout_cb=self._raise_network_exception)
-        #self._heartbeat.start()
+        self._heartbeat = Heartbeat(socket=self._conn_obj, 
+            timeout_cb=self.partner_connection_failure)
+        self._heartbeat.start()
         
     def _stop_lock(self):
         self._stop_mutex.acquire()
@@ -115,9 +115,20 @@ class _Endpoint(object):
     def _ready_waiting_list_unlock(self,additional):
         self._ready_waiting_list_mutex.release()        
 
-    def set_conn_failed(self):
+    def partner_connection_failure(self):
         '''
-        Sets the _conn_failed flag in the endpoint to True.
+        Called when it has been determined that the connection to the partner
+        endpoint has failed prematurely. Closes the socket and raises a network
+        exception, thus backing out from all current events, and sets the 
+        conn_failed flag.
+        '''
+        self._conn_obj.close()
+        self._raise_network_exception()
+        self.set_conn_failed()
+
+    def _set_conn_failed(self):
+        '''
+        Sets the conn_failed flag in the endpoint to True.
 
         Should be called when Waldo detects that the endpoint's connection 
         with its partner has been closed.
@@ -126,7 +137,7 @@ class _Endpoint(object):
         self._conn_failed = True
         self._conn_status_mutex.release()
 
-    def conn_failed(self):
+    def check_conn_failed(self):
         '''
         Returns a boolean representing whether or not Waldo has detected that
         the endpoint's connection with its partner has been closed.
@@ -270,7 +281,7 @@ class _Endpoint(object):
         '''
         self._act_event_map.backout_from_all_events(
             skip_partner=True,reason=waldoActiveEvent.NETWORK)
-            
+
     def _receive_msg_from_partner(self,string_msg):
         '''
         Called by the connection object.
