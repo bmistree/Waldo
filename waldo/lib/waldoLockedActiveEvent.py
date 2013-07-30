@@ -377,3 +377,14 @@ class LockedActiveEvent(object):
         self.event_parent.receive_successful_first_phase_commit_msg(
             event_uuid,msg_originator_endpoint_uuid,
             children_event_endpoint_uuids)
+
+    def complete_commit_and_forward_complete_msg(
+        self,request_from_partner):
+        '''
+        @param {bool} request_from_partner --- @see
+        waldoEndpointServiceThread
+        complete_commit_and_forward_complete_msg.
+        '''
+        self.second_phase_commit()
+
+        

@@ -147,7 +147,7 @@ class _ReceiveRequestCompleteCommitAction(_Action):
         '''
         
         evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
-        
+
         if evt == None:
             # event may not exist, for instance if got multiple
             # complete commit messages because of loops in endpoint

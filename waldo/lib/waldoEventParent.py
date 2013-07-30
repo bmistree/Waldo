@@ -15,6 +15,7 @@ class EventParent(object):
         '''
         util.logger_assert('get_uuid is pure virtual in EventParent')
 
+        
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
         children_event_endpoint_uuids):
@@ -86,9 +87,15 @@ class EventParent(object):
         called/touched as part of its computation.  Requests each of
         them to enter complete commit.
         '''
-        util.logger_warn(
-            'second_phase_transition_success is pure virtual in EventParent')
+        # tell any endpoints that we had called endpoint methods on to
+        # run second phase of commit
+        for endpoint_to_second_phase_commit in same_host_endpoints_contacted_dict.values():
+            endpoint_to_second_phase_commit.endpoint_object._receive_request_complete_commit(self.uuid)
 
+        if partner_contacted:
+            self.local_endpoint._forward_complete_commit_request_partner(self.uuid)
+
+        
         
     def rollback(
         self,backout_requester_endpoint_uuid,
@@ -114,7 +121,7 @@ class EventParent(object):
         util.logger_warn('rollback is pure virtual in EventParent')
         
         
-# FIXME: must overload rollback, second_phase_transition_success
+# FIXME: must overload rollback
         
 class RootEventParent(EventParent):
     def __init__(self,local_endpoint,partner_uuid):
@@ -133,6 +140,15 @@ class RootEventParent(EventParent):
         # when the root tries to commit the event, it blocks while
         # reading the event_complete_queue
         self.event_complete_queue = util.Queue.Queue()
+
+    def second_phase_transition_success(
+        self,same_host_endpoints_contacted_dict,partner_contacted):
+        '''
+        @see second_phase_transition_success in EventParent
+        '''
+        self.event_complete_queue.put(_CompleteRootCallResult())
+        super(RootEventParent,self).second_phase_transition_success(
+            same_host_endpoints_contacted_dict,partner_contacted)
 
         
     def get_uuid(self):
@@ -170,20 +186,7 @@ class RootEventParent(EventParent):
         
         self.event.second_phase_commit()
 
-    def second_phase_transition_success(
-        self,same_host_endpoints_contacted_dict,partner_contacted):
-        '''
-        @see second_phase_transition_success in EventParent
-        '''
-        self.event_complete_queue.put(_CompleteRootCallResult())
-        # tell any endpoints that we had called endpoint methods on to
-        # run second phase of commit
-        for endpoint_to_second_phase_commit in same_host_endpoints_contacted_dict.values():
-            endpoint_to_second_phase_commit._receive_request_complete_commit(self.uuid)
 
-        if partner_contacted:
-            self.local_endpoint._forward_complete_commit_request_partner(self.uuid)
-            
         
     def rollback(
         self,backout_requester_endpoint_uuid,other_endpoints_contacted,

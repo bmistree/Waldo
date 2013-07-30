@@ -20,10 +20,12 @@ from waldo.lib.waldoExecutingEvent import _ExecutingEventContext
 from waldo.lib.waldoCallResults import _CompleteRootCallResult
 
 '''
-Creates two endpoints.  Each with a single number variable.  Sets the
-number variable on each endpoint to a known value.
+Creates three endpoints.  Each with a single number variable.  Sets
+the number variable on each endpoint to a known value.
 
-Then, start an event which reads both values and commits.  
+Then, start an event that contacts one endpoint, asking the other
+endpoint to make an endpoint call on the last endpoint and read its
+internal value and then commit.
 '''
 
 def create_context(endpoint):
@@ -149,7 +151,9 @@ def run_test():
     if not isinstance(call_result,_CompleteRootCallResult):
         print '\nDid not get a completion result\n'
         return False
-    
+
+    import time
+    time.sleep(3)
     return True
 
 
