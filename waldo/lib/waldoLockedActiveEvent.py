@@ -83,7 +83,7 @@ class LockedActiveEvent(object):
 
         return True
 
-    def begin_first_phase_commit(self):
+    def begin_first_phase_commit(self,from_partner=False):
         '''
         If can enter Should send a message back to parent that 
         '''
@@ -107,8 +107,6 @@ class LockedActiveEvent(object):
         # now in first pahse of commit.
         self.event_parent.first_phase_transition_success(
             self.other_endpoints_contacted,self.partner_contacted,self)
-
-        
 
     def second_phase_commit(self):
         self._lock()

@@ -118,8 +118,7 @@ class _ReceiveRequestCommitAction(_Action):
             #     point.  Just ignore the request.
             pass
         else:
-            evt.forward_commit_request_and_try_holding_commit_on_myself(
-                self.from_partner)        
+            evt.begin_first_phase_commit(self.from_partner)
         
         
 class _ReceiveRequestCompleteCommitAction(_Action):

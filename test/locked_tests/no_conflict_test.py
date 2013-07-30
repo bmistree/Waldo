@@ -52,7 +52,6 @@ def run_test():
     # commit the write
     write_event.begin_first_phase_commit()
 
-
     #### Check final value after write
     read_event = endpoint._act_event_map.create_root_event()
     if num_var.get_val(read_event) != (initial_value + amount_added):

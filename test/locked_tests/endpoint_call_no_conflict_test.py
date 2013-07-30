@@ -17,6 +17,8 @@ from waldo.lib import util
 from waldo.lib.waldoVariableStore import _VariableStore
 from waldo.lib.waldoExecutingEvent import _ExecutingEventContext
 
+from waldo.lib.waldoCallResults import _CompleteRootCallResult
+
 '''
 Creates two endpoints.  Each with a single number variable.  Sets the
 number variable on each endpoint to a known value.
@@ -117,6 +119,18 @@ def run_test():
     # perform endpoint call on endpoint b
     val = ctx_a.hide_endpoint_call(
         read_endpoint_event_a,ctx_a,endpoint_b,'endpoint_func')
+
+    if val != DATA_INIT_VAL:
+        print '\nIncorrect value from other endpoint\n'
+        return False
+
+    # attempt to commit the event
+    read_endpoint_event_a.begin_first_phase_commit()
+    
+    call_result = read_endpoint_event_a.event_parent.event_complete_queue.get()
+    if not isinstance(call_result,_CompleteRootCallResult):
+        print '\nDid not get a completion result\n'
+        return False
     
     return True
 

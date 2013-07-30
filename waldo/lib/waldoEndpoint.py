@@ -620,15 +620,15 @@ class _Endpoint(object):
         self._conn_obj.write(general_message.SerializeToString(),self)
         
 
-    def _forward_complete_commit_request_partner(self,active_event):
+    def _forward_complete_commit_request_partner(self,active_event_uuid):
         '''
-        Active event on this endpoint has completed its commit and it
-        wants you to tell partner endpoint as well to complete its
-        commit.
+        Active event uuid on this endpoint has completed its commit
+        and it wants you to tell partner endpoint as well to complete
+        its commit.
         '''
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_COMPLETE_COMMIT_REQUEST
-        general_message.complete_commit_request.event_uuid.data = active_event.uuid
+        general_message.complete_commit_request.event_uuid.data = active_event_uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
 
     def _forward_backout_request_partner(self,active_event_uuid):
