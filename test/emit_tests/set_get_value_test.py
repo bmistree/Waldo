@@ -42,7 +42,6 @@ def run_test():
             print '\nGot incorrect string back'
             return False
 
-
         internal_list = single_side.increment_list(counter)
         expected_internal_list = list(range(0,counter+1))
         if internal_list != expected_internal_list:

@@ -359,12 +359,15 @@ class _ReferenceBase(WaldoObj):
             self._lock()
             internal_val = self.val
             self._unlock()
+            print "Read value " + str(internal_val) + " from " + str(self)
+
             return internal_val
         
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_val = self._dirty_map[invalid_listener.uuid].val
         self._unlock()
+        print "Read value " + str(dirty_val) + " from " + str(self)
         return dirty_val
 
     def write_if_different(self,invalid_listener,new_val):
@@ -536,6 +539,7 @@ class _DirtyMapElement(object):
 
     def set_has_been_written_to(self,new_val):
         self.version_obj.set_has_been_written_to()
+        print "Changed value at " + str(self) + " from " + str(self.val) + " to " + str(new_val)        
         self.val = new_val
 
     def update_obj_val_and_version(self,w_obj):
@@ -547,8 +551,6 @@ class _DirtyMapElement(object):
         are already inside of w_obj's internal lock.
         '''
         self.version_obj.update_obj_val_and_version(w_obj,self.val)
-        print '"Value updating occurring at "'  + str(self)
-        print '"Update targetting "' + str(w_obj)
 
     def modified(self,invalidation_listener):
         '''
@@ -565,7 +567,6 @@ class _DirtyMapElement(object):
         # object shows no modification.  That is why we must check a's
         # submaps for modification.
         
-        print "modified"
 
         if self.version_obj.modified(invalidation_listener):
             return True

@@ -67,7 +67,6 @@ class _SingleThreadReferenceBase(WaldoObj):
         # or a list/map of waldo references or a list/map of python
         # values.
         var_data = self.val
-
         if (not force) and (not self.version_obj.has_been_written_since_last_message):
             if (isinstance(var_data,numbers.Number) or
                 util.is_string(var_data) or isinstance(var_data,bool)):
@@ -140,6 +139,7 @@ class _SingleThreadReferenceBase(WaldoObj):
         '''
         is_value_type = False
         delta = None
+        print "PY SERIALIZE"
         if isinstance(var_data, numbers.Number):
             # can only add a pure number to var store a holder or to
             # an added key
@@ -194,6 +194,7 @@ class _SingleThreadReferenceBase(WaldoObj):
         return is_value_type
 
     def get_val(self,invalid_listener):
+
         return self.val
 
     def write_if_different(self,invalid_listener,new_val):
@@ -208,4 +209,5 @@ class _SingleThreadReferenceBase(WaldoObj):
         '''
         Writes to a copy of internal val, dirtying it
         '''
+
         self.val = new_val
