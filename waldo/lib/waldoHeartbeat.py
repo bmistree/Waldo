@@ -52,9 +52,7 @@ class Heartbeat:
             try:
                 self._sock.write(general_message.SerializeToString(),self)
             except socket.error as err:
-                print 'caught write error in heartbeat send thread.'
                 self._sock.close()
-                print 'closed socket...'
                 break
 
     def receive_heartbeat(self, msg):
@@ -64,7 +62,4 @@ class Heartbeat:
 
         @param  msg     The pong message received by the endpoint.
         '''
-
-#        print 'received heartbeat' ## for testing purposes
-
         pass
