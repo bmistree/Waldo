@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+import os
+import sys
+import time
 
-import sys,os,time
 base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..')
 sys.path.append(base_dir)
