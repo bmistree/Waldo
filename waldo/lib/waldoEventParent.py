@@ -56,17 +56,14 @@ class EventParent(object):
         each of them to enter first phase commit as well.
         '''
         self.event = event
-        
         # first keep track of all events that we are waiting on
         # hearing that first phase commit succeeded.
         if partner_contacted:
-            self.endpoints_waiting_on_commit[self.partner_uuid] = False
             # send message to partner telling it to enter first phase
             # commit
             self.local_endpoint._forward_commit_request_partner(self.uuid)
 
         for waiting_on_uuid in same_host_endpoints_contacted_dict.keys():
-            self.endpoints_waiting_on_commit[waiting_on_uuid] = False
             # send message to all other endpoints that we made direct
             # endpoint calls on that they should attempt first phase
             # commit
@@ -148,6 +145,13 @@ class RootEventParent(EventParent):
         '''
         super(RootEventParent,self).first_phase_transition_success(
             same_host_endpoints_contacted_dict,partner_contacted,event)
+
+        if partner_contacted:
+            self.endpoints_waiting_on_commit[self.partner_uuid] = False
+
+        for waiting_on_uuid in same_host_endpoints_contacted_dict.keys():
+            self.endpoints_waiting_on_commit[waiting_on_uuid] = False
+
         
         # after first phase has completed, should check if can
         # transition directly to second phase (ie, no other endpoints
