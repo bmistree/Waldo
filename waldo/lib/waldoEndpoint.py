@@ -6,6 +6,7 @@ import waldoCallResults
 from util import Queue
 import threading
 import time
+from waldo.lib.waldoHeartbeat import Heartbeat
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 
 HEARTBEAT_TIMEOUT = 30
@@ -98,19 +99,10 @@ class _Endpoint(object):
         self._conn_status_mutex = threading.Lock()
 
         # start heartbeat thread
-        self._run_hb_thread()
+        #self._heartbeat = Heartbeat(socket=self._conn_obj, 
+        #    timeout_cb=self._raise_network_exception)
+        #self._heartbeat.start()
         
-
-    def _run_hb_thread(self):
-        self._hb_thread = threading.Thread(target=self._run_hb)
-        self._hb_thread.daemon = True
-        self._hb_thread.start()
-
-    def _run_hb(self):
-        while True:
-           time.sleep(HEARTBEAT_TIMEOUT)
-           self._send_heartbeat()
-
     def _stop_lock(self):
         self._stop_mutex.acquire()
         
@@ -351,7 +343,7 @@ class _Endpoint(object):
                 general_msg.commit_request)
             
         elif general_msg.HasField('heartbeat'):
-            self._process_heartbeat(general_msg.heartbeat.msg)
+            self._heartbeat.receive_heartbeat(general_msg.heartbeat.msg)
 
         #### DEBUG
         else:
@@ -704,26 +696,6 @@ class _Endpoint(object):
 
         self._conn_obj.write_stop(general_message.SerializeToString(),self)
 
-    def _process_heartbeat(self, msg):
-        '''
-        Called when a heartbeat is received from the partner endpoint,
-        indicating that the partner is still alive and reachable.
-        '''
-        pass
-
-    def _send_heartbeat(self):
-        '''
-        Sends a heartbeat message to the partner endpoint, indicating that 
-        the current endpoint is still alive and reachable.
-        '''
-        general_message = GeneralMessage()
-        general_message.message_type = GeneralMessage.HEARTBEAT
-        heartbeat_message = general_message.heartbeat
-        heartbeat_message.msg = 'ping' ### FIXME: This should probably be a constant,
-              ### whether or not it needs to be a string is debatable.
-        self._conn_obj.write(general_message.SerializeToString(),self)
-
-        
     def add_stop_listener(self, to_exec_on_stop):
         '''
         @param {callable} to_exec_on_stop --- When this endpoint
