@@ -139,7 +139,9 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
                         # Socket is closed but the partners have not stopped
                         # communicating, so we want to back out
                         self.local_endpoint._raise_network_exception()
+                        self.local_endpoint.set_conn_failed()
                     break
+                    self.close()
 
                 self.received_data += data
                 self._decapsulate_msg_and_dispatch()
