@@ -8,7 +8,7 @@ import threading
 import time
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 
-
+HEARTBEAT_TIMEOUT = 30
 
 class _Endpoint(object):
     '''
@@ -108,7 +108,7 @@ class _Endpoint(object):
 
     def _run_hb(self):
         while True:
-           time.sleep(10) 
+           time.sleep(HEARTBEAT_TIMEOUT)
            self._send_heartbeat()
 
     def _stop_lock(self):
