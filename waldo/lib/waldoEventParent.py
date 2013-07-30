@@ -267,3 +267,14 @@ class EndpointEventParent(EventParent):
 
         self.parent_endpoint._receive_first_phase_commit_successful(
             self.uuid,self.local_endpoint._uuid,children_endpoints)
+        
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        @see super class comments
+
+        Forward message on to parent
+        '''
+        self.parent_endpoint._receive_first_phase_commit_successful(
+            self.uuid,msg_originator_endpoint_uuid,children_event_endpoint_uuids)
