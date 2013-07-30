@@ -2,7 +2,7 @@
 
 import sys,os,time
 base_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), '..','..','Waldo')
+    os.path.dirname(os.path.realpath(__file__)), '..','..')
 sys.path.append(base_dir)
 from waldo.lib import Waldo
 from network_exception_mid_sequence_test_v4 import Ping, Pong
