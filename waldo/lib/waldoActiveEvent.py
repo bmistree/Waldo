@@ -625,8 +625,7 @@ class _ActiveEvent(_InvalidationListener):
             if stop_request:
                 queue_feeder = waldoCallResults._StopAlreadyCalledEndpointCallResult()
             elif reason == NETWORK:
-                message_listening_queue.put(
-                    waldoCallResults._BackoutDueToNetworkFailure())
+                queue_feeder = waldoCallResults._BackoutDueToNetworkFailure()
             else:
                 queue_feeder = waldoCallResults._BackoutBeforeReceiveMessageResult()
             message_listening_queue.put(queue_feeder)
