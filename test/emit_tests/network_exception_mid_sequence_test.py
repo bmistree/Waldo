@@ -40,6 +40,8 @@ def run_test():
     
     Returns true if the exception is caught and handled, and false otherwise.
     '''
+    Waldo.set_default_heartbeat_period(1)
+    Waldo.set_default_timeout(3)
     acceptor_process.start()
     time.sleep(SLEEP_TIME)
     connector = Waldo.tcp_connect(Ping,HOST,PORT,signal_func)
