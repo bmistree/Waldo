@@ -67,7 +67,7 @@ _waldo_classes = {
 
 _default_values = {
     'heartbeat_timeout_period': 300,
-    'heartbeat_send_period': 1,
+    'heartbeat_send_period': 30,
 }
     
 
