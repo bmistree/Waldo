@@ -126,6 +126,8 @@ class LockedActiveEvent(object):
         
         self._unlock()
 
+        self.event_map.remove_event(self.uuid)
+        
         # FIXME: which should happen first, notifying others or
         # releasing locks locally?
         
@@ -216,7 +218,6 @@ class LockedActiveEvent(object):
         5) Forward messages to all other endpoints in event to roll
            back.
         '''
-
         # 0
         if self.state == LockedActiveEvent.STATE_BACKED_OUT:
             # Can get multiple backout requests if, for instance,
@@ -276,7 +277,6 @@ class LockedActiveEvent(object):
         self._unlock()
 
         
-        
     def obj_request_no_backout_and_release_lock(self):
         '''
         Either this or obj_request_backout_and_release_lock
@@ -289,7 +289,6 @@ class LockedActiveEvent(object):
         Do not have backout event.  Just release lock.
         '''
         self._unlock()
-
 
 
     def issue_endpoint_object_call(
