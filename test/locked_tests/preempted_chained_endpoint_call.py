@@ -29,6 +29,10 @@ starts first.  It starts a chained endpoint call that makes calls
 Before committing this chained event, start other event (with higher
 priority) that preempts the chained event.  Hope that everything gets
 rolled back properly.
+
+Finally, start an event with even lower priority on the third endpoint
+that tries to write to variable.  If chained read event has been
+correctly backed out, then the write should go through.
 '''
 
 def create_context(endpoint):
@@ -173,6 +177,27 @@ def run_test():
     
     import time
     time.sleep(3)
+
+    ### Perform last write on endpoint c.  Should go through.  If it's
+    ### not, it means that chained event was not preempted correctly.
+    num_var_c = endpoint_c._global_var_store.get_var_if_exists(
+        endpoint_c.end_global_number_var_name)
+
+    to_overwrite_with = 39
+    # need to ensure that the write event has lower priority than the
+    # chained event.
+    write_event_c = endpoint_c._act_event_map.create_root_event()
+    while write_event_c.uuid > chained_endpoint_event_a.uuid:
+        write_event_c = endpoint_c._act_event_map.create_root_event()
+
+    num_var_c.set_val(write_event_c,to_overwrite_with)
+    write_event_c.begin_first_phase_commit()
+    
+    last_write_result = write_event_c.event_parent.event_complete_queue.get()
+    if not isinstance(last_write_result,_CompleteRootCallResult):
+        print '\nCould not complete last write\n'
+        return False
+
     return True
 
 
