@@ -196,8 +196,9 @@ class RootEventParent(EventParent):
 
         # tell any endpoints that we had called endpoint methods on to
         # back out their changes.
-        for endpoint_to_rollback in other_endpoints_contacted.values():
-            if endpoint_to_rollback.uuid != backout_requester_endpoint_uuid:
+        for subscribed_elements_to_rollback in other_endpoints_contacted.values():
+            endpoint_to_rollback = subscribed_elements_to_rollback.endpoint_object
+            if endpoint_to_rollback._uuid != backout_requester_endpoint_uuid:
                 endpoint_to_rollback._receive_request_backout(self.uuid,self.local_endpoint)
 
         # tell partner to backout its changes too
