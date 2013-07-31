@@ -137,6 +137,7 @@ def run_emit_tests():
     import emit_tests.string_pass
     import emit_tests.application_exception_test
     import emit_tests.network_exception_mid_sequence_test
+    import emit_tests.network_exception_on_call_test
 
     
     emit_tests_to_run = [
@@ -257,6 +258,9 @@ def run_emit_tests():
 
         ('Tests network exception may be thrown mid-sequence due to socket closure and caught.',
          emit_tests.network_exception_mid_sequence_test.run_test),
+
+        ('Tests network exception may be thrown at the beginning of a sequence due to prior network failure.',
+         emit_tests.network_exception_on_call_test.run_test),
         ]
 
 
