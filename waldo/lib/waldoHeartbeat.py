@@ -15,7 +15,7 @@ class Heartbeat:
     partner.
     '''
 
-    def __init__(self, socket, timeout_cb, send_period=1, timeout=15):
+    def __init__(self, socket, timeout_cb, send_period=1, timeout=300):
         '''
         Initializes the Heartbeat object. 
 
