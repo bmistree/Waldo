@@ -743,7 +743,7 @@ class _Endpoint(object):
         '''
         return self._stop_complete
 
-    def stop(self):
+    def stop(self,_skip_partner=False):
         '''
         Called from python or called when partner requests stop
         '''
