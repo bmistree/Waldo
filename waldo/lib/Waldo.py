@@ -65,6 +65,10 @@ _waldo_classes = {
     'NetworkException': util.NetworkException
     }
 
+_default_values = {
+    'heartbeat_timeout_period': 300,
+    'heartbeat_send_period': 1,
+}
     
 
 def tcp_connect(constructor,host,port,*args):

@@ -21,7 +21,7 @@ class _Endpoint(object):
     active events on this endpoint.
     '''
 
-    def __init__(self,waldo_classes,host_uuid,conn_obj,global_var_store):
+    def __init__(self,waldo_classes,host_uuid,conn_obj,global_var_store,*args):
         '''
         @param {dict} waldo_classes --- Contains common utilities
         needed by emitted code, such as WaldoNumVariable
@@ -100,7 +100,7 @@ class _Endpoint(object):
 
         # start heartbeat thread
         self._heartbeat = Heartbeat(socket=self._conn_obj, 
-            timeout_cb=self.partner_connection_failure)
+            timeout_cb=self.partner_connection_failure,*args)
         self._heartbeat.start()
         
     def _stop_lock(self):

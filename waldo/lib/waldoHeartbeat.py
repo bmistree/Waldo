@@ -1,4 +1,5 @@
 import time
+import Waldo
 import Queue
 import socket
 import threading
@@ -15,7 +16,7 @@ class Heartbeat:
     partner.
     '''
 
-    def __init__(self, socket, timeout_cb, send_period=1, timeout=300):
+    def __init__(self, socket, timeout_cb):
         '''
         Initializes the Heartbeat object. 
 
@@ -30,8 +31,8 @@ class Heartbeat:
         '''
         self._sock = socket
         self._timeout_cb = timeout_cb
-        self._send_period = send_period
-        self._timeout = timeout
+        self._send_period = Waldo._default_values['heartbeat_send_period']
+        self._timeout = Waldo._default_values['heartbeat_timeout_period']
         self._lock = threading.Lock()
         self._partner_alive = True
 
