@@ -250,7 +250,10 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         other.
         '''
         msg_str_to_send = self._encapsulate_msg_str(msg_str_to_write)
-        self.sock.sendall(msg_str_to_send)
+        try:
+            self.sock.sendall(msg_str_to_send)
+        except socket.error as err:
+            self.local_endpoint.partner_connection_failure()
 
         
 class _TCPListeningStoppable(object):
