@@ -96,7 +96,7 @@ class _Endpoint(object):
         self._stop_listeners = {}
 
         self._conn_failed = False
-        self._conn_status_mutex = threading.Lock()
+        self._conn_mutex = threading.Lock()
 
         # start heartbeat thread
         self._heartbeat = Heartbeat(socket=self._conn_obj, 
@@ -120,33 +120,15 @@ class _Endpoint(object):
         Called when it has been determined that the connection to the partner
         endpoint has failed prematurely. Closes the socket and raises a network
         exception, thus backing out from all current events, and sets the 
-        conn_failed flag.
+        conn_failed flag, but only if this method has not been called before.
         '''
-        self._conn_obj.close()
-        self._raise_network_exception()
-        self.set_conn_failed()
+        self._conn_mutex.acquire()
+        if not self._conn_failed:
+            self._conn_obj.close()
+            self._raise_network_exception()
+            self._conn_failed = True
+        self._conn_mutex.release()
 
-    def _set_conn_failed(self):
-        '''
-        Sets the conn_failed flag in the endpoint to True.
-
-        Should be called when Waldo detects that the endpoint's connection 
-        with its partner has been closed.
-        '''
-        self._conn_status_mutex.acquire()
-        self._conn_failed = True
-        self._conn_status_mutex.release()
-
-    def check_conn_failed(self):
-        '''
-        Returns a boolean representing whether or not Waldo has detected that
-        the endpoint's connection with its partner has been closed.
-        '''
-        self._conn_status_mutex.acquire()
-        conn_failed = self._conn_failed
-        self._conn_status_mutex.release()
-        return conn_failed
-        
     def _block_ready(self):
         '''
         Returns True if both sides are initialized.  Otherwise, blocks

@@ -136,10 +136,9 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
                 data = self.sock.recv(1024)
                 if not data:
                     if not self.local_endpoint.is_stopped():
-                        # Socket is closed but the partners have not stopped
-                        # communicating, so we want to back out
-                        self.local_endpoint._raise_network_exception()
-                        self.local_endpoint.set_conn_failed()
+                        # socket closed before stop called
+                        # indicate failure to endpoint and backout
+                        self.local_endpoint.partner_connection_failure()
                     break
                     self.close()
 
@@ -252,7 +251,6 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         '''
         msg_str_to_send = self._encapsulate_msg_str(msg_str_to_write)
         self.sock.sendall(msg_str_to_send)
-
 
         
 class _TCPListeningStoppable(object):
