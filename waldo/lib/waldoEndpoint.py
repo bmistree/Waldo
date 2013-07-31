@@ -123,10 +123,9 @@ class _Endpoint(object):
         conn_failed flag, but only if this method has not been called before.
         '''
         self._conn_mutex.acquire()
-        if not self._conn_failed:
-            self._conn_obj.close()
-            self._raise_network_exception()
-            self._conn_failed = True
+        self._conn_obj.close()
+        self._raise_network_exception()
+        self._conn_failed = True
         self._conn_mutex.release()
 
     def _block_ready(self):
