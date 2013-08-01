@@ -640,6 +640,16 @@ class _ExecutingEventContext(object):
             'Calling len on an object that does not support the function')
 
 
+    def hide_sequence_completed_call(self,endpoint,active_event):
+        '''
+        When a sequence completes not on the endpoint that began the
+        sequence, we must send a parting message so that the root
+        endpoint can continue running.  This method sends that
+        message.
+        '''
+        active_event.issue_partner_sequence_block_call(
+            self,None,None,False)
+
     def hide_partner_call(
         self,endpoint,active_event,func_name,first_msg):
         '''

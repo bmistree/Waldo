@@ -50,6 +50,7 @@ class PartnerEndpoint(DummyEndpoint):
         num_var = context.global_store.get_var_if_exists(
             self.end_global_number_var_name)
         num_var.set_val(active_event,B_VAL)
+        context.hide_sequence_completed_call(self,active_event)
 
 
 def run_test():
@@ -71,7 +72,6 @@ def run_test():
     write_event = end_a._act_event_map.create_root_event()
     num_var_a.set_val(write_event,a_val)
     
-
     # send sequence message to the other side to perform write there.
     # block until call completes
     ctx_a.hide_partner_call(
@@ -79,7 +79,7 @@ def run_test():
 
     # actually try to commit write event
     write_event.begin_first_phase_commit()
-    
+
     # check that both values were updated
     read_event_a = end_a._act_event_map.create_root_event()
     if num_var_a.get_val(read_event_a) != a_val:
@@ -87,7 +87,7 @@ def run_test():
         return False
 
     read_event_a.begin_first_phase_commit()
-    
+
     read_event_b = end_b._act_event_map.create_root_event()
     if num_var_b.get_val(read_event_b) != B_VAL:
         print '\nWrite did not go through on b\n'

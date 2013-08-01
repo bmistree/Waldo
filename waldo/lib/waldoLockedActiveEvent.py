@@ -345,6 +345,10 @@ class LockedActiveEvent(object):
         in a sequence that we're sending.  Necessary so that we can
         tell whether or not to force sending sequence local data.
 
+        @param {Queue or None} threadsafe_unblock_queue --- None if
+        this was the last message sent in a sequence and we're not
+        waiting on a reply.
+        
         The local endpoint is requesting its partner to call some
         sequence block.
         '''
