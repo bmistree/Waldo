@@ -2,7 +2,7 @@ import threading
 import util
 from waldoEventSubscribedTo import EventSubscribedTo
 from waldoCallResults import _BackoutBeforeEndpointCallResult
-
+from waldoCallResults import _SequenceMessageCallResult
 
 class LockedActiveEvent(object):
 
@@ -504,4 +504,154 @@ class LockedActiveEvent(object):
         # FIXME: may be needlessly forwarding backouts to partners and
         # back to the endpoints that requested us to back out.
         self.backout(None)
+
+
+    def handle_first_sequence_msg_from_partner(
+        self,msg,name_of_block_to_exec_next):
+        '''        
+        ASSUMES ALREADY WITHIN LOCK
+
+        @param {PartnerMessageRequestSequenceBlock.proto} msg ---
+
+        @param {string} name_of_block_to_exec_next --- the name of the
+        sequence block to execute next.
+
+        @returns {Executing event}
+        
+        means that the other side has generated a first message create
+        a new context to execute that message and do so in a new
+        thread.
+        '''
+        ### FIGURE OUT WHAT TO EXECUTE NEXT
+
+        #### DEBUG
+        if name_of_block_to_exec_next == None:
+            util.logger_assert(
+                'Error in _ActiveEvent.  Should not receive the ' +
+                'beginning of a sequence message without some ' +
+                'instruction for what to do next.')
+        #### END DEBUG
+
+        block_to_exec_internal_name = util.partner_endpoint_msg_call_func_name(
+            name_of_block_to_exec_next)
+
+        #### MAYBE DEBUG
+        # ("maybe" because we also may want to throw a Waldo error
+        # for this instead of just asserting out.)
+        if not hasattr(
+            self.event_parent.local_endpoint,block_to_exec_internal_name):
+            util.logger_assert(
+                'Error in _ActiveEvent.  Received a request to ' +
+                'perform an unknown sequence step.')
+        #### END MAYBE DEBUG
+
+        to_exec = getattr(self.event_parent.local_endpoint,block_to_exec_internal_name)
+
+        ### SET UP CONTEXT FOR EXECUTING
+        # FIXME: re-arrange code to avoid this import
+        import waldoVariableStore
+        seq_local_var_store = waldoVariableStore._VariableStore(
+            self.event_parent.local_endpoint._host_uuid)
+
+        # FIXME: eventually, want to remove pickle-ing here
+        seq_local_var_store.incorporate_deltas(
+            self,msg.sequence_local_var_store_deltas)
+
+        # FIXME: super ugly
+        from waldoExecutingEvent import _ExecutingEventContext
+        from waldoExecutingEvent import _ExecutingEvent
+
+        
+        evt_ctx = _ExecutingEventContext(
+            # already incorporated deltas for global_var_store
+            # above.
+            self.event_parent.local_endpoint._global_var_store,
+            seq_local_var_store)
+
+        evt_ctx.set_to_reply_with(msg.reply_with_uuid.data)
+
+        # used to actually start execution of context thread at end
+        # of loop.  must start event outside of locks.  That way,
+        # if the exec event leads to and endpoint call, etc., we
+        # don't block waiting on its return.
+        exec_event = _ExecutingEvent(
+            to_exec,self,evt_ctx,
+            None # using None here means that we do not need to
+                 # bother with waiting for modified peered-s to
+                 # update.
+            )
+
+        return exec_event
+
+
+    def recv_partner_sequence_call_msg(self,msg):
+        '''
+        @param {PartnerMessageRequestSequenceBlock.proto} msg --- 
+        '''
+        # can be None... if it is means that the other side wants us
+        # to decide what to do next (eg, the other side performed its
+        # last message sequence action)
+        name_of_block_to_exec_next = None
+        if msg.HasField('name_of_block_requesting'):
+            name_of_block_to_exec_next = msg.name_of_block_requesting
+        
+        # update peered data based on data contents of message.
+        # (Note: still must update sequence local data from deltas
+        # below.)
+
+        # FIXME: pretty sure that do not need to incorporate deltas within
+        # lock, but should check
+        self.event_parent.local_endpoint._global_var_store.incorporate_deltas(
+            self,msg.peered_var_store_deltas)
+
+        exec_event = None
+
+        self._lock()
+        if not msg.HasField('reply_to_uuid'):
+            exec_event = self.handle_first_sequence_msg_from_partner(
+                msg,name_of_block_to_exec_next)
+        else:
+            self.handle_non_first_sequence_msg_from_partner(
+                msg,name_of_block_to_exec_next)
+        self._unlock()
+
+        if exec_event != None:
+            ### ACTUALLY START EXECUTION CONTEXT THREAD
+            exec_event.run()
+
+            
+
+    def handle_non_first_sequence_msg_from_partner(
+        self,msg,name_of_block_to_exec_next):
+        '''
+        ASSUMES ALREADY WITHIN LOCK
+        @param {PartnerMessageRequestSequenceBlock.proto} msg ---
+
+        @param {string or None} name_of_block_to_exec_next --- the
+        name of the sequence block to execute next. None if nothing to
+        execute next (ie, last sequence message).
+        '''
+        #### DEBUG
+        if msg.reply_to_uuid.data not in self.message_listening_queues_map:
+            util.logger_assert(
+                'Error: partner response message responding to ' +
+                'unknown _ActiveEvent message.')
+        #### END DEBUG
+
+        # unblock waiting listening queue.
+        self.message_listening_queues_map[msg.reply_to_uuid.data].put(
+            _SequenceMessageCallResult(
+                msg.reply_with_uuid.data,
+                name_of_block_to_exec_next,
+                # as soon as read from the listening message
+                # queue, populate sequence local data from context
+                # using sequence_local_var_store_deltas.
+
+                # FIXME: eventaully, want to move away from
+                # pickle-ing here.
+                msg.sequence_local_var_store_deltas))
+
+        # no need holding onto queue waiting on a message response.
+        del self.message_listening_queues_map[msg.reply_to_uuid.data]
+
 

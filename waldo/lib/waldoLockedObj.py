@@ -132,6 +132,9 @@ class WaldoLockedObj(object):
         # have caused another read/write to be scheduled.
         self.try_next()
 
+    def is_peered(self):
+        return self.peered
+        
     def backout(self,active_event):
         '''
         When an event backs out, it calls this method on all the

@@ -43,9 +43,9 @@ class PartnerEndpoint(DummyEndpoint):
 
         setattr(
             self,
-            util.endpoint_call_func_name('test_partner'),
+            util.partner_endpoint_msg_call_func_name('test_partner'),
             self.test_partner)
-        
+
     def test_partner (self,active_event,context):
         num_var = context.global_store.get_var_if_exists(
             self.end_global_number_var_name)
