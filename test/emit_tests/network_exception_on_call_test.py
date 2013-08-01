@@ -42,7 +42,6 @@ def run_test():
     time.sleep(KILL_WAIT_TIME)
     acceptor_process.terminate()
     time.sleep(TIMEOUT_DETECT_TIME)
-    print 'test beginning...'
     return connector.testNetworkException()
 
 if __name__ == "__main__":
