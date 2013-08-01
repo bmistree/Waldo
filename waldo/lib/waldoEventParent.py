@@ -117,10 +117,20 @@ class EventParent(object):
         Tells all endpoints that we have contacted to rollback their
         events as well.  
         '''
-        util.logger_warn('rollback is pure virtual in EventParent')
+        # tell any endpoints that we had called endpoint methods on to
+        # back out their changes.
+        for subscribed_elements_to_rollback in same_host_endpoints_contacted_dict.values():
+            endpoint_to_rollback = subscribed_elements_to_rollback.endpoint_object
+            if endpoint_to_rollback._uuid != backout_requester_endpoint_uuid:
+                endpoint_to_rollback._receive_request_backout(
+                    self.uuid,self.local_endpoint)
+
+        # tell partner to backout its changes too
+        if (partner_contacted and
+            (backout_requester_endpoint_uuid != self.local_endpoint._partner_uuid)):
+            self.local_endpoint._forward_backout_request_partner(self.uuid)
         
         
-# FIXME: must overload rollback
         
 class RootEventParent(EventParent):
     def __init__(self,local_endpoint,partner_uuid):
@@ -189,20 +199,11 @@ class RootEventParent(EventParent):
         self,backout_requester_endpoint_uuid,other_endpoints_contacted,
         partner_contacted):
 
+        super(RootEventParent,self).rollback(
+            backout_requester_endpoint_uuid, other_endpoints_contacted,
+            partner_contacted)
+
         self.event_complete_queue.put(_RescheduleRootCallResult())
-
-        # tell any endpoints that we had called endpoint methods on to
-        # back out their changes.
-        for subscribed_elements_to_rollback in other_endpoints_contacted.values():
-            endpoint_to_rollback = subscribed_elements_to_rollback.endpoint_object
-            if endpoint_to_rollback._uuid != backout_requester_endpoint_uuid:
-                endpoint_to_rollback._receive_request_backout(
-                    self.uuid,self.local_endpoint)
-
-        # tell partner to backout its changes too
-        if (partner_contacted and
-            (backout_requester_endpoint_uuid != self.local_endpoint._partner_uuid)):
-            self.local_endpoint._forward_backout_request_partner(self.uuid)
 
 
     def receive_successful_first_phase_commit_msg(
