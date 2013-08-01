@@ -75,7 +75,7 @@ class _WaldoSameHostConnectionObject(_WaldoConnectionObject,threading.Thread):
 
     def write_stop(self,string_to_write,endpoint_writing):
         # write same message back to self
-        self.queue.put( ( string_to_write , endpoint_writing ))
+        self.queue.put((string_to_write, endpoint_writing))
 
     def write(self,msg,endpoint):
         self.queue.put((msg,endpoint))
