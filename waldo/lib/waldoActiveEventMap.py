@@ -21,7 +21,6 @@ class _ActiveEventMap(object):
         self.stop_callback = None
         self.waiting_on_stop = {}
     
-
     def initiate_stop(self):
         '''
         When the endpoint that this is on has said to start
@@ -74,6 +73,7 @@ class _ActiveEventMap(object):
     def remove_event_if_exists(self,event_uuid):
         self._lock()
         to_remove = self.map.pop(event_uuid,None)
+
         fire_stop_complete_callback = False
         if (len(self.map) == 0) and (self.in_stop_complete_phase):
             fire_stop_complete_callback = True
@@ -83,6 +83,8 @@ class _ActiveEventMap(object):
         if fire_stop_complete_callback:
             self.stop_callback()
 
+        return to_remove
+            
         
     def get_or_create_partner_event(self,uuid):
         '''
