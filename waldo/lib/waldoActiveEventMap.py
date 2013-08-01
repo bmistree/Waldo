@@ -83,6 +83,7 @@ class _ActiveEventMap(object):
         if fire_stop_complete_callback:
             self.stop_callback()
 
+        return to_remove
         
     def get_or_create_partner_event(self,uuid):
         '''
