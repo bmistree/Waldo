@@ -169,7 +169,9 @@ class RootEventParent(EventParent):
         '''
         super(RootEventParent,self).first_phase_transition_success(
             same_host_endpoints_contacted_dict,partner_contacted,event)
-        
+
+        # note that we should not wait on ourselves to commit
+        self.endpoints_waiting_on_commit[self.local_endpoint._uuid] = True
         if partner_contacted:
             self.endpoints_waiting_on_commit[self.local_endpoint._partner_uuid] = False
 
