@@ -1,6 +1,7 @@
 import threading
 import util
 from waldoEventSubscribedTo import EventSubscribedTo
+from waldoCallResults import _BackoutBeforeEndpointCallResult
 
 class LockedActiveEvent(object):
 
@@ -245,9 +246,17 @@ class LockedActiveEvent(object):
 
         
     def rollback_unblock_waiting_queues(self):
-        util.logger_warn(
-            'Unfinished method for unblocking waiting queues in waldoLockedActiveEvent.')
-
+        '''
+        To provide blocking, whenever issue an endpoint call or
+        partner call, thread of execution blocks, waiting on a read
+        into a threadsafe queue.  When we rollback, we must put a
+        sentinel into the threadsafe queue indicating that the event
+        has been rolled back and to not proceed further.
+        '''
+        for subscribed_to_element in self.other_endpoints_contacted.values():
+            for res_queue in subscribed_to_element.result_queues:
+                res_queue.put(_BackoutBeforeEndpointCallResult())
+                    
         
     def backout(self,backout_requester_endpoint_uuid):
         '''
