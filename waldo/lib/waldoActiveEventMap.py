@@ -61,7 +61,7 @@ class _ActiveEventMap(object):
             self._unlock()
             raise util.StoppedException()
 
-        rep = RootEventParent(self.local_endpoint,util.generate_uuid())
+        rep = RootEventParent(self.local_endpoint)
         root_event = LockedActiveEvent(rep,self)
         self.map[rep.get_uuid()] = root_event
         self._unlock()

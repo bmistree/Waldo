@@ -133,14 +133,13 @@ class EventParent(object):
         
         
 class RootEventParent(EventParent):
-    def __init__(self,local_endpoint,partner_uuid):
+    def __init__(self,local_endpoint):
         '''
         @param{uuid} partner_uuid --- UUID of the attached neighbor
         endpoint
         '''
         self.uuid = util.generate_uuid()
         self.local_endpoint = local_endpoint
-        self.partner_uuid = partner_uuid
         # indices are event uuids.  Values are bools.  When all values
         # are true in this dict, then we can transition into second
         # phase commit.
@@ -170,9 +169,9 @@ class RootEventParent(EventParent):
         '''
         super(RootEventParent,self).first_phase_transition_success(
             same_host_endpoints_contacted_dict,partner_contacted,event)
-
+        
         if partner_contacted:
-            self.endpoints_waiting_on_commit[self.partner_uuid] = False
+            self.endpoints_waiting_on_commit[self.local_endpoint._partner_uuid] = False
 
         for waiting_on_uuid in same_host_endpoints_contacted_dict.keys():
             self.endpoints_waiting_on_commit[waiting_on_uuid] = False
@@ -217,7 +216,6 @@ class RootEventParent(EventParent):
         of commit.
         '''
         self.endpoints_waiting_on_commit[msg_originator_endpoint_uuid] = True
-
         may_transition = True
         for end_uuid in children_event_endpoint_uuids:
             val = self.endpoints_waiting_on_commit.setdefault(end_uuid,False)
@@ -237,12 +235,26 @@ class PartnerEventParent(EventParent):
 
     def first_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted,event):
-        # FIXME: Finish method
-        util.logger_warn(
-            'FIXME: must finish first phase transition success ' +
-            'in partner event parent')
-    
-    
+                
+        # forwards the message to others
+        super(PartnerEventParent,self).first_phase_transition_success(
+            same_host_endpoints_contacted_dict,partner_contacted,event)
+
+        # tell parent endpoint that first phase has gone well and that
+        # it should wait on receiving responses from all the following
+        # endpoint uuids before entering second phase
+        children_endpoints = list(same_host_endpoints_contacted_dict.keys())
+        if partner_contacted:
+            children_endpoints.append(self.local_endpoint._partner_uuid)
+
+        self.local_endpoint._forward_first_phase_commit_successful(
+            self.uuid,self.local_endpoint._uuid,children_endpoints)
+
+    def second_phase_transition_success(
+        self,same_host_endpoints_contacted_dict,partner_contacted):
+        super(PartnerEventParent,self).second_phase_transition_success(
+            same_host_endpoints_contacted_dict,partner_contacted)
+        
 class EndpointEventParent(EventParent):
     def __init__(self,uuid,parent_endpoint,local_endpoint,result_queue):
         
@@ -271,6 +283,7 @@ class EndpointEventParent(EventParent):
 
         self.parent_endpoint._receive_first_phase_commit_successful(
             self.uuid,self.local_endpoint._uuid,children_endpoints)
+
         
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
