@@ -10,6 +10,7 @@ from util import Queue
 from waldoObj import WaldoObj
 
 
+
 class _ExecutingEventContext(object):
     def __init__(self,global_store,sequence_local_store):
         '''
@@ -637,6 +638,55 @@ class _ExecutingEventContext(object):
 
         util.logger_assert(
             'Calling len on an object that does not support the function')
+
+
+    def hide_partner_call(
+        self,endpoint,active_event,func_name,first_msg):
+        '''
+        @param {String or None} func_name --- When func_name is None,
+        then sending to the other side the message that we finished
+        performing the requested block.  In this case, we do not need
+        to add result_queue to waiting queues.
+
+        @param {bool} first_msg --- True if this is the first message
+        in a sequence that we're sending.  Necessary so that we can
+        tell whether or not to force sending sequence local data.
+
+        The local endpoint is requesting its partner to call some
+        sequence block.
+        '''
+        threadsafe_unblock_queue = Queue.Queue()
+        if not active_event.issue_partner_sequence_block_call(
+            self,func_name,threadsafe_unblock_queue, first_msg):
+            # already backed out.  did not schedule message.  raise
+            # exception
+            raise util.BackoutException()
+            
+        queue_elem = threadsafe_unblock_queue.get()
+
+        if isinstance(queue_elem,waldoCallResults._BackoutBeforeReceiveMessageResult):
+            raise util.BackoutException()
+
+        self.set_to_reply_with(queue_elem.reply_with_msg_field)
+
+        # apply changes to sequence variables.  Note: that the system
+        # has already applied deltas for global data.
+        self.sequence_local_store.incorporate_deltas(
+            active_event,queue_elem.sequence_local_var_store_deltas)
+
+        # send more messages
+        to_exec_next = queue_elem.to_exec_next_name_msg_field
+        if to_exec_next != None:
+            # means that we do not have any additional functions to exec
+            to_exec = getattr(endpoitn,_to_exec_next)
+            to_exec(active_event,self)
+        else:
+            # end of sequence: reset to_reply_with_uuid in context.  we do
+            # this so that if we go on to execute another message sequence
+            # following this one, then the message sequence will be viewed as
+            # a new message sequence, rather than the continuation of a
+            # previous one.
+            self.reset_to_reply_with()
         
 
     def hide_endpoint_call(

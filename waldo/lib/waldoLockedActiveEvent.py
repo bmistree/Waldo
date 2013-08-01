@@ -3,6 +3,7 @@ import util
 from waldoEventSubscribedTo import EventSubscribedTo
 from waldoCallResults import _BackoutBeforeEndpointCallResult
 
+
 class LockedActiveEvent(object):
 
     STATE_RUNNING = 1
@@ -38,6 +39,37 @@ class LockedActiveEvent(object):
         self.partner_contacted = False
         
         self.event_parent = event_parent
+
+                # When an active event sends a message to the partner
+        # endpoint, it blocks until the response.  The way it blocks
+        # is by calling get on an empty threadsafe queue.  There are
+        # two ways that data get put into the queue.  The first is if
+        # the partner endpoint completes its computation and replies.
+        # In this case, _Endpoint updates the associated ActiveEvent
+        # and puts a waldoCallResults._MessageFinishedCallResult
+        # object into the queue.  When the listening endpoint receives
+        # this result, it continues processing.  The other way is if
+        # the event is backed out while we're waiting.  In that case,
+        # the runtime puts a
+        # waldoCallResults._BackoutBeforeReceiveMessageResult object
+        # into the queue.
+        #
+        # We can be listening to more than one open threadsafe message
+        # queue.  If endpoint A waits on its partner, and, while
+        # waiting, its partner executes a series of endpoint calls so
+        # that another method on A is invoked, and that method calls
+        # its partner again, we could be waiting on 2 different
+        # message queues, each held by the same active event.  To
+        # determine which queue a message is a reply to, we read the
+        # message's reply_to field.  If the reply_to field matches one
+        # of the indices in the map below, we know the matching
+        # waiting queue.  If it does not match and is None, that means
+        # that it is the first message in a message sequence.  If it
+        # does not match and is not None, there must be some error.
+        # (@see
+        # waldoExecutingEvent._ExecutingEventContext.to_reply_with_uuid.)
+        self.message_listening_queues_map = {}
+
         
         
     def _lock(self):
@@ -253,6 +285,8 @@ class LockedActiveEvent(object):
         sentinel into the threadsafe queue indicating that the event
         has been rolled back and to not proceed further.
         '''
+        util.logger_warn('Still must add in the message waiting queues as well.')
+        
         for subscribed_to_element in self.other_endpoints_contacted.values():
             for res_queue in subscribed_to_element.result_queues:
                 res_queue.put(_BackoutBeforeEndpointCallResult())
@@ -299,6 +333,58 @@ class LockedActiveEvent(object):
         '''
         self._unlock()
 
+    def issue_partner_sequence_block_call(
+        self,ctx,func_name,threadsafe_unblock_queue, first_msg):
+        '''
+        @param {String or None} func_name --- When func_name is None,
+        then sending to the other side the message that we finished
+        performing the requested block.  In this case, we do not need
+        to add result_queue to waiting queues.
+
+        @param {bool} first_msg --- True if this is the first message
+        in a sequence that we're sending.  Necessary so that we can
+        tell whether or not to force sending sequence local data.
+
+        The local endpoint is requesting its partner to call some
+        sequence block.
+        '''
+        partner_call_requested = False
+        self._lock()
+
+        if self.state == self.STATE_RUNNING:
+            partner_call_requested = True
+            self.partner_contacted = True
+
+            # code is listening on threadsafe result_queue.  when we
+            # receive a response, put it inside of the result queue.
+            # put result queue in map so that can demultiplex messages
+            # from partner to determine which result queue is finished
+            reply_with_uuid = util.generate_uuid()
+
+            if threadsafe_unblock_queue != None:
+                # may get None for result queue for the last message
+                # sequence block requested.  It does not need to await
+                # a response.
+                self.message_listening_queues_map[
+                    reply_with_uuid] = threadsafe_unblock_queue
+
+            # here, the local endpoint uses the connection object to
+            # actually send the message.
+            self.event_parent.local_endpoint._send_partner_message_sequence_block_request(
+                func_name, self.uuid, reply_with_uuid,
+                ctx.to_reply_with_uuid, self,
+                # sending sequence_local_store so that can determine
+                # deltas in sequence local state made from this call.
+                # do not need to add global store, because
+                # self.local_endpoint already has a copy of it.
+                ctx.sequence_local_store,
+                first_msg)
+            
+        self._unlock()
+        return partner_call_requested
+
+        
+        
 
     def issue_endpoint_object_call(
         self,endpoint_calling,func_name,result_queue,*args):

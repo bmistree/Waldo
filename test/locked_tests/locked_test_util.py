@@ -17,6 +17,11 @@ from waldo.lib import Waldo
 
 from waldo.lib.waldoLockedVariables import LockedNumberVariable, LockedTextVariable
 from waldo.lib.waldoLockedVariables import LockedTrueFalseVariable
+from waldo.lib.waldoConnectionObj import _WaldoSameHostConnectionObject
+
+
+class DummyConnectionObj(_WaldoSameHostConnectionObject):
+    pass
 
 
 class DummyEndpoint(_Endpoint):
@@ -29,7 +34,7 @@ class DummyEndpoint(_Endpoint):
             host_uuid = generate_uuid()
             
         glob_var_store = _VariableStore(host_uuid)
-        
+
         self.end_global_number_var_name = 'numero'
         glob_var_store.add_var(
             self.end_global_number_var_name,
