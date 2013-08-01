@@ -194,7 +194,7 @@ class _ReceiveRequestBackoutAction(_Action):
             # request to backout an event.  However, the first backout
             # has already removed the the active event from the active
             # event map.
-             return
+            return
 
         skip_partner = False
         if self.requesting_endpoint == util.PARTNER_ENDPOINT_SENTINEL:
@@ -250,6 +250,7 @@ class _ReceiveEndpointCallAction(_Action):
         try:
             act_event = act_evt_map.get_or_create_endpoint_called_event(
                 self.endpoint_making_call,self.event_uuid,self.result_queue)
+            
         except util.StoppedException:
             self.result_queue.put(
                 waldoCallResults._StopAlreadyCalledEndpointCallResult())

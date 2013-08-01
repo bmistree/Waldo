@@ -387,3 +387,26 @@ class LockedActiveEvent(object):
         self.second_phase_commit()
 
         
+    def forward_backout_request_and_backout_self(
+        self,skip_partner=False,already_backed_out=False,stop_request=False):
+        '''
+        @param {bool} skip_partner --- @see forward_commit_request
+
+        @param {bool} already_backed_out --- Caller has already backed
+        out the commit through commit manager, and is calling this
+        function primarily to forward the backout message.  No need to
+        do so again inside of function.
+
+        @param {bool} stop_request --- True if this backout is a
+        product of a stop request.  False otherwise.
+        
+        When this is called, we want to disable all further additions
+        to self.subscribed_to and self.message_sent.  (Ie, after we
+        have requested to backout, we should not execute any further
+        endpoint object calls or request partner to do any additional
+        work for this event.)
+        '''
+        # FIXME: may be needlessly forwarding backouts to partners and
+        # back to the endpoints that requested us to back out.
+        self.backout(None)
+

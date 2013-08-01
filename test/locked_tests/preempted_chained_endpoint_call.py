@@ -138,19 +138,19 @@ def run_test():
     # create event for endpoint call
     chained_endpoint_event_a = endpoint_a._act_event_map.create_root_event()
     preempting_endpoint_event_a = endpoint_a._act_event_map.create_root_event()
-    
+
     if chained_endpoint_event_a.uuid > preempting_endpoint_event_a.uuid:
         tmp = preempting_endpoint_event_a
         preempting_endpoint_event_a = chained_endpoint_event_a
         chained_endpoint_event_a = tmp
         
-
-    # start chained ednpoint call
+    # start chained endpoint call
     chained_ctx_a = create_context(endpoint_a)
     num_var_a.get_val(chained_endpoint_event_a)
     # perform endpoint call on endpoint b + c
     val = chained_ctx_a.hide_endpoint_call(
-        chained_endpoint_event_a,chained_ctx_a,endpoint_b,'endpoint_middle_func',endpoint_c)
+        chained_endpoint_event_a,chained_ctx_a,endpoint_b,
+        'endpoint_middle_func',endpoint_c)
     
     if val != DATA_INIT_VAL:
         print '\nIncorrect value from other endpoint\n'
@@ -159,7 +159,7 @@ def run_test():
     # perform preempting write on a's variable
     write_ctx_a = create_context(endpoint_a)
     num_var_a.set_val(preempting_endpoint_event_a,30)
-
+    
     # attempt to commit the chained event...should fail
     chained_endpoint_event_a.begin_first_phase_commit()
     call_result = chained_endpoint_event_a.event_parent.event_complete_queue.get()
@@ -199,6 +199,8 @@ def run_test():
         return False
 
     return True
+
+
 
 
 if __name__ == '__main__':

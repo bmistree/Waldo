@@ -95,8 +95,7 @@ class EventParent(object):
         if partner_contacted:
             self.local_endpoint._forward_complete_commit_request_partner(self.uuid)
 
-        
-        
+            
     def rollback(
         self,backout_requester_endpoint_uuid,
         same_host_endpoints_contacted_dict,partner_contacted):
@@ -186,8 +185,6 @@ class RootEventParent(EventParent):
         
         self.event.second_phase_commit()
 
-
-        
     def rollback(
         self,backout_requester_endpoint_uuid,other_endpoints_contacted,
         partner_contacted):
@@ -199,7 +196,8 @@ class RootEventParent(EventParent):
         for subscribed_elements_to_rollback in other_endpoints_contacted.values():
             endpoint_to_rollback = subscribed_elements_to_rollback.endpoint_object
             if endpoint_to_rollback._uuid != backout_requester_endpoint_uuid:
-                endpoint_to_rollback._receive_request_backout(self.uuid,self.local_endpoint)
+                endpoint_to_rollback._receive_request_backout(
+                    self.uuid,self.local_endpoint)
 
         # tell partner to backout its changes too
         if (partner_contacted and
@@ -246,6 +244,7 @@ class PartnerEventParent(EventParent):
     
 class EndpointEventParent(EventParent):
     def __init__(self,uuid,parent_endpoint,local_endpoint,result_queue):
+        
         self.uuid = uuid
         self.parent_endpoint = parent_endpoint
         self.local_endpoint = local_endpoint
