@@ -60,7 +60,7 @@ class WaitingElement(object):
 
     
 class WaldoLockedObj(object):
-    def __init__(self,data_wrapper_constructor, host_uuid,peered,init_val):
+    def __init__(self,data_wrapper_constructor,host_uuid,peered,init_val):
         '''
         @param {DataWrapper object} --- Used to store dirty values.
         For value types, can just use ValueTypeDataWrapper.  For

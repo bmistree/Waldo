@@ -18,11 +18,11 @@ class LockedTrueFalseVariable(LockedValueVariable):
     pass
 
 
-class WaldoLockedMap(WaldoLockedContainer):
+class LockedMapVariable(WaldoLockedContainer):
     def __init__(self,host_uuid,peered,init_val):
-        super(WaldoLockedMap,self).__init__(
+        super(LockedMapVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
-    
+
     def add_key(self,active_event,key_added,new_val):
         '''
         Map specific
@@ -30,10 +30,10 @@ class WaldoLockedMap(WaldoLockedContainer):
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.val[key_added] = new_val
 
-class WaldoLockedList(WaldoLockedContainer):
+class LockedListVariable(WaldoLockedContainer):
 
     def __init__(self,host_uuid,peered,init_val):
-        super(WaldoLockedMap,self).__init__(
+        super(LockedListVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
     
     def insert_val(self,active_event,where_to_insert,new_val):

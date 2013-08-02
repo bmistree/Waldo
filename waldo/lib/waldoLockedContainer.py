@@ -1,12 +1,6 @@
 from waldoLockedObj import WaldoLockedObj
 
 class WaldoLockedContainer(WaldoLockedObj):
-
-    def __init__(self,host_uuid,peered,init_val):
-        '''
-        '''
-        super(WaldoLockedContainer,self).__init__(host_uuid,peered,init_val)
-
         
     def get_val(self,active_event):
         util.logger_assert('Cannot call get val on a container object')
