@@ -186,7 +186,7 @@ while True:  # FIXME: currently using infinite retry
     try:
         _to_return = self.%s(_root_event,_ctx %s,[])
     except %s:
-        pass
+        continue
 
     # try committing root event
     _root_event.request_commit()
