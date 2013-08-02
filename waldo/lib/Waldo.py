@@ -288,7 +288,7 @@ def stop():
         return
 
 
-def set_default_timeout(timeout_period):
+def set_default_partner_timeout(timeout_period):
     '''
     Sets the default timeout period for connections between endpoints. 
     When a heartbeat from a partner endpoint is not received within the

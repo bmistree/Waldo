@@ -35,7 +35,7 @@ def run_test():
     '''
     acceptor_process = Process(target=spawn_acceptor,args=())
     Waldo.set_default_heartbeat_period(1)
-    Waldo.set_default_timeout(3)
+    Waldo.set_default_partner_timeout(3)
     acceptor_process.start()
     time.sleep(KILL_WAIT_TIME)
     connector = Waldo.tcp_connect(Ping,HOST,PORT)
