@@ -1,7 +1,6 @@
 import threading
 import util
 
-
 def gte_uuid(uuida,uuidb):
     '''
     Returns true if uuida is greater than or equal to uuidb.  That is,
@@ -17,23 +16,16 @@ def gte_uuid_key(uuida):
     return uuida
 
 
-# FIXME: may want to have different data wrappers depending on whether
-# value being wrapped is a value type or a reference type.
-class DataWrapper(object):
-    def __init__(self,val):
-        self.val = val
-    def write(self,val):
-        self.val = val
-
 class WaitingElement(object):
-    def __init__(self,event,read):
+    def __init__(self,event,read,data_wrapper_constructor):
         '''
         @param {bool} read --- True if the element that is waiting is
         waiting on a read lock (not a write lock).
         '''
         self.event = event
         self.read = read
-
+        self.data_wrapper_consructor = data_wrapper_constructor
+        
         # when add a waiting element, that waiting element's read or
         # write blocks.  The way that it blocks is by listening at a
         # threadsafe queue.  This is that queue.
@@ -62,20 +54,25 @@ class WaitingElement(object):
             # write over it anyways).  Add a mechanism for that?
             
             # update dirty val with value asked to write with
-            locked_obj.dirty_val = DataWrapper(locked_obj.val.val)
+            locked_obj.dirty_val = self.data_wrapper_constructor(locked_obj.val.val)
             self.queue.put(locked_obj.dirty_val)
     
 
     
 class WaldoLockedObj(object):
-    def __init__(self,host_uuid,peered,init_val):
-
+    def __init__(self,data_wrapper_constructor, host_uuid,peered,init_val):
+        '''
+        @param {DataWrapper object} --- Used to store dirty values.
+        For value types, can just use ValueTypeDataWrapper.  For
+        reference types, should use ReferenceTypeDataWrpper.
+        '''
+        self.data_wrapper_constructor = data_wrapper_constructor
         self.uuid = util.generate_uuid()
         
         self.host_uuid = host_uuid
         self.peered = peered
 
-        self.val = DataWrapper(init_val)
+        self.val = self.data_wrapper_constructor(init_val)
         self.dirty_val = None
         
         # If write_lock_holder is not None, then the only element in
@@ -208,7 +205,8 @@ class WaldoLockedObj(object):
         # Condition 2c + 3
             
         # create a waiting read element
-        waiting_element = WaitingElement(active_event,True)
+        waiting_element = WaitingElement(
+            active_event,True,self.data_wrapper_constructor)
         
         self.waiting_events[active_event.uuid] = waiting_element
         self._unlock()
@@ -247,7 +245,7 @@ class WaldoLockedObj(object):
         # case 1 above
         if ((self.write_lock_holder is None) and
             (len(self.read_lock_holders) == 0)):
-            self.dirty_val = DataWrapper(self.val)
+            self.dirty_val = self.data_wrapper_constructor(self.val)
             self.write_lock_holder = active_event
             self.read_lock_holders[active_event.uuid] = active_event
             to_return = self.dirty_val
@@ -263,14 +261,15 @@ class WaldoLockedObj(object):
                 self.read_lock_holders[active_event.uuid] = active_event
                 self.write_lock_holder = active_event
 
-                self.dirty_val = DataWrapper(self.val)
+                self.dirty_val = self.data_wrapper_constructor(self.val)
                 to_return = self.dirty_val
                 self._unlock()
                 return to_return
 
 
         # case 3: add to wait queue and wait
-        write_waiting_event = WaitingElement(active_event,False)
+        write_waiting_event = WaitingElement(
+            active_event,False,self.data_wrapper_constructor)
         self._unlock()
         return write_waiting_event.get()
         
