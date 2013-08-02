@@ -16,6 +16,11 @@ def gte_uuid_key(uuida):
     '''
     return uuida
     
+class DataWrapper(object):
+    def __init__(self,val):
+        self.val = val
+    def write(self,val):
+        self.val = val
 
 class WaitingElement(object):
     def __init__(self,event,read,val_to_write=None):
@@ -54,13 +59,14 @@ class WaitingElement(object):
         if self.read:
             # read expects updated value returned in queue
             self.queue.put(locked_obj.val)
+
         else:
             # write doesn't require any particular value to be
             # returned in queue.  just that some value is put in
             # queue, which signals to blocked event to continue on.
 
             # update dirty val with value asked to write with
-            locked_obj.dirty_val = self.val_to_write
+            locked_obj.dirty_val = DataWrapper(self.val_to_write)
             self.queue.put(None)
     
 
@@ -73,7 +79,7 @@ class WaldoLockedObj(object):
         self.host_uuid = host_uuid
         self.peered = peered
 
-        self.val = init_val
+        self.val = DataWrapper(init_val)
         self.dirty_val = None
         
         # If write_lock_holder is not None, then the only element in
@@ -105,6 +111,104 @@ class WaldoLockedObj(object):
     def _unlock(self):
         self._mutex.release()
 
+    def acquire_read_lock(self,active_event):
+        '''
+        DOES NOT ASSUME ALREADY WITHIN LOCK
+
+        @returns {DataWrapper object}
+
+        Algorithms:
+
+           0) If already holds a write lock on the variable, then
+              return the dirty value associated with event.
+           
+           1) If already holds a read lock on variable, returns the value
+              immediately.
+
+           2) If does not hold a read lock on variable, then attempts
+              to acquire one.  If worked, then return the variable.
+              When attempting to acquire read lock:
+
+                 a) Checks if there is any event holding a write lock.
+                    If there is not, then adds itself to read lock
+                    holder dict.
+              
+                 b) If there is another event holding a write lock,
+                    then check if uuid of the read lock requester is
+                    >= uuid of the write lock.  If it is, then try to
+                    backout the holder of write lock.
+
+                 c) If cannot backout or have a lesser uuid, then
+                    create a waiting event and block while listening
+                    to queue.  (same as #3)
+              
+           3) If did not work, then create a waiting event and a queue
+              and block while listening on that queue.
+        
+        '''
+        self._lock()
+        
+        # check 0 above
+        if ((self.write_lock_holder is not None) and
+            (active_event.uuid == self.write_lock_holder.uuid)):
+            to_return = self.dirty_val
+            self._unlock()
+            return to_return
+
+
+        # also check 1 above
+        if active_event.uuid in self.read_lock_holders:
+            # already allowed to read the variable
+            to_return = self.val
+            self._unlock()
+            return to_return
+
+        # must be careful to add obj to active_event's touched_objs.
+        # That way, if active_event needs to backout, we're guaranteed
+        # that the state we've allocated for accounting the
+        # active_event is cleaned up here.
+        if not self.insert_in_touched_objs(active_event):
+            self._unlock()
+            raise util.BackoutException()
+
+        # Check 2 from above
+        
+        # check 2a
+        if self.write_lock_holder is None:
+            to_return = self.val
+            self.read_lock_holders[active_event.uuid] = active_event
+            self._unlock()
+            return to_return
+
+        # check 2b
+        if gte_uuid(active_event.uuid, self.write_lock_holder.uuid):
+
+            # backout write lock if can
+            if self.write_lock_holder.can_backout_and_hold_lock():
+
+                # actually back out the event
+                self.write_lock_holder.obj_request_backout_and_release_lock()
+                
+                # add active event as read lock holder and return
+                self.dirty_val = None
+                self.write_lock_holder = None
+                self.read_lock_holders = {}
+                self.read_lock_holders[active_event.uuid] = active_event
+                to_return = self.val
+                self._unlock()
+                return to_return
+
+        # Condition 2c + 3
+            
+        # create a waiting read element
+        waiting_element = WaitingElement(active_event,True)
+        
+        self.waiting_events[active_event.uuid] = waiting_element
+        self._unlock()
+
+        return waiting_element.queue.get()
+
+        
     def complete_commit(self,active_event):
         '''
         Both readers and writers can complete commits.  If it's a
@@ -116,7 +220,8 @@ class WaldoLockedObj(object):
         self._lock()
         if ((self.write_lock_holder is not None) and 
             (active_event.uuid == self.write_lock_holder.uuid)):
-            self.val = self.dirty_val
+            self.val.write(self.dirty_val.val)
+            
             self.write_lock_holder = None
             self.read_lock_holders = {}
         else:
@@ -262,7 +367,6 @@ class WaldoLockedObj(object):
             
             return False
 
-        
         # check read locks
         for read_lock_uuid in self.read_lock_holders:
             if not gte_uuid(waiting_event_uuid,read_lock_uuid):
@@ -485,96 +589,8 @@ class WaldoLockedObj(object):
 
 
     def get_val(self,active_event):
-        '''
-        Called when processing an event.
-
-        Algorithms:
-        
-           1) If already holds a read lock on variable, returns the value
-              immediately.
-
-           2) If does not hold a read lock on variable, then attempts
-              to acquire one.  If worked, then return the variable.
-              When attempting to acquire read lock:
-
-                 a) Checks if there is any event holding a write lock.
-                    If there is not, then adds itself to read lock
-                    holder dict.
-              
-                 b) If there is another event holding a write lock,
-                    then check if uuid of the read lock requester is
-                    >= uuid of the write lock.  If it is, then try to
-                    backout the holder of write lock.
-
-                 c) If cannot backout or have a lesser uuid, then
-                    create a waiting event and block while listening
-                    to queue.  (same as #3)
-              
-           3) If did not work, then create a waiting event and a queue
-              and block while listening on that queue.
-
-        '''
-        self._lock()
-
-        # check 1 above
-        if ((self.write_lock_holder is not None) and
-            (active_event.uuid == self.write_lock_holder.uuid)):
-            to_return = self.dirty_val
-            self._unlock()
-            return to_return
-
-        
-        # also check 1 above
-        if active_event.uuid in self.read_lock_holders:
-            # already allowed to read the variable
-            to_return = self.val
-            self._unlock()
-            return to_return
-
-        # must be careful to add obj to active_event's touched_objs.
-        # That way, if active_event needs to backout, we're guaranteed
-        # that the state we've allocated for accounting the
-        # active_event is cleaned up here.
-        if not self.insert_in_touched_objs(active_event):
-            self._unlock()
-            raise util.BackoutException()
-
-        # Check 2 from above
-        
-        # check 2a
-        if self.write_lock_holder is None:
-            to_return = self.val
-            self.read_lock_holders[active_event.uuid] = active_event
-            self._unlock()
-            return to_return
-
-        # check 2b
-        if gte_uuid(active_event.uuid, self.write_lock_holder.uuid):
-
-            # backout write lock if can
-            if self.write_lock_holder.can_backout_and_hold_lock():
-
-                # actually back out the event
-                self.write_lock_holder.obj_request_backout_and_release_lock()
-                
-                # add active event as read lock holder and return
-                self.dirty_val = None
-                self.write_lock_holder = None
-                self.read_lock_holders = {}
-                self.read_lock_holders[active_event.uuid] = active_event
-                to_return = self.val
-                self._unlock()
-                return to_return
-
-        # Condition 2c + 3
-            
-        # create a waiting read element
-        waiting_element = WaitingElement(active_event,True)
-        
-        self.waiting_events[active_event.uuid] = waiting_element
-        self._unlock()
-        return waiting_element.queue.get()
-        
+        data_wrapper = self.acquire_read_lock(active_event)
+        return data_wrapper.val
 
 
     def insert_in_touched_objs(self,active_event):

@@ -209,7 +209,6 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
         self._unlock()
         return keys
 
-
     def contains_key_called(self,invalid_listener,contains_key):
         self._lock()
         self._add_invalid_listener(invalid_listener)

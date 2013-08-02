@@ -83,14 +83,14 @@ def run_test():
     # check that both values were updated
     read_event_a = end_a._act_event_map.create_root_event()
     if num_var_a.get_val(read_event_a) != a_val:
-        print '\nWrite did not go through on a\n'
+        print '\nWrite did not go through on A\n'
         return False
 
     read_event_a.begin_first_phase_commit()
 
     read_event_b = end_b._act_event_map.create_root_event()
     if num_var_b.get_val(read_event_b) != B_VAL:
-        print '\nWrite did not go through on b\n'
+        print '\nWrite did not go through on B\n'
         return False
     read_event_b.begin_first_phase_commit()
 
