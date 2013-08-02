@@ -3,6 +3,7 @@ import util
 from waldoEventSubscribedTo import EventSubscribedTo
 from waldoCallResults import _BackoutBeforeEndpointCallResult
 from waldoCallResults import _SequenceMessageCallResult
+from waldoCallResults import _BackoutBeforeReceiveMessageResult
 
 class LockedActiveEvent(object):
 
@@ -40,7 +41,7 @@ class LockedActiveEvent(object):
         
         self.event_parent = event_parent
 
-                # When an active event sends a message to the partner
+        # When an active event sends a message to the partner
         # endpoint, it blocks until the response.  The way it blocks
         # is by calling get on an empty threadsafe queue.  There are
         # two ways that data get put into the queue.  The first is if
@@ -285,7 +286,9 @@ class LockedActiveEvent(object):
         sentinel into the threadsafe queue indicating that the event
         has been rolled back and to not proceed further.
         '''
-        util.logger_warn('Still must add in the message waiting queues as well.')
+
+        for msg_queue_to_unblock in self.message_listening_queues_map.values():
+            msg_queue_to_unblock.put(_BackoutBeforeReceiveMessageResult())
         
         for subscribed_to_element in self.other_endpoints_contacted.values():
             for res_queue in subscribed_to_element.result_queues:
