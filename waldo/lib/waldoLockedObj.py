@@ -15,7 +15,10 @@ def gte_uuid_key(uuida):
     python.
     '''
     return uuida
-    
+
+
+# FIXME: may want to have different data wrappers depending on whether
+# value being wrapped is a value type or a reference type.
 class DataWrapper(object):
     def __init__(self,val):
         self.val = val
@@ -23,20 +26,14 @@ class DataWrapper(object):
         self.val = val
 
 class WaitingElement(object):
-    def __init__(self,event,read,val_to_write=None):
+    def __init__(self,event,read):
         '''
         @param {bool} read --- True if the element that is waiting is
         waiting on a read lock (not a write lock).
-
-        @param {Anything} val_to_write --- If this waiting element is
-        waiting on performing a write, then this is the value that the
-        waiting element actually wants to write.
         '''
         self.event = event
         self.read = read
 
-        self.val_to_write = val_to_write
-        
         # when add a waiting element, that waiting element's read or
         # write blocks.  The way that it blocks is by listening at a
         # threadsafe queue.  This is that queue.
@@ -59,15 +56,14 @@ class WaitingElement(object):
         if self.read:
             # read expects updated value returned in queue
             self.queue.put(locked_obj.val)
-
         else:
-            # write doesn't require any particular value to be
-            # returned in queue.  just that some value is put in
-            # queue, which signals to blocked event to continue on.
-
+            # FIXME: it may be that we don't want to copy over initial
+            # value when acquiring a lock (eg., if we're just going to
+            # write over it anyways).  Add a mechanism for that?
+            
             # update dirty val with value asked to write with
-            locked_obj.dirty_val = DataWrapper(self.val_to_write)
-            self.queue.put(None)
+            locked_obj.dirty_val = DataWrapper(locked_obj.val.val)
+            self.queue.put(locked_obj.dirty_val)
     
 
     
@@ -110,7 +106,7 @@ class WaldoLockedObj(object):
         self._mutex.acquire()
     def _unlock(self):
         self._mutex.release()
-
+        
     def acquire_read_lock(self,active_event):
         '''
         DOES NOT ASSUME ALREADY WITHIN LOCK
@@ -144,9 +140,20 @@ class WaldoLockedObj(object):
               
            3) If did not work, then create a waiting event and a queue
               and block while listening on that queue.
-        
+
+        Blocks until has acquired.
+              
         '''
         self._lock()
+
+        # must be careful to add obj to active_event's touched_objs.
+        # That way, if active_event needs to backout, we're guaranteed
+        # that the state we've allocated for accounting the
+        # active_event is cleaned up here.
+        if not self.insert_in_touched_objs(active_event):
+            self._unlock()
+            raise util.BackoutException()
+
         
         # check 0 above
         if ((self.write_lock_holder is not None) and
@@ -208,7 +215,66 @@ class WaldoLockedObj(object):
 
         return waiting_element.queue.get()
 
+    def acquire_write_lock(self,active_event):
+        '''
+        0) If already holding a write lock, then return the dirty value
+
+        1) If there are no read or write locks, then just copy the
+           data value and set read and write lock holders for it.
+
+        2) There are existing read and/or write lock holders.  Check
+           if our uuid is larger than their uuids.
         
+        '''
+        self._lock()
+
+        # must be careful to add obj to active_event's touched_objs.
+        # That way, if active_event needs to backout, we're guaranteed
+        # that the state we've allocated for accounting the
+        # active_event is cleaned up here.
+        if not self.insert_in_touched_objs(active_event):
+            self._unlock()
+            raise util.BackoutException()
+
+        
+        # case 0 above
+        if ((self.write_lock_holder is not None) and
+            (active_event.uuid == self.write_lock_holder.uuid)):
+            to_return = self.dirty_val
+            self._unlock()
+            return to_return
+        
+        # case 1 above
+        if ((self.write_lock_holder is None) and
+            (len(self.read_lock_holders) == 0)):
+            self.dirty_val = DataWrapper(self.val)
+            self.write_lock_holder = active_event
+            self.read_lock_holders[active_event.uuid] = active_event
+            to_return = self.dirty_val
+            self._unlock()
+            return to_return
+            
+
+        if self.is_gte_than_lock_holding_events(active_event.uuid):
+            # Stage 2 from above
+            if self.test_and_backout_all(active_event.uuid):
+                # Stage 3 from above
+                # actually update the read/write lock holders
+                self.read_lock_holders[active_event.uuid] = active_event
+                self.write_lock_holder = active_event
+
+                self.dirty_val = DataWrapper(self.val)
+                to_return = self.dirty_val
+                self._unlock()
+                return to_return
+
+
+        # case 3: add to wait queue and wait
+        write_waiting_event = WaitingElement(active_event,False)
+        self._unlock()
+        return write_waiting_event.get()
+        
+    
     def complete_commit(self,active_event):
         '''
         Both readers and writers can complete commits.  If it's a
@@ -441,34 +507,10 @@ class WaldoLockedObj(object):
     def set_val(self,active_event,new_val):
         '''
         Called as an active event runs code.
-
-           FIXME: Lots of overhead to this.  Sort list of waiting
-           events, etc.
-        
-           * Wrap the write event into a new waiting event and call
-             try_next.
-           * Get on threadsafe listening queue for value
         '''
-        write_waiting_event = WaitingElement(active_event,False,new_val)
-        self._lock()
-        
-        # must be careful to add obj to active_event's touched_objs.
-        # That way, if active_event needs to backout, we're guaranteed
-        # that the state we've allocated for accounting the
-        # active_event is cleaned up here.
-        if not self.insert_in_touched_objs(active_event):
-            self._unlock()
-            raise util.BackoutException()
+        to_write_on = self.acquire_write_lock(active_event)
+        to_write_on.val = new_val
 
-
-        self.waiting_events[active_event.uuid] = write_waiting_event
-        self._unlock()
-
-        self.try_next()
-
-        # block on the write of this value
-        write_waiting_event.queue.get()
-        return
 
     
     def try_schedule_write_waiting_event(self,waiting_event):
@@ -493,7 +535,6 @@ class WaldoLockedObj(object):
              and self.read_lock_holders.  Also, unjams
              waiting_event's queue.
 
-             
         @param {Waiting Event object} --- Should be 
         
         @returns {bool} --- True if could successfully schedule the
@@ -585,7 +626,6 @@ class WaldoLockedObj(object):
 
         self.in_try_next = False
         self._unlock()
-
 
 
     def get_val(self,active_event):
