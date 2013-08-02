@@ -10,7 +10,7 @@ from waldo.lib import Waldo
 from network_exception_on_call_test_v4 import Ping, Pong
 from multiprocessing import Process
 
-HOST = ''
+HOST = '127.0.0.1'
 PORT = 7779
 KILL_WAIT_TIME = .5
 TIMEOUT_DETECT_TIME = 6 # should be enough time for network exception to be

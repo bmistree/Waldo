@@ -10,7 +10,7 @@ from waldo.lib import Waldo
 from network_exception_mid_sequence_test_v4 import Ping, Pong
 from multiprocessing import Process
 
-HOST = ''
+HOST = '127.0.0.1'
 PORT = 7778
 SLEEP_TIME = .5
 
