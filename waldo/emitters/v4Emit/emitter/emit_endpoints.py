@@ -636,6 +636,13 @@ while True:  # FIXME: currently using infinite retry
         _to_return = self.%s(_root_event,_ctx %s,%s)
     except %s:
         pass
+    except %s: # NetworkExceptions should be backed out
+        _root_event.forward_backout_request_and_backout_self(skip_partner=True)
+        raise
+    except: # ApplicationExceptions should be backed out and the partner should be
+            # notified
+        _root_event.forward_backout_request_and_backout_self()
+        raise
 
     # try committing root event
     _root_event.request_commit()
@@ -653,6 +660,7 @@ while True:  # FIXME: currently using infinite retry
        comma_sep_arg_names,
        str(list_return_external_positions),
        emit_utils.library_transform('BackoutException'),
+       emit_utils.library_transform('NetworkException'),
        emit_utils.library_transform('CompleteRootCallResult'),
        emit_utils.library_transform('NetworkFailureCallResult'),
        emit_utils.library_transform('StopRootCallResult'),
@@ -947,7 +955,7 @@ else:
        issue_call_is_first_txt,
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
        emit_utils.library_transform('BackoutException'),
-       emit_utils.library_transform('BackoutDueToNetworkFailure'),
+       emit_utils.library_transform('NetworkFailureCallResult'),
        emit_utils.library_transform('NetworkException')
        )
 

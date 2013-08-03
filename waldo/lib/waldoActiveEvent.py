@@ -614,8 +614,6 @@ class _ActiveEvent(_InvalidationListener):
             for res_queue in res_queues_array:
                 if stop_request:
                     queue_feeder = waldoCallResults._StopAlreadyCalledEndpointCallResult()
-                elif reason == NETWORK:
-                    queue_feeder = waldoCallResults._BackoutDueToNetworkFailure()
                 else:
                     queue_feeder = waldoCallResults._BackoutBeforeReceiveMessageResult()
                 res_queue.put(queue_feeder)
@@ -624,8 +622,6 @@ class _ActiveEvent(_InvalidationListener):
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
             if stop_request:
                 queue_feeder = waldoCallResults._StopAlreadyCalledEndpointCallResult()
-            elif reason == NETWORK:
-                queue_feeder = waldoCallResults._BackoutDueToNetworkFailure()
             else:
                 queue_feeder = waldoCallResults._BackoutBeforeReceiveMessageResult()
             message_listening_queue.put(queue_feeder)
@@ -1123,26 +1119,35 @@ class RootActiveEvent(_ActiveEvent):
 
     def forward_backout_request_and_backout_self(
         self,skip_partner=False,already_backed_out=False,stop_request=False,
-        reason=BACKOUT,network_failure=False):
+        reason=BACKOUT):
 
         # whenever we backout, we must also reschedule
         super(RootActiveEvent,self).forward_backout_request_and_backout_self(
             skip_partner,already_backed_out,reason=reason)
 
-        if network_failure:
-            # on network failure we don't want to reschedule since restarting
-            # the event will immediately result in a socket exception so we 
-            # notify the queue that we have stopped due to a network failure
-            self.event_complete_queue.put(
-                waldoCallResults._NetworkFailureCallResult())
-        elif stop_request:
+        if stop_request:
             # notify queue that we have stopped and are not processing
             # any more
             self.event_complete_queue.put(
                 waldoCallResults._StopRootCallResult())
         else:
             self.reschedule()
-        
+
+    def put_network_exception(self):
+        '''
+        Places a  NetworkFailureCallResult in the event complete queue to 
+        indicate to the endpoint that the network has failed and a 
+        NetworkException should be raised.
+        '''
+        # Send a NetworkFailureCallResult to each listening queue
+        for reply_with_uuid in self.message_listening_queues_map.keys():
+            message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
+            message_listening_queue.put(
+                waldoCallResults._NetworkFailureCallResult())
+        # but complete the event, because if get is ever called on this queue then the
+        # network exception was caught by the programmer.
+        self.event_complete_queue.put(waldoCallResults._CompleteRootCallResult())
+
         
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,

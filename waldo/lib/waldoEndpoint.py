@@ -254,14 +254,13 @@ class _Endpoint(object):
         '''
         Called by the connection object when a network error is detected.
 
-        Right now this method is very naive. It simply iterates through 
-        all active events and sends each a network exception.
-        
-        In the future it would make more sense to avoid backing out from
-        local events.
+        Sends a message to each active event indicating that the connection
+        with the partner endpoint has failed. Any corresponding endpoint calls
+        waiting on an event involving the partner will throw a NetworkException,
+        which will result in a backout (and be re-raised) if not caught by
+        the programmer.
         '''
-        self._act_event_map.backout_from_all_events(
-            skip_partner=True,reason=waldoActiveEvent.NETWORK)
+        self._act_event_map.inform_events_of_network_failure()
 
     def _receive_msg_from_partner(self,string_msg):
         '''

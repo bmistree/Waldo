@@ -162,11 +162,14 @@ class _ActiveEventMap(object):
         supplied function will lock and release the mutex.
 
         @arg {dict} -- map of argument names to values. Unpacked when passed to
-        the provided function.
+        the provided function. May be None to indicate that there are no args.
         '''
         event_list = [pair[1] for pair in self.map.items()]
         for event in event_list:
-            func(event,**dict)
+            if dict:
+                func(event,**dict)
+            else:
+                func(event)
         
     def _stop_event(self,event,should_skip_partner,reason_for_backout):
         '''
@@ -176,7 +179,7 @@ class _ActiveEventMap(object):
         '''
         event.forward_backout_request_and_backout_self(
             skip_partner=should_skip_partner,reason=reason_for_backout,
-            stop_request=True,network_failure=True) # Set stop_request since 
+            stop_request=True) # Set stop_request since 
 
         self.remove_event_if_exists(event.uuid)
 
@@ -186,6 +189,22 @@ class _ActiveEventMap(object):
         '''
         dict = {'should_skip_partner':skip_partner,'reason_for_backout':reason}
         self._map(self._stop_event,dict)
+
+    def _indicate_network_failure(self,event):
+        '''
+        Indicates to the event that a network failure has occured if it has
+        previously sent or received a message.
+        '''
+        if event.message_sent:
+            event.put_network_exception()
+
+    def inform_events_of_network_failure(self):
+        '''
+        Iterates through each active event in the map and sends it a message
+        indicating that a network failure has occured if it has previously
+        sent a message.
+        '''
+        self._map(self._indicate_network_failure, None)
 
     def _lock(self):
         self._mutex.acquire()
