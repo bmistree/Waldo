@@ -15,6 +15,7 @@ import locked_tests.preemption_test
 import locked_tests.read_read_test
 import locked_tests.partner_no_conflict_test
 import locked_tests.list_map_write_no_conflict
+import locked_tests.list_map_write_conflict
 
 def run_lib_tests():
     to_run = [
@@ -26,6 +27,7 @@ def run_lib_tests():
         ('Concurrent reads', locked_tests.read_read_test.run_test),
         ('Partner writes', locked_tests.partner_no_conflict_test.run_test),
         ('Non-conflicting writes to list and map', locked_tests.list_map_write_no_conflict.run_test),
+        ('Conflicting writes to list and map', locked_tests.list_map_write_conflict.run_test),
         ]
     run_tests(to_run)
 
