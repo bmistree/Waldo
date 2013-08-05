@@ -76,7 +76,7 @@ def get_certificate(CN, host, port, key=None):
   return waldo.lib.WaldoSSL.secure.get_certificate(CN, host, port, key)
 
 def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time=None, end_time=None, cert_start = None, cert_end = None, authentication_function=None):
-  keymanager.start_ca(generate, certfile, keyfile, host, port,start_time, end_time, cert_start, cert_end, authentication_function)
+  waldo.lib.WaldoSSL.keymanager.start_ca(generate, certfile, keyfile, host, port,start_time, end_time, cert_start, cert_end, authentication_function)
 
 def get_ca_endpoint(host, port):
   return waldo.lib.WaldoSSL.secure.connect_to_ca(host, port)
