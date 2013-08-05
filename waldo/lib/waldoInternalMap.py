@@ -1,17 +1,17 @@
-import waldoReferenceContainerBase
-import waldoReferenceBase
-import waldoExecutingEvent
+import waldo.lib.waldoReferenceContainerBase as waldoReferenceContainerBase
+import waldo.lib.waldoReferenceBase as waldoReferenceBase
+import waldo.lib.waldoExecutingEvent
 
-from waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
-from waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
-from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
-from waldoReferenceContainerBase import is_reference_container
+from waldo.lib.waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
+from waldo.lib.waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
+from waldo.lib.waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
+from waldo.lib.waldoReferenceContainerBase import is_reference_container
 
 import numbers
-import util
+import waldo.lib.util as util
 
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
-from waldoObj import WaldoObj
+from waldo.lib.waldoObj import WaldoObj
 
 def _map_get_write_key_incorporate_deltas(container_written_action):
     if container_written_action.HasField('write_key_text'):
@@ -86,8 +86,8 @@ def _map_de_waldoify(map_obj,invalid_listener):
     to_return = {}
 
     for key in keys:
-        key = waldoExecutingEvent.de_waldoify(key,invalid_listener)
-        val = waldoExecutingEvent.de_waldoify(
+        key = waldo.lib.waldoExecutingEvent.de_waldoify(key,invalid_listener)
+        val = waldo.lib.waldoExecutingEvent.de_waldoify(
             map_obj.get_val_on_key(invalid_listener,key),invalid_listener)
 
         to_return[key] = val

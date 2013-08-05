@@ -5,19 +5,18 @@ deps_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','deps')
 sys.path.insert(0,deps_dir)
 
-import util
-import waldoConnectionObj
-from util import Queue
-import wVariables
-import waldoCallResults
-import waldoEndpoint
-import waldoExecutingEvent
-import waldoVariableStore
-import shim.get_math_endpoint
-import waldoReferenceBase
-import WaldoSSL
-from WaldoSSL import secure
-from WaldoSSL import keymanager
+import waldo.lib.util as util
+import waldo.lib.waldoConnectionObj as waldoConnectionObj
+from waldo.lib.util import Queue
+import waldo.lib.wVariables as wVariables
+import waldo.lib.waldoCallResults as waldoCallResults
+import waldo.lib.waldoEndpoint as waldoEndpoint
+import waldo.lib.waldoExecutingEvent as waldoExecutingEvent
+import waldo.lib.waldoVariableStore as waldoVariableStore
+import waldo.lib.shim.get_math_endpoint as get_math_endpoint
+import waldo.lib.waldoReferenceBase as waldoReferenceBase
+import waldo.lib.WaldoSSL.secure
+import waldo.lib.WaldoSSL.keymanager
 import shutil
 
 StoppedException = util.StoppedException
@@ -71,16 +70,16 @@ def uuid():
   return _host_uuid
 
 def get_key():
-  return secure.get_key()
+  return waldo.lib.WaldoSSL.secure.get_key()
 
 def get_certificate(CN, host, port, key=None):
-  return secure.get_certificate(CN, host, port, key)
+  return waldo.lib.WaldoSSL.secure.get_certificate(CN, host, port, key)
 
 def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time=None, end_time=None, cert_start = None, cert_end = None, authentication_function=None):
   keymanager.start_ca(generate, certfile, keyfile, host, port,start_time, end_time, cert_start, cert_end, authentication_function)
 
 def get_ca_endpoint(host, port):
-  return secure.connect_to_ca(host, port)
+  return waldo.lib.WaldoSSL.secure.connect_to_ca(host, port)
 
 def generate_request(CN, key):
     import OpenSSL
@@ -93,7 +92,7 @@ def generate_request(CN, key):
     return req
 
 def get_certificate(client, CN, key):
-    req = secure.generate_request(CN, key)
+    req = waldo.lib.WaldoSSL.secure.generate_request(CN, key)
     cert = client.req_to_cert(req)
     import OpenSSL
     from OpenSSL import crypto
@@ -101,7 +100,7 @@ def get_certificate(client, CN, key):
     return cert
 
 def add_ca_to_list(ca_file, host, port):
-  ca_cert = secure.get_cacert(host, port)
+  ca_cert = waldo.lib.WaldoSSL.secure.get_cacert(host, port)
   f = open("temp.pem", "w+")
   f.write(ca_cert)
   f.close()
@@ -426,7 +425,7 @@ def math_endpoint_lib():
       missing from the Waldo langauge.
 
     '''
-    return shim.get_math_endpoint.math_endpoint(no_partner_create)
+    return get_math_endpoint.math_endpoint(no_partner_create)
 
 def no_partner_create(constructor,*args):
     '''

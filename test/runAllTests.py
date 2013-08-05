@@ -108,7 +108,6 @@ def run_emit_tests():
     call_make_in_emit_test_folder()
     call_make_in_security_test_folder()
 
-
     import emit_tests.set_get_value_test
     import emit_tests.binary_operator_tests
     import emit_tests.tuple_return_tests
@@ -145,8 +144,8 @@ def run_emit_tests():
     import emit_tests.foreign_func_in_sequence
     import emit_tests.id_method
 
-    import security_tests.symmetric_test
-    import security_tests.symmetric_test_no_key
+    # import security_tests.symmetric_test
+    # import security_tests.symmetric_test_no_key
     import security_tests.two_side_stop
 
 
@@ -270,16 +269,14 @@ def run_emit_tests():
 
     security_tests_to_run = [
 
-        ('Test secure symmetric compile',
-         security_tests.symmetric_test.run_test),
+        # ('Test secure symmetric compile',
+        #  security_tests.symmetric_test.run_test),
 
-        ('Tests to ensure secure stop message sent to other side',
-          security_tests.two_side_stop.run_test),
+        # ('Tests to ensure secure stop message sent to other side',
+        #   security_tests.two_side_stop.run_test),
 
-        ('Test secure no key symmetric compile ',
-         security_tests.symmetric_test_no_key.run_test)
-
-        
+        # ('Test secure no key symmetric compile ',
+        #  security_tests.symmetric_test_no_key.run_test),
 
         ]
 

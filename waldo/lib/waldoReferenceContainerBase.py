@@ -1,10 +1,10 @@
-import waldoReferenceBase
-import util
+import waldo.lib.waldoReferenceBase as waldoReferenceBase
+import waldo.lib.util as util
 from abc import abstractmethod
 import itertools
-import singleThreadReference
+import waldo.lib.singleThreadReference as singleThreadReference
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
-from waldoObj import WaldoObj
+from waldo.lib.waldoObj import WaldoObj
 
 def is_reference_container(to_check):
     return (isinstance(to_check,_ReferenceContainer) or

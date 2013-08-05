@@ -1,13 +1,16 @@
 import threading
 import waldo.lib.waldoCallResults as waldoCallResults
-import waldoReferenceBase
-import waldoReferenceContainerBase
+import waldo.lib.waldoReferenceBase as waldoReferenceBase
+import waldo.lib.waldoReferenceContainerBase as waldoReferenceContainerBase
+
 import numbers
-import wVariables
-import util
-import waldoEndpoint, waldoInternalMap, waldoInternalList
-from util import Queue
-from waldoObj import WaldoObj
+
+import waldo.lib.util as util
+import waldo.lib.waldoEndpoint as waldoEdnpoint
+import waldo.lib.wVariables
+import waldo.lib.waldoInternalMap as waldoInternalMap
+from waldo.lib.util import Queue
+from waldo.lib.waldoObj import WaldoObj
 
 
 class _ExecutingEventContext(object):
@@ -142,7 +145,7 @@ class _ExecutingEventContext(object):
         of the variable.  Don't wait for commit or anything else.
         '''
 
-        if isinstance(val,wVariables._WaldoExternalValueType):
+        if isinstance(val,waldo.lib.wVariables._WaldoExternalValueType):
             return val.get_val(active_event).get_val(active_event)
         elif isinstance(val,WaldoObj):
             return val.get_val(active_event)
@@ -230,17 +233,17 @@ class _ExecutingEventContext(object):
             if util.is_string(val):
                 # not using isinstance here because python 3 and python
                 # 2.7 have different ways of testing for string.
-                constructor = wVariables.WaldoTextVariable
+                constructor = waldo.lib.wVariables.WaldoTextVariable
             elif isinstance(val,numbers.Number):
-                constructor = wVariables.WaldoNumVariable
+                constructor = waldo.lib.wVariables.WaldoNumVariable
             elif isinstance(val,bool):
-                constructor = wVariables.WaldoTrueFalseVariable
+                constructor = waldo.lib.wVariables.WaldoTrueFalseVariable
             elif isinstance(val,dict):
-                constructor = wVariables.WaldoMapVariable
+                constructor = waldo.lib.wVariables.WaldoMapVariable
             elif isinstance(val,list):
-                constructor = wVariables.WaldoListVariable
+                constructor = waldo.lib.wVariables.WaldoListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
-                constructor = wVariables.WaldoEndpointVariable
+                constructor = waldo.lib.wVariables.WaldoEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
                 # checks if is function
@@ -256,17 +259,17 @@ class _ExecutingEventContext(object):
             if util.is_string(val):
                 # not using isinstance here because python 3 and python
                 # 2.7 have different ways of testing for string.
-                constructor = wVariables.WaldoSingleThreadTextVariable
+                constructor = waldo.lib.wVariables.WaldoSingleThreadTextVariable
             elif isinstance(val,numbers.Number):
-                constructor = wVariables.WaldoSingleThreadNumVariable
+                constructor = waldo.lib.wVariables.WaldoSingleThreadNumVariable
             elif isinstance(val,bool):
-                constructor = wVariables.WaldoSingleThreadTrueFalseVariable
+                constructor = waldo.lib.wVariables.WaldoSingleThreadTrueFalseVariable
             elif isinstance(val,dict):
-                constructor = wVariables.WaldoSingleThreadMapVariable
+                constructor = waldo.lib.wVariables.WaldoSingleThreadMapVariable
             elif isinstance(val,list):
-                constructor = wVariables.WaldoSingleThreadListVariable
+                constructor = waldo.lib.wVariables.WaldoSingleThreadListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
-                constructor = wVariables.WaldoSingleThreadEndpointVariable
+                constructor = waldo.lib.wVariables.WaldoSingleThreadEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
                 # checks if is function
@@ -294,7 +297,7 @@ class _ExecutingEventContext(object):
         are and are not external) to populate their ext_args_array.
         This is passed in in this function.
         '''
-        if isinstance(val,wVariables.WaldoFunctionVariable):
+        if isinstance(val,waldo.lib.wVariables.WaldoFunctionVariable):
             if force_copy:
                 # means that it was a WaldoVariable: just call its copy
                 # method
@@ -310,7 +313,7 @@ class _ExecutingEventContext(object):
                 'incorrect type passed into func_turn_into_waldo_var')
         #### END DEBUG
 
-        waldo_func = wVariables.WaldoFunctionVariable(
+        waldo_func = waldo.lib.wVariables.WaldoFunctionVariable(
             'garbage',
             host_uuid,
             new_peered,
@@ -352,7 +355,7 @@ class _ExecutingEventContext(object):
             active_event.local_endpoint,*call_arg_list)
 
         if isinstance(returned_val,list):
-            return wVariables.WaldoSingleThreadListVariable(
+            return waldo.lib.wVariables.WaldoSingleThreadListVariable(
                 'garbage', # actual name of variable isn't important
                 active_event.local_endpoint._host_uuid,
                 False, # not peered
@@ -360,7 +363,7 @@ class _ExecutingEventContext(object):
                 )
 
         elif isinstance(returned_val,dict):
-            return wVariables.WaldoSingleThreadMapVariable(
+            return waldo.lib.wVariables.WaldoSingleThreadMapVariable(
                 'garbage', # actual name of variable isn't important
                 active_event.local_endpoint._host_uuid,
                 False, # not peered
@@ -465,12 +468,12 @@ class _ExecutingEventContext(object):
 
         raw_key = self.get_val_if_waldo(key,active_event)
 
-        if wVariables.is_non_ext_text_var(lhs):
+        if waldo.lib.wVariables.is_non_ext_text_var(lhs):
             raw_rhs = self.get_val_if_waldo(rhs,active_event)            
             to_overwrite_string = lhs.get_val(active_event)
             to_overwrite_string[raw_key] = raw_rhs
             lhs.write_val(active_event,to_overwrite_string)
-        elif isinstance(lhs,wVariables.WaldoExtTextVariable):
+        elif isinstance(lhs,waldo.lib.wVariables.WaldoExtTextVariable):
             raw_rhs = self.get_val_if_waldo(rhs,active_event)            
             to_overwrite_string = lhs.get_val(active_event).get_val(active_event)
             to_overwrite_string[raw_key] = raw_rhs
@@ -493,10 +496,10 @@ class _ExecutingEventContext(object):
             return to_get_from[raw_key]
 
         # handle text + ext text
-        if wVariables.is_non_ext_text_var(lhs):
+        if waldo.lib.wVariables.is_non_ext_text_var(lhs):
             return to_get_from.get_val(active_event)[raw_key]
 
-        if isinstance(lhs,wVariables.WaldoExtTextVariable):
+        if isinstance(lhs,waldo.lib.wVariables.WaldoExtTextVariable):
             return to_get_from.get_val(active_event).get_val(active_event)[raw_key]
 
         # handle internals containers
@@ -517,13 +520,13 @@ class _ExecutingEventContext(object):
             util.is_string(to_iter_over)):
             return iter(to_iter_over)
 
-        if wVariables.is_non_ext_text_var(to_iter_over):
+        if waldo.lib.wVariables.is_non_ext_text_var(to_iter_over):
             return iter(to_iter_over.get_val(active_event))
 
-        if wVariables.is_non_ext_map_var(to_iter_over):
+        if waldo.lib.wVariables.is_non_ext_map_var(to_iter_over):
             return iter(to_iter_over.get_val(active_event).get_keys(active_event))
 
-        if wVariables.is_non_ext_list_var(to_iter_over):
+        if waldo.lib.wVariables.is_non_ext_list_var(to_iter_over):
             # FIXME: This is an inefficient way of reading all values
             # over list.
             to_return = []
@@ -540,8 +543,8 @@ class _ExecutingEventContext(object):
                 # WaldoList/WaldoMap first.  Note this is unnecessary
                 # for all other for iterations because none of the
                 # others possibly return a WaldoObject to iterate over.
-                if (wVariables.is_non_ext_list_var(to_append) or
-                    wVariables.is_non_ext_map_var(to_append)):
+                if (waldo.lib.wVariables.is_non_ext_list_var(to_append) or
+                    waldo.lib.wVariables.is_non_ext_map_var(to_append)):
                     to_append = to_append.get_val(active_event)
                 
                 to_return.append(to_append)
@@ -561,14 +564,14 @@ class _ExecutingEventContext(object):
             return str(what_to_call_to_text_on)
 
         # strings for waldo variable value types
-        if (wVariables.is_non_ext_text_var(what_to_call_to_text_on) or
-            wVariables.is_non_ext_num_var(what_to_call_to_text_on) or
-            wVariables.is_non_ext_true_false_var(what_to_call_to_text_on)):
+        if (waldo.lib.wVariables.is_non_ext_text_var(what_to_call_to_text_on) or
+            waldo.lib.wVariables.is_non_ext_num_var(what_to_call_to_text_on) or
+            waldo.lib.wVariables.is_non_ext_true_false_var(what_to_call_to_text_on)):
             return str(what_to_call_to_text_on.get_val(active_event))
 
         # strings for reference types
         # lists
-        if wVariables.is_non_ext_list_var(what_to_call_to_text_on):
+        if waldo.lib.wVariables.is_non_ext_list_var(what_to_call_to_text_on):
             to_return_arg = ''
             waldo_internal_list = what_to_call_to_text_on.get_val(active_event)
             # get each element separately from the list and call
@@ -580,7 +583,7 @@ class _ExecutingEventContext(object):
             return '[%s]' % to_return_arg
 
         # maps
-        if wVariables.is_non_ext_map_var(what_to_call_to_text_on):
+        if waldo.lib.wVariables.is_non_ext_map_var(what_to_call_to_text_on):
             to_return_arg = ''
             waldo_internal_map = what_to_call_to_text_on.get_val(active_event)
             # get each element separately from the list and call
@@ -627,12 +630,12 @@ class _ExecutingEventContext(object):
             util.is_string(what_calling_len_on)):
             return len(what_calling_len_on)
 
-        if wVariables.is_non_ext_text_var(what_calling_len_on):
+        if waldo.lib.wVariables.is_non_ext_text_var(what_calling_len_on):
             return len(what_calling_len_on.get_val(active_event))
 
 
-        if (wVariables.is_non_ext_list_var(what_calling_len_on) or
-            wVariables.is_non_ext_map_var(what_calling_len_on)):
+        if (waldo.lib.wVariables.is_non_ext_list_var(what_calling_len_on) or
+            waldo.lib.wVariables.is_non_ext_map_var(what_calling_len_on)):
             return what_calling_len_on.get_val(active_event).get_len(active_event)
 
         util.logger_assert(
@@ -680,14 +683,14 @@ class _ExecutingEventContext(object):
         if util.is_string(rhs):
             return lhs_val in rhs
 
-        elif wVariables.is_non_ext_text_var(rhs):
+        elif waldo.lib.wVariables.is_non_ext_text_var(rhs):
             return lhs_val in rhs.get_val(active_event)
 
-        elif wVariables.is_non_ext_map_var(rhs):
+        elif waldo.lib.wVariables.is_non_ext_map_var(rhs):
             return rhs.get_val(active_event).contains_key_called(
                 active_event,lhs_val)
 
-        elif wVariables.is_non_ext_list_var(rhs):
+        elif waldo.lib.wVariables.is_non_ext_list_var(rhs):
             return rhs.get_val(active_event).contains_val_called(
                 active_event,lhs_val)
 
