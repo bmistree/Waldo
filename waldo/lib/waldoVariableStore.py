@@ -1,6 +1,6 @@
-import util
+import waldo.lib.util as util
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
-import wVariables
+import waldo.lib.wVariables as wVariables
 
 '''
 _VariableStore keeps track of peered data, sequence local data (which

@@ -1,15 +1,15 @@
-import waldoReferenceContainerBase
-import util
-import waldoReferenceBase
-import singleThreadReference
-from waldoReferenceContainerBase import is_reference_container
+import waldo.lib.waldoReferenceContainerBase as waldoReferenceContainerBase
+import waldo.lib.util as util
+import waldo.lib.waldoReferenceBase as waldoReferenceBase
+import waldo.lib.singleThreadReference as singleThreadReference
+from waldo.lib.waldoReferenceContainerBase import is_reference_container
 
-import waldoExecutingEvent
-from waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
-from waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
-from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
+import waldo.lib.waldoExecutingEvent as waldoExecutingEvent
+from waldo.lib.waldoReferenceContainerBase import delete_key_tuple, is_delete_key_tuple
+from waldo.lib.waldoReferenceContainerBase import add_key_tuple, is_add_key_tuple
+from waldo.lib.waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
 import numbers
-from waldoObj import WaldoObj
+from waldo.lib.waldoObj import WaldoObj
 
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 

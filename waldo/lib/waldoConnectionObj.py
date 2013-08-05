@@ -1,5 +1,4 @@
-import util
-from util import Queue
+import waldo.lib.util as util
 import threading
 import thread
 import socket
@@ -49,7 +48,7 @@ class _WaldoSingleSideConnectionObject(_WaldoConnectionObject):
     
 class _WaldoSameHostConnectionObject(_WaldoConnectionObject,threading.Thread):
     def __init__(self):
-        self.queue = Queue.Queue()
+        self.queue = util.Queue.Queue()
 
         self.endpoint_mutex = threading.Lock()
         self.endpoint1 = None

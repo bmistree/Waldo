@@ -1,4 +1,4 @@
-import util
+import waldo.lib.util as util
 from abc import abstractmethod
 
 class _InvalidationListener(object):

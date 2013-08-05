@@ -1,7 +1,7 @@
-import util
-import waldoCallResults
+import waldo.lib.util as util
+import waldo.lib.waldoCallResults as waldoCallResults
 import threading
-import waldoExecutingEvent
+import waldo.lib.waldoExecutingEvent 
 
 
 class _Action(object):
@@ -257,7 +257,7 @@ class _ReceiveEndpointCallAction(_Action):
             return
         
         import waldoVariableStore
-        evt_ctx = waldoExecutingEvent._ExecutingEventContext(
+        evt_ctx = waldo.lib.waldoExecutingEvent._ExecutingEventContext(
             self.local_endpoint._global_var_store,
             # should not have any sequence local data from an endpoint
             # call.
@@ -268,7 +268,7 @@ class _ReceiveEndpointCallAction(_Action):
         # all non-external arguments (including lists,maps, and user
         # structs).
         evt_ctx.set_from_endpoint_true()
-        exec_event = waldoExecutingEvent._ExecutingEvent(
+        exec_event = waldo.lib.waldoExecutingEvent._ExecutingEvent(
             self.to_exec,act_event,evt_ctx,self.result_queue,
             *self.args)
 

@@ -1,14 +1,14 @@
-from waldoReferenceValue import _ReferenceValue
-from waldoInternalList import InternalList, SingleThreadInternalList
-from waldoInternalMap import InternalMap, SingleThreadInternalMap
+from waldo.lib.waldoReferenceValue import _ReferenceValue
+from waldo.lib.waldoInternalList import InternalList, SingleThreadInternalList
+from waldo.lib.waldoInternalMap import InternalMap, SingleThreadInternalMap
 from abc import abstractmethod
-import util
-import waldoReferenceBase
+import waldo.lib.util as util
+import waldo.lib.waldoReferenceBase as waldoReferneceBase
 import numbers
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
-from waldoObj import WaldoObj
+from waldo.lib.waldoObj import WaldoObj
 
-from singleThreadReferenceValue import _SingleThreadReferenceValue
+from waldo.lib.singleThreadReferenceValue import _SingleThreadReferenceValue
 
 class _WaldoSingleThreadVariable(_SingleThreadReferenceValue):
     '''

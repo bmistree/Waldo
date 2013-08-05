@@ -1,4 +1,4 @@
-import waldoReferenceBase
+import waldo.lib.waldoReferenceBase as waldoReferenceBase
 
 
 class _ReferenceValue(waldoReferenceBase._ReferenceBase):

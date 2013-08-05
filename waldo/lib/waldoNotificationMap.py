@@ -1,5 +1,5 @@
 import threading
-import util
+import waldo.lib.util as util
 
 class _NotificationMap(object):
     '''

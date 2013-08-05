@@ -1,8 +1,8 @@
 import util
-import waldoEndpointServiceThread
-import waldoActiveEventMap
-import waldoCallResults
-from util import Queue
+import waldo.lib.waldoEndpointServiceThread as waldoEndpointServiceThread
+import waldo.lib.waldoActiveEventMap as waldoActiveEventMap
+import waldo.lib.waldoCallResults as waldoCallResults
+from waldo.lib.util import Queue
 import threading
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 
