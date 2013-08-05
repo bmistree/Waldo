@@ -1,5 +1,5 @@
 import threading
-import waldoCallResults
+import waldo.lib.waldoCallResults as waldoCallResults
 import waldoReferenceBase
 import waldoReferenceContainerBase
 import numbers
