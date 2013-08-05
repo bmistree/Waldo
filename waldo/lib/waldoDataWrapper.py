@@ -10,6 +10,10 @@ class ValueTypeDataWrapper(DataWrapper):
 
 class ReferenceTypeDataWrapper(DataWrapper):
     def __init__(self,val):
+        if isinstance(val,ReferenceTypeDataWrapper):
+            val = val.val
+
+            
         if isinstance(val,dict):
             self.val = {}
             for key in val:

@@ -3,6 +3,7 @@ from waldoDataWrapper import ValueTypeDataWrapper
 from waldoDataWrapper import ReferenceTypeDataWrapper
 from waldoLockedContainer import WaldoLockedContainer
 import util
+import numbers
 
 def ensure_locked_obj(new_val,host_uuid):
     '''
@@ -49,7 +50,7 @@ class LockedMapVariable(WaldoLockedContainer):
         '''
         Map specific
         '''
-        new_val = ensure_locked_obj(new_val)
+        new_val = ensure_locked_obj(new_val,self.host_uuid)
         
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.val[key_added] = new_val
@@ -64,7 +65,7 @@ class LockedListVariable(WaldoLockedContainer):
         '''
         List specific
         '''
-        new_val = ensure_locked_obj(new_val)
+        new_val = ensure_locked_obj(new_val,self.host_uuid)
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.val.insert(where_to_insert, new_val)
         
@@ -72,6 +73,6 @@ class LockedListVariable(WaldoLockedContainer):
         '''
         List specific
         '''
-        new_val = ensure_locked_obj(new_val)        
+        new_val = ensure_locked_obj(new_val,self.host_uuid)
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.val.append(new_val)
