@@ -135,7 +135,7 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
 
 
     if generate is True:
-        generate_ca_certificate(certfile, keyfile, start_time, end_time)
+        generate_ca_certificate(certfile, keyfile, cert_start, cert_end)
     else:
         load_ca_certificate(certfile, keyfile)
     if host is not None:
