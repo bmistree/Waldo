@@ -2,7 +2,7 @@ import threading, numbers
 import util
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
-from waldoObj import WaldoObj
+from waldo.lib.waldoObj import WaldoObj
 
 
 class _SingleThreadReferenceBase(WaldoObj):

@@ -1,12 +1,11 @@
-from Waldo import _host_uuid
+from waldo.lib.Waldo import _host_uuid
 
 from pysnmp.entity.rfc3413.oneliner import cmdgen,mibvar
 from pysnmp.proto.rfc1902 import Integer
-from waldoInternalMap import InternalMap, _InternalMapVersion, _InternalMapDirtyMapElement
-import waldoReferenceContainerBase
-from wVariables import WaldoMapVariable, _WaldoVariable
-from Waldo import _host_uuid
-from waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
+from waldo.lib.waldoInternalMap import InternalMap, _InternalMapVersion, _InternalMapDirtyMapElement
+import waldo.lib.waldoReferenceContainerBase import waldoReferenceContainerBase
+from waldo.lib.wVariables import WaldoMapVariable, _WaldoVariable
+from waldo.lib.waldoReferenceContainerBase import write_key_tuple, is_write_key_tuple
 
 # pip install pysnmp
 
