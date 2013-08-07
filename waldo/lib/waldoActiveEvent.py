@@ -184,6 +184,13 @@ class _ActiveEvent(_InvalidationListener):
         self.holding_locks_on = []
         self.breakout = False
 
+        # Before we attempt to request a commit after a sequence, we need
+        # to keep track of whether or not the network has failed; if it has
+        # we will not be able to forward a request commit message to our 
+        # partner. This variable is only set to True at runtime if a network
+        # exception is caught during an event.
+        self._network_failure = False
+
 
     def _lock(self):
         self._mutex.acquire()
@@ -236,6 +243,17 @@ class _ActiveEvent(_InvalidationListener):
         #### END DEBUG
 
         self._state = _ActiveEvent.STATE_COMPLETED_COMMIT
+
+    def set_network_failure(self):
+        self._lock()
+        self._network_failure = True
+        self._unlock()
+
+    def get_network_failure(self):
+        self._lock()
+        failure = self._network_failure
+        self._unlock()
+        return failure
 
     def stop(self,skip_partner):
         '''
@@ -442,7 +460,7 @@ class _ActiveEvent(_InvalidationListener):
         self._unlock()
 
         
-        if must_send_update:
+        if must_send_update and not self.get_network_failure():
             # send update message and block until we receive a
             # response
             waiting_queue = Queue.Queue()
@@ -1099,7 +1117,8 @@ class RootActiveEvent(_ActiveEvent):
         # FIXME: there may be instances/topologies where do not have
         # to issue this call.
         self.wait_if_modified_peered()
-        self.forward_commit_request_and_try_holding_commit_on_myself()
+        self.forward_commit_request_and_try_holding_commit_on_myself(
+                skip_partner=self.get_network_failure())
 
     def receive_unsuccessful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid):

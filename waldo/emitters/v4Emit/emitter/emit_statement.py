@@ -103,10 +103,13 @@ def emit_statement(
         exception = statement_node.children[0] 
         identifier = statement_node.children[1]
         catch_body = statement_node.children[2]
+
         statement_txt = ('except ' + '(' + EXCEPTIONS[exception.value] + ')' + 
             ' as ' + identifier.value + ':\n')
         catch_body_txt = emit_statement(catch_body,endpoint_name,ast_root,
             fdep_dict,emit_ctx)
+        if exception.value == 'NetworkException': ### FIXME: change NetworkException to constant
+            catch_body_txt += '_active_event.set_network_failure()'
         statement_txt += emit_utils.indent_str(catch_body_txt)
 
     elif statement_node.label == AST_FINALLY_BLOCK:
