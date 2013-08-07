@@ -139,7 +139,6 @@ class _SingleThreadReferenceBase(WaldoObj):
         '''
         is_value_type = False
         delta = None
-        print "PY SERIALIZE"
         if isinstance(var_data, numbers.Number):
             # can only add a pure number to var store a holder or to
             # an added key

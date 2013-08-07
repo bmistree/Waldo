@@ -375,7 +375,8 @@ class _ReferenceBase(WaldoObj):
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
         if dirty_element.val != new_val:
-            self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
+            oldval, newval = self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
+
             if self.peered:
                 invalid_listener.add_peered_modified()
         self._unlock()
@@ -386,7 +387,10 @@ class _ReferenceBase(WaldoObj):
         '''
         self._lock()
         self._add_invalid_listener(invalid_listener)
+        dirty_element = self._dirty_map[invalid_listener.uuid]
+        print "Changed value at " + str(self) + " from " + str(dirty_element.val) + " to " + str(new_val)        
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
+
         if self.peered:
             invalid_listener.add_peered_modified()
 
@@ -498,7 +502,6 @@ class _DirtyNotifyThread(threading.Thread):
         self.daemon = True
         
     def run(self):
-        print "Notify all subscribers"
         for dirty_map_elem in self.to_notify_list:
             inv_listener = dirty_map_elem.invalidation_listener
             inv_listener.notify_invalidated(self.wld_obj)
@@ -539,8 +542,9 @@ class _DirtyMapElement(object):
 
     def set_has_been_written_to(self,new_val):
         self.version_obj.set_has_been_written_to()
-        print "Changed value at " + str(self) + " from " + str(self.val) + " to " + str(new_val)        
+        old_val = self.val
         self.val = new_val
+        return old_val, self.val
 
     def update_obj_val_and_version(self,w_obj):
         '''
