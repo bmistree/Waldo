@@ -183,10 +183,7 @@ while True:  # FIXME: currently using infinite retry
     # return them....if it were false, might just get back refrences
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
-    try:
-        _to_return = self.%s(_root_event,_ctx %s,[])
-    except %s:
-        pass
+    _to_return = self.%s(_root_event,_ctx %s,[])
 
     # try committing root event
     _root_event.request_commit()
@@ -204,7 +201,6 @@ while True:  # FIXME: currently using infinite retry
            emit_utils.library_transform('VariableStore'),
            lib_util.internal_oncreate_func_call_name('onCreate'),
            comma_sep_arg_names,
-           emit_utils.library_transform('BackoutException'),
            emit_utils.library_transform('CompleteRootCallResult'))
 
     else:
@@ -422,18 +418,40 @@ def %s(self,_active_event,_context%s):
             # Similarly, we must initialize other sequence global
             # data.
             private_body = prefix
+
+    private_body += 'try:\n'
             
+    private_body_emitted = ''
     method_body_node = get_method_body_node_from_method_node(method_node)
     emitted_something = False
     for statement_node in method_body_node.children:
         emitted_something = True
-        private_body += emit_statement.emit_statement(
+        indented_body = emit_statement.emit_statement(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-        private_body += '\n'
-        
-    if private_body.strip() == '':
+        indented_body += '\n'
+        private_body_emitted += emit_utils.indent_str(indented_body)
+
+    if private_body_emitted.strip() == '':
         # in case of empty functions
-        private_body += 'pass\n'
+        private_body_emitted += emit_utils.indent_str('pass\n')
+
+    private_body += private_body_emitted
+
+    except_str = '''
+except %s:
+    pass
+except %s: # NetworkExceptions should be backed out
+    _active_event.forward_backout_request_and_backout_self(skip_partner=True)
+    raise
+except: # ApplicationExceptions should be backed out and the partner should be
+        # notified
+    _active_event.forward_backout_request_and_backout_self()
+    raise
+    ''' % (emit_utils.library_transform('BackoutException'),
+           emit_utils.library_transform('CompleteRootCallResult'))
+
+    private_body += except_str
+        
     
     return private_header + emit_utils.indent_str(private_body)
         
@@ -632,17 +650,7 @@ while True:  # FIXME: currently using infinite retry
     # return them....if it were false, might just get back refrences
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
-    try:
-        _to_return = self.%s(_root_event,_ctx %s,%s)
-    except %s:
-        pass
-    except %s: # NetworkExceptions should be backed out
-        _root_event.forward_backout_request_and_backout_self(skip_partner=True)
-        raise
-    except: # ApplicationExceptions should be backed out and the partner should be
-            # notified
-        _root_event.forward_backout_request_and_backout_self()
-        raise
+    _to_return = self.%s(_root_event,_ctx %s,%s)
 
     # try committing root event
     _root_event.request_commit()
@@ -659,8 +667,6 @@ while True:  # FIXME: currently using infinite retry
        internal_method_name,
        comma_sep_arg_names,
        str(list_return_external_positions),
-       emit_utils.library_transform('BackoutException'),
-       emit_utils.library_transform('NetworkException'),
        emit_utils.library_transform('CompleteRootCallResult'),
        emit_utils.library_transform('NetworkFailureCallResult'),
        emit_utils.library_transform('StopRootCallResult'),
