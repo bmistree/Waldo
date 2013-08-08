@@ -298,8 +298,8 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
     elif node.label == AST_TRY_CATCH_STATEMENT:
         tryNode = node.children[0]
         tryNode.typeCheck(progText,typeStack,avoidFunctionObjects)
-        catchNode = node.children[1]
-        catchNode.typeCheck(progText,typeStack,avoidFunctionObjects)
+        catchOrFinallyNode = node.children[1]
+        catchOrFinallyNode.typeCheck(progText,typeStack,avoidFunctionObjects)
         if len(node.children) == 3:
             finallyNode = node.children[2]
             finallyNode.typeCheck(progText,typeStack,avoidFunctionObjects)

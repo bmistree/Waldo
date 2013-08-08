@@ -1320,11 +1320,12 @@ def p_ForStatement (p):
 def p_TryCatchStatement(p):
     '''
     TryCatchStatement : TryBlock CatchBlock
+                      | TryBlock FinallyBlock
                       | TryBlock CatchBlock FinallyBlock
     '''
     p[0] = AstNode(AST_TRY_CATCH_STATEMENT,p.lineno(1),p.lexpos(1));
     if len(p) == 3:
-        # Try-catch without finally
+        # Try-catch without finally or try-finally
         p[0].addChildren([p[1],p[2]])
     elif len(p) == 4:
         # Includes finally
