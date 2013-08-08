@@ -257,10 +257,12 @@ def run_emit_tests():
         ('Tests application exception may be thrown and caught.',
          emit_tests.application_exception_test.run_test),
 
-        ('Tests network exception may be thrown mid-sequence due to socket closure and caught.',
+        ('Tests network exception may be thrown mid-sequence due '
+         'to socket closure and caught.',
          emit_tests.network_exception_mid_sequence_test.run_test),
 
-        ('Tests network exception may be thrown at the beginning of a sequence due to prior network failure.',
+        ('Tests network exception may be thrown at the beginning '
+         'of a sequence due to prior network failure.',
          emit_tests.network_exception_on_call_test.run_test),
 
         ('Tests network exception which is properly caught does ' +
