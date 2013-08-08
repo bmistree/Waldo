@@ -189,6 +189,7 @@ class _InternalMapVersion(
         '''
         copy = _InternalMapVersion()
         copy.commit_num = self.commit_num
+        copy.masterobj = self.masterobj
         return copy
 
     def add_all_data_to_delta_list(

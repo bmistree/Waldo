@@ -18,12 +18,15 @@ class _ReferenceBase(WaldoObj):
     def __init__(
         self,host_uuid,peered,init_val,version_obj,
         dirty_element_constructor):
-
+       
         self.host_uuid = host_uuid
         self.uuid = util.generate_uuid()
         self.version_obj = version_obj
+        
         self.peered = peered
         
+        self.version_obj.register_object(self)
+
         self.val = init_val
         self.dirty_element_constructor = dirty_element_constructor
 
@@ -663,4 +666,10 @@ class _ReferenceVersion(object):
         '''
         util.logger_assert(
             'modified is pure virtual in _ReferenceVersion class.')
-        
+    
+    def register_object(self, obj):
+        self.masterobj = obj  
+        print str(self.masterobj)
+
+    def get_parent(self):
+        return str(self.masterobj)  

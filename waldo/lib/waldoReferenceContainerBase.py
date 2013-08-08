@@ -22,7 +22,8 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     def __init__(
         self,host_uuid,peered,init_val,version_obj,
         dirty_element_constructor):
-        
+        print "Creating Reference container"
+        print type(version_obj)
         waldoReferenceBase._ReferenceBase.__init__(
             self,host_uuid,peered,init_val,version_obj,
             dirty_element_constructor)
@@ -486,7 +487,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     w_obj.val[field_to_update] = (
                         val[field_to_update].promote_multithreaded(self.peered))
                 else:
-                    print "Changed value at index " + str(field_to_update) + " of " + str(self) + " from " + str(w_obj.val[field_to_update]) + " to " + str(val[field_to_update])
+                    print "Changed value at index " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + str(w_obj.val[field_to_update]) + " to " + str(val[field_to_update])
                     w_obj.val[field_to_update] = val[field_to_update]
 
 
@@ -504,6 +505,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         '''
         copy = _ReferenceContainerVersion()
         copy.commit_num = self.commit_num
+        copy.masterobj = self.masterobj
         return copy
         
 
