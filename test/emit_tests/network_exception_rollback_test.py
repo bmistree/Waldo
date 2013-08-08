@@ -7,8 +7,7 @@ base_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','..')
 sys.path.append(base_dir)
 from waldo.lib import Waldo
-#from network_exception_mid_sequence_test_v4 import Ping, Pong
-from emitted import Ping, Pong
+from network_exception_rollback_test_v4 import Ping, Pong
 from multiprocessing import Process
 
 HOST = '127.0.0.1'
@@ -47,11 +46,11 @@ def run_test():
     acceptor_process.start()
     time.sleep(SLEEP_TIME)
     connector = Waldo.tcp_connect(Ping,HOST,PORT,signal_func)
-    print connector.testNetworkExceptionRollback(VALUE)
+    connector.testNetworkExceptionRollback(VALUE)
     if connector.getValue() == VALUE:
         return True
     else:
         return False
 
 if __name__ == "__main__":
-    run_test()
+    print run_test()
