@@ -452,12 +452,23 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     if isinstance(
                         val[field_to_update],_SingleThreadReferenceContainer):
 
+                        value = None
+                        if field_to_update in w_obj.val.keys():
+                            value = str(w_obj.val[field_to_update])
+                        else:
+                            value = "None"
+
+                        print "Changed value at " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + value + " to " + str(val[field_to_update])
                         w_obj.val[field_to_update] = (
                             val[field_to_update].promote_multithreaded(self.peered))
-                        print "Wrote " + field_to_update + " to " + type(w_obj.val)
                     else:
+                        value = None
+                        if field_to_update in w_obj.val.keys():
+                            value = str(w_obj.val[field_to_update])
+                        else:
+                            value = "None"
+                        print "Changed value at " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + value + " to " + str(val[field_to_update])
                         w_obj.val[field_to_update] = val[field_to_update]
-                        print "Wrote " + field_to_update + " to " + type(w_obj.val)
                     
         elif isinstance(val,list):
             if len(w_obj.val) > len(val):
