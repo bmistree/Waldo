@@ -279,7 +279,6 @@ class _ActiveEvent(_InvalidationListener):
         self._unlock()
 
         
-        
     def must_check_partner(self):
         '''
         If we have modified peered state or if we received or sent a
@@ -1467,6 +1466,7 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         
         _ActiveEvent.__init__(self,uuid,local_endpoint)
         self.subscriber = endpoint_making_call
+        self.result_queue = result_queue
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
@@ -1568,3 +1568,14 @@ class EndpointCalledActiveEvent(_ActiveEvent):
                 # message.                
                 self.subscriber._receive_first_phase_commit_unsuccessful(
                     self.uuid,self.local_endpoint._uuid)
+
+    def put_application_exception(self):
+        '''
+        Places an ApplicationExceptionCallResult in the event complete queue to 
+        indicate to the endpoint that an ApplicationException has been raised.
+        This allows ApplicationExceptions to be propagated back through endpoint 
+        calls.
+        '''
+        # Send a NetworkFailureCallResult to each listening queue
+        self.result_queue.put(
+                waldoCallResults._ApplicationExceptionCallResult())

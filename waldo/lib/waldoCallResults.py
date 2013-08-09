@@ -93,3 +93,6 @@ class _CompleteRootCallResult(object):
 
 class _NetworkFailureCallResult(object):
     pass
+
+class _ApplicationExceptionCallResult(object):
+    pass
