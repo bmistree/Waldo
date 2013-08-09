@@ -449,7 +449,7 @@ except: # ApplicationExceptions should be backed out and the partner should be
     _active_event.forward_backout_request_and_backout_self()
     raise
     ''' % (emit_utils.library_transform('BackoutException'),
-           emit_utils.library_transform('CompleteRootCallResult'))
+           emit_utils.library_transform('NetworkException'))
 
     private_body += except_str
         
