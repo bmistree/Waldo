@@ -438,18 +438,11 @@ def %s(self,_active_event,_context%s):
     private_body += private_body_emitted
 
     except_str = '''
-except %s:
-    pass
-except %s: # NetworkExceptions should be backed out
-    _active_event.forward_backout_request_and_backout_self(skip_partner=True)
-    raise
 except: # ApplicationExceptions should be backed out and the partner should be
         # notified
     _active_event.put_application_exception()
-    _active_event.forward_backout_request_and_backout_self()
     raise
-    ''' % (emit_utils.library_transform('BackoutException'),
-           emit_utils.library_transform('NetworkException'))
+    '''
 
     private_body += except_str
         
