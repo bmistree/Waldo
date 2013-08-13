@@ -22,8 +22,7 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     def __init__(
         self,host_uuid,peered,init_val,version_obj,
         dirty_element_constructor):
-        print "Creating Reference container"
-        print type(version_obj)
+       
         waldoReferenceBase._ReferenceBase.__init__(
             self,host_uuid,peered,init_val,version_obj,
             dirty_element_constructor)
