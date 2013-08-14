@@ -31,7 +31,7 @@ def set_port(port):
 
 def get_key():
     '''
-    Generates a random key and returns a key object
+    Generates a random key pair and returns a key object
     '''
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA,2048)

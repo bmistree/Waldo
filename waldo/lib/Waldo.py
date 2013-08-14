@@ -68,39 +68,74 @@ _waldo_classes = {
     }
 
 def uuid():
+  '''
+  Returns the uuid (probability says this should be unique)
+  '''
   return _host_uuid
 
 def get_key():
+  '''
+  Call this to get a key pair
+  '''
   return secure.get_key()
 
-def get_certificate(CN, host, port, key=None):
+def get_certificate(CN, host, port, key):
+  '''
+  Params:
+  host and port are the address that certificate authority is running on
+  key is the keyobject that you want to register
+  CN is the common name that you want
+
+  Returns:
+  The certificate object
+  '''
   return secure.get_certificate(CN, host, port, key)
 
 def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time=None, end_time=None, cert_start = None, cert_end = None, authentication_function=None):
+  '''
+  Call this to get a CA running on the host and port specified.
+
+  Generate says whether or not 
+  to create a new certificate or not. If True, it will save the certificate in the address specified by the certfile, and the key in the keyfile path specified.
+  If Generate is False, then it will load up the certificate and key from the path specified.
+
+  The start_time and the end_time says how when the certificates should start and how long they should last. The cert_start and cert_end say how long the ca_certificate generated 
+  should last.
+
+  The authentication function is a callback function that will called everytime a request for a certificate comes in. It should accept a string. It is up the developer
+  to create their own authentication function to know if the CN being asked for is valid.
+
+  '''
   keymanager.start_ca(generate, certfile, keyfile, host, port,start_time, end_time, cert_start, cert_end, authentication_function)
 
 def get_ca_endpoint(host, port):
+  '''
+  This used to past back an endpoint so you can ask for certificates through Waldo.
+  '''
   return secure.connect_to_ca(host, port)
 
-def generate_request(CN, key):
-    import OpenSSL
-    from OpenSSL import crypto
-    req = OpenSSL.crypto.X509Req()
-    req.get_subject().CN = CN
-    req.set_pubkey(key)
-    req.sign(key, "sha1")
-    req = crypto.dump_certificate_request(crypto.FILETYPE_PEM, req)
-    return req
 
 def get_certificate(client, CN, key):
-    req = secure.generate_request(CN, key)
-    cert = client.req_to_cert(req)
-    import OpenSSL
-    from OpenSSL import crypto
-    cert = crypto.load_certificate(crypto.FILETYPE_PEM,cert)
-    return cert
+  '''
+  client is the endpoint that we will call to get the certificate. Get it from get_ca_endpoint.
+
+  CN, key are the common name and key that we respectively want saved
+  '''
+
+  req = secure.generate_request(CN, key)
+  cert = client.req_to_cert(req)
+  import OpenSSL
+  from OpenSSL import crypto
+  cert = crypto.load_certificate(crypto.FILETYPE_PEM,cert)
+  return cert
 
 def add_ca_to_list(ca_file, host, port):
+  '''
+  This is used to add a custom CA to your CA list.
+  ca_file is a pathname to where the file is stored.
+
+  host and port is the address of the CA that we want to add to the list
+  '''
   ca_cert = secure.get_cacert(host, port)
   f = open("temp.pem", "w+")
   f.write(ca_cert)
@@ -111,6 +146,17 @@ def add_ca_to_list(ca_file, host, port):
   destination.close()
 
 def encrypt_keytext(key, passphrase, cipher=None):
+  '''
+  This is the function used to encrypt text
+
+  The key is the key object.
+
+  The passphrase is the password we're using to encrypt it.
+
+  The cipher is the encryption algorithm. "DES3" is the default.
+
+  Returns the ciphertext is a text form
+  '''
   import OpenSSL
   from OpenSSL import crypto
   if cipher is None:
@@ -119,29 +165,57 @@ def encrypt_keytext(key, passphrase, cipher=None):
     return crypto.dump_privatekey(crypto.FILETYPE_PEM, key, cipher, passphrase)
 
 def decrypt_keytext(keytext, passphrase):
+  '''
+  This is the function used to decrypt the keytext.
+
+  The keytext is the encrypted text.
+
+  The passphrase is the phrase we're using to decode the cipher text
+  
+  This returns a key object.
+  '''
   import OpenSSL
   from OpenSSL import crypto
   return crypto.load_privatekey(crypto.FILETYPE_PEM, keytext, passphrase)
 
 def cleanup(certfile, keyfile=None):
+  '''
+  Helper function called to cleanup the certfile and keyfile so they aren't kept on disk.
+
+  certfile and keyfile are pathnames
+  '''
   os.remove(certfile)
   os.remove(keyfile)
 
 def salt():
+  '''
+  Returns a randomly generated uuid to use as salt
+  '''
   return util.generate_uuid()
 
 def hash(password, salt):
+  '''
+  Hashes the password
+  password is keytext of the password
+  salt is the randomly generated string passed to randomize it
+  '''
   import hashlib
   h = hashlib.new("sha256")
   h.update(password + str(salt))
   return h.hexdigest()
 
 def get_cert_text(cert):
+  '''
+  Returns the certificate text dump of a certificate object
+  '''
   import OpenSSL
   from OpenSSL import crypto
   return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
 def get_cert_from_text(certtext):
+  '''
+  Returns a certificate object from a certificate text
+  '''
   import OpenSSL
   from OpenSSL import crypto
   return crypto.load_certificate(crypto.FILETYPE_PEM, certtext)
