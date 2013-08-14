@@ -69,6 +69,10 @@ _waldo_classes = {
 
 def uuid():
   '''
+  Params:
+  None
+
+
   Returns the uuid (probability says this should be unique)
   '''
   return _host_uuid
@@ -76,6 +80,10 @@ def uuid():
 def get_key():
   '''
   Call this to get a key pair
+
+  IMPORTANT: The key pair shouldn't be passed around. The public key should be extracted then passed around.
+
+  Returns a key object
   '''
   return secure.get_key()
 
@@ -88,19 +96,24 @@ def get_certificate(CN, host, port, key):
 
   Returns:
   The certificate object
+
+  Call get_cert_text if you need a keytext version
   '''
   return secure.get_certificate(CN, host, port, key)
 
 def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", host=None, port=None, start_time=None, end_time=None, cert_start = None, cert_end = None, authentication_function=None):
   '''
-  Call this to get a CA running on the host and port specified.
+  Params:
+  Call this to start a CA running on the host and port specified.
 
   Generate says whether or not 
   to create a new certificate or not. If True, it will save the certificate in the address specified by the certfile, and the key in the keyfile path specified.
   If Generate is False, then it will load up the certificate and key from the path specified.
 
-  The start_time and the end_time says how when the certificates should start and how long they should last. The cert_start and cert_end say how long the ca_certificate generated 
-  should last.
+  The start_time and the end_time says how when the certificates should start and how long they should last. The start_time is seconds from now, and the end_time is seconds from the start_time.
+  By defauly, it starts now and ends in 3 months. 
+
+  The cert_start and cert_end say how long the ca_certificate generated should last and function the same way as the start_time and end_time
 
   The authentication function is a callback function that will called everytime a request for a certificate comes in. It should accept a string. It is up the developer
   to create their own authentication function to know if the CN being asked for is valid.
@@ -117,9 +130,13 @@ def get_ca_endpoint(host, port):
 
 def get_certificate(client, CN, key):
   '''
+  Params:
   client is the endpoint that we will call to get the certificate. Get it from get_ca_endpoint.
 
   CN, key are the common name and key that we respectively want saved
+
+  Return:
+  returns the certificate object
   '''
 
   req = secure.generate_request(CN, key)
@@ -132,6 +149,7 @@ def get_certificate(client, CN, key):
 def add_ca_to_list(ca_file, host, port):
   '''
   This is used to add a custom CA to your CA list.
+  Params:
   ca_file is a pathname to where the file is stored.
 
   host and port is the address of the CA that we want to add to the list
@@ -148,14 +166,15 @@ def add_ca_to_list(ca_file, host, port):
 def encrypt_keytext(key, passphrase, cipher=None):
   '''
   This is the function used to encrypt text
-
+  Params:
   The key is the key object.
 
   The passphrase is the password we're using to encrypt it.
 
   The cipher is the encryption algorithm. "DES3" is the default.
 
-  Returns the ciphertext is a text form
+  Returns: 
+  The ciphertext in a text form
   '''
   import OpenSSL
   from OpenSSL import crypto
@@ -166,13 +185,15 @@ def encrypt_keytext(key, passphrase, cipher=None):
 
 def decrypt_keytext(keytext, passphrase):
   '''
+  Params:
   This is the function used to decrypt the keytext.
 
   The keytext is the encrypted text.
 
   The passphrase is the phrase we're using to decode the cipher text
   
-  This returns a key object.
+  Returns:
+  A PKey object.
   '''
   import OpenSSL
   from OpenSSL import crypto
@@ -195,9 +216,13 @@ def salt():
 
 def hash(password, salt):
   '''
+  Param:
   Hashes the password
   password is keytext of the password
   salt is the randomly generated string passed to randomize it
+
+  Returns:
+  The hash digest in string format
   '''
   import hashlib
   h = hashlib.new("sha256")
@@ -206,7 +231,11 @@ def hash(password, salt):
 
 def get_cert_text(cert):
   '''
-  Returns the certificate text dump of a certificate object
+  Params:
+  cert
+
+  Returns:
+  The certificate text dump of a certificate object
   '''
   import OpenSSL
   from OpenSSL import crypto
@@ -214,7 +243,12 @@ def get_cert_text(cert):
 
 def get_cert_from_text(certtext):
   '''
-  Returns a certificate object from a certificate text
+  Params:
+
+  certtext is the text dump of a certificate object
+
+  Returns: 
+  A certificate object from a certificate text
   '''
   import OpenSSL
   from OpenSSL import crypto
