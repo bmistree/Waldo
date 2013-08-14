@@ -59,7 +59,7 @@ def generate_request(CN, key):
     req = OpenSSL.crypto.X509Req()
     req.get_subject().CN = CN
     req.set_pubkey(key)
-    req.sign(key, "sha1")
+    req.sign(key, "sha256")
     req = crypto.dump_certificate_request(crypto.FILETYPE_PEM, req)
     return req
 

@@ -80,7 +80,7 @@ def generate_ca_certificate(certfilepath, keyfilepath, start_time, end_time):
       OpenSSL.crypto.X509Extension("subjectKeyIdentifier", False, "hash",
                                    subject=ca),
       ])
-    ca.sign(key, "sha1")
+    ca.sign(key, "sha256")
 
     global ca_cert
     ca_cert=ca
@@ -192,7 +192,7 @@ def generate_cert_from_request(Endpoint, req, start, end):
     cert.gmtime_adj_notAfter(end)
     cert.set_issuer(ca_cert.get_subject())
     cert.set_pubkey(req.get_pubkey())
-    cert.sign(ca_key, "sha1")
+    cert.sign(ca_key, "sha256")
 
     cert = crypto.dump_certificate(crypto.FILETYPE_PEM,cert)
     return cert
