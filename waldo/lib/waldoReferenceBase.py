@@ -669,7 +669,7 @@ class _ReferenceVersion(object):
     
     def register_object(self, obj):
         self.masterobj = obj  
-        print str(self.masterobj)
+        #print str(self.masterobj)
 
     def get_parent(self):
         return str(self.masterobj)  

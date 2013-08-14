@@ -23,7 +23,6 @@ class _SubscribedToElement(object):
         @param {Queue.Queue} result_queue --- @see add_result_queue
         '''
         self.endpoint_object = endpoint_object
-        print "Subscried to " + str(self.endpoint_object.id())
         self.result_queues = []
         self.add_result_queue(result_queue)
 
