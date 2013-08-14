@@ -15,6 +15,7 @@ from waldo.lib.waldoExecutingEvent import _ExecutingEventContext
 from waldo.lib.waldoLockedVariables import LockedNumberVariable, LockedTextVariable
 from waldo.lib.waldoLockedVariables import LockedTrueFalseVariable
 from locked_test_util import DummyEndpoint,DummyConnectionObj
+from locked_test_util import create_context, DummyPartnerEndpoint
 
 '''
 Create two, connected endpoints.  Create a single number variable on
@@ -30,14 +31,8 @@ they've been written properly.
 
 B_VAL = 3339
 
-def create_context(endpoint):
-    seq_local_store = _VariableStore(endpoint._host_uuid)
-    return _ExecutingEventContext(
-        endpoint._global_var_store,
-        seq_local_store)
 
-
-class PartnerEndpoint(DummyEndpoint):
+class PartnerEndpoint(DummyPartnerEndpoint):
     def __init__(self,conn_obj):
         super(PartnerEndpoint,self).__init__(conn_obj)
 

@@ -12,9 +12,9 @@ from waldo.lib.waldoVariableStore import _VariableStore
 from waldo.lib.waldoEndpoint import _Endpoint
 from waldo.lib.util import generate_uuid
 from waldo.lib.waldoConnectionObj import _WaldoSingleSideConnectionObject
-from waldo.lib.util import generate_uuid
+from waldo.lib.util import generate_uuid, partner_endpoint_msg_call_func_name
 from waldo.lib import Waldo
-
+from waldo.lib.waldoExecutingEvent import _ExecutingEventContext
 from waldo.lib.waldoLockedVariables import LockedNumberVariable, LockedTextVariable
 from waldo.lib.waldoLockedVariables import LockedTrueFalseVariable
 from waldo.lib.waldoConnectionObj import _WaldoSameHostConnectionObject
@@ -57,3 +57,14 @@ class DummyEndpoint(_Endpoint):
 
         return older_event,younger_event
 
+
+def create_context(endpoint):
+    seq_local_store = _VariableStore(endpoint._host_uuid)
+    return _ExecutingEventContext(
+        endpoint._global_var_store,
+        seq_local_store)
+
+
+class DummyPartnerEndpoint(DummyEndpoint):
+    def __init__(self,conn_obj):
+        super(DummyPartnerEndpoint,self).__init__(conn_obj)
