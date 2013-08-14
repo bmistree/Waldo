@@ -90,9 +90,9 @@ def get_key():
 def get_certificate(CN, host, port, key):
   '''
   Params:
-  host and port are the address that certificate authority is running on
-  key is the keyobject that you want to register
-  CN is the common name that you want
+  host(string) and port(int) are the address that certificate authority is running on
+  key(PKey) is the keyobject that you want to register
+  CN(string) is the common name that you want
 
   Returns:
   The certificate object
@@ -106,16 +106,16 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
   Params:
   Call this to start a CA running on the host and port specified.
 
-  Generate says whether or not 
+  Generate(bool) says whether or not 
   to create a new certificate or not. If True, it will save the certificate in the address specified by the certfile, and the key in the keyfile path specified.
   If Generate is False, then it will load up the certificate and key from the path specified.
 
-  The start_time and the end_time says how when the certificates should start and how long they should last. The start_time is seconds from now, and the end_time is seconds from the start_time.
+  The start_time(int) and the end_time(int) says how when the certificates should start and how long they should last. The start_time is seconds from now, and the end_time is seconds from the start_time.
   By defauly, it starts now and ends in 3 months. 
 
-  The cert_start and cert_end say how long the ca_certificate generated should last and function the same way as the start_time and end_time
+  The cert_start(int) and cert_end(int) say how long the ca_certificate generated should last and function the same way as the start_time and end_time
 
-  The authentication function is a callback function that will called everytime a request for a certificate comes in. It should accept a string. It is up the developer
+  The authentication_function(function) is a callback function that will called everytime a request for a certificate comes in. It should accept a string. It is up the developer
   to create their own authentication function to know if the CN being asked for is valid.
 
   '''
@@ -124,6 +124,11 @@ def start_ca(generate=False, certfile="cacertificate.pem", keyfile="cakey.pem", 
 def get_ca_endpoint(host, port):
   '''
   This used to past back an endpoint so you can ask for certificates through Waldo.
+
+  host(string)
+  port(int)
+
+  host and port are the address of the CA that you want to connect to
   '''
   return secure.connect_to_ca(host, port)
 
@@ -131,12 +136,12 @@ def get_ca_endpoint(host, port):
 def get_certificate(client, CN, key):
   '''
   Params:
-  client is the endpoint that we will call to get the certificate. Get it from get_ca_endpoint.
+  client(Waldo endpoint) is the endpoint that we will call to get the certificate. Get it from get_ca_endpoint.
 
-  CN, key are the common name and key that we respectively want saved
+  CN(string), key(PKey) are the common name and key that we respectively want saved
 
   Return:
-  returns the certificate object
+  returns the certificate object (X509)
   '''
 
   req = secure.generate_request(CN, key)
@@ -150,9 +155,9 @@ def add_ca_to_list(ca_file, host, port):
   '''
   This is used to add a custom CA to your CA list.
   Params:
-  ca_file is a pathname to where the file is stored.
+  ca_file(string) is a pathname to where the file is stored.
 
-  host and port is the address of the CA that we want to add to the list
+  host(string) and port(int) is the address of the CA that we want to add to the list
   '''
   ca_cert = secure.get_cacert(host, port)
   f = open("temp.pem", "w+")
@@ -167,11 +172,11 @@ def encrypt_keytext(key, passphrase, cipher=None):
   '''
   This is the function used to encrypt text
   Params:
-  The key is the key object.
+  The key(PKey) is the key object.
 
-  The passphrase is the password we're using to encrypt it.
+  The passphrase(string) is the password we're using to encrypt it.
 
-  The cipher is the encryption algorithm. "DES3" is the default.
+  The cipher(string) is the encryption algorithm. Pass in a string specifying the name of the algorithm. "DES3" is the default.
 
   Returns: 
   The ciphertext in a text form
@@ -188,9 +193,9 @@ def decrypt_keytext(keytext, passphrase):
   Params:
   This is the function used to decrypt the keytext.
 
-  The keytext is the encrypted text.
+  The keytext(string) is the encrypted text.
 
-  The passphrase is the phrase we're using to decode the cipher text
+  The passphrase(string) is the phrase we're using to decode the cipher text
   
   Returns:
   A PKey object.
@@ -203,7 +208,7 @@ def cleanup(certfile, keyfile=None):
   '''
   Helper function called to cleanup the certfile and keyfile so they aren't kept on disk.
 
-  certfile and keyfile are pathnames
+  certfile(path) and keyfile(path) are pathnames
   '''
   os.remove(certfile)
   os.remove(keyfile)
@@ -216,13 +221,13 @@ def salt():
 
 def hash(password, salt):
   '''
-  Param:
+  Paramsß:
   Hashes the password
-  password is keytext of the password
-  salt is the randomly generated string passed to randomize it
+  password(string) is keytext of the password
+  salt(int) is the randomly generated string passed to randomize it
 
   Returns:
-  The hash digest in string format
+  The hash digest in string format (string)
   '''
   import hashlib
   h = hashlib.new("sha256")
@@ -232,7 +237,7 @@ def hash(password, salt):
 def get_cert_text(cert):
   '''
   Params:
-  cert
+  cert (X509 object)
 
   Returns:
   The certificate text dump of a certificate object
@@ -245,10 +250,10 @@ def get_cert_from_text(certtext):
   '''
   Params:
 
-  certtext is the text dump of a certificate object
+  certtext (string) is the text dump of a certificate object
 
   Returns: 
-  A certificate object from a certificate text
+  A certificate object from a certificate text (X509)
   '''
   import OpenSSL
   from OpenSSL import crypto
