@@ -31,3 +31,10 @@ class WaldoLockedContainer(WaldoLockedObj):
         wrapped_val = self.acquire_read_lock(active_event)
         return contains_key in wrapped_val.val
 
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,active_event,force):
+        
+        util.logger_assert(
+            'Still must define serializable_var_tuple_for_network on ' +
+            'locked container objects.')
+    

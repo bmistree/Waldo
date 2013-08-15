@@ -650,6 +650,7 @@ class _ExecutingEventContext(object):
         active_event.issue_partner_sequence_block_call(
             self,None,None,False)
 
+        
     def hide_partner_call(
         self,endpoint,active_event,func_name,first_msg):
         '''

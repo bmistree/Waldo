@@ -272,8 +272,25 @@ class WaldoLockedObj(object):
             active_event,False,self.data_wrapper_constructor)
         self._unlock()
         return write_waiting_event.get()
+
+    def get_and_reset_has_been_written_since_last_msg(self,active_event):
+        '''
+        @returns {bool} --- True if the object has been written to
+        since we sent the last message.  False otherwise.  (Including
+        if event has been preempted.)
+        '''
+        has_been_written = False
+        self._lock()
+
+        # check if active event even has ability to write to variable
+        if self.write_lock_holder is not None:
+            if self.write_lock_holder.uuid == active_event.uuid:
+                has_been_written = self.dirty_val.get_and_reset_has_been_written_since_last_msg()
         
+        self._unlock()
+        return has_been_written
     
+        
     def complete_commit(self,active_event):
         '''
         Both readers and writers can complete commits.  If it's a
@@ -508,8 +525,7 @@ class WaldoLockedObj(object):
         Called as an active event runs code.
         '''
         to_write_on = self.acquire_write_lock(active_event)
-        to_write_on.val = new_val
-
+        to_write_on.write(new_val)
 
     
     def try_schedule_write_waiting_event(self,waiting_event):
@@ -657,3 +673,45 @@ class WaldoLockedObj(object):
         in_running_state = active_event.add_touched_obj(self)
         return in_running_state
 
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,invalid_listener,force):
+        '''
+        The runtime automatically synchronizes data between both
+        endpoints.  When one side has updated a peered variable, the
+        other side needs to attempt to apply those changes before
+        doing further work.  This method grabs the val and version
+        object of the dirty element associated with invalid_listener.
+        Using these data, plus var_name, it constructs a named tuple
+        for serialization.  (@see
+        util._generate_serialization_named_tuple)
+
+        Note: if the val of this object is another Reference object,
+        then we recursively keep generating named tuples and embed
+        them in the one we return.
+
+        Note: we only serialize peered data.  No other data gets sent
+        over the network; therefore, it should not be serialized.
+
+        @param {*Delta or VarStoreDeltas} parent_delta --- Append any
+        message that we create here to this message.
+        
+        @param {String} var_name --- Both sides of the connection need
+        to agree on a common name for the variable being serialized.
+        This is to ensure that when the data are received by the other
+        side we know which variable to put them into.  This value is
+        only really necessary for the outermost wrapping of the named
+        type tuple, but we pass it through anyways.
+
+        @param {bool} force --- True if regardless of whether modified
+        or not we should serialize.  False otherwise.  (We migth want
+        to force for instance the first time we send sequence data.)
+        
+        @returns {bool} --- True if some subelement was modified,
+        False otherwise.
+
+        '''
+        util.logger_assert(
+            'Serializable var tuple for network is pure virtual ' +
+            'in waldoLockedObj.')
+                
+    

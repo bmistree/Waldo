@@ -1,6 +1,7 @@
 import util
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
-import wVariables
+import waldo.lib.waldoLockedVariables as waldoLockedVariables
+
 
 '''
 _VariableStore keeps track of peered data, sequence local data (which
@@ -66,14 +67,21 @@ class _VariableStore(object):
     # serialization and deserialization.
     class VarConstructors(object):
         def __init__(self):
-            self.list_constructor = wVariables.WaldoListVariable
-            self.map_constructor = wVariables.WaldoMapVariable
-            self.struct_constructor = wVariables.WaldoUserStructVariable
+            self.list_constructor = waldoLockedVariables.LockedListVariable
+            self.map_constructor = waldoLockedVariables.LockedMapVariable
+            self.struct_constructor = None
+            util.logger_warn(
+                'Have not specified a struct constructor in variable store. ' +
+                'Also, no longer have single threaded variables.')
 
-            self.single_thread_list_constructor = wVariables.WaldoSingleThreadListVariable
-            self.single_thread_map_constructor = wVariables.WaldoSingleThreadMapVariable
-            self.single_thread_struct_constructor = wVariables.WaldoSingleThreadUserStructVariable
+            self.single_thread_list_constructor = None
+            self.single_thread_map_constructor = None
+            self.single_thread_struct_constructor = None
             
+            # self.single_thread_list_constructor = wVariables.WaldoSingleThreadListVariable
+            # self.single_thread_map_constructor = wVariables.WaldoSingleThreadMapVariable
+            # self.single_thread_struct_constructor = wVariables.WaldoSingleThreadUserStructVariable
+
             
     var_constructors = VarConstructors()
 
@@ -182,6 +190,10 @@ class _VariableStore(object):
         each waldo variable.
         '''
         
+        util.logger_warn(
+            'Fixme: allow incorporating deltas with single threaded variables.')
+        
+
         # incorporate all numbers
         for num_delta in var_store_deltas.num_deltas:
             if num_delta.var_name not in self._name_to_var_map:
@@ -189,8 +201,9 @@ class _VariableStore(object):
                 # store already.  This could happen for instance if we
                 # are creating a sequence local variable for the first
                 # time.
-                self._name_to_var_map[num_delta.var_name] = wVariables.WaldoNumVariable(
-                    num_delta.var_name,self.host_uuid,True,num_delta.var_data)
+                self._name_to_var_map[num_delta.var_name] = (
+                    waldoLockedVariables.LockedNumberVariable(
+                        self.host_uuid,True,num_delta.var_data))
 
             else:
                 self._name_to_var_map[num_delta.var_name].write_if_different(
@@ -199,8 +212,9 @@ class _VariableStore(object):
         # incorporate all texts
         for text_delta in var_store_deltas.text_deltas:
             if text_delta.var_name not in self._name_to_var_map:
-                self._name_to_var_map[text_delta.var_name] = wVariables.WaldoTextVariable(
-                    text_delta.var_name,self.host_uuid,True,text_delta.var_data)
+                self._name_to_var_map[text_delta.var_name] = (
+                    waldoLockedVariables.LockedTextVariable(
+                        self.host_uuid,True,text_delta.var_data))
             else:
                 self._name_to_var_map[text_delta.var_name].write_if_different(
                     invalidation_listener,text_delta.var_data)
@@ -209,38 +223,40 @@ class _VariableStore(object):
         # incorporate all true false-s
         for true_false_delta in var_store_deltas.true_false_deltas:
             if true_false_delta.var_name not in self._name_to_var_map:
-                self._name_to_var_map[true_false_delta.var_name] = wVariables.WaldoTrueFalseVariable(
-                    true_false_delta.var_name,self.host_uuid,True,true_false_delta.var_data)
+                self._name_to_var_map[true_false_delta.var_name] = (
+                    waldoLockedVariables.LockedTrueFalseVariable(
+                        self.host_uuid,True,true_false_delta.var_data))
             else:
                 self._name_to_var_map[true_false_delta.var_name].write_if_different(
                     invalidation_listener,true_false_delta.var_data)
 
-        # incorporate all maps
-        for map_delta in var_store_deltas.map_deltas:
-            if map_delta.var_name not in self._name_to_var_map:
-                # need to create a new map and put all values in
-                self._name_to_var_map[map_delta.var_name] = wVariables.WaldoMapVariable(
-                    map_delta.var_name,self.host_uuid,True)
-            self._name_to_var_map[map_delta.var_name].incorporate_deltas(
-                map_delta,self.var_constructors,invalidation_listener)
+                
+        # # incorporate all maps
+        # for map_delta in var_store_deltas.map_deltas:
+        #     if map_delta.var_name not in self._name_to_var_map:
+        #         # need to create a new map and put all values in
+        #         self._name_to_var_map[map_delta.var_name] = wVariables.WaldoMapVariable(
+        #             map_delta.var_name,self.host_uuid,True)
+        #     self._name_to_var_map[map_delta.var_name].incorporate_deltas(
+        #         map_delta,self.var_constructors,invalidation_listener)
 
-        # incorporate all lists
-        for list_delta in var_store_deltas.list_deltas:
-            if list_delta.var_name not in self._name_to_var_map:
-                # need to create a new map and put all values in
-                self._name_to_var_map[list_delta.var_name] = wVariables.WaldoListVariable(
-                    list_delta.var_name,self.host_uuid,True)
-            self._name_to_var_map[list_delta.var_name].incorporate_deltas(
-                list_delta,self.var_constructors,invalidation_listener)
+        # # incorporate all lists
+        # for list_delta in var_store_deltas.list_deltas:
+        #     if list_delta.var_name not in self._name_to_var_map:
+        #         # need to create a new map and put all values in
+        #         self._name_to_var_map[list_delta.var_name] = wVariables.WaldoListVariable(
+        #             list_delta.var_name,self.host_uuid,True)
+        #     self._name_to_var_map[list_delta.var_name].incorporate_deltas(
+        #         list_delta,self.var_constructors,invalidation_listener)
 
 
-        # incorporate all structs
-        for struct_delta in var_store_deltas.struct_deltas:
-            if struct_delta.var_name not in self._name_to_var_map:
-                # need to create a new map and put all values in
-                self._name_to_var_map[struct_delta.var_name] = wVariables.WaldoUserStructVariable(
-                    struct_delta.var_name,self.host_uuid,True,{})
-            self._name_to_var_map[struct_delta.var_name].incorporate_deltas(
-                struct_delta,self.var_constructors,invalidation_listener)
+        # # incorporate all structs
+        # for struct_delta in var_store_deltas.struct_deltas:
+        #     if struct_delta.var_name not in self._name_to_var_map:
+        #         # need to create a new map and put all values in
+        #         self._name_to_var_map[struct_delta.var_name] = wVariables.WaldoUserStructVariable(
+        #             struct_delta.var_name,self.host_uuid,True,{})
+        #     self._name_to_var_map[struct_delta.var_name].incorporate_deltas(
+        #         struct_delta,self.var_constructors,invalidation_listener)
 
             

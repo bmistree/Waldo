@@ -374,7 +374,7 @@ class LockedActiveEvent(object):
                 # a response.
                 self.message_listening_queues_map[
                     reply_with_uuid] = threadsafe_unblock_queue
-
+                
             # here, the local endpoint uses the connection object to
             # actually send the message.
             self.event_parent.local_endpoint._send_partner_message_sequence_block_request(
@@ -386,7 +386,7 @@ class LockedActiveEvent(object):
                 # self.local_endpoint already has a copy of it.
                 ctx.sequence_local_store,
                 first_msg)
-            
+
         self._unlock()
         return partner_call_requested
 
