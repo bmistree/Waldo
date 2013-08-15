@@ -19,7 +19,10 @@ class LockedActiveEvent(object):
         @param {WaldoActiveEventMap} event_map
         '''
         self.uuid = event_parent.get_uuid()
-        self.mutex = threading.Lock()
+        
+        # FIXME: maybe can unmake this reentrant, but get deadlock
+        # from serializing data when need to add to touched objects.
+        self.mutex = threading.RLock()
         self.state = LockedActiveEvent.STATE_RUNNING
 
         self.event_map = event_map

@@ -63,9 +63,6 @@ def run_test():
 
     num_var = ctx_a.sequence_local_store.get_var_if_exists(
         SEQ_LOC_VAR_NAME)
-
-    # FIXME: unclear why need this.
-    num_var.get_val(write_event)
     
     ctx_a.hide_partner_call(
         end_a,write_event,'test_partner_write',True)

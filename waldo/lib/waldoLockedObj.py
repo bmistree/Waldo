@@ -151,7 +151,6 @@ class WaldoLockedObj(object):
             self._unlock()
             raise util.BackoutException()
 
-        
         # check 0 above
         if ((self.write_lock_holder is not None) and
             (active_event.uuid == self.write_lock_holder.uuid)):
