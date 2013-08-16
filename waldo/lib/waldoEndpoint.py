@@ -262,6 +262,19 @@ class _Endpoint(object):
         '''
         self._act_event_map.inform_events_of_network_failure()
 
+    def _propagate_back_exception(self,event_uuid,error):
+        '''
+        Called by the active event when an exception has occured in the midst
+        of a sequence and it needs to be propagated back towards the 
+        root of the active event. Sends a partner_error message to the partner
+        containing the event and endpoint uuids.
+        '''
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_ERROR
+        general_message.event_uuid = event_uuid
+        general_message.host_uuid = self._uuid
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
     def _receive_msg_from_partner(self,string_msg):
         '''
         Called by the connection object.
@@ -333,6 +346,10 @@ class _Endpoint(object):
             self._endpoint_service_thread_pool.receive_partner_request_commit(
                 general_msg.commit_request)
             
+        elif general_msg.HasField('error'):
+            event = self._act_event_map.get_event(general_msg.error.event_uuid)
+            event.send_application_exception_to_listeners()
+
         elif general_msg.HasField('heartbeat'):
             self._heartbeat.receive_heartbeat(general_msg.heartbeat.msg)
 

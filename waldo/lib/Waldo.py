@@ -51,6 +51,7 @@ _waldo_classes = {
     'CompleteRootCallResult': waldoCallResults._CompleteRootCallResult,
     'StopRootCallResult' : waldoCallResults._StopRootCallResult,
     'NetworkFailureCallResult' : waldoCallResults._NetworkFailureCallResult,
+    'ApplicationExceptionCallResult' : waldoCallResults._ApplicationExceptionCallResult,
     'BackoutBeforeReceiveMessageResult': waldoCallResults._BackoutBeforeReceiveMessageResult,
     'BackoutDueToNetworkFailure': waldoCallResults._BackoutDueToNetworkFailure,
     'EndpointCallResult': waldoCallResults._EndpointCallResult,
