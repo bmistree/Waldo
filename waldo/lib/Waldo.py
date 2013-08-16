@@ -23,6 +23,7 @@ StoppedException = util.StoppedException
 _host_uuid = util.generate_uuid()
 _threadsafe_stoppable_cleanup_queue = Queue.Queue()
 
+
 _waldo_classes = {
     # waldo variables
     'WaldoNumVariable': waldoLockedVariables.LockedNumberVariable,
@@ -39,9 +40,10 @@ _waldo_classes = {
     'WaldoExtTextVariable': wVariables.WaldoExtTextVariable,
 
     # single thread variables
-    'WaldoSingleThreadNumVariable': wVariables.WaldoSingleThreadNumVariable,
-    'WaldoSingleThreadTextVariable': wVariables.WaldoSingleThreadTextVariable,
-    'WaldoSingleThreadTrueFalseVariable': wVariables.WaldoSingleThreadTrueFalseVariable,
+    'WaldoSingleThreadNumVariable': waldoLockedVariables.SingleThreadedLockedNumberVariable,
+    'WaldoSingleThreadTextVariable': waldoLockedVariables.SingleThreadedLockedTextVariable,
+    'WaldoSingleThreadTrueFalseVariable': waldoLockedVariables.SingleThreadedLockedTrueFalseVariable,
+    
     'WaldoSingleThreadMapVariable': wVariables.WaldoSingleThreadMapVariable,
     'WaldoSingleThreadListVariable': wVariables.WaldoSingleThreadListVariable,
     'WaldoSingleThreadUserStructVariable': wVariables.WaldoSingleThreadUserStructVariable,

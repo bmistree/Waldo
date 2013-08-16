@@ -3,8 +3,7 @@ import numbers
 from waldo.lib.waldoDataWrapper import ReferenceTypeDataWrapper
 from waldo.lib.waldoLockedContainer import WaldoLockedContainer
 import waldo.lib.util as util
-from waldo.lib.waldoLockedSingleThreadMultiThread import MultiThreadedObj
-from waldo.lib.waldoLockedSingleThreadMultiThread import SingleThreadedObj
+from waldo.lib.waldoLockedVariablesHelper import SingleThreadedLockedValueVariable
 from waldo.lib.waldoLockedVariablesHelper import LockedValueVariable
 
 def ensure_locked_obj(new_val,host_uuid):
@@ -28,14 +27,25 @@ def ensure_locked_obj(new_val,host_uuid):
         util.logger_assert('Unknown object type.')
     
 
-
+##### Multi-threaded value variables #####
 class LockedNumberVariable(LockedValueVariable):
     pass
 
-class LockedTextVariable(LockedValueVariable):    
+class LockedTextVariable(LockedValueVariable):
     pass
 
 class LockedTrueFalseVariable(LockedValueVariable):
+    pass
+
+
+##### Single threaded value variables #####
+class SingleThreadedLockedNumberVariable(SingleThreadedLockedValueVariable):
+    pass
+
+class SingleThreadedLockedTextVariable(SingleThreadedLockedValueVariable):
+    pass
+
+class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
     pass
 
 

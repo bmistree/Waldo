@@ -108,7 +108,6 @@ class _ExecutingEventContext(object):
         return to_write
 
 
-
     #### UTILITY FUNCTIONS  ####
     # all of these could be static: they don't touch any internal
     # state.
