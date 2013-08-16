@@ -186,7 +186,7 @@ while True:  # FIXME: currently using infinite retry
     _to_return = self.%s(_root_event,_ctx %s,[])
     # try committing root event
     _root_event.begin_first_phase_commit()
-    _commit_resp = _root_event.event_complete_queue.get()
+    _commit_resp = _root_event.event_parent.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
 
@@ -633,7 +633,7 @@ while True:  # FIXME: currently using infinite retry
     _to_return = self.%s(_root_event,_ctx %s,%s)
     # try committing root event
     _root_event.begin_first_phase_commit()
-    _commit_resp = _root_event.event_complete_queue.get()
+    _commit_resp = _root_event.event_parent.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
         return _to_return
