@@ -1,10 +1,11 @@
-from waldoLockedObj import WaldoLockedObj
-from waldoDataWrapper import ValueTypeDataWrapper
-from waldoDataWrapper import ReferenceTypeDataWrapper
-from waldoLockedContainer import WaldoLockedContainer
-from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
-import util
+from waldo.lib.waldoLockedObj import WaldoLockedObj
 import numbers
+from waldo.lib.waldoDataWrapper import ReferenceTypeDataWrapper
+from waldo.lib.waldoLockedContainer import WaldoLockedContainer
+import waldo.lib.util as util
+from waldo.lib.waldoLockedSingleThreadMultiThread import MultiThreadedObj
+from waldo.lib.waldoLockedSingleThreadMultiThread import SingleThreadedObj
+from waldo.lib.waldoLockedVariablesHelper import LockedValueVariable
 
 def ensure_locked_obj(new_val,host_uuid):
     '''
@@ -27,109 +28,6 @@ def ensure_locked_obj(new_val,host_uuid):
         util.logger_assert('Unknown object type.')
     
 
-class LockedValueVariable(WaldoLockedObj):
-    def __init__(self,host_uuid,peered,init_val):
-        super(LockedValueVariable,self).__init__(
-            ValueTypeDataWrapper,host_uuid,peered,init_val)
-
-    def write_if_different(self,active_event,data):
-        to_write_on = self.acquire_write_lock(active_event)
-        to_write_on.write(data,True)
-        
-    def serializable_var_tuple_for_network(
-        self,parent_delta,var_name,active_event,force):
-        '''
-        @see waldoLockedObj.serializable_var_tuple_for_network
-        '''
-        var_data = self.get_val(active_event)
-        has_been_written_since_last_msg = self.get_and_reset_has_been_written_since_last_msg(active_event)
-
-        if (not force) and (not has_been_written_since_last_msg):
-            # nothing to do because this value has not been
-            # written.  NOTE: for list/dict types, must actually
-            # go through to ensure no subelements were written.
-            return False
-        
-        # check if this is a python value type.  if it is, append it
-        # to delta.
-        if not self.py_val_serialize(parent_delta,var_data,var_name):
-            util.logger_assert(
-                'Error when serializing variable for network.  ' +
-                'Expected python value type')
-
-        return True
-
-
-    def py_val_serialize(self,parent,var_data,var_name):
-        '''
-        @param {} parent --- Either a ContainerAction a VarStoreDeltas.
-
-        FIXME: unclear if actually need var_name for all elements
-        py_serialize-ing, or just py variables that are in the
-        top-level.
-
-        @returns {bool} --- True if var_data was a python value type
-        and we put it into parent.  False otherwise.
-        
-        If is python value type, then adds a delta message to
-        parent.  Otherwise, does nothing.
-        '''
-        is_value_type = False
-        delta = None
-        if isinstance(var_data, numbers.Number):
-            # can only add a pure number to var store a holder or to
-            # an added key
-            if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
-                delta = parent.num_deltas.add()
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
-                parent.added_what_num = var_data
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
-                parent.what_written_num = var_data
-            #### DEBUG
-            else:
-                util.logger_assert('Unexpected parent type in py_serialize')
-            #### END DEBUG
-                
-            is_value_type = True
-            
-        elif util.is_string(var_data):
-            if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
-                delta = parent.text_deltas.add()
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
-                parent.added_what_text = var_data
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
-                parent.what_written_text = var_data
-                
-            #### DEBUG
-            else:
-                util.logger_assert('Unexpected parent type in py_serialize')
-            #### END DEBUG                
-                
-            is_value_type = True
-            
-        elif isinstance(var_data,bool):
-            if parent.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
-                delta = parent.true_false_deltas.add()
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_ADDED:
-                parent.added_what_tf = var_data
-            elif parent.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
-                parent.what_written_tf = var_data                
-            #### DEBUG
-            else:
-                util.logger_assert('Unexpected parent type in py_serialize')
-            #### END DEBUG                
-
-            is_value_type = True
-
-        if delta != None:
-            # all value types have same format
-            delta.var_name = var_name
-            delta.var_data = var_data
-            
-        return is_value_type
-
-        
-        
 
 class LockedNumberVariable(LockedValueVariable):
     pass
