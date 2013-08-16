@@ -438,9 +438,9 @@ def %s(self,_active_event,_context%s):
     private_body += private_body_emitted
 
     except_str = '''
-except: # ApplicationExceptions should be backed out and the partner should be
+except Exception as err: # ApplicationExceptions should be backed out and the partner should be
         # notified
-    _active_event.put_application_exception()
+    _active_event.put_application_exception(err)
     raise
     '''
 

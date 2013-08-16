@@ -1471,7 +1471,14 @@ class PartnerActiveEvent(_ActiveEvent):
 
         return can_commit
         
-
+    def put_application_exception(self, error):
+        ### FIXME: make this more general -- e.g. put_exception instead
+        ### of put_application_exception
+        '''
+        Informs the partner that an exception has occured at runtime (thus the
+        event should be backed out).
+        '''
+        self.local_endpoint._propagate_back_exception(self.uuid,error)
 
     
 class EndpointCalledActiveEvent(_ActiveEvent):
@@ -1584,7 +1591,7 @@ class EndpointCalledActiveEvent(_ActiveEvent):
                 self.subscriber._receive_first_phase_commit_unsuccessful(
                     self.uuid,self.local_endpoint._uuid)
 
-    def put_application_exception(self):
+    def put_application_exception(self,error):
         '''
         Places an ApplicationExceptionCallResult in the event complete queue to 
         indicate to the endpoint that an ApplicationException has been raised.
