@@ -1,0 +1,11 @@
+import "util.proto";
+
+message PartnerError {
+    /**
+       When an exception occurs on a partner endpoint during a sequence
+       we want to propagate that error back to the root of the event.
+    */
+
+    required UUID event_uuid = 1;
+    required UUID host_uuid = 2;
+}
