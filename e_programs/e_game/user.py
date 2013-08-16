@@ -67,7 +67,7 @@ def on_register (event):
         login.set_message("Passwords do not match.")
     elif len(register_info[1]) < MIN_PASSWORD_LENGTH:
         login.set_message("Password length must be at least 6 characters long.")
-    elif register_info[0] or len(register_info[0]) < MIN_USERNAME_LENGTH:
+    elif not register_info[0].isalnum() or len(register_info[0]) < MIN_USERNAME_LENGTH:
         login.set_message("Username must consist of at least 3 alphanumeric characters")
     else:
         name = register_info[0]

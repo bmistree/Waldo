@@ -32,7 +32,7 @@ class LoginWindow(Frame):
         StaticText(self, label = "Password", pos = (BORDER, self.password_input.GetPositionTuple()[Y_INDEX]))
         self.register_text = HyperlinkCtrl(self, id = ID_ANY, url = "", pos = (LABEL_BUFFER + BORDER, self.password_input.GetPositionTuple()[Y_INDEX] + TEXT_BOX_HEIGHT), label = "New here? Register here")
         self.register_text.Bind(EVT_HYPERLINK, self.register_mode)
-        self.register_text.Hide()
+        #self.register_text.Hide()
         self.login_button = Button(self, label = "Login", size = (BUTTON_WIDTH,TEXT_BOX_HEIGHT), pos = ((self.GetSizeTuple()[X_INDEX] - BUTTON_WIDTH) / 2, self.register_text.GetPositionTuple()[Y_INDEX] + self.register_text.GetSizeTuple()[Y_INDEX] + BORDER))
 
         self.register_button =  Button(self, label = "Register", size = (REGISTER_BUTTON_WIDTH,TEXT_BOX_HEIGHT))
