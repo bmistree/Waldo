@@ -273,7 +273,7 @@ def emit_statement(
     elif statement_node.label == AST_EXT_COPY:
         # extCopy 3 to a
         # should produce
-        # a.get_val(_active_event).write_val(
+        # a.get_val(_active_event).set_val(
         #    _active_event,_context.get_val_if_waldo(
         #        3,_active_event))
         # ie, assign the internal value of a to whatever
@@ -289,7 +289,7 @@ def emit_statement(
 
         statement_txt = (
             to_copy_to_node_txt + '.get_val(_active_event).' +
-            'write_val(_active_event,_context.get_val_if_waldo(' +
+            'set_val(_active_event,_context.get_val_if_waldo(' +
             to_copy_from_node_txt + ',_active_event))'
             )
 
@@ -1053,7 +1053,7 @@ def emit_ext_assign(
         
         statement_txt = (
             outside_bracket_node_txt + '.get_val(_active_event)'
-            '.write_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event),%s)' %
+            '.set_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event),%s)' %
             (inside_bracket_node_txt,to_assign_from_node_txt))
 
     elif emit_utils.is_method_call(to_assign_to_node):
@@ -1066,7 +1066,7 @@ def emit_ext_assign(
         # endpoint call(if it were a message call, then we
         # wouldn't be able to write an external back)
         statement_txt = (
-            to_assign_to_txt + '.write_val(_active_event,%s)' %
+            to_assign_to_txt + '.set_val(_active_event,%s)' %
             to_assign_from_node_txt)
     else:
 
@@ -1075,10 +1075,10 @@ def emit_ext_assign(
             to_assign_to_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
         # from extAssign a to b, produces
-        # b.write_val(_active_event, a.get_val(_active_event))
+        # b.set_val(_active_event, a.get_val(_active_event))
         # ie, take the internal val of a and put it in b.
         statement_txt = (
-            to_assign_to_node_txt + ('.write_val(_active_event,%s.get_val(_active_event))' %
+            to_assign_to_node_txt + ('.set_val(_active_event,%s.get_val(_active_event))' %
             to_assign_from_node_txt))
 
         
@@ -1360,14 +1360,14 @@ def emit_for(
     # iterators.  Ie, for the statement:
     #     for (Number i in range(0,10))
     # i should be a WaldoNumberVariable.  But the only way to write
-    # into a WaldoVariable is to call write_val on it.  Solution is to
+    # into a WaldoVariable is to call set_val on it.  Solution is to
     # create an intermediate Python variable that we use as the index.
     # Then, on the first line of the for loop body, we assign into the
-    # Waldo variable (using the python variable) using write_val.  Ie,
+    # Waldo variable (using the python variable) using set_val.  Ie,
     # the above would get translated to:
     #     i = WaldoNum(...)
     #     for _i in range(0,10):
-    #         i.write_val(_i,_active_event)
+    #         i.set_val(_i,_active_event)
     # The problem with this approach, and the reason for this FIXME is
     # that we need to be careful to select the intermediate Python
     # variable carefully to prevent collisions with other variables.
@@ -1389,9 +1389,9 @@ def emit_for(
         identifier_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
     
     for_body_txt = (
-        '%s = _context.write_val(%s,%s,_active_event)\n' %
+        '%s = _context.set_val(%s,%s,_active_event)\n' %
         (iter_id_txt, iter_id_txt, inter_iter_name))
-    # for_body_txt += '.write_val(_active_event,%s)\n' % inter_iter_name
+    # for_body_txt += '.set_val(_active_event,%s)\n' % inter_iter_name
 
     for_body_txt += emit_statement(
         for_body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)

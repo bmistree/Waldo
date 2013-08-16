@@ -11,7 +11,7 @@ class WaldoLockedContainer(WaldoLockedObj):
         wrapped_val = self.acquire_read_lock(active_event)
         return wrapped_val.val[key].get_val(active_event)
         
-    def write_val_on_key(self,active_event,key,to_write):
+    def set_val_on_key(self,active_event,key,to_write):
         wrapped_val =  self.acquire_read_lock(active_event) 
         return wrapped_val.val[key].set_val(active_event,to_write)
 

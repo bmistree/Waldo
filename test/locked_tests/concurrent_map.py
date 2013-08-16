@@ -48,8 +48,8 @@ def run_test():
 
     a_val = 'test it'
     b_val = 'test other'
-    map_var.write_val_on_key(map_change_event_1,'a',a_val)
-    map_var.write_val_on_key(map_change_event_2,'b',b_val)
+    map_var.set_val_on_key(map_change_event_1,'a',a_val)
+    map_var.set_val_on_key(map_change_event_2,'b',b_val)
     
     # try to commit both events
     map_change_event_1.begin_first_phase_commit()

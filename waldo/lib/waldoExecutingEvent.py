@@ -101,9 +101,9 @@ class _ExecutingEventContext(object):
         self.msg_send_initialized_bit = True
         return prev_initialized_bit
 
-    def write_val(self,to_write_to,to_write,active_event):
+    def set_val(self,to_write_to,to_write,active_event):
         if isinstance(to_write_to, WaldoObj):
-            to_write_to.write_val(active_event,to_write)
+            to_write_to.set_val(active_event,to_write)
             return to_write_to
         return to_write
 
@@ -126,8 +126,8 @@ class _ExecutingEventContext(object):
         want to assign the value of 4 to a.  We want to emit the
         following for each:
 
-        a.write_val(_active_event,b.get_val(_active_event))
-        a.write_val(_active_event,4)
+        a.set_val(_active_event,b.get_val(_active_event))
+        a.set_val(_active_event,4)
 
         At compile time, we *do* have information on whether the rhs
         of the expression is a literal or a WaldoReference object.
@@ -438,7 +438,7 @@ class _ExecutingEventContext(object):
 
     def assign(self,lhs,rhs,active_event):
         '''
-        If lhs is a Waldo variable, then write_val rhs's value into it
+        If lhs is a Waldo variable, then set_val rhs's value into it
         and return True.  Otherwise, return False.  (if return False,
         then should do assignment in function calling from directly.)
 
@@ -452,7 +452,7 @@ class _ExecutingEventContext(object):
         if not isinstance(lhs,WaldoObj):
             return False
 
-        lhs.write_val(active_event,self.get_val_if_waldo(rhs,active_event))
+        lhs.set_val(active_event,self.get_val_if_waldo(rhs,active_event))
         return True
 
 
@@ -469,20 +469,20 @@ class _ExecutingEventContext(object):
             raw_rhs = self.get_val_if_waldo(rhs,active_event)            
             to_overwrite_string = lhs.get_val(active_event)
             to_overwrite_string[raw_key] = raw_rhs
-            lhs.write_val(active_event,to_overwrite_string)
+            lhs.set_val(active_event,to_overwrite_string)
         elif isinstance(lhs,wVariables.WaldoExtTextVariable):
             raw_rhs = self.get_val_if_waldo(rhs,active_event)            
             to_overwrite_string = lhs.get_val(active_event).get_val(active_event)
             to_overwrite_string[raw_key] = raw_rhs
-            lhs.get_val(active_event).write_val(active_event,to_overwrite_string)
+            lhs.get_val(active_event).set_val(active_event,to_overwrite_string)
         elif waldoReferenceContainerBase.is_reference_container(lhs):
             # just write the value explicitly for now.  Later, will
             # need to check if we need to wrap it first.
-            lhs.write_val_on_key(active_event,raw_key,rhs)
+            lhs.set_val_on_key(active_event,raw_key,rhs)
         else:
             # just write the value explicitly for now.  Later, will
             # need to check if we need to wrap it first.
-            lhs.get_val(active_event).write_val_on_key(active_event,raw_key,rhs)
+            lhs.get_val(active_event).set_val_on_key(active_event,raw_key,rhs)
 
         return True
 
@@ -534,8 +534,8 @@ class _ExecutingEventContext(object):
                 # loop, the operation we perform in the compiled code
                 # immediately following the actual for header is
                 # assign to another Waldo variable the variable being
-                # held by to_append.  (We do this through a write_val
-                # call.  write_val must take in InternalMaps or
+                # held by to_append.  (We do this through a set_val
+                # call.  set_val must take in InternalMaps or
                 # InternalLists.  Therefore, get_val on the
                 # WaldoList/WaldoMap first.  Note this is unnecessary
                 # for all other for iterations because none of the
