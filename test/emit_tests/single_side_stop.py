@@ -20,4 +20,7 @@ def run_test():
     return False
 
 if __name__ == '__main__':
-    run_test()
+    if run_test():
+        print '\nSucceeded\n'
+    else:
+        print '\nFailed\n'

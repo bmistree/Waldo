@@ -181,4 +181,7 @@ def test_to_text(single_side):
 
 
 if __name__ == '__main__':
-    run_test()
+    if run_test():
+        print '\nSucceeded\n'
+    else:
+        print '\nFailed\n'
