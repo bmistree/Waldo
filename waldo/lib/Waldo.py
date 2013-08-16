@@ -15,6 +15,7 @@ import waldoExecutingEvent
 import waldoVariableStore
 import shim.get_math_endpoint
 import waldoReferenceBase
+import waldo.lib.waldoLockedVariables as waldoLockedVariables
 
 StoppedException = util.StoppedException
 
@@ -24,11 +25,11 @@ _threadsafe_stoppable_cleanup_queue = Queue.Queue()
 
 _waldo_classes = {
     # waldo variables
-    'WaldoNumVariable': wVariables.WaldoNumVariable,
-    'WaldoTextVariable': wVariables.WaldoTextVariable,
-    'WaldoTrueFalseVariable': wVariables.WaldoTrueFalseVariable,
-    'WaldoMapVariable': wVariables.WaldoMapVariable,
-    'WaldoListVariable': wVariables.WaldoListVariable,
+    'WaldoNumVariable': waldoLockedVariables.LockedNumberVariable,
+    'WaldoTextVariable': waldoLockedVariables.LockedTextVariable,
+    'WaldoTrueFalseVariable': waldoLockedVariables.LockedTrueFalseVariable,
+    'WaldoMapVariable': waldoLockedVariables.LockedMapVariable,
+    'WaldoListVariable': waldoLockedVariables.LockedListVariable,
     'WaldoUserStructVariable': wVariables.WaldoUserStructVariable,
     'WaldoFunctionVariable': wVariables.WaldoFunctionVariable,
     
