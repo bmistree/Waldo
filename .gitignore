@@ -2,3 +2,5 @@
 parser.out
 parsetab.py
 *.pyo
+test/emit_tests/*_v4.py
+
