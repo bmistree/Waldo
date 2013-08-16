@@ -1,0 +1,102 @@
+userfile
+
+Endpoint UserLogin;
+Endpoint UserLoginHelper;
+
+
+
+Sequences {
+  CheckLogin: UserLogin.doNothing -> UserLoginHelper.check_info;
+  RegisterUser: UserLogin.doNothing -> UserLoginHelper.check_database;
+  EncryptedKey: UserLogin.doNothing -> UserLoginHelper.return_key;
+  ReturnCertificate: UserLogin.doNothing -> UserLoginHelper.get_cert;
+  ReturnSalt: UserLogin.doNothing -> UserLoginHelper.get_salt;
+  CheckUser: UserLogin.doNothing -> UserLoginHelper.check_name;
+  ChangePassword: UserLogin.doNothing -> UserLoginHelper.change_pw;
+}
+
+Sequence ChangePassword(Text name, Text encrypt, Text hashed_pw) {
+    UserLogin.doNothing{}
+    UserLoginHelper.change_pw {
+        password_server.change_password(name, encrypt, hashed_pw);
+    }
+}
+
+Sequence ReturnSalt(Text name) returns Number salt {
+    UserLogin.doNothing{}
+    UserLoginHelper.get_salt {
+        salt = password_server.get_salt(name);
+    }
+}
+
+Sequence ReturnCertificate(Text name) returns Text certificate {
+    UserLogin.doNothing{}
+    UserLoginHelper.get_cert{
+        certificate = password_server.get_certificate(name);
+    }
+}
+
+Sequence CheckLogin(Text name, Text password) returns TrueFalse valid_combination {
+    UserLogin.doNothing{}
+    UserLoginHelper.check_info {
+        valid_combination = password_server.check_password(name, password);
+    }
+}
+
+Sequence RegisterUser(Text name, Text password, Text key, Text request, Number salt) {
+    UserLogin.doNothing{}
+    UserLoginHelper.check_database {
+        password_server.register_user(name, password, key, request, salt);
+    }
+}
+
+Sequence CheckUser (Text name) returns TrueFalse used_name{
+    UserLogin.doNothing{}
+    UserLoginHelper.check_name {
+        used_name = password_server.check_user(name);
+    }
+}
+Sequence EncryptedKey(Text name, Text password) returns Text encrypted{
+    UserLogin.doNothing{}
+    UserLoginHelper.return_key {
+        encrypted = password_server.get_encrypted_key(name, password);
+    }
+}
+
+UserLogin {
+
+    Public Function check_password(Text name, Text password) returns TrueFalse {
+        return CheckLogin(name, password);
+    }
+
+    Public Function unique_username(Text name) returns TrueFalse {
+        return not CheckUser(name);
+    }
+
+    Public Function register_user(Text name, Text password, Text key, Text cert, Number salt) {
+        RegisterUser(name, password, key, cert, salt);
+    }
+    
+    Public Function get_encrypted_key(Text name, Text password) returns Text {
+        return EncryptedKey(name, password);
+    }
+
+    Public Function get_certificate(Text name) returns Text {
+        return ReturnCertificate(name);
+    }
+
+    Public Function get_salt(Text name) returns Number {
+        return ReturnSalt(name);
+    }
+
+    Public Function change_password(Text name, Text encrypted_key, Text hashed_pw) {
+        ChangePassword(name, encrypted_key, hashed_pw);
+    }
+}
+
+UserLoginHelper {
+    Endpoint password_server;
+    onCreate(Endpoint server) {
+        password_server = server;
+    }
+}

@@ -1,0 +1,136 @@
+omid_player
+
+Endpoint OmidPlayer;
+Endpoint OmidPlayerHelper;
+
+Struct node_information {
+    Number node_num;
+    Number x;
+    Number y;
+    TrueFalse found;
+}
+
+Struct arc_information {
+    Number x1;
+    Number y1;
+    Number x2;
+    Number y2;
+}
+
+Sequences {
+  AddUser: OmidPlayer.doNothing -> OmidPlayerHelper.add_to_server;
+  JoinWaiting: OmidPlayer.doNothing -> OmidPlayerHelper.addPlayer;
+  LeaveWaiting: OmidPlayer.doNothing -> OmidPlayerHelper.removePlayer;
+  CheckGameOver: OmidPlayer.doNothing -> OmidPlayerHelper.checkServer;
+  SendWaitingMsg: OmidPlayer.doNothing -> OmidPlayerHelper.sendServer;
+  DisplayWaiting: OmidPlayerHelper.doNothing -> OmidPlayer.displayWaitingMessage;
+  UpdateGame: OmidPlayerHelper.setMap -> OmidPlayer.updateMap;
+}
+
+Peered {
+    Text username;
+}
+
+Sequence AddUser() {
+    OmidPlayer.doNothing{}
+    OmidPlayerHelper.add_to_server{
+        game_server.add_player(username, self);
+    }
+}
+
+Sequence SendWaiting(Text message) {
+    OmidPlayer.doNothing{}
+    OmidPlayerHelper.sendServer{
+        game_server.broadcastWaitingMessage(Text message);
+    }        
+}
+
+Sequence JoinWaiting() {
+    OmidPlayer.doNothing {}
+    OmidPlayerHelper.addPlayer {
+        game_server.add_to_waiting(username, self);
+    }
+}
+
+Sequence LeaveWaiting() {
+    OmidPlayer.doNothing{}
+    OmidPlayerHelper.removePlayer {
+        game_server.remove_from_waiting(username);
+    }
+}
+
+Sequence CheckGameOver() returns TrueFalse game_over {
+    OmidPlayer.doNothing{}
+    OmidPlayer.checkServer{
+        game_over = game_server.game_ended();
+
+}
+
+Sequence DisplayWaiting(Text message) {
+    OmidPlayerHelper.doNothing{}
+    OmidPlayer.displayWaitingMessage{
+        extCopy message to waiting_message;
+    }
+}
+
+Sequence UpdateGame(Text message) {
+    Map(from: Text, to: Struct node_information) node_map;
+    List(element: Struct arc_information) arc_map;
+    OmidPlayerHelper.setMap{
+        node_map = nodes;
+        arc_map = arcs;
+    }
+    OmidPlayer.updateMap{
+        clear_map()
+        for (Text answer in node_map) {
+            Struct node_information info = node_map[answer];
+            draw_circle(info.x, info.y, info.found, info.node_num, answer);
+        }
+        for (Struct arc_information arc_info in arc_map) {
+            draw_arc(arc_info.x1, arc_info.y1, arc_info.x2, arc_info.y2);
+        }
+    }
+}
+
+
+Endpoint OmidPlayer {
+    External Text waiting_message;
+    Function(returns: Nothing) draw_circle;
+    Function(returns: Nothing) clear_map;
+    onCreate(Text name, External Text gui, Function(returns: Nothing) draw, Function(returns: Nothing) clear) {
+        username = name;
+        waiting_message = gui;
+        draw_circle = draw;
+        clear_map = clear;
+    }
+    Public Function game_ended() returns TrueFalse {
+        return CheckGameOver();
+    }
+    Public Function send_to_waiting(Text message) {
+        SendWaiting(message);
+    }
+}
+
+Endpoint OmidPlayerHelper {
+    Endpoint game_server;
+    Map(from: Text, to: Struct node_information) nodes;
+    List(element: Struct arc_information) arcs;
+    onCreate(Endpoint server) {
+        game_server = server;
+    }
+    Public Function init_map(Map(from: Text, to: Struct node_information)) node_info, List(element: Struct arc_information) arc_info) {
+        nodes = node_info;
+        arcs = arc_info;
+        UpdateGame()
+    }
+    Public Function update_map(Text answer_found) {
+        nodes[answer_found].found = True;
+        UpdateGame()
+    }
+    Public Function get_new_waiting_message(Text message) {
+        DisplayWaiting(message);
+    }
+    Public Function get_new_game_message(Text message) {
+        DisplayGame(message);
+    }
+}

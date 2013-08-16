@@ -1,0 +1,37 @@
+server
+
+Endpoint Server;
+
+Server {
+
+    Map(from: Text, to: Endpoint) users;
+
+    Public Function add_user(Text username, Endpoint pt) {
+        users[username] = pt;
+    }
+    
+    Public Function remove_user(Text username) {
+        users.remove(username);
+    }
+    Public Function broadcastMessage(Text message) {
+        for (Text username in users) {
+            users[username].get_new_message(message);
+        }
+    }
+    
+    Public Function send_message (Text receiver, Text message) returns TrueFalse{
+        if (not (receiver in users)) {
+            return False;
+        }
+        users[receiver].get_new_message(message);
+        return True;
+    }
+    
+    Public Function get_users() returns List(element: Text) {
+        List(element: Text) users_list;
+        for (Text username in users) {
+            users_list.append(username);
+        }
+        return users_list;
+    }
+}

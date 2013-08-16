@@ -1,0 +1,187 @@
+player
+
+Endpoint Player;
+Endpoint PlayerHelper;
+
+Sequences {
+  GameInSession: Player.doNothing -> PlayerHelper.checkServer;
+  AddUser: Player.doNothing -> PlayerHelper.sendServer;
+  AddPoints: Player.doNothing -> PlayerHelper.addPoints -> Player.displayMessage;
+  GetAnagram: Player.doNothing -> PlayerHelper.setAnagram;
+  GetSolutions: Player.doNothing -> PlayerHelper.setList;
+  JoinWaiting: Player.doNothing -> PlayerHelper.addPlayer;
+  LeaveWaiting: Player.doNothing -> PlayerHelper.removePlayer;
+  SendToWaiting: Player.doNothing -> PlayerHelper.sendMessage;
+  DisplayWaiting: PlayerHelper.doNothing -> Player.displayWaitingMessage;
+  DisplayGame: PlayerHelper.doNothing -> Player.displayGameMessage;
+  CheckGameOver: Player.doNothing -> PlayerHelper.checkEnded;
+}
+
+Peered 
+{
+  Text username;
+}
+
+Sequence CheckGameOver() returns TrueFalse game_over {
+    Player.doNothing{}
+    PlayerHelper.checkEnded {
+        game_over = game_server.game_ended();
+    }
+}
+
+Sequence GetAnagram() returns Text anagram {
+  Player.doNothing{}
+  PlayerHelper.setAnagram {
+    anagram = game_server.return_anagram();
+  }
+}
+
+Sequence GetSolutions() returns List (element: Text) solutions{
+  Player.doNothing{}
+  PlayerHelper.setList {
+    solutions = game_server.return_solutions();
+  }
+}
+Sequence GameInSession() returns TrueFalse game_status{
+  Player.doNothing {}
+  PlayerHelper.checkServer {
+    game_status = game_server.get_game_status();
+  }
+}
+
+Sequence AddUser() {
+  Player.doNothing {  
+  }
+  PlayerHelper.sendServer {
+    game_server.add_player(username, self);
+  }
+}
+
+Sequence JoinWaiting() {
+  Player.doNothing {}
+  PlayerHelper.addPlayer {
+     game_server.add_to_waiting(username, self);
+  }
+}
+
+Sequence LeaveWaiting() {
+  Player.doNothing{}
+  PlayerHelper.removePlayer {
+    game_server.remove_from_waiting(username);
+  }
+}
+
+Sequence AddPoints(Number points) {
+  Text message;
+  Player.doNothing{}
+  PlayerHelper.addPoints {
+    Number score = game_server.add_score(username, points);
+    message = 'Score: ' + toText(score) + '\n';
+  }
+  Player.displayMessage {
+    extCopy message to game_message;
+  }
+}
+
+Sequence DisplayWaiting(Text message) {
+    PlayerHelper.doNothing{}
+    Player.displayWaitingMessage{
+        extCopy message to waiting_message;
+    }
+}
+
+Sequence DisplayGame(Text message) {
+    PlayerHelper.doNothing{}
+    Player.displayGameMessage{
+        extCopy message to game_message;
+    }
+}
+
+Sequence SendToWaiting(Text message) {
+  Player.doNothing{}
+  PlayerHelper.sendMessage{
+    game_server.broadcastWaitingMessage(message);
+  }
+}
+
+Player {
+
+    External Text waiting_message;
+    External Text game_message;
+    List(element: Text) solution;
+    List(element: Text) used_words;
+    onCreate(Text name, External Text waiting_gui, External Text game_gui) {
+        username = name;
+        extAssign waiting_gui to waiting_message;
+        extAssign game_gui to game_message;
+    }
+
+    Public Function game_ended() returns TrueFalse {
+        return CheckGameOver();
+    }
+
+    Public Function check_answer(Text answer) {
+        if (answer in used_words) {
+            extCopy answer + ' was already used.\n' to game_message;
+        } else if (answer in solution) {
+            used_words.append(answer);
+            add_points(len(answer));
+        } else {
+            extCopy answer + ' is an invalid word.\n' to game_message;
+        }
+    }
+
+    Public Function display_remaining_answers() {
+        Text remaining_answers;
+        for (Text answer in solution) {
+            if (not answer in used_words) {
+                remaining_answers += answer + '\n';
+            }
+        }
+        extCopy remaining_answers to game_message;
+    }
+
+    Public Function get_game_information() returns Text{
+        solution = GetSolutions();
+        return GetAnagram();
+    }
+
+    Public Function game_in_session() returns TrueFalse {
+        return GameInSession();
+    }
+
+    Public Function add_points(Number points) {
+        AddPoints(points);
+    }
+
+    Public Function add_to_game() {
+        SendToWaiting(username + "is ready.\n");
+        AddUser();
+    }
+    Public Function join_waiting_room() {
+        JoinWaiting();
+        extCopy "You have entered the anagram waiting room. Type /ready when you are ready to play.\n" to waiting_message;
+    }
+
+    Public Function leave_waiting() {
+        LeaveWaiting();
+    }
+    Public Function send_to_waiting(Text message) {
+        message = username + ": " + message;
+        SendToWaiting(message);
+    }
+}
+
+
+PlayerHelper {
+    Endpoint game_server;
+    onCreate(Endpoint server) {
+        game_server = server;
+    }
+    Public Function get_new_waiting_message(Text message) {
+        DisplayWaiting(message);
+    }
+    Public Function get_new_game_message(Text message) {
+        DisplayGame(message);
+    }
+}

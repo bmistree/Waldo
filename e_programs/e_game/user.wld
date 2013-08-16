@@ -1,0 +1,153 @@
+userfile
+
+Endpoint User;
+Endpoint UserHelper;
+
+Sequences {
+  AddUser: User.doNothing -> UserHelper.sendServer;
+  SendMessage: User.send -> UserHelper.updateUsers; 
+  DisplayMessage: UserHelper.doNothing -> User.printMessage;
+  Quit: User.doNothing -> UserHelper.notify;
+  SendPrivate: User.doNothing -> UserHelper.sendMessage -> User.checkSent;
+  PrintUsers: User.doNothing -> UserHelper.get_list -> User.print_list;
+  CheckLogin: User.doNothing -> UserHelper.check_info;
+  CheckUser: User.doNothing -> UserHelper.check_database;
+}
+
+Peered 
+{
+    Text username = "";
+}
+
+Sequence Quit() {
+  User.doNothing {}
+  UserHelper.notify {
+    Text msg = username + " has left the chatroom.\n";
+    chat_server.broadcastMessage(msg);
+    chat_server.remove_user(username);
+  }
+}
+
+Sequence AddUser() {
+  User.doNothing {}
+  UserHelper.sendServer {
+    Text msg = username + " has entered the chatroom.\n";
+    chat_server.broadcastMessage(msg);
+    chat_server.add_user(username, self);
+  }
+}
+
+Sequence SendPrivate(Text receiver, Text msg) {
+  TrueFalse message_sent;
+  User.doNothing{}
+  UserHelper.sendMessage {
+      msg = 'private message from ' + username + ': ' + msg;
+    message_sent = chat_server.send_message(receiver, msg);
+  }
+  User.checkSent {
+    if (not message_sent) {
+      msg = receiver + ' does not exist in chat.\n';
+      extCopy msg to message;
+    }
+  }
+}
+
+Sequence SendMessage(Text msg) {
+  User.send {
+  }
+  UserHelper.updateUsers{
+    chat_server.broadcastMessage(msg);
+  }
+}
+
+Sequence DisplayMessage(Text msg) {
+  UserHelper.doNothing{}
+  User.printMessage {
+    extCopy msg to message;
+  }
+}
+
+Sequence PrintUsers() {
+  List(element: Text) users_list;
+
+  User.doNothing{}
+
+  UserHelper.get_list {
+    users_list = chat_server.get_users();
+  }
+
+  User.print_list {
+    extCopy 'Users in chat:' to message;
+    for (Text user in users_list) {
+      extCopy user + "\n" to message;
+    }
+  }
+
+}
+Sequence CheckLogin(Text name, Text password) returns TrueFalse valid_combination {
+    User.doNothing{}
+    UserHelper.check_info {
+        valid_combination = chat_server.check_password(name, password);
+        if (valid_combination) print ('returned true');
+    }
+}
+
+Sequence CheckUser(Text name) returns TrueFalse exists {
+    User.doNothing{}
+    UserHelper.check_database {
+        exists = chat_server.check_user(name);
+    }
+}
+
+User {
+    External Text message;
+    onCreate(External Text gui_str) {
+        extAssign gui_str to message;
+    }
+
+    Public Function send_message(Text msg) {
+        msg = username + ": " + msg;
+        SendMessage(msg);
+    }
+    Public Function add_to_server() {
+        AddUser();
+    }
+    Public Function quit() {
+        Quit();
+    }
+    Public Function private_message(Text receiver, Text msg) {
+        SendPrivate(receiver, msg);
+    }
+
+    Public Function print_users() {
+        PrintUsers();
+    }
+    Public Function get_username ()returns Text {
+        return username;
+    }
+
+    Public Function check_password(Text name, Text password) returns TrueFalse {
+        return CheckLogin(name, password);
+    }
+
+    Public Function check_user(Text name) returns TrueFalse {
+        return CheckUser(name);
+    }
+
+    Public Function set_name(Text name) {
+        username = name;
+    }
+}
+
+
+UserHelper {
+  Endpoint chat_server;
+  onCreate(Endpoint server) {
+    chat_server = server;
+    
+  }
+  Public Function get_new_message(Text msg) returns Nothing {
+    DisplayMessage(msg);
+  }
+ 
+}
