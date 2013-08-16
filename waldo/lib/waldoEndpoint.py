@@ -271,8 +271,9 @@ class _Endpoint(object):
         '''
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_ERROR
-        general_message.event_uuid = event_uuid
-        general_message.host_uuid = self._uuid
+        error = general_message.error
+        error.event_uuid.data = event_uuid
+        error.host_uuid.data = self._uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
 
     def _receive_msg_from_partner(self,string_msg):
