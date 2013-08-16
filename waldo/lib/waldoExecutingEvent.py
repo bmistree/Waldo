@@ -672,7 +672,11 @@ class _ExecutingEventContext(object):
             # already backed out.  did not schedule message.  raise
             # exception
             raise util.BackoutException()
-            
+
+        if func_name is None:
+            return
+
+        
         queue_elem = threadsafe_unblock_queue.get()
 
         if isinstance(queue_elem,waldoCallResults._BackoutBeforeReceiveMessageResult):

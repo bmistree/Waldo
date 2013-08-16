@@ -185,7 +185,7 @@ while True:  # FIXME: currently using infinite retry
     # transaction might return over-written/inconsistent values.
     _to_return = self.%s(_root_event,_ctx %s,[])
     # try committing root event
-    _root_event.request_commit()
+    _root_event.begin_first_phase_commit()
     _commit_resp = _root_event.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
@@ -201,6 +201,7 @@ while True:  # FIXME: currently using infinite retry
            lib_util.internal_oncreate_func_call_name('onCreate'),
            comma_sep_arg_names,
            emit_utils.library_transform('CompleteRootCallResult'))
+
 
     else:
         oncreate_call_txt = '\n'
@@ -631,7 +632,7 @@ while True:  # FIXME: currently using infinite retry
     # transaction might return over-written/inconsistent values.
     _to_return = self.%s(_root_event,_ctx %s,%s)
     # try committing root event
-    _root_event.request_commit()
+    _root_event.begin_first_phase_commit()
     _commit_resp = _root_event.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
@@ -815,59 +816,21 @@ def emit_message_receive(
         # the name of the next sequence block to execute, as it
         # appears in the source Waldo text, ie, before mangling.
         next_sequence_block_src_name = next_to_call_node.children[1].value
+
+        # note that we must wait on receiving a response from the other
+        # side before we can continue on, or the original sender may
+        # return too early. We should not wait on the last message that we
+        # send however, because, we do not expect any response to it.
+        # (Ie, if next_to_call_txt == 'None', then do not wait.)
         
         next_to_call_txt = '"' + lib_util.partner_endpoint_msg_call_func_name(
             next_sequence_block_src_name) + '"'
-        
 
-        
-    # note that we must wait on receiving a response from the other
-    # side before we can continue on, or the original sender may
-    # return too early. We should not wait on the last message that we
-    # send however, because, we do not expect any response to it.
-    # (Ie, if next_to_call_txt == 'None', then do not wait.)
     next_sequence_txt = '''
 
-_threadsafe_queue = %s.Queue()
-_active_event.issue_partner_sequence_block_call(
-    _context,%s,_threadsafe_queue,False)
-# must wait on the result of the call before returning
-
-if %s != None:
-    # means that we have another sequence item to execute next
-
-    _queue_elem = _threadsafe_queue.get()
-
-
-''' % (emit_utils.library_transform('Queue'),
-       next_to_call_txt,
-       next_to_call_txt)
-
-
-
-    next_sequence_txt += '''
-
-    if isinstance(_queue_elem,%s):
-        # back everything out: 
-        raise %s()
-
-    _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
-
-    # apply changes to sequence variables.  Note: that
-    # the system has already applied deltas for global data.
-    _context.sequence_local_store.incorporate_deltas(
-        _active_event,_queue_elem.sequence_local_var_store_deltas)
-
-    # send more messages
-    _to_exec_next = _queue_elem.to_exec_next_name_msg_field
-    if _to_exec_next != None:
-        # means that we do not have any additional functions to exec
-        _to_exec = getattr(self,_to_exec_next)
-        _to_exec(_active_event,_context)
-
-''' % (emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
-       emit_utils.library_transform('BackoutException'))
-
+_context.hide_partner_call(
+    self,_active_event,%s,False)
+''' % (next_to_call_txt)
 
     msg_receive_txt += emit_utils.indent_str(next_sequence_txt)
     return msg_receive_txt
@@ -902,45 +865,15 @@ def emit_message_node_what_to_call_next(next_to_call_node,emit_ctx):
         # not, we only need to synchronize modified sequence local data.
         issue_call_is_first_txt = '_first_msg'
 
-    
     return  '''
-_threadsafe_queue = %s.Queue()
-_active_event.issue_partner_sequence_block_call(
-    _context,'%s',_threadsafe_queue, '%s')
-_queue_elem = _threadsafe_queue.get()
 
-if isinstance(_queue_elem,%s):
-    raise %s()
+_context.hide_partner_call(
+    self,_active_event,'%s',%s)
 
-_context.set_to_reply_with(_queue_elem.reply_with_msg_field)
-
-# apply changes to sequence variables.  (There shouldn't
-# be any, but it's worth getting in practice.)  Note: that
-# the system has already applied deltas for global data.
-_context.sequence_local_store.incorporate_deltas(
-    _active_event,_queue_elem.sequence_local_var_store_deltas)
-
-# send more messages
-_to_exec_next = _queue_elem.to_exec_next_name_msg_field
-if _to_exec_next != None:
-    # means that we do not have any additional functions to exec
-    _to_exec = getattr(self,_to_exec_next)
-    _to_exec(_active_event,_context)
-else:
-    # end of sequence: reset to_reply_with_uuid in context.  we do
-    # this so that if we go on to execute another message sequence
-    # following this one, then the message sequence will be viewed as
-    # a new message sequence, rather than the continuation of a
-    # previous one.
-    _context.reset_to_reply_with()
-
-''' % (emit_utils.library_transform('Queue'),
+''' % (
        next_message_name, # the name of the message receive func to
                           # exec on other side in plain text
-       issue_call_is_first_txt,
-       emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
-       emit_utils.library_transform('BackoutException'),
-       )
+       issue_call_is_first_txt)
 
                                    
 def get_message_send_return_var_names(message_send_node):
