@@ -17,7 +17,7 @@ def gte_uuid_key(uuida):
 
 
 class WaitingElement(object):
-    def __init__(self,event,read,data_wrapper_constructor):
+    def __init__(self,event,read,data_wrapper_constructor,peered):
         '''
         @param {bool} read --- True if the element that is waiting is
         waiting on a read lock (not a write lock).
@@ -25,6 +25,7 @@ class WaitingElement(object):
         self.event = event
         self.read = read
         self.data_wrapper_consructor = data_wrapper_constructor
+        self.peered = peered
         
         # when add a waiting element, that waiting element's read or
         # write blocks.  The way that it blocks is by listening at a
@@ -54,7 +55,7 @@ class WaitingElement(object):
             # write over it anyways).  Add a mechanism for that?
             
             # update dirty val with value asked to write with
-            locked_obj.dirty_val = self.data_wrapper_constructor(locked_obj.val.val)
+            locked_obj.dirty_val = self.data_wrapper_constructor(locked_obj.val.val,self.peered)
             self.queue.put(locked_obj.dirty_val)
     
 
@@ -72,7 +73,7 @@ class WaldoLockedObj(object):
         self.host_uuid = host_uuid
         self.peered = peered
 
-        self.val = self.data_wrapper_constructor(init_val)
+        self.val = self.data_wrapper_constructor(init_val,self.peered)
         self.dirty_val = None
         
         # If write_lock_holder is not None, then the only element in
@@ -205,7 +206,7 @@ class WaldoLockedObj(object):
             
         # create a waiting read element
         waiting_element = WaitingElement(
-            active_event,True,self.data_wrapper_constructor)
+            active_event,True,self.data_wrapper_constructor,self.peered)
         
         self.waiting_events[active_event.uuid] = waiting_element
         self._unlock()
@@ -244,7 +245,7 @@ class WaldoLockedObj(object):
         # case 1 above
         if ((self.write_lock_holder is None) and
             (len(self.read_lock_holders) == 0)):
-            self.dirty_val = self.data_wrapper_constructor(self.val)
+            self.dirty_val = self.data_wrapper_constructor(self.val,self.peered)
             self.write_lock_holder = active_event
             self.read_lock_holders[active_event.uuid] = active_event
             to_return = self.dirty_val
@@ -260,7 +261,7 @@ class WaldoLockedObj(object):
                 self.read_lock_holders[active_event.uuid] = active_event
                 self.write_lock_holder = active_event
 
-                self.dirty_val = self.data_wrapper_constructor(self.val)
+                self.dirty_val = self.data_wrapper_constructor(self.val,self.peered)
                 to_return = self.dirty_val
                 self._unlock()
                 return to_return
@@ -268,7 +269,7 @@ class WaldoLockedObj(object):
 
         # case 3: add to wait queue and wait
         write_waiting_event = WaitingElement(
-            active_event,False,self.data_wrapper_constructor)
+            active_event,False,self.data_wrapper_constructor,self.peered)
         self._unlock()
         return write_waiting_event.get()
 

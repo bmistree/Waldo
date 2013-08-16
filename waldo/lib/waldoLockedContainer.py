@@ -12,12 +12,12 @@ class WaldoLockedContainer(WaldoLockedObj):
         return wrapped_val.val[key].get_val(active_event)
         
     def set_val_on_key(self,active_event,key,to_write):
-        wrapped_val =  self.acquire_read_lock(active_event) 
-        return wrapped_val.val[key].set_val(active_event,to_write)
+        wrapped_val =  self.acquire_read_lock(active_event)
+        return wrapped_val.set_val_on_key(active_event,key,to_write)
 
     def del_key_called(self,active_event,key_to_delete):
         wrapped_val = self.acquire_write_lock(active_event)
-        del wrapped_val.val[key_to_delete]
+        wrapped_val.del_key(active_event,key_to_delete)
 
     def get_len(self,active_event):
         wrapped_val = self.acquire_read_lock(active_event)

@@ -59,28 +59,30 @@ class LockedMapVariable(WaldoLockedContainer):
         Map specific
         '''
         new_val = ensure_locked_obj(new_val,self.host_uuid)
-        
         wrapped_val = self.acquire_write_lock(active_event)
-        wrapped_val.val[key_added] = new_val
+        wrapped_val.add_key(active_event,key_added,new_val)
+
 
 class LockedListVariable(WaldoLockedContainer):
 
     def __init__(self,host_uuid,peered,init_val):
         super(LockedListVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
-    
+
     def insert_val(self,active_event,where_to_insert,new_val):
         '''
         List specific
         '''
         new_val = ensure_locked_obj(new_val,self.host_uuid)
         wrapped_val = self.acquire_write_lock(active_event)
-        wrapped_val.val.insert(where_to_insert, new_val)
-        
+        wrapped_val.insert(active_event,where_to_insert,new_val)
+
+
     def append_val(self,active_event,new_val):
         '''
         List specific
         '''
         new_val = ensure_locked_obj(new_val,self.host_uuid)
         wrapped_val = self.acquire_write_lock(active_event)
-        wrapped_val.val.append(new_val)
+        wrapped_val.append(active_event,new_val)
+
