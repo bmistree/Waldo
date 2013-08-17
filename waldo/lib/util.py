@@ -71,5 +71,6 @@ class StoppedException(Exception):
     pass
 class NetworkException(Exception):
     pass
-
+class ApplicationException(Exception):
+    pass
 

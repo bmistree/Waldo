@@ -63,7 +63,8 @@ _waldo_classes = {
     'VariableStore': waldoVariableStore._VariableStore,
     'BackoutException': util.BackoutException,
     'StoppedException': util.StoppedException,
-    'NetworkException': util.NetworkException
+    'NetworkException': util.NetworkException,
+    'ApplicationException': util.ApplicationException,
     }
 
 _default_values = {
