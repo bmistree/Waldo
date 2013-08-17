@@ -926,6 +926,8 @@ if isinstance(_queue_elem,%s):
     raise %s()
 elif isinstance(_queue_elem,%s):
     raise %s()
+elif isinstance(_queue_elem,%s):
+    raise %s()
 
 _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
 
@@ -956,7 +958,9 @@ else:
        emit_utils.library_transform('BackoutBeforeReceiveMessageResult'),
        emit_utils.library_transform('BackoutException'),
        emit_utils.library_transform('NetworkFailureCallResult'),
-       emit_utils.library_transform('NetworkException')
+       emit_utils.library_transform('NetworkException'),
+       emit_utils.library_transform('ApplicationExceptionCallResult'),
+       emit_utils.library_transform('ApplicationException')
        )
 
                                    
