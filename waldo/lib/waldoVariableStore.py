@@ -1,4 +1,4 @@
-import util
+import waldo.lib.util as util
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 import waldo.lib.waldoLockedVariables as waldoLockedVariables
 

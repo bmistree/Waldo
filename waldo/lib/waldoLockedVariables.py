@@ -3,12 +3,11 @@ import numbers
 from waldo.lib.waldoDataWrapper import ReferenceTypeDataWrapper
 from waldo.lib.waldoLockedContainer import WaldoLockedContainer
 import waldo.lib.util as util
-from waldo.lib.waldoLockedVariablesHelper import SingleThreadedLockedValueVariable
-from waldo.lib.waldoLockedVariablesHelper import SingleThreadedLockedContainerVariable
-from waldo.lib.waldoLockedVariablesHelper import LockedValueVariable
-from waldo.lib.waldoLockedVariablesHelper import MapBaseClass
-from waldo.lib.waldoLockedVariablesHelper import container_serializable_var_tuple_for_network
-from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
+from waldo.lib.waldoLockedValueVariablesHelper import SingleThreadedLockedValueVariable
+from waldo.lib.waldoLockedValueVariablesHelper import LockedValueVariable
+from waldo.lib.waldoLockedContainer import SingleThreadedLockedContainerVariable
+from waldo.lib.waldoLockedMapBase import MapBaseClass
+
 
 def ensure_locked_obj(new_val,host_uuid):
     '''
@@ -68,11 +67,10 @@ class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
 
     def serializable_var_tuple_for_network(
         self,parent_delta,var_name,active_event,force):
-        '''
-        @see waldoReferenceBase.serializable_var_tuple_for_network
-        '''
-        container_serializable_var_tuple_for_network(
+        
+        return MapBaseClass.serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force)
+
 
 
 class SingleThreadedLockedMapVariable(SingleThreadedLockedContainerVariable, MapBaseClass):
@@ -89,14 +87,11 @@ class SingleThreadedLockedMapVariable(SingleThreadedLockedContainerVariable, Map
 
     def serializable_var_tuple_for_network(
         self,parent_delta,var_name,active_event,force):
-        '''
-        @see waldoReferenceBase.serializable_var_tuple_for_network
-        '''
-        container_serializable_var_tuple_for_network(
+        
+        return MapBaseClass.serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force)
 
         
-    
 class LockedListVariable(WaldoLockedContainer):
 
     def __init__(self,host_uuid,peered,init_val):
