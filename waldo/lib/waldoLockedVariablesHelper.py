@@ -232,7 +232,7 @@ class SingleThreadedLockedValueVariable(SingleThreadedObj):
             ValueTypeDataWrapper,host_uuid,peered,init_val)
 
     def write_if_different(self,active_event,data):
-        to_write_on.write(data,True)
+        self.val.write(data,True)
         
     def serializable_var_tuple_for_network(
         self,parent_delta,var_name,active_event,force):

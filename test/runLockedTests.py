@@ -18,6 +18,7 @@ import locked_tests.list_map_write_no_conflict
 import locked_tests.list_map_write_conflict
 import locked_tests.concurrent_map
 import locked_tests.partner_seq_local_test
+import locked_tests.partner_seq_local_map_test
 
 def run_lib_tests():
     to_run = [
@@ -32,6 +33,7 @@ def run_lib_tests():
         ('Conflicting writes to list and map', locked_tests.list_map_write_conflict.run_test),
         ('Concurrent writes on different map elements',locked_tests.concurrent_map.run_test),
         ('Sequence local data',locked_tests.partner_seq_local_test.run_test),
+        ('Sequence local map',locked_tests.partner_seq_local_map_test.run_test),
         ]
     run_tests(to_run)
 

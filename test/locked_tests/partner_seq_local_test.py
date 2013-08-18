@@ -12,8 +12,7 @@ from waldo.lib import Waldo
 from waldo.lib import util
 from waldo.lib.waldoVariableStore import _VariableStore
 from waldo.lib.waldoExecutingEvent import _ExecutingEventContext
-from waldo.lib.waldoLockedVariables import LockedNumberVariable, LockedTextVariable
-from waldo.lib.waldoLockedVariables import LockedTrueFalseVariable
+from waldo.lib.waldoLockedVariables import SingleThreadedLockedNumberVariable
 from locked_test_util import DummyEndpoint,DummyConnectionObj
 from locked_test_util import create_context, DummyPartnerEndpoint
 
@@ -54,7 +53,7 @@ def run_test():
     ctx_a.sequence_local_store.add_var(
         SEQ_LOC_VAR_NAME,
         # True means that it's peered
-        LockedNumberVariable(Waldo._host_uuid,True,100))
+        SingleThreadedLockedNumberVariable(Waldo._host_uuid,True,100))
     
     # send sequence message to the other side to perform write there.
     # block until call completes

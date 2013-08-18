@@ -55,8 +55,6 @@ class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
 
 class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
     def __init__(self,host_uuid,peered,init_val):
-        import pdb
-        pdb.set_trace()
         super(LockedMapVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
 
