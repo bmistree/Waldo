@@ -7,7 +7,7 @@ from waldo.lib.waldoLockedValueVariablesHelper import SingleThreadedLockedValueV
 from waldo.lib.waldoLockedValueVariablesHelper import LockedValueVariable
 from waldo.lib.waldoLockedContainer import SingleThreadedLockedContainerVariable
 from waldo.lib.waldoLockedMapBase import MapBaseClass
-
+from waldo.lib.waldoLockedListBase import ListBaseClass
 
 def ensure_locked_obj(new_val,host_uuid):
     '''
@@ -73,7 +73,9 @@ class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
 
 
 
-class SingleThreadedLockedMapVariable(SingleThreadedLockedContainerVariable, MapBaseClass):
+class SingleThreadedLockedMapVariable(
+    SingleThreadedLockedContainerVariable, MapBaseClass):
+    
     def __init__(self,host_uuid,peered,init_val):
         super(SingleThreadedLockedMapVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
@@ -91,20 +93,20 @@ class SingleThreadedLockedMapVariable(SingleThreadedLockedContainerVariable, Map
         return MapBaseClass.serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force)
 
-        
-class LockedListVariable(WaldoLockedContainer):
+
+class LockedListVariable(WaldoLockedContainer,ListBaseClass):
 
     def __init__(self,host_uuid,peered,init_val):
         super(LockedListVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
 
-    def insert_val(self,active_event,where_to_insert,new_val):
+    def insert_val(self,active_event,where_to_insert,new_val,incorporating_deltas=False):
         '''
         List specific
         '''
         new_val = ensure_locked_obj(new_val,self.host_uuid)
         wrapped_val = self.acquire_write_lock(active_event)
-        wrapped_val.insert(active_event,where_to_insert,new_val)
+        wrapped_val.insert(active_event,where_to_insert,new_val,incorporating_deltas)
 
 
     def append_val(self,active_event,new_val):
@@ -115,3 +117,38 @@ class LockedListVariable(WaldoLockedContainer):
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.append(active_event,new_val)
 
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,active_event,force):
+        
+        return ListBaseClass.serializable_var_tuple_for_network(
+            self,parent_delta,var_name,active_event,force)
+
+
+class SingleThreadedLockedListVariable(
+    SingleThreadedLockedContainerVariable, ListBaseClass):
+
+    def __init__(self,host_uuid,peered,init_val):
+        super(SingleThreadedLockedListVariable,self).__init__(
+            ReferenceTypeDataWrapper,host_uuid,peered,init_val)
+
+
+    def insert_val(self,active_event,where_to_insert,new_val,incorporating_deltas=False):
+        '''
+        List specific
+        '''
+        new_val = ensure_locked_obj(new_val,self.host_uuid)
+        self.val.insert(active_event,where_to_insert,new_val,incorporating_deltas)
+
+    def append_val(self,active_event,new_val):
+        '''
+        List specific
+        '''
+        new_val = ensure_locked_obj(new_val,self.host_uuid)
+        self.val.append(active_event,new_val)
+
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,active_event,force):
+        
+        return ListBaseClass.serializable_var_tuple_for_network(
+            self,parent_delta,var_name,active_event,force)
+        

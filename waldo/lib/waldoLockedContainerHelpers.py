@@ -2,15 +2,7 @@ import waldo.lib.util as util
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
 
-def container_serializable_var_tuple_for_network(
-    container_obj,parent_delta,var_name,active_event,force):
-    '''
-    @see waldoReferenceBase.serializable_var_tuple_for_network
-    '''
-    # reset has been written to
-    has_been_written_since_last_msg = (
-        container_obj.get_and_reset_has_been_written_since_last_msg(active_event))
-
+def create_map_delta(parent_delta):
     is_var_store = False
     if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
         is_var_store = True
@@ -26,12 +18,47 @@ def container_serializable_var_tuple_for_network(
             'Unexpected parent container type when serializing map')
 
     map_delta.parent_type = VarStoreDeltas.MAP_CONTAINER            
-    map_delta.var_name = var_name
+    return map_delta,is_var_store
 
-    map_delta.has_been_written = has_been_written_since_last_msg
+
+def create_list_delta(parent_delta):
+    is_var_store = False
+    if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+        is_var_store = True
+        list_delta = parent_delta.list_deltas.add()
+    elif parent_delta.parent_type == VarStoreDeltas.CONTAINER_WRITTEN:
+        list_delta = parent_delta.what_written_list
+    elif parent_delta.parent_type == VarStoreDeltas.CONTAINER_ADDED:
+        list_delta = parent_delta.added_what_list
+    elif parent_delta.parent_type == VarStoreDeltas.SUB_ELEMENT_ACTION:
+        list_delta = parent_delta.list_delta
+    else:
+        util.logger_assert('Unexpected parent container type when serializing list')
+
+    list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER        
+
+    return list_delta,is_var_store
+    
+
+def container_serializable_var_tuple_for_network(
+    container_obj,parent_delta,var_name,active_event,force,for_map):
+    '''
+    @see waldoReferenceBase.serializable_var_tuple_for_network
+    '''
+    # reset has been written to
+    has_been_written_since_last_msg = (
+        container_obj.get_and_reset_has_been_written_since_last_msg(active_event))
+
+    if for_map:
+        container_delta,is_var_store = create_map_delta(parent_delta)
+    else:
+        container_delta,is_var_store = create_list_delta(parent_delta)
+
+    container_delta.var_name = var_name
+    container_delta.has_been_written = has_been_written_since_last_msg
 
     internal_has_been_written = internal_container_variable_serialize_var_tuple_for_network(
-        container_obj,map_delta,var_name,active_event,
+        container_obj,container_delta,var_name,active_event,
         # must force the write when we have written a new value over list
         force or has_been_written_since_last_msg)
 
@@ -41,8 +68,12 @@ def container_serializable_var_tuple_for_network(
     if (not internal_has_been_written) and is_var_store and (not has_been_written_since_last_message):
         # remove the newly added map delta because there were no
         # changes that it encoded
-        del parent_delta.map_deltas[-1]
+        if for_map:
+            del parent_delta.map_deltas[-1]
+        else:
+            del parent_delta.list_deltas[-1]
 
+        
     return internal_has_been_written or written_since_last_message or force
 
 
@@ -60,7 +91,7 @@ def internal_container_variable_serialize_var_tuple_for_network(
     # wrapped val that can use for serializing data.
     dirty_wrapped_val = locked_container.get_dirty_wrapped_val(active_event)
 
-    
+
     sub_element_modified = False
     if isinstance(var_data,list):
         list_delta = parent_delta.internal_list_delta

@@ -74,7 +74,6 @@ class SingleThreadedLockedContainerVariable(SingleThreadedObj):
 
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
         util.logger_warn('Not handling copy_if_peered: should not copy in this case')
-        wrapped_val =  self.acquire_read_lock(active_event)
         return self.val.set_val_on_key(active_event,key,to_write)
 
     def del_key_called(self,active_event,key_to_delete):

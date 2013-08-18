@@ -98,8 +98,11 @@ class ReferenceTypeDataWrapper(DataWrapper):
         self.val[key_added] = new_val
 
     def insert(self,active_event,where_to_insert,new_val,incorporating_deltas = False):
-        util.logger_assert(
-            'Insertion still unsupported')
+        if self.peered and (not incorporating_deltas):
+            self.partner_change_log.append(add_key_tuple(len(self.val)))
+
+        self.val.insert(where_to_insert,new_val)
+
 
     def append(self,active_event,new_val,incorporating_deltas=False):
         if self.peered and (not incorporating_deltas):

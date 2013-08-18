@@ -45,7 +45,7 @@ _waldo_classes = {
     'WaldoSingleThreadTrueFalseVariable': waldoLockedVariables.SingleThreadedLockedTrueFalseVariable,
 
     'WaldoSingleThreadMapVariable': waldoLockedVariables.SingleThreadedLockedMapVariable,
-    'WaldoSingleThreadListVariable': wVariables.WaldoSingleThreadListVariable,
+    'WaldoSingleThreadListVariable': waldoLockedVariables.SingleThreadedLockedListVariable,
     'WaldoSingleThreadUserStructVariable': wVariables.WaldoSingleThreadUserStructVariable,
     'WaldoSingleThreadEndpointVariable': wVariables.WaldoSingleThreadEndpointVariable,
     

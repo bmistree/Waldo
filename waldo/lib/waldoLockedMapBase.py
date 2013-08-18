@@ -58,5 +58,5 @@ class MapBaseClass(object):
         @see waldoReferenceBase.serializable_var_tuple_for_network
         '''
         container_serializable_var_tuple_for_network(
-            self,parent_delta,var_name,active_event,force)
+            self,parent_delta,var_name,active_event,force,True)
 
