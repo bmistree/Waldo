@@ -4,7 +4,11 @@ from waldo.lib.waldoDataWrapper import ReferenceTypeDataWrapper
 from waldo.lib.waldoLockedContainer import WaldoLockedContainer
 import waldo.lib.util as util
 from waldo.lib.waldoLockedVariablesHelper import SingleThreadedLockedValueVariable
+from waldo.lib.waldoLockedVariablesHelper import SingleThreadedLockedContainerVariable
 from waldo.lib.waldoLockedVariablesHelper import LockedValueVariable
+from waldo.lib.waldoLockedVariablesHelper import MapBaseClass
+from waldo.lib.waldoLockedVariablesHelper import container_serializable_var_tuple_for_network
+from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
 def ensure_locked_obj(new_val,host_uuid):
     '''
@@ -49,20 +53,52 @@ class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
     pass
 
 
-class LockedMapVariable(WaldoLockedContainer):
+class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
     def __init__(self,host_uuid,peered,init_val):
+        import pdb
+        pdb.set_trace()
         super(LockedMapVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
 
-    def add_key(self,active_event,key_added,new_val):
+    def add_key(self,active_event,key_added,new_val,incorporating_deltas=False):
         '''
         Map specific
         '''
         new_val = ensure_locked_obj(new_val,self.host_uuid)
         wrapped_val = self.acquire_write_lock(active_event)
-        wrapped_val.add_key(active_event,key_added,new_val)
+        wrapped_val.add_key(active_event,key_added,new_val,incorporating_deltas)
+
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,active_event,force):
+        '''
+        @see waldoReferenceBase.serializable_var_tuple_for_network
+        '''
+        container_serializable_var_tuple_for_network(
+            self,parent_delta,var_name,active_event,force)
 
 
+class SingleThreadedLockedMapVariable(SingleThreadedLockedContainerVariable, MapBaseClass):
+    def __init__(self,host_uuid,peered,init_val):
+        super(SingleThreadedLockedMapVariable,self).__init__(
+            ReferenceTypeDataWrapper,host_uuid,peered,init_val)
+
+    def add_key(self,active_event,key_added,new_val,incorporating_deltas=False):
+        '''
+        Map specific
+        '''
+        new_val = ensure_locked_obj(new_val,self.host_uuid)
+        self.val.add_key(active_event,key_added,new_val,incorporating_deltas)
+
+    def serializable_var_tuple_for_network(
+        self,parent_delta,var_name,active_event,force):
+        '''
+        @see waldoReferenceBase.serializable_var_tuple_for_network
+        '''
+        container_serializable_var_tuple_for_network(
+            self,parent_delta,var_name,active_event,force)
+
+        
+    
 class LockedListVariable(WaldoLockedContainer):
 
     def __init__(self,host_uuid,peered,init_val):

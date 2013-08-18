@@ -191,9 +191,8 @@ class _VariableStore(object):
         '''
         
         util.logger_warn(
-            'Fixme: allow incorporating deltas with single threaded variables.')
+            'Fixme: allow incorporating deltas on multi-threaded variables.')
         
-
         # incorporate all numbers
         for num_delta in var_store_deltas.num_deltas:
             if num_delta.var_name not in self._name_to_var_map:
@@ -202,7 +201,7 @@ class _VariableStore(object):
                 # are creating a sequence local variable for the first
                 # time.
                 self._name_to_var_map[num_delta.var_name] = (
-                    waldoLockedVariables.LockedNumberVariable(
+                    waldoLockedVariables.SingleThreadedLockedNumberVariable(
                         self.host_uuid,True,num_delta.var_data))
 
             else:
@@ -213,7 +212,7 @@ class _VariableStore(object):
         for text_delta in var_store_deltas.text_deltas:
             if text_delta.var_name not in self._name_to_var_map:
                 self._name_to_var_map[text_delta.var_name] = (
-                    waldoLockedVariables.LockedTextVariable(
+                    waldoLockedVariables.SingleThreadedLockedTextVariable(
                         self.host_uuid,True,text_delta.var_data))
             else:
                 self._name_to_var_map[text_delta.var_name].write_if_different(
@@ -224,32 +223,36 @@ class _VariableStore(object):
         for true_false_delta in var_store_deltas.true_false_deltas:
             if true_false_delta.var_name not in self._name_to_var_map:
                 self._name_to_var_map[true_false_delta.var_name] = (
-                    waldoLockedVariables.LockedTrueFalseVariable(
+                    waldoLockedVariables.SingleThreadedLockedTrueFalseVariable(
                         self.host_uuid,True,true_false_delta.var_data))
             else:
                 self._name_to_var_map[true_false_delta.var_name].write_if_different(
                     invalidation_listener,true_false_delta.var_data)
 
-                
-        # # incorporate all maps
-        # for map_delta in var_store_deltas.map_deltas:
-        #     if map_delta.var_name not in self._name_to_var_map:
-        #         # need to create a new map and put all values in
-        #         self._name_to_var_map[map_delta.var_name] = wVariables.WaldoMapVariable(
-        #             map_delta.var_name,self.host_uuid,True)
-        #     self._name_to_var_map[map_delta.var_name].incorporate_deltas(
-        #         map_delta,self.var_constructors,invalidation_listener)
 
-        # # incorporate all lists
-        # for list_delta in var_store_deltas.list_deltas:
-        #     if list_delta.var_name not in self._name_to_var_map:
-        #         # need to create a new map and put all values in
-        #         self._name_to_var_map[list_delta.var_name] = wVariables.WaldoListVariable(
-        #             list_delta.var_name,self.host_uuid,True)
-        #     self._name_to_var_map[list_delta.var_name].incorporate_deltas(
-        #         list_delta,self.var_constructors,invalidation_listener)
+        # incorporate all maps
+        for map_delta in var_store_deltas.map_deltas:
+            if map_delta.var_name not in self._name_to_var_map:
+                # need to create a new map and put all values in
+                self._name_to_var_map[map_delta.var_name] = (
+                    waldoLockedVariables.SingleThreadedLockedMapVariable(
+                    self.host_uuid,True,{}))
+            self._name_to_var_map[map_delta.var_name].incorporate_deltas(
+                map_delta,self.var_constructors,invalidation_listener)
+
+        # incorporate all lists
+        for list_delta in var_store_deltas.list_deltas:
+            if list_delta.var_name not in self._name_to_var_map:
+                # need to create a new map and put all values in
+                self._name_to_var_map[list_delta.var_name] = (
+                    waldoLockedVariables.SingleThreadedLockedListVariable(
+                    self.host_uuid,True,[]))
+            self._name_to_var_map[list_delta.var_name].incorporate_deltas(
+                list_delta,self.var_constructors,invalidation_listener)
 
 
+        if len(var_store_deltas.struct_deltas) != 0:
+            util.logger_assert('Must add method back for peered structs')
         # # incorporate all structs
         # for struct_delta in var_store_deltas.struct_deltas:
         #     if struct_delta.var_name not in self._name_to_var_map:

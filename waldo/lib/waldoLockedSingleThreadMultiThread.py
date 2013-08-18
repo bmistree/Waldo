@@ -27,7 +27,7 @@ class SingleThreadedObj(object):
 
         # still using data wrappers because data wrappers keep track
         # whether this variable was written since last message.
-        self.val = self.data_wrapper_constructor(init_val)
+        self.val = self.data_wrapper_constructor(init_val,self.peered)
 
 
     def get_val(self,active_event):

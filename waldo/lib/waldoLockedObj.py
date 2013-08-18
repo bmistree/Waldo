@@ -273,6 +273,17 @@ class WaldoLockedObj(object):
         self._unlock()
         return write_waiting_event.get()
 
+    def get_dirty_wrapped_val(self,active_event):
+        '''
+        When serializing data to send to other side for peered
+        variables, need to get deltas across lifetime of variable,
+        this method returns a data wrapper that can be used to get
+        those deltas.
+        '''
+        util.logger_assert(
+            'Have not determined how to serialize multithreaded peered data.')
+
+    
     def get_and_reset_has_been_written_since_last_msg(self,active_event):
         '''
         @returns {bool} --- True if the object has been written to
