@@ -141,6 +141,7 @@ def run_emit_tests():
     import emit_tests.network_exception_rollback_test
     import emit_tests.application_exception_endpoint_call_test
     import emit_tests.application_exception_sequence_propagate_test
+    import emit_tests.network_exception_test_propagate_endpoint_call
 
     
     emit_tests_to_run = [
@@ -278,6 +279,10 @@ def run_emit_tests():
         ('Tests application exception may be propagated back across ' + 
          'endpoint connection mid-sequence and caught.',
          emit_tests.application_exception_sequence_propagate_test.run_test),
+
+        ('Tests network exception may be propagated back through ' +
+         'endpoint call and caught.',
+         emit_tests.network_exception_test_propagate_endpoint_call.run_test),
         ]
 
 
