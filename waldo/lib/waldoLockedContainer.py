@@ -1,8 +1,8 @@
 import waldo.lib.util as util
 from waldo.lib.waldoLockedContainerHelpers import container_incorporate_deltas
-from waldo.lib.waldoLockedSingleThreadMultiThread import SingleThreadedObj
-from waldo.lib.waldoLockedSingleThreadMultiThread import MultiThreadedObj
-
+from waldo.lib.waldoLockedSingleThreadedObj import SingleThreadedObj
+from waldo.lib.waldoLockedMultiThreadedObj import MultiThreadedObj
+import pickle
 
 class WaldoLockedContainer(MultiThreadedObj):
         
@@ -42,6 +42,10 @@ class WaldoLockedContainer(MultiThreadedObj):
         util.logger_assert(
             'Still must define serializable_var_tuple_for_network on ' +
             'locked container objects.')
+
+    def de_waldoify(self,active_event):
+        wrapped_val = self.acquire_read_lock(active_event)
+        return pickle.loads(pickle.dumps(wrapped_val.val))
 
         
     def incorporate_deltas(self,delta_to_incorporate,constructors,active_event):
@@ -94,6 +98,9 @@ class SingleThreadedLockedContainerVariable(SingleThreadedObj):
         '''
         return self.val
 
+    def de_waldoify(self,active_event):
+        return pickle.loads(pickle.dumps(self.val.val))
+    
     def incorporate_deltas(self,delta_to_incorporate,constructors,active_event):
         '''
         @param {SingleListDelta or SingleMapDelta} delta_to_incorporate

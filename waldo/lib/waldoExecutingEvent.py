@@ -7,7 +7,7 @@ import wVariables
 import util
 import waldoEndpoint, waldoInternalMap, waldoInternalList
 from util import Queue
-from waldoObj import WaldoObj
+from waldo.lib.waldoLockedObj import WaldoLockedObj
 
 
 
@@ -102,7 +102,7 @@ class _ExecutingEventContext(object):
         return prev_initialized_bit
 
     def set_val(self,to_write_to,to_write,active_event):
-        if isinstance(to_write_to, WaldoObj):
+        if isinstance(to_write_to, WaldoLockedObj):
             to_write_to.set_val(active_event,to_write)
             return to_write_to
         return to_write
@@ -144,7 +144,7 @@ class _ExecutingEventContext(object):
 
         if isinstance(val,wVariables._WaldoExternalValueType):
             return val.get_val(active_event).get_val(active_event)
-        elif isinstance(val,WaldoObj):
+        elif isinstance(val,WaldoLockedObj):
             return val.get_val(active_event)
         return val
 
@@ -158,7 +158,7 @@ class _ExecutingEventContext(object):
 
         Otherwise, return the value and variable keeps Python form.
         '''
-        if (isinstance(val,WaldoObj) or
+        if (isinstance(val,WaldoLockedObj) or
             isinstance(val,dict) or
             isinstance(val,list)):
             # note: when converting from external, we may need to copy
@@ -214,7 +214,7 @@ class _ExecutingEventContext(object):
         # FIXME: Start using some of the single threaded constructors
         # as well.
         
-        if isinstance(val,WaldoObj):
+        if isinstance(val,WaldoLockedObj):
             if force_copy:
                 # means that it was a WaldoVariable: just call its copy
                 # method
@@ -230,16 +230,17 @@ class _ExecutingEventContext(object):
             if util.is_string(val):
                 # not using isinstance here because python 3 and python
                 # 2.7 have different ways of testing for string.
-                constructor = wVariables.WaldoTextVariable
+                constructor = waldoLockedVariables.LockedTextVariable
             elif isinstance(val,numbers.Number):
-                constructor = wVariables.WaldoNumVariable
+                constructor = waldoLockedVariables.LockedNumberVariable
             elif isinstance(val,bool):
-                constructor = wVariables.WaldoTrueFalseVariable
+                constructor = waldoLockedVariables.LockedTrueFalseVariable
             elif isinstance(val,dict):
-                constructor = wVariables.WaldoMapVariable
+                constructor = waldoLockedVariables.LockedMapVariable
             elif isinstance(val,list):
-                constructor = wVariables.WaldoListVariable
+                constructor = waldoLockedVariables.LockedListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
+                util.logger_warn ('UPDATE-REFACTOR')
                 constructor = wVariables.WaldoEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
@@ -256,16 +257,17 @@ class _ExecutingEventContext(object):
             if util.is_string(val):
                 # not using isinstance here because python 3 and python
                 # 2.7 have different ways of testing for string.
-                constructor = wVariables.WaldoSingleThreadTextVariable
+                constructor = waldoLockedVariables.SingleThreadedLockedTextVariable
             elif isinstance(val,numbers.Number):
-                constructor = wVariables.WaldoSingleThreadNumVariable
+                constructor = waldoLockedVariables.SingleThreadedLockedNumberVariable
             elif isinstance(val,bool):
-                constructor = wVariables.WaldoSingleThreadTrueFalseVariable
+                constructor = waldoLockedVariables.SingleThreadedLockedTrueFalseVariable
             elif isinstance(val,dict):
-                constructor = wVariables.WaldoSingleThreadMapVariable
+                constructor = waldoLockedVariables.SingleThreadedLockedMapVariable
             elif isinstance(val,list):
-                constructor = wVariables.WaldoSingleThreadListVariable
+                constructor = waldoLockedVariables.SingleThreadedLockedListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
+                util.logger_warn ('UPDATE-REFACTOR')                
                 constructor = wVariables.WaldoSingleThreadEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
@@ -279,7 +281,6 @@ class _ExecutingEventContext(object):
             
                 
         return constructor(
-            'garbage', # actual name of variable isn't important
             host_uuid,
             new_peered, # not peered
             val # used as initial value
@@ -352,16 +353,14 @@ class _ExecutingEventContext(object):
             active_event.local_endpoint,*call_arg_list)
 
         if isinstance(returned_val,list):
-            return wVariables.WaldoSingleThreadListVariable(
-                'garbage', # actual name of variable isn't important
+            return waldoLockedVariables.SingleThreadedLockedListVariable(
                 active_event.local_endpoint._host_uuid,
                 False, # not peered
                 returned_val# used as initial value
                 )
 
         elif isinstance(returned_val,dict):
-            return wVariables.WaldoSingleThreadMapVariable(
-                'garbage', # actual name of variable isn't important
+            return waldoLockedVariables.SingleThreadedLockedMapVariable(
                 active_event.local_endpoint._host_uuid,
                 False, # not peered
                 returned_val# used as initial value
@@ -449,7 +448,7 @@ class _ExecutingEventContext(object):
         False otherwise.
         '''
         
-        if not isinstance(lhs,WaldoObj):
+        if not isinstance(lhs,WaldoLockedObj):
             return False
 
         lhs.set_val(active_event,self.get_val_if_waldo(rhs,active_event))
@@ -460,7 +459,7 @@ class _ExecutingEventContext(object):
         '''
         For bracket statements + struct statements
         '''
-        if not isinstance(lhs,WaldoObj):
+        if not isinstance(lhs,WaldoLockedObj):
             return False
 
         raw_key = self.get_val_if_waldo(key,active_event)
@@ -489,7 +488,7 @@ class _ExecutingEventContext(object):
     def get_val_on_key(self,to_get_from,key,active_event):
         raw_key = self.get_val_if_waldo(key,active_event)
         
-        if not isinstance(to_get_from,WaldoObj):
+        if not isinstance(to_get_from,WaldoLockedObj):
             return to_get_from[raw_key]
 
         # handle text + ext text
@@ -557,7 +556,7 @@ class _ExecutingEventContext(object):
         '''
         @returns {Python String}
         '''
-        if not isinstance(what_to_call_to_text_on,WaldoObj):
+        if not isinstance(what_to_call_to_text_on,WaldoLockedObj):
             return str(what_to_call_to_text_on)
 
         # strings for waldo variable value types
@@ -764,7 +763,7 @@ def de_waldoify(val,active_event):
     When returning a value to non-Waldo code, need to convert the
     value to a regular python type.  This function handles that.
     '''
-    if isinstance(val,WaldoObj):
+    if isinstance(val,WaldoLockedObj):
         return val.de_waldoify(active_event)
     if isinstance(val,tuple):
         # means that we are trying to dewaldoify a function call's

@@ -59,4 +59,3 @@ class MapBaseClass(object):
         '''
         container_serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force,True)
-
