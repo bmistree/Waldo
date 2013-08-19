@@ -257,4 +257,14 @@ def run_all():
     run_emit_tests()
 
 if __name__ == '__main__':
-    run_all()
+
+    if len(sys.argv) == 1:
+        run_all()
+    else:
+        flag = sys.argv[1]
+        if flag == '-e':
+            run_emit_tests()
+        elif flag == '-l':
+            run_lib_tests()
+        else:
+            print '\nUnknonw usage.\n'
