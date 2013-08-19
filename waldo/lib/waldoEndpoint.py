@@ -128,6 +128,17 @@ class _Endpoint(object):
         self._conn_failed = True
         self._conn_mutex.release()
 
+    def get_conn_failed(self):
+        '''
+        Returns true if the runtime has detected a network failure and false
+        otherwise.
+        '''
+        self._conn_mutex.acquire()
+        conn_failed = self._conn_failed    
+        self._conn_mutex.release()
+        return conn_failed
+
+
     def _block_ready(self):
         '''
         Returns True if both sides are initialized.  Otherwise, blocks
