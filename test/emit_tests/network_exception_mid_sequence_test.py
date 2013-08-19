@@ -48,4 +48,4 @@ def run_test():
     return connector.testNetworkException()
 
 if __name__ == "__main__":
-    run_test()
+    print run_test()
