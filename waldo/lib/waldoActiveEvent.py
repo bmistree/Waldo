@@ -1598,6 +1598,10 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         This allows ApplicationExceptions to be propagated back through endpoint 
         calls.
         '''
-        # Send a NetworkFailureCallResult to each listening queue
         self.result_queue.put(
                 waldoCallResults._ApplicationExceptionCallResult())
+
+    def put_network_exception(self):
+        self.result_queue.put(
+                waldoCallResults._NetworkFailureCallResult())
+
