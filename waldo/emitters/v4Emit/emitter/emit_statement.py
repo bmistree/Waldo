@@ -89,7 +89,7 @@ def emit_statement(
             increment_range_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
         statement_txt = (
-            '%s("garbage",self._host_uuid,False,' % emit_utils.library_transform('WaldoSingleThreadListVariable') +
+            '%s(self._host_uuid,False,' % emit_utils.library_transform('WaldoSingleThreadListVariable') +
             'list(range(_context.get_val_if_waldo(%s,_active_event),' % base_range_txt +
             '_context.get_val_if_waldo(%s,_active_event),' % limit_range_txt +
             '_context.get_val_if_waldo(%s,_active_event))))' % increment_range_txt )
@@ -376,8 +376,7 @@ def emit_statement(
                 map_literal_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
         
-        statement_txt = '''%s("garbage_name",
-    self._host_uuid,
+        statement_txt = '''%s(self._host_uuid,
     False,
     {%s})''' % (variable_type_str, map_item_str)
 
@@ -410,8 +409,7 @@ def emit_statement(
                 list_literal_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
             list_item_str += ','
 
-        statement_txt = '''%s("garbage_name",
-    self._host_uuid,
+        statement_txt = '''%s(self._host_uuid,
     False,
     [%s])''' % (variable_type_str, list_item_str)
 
