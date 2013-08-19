@@ -1162,9 +1162,6 @@ class RootActiveEvent(_ActiveEvent):
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
             message_listening_queue.put(
                 waldoCallResults._NetworkFailureCallResult())
-        # but complete the event, because if get is ever called on this queue then the
-        # network exception was caught by the programmer.
-        self.event_complete_queue.put(waldoCallResults._CompleteRootCallResult())
 
     def send_application_exception_to_listener(self):
         '''
@@ -1177,10 +1174,6 @@ class RootActiveEvent(_ActiveEvent):
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
             message_listening_queue.put(
                 waldoCallResults._ApplicationExceptionCallResult())
-        # but complete the event, because if get is ever called on this queue then the
-        # application exception was caught by the programmer.
-        self.event_complete_queue.put(waldoCallResults._CompleteRootCallResult())
-
         
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
