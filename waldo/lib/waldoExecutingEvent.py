@@ -535,8 +535,8 @@ class _ExecutingEventContext(object):
             # FIXME: This is an inefficient way of reading all values
             # over list.
             to_return = []
-            for i in range(0, to_iter_over.get_val(active_event).get_len(active_event)):
-                to_append = to_iter_over.get_val(active_event).get_val_on_key(active_event,i)
+            for i in range(0, to_iter_over.get_len(active_event)):
+                to_append = to_iter_over.get_val_on_key(active_event,i)
 
                 # The reason that we do this here is that in a for
                 # loop, the operation we perform in the compiled code

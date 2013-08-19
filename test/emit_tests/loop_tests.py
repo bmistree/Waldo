@@ -149,6 +149,7 @@ def test_while(single_side):
 def test_range(single_side):
 
     # test ternary range, which includes increment
+    val = single_side.range_test(0,10,1)
     if single_side.range_test(0,10,1) != list(range(0,10,1)):
         print '\nErr: range test 1'
         return False

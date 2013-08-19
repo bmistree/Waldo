@@ -103,14 +103,18 @@ class WaldoExternalTrueFalseVariable(WaldoExternalValueVariable):
         super(WaldoExternalMultiThreadedTextVariable,self).__init__(host_uuid,False,init_val)
         
 
-
-
 class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
     def __init__(self,host_uuid,peered,init_val=None):
-        if init_val is None:
-            init_val = {}
+
         super(LockedMapVariable,self).__init__(
-            ReferenceTypeDataWrapper,host_uuid,peered,init_val)
+            ReferenceTypeDataWrapper,host_uuid,peered,{})
+        
+        if init_val is not None:
+            # initialize with new data
+            for key in init_val.keys():
+                val = init_val[key]
+                self.val.add_key(None,key,val,True)
+
 
     def add_key(self,active_event,key_added,new_val,incorporating_deltas=False):
         '''
@@ -126,17 +130,26 @@ class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
         return MapBaseClass.serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force)
 
-
+    def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
+        to_write = ensure_locked_obj(to_write,self.host_uuid)
+        return super (LockedMapVariable,self).set_val_on_key(
+            active_event,key,to_write,copy_if_peered)
+    
 
 class SingleThreadedLockedMapVariable(
     SingleThreadedLockedContainerVariable, MapBaseClass):
     
     def __init__(self,host_uuid,peered,init_val=None):
-        if init_val is None:
-            init_val = {}
         super(SingleThreadedLockedMapVariable,self).__init__(
-            ReferenceTypeDataWrapper,host_uuid,peered,init_val)
+            ReferenceTypeDataWrapper,host_uuid,peered,{})
 
+        if init_val is not None:
+            # initialize with new data
+            for key in init_val.keys():
+                val = init_val[key]
+                self.val.add_key(None,key,val,True)
+
+        
     def add_key(self,active_event,key_added,new_val,incorporating_deltas=False):
         '''
         Map specific
@@ -144,6 +157,11 @@ class SingleThreadedLockedMapVariable(
         new_val = ensure_locked_obj(new_val,self.host_uuid)
         self.val.add_key(active_event,key_added,new_val,incorporating_deltas)
 
+    def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
+        to_write = ensure_locked_obj(to_write,self.host_uuid)
+        return super (SingleThreadedLockedMapVariable,self).set_val_on_key(
+            active_event,key,to_write,copy_if_peered)
+        
     def serializable_var_tuple_for_network(
         self,parent_delta,var_name,active_event,force):
         
@@ -154,11 +172,16 @@ class SingleThreadedLockedMapVariable(
 class LockedListVariable(WaldoLockedContainer,ListBaseClass):
 
     def __init__(self,host_uuid,peered,init_val=None):
-        if init_val is None:
-            init_val = []
         super(LockedListVariable,self).__init__(
-            ReferenceTypeDataWrapper,host_uuid,peered,init_val)
+            ReferenceTypeDataWrapper,host_uuid,peered,[])
 
+        if init_val is not None:
+            # initialize with new data
+            for key in range(0,len(init_val)):
+                val = init_val[key]
+                self.val.append(None,val,True)
+
+        
     def insert_val(self,active_event,where_to_insert,new_val,incorporating_deltas=False):
         '''
         List specific
@@ -167,7 +190,11 @@ class LockedListVariable(WaldoLockedContainer,ListBaseClass):
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.insert(active_event,where_to_insert,new_val,incorporating_deltas)
 
-
+    def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
+        to_write = ensure_locked_obj(to_write,self.host_uuid)
+        return super (LockedListVariable,self).set_val_on_key(
+            active_event,key,to_write,copy_if_peered)
+        
     def append_val(self,active_event,new_val):
         '''
         List specific
@@ -187,12 +214,23 @@ class SingleThreadedLockedListVariable(
     SingleThreadedLockedContainerVariable, ListBaseClass):
 
     def __init__(self,host_uuid,peered,init_val=None):
+        super(SingleThreadedLockedListVariable,self).__init__(
+            ReferenceTypeDataWrapper,host_uuid,peered,[])
+
         if init_val is None:
             init_val = []
-        super(SingleThreadedLockedListVariable,self).__init__(
-            ReferenceTypeDataWrapper,host_uuid,peered,init_val)
+
+        # initialize with new data
+        for key in range(0,len(init_val)):
+            val = init_val[key]
+            self.val.append(None,val,True)
 
 
+    def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
+        to_write = ensure_locked_obj(to_write,self.host_uuid)
+        return super (SingleThreadedLockedListVariable,self).set_val_on_key(
+            active_event,key,to_write,copy_if_peered)
+        
     def insert_val(self,active_event,where_to_insert,new_val,incorporating_deltas=False):
         '''
         List specific

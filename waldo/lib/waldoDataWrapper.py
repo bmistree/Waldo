@@ -59,18 +59,20 @@ class ReferenceTypeDataWrapper(DataWrapper):
         # object so can send deltas across network to partners.
         # (Note: only used for peered data.)
         self.partner_change_log = []
+
+        self.val = val
         
-        if isinstance(val,ReferenceTypeDataWrapper):
-            val = val.val
+        # if isinstance(val,ReferenceTypeDataWrapper):
+        #     val = val.val
             
-        if isinstance(val,dict):
-            self.val = {}
-            for key in val:
-                self.val[key] = val[key]
-        else:
-            self.val = []
-            for list_val in val:
-                self.val.append(list_val)
+        # if isinstance(val,dict):
+        #     self.val = {}
+        #     for key in val:
+        #         self.val[key] = val[key]
+        # else:
+        #     self.val = []
+        #     for list_val in val:
+        #         self.val.append(list_val)
 
     def set_val_on_key(self,active_event,key,to_write,incorporating_deltas=False):
         '''
