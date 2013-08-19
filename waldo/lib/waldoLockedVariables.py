@@ -53,7 +53,9 @@ class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
 
 
 class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
-    def __init__(self,host_uuid,peered,init_val):
+    def __init__(self,host_uuid,peered,init_val=None):
+        if init_val is None:
+            init_val = {}
         super(LockedMapVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
 
@@ -76,7 +78,9 @@ class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
 class SingleThreadedLockedMapVariable(
     SingleThreadedLockedContainerVariable, MapBaseClass):
     
-    def __init__(self,host_uuid,peered,init_val):
+    def __init__(self,host_uuid,peered,init_val=None):
+        if init_val is None:
+            init_val = {}
         super(SingleThreadedLockedMapVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
 
@@ -96,7 +100,9 @@ class SingleThreadedLockedMapVariable(
 
 class LockedListVariable(WaldoLockedContainer,ListBaseClass):
 
-    def __init__(self,host_uuid,peered,init_val):
+    def __init__(self,host_uuid,peered,init_val=None):
+        if init_val is None:
+            init_val = []
         super(LockedListVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
 
@@ -127,7 +133,9 @@ class LockedListVariable(WaldoLockedContainer,ListBaseClass):
 class SingleThreadedLockedListVariable(
     SingleThreadedLockedContainerVariable, ListBaseClass):
 
-    def __init__(self,host_uuid,peered,init_val):
+    def __init__(self,host_uuid,peered,init_val=None):
+        if init_val is None:
+            init_val = []
         super(SingleThreadedLockedListVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,init_val)
 

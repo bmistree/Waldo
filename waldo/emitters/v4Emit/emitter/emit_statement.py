@@ -1183,7 +1183,7 @@ def struct_type_emit_declaration(
     
     struct_waldo_var_txt = (
         waldo_type +
-        '("%s",%s,%s,%s)' % (var_name,host_uuid_var_name,peered_str,init_val_dict_str))
+        '(%s,%s,%s)' % (host_uuid_var_name,peered_str,init_val_dict_str))
 
     return struct_waldo_var_txt
 
@@ -1265,11 +1265,10 @@ def non_struct_type_emit_declaration(
         type_dict,multithreaded)
 
     wvar_load_text = '''%s(  # the type of waldo variable to create
-    '%s', # variable's name
     %s, # host uuid var name
     %s,  # if peered, True, otherwise, False
     %s
-)''' % (variable_type_str,var_name,host_uuid_var_name,
+)''' % (variable_type_str,host_uuid_var_name,
        peered_str, initializer_str)
 
     if is_func:
