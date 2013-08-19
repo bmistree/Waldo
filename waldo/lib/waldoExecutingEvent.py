@@ -8,7 +8,17 @@ import util
 import waldoEndpoint, waldoInternalMap, waldoInternalList
 from util import Queue
 from waldo.lib.waldoLockedObj import WaldoLockedObj
+from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
+from waldo.lib.waldoLockedVariables import is_non_ext_num_var, is_non_ext_true_false_var
+from waldo.lib.waldoLockedVariables import is_non_ext_text_var, is_reference_container
+from waldo.lib.waldoLockedVariables import is_non_ext_map_var, is_non_ext_list_var
+from waldo.lib.waldoLockedVariables import WaldoExternalTextVariable
 
+from waldo.lib.waldoLockedVariables import SingleThreadedLockedTextVariable, LockedTextVariable
+from waldo.lib.waldoLockedVariables import SingleThreadedLockedNumberVariable, LockedNumberVariable
+from waldo.lib.waldoLockedVariables import SingleThreadedLockedTrueFalseVariable, LockedTrueFalseVariable
+from waldo.lib.waldoLockedVariables import SingleThreadedLockedMapVariable, LockedMapVariable
+from waldo.lib.waldoLockedVariables import SingleThreadedLockedListVariable, LockedListVariable
 
 
 class _ExecutingEventContext(object):
@@ -141,8 +151,7 @@ class _ExecutingEventContext(object):
         Waldo Reference should just return the actual committed value
         of the variable.  Don't wait for commit or anything else.
         '''
-
-        if isinstance(val,wVariables._WaldoExternalValueType):
+        if isinstance(val,WaldoExternalValueVariable):
             return val.get_val(active_event).get_val(active_event)
         elif isinstance(val,WaldoLockedObj):
             return val.get_val(active_event)
@@ -230,15 +239,15 @@ class _ExecutingEventContext(object):
             if util.is_string(val):
                 # not using isinstance here because python 3 and python
                 # 2.7 have different ways of testing for string.
-                constructor = waldoLockedVariables.LockedTextVariable
+                constructor = LockedTextVariable
             elif isinstance(val,numbers.Number):
-                constructor = waldoLockedVariables.LockedNumberVariable
+                constructor = LockedNumberVariable
             elif isinstance(val,bool):
-                constructor = waldoLockedVariables.LockedTrueFalseVariable
+                constructor = LockedTrueFalseVariable
             elif isinstance(val,dict):
-                constructor = waldoLockedVariables.LockedMapVariable
+                constructor = LockedMapVariable
             elif isinstance(val,list):
-                constructor = waldoLockedVariables.LockedListVariable
+                constructor = LockedListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
                 util.logger_warn ('UPDATE-REFACTOR')
                 constructor = wVariables.WaldoEndpointVariable
@@ -257,15 +266,15 @@ class _ExecutingEventContext(object):
             if util.is_string(val):
                 # not using isinstance here because python 3 and python
                 # 2.7 have different ways of testing for string.
-                constructor = waldoLockedVariables.SingleThreadedLockedTextVariable
+                constructor = SingleThreadedLockedTextVariable
             elif isinstance(val,numbers.Number):
-                constructor = waldoLockedVariables.SingleThreadedLockedNumberVariable
+                constructor = SingleThreadedLockedNumberVariable
             elif isinstance(val,bool):
-                constructor = waldoLockedVariables.SingleThreadedLockedTrueFalseVariable
+                constructor = SingleThreadedLockedTrueFalseVariable
             elif isinstance(val,dict):
-                constructor = waldoLockedVariables.SingleThreadedLockedMapVariable
+                constructor = SingleThreadedLockedMapVariable
             elif isinstance(val,list):
-                constructor = waldoLockedVariables.SingleThreadedLockedListVariable
+                constructor = SingleThreadedLockedListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
                 util.logger_warn ('UPDATE-REFACTOR')                
                 constructor = wVariables.WaldoSingleThreadEndpointVariable
@@ -463,18 +472,18 @@ class _ExecutingEventContext(object):
             return False
 
         raw_key = self.get_val_if_waldo(key,active_event)
-
-        if wVariables.is_non_ext_text_var(lhs):
+        if is_non_ext_text_var(lhs):
             raw_rhs = self.get_val_if_waldo(rhs,active_event)            
             to_overwrite_string = lhs.get_val(active_event)
             to_overwrite_string[raw_key] = raw_rhs
             lhs.set_val(active_event,to_overwrite_string)
-        elif isinstance(lhs,wVariables.WaldoExtTextVariable):
+
+        elif isinstance(lhs,WaldoExternalTextVariable):
             raw_rhs = self.get_val_if_waldo(rhs,active_event)            
             to_overwrite_string = lhs.get_val(active_event).get_val(active_event)
             to_overwrite_string[raw_key] = raw_rhs
             lhs.get_val(active_event).set_val(active_event,to_overwrite_string)
-        elif waldoReferenceContainerBase.is_reference_container(lhs):
+        elif is_reference_container(lhs):
             # just write the value explicitly for now.  Later, will
             # need to check if we need to wrap it first.
             lhs.set_val_on_key(active_event,raw_key,rhs)
@@ -492,14 +501,14 @@ class _ExecutingEventContext(object):
             return to_get_from[raw_key]
 
         # handle text + ext text
-        if wVariables.is_non_ext_text_var(lhs):
+        if is_non_ext_text_var(lhs):
             return to_get_from.get_val(active_event)[raw_key]
 
-        if isinstance(lhs,wVariables.WaldoExtTextVariable):
+        if isinstance(lhs,WaldoExternalTextVariable):
             return to_get_from.get_val(active_event).get_val(active_event)[raw_key]
 
         # handle internals containers
-        if waldoReferenceContainerBase.is_reference_container(lhs):
+        if is_reference_container(lhs):
             return to_get_from.get_val_on_key(active_event,raw_key)
 
         # handle map, list, struct
@@ -516,13 +525,13 @@ class _ExecutingEventContext(object):
             util.is_string(to_iter_over)):
             return iter(to_iter_over)
 
-        if wVariables.is_non_ext_text_var(to_iter_over):
+        if is_non_ext_text_var(to_iter_over):
             return iter(to_iter_over.get_val(active_event))
 
-        if wVariables.is_non_ext_map_var(to_iter_over):
+        if is_non_ext_map_var(to_iter_over):
             return iter(to_iter_over.get_val(active_event).get_keys(active_event))
 
-        if wVariables.is_non_ext_list_var(to_iter_over):
+        if is_non_ext_list_var(to_iter_over):
             # FIXME: This is an inefficient way of reading all values
             # over list.
             to_return = []
@@ -539,8 +548,8 @@ class _ExecutingEventContext(object):
                 # WaldoList/WaldoMap first.  Note this is unnecessary
                 # for all other for iterations because none of the
                 # others possibly return a WaldoObject to iterate over.
-                if (wVariables.is_non_ext_list_var(to_append) or
-                    wVariables.is_non_ext_map_var(to_append)):
+                if (is_non_ext_list_var(to_append) or
+                    is_non_ext_map_var(to_append)):
                     to_append = to_append.get_val(active_event)
                 
                 to_return.append(to_append)
@@ -560,14 +569,14 @@ class _ExecutingEventContext(object):
             return str(what_to_call_to_text_on)
 
         # strings for waldo variable value types
-        if (wVariables.is_non_ext_text_var(what_to_call_to_text_on) or
-            wVariables.is_non_ext_num_var(what_to_call_to_text_on) or
-            wVariables.is_non_ext_true_false_var(what_to_call_to_text_on)):
+        if (is_non_ext_text_var(what_to_call_to_text_on) or
+            is_non_ext_num_var(what_to_call_to_text_on) or
+            is_non_ext_true_false_var(what_to_call_to_text_on)):
             return str(what_to_call_to_text_on.get_val(active_event))
 
         # strings for reference types
         # lists
-        if wVariables.is_non_ext_list_var(what_to_call_to_text_on):
+        if is_non_ext_list_var(what_to_call_to_text_on):
             to_return_arg = ''
             waldo_internal_list = what_to_call_to_text_on.get_val(active_event)
             # get each element separately from the list and call
@@ -579,7 +588,7 @@ class _ExecutingEventContext(object):
             return '[%s]' % to_return_arg
 
         # maps
-        if wVariables.is_non_ext_map_var(what_to_call_to_text_on):
+        if is_non_ext_map_var(what_to_call_to_text_on):
             to_return_arg = ''
             waldo_internal_map = what_to_call_to_text_on.get_val(active_event)
             # get each element separately from the list and call
@@ -626,12 +635,12 @@ class _ExecutingEventContext(object):
             util.is_string(what_calling_len_on)):
             return len(what_calling_len_on)
 
-        if wVariables.is_non_ext_text_var(what_calling_len_on):
+        if is_non_ext_text_var(what_calling_len_on):
             return len(what_calling_len_on.get_val(active_event))
 
 
-        if (wVariables.is_non_ext_list_var(what_calling_len_on) or
-            wVariables.is_non_ext_map_var(what_calling_len_on)):
+        if (is_non_ext_list_var(what_calling_len_on) or
+            is_non_ext_map_var(what_calling_len_on)):
             return what_calling_len_on.get_val(active_event).get_len(active_event)
 
         util.logger_assert(
@@ -743,20 +752,18 @@ class _ExecutingEventContext(object):
         if util.is_string(rhs):
             return lhs_val in rhs
 
-        elif wVariables.is_non_ext_text_var(rhs):
+        elif is_non_ext_text_var(rhs):
             return lhs_val in rhs.get_val(active_event)
 
-        elif wVariables.is_non_ext_map_var(rhs):
-            return rhs.get_val(active_event).contains_key_called(
-                active_event,lhs_val)
-
-        elif wVariables.is_non_ext_list_var(rhs):
-            return rhs.get_val(active_event).contains_val_called(
-                active_event,lhs_val)
+        elif is_non_ext_map_var(rhs):
+            return rhs.contains_key_called(active_event,lhs_val)
+        
+        elif is_non_ext_list_var(rhs):
+            return rhs.contains_val_called(active_event,lhs_val)
 
         util.logger_assert(
             'Error when calling in: unknown right hand side of expression')
-        
+
     
 def de_waldoify(val,active_event):
     '''

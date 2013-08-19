@@ -10,6 +10,8 @@ from waldo.lib.waldoLockedMapBase import MapBaseClass
 from waldo.lib.waldoLockedListBase import ListBaseClass
 from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
 
+#### HELPER FUNCTIONS ####
+
 def ensure_locked_obj(new_val,host_uuid):
     '''
     @param {Anything} new_val --- If new_val is a non-Waldo object,
@@ -18,6 +20,8 @@ def ensure_locked_obj(new_val,host_uuid):
     This method is used to ensure that each individual entry in a
     map/list is also protected.
     '''
+    util.logger_warn('In ensure locked obj should think about single threaded variables.')
+
     if isinstance(new_val , WaldoLockedObj):
         return new_val
 
@@ -29,7 +33,32 @@ def ensure_locked_obj(new_val,host_uuid):
         return LockedTextVariable(host_uuid,False,new_val)
     else:
         util.logger_assert('Unknown object type.')
-    
+
+
+def is_non_ext_text_var (to_check):
+    return (isinstance(to_check,LockedTextVariable) or
+            isinstance(to_check,SingleThreadedLockedTextVariable))
+
+def is_reference_container(to_check):
+    return (isinstance(to_check,WaldoLockedContainer) or
+            isinstance(to_check,SingleThreadedLockedContainerVariable))
+
+def is_non_ext_map_var (to_check):
+    return (isinstance(to_check,LockedMapVariable) or
+            isinstance(to_check,SingleThreadedLockedMapVariable))
+
+def is_non_ext_list_var (to_check):
+    return (isinstance(to_check,LockedListVariable) or
+            isinstance(to_check,SingleThreadedLockedListVariable))
+
+def is_non_ext_num_var (to_check):
+    return (isinstance(to_check,LockedNumberVariable) or
+            isinstance(to_check,SingleThreadedLockedNumberVariable))
+
+def is_non_ext_true_false_var (to_check):
+    return (isinstance(to_check,LockedTrueFalseVariable) or
+            isinstance(to_check,SingleThreadedLockedTrueFalseVariable))
+
 
 ##### Multi-threaded value variables #####
 class LockedNumberVariable(LockedValueVariable):

@@ -36,6 +36,10 @@ class WaldoLockedContainer(MultiThreadedObj):
         wrapped_val = self.acquire_read_lock(active_event)
         return contains_key in wrapped_val.val
 
+    def contains_val_called(self,active_event,contains_val):
+        wrapped_val = self.acquire_read_lock(active_event)
+        return contains_val in wrapped_val.val
+    
     def serializable_var_tuple_for_network(
         self,parent_delta,var_name,active_event,force):
 
@@ -92,6 +96,9 @@ class SingleThreadedLockedContainerVariable(SingleThreadedObj):
     def contains_key_called(self,active_event,contains_key):
         return contains_key in self.val.val
 
+    def contains_val_called(self,active_event,contains_val):
+        return contains_val in self.val.val
+    
     def get_dirty_wrapped_val(self,active_event):
         '''
         @see waldoLockedObj.waldoLockedObj
