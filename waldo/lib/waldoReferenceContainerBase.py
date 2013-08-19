@@ -5,6 +5,7 @@ import itertools
 import singleThreadReference
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 from waldoObj import WaldoObj
+import datetime
 
 def is_reference_container(to_check):
     return (isinstance(to_check,_ReferenceContainer) or
@@ -457,8 +458,10 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-
-                        print "Changed value at " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + value + " to " + str(val[field_to_update]) + "|" + self.get_host()
+                        log = self.get_host() + "|" + str(self.get_parent()) + "|Update|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "|" + str(datetime.datetime.now()) + "\n"
+                        print log
+                        f = open(str(self.get_host()), "a")
+                        f.write(log)
                         w_obj.val[field_to_update] = (
                             val[field_to_update].promote_multithreaded(self.peered))
                     else:
@@ -467,7 +470,10 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-                        print "Changed value at " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + value + " to " + str(val[field_to_update]) + "|" + self.get_host()
+                        log = self.get_host() + "|" + str(self.get_parent()) + "|Update|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "|" + str(datetime.datetime.now()) + "\n"
+                        print log
+                        f = open(str(self.get_host()), "a")
+                        f.write(log)
                         w_obj.val[field_to_update] = val[field_to_update]
                     
         elif isinstance(val,list):
@@ -498,7 +504,10 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     w_obj.val[field_to_update] = (
                         val[field_to_update].promote_multithreaded(self.peered))
                 else:
-                    print "Changed value at index " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + str(w_obj.val[field_to_update]) + " to " + str(val[field_to_update]) + "|" + self.get_host()
+                    log = self.get_host() + "|" + str(self.get_parent()) + "|Update|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "|" + str(datetime.datetime.now()) + "\n"
+                    print log
+                    f = open(str(self.get_host()), "a")
+                    f.write(log)
                     w_obj.val[field_to_update] = val[field_to_update]
 
 

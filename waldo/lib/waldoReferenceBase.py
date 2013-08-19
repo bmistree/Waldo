@@ -4,6 +4,7 @@ from abc import abstractmethod
 import waldoNotificationMap
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 from  waldoObj import WaldoObj
+import datetime
 
 
 class _ReferenceBase(WaldoObj):
@@ -365,15 +366,20 @@ class _ReferenceBase(WaldoObj):
             self._lock()
             internal_val = self.val
             self._unlock()
-            print "Read value " + str(internal_val) + " from " + str(self) + "|" + self.str_uuid
-
+            log = self.str_uuid + "|" + str(self) + "|Read|" + str(internal_val) + "|" + str(datetime.datetime.now()) + "\n"
+            print log
+            f = open(str(self.str_uuid), "a")
+            f.write(log)
             return internal_val
         
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_val = self._dirty_map[invalid_listener.uuid].val
         self._unlock()
-        print "Read value " + str(dirty_val) + " from " + str(self) + "|" + self.str_uuid
+        log = self.str_uuid + "|" + str(self) + "|Read|" + str(dirty_val) + "|" + str(datetime.datetime.now()) + "\n"
+        print log
+        f = open(str(self.str_uuid), "a")
+        f.write(log)
         return dirty_val
 
     def write_if_different(self,invalid_listener,new_val):
@@ -394,7 +400,10 @@ class _ReferenceBase(WaldoObj):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
-        print "Changed value at " + str(self) + " from " + str(dirty_element.val) + " to " + str(new_val) + "|" + self.str_uuid      
+        log = str(self) + "|Update|" + str(dirty_element.val) + "|" + str(new_val) + "|" + self.str_uuid + "|" + str(datetime.datetime.now()) + "\n"
+        print log
+        f = open(str(self.str_uuid), "a")
+        f.write(log)    
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
 
         if self.peered:

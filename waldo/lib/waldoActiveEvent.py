@@ -6,6 +6,7 @@ import waldoExecutingEvent
 from abc import abstractmethod
 from util import Queue
 import waldoDeadlockDetector
+import datetime
 
 
 
@@ -98,8 +99,12 @@ class _ActiveEvent(_InvalidationListener):
         
         self.local_endpoint = local_endpoint
         endpointID = ''.join(x.encode('hex') for x in self.local_endpoint.id())
-
-        print "Endpoint|" + str(endpointID) + "|" + self.str_uuid
+        log = self.str_uuid + "|" + "Endpoint|" + str(endpointID) + "|" + str(datetime.datetime.now()) + "\n"
+        print log
+        f = open(str(self.str_uuid), "a")
+        f.write(log)
+        f = open(str("master.txt"), "a")
+        f.write(str(self.str_uuid)+"\n")
         # If we hit any sequences that have oncomplete handlers, we
         # keep track of each that we must fire.
         self.on_completes_to_fire = []
@@ -1037,7 +1042,10 @@ class _ActiveEvent(_InvalidationListener):
                 except Queue.Empty:
                     break
         endpointID = ''.join(x.encode('hex') for x in self.local_endpoint.id())
-        print "Finished|" + endpointID + "|" + self.str_uuid
+        log = self.str_uuid + "|" + "Finished|" + endpointID + "|" + str(datetime.datetime.now()) + "\n"
+        print log
+        f = open(str(self.str_uuid), "a")
+        f.write(log)
                 
     def set_breakout(self):
         self._breakout_mutex.acquire()
