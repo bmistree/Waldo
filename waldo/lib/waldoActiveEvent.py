@@ -94,11 +94,12 @@ class _ActiveEvent(_InvalidationListener):
             self,uuid)
 
         self.str_uuid = str(self.uuid)
+        self.str_uuid = ''.join(x.encode('hex') for x in self.str_uuid)
         
         self.local_endpoint = local_endpoint
         endpointID = ''.join(x.encode('hex') for x in self.local_endpoint.id())
 
-        print "Endpoint master is " + str(endpointID)
+        print "Endpoint|" + str(endpointID) + "|" + self.str_uuid
         # If we hit any sequences that have oncomplete handlers, we
         # keep track of each that we must fire.
         self.on_completes_to_fire = []
@@ -1036,7 +1037,7 @@ class _ActiveEvent(_InvalidationListener):
                 except Queue.Empty:
                     break
         endpointID = ''.join(x.encode('hex') for x in self.local_endpoint.id())
-        print "Event finished at " + endpointID
+        print "Finished|" + endpointID + "|" + self.str_uuid
                 
     def set_breakout(self):
         self._breakout_mutex.acquire()

@@ -22,10 +22,13 @@ class _ReferenceBase(WaldoObj):
         self.host_uuid = host_uuid
         self.uuid = util.generate_uuid()
         self.version_obj = version_obj
-        
+        self.str_uuid = str(host_uuid)
+
+        self.str_uuid = ''.join(x.encode('hex') for x in self.str_uuid)
         self.peered = peered
         
         self.version_obj.register_object(self)
+        self.version_obj.register_host(self.str_uuid)
 
         self.val = init_val
         self.dirty_element_constructor = dirty_element_constructor
@@ -362,7 +365,7 @@ class _ReferenceBase(WaldoObj):
             self._lock()
             internal_val = self.val
             self._unlock()
-            print "Read value " + str(internal_val) + " from " + str(self)
+            print "Read value " + str(internal_val) + " from " + str(self) + "|" + self.str_uuid
 
             return internal_val
         
@@ -370,7 +373,7 @@ class _ReferenceBase(WaldoObj):
         self._add_invalid_listener(invalid_listener)
         dirty_val = self._dirty_map[invalid_listener.uuid].val
         self._unlock()
-        print "Read value " + str(dirty_val) + " from " + str(self)
+        print "Read value " + str(dirty_val) + " from " + str(self) + "|" + self.str_uuid
         return dirty_val
 
     def write_if_different(self,invalid_listener,new_val):
@@ -391,7 +394,7 @@ class _ReferenceBase(WaldoObj):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
-        print "Changed value at " + str(self) + " from " + str(dirty_element.val) + " to " + str(new_val)        
+        print "Changed value at " + str(self) + " from " + str(dirty_element.val) + " to " + str(new_val) + "|" + self.str_uuid      
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
 
         if self.peered:
@@ -669,7 +672,12 @@ class _ReferenceVersion(object):
     
     def register_object(self, obj):
         self.masterobj = obj  
-        #print str(self.masterobj)
-
+        
     def get_parent(self):
-        return str(self.masterobj)  
+        return str(self.masterobj)
+
+    def register_host(self, uuid):
+        self.uuid = uuid
+
+    def get_host(self):
+        return self.uuid

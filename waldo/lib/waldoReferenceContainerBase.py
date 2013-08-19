@@ -22,7 +22,8 @@ class _ReferenceContainer(waldoReferenceBase._ReferenceBase):
     def __init__(
         self,host_uuid,peered,init_val,version_obj,
         dirty_element_constructor):
-       
+        self.str_uuid = host_uuid
+        self.str_uuid = ''.join(x.encode('hex') for x in self.str_uuid)
         waldoReferenceBase._ReferenceBase.__init__(
             self,host_uuid,peered,init_val,version_obj,
             dirty_element_constructor)
@@ -457,7 +458,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                         else:
                             value = "None"
 
-                        print "Changed value at " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + value + " to " + str(val[field_to_update])
+                        print "Changed value at " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + value + " to " + str(val[field_to_update]) + "|" + self.get_host()
                         w_obj.val[field_to_update] = (
                             val[field_to_update].promote_multithreaded(self.peered))
                     else:
@@ -466,7 +467,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-                        print "Changed value at " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + value + " to " + str(val[field_to_update])
+                        print "Changed value at " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + value + " to " + str(val[field_to_update]) + "|" + self.get_host()
                         w_obj.val[field_to_update] = val[field_to_update]
                     
         elif isinstance(val,list):
@@ -497,7 +498,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     w_obj.val[field_to_update] = (
                         val[field_to_update].promote_multithreaded(self.peered))
                 else:
-                    print "Changed value at index " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + str(w_obj.val[field_to_update]) + " to " + str(val[field_to_update])
+                    print "Changed value at index " + str(field_to_update) + " of " + str(self.get_parent()) + " from " + str(w_obj.val[field_to_update]) + " to " + str(val[field_to_update]) + "|" + self.get_host()
                     w_obj.val[field_to_update] = val[field_to_update]
 
 

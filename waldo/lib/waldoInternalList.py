@@ -257,6 +257,7 @@ class _InternalListVersion(
         copy = _InternalListVersion()
         copy.commit_num = self.commit_num
         copy.masterobj = self.masterobj
+        copy.uiid = self.uiid
         return copy
 
     def del_key_list(self,del_index,length_of_list_before_del):
