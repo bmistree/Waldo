@@ -35,9 +35,10 @@ _waldo_classes = {
     'WaldoFunctionVariable': wVariables.WaldoFunctionVariable,
     
     'WaldoEndpointVariable': wVariables.WaldoEndpointVariable,
-    'WaldoExtNumVariable': wVariables.WaldoExtNumVariable,
-    'WaldoExtTrueFalseVariable': wVariables.WaldoExtTrueFalseVariable,
-    'WaldoExtTextVariable': wVariables.WaldoExtTextVariable,
+    
+    'WaldoExtNumVariable': waldoLockedVariables.WaldoExternalNumberVariable,
+    'WaldoExtTrueFalseVariable': waldoLockedVariables.WaldoExternalTrueFalseVariable,
+    'WaldoExtTextVariable': waldoLockedVariables.WaldoExternalTextVariable,
 
     # single thread variables
     'WaldoSingleThreadNumVariable': waldoLockedVariables.SingleThreadedLockedNumberVariable,

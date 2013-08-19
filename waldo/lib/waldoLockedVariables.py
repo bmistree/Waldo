@@ -8,6 +8,7 @@ from waldo.lib.waldoLockedValueVariablesHelper import LockedValueVariable
 from waldo.lib.waldoLockedContainer import SingleThreadedLockedContainerVariable
 from waldo.lib.waldoLockedMapBase import MapBaseClass
 from waldo.lib.waldoLockedListBase import ListBaseClass
+from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
 
 def ensure_locked_obj(new_val,host_uuid):
     '''
@@ -50,6 +51,29 @@ class SingleThreadedLockedTextVariable(SingleThreadedLockedValueVariable):
 
 class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
     pass
+
+
+###### External value variables #####
+class WaldoExternalTextVariable(WaldoExternalValueVariable):
+    def __init__(self,host_uuid,peered=False,init_val=None):
+        if init_val is None:
+            init_val = MultiThreadedTextVariable(host_uuid,False,'')
+        super(WaldoExternalMultiThreadedTextVariable,self).__init__(host_uuid,False,init_val)
+
+        
+class WaldoExternalNumberVariable(WaldoExternalValueVariable):
+    def __init__(self,host_uuid,peered=False,init_val=None):
+        if init_val is None:
+            init_val = MultiThreadedTextVariable(host_uuid,False,0)
+        super(WaldoExternalMultiThreadedTextVariable,self).__init__(host_uuid,False,init_val)
+
+class WaldoExternalTrueFalseVariable(WaldoExternalValueVariable):
+    def __init__(self,host_uuid,peered=False,init_val=None):
+        if init_val is None:
+            init_val = MultiThreadedTextVariable(host_uuid,False,False)
+        super(WaldoExternalMultiThreadedTextVariable,self).__init__(host_uuid,False,init_val)
+        
+
 
 
 class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
