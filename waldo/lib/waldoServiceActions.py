@@ -119,7 +119,7 @@ class _ReceiveRequestCommitAction(_Action):
             pass
         else:
             evt.forward_commit_request_and_try_holding_commit_on_myself(
-                self.from_partner)        
+                (self.from_partner or self.local_endpoint.get_conn_failed()))
         
         
 class _ReceiveRequestCompleteCommitAction(_Action):
