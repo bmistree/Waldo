@@ -74,13 +74,11 @@ class _VariableStore(object):
                 'Have not specified a struct constructor in variable store. ' +
                 'Also, no longer have single threaded variables.')
 
-            self.single_thread_list_constructor = None
-            self.single_thread_map_constructor = None
-            self.single_thread_struct_constructor = None
+            self.single_thread_list_constructor = waldoLockedVariables.SingleThreadedLockedListVariable
+            self.single_thread_map_constructor = waldoLockedVariables.SingleThreadedLockedMapVariable
             
-            # self.single_thread_list_constructor = wVariables.WaldoSingleThreadListVariable
-            # self.single_thread_map_constructor = wVariables.WaldoSingleThreadMapVariable
             # self.single_thread_struct_constructor = wVariables.WaldoSingleThreadUserStructVariable
+            self.single_thread_struct_constructor = None
 
             
     var_constructors = VarConstructors()
