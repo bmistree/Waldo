@@ -3,19 +3,6 @@ omid_player
 Endpoint OmidPlayer;
 Endpoint OmidPlayerHelper;
 
-Struct node_information {
-    Number node_num;
-    Number x;
-    Number y;
-    TrueFalse found;
-}
-
-Struct arc_information {
-    Number x1;
-    Number y1;
-    Number x2;
-    Number y2;
-}
 
 Sequences {
   AddUser: OmidPlayer.doNothing -> OmidPlayerHelper.add_to_server;
@@ -26,6 +13,19 @@ Sequences {
   DisplayWaiting: OmidPlayerHelper.doNothing -> OmidPlayer.displayWaitingMessage;
   UpdateGame: OmidPlayerHelper.setMap -> OmidPlayer.updateMap;
 }
+
+Struct node_information {
+    Number node_num;
+    Number x;
+    Number y;
+    TrueFalse found;
+}
+
+Struct arc_information {
+    Text node1;
+    Text node2;
+}
+
 
 Peered {
     Text username;
@@ -38,10 +38,10 @@ Sequence AddUser() {
     }
 }
 
-Sequence SendWaiting(Text message) {
+Sequence SendWaitingMsg(Text message) {
     OmidPlayer.doNothing{}
     OmidPlayerHelper.sendServer{
-        game_server.broadcastWaitingMessage(Text message);
+        game_server.broadcastWaitingMessage(message);
     }        
 }
 
@@ -61,9 +61,9 @@ Sequence LeaveWaiting() {
 
 Sequence CheckGameOver() returns TrueFalse game_over {
     OmidPlayer.doNothing{}
-    OmidPlayer.checkServer{
+    OmidPlayerHelper.checkServer{
         game_over = game_server.game_ended();
-
+    }
 }
 
 Sequence DisplayWaiting(Text message) {
@@ -73,7 +73,7 @@ Sequence DisplayWaiting(Text message) {
     }
 }
 
-Sequence UpdateGame(Text message) {
+Sequence UpdateGame() {
     Map(from: Text, to: Struct node_information) node_map;
     List(element: Struct arc_information) arc_map;
     OmidPlayerHelper.setMap{
@@ -81,21 +81,25 @@ Sequence UpdateGame(Text message) {
         arc_map = arcs;
     }
     OmidPlayer.updateMap{
-        clear_map()
+        clear_map();
         for (Text answer in node_map) {
             Struct node_information info = node_map[answer];
             draw_circle(info.x, info.y, info.found, info.node_num, answer);
         }
         for (Struct arc_information arc_info in arc_map) {
-            draw_arc(arc_info.x1, arc_info.y1, arc_info.x2, arc_info.y2);
+            Struct node_information node1 = node_map[arc_info.node1];
+            Struct node_information node2 = node_map[arc_info.node2];
+            if (node1.found and node2.found) {
+                draw_arc(node1.x, node1.y, node2.x, node2.y);
+            }
         }
     }
 }
 
-
-Endpoint OmidPlayer {
+OmidPlayer {
     External Text waiting_message;
-    Function(returns: Nothing) draw_circle;
+    Function(in: Number, Number, TrueFalse, Number, Text; returns: Nothing) draw_circle;
+    Function(in: Number, Number, Number, Number; returns: Nothing) draw_arc;
     Function(returns: Nothing) clear_map;
     onCreate(Text name, External Text gui, Function(returns: Nothing) draw, Function(returns: Nothing) clear) {
         username = name;
@@ -107,30 +111,28 @@ Endpoint OmidPlayer {
         return CheckGameOver();
     }
     Public Function send_to_waiting(Text message) {
-        SendWaiting(message);
+        SendWaitingMsg(message);
     }
 }
 
-Endpoint OmidPlayerHelper {
+OmidPlayerHelper {
     Endpoint game_server;
     Map(from: Text, to: Struct node_information) nodes;
     List(element: Struct arc_information) arcs;
     onCreate(Endpoint server) {
         game_server = server;
     }
-    Public Function init_map(Map(from: Text, to: Struct node_information)) node_info, List(element: Struct arc_information) arc_info) {
+
+    Public Function init_map(Map(from: Text, to: Struct node_information) node_info, List(element: Struct arc_information) arc_info) {
         nodes = node_info;
         arcs = arc_info;
-        UpdateGame()
+        UpdateGame();
     }
     Public Function update_map(Text answer_found) {
         nodes[answer_found].found = True;
-        UpdateGame()
+        UpdateGame();
     }
     Public Function get_new_waiting_message(Text message) {
         DisplayWaiting(message);
-    }
-    Public Function get_new_game_message(Text message) {
-        DisplayGame(message);
     }
 }

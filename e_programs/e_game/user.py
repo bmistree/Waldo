@@ -3,6 +3,7 @@ from user_login_emitted import UserLogin
 from server_emitted import Server
 from player_emitted import Player
 from anagram_player import AnagramPlayer
+from omid_player import OmidPlayer
 from gui_string import GUI_String_Ext
 from login import LoginWindow, MenuWindow
 from wx import *
@@ -146,6 +147,9 @@ def read_command(message):
 
     elif message.startswith('anagram_game'):
         anagram_player = AnagramPlayer(name)
+
+    elif message.startswith('iwanttoplaywithomid'):
+        omid_player = OmidPlayer(name)
 
     elif message.startswith('h'):
         text_display.AppendText('Commands:\n\t/quit - to leave the chatroom.\n\t/private [username] [message] - to send a private message.\n\t/users_list - to see a list of users.\n\t/anagram_game - to enter the anagram game.\n')

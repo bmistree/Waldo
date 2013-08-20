@@ -15,9 +15,12 @@ import waldo.lib.waldoExecutingEvent as waldoExecutingEvent
 import waldo.lib.waldoVariableStore as waldoVariableStore
 import waldo.lib.shim.get_math_endpoint as get_math_endpoint
 import waldo.lib.waldoReferenceBase as waldoReferenceBase
+<<<<<<< HEAD
 import waldo.lib.WaldoSSL.secure
 import waldo.lib.WaldoSSL.keymanager
 import shutil
+=======
+>>>>>>> e2e7f3e1acd64e0d102e5f9921d4959fbaf47d91
 
 StoppedException = util.StoppedException
 

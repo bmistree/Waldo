@@ -2,7 +2,10 @@ import threading
 import waldo.lib.waldoCallResults as waldoCallResults
 import waldo.lib.waldoReferenceBase as waldoReferenceBase
 import waldo.lib.waldoReferenceContainerBase as waldoReferenceContainerBase
+<<<<<<< HEAD
 
+=======
+>>>>>>> e2e7f3e1acd64e0d102e5f9921d4959fbaf47d91
 import numbers
 
 import waldo.lib.util as util

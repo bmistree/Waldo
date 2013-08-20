@@ -1,7 +1,11 @@
 from wx import *
 from wx.lib.ogl import *
 from waiting_room import WaitingRoom
-import time
+from omid_player_emitted import OmidPlayer
+from gui_string import GUI_String_Ext
+import time, sys, os
+sys.path.append(os.path.join('../../'))
+from waldo.lib import Waldo
 HOSTNAME = '127.0.0.1'
 OMID_PORT = 6768
 CIRCLE_DIAMETER = 50
@@ -39,6 +43,12 @@ class OmidPlayer(Frame):
 
     def clear_map(self, endpoint):
         self.diagram.DeleteAllShapes()
+#Make draw arc function
+    
+    def draw_arc(self, endpoint, x1, y1, x2, y2):
+        line = LineShape()
+        line.SetEnds(x1, y1, x2, y2)
+        line.SetBrush(Brush('BLACK', style = SOLID))
 
     def draw_circle(self, endpoint, x_pos, y_pos, found, num, text):
         circle = CircleShape(CIRCLE_DIAMETER)

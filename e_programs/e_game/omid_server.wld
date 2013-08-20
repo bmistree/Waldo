@@ -16,10 +16,8 @@ Struct node_information {
 
 
 Struct arc_information {
-    Number x1;
-    Number y1;
-    Number x2;
-    Number y2;
+    Text node1;
+    Text node2;
 }
 
 OmidServer {
@@ -36,21 +34,22 @@ OmidServer {
 
     Public Function start_game() {
         game_in_session = True;
-        for (Endpoint player in game) {
-            player.init_map(nodes, arcs)
+        for (Text player in game) {
+            game[player].player_helper.init_map(nodes, arcs);
+        }
     }
 
     Public Function update_maps(Text answer) {
         for (Text user in game) {
-            game[user].update_map(answer);
+            game[user].player_helper.update_map(answer);
         }
     }
 
     Public Function check_node(Text username, Text answer, Number node_number) returns TrueFalse{
-        if (name in nodes) {
+        if (username in nodes) {
             if (node_number == nodes[answer].node_num) {
-                if (not nodes[name].found) {
-                    nodes[name].found = True;
+                if (not nodes[username].found) {
+                    nodes[username].found = True;
                     update_maps(answer);
                     //Update score
                     return True;
@@ -59,7 +58,11 @@ OmidServer {
             }
         }
         //Tell incorrect
-        return False
+        return False;
+    }
+
+    Public Function get_player_count() returns Number{
+        return len(game);
     }
 
     Public Function add_user(Text username, Endpoint node) {
@@ -96,11 +99,12 @@ OmidServer {
 
     Public Function end_game() {
         game_in_session = False;
-        game_over = True;
+        /*  game_over = True;
         Text message = 'Game Over\n';
         for (Text username in game) {
             message += username + ' - ' + toText(game[username].score) + '\n';
         }
-        broadcastMessage(message);
+        broadcastMessage(message);*/
         game = {};
     }
+}
