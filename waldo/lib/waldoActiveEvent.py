@@ -1171,6 +1171,8 @@ class RootActiveEvent(_ActiveEvent):
         '''
         # Send an ApplicationExceptionCallResult to each listening queue
         for reply_with_uuid in self.message_listening_queues_map.keys():
+            ### FIXME: It probably isn't necessary to send an exception result to
+            ### each queue.
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
             message_listening_queue.put(
                 waldoCallResults._ApplicationExceptionCallResult())
