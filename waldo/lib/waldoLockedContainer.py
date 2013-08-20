@@ -46,12 +46,7 @@ class WaldoLockedContainer(MultiThreadedObj):
         util.logger_assert(
             'Still must define serializable_var_tuple_for_network on ' +
             'locked container objects.')
-
-    def de_waldoify(self,active_event):
-        wrapped_val = self.acquire_read_lock(active_event)
-        return pickle.loads(pickle.dumps(wrapped_val.val))
-
-        
+    
     def incorporate_deltas(self,delta_to_incorporate,constructors,active_event):
         '''
         @param {SingleListDelta or SingleMapDelta} delta_to_incorporate
@@ -80,6 +75,7 @@ class SingleThreadedLockedContainerVariable(SingleThreadedObj):
     def get_val_on_key(self,active_event,key):
         return self.val.val[key].get_val(active_event)
 
+    
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
         util.logger_warn('Not handling copy_if_peered: should not copy in this case')
         return self.val.set_val_on_key(active_event,key,to_write)
@@ -105,9 +101,6 @@ class SingleThreadedLockedContainerVariable(SingleThreadedObj):
         '''
         return self.val
 
-    def de_waldoify(self,active_event):
-        return pickle.loads(pickle.dumps(self.val.val))
-    
     def incorporate_deltas(self,delta_to_incorporate,constructors,active_event):
         '''
         @param {SingleListDelta or SingleMapDelta} delta_to_incorporate

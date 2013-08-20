@@ -22,6 +22,9 @@ class DataWrapper(object):
         self.has_been_written_since_last_msg = False
         return to_return
 
+    def de_waldoify(self,active_event):
+        return self.val
+    
 
 class ValueTypeDataWrapper(DataWrapper):
     pass
@@ -61,19 +64,23 @@ class ReferenceTypeDataWrapper(DataWrapper):
         self.partner_change_log = []
 
         self.val = val
-        
-        # if isinstance(val,ReferenceTypeDataWrapper):
-        #     val = val.val
-            
-        # if isinstance(val,dict):
-        #     self.val = {}
-        #     for key in val:
-        #         self.val[key] = val[key]
-        # else:
-        #     self.val = []
-        #     for list_val in val:
-        #         self.val.append(list_val)
 
+        
+    def de_waldoify(self,active_event):
+        if isinstance(self.val,list):
+            to_return = []
+            for item in self.val:
+                to_return.append(item.de_waldoify(active_event))
+                
+        else:
+            to_return = []
+            for key in self.val:
+                val = self.val[key]
+                to_return[key] = val.de_waldoify(active_event)
+
+        return to_return
+
+        
     def set_val_on_key(self,active_event,key,to_write,incorporating_deltas=False):
         '''
         @param {bool} incorporating_deltas --- True if we are setting

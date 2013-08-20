@@ -111,6 +111,10 @@ class MultiThreadedObj(WaldoLockedObj):
     def _unlock(self):
         self._mutex.release()
         
+    def de_waldoify(self,active_event):
+        wrapped_val = self.acquire_read_lock(active_event)
+        return wrapped_val.de_waldoify(active_event)
+        
     def acquire_read_lock(self,active_event):
         '''
         DOES NOT ASSUME ALREADY WITHIN LOCK

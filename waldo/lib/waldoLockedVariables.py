@@ -21,7 +21,9 @@ def ensure_locked_obj(new_val,host_uuid):
     map/list is also protected.
     '''
     util.logger_warn('In ensure locked obj should think about single threaded variables.')
-
+    util.logger_warn(
+        'If single threaded variable is not peered, then do not need to actually use waldo variables.')
+    
     if isinstance(new_val , WaldoLockedObj):
         return new_val
 
@@ -112,7 +114,7 @@ class LockedMapVariable(WaldoLockedContainer,MapBaseClass):
         if init_val is not None:
             # initialize with new data
             for key in init_val.keys():
-                val = init_val[key]
+                val = ensure_locked_obj(init_val[key],self.host_uuid)
                 self.val.add_key(None,key,val,True)
 
 
@@ -146,7 +148,7 @@ class SingleThreadedLockedMapVariable(
         if init_val is not None:
             # initialize with new data
             for key in init_val.keys():
-                val = init_val[key]
+                val = ensure_locked_obj(init_val[key],self.host_uuid)
                 self.val.add_key(None,key,val,True)
 
         
@@ -178,7 +180,7 @@ class LockedListVariable(WaldoLockedContainer,ListBaseClass):
         if init_val is not None:
             # initialize with new data
             for key in range(0,len(init_val)):
-                val = init_val[key]
+                val = ensure_locked_obj(init_val[key],self.host_uuid)                
                 self.val.append(None,val,True)
 
         
@@ -217,13 +219,11 @@ class SingleThreadedLockedListVariable(
         super(SingleThreadedLockedListVariable,self).__init__(
             ReferenceTypeDataWrapper,host_uuid,peered,[])
 
-        if init_val is None:
-            init_val = []
-
-        # initialize with new data
-        for key in range(0,len(init_val)):
-            val = init_val[key]
-            self.val.append(None,val,True)
+        if init_val is not None:
+            # initialize with new data
+            for key in range(0,len(init_val)):
+                val = ensure_locked_obj(init_val[key],self.host_uuid)                            
+                self.val.append(None,val,True)
 
 
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):

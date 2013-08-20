@@ -120,9 +120,6 @@ class LockedValueVariable(MultiThreadedObj):
         return value_variable_serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force)
 
-    def de_waldoify(self,active_event):
-        wrapped_val = self.acquire_read_lock(active_event)
-        return wrapped_val.val
 
     
 class SingleThreadedLockedValueVariable(SingleThreadedObj):
@@ -140,9 +137,6 @@ class SingleThreadedLockedValueVariable(SingleThreadedObj):
         '''
         return value_variable_serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force)
-
-    def de_waldoify(self,active_event):
-        return self.val.val
         
     
 
