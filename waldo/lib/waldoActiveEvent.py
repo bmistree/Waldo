@@ -1062,6 +1062,21 @@ class _ActiveEvent(_InvalidationListener):
         to_return = self.breakout
         self._breakout_mutex.release()
         return to_return
+
+    def send_application_exception_to_listener(self):
+        '''
+        Places an ApplicationExceptionCallResult in the event complete queue to 
+        indicate to the endpoint that an application exception has been raised 
+        somewhere down the call graph.
+        '''
+        # Send an ApplicationExceptionCallResult to each listening queue
+        for reply_with_uuid in self.message_listening_queues_map.keys():
+            ### FIXME: It probably isn't necessary to send an exception result to
+            ### each queue.
+            message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
+            message_listening_queue.put(
+                waldoCallResults._ApplicationExceptionCallResult())
+        
         
 # FIXME: are there any cases where we need to flush threadsafe queues
 # when completing a commit?
@@ -1163,20 +1178,6 @@ class RootActiveEvent(_ActiveEvent):
             message_listening_queue.put(
                 waldoCallResults._NetworkFailureCallResult())
 
-    def send_application_exception_to_listener(self):
-        '''
-        Places an ApplicationExceptionCallResult in the event complete queue to 
-        indicate to the endpoint that an application exception has been raised 
-        somewhere down the call graph.
-        '''
-        # Send an ApplicationExceptionCallResult to each listening queue
-        for reply_with_uuid in self.message_listening_queues_map.keys():
-            ### FIXME: It probably isn't necessary to send an exception result to
-            ### each queue.
-            message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
-            message_listening_queue.put(
-                waldoCallResults._ApplicationExceptionCallResult())
-        
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
         children_event_endpoint_uuids):
