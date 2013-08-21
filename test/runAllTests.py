@@ -143,6 +143,7 @@ def run_emit_tests():
     import emit_tests.application_exception_sequence_propagate_test
     import emit_tests.network_exception_test_propagate_endpoint_call
     import emit_tests.application_exception_endpoint_call_with_sequence_test
+    import emit_tests.application_exception_sequence_with_endpoint_call_test
 
     
     emit_tests_to_run = [
@@ -289,6 +290,11 @@ def run_emit_tests():
          'mid-sequence and propagated back through both a network connection ' +
          'and an endpoint call.',
          emit_tests.application_exception_endpoint_call_with_sequence_test.run_test),
+        
+        ('Tests application exception may be thrown on a remote endpoint ' + 
+         'during an endpoint call invoked mid-sequence and propagated back to ' +
+         'the root.',
+         emit_tests.application_exception_sequence_with_endpoint_call_test.run_test),
         ]
 
 
