@@ -139,8 +139,8 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
                         # socket closed before stop called
                         # indicate failure to endpoint and backout
                         self.local_endpoint.partner_connection_failure()
-                    break
                     self.close()
+                    break
 
                 self.received_data += data
                 self._decapsulate_msg_and_dispatch()
