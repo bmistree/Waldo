@@ -1,7 +1,7 @@
 import waldo.lib.util as util
 from waldo.lib.waldoLockedContainerHelpers import container_serializable_var_tuple_for_network
 
-class ListBaseClass(object):
+class InternalListBaseClass(object):
     def get_write_key_incorporate_deltas(self,container_written_action):
         return int(container_written_action.write_key_num)
 

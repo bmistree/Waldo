@@ -2,7 +2,7 @@ import waldo.lib.util as util
 from waldo.lib.waldoLockedContainerHelpers import container_serializable_var_tuple_for_network
 
 
-class MapBaseClass(object):
+class InternalMapBaseClass(object):
     def get_write_key_incorporate_deltas(self,container_written_action):
         if container_written_action.HasField('write_key_text'):
             index_to_write_to = container_written_action.write_key_text

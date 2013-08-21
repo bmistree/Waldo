@@ -8,7 +8,6 @@ sys.path.insert(0,deps_dir)
 import util
 import waldoConnectionObj
 from util import Queue
-import wVariables
 import waldoCallResults
 import waldoEndpoint
 import waldoExecutingEvent
@@ -31,10 +30,15 @@ _waldo_classes = {
     'WaldoTrueFalseVariable': waldoLockedVariables.LockedTrueFalseVariable,
     'WaldoMapVariable': waldoLockedVariables.LockedMapVariable,
     'WaldoListVariable': waldoLockedVariables.LockedListVariable,
-    'WaldoUserStructVariable': wVariables.WaldoUserStructVariable,
-    'WaldoFunctionVariable': wVariables.WaldoFunctionVariable,
-    
-    'WaldoEndpointVariable': wVariables.WaldoEndpointVariable,
+
+    # NOTE: must build these methods
+    'WaldoUserStructVariable': None,
+    'WaldoFunctionVariable': None,
+    'WaldoEndpointVariable': None,
+    # 'WaldoUserStructVariable': wVariables.WaldoUserStructVariable,
+    # 'WaldoFunctionVariable': wVariables.WaldoFunctionVariable,
+    # 'WaldoEndpointVariable': wVariables.WaldoEndpointVariable,
+
     
     'WaldoExtNumVariable': waldoLockedVariables.WaldoExternalNumberVariable,
     'WaldoExtTrueFalseVariable': waldoLockedVariables.WaldoExternalTrueFalseVariable,
@@ -47,9 +51,12 @@ _waldo_classes = {
 
     'WaldoSingleThreadMapVariable': waldoLockedVariables.SingleThreadedLockedMapVariable,
     'WaldoSingleThreadListVariable': waldoLockedVariables.SingleThreadedLockedListVariable,
-    'WaldoSingleThreadUserStructVariable': wVariables.WaldoSingleThreadUserStructVariable,
-    'WaldoSingleThreadEndpointVariable': wVariables.WaldoSingleThreadEndpointVariable,
     
+    # 'WaldoSingleThreadUserStructVariable': wVariables.WaldoSingleThreadUserStructVariable,
+    # 'WaldoSingleThreadEndpointVariable': wVariables.WaldoSingleThreadEndpointVariable,
+    'WaldoSingleThreadUserStructVariable': None,
+    'WaldoSingleThreadEndpointVariable': None,
+
     
     # call results
     'CompleteRootCallResult': waldoCallResults._CompleteRootCallResult,

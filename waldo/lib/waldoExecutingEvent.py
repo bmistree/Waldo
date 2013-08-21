@@ -3,10 +3,9 @@ import waldoCallResults
 import waldoReferenceBase
 import waldoReferenceContainerBase
 import numbers
-import wVariables
 import util
 import waldoEndpoint, waldoInternalMap, waldoInternalList
-from util import Queue
+from waldo.lib.util import Queue
 from waldo.lib.waldoLockedObj import WaldoLockedObj
 from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
 from waldo.lib.waldoLockedVariables import is_non_ext_num_var, is_non_ext_true_false_var
@@ -250,7 +249,8 @@ class _ExecutingEventContext(object):
                 constructor = LockedListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
                 util.logger_warn ('UPDATE-REFACTOR')
-                constructor = wVariables.WaldoEndpointVariable
+                util.logger_assert('Must finish')
+                # constructor = wVariables.WaldoEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
                 # checks if is function
@@ -276,8 +276,9 @@ class _ExecutingEventContext(object):
             elif isinstance(val,list):
                 constructor = SingleThreadedLockedListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
-                util.logger_warn ('UPDATE-REFACTOR')                
-                constructor = wVariables.WaldoSingleThreadEndpointVariable
+                util.logger_warn ('UPDATE-REFACTOR')
+                util.logger_assert('Must finish')
+                # constructor = wVariables.WaldoSingleThreadEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
                 # checks if is function
@@ -304,29 +305,30 @@ class _ExecutingEventContext(object):
         are and are not external) to populate their ext_args_array.
         This is passed in in this function.
         '''
-        if isinstance(val,wVariables.WaldoFunctionVariable):
-            if force_copy:
-                # means that it was a WaldoVariable: just call its copy
-                # method
-                return val.copy(active_event,new_peered,new_multi_threaded)
-            # otherwise, just return val
-            return val
-        elif hasattr(val,'__call__'):
-            # python function
-            pass
-        #### DEBUG
-        else:
-            util.logger_assert(
-                'incorrect type passed into func_turn_into_waldo_var')
-        #### END DEBUG
+        util.logger_assert('Must finish turn into wald var')
+        # if isinstance(val,wVariables.WaldoFunctionVariable):
+        #     if force_copy:
+        #         # means that it was a WaldoVariable: just call its copy
+        #         # method
+        #         return val.copy(active_event,new_peered,new_multi_threaded)
+        #     # otherwise, just return val
+        #     return val
+        # elif hasattr(val,'__call__'):
+        #     # python function
+        #     pass
+        # #### DEBUG
+        # else:
+        #     util.logger_assert(
+        #         'incorrect type passed into func_turn_into_waldo_var')
+        # #### END DEBUG
 
-        waldo_func = wVariables.WaldoFunctionVariable(
-            'garbage',
-            host_uuid,
-            new_peered,
-            val).set_external_args_array(ext_args_array)
+        # waldo_func = wVariables.WaldoFunctionVariable(
+        #     'garbage',
+        #     host_uuid,
+        #     new_peered,
+        #     val).set_external_args_array(ext_args_array)
 
-        return waldo_func
+        # return waldo_func
     
     
     def call_func_obj(

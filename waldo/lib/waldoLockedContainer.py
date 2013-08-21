@@ -2,7 +2,7 @@ import waldo.lib.util as util
 from waldo.lib.waldoLockedContainerHelpers import container_incorporate_deltas
 from waldo.lib.waldoLockedSingleThreadedObj import SingleThreadedObj
 from waldo.lib.waldoLockedMultiThreadedObj import MultiThreadedObj
-import pickle
+
 
 class WaldoLockedContainer(MultiThreadedObj):
         
@@ -65,7 +65,7 @@ class WaldoLockedContainer(MultiThreadedObj):
         
 
         
-class SingleThreadedLockedContainerVariable(SingleThreadedObj):
+class SingleThreadedLockedContainer(SingleThreadedObj):
 
     def get_val(self,active_event):
         util.logger_assert('Cannot call get val on a container object')
