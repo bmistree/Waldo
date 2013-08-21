@@ -6,6 +6,12 @@ message PartnerError {
        we want to propagate that error back to the root of the event.
     */
 
+    enum ErrorType {
+        APPLICATION = 1;
+        NETWORK = 2;
+    }
+
     required UUID event_uuid = 1;
     required UUID host_uuid = 2;
+    required ErrorType type = 3;
 }
