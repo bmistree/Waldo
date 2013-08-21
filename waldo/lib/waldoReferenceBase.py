@@ -366,20 +366,20 @@ class _ReferenceBase(WaldoObj):
             self._lock()
             internal_val = self.val
             self._unlock()
-            log = self.str_uuid + "|" + str(self) + "|Read|" + str(internal_val) + "|" + str(datetime.datetime.now()) + "\n"
-            print log
-            f = open(str(self.str_uuid), "a")
-            f.write(log)
+           # log = str(self) + "|Read|" + str(internal_val) + "|" + self.str_uuid + "|" + str(datetime.datetime.now()) + "\n"
+           # print log
+           # f = open(str(self.str_uuid), "a")
+           # f.write(log)
             return internal_val
         
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_val = self._dirty_map[invalid_listener.uuid].val
         self._unlock()
-        log = self.str_uuid + "|" + str(self) + "|Read|" + str(dirty_val) + "|" + str(datetime.datetime.now()) + "\n"
-        print log
-        f = open(str(self.str_uuid), "a")
-        f.write(log)
+       # log = str(self) + "|Read|" + str(dirty_val) + "|" + self.str_uuid + "|" + str(datetime.datetime.now()) 
+       # print log
+       # f = open(str(self.str_uuid), "a")
+       # f.write(log)
         return dirty_val
 
     def write_if_different(self,invalid_listener,new_val):
@@ -400,10 +400,10 @@ class _ReferenceBase(WaldoObj):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
-        log = str(self) + "|Update|" + str(dirty_element.val) + "|" + str(new_val) + "|" + self.str_uuid + "|" + str(datetime.datetime.now()) + "\n"
-        print log
-        f = open(str(self.str_uuid), "a")
-        f.write(log)    
+       # log = str(self) + "|Update|" + str(dirty_element.val) + "|" + str(new_val) + "|" + self.str_uuid + "|" + str(datetime.datetime.now())
+       # print log
+       # f = open(str(self.str_uuid), "a")
+       # f.write(log)    
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
 
         if self.peered:
@@ -473,7 +473,11 @@ class _ReferenceBase(WaldoObj):
         del self._dirty_map[invalid_listener.uuid]
 
         # will update version obj as well
-        dirty_map_elem.update_obj_val_and_version(self)
+        str_uuid = ''.join(x.encode('hex') for x in invalid_listener.uuid)
+        host_uuid = ''.join(x.encode('hex') for x in self.host_uuid)
+
+        dirty_map_elem.update_obj_val_and_version(self, str_uuid, host_uuid)
+        #
 
         # determine who we need to send invalidation messages to
         to_invalidate_list = []
@@ -486,7 +490,6 @@ class _ReferenceBase(WaldoObj):
         # FIXME: May eventually want to send what the conflict was so
         # can determine how much the invalidation listener actually
         # needs to backout.
-
         if len(to_invalidate_list) != 0:
             dirty_notify_thread = _DirtyNotifyThread(
                 self,to_invalidate_list)
@@ -561,7 +564,7 @@ class _DirtyMapElement(object):
         self.val = new_val
         return old_val, self.val
 
-    def update_obj_val_and_version(self,w_obj):
+    def update_obj_val_and_version(self,w_obj, str_uuid, host_uuid):
         '''
         @param {_WaldoObject} w_obj --- Take our version object and
         determine if we need to update w_obj's val and version.  This
@@ -569,7 +572,8 @@ class _DirtyMapElement(object):
         conflict and is in the process of committing.  Similarly, we
         are already inside of w_obj's internal lock.
         '''
-        self.version_obj.update_obj_val_and_version(w_obj,self.val)
+        self.version_obj.update_obj_val_and_version(w_obj,self.val, str_uuid, host_uuid)
+        
 
     def modified(self,invalidation_listener):
         '''

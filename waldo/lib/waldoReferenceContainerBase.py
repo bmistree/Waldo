@@ -6,6 +6,7 @@ import singleThreadReference
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 from waldoObj import WaldoObj
 import datetime
+import os
 
 def is_reference_container(to_check):
     return (isinstance(to_check,_ReferenceContainer) or
@@ -426,7 +427,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         return False
 
         
-    def update_obj_val_and_version(self,w_obj,val):
+    def update_obj_val_and_version(self,w_obj,val, str_uuid, host_uuid):
         '''
         @param {_WaldoObject} w_obj --- We know that w_obj must be one
         of the value type objects at this point.  That means that if
@@ -435,7 +436,6 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
         @param {val}
         '''
-
         fields_to_update = w_obj.version_obj.update(self)
         # FIXME: probably do not want to overwrite the entire val each
         # time.  could just apply deltas instead.
@@ -448,6 +448,9 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                         # missing entry, then we might have
                         # field_to_update not be in w_obj.val.  In
                         # that case, we cannot delete it.
+                        log = str_uuid + "|" + host_uuid + "|DeleteContainerValue|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                        f = open("./log/" + str(str_uuid) + ".txt", "a")
+                        f.write(log)
                         del w_obj.val[field_to_update]
                 else:
                     if isinstance(
@@ -458,10 +461,12 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-                        log = self.get_host() + "|" + str(self.get_parent()) + "|Update|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "|" + str(datetime.datetime.now()) + "\n"
+                        log = str_uuid + "|" + host_uuid + "|UpdateContainer|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
                         print log
-                        f = open(str(self.get_host()), "a")
+                        f = open("./log/" + str(str_uuid) + ".txt", "a")
                         f.write(log)
+                       # f = open(str(self.get_host()), "a")
+                       # f.write(log)
                         w_obj.val[field_to_update] = (
                             val[field_to_update].promote_multithreaded(self.peered))
                     else:
@@ -470,14 +475,19 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-                        log = self.get_host() + "|" + str(self.get_parent()) + "|Update|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "|" + str(datetime.datetime.now()) + "\n"
+                        log = str_uuid + "|" + host_uuid + "|UpdateContainer|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
                         print log
-                        f = open(str(self.get_host()), "a")
+                        f = open("./log/" + str(str_uuid) + ".txt", "a")
                         f.write(log)
+                       # f = open(str(self.get_host()), "a")
+                       # f.write(log)
                         w_obj.val[field_to_update] = val[field_to_update]
                     
         elif isinstance(val,list):
             if len(w_obj.val) > len(val):
+                log = str_uuid + "|" + host_uuid + "|DeleteContainerValue|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                f = open("./log/" + str(str_uuid) + ".txt", "a")
+                f.write(log)
                 del w_obj.val[len(val):]
 
             for field_to_update in fields_to_update.keys():
@@ -500,14 +510,19 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
                 if isinstance(
                     val[field_to_update],_SingleThreadReferenceContainer):
-
+                    log = str_uuid + "|" + host_uuid + "|UpdateContainer|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                    print log
+                    f = open("./log/" + str(str_uuid) + ".txt", "a")
+                    f.write(log)
                     w_obj.val[field_to_update] = (
                         val[field_to_update].promote_multithreaded(self.peered))
                 else:
-                    log = self.get_host() + "|" + str(self.get_parent()) + "|Update|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "|" + str(datetime.datetime.now()) + "\n"
+                    log = str_uuid + "|" + host_uuid + "|UpdateContainer|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
                     print log
-                    f = open(str(self.get_host()), "a")
+                    f = open("./log/" + str(str_uuid) + ".txt", "a")
                     f.write(log)
+                  #  f = open(str(self.get_host()), "a")
+                  #  f.write(log)
                     w_obj.val[field_to_update] = val[field_to_update]
 
 

@@ -1,4 +1,5 @@
 import waldoReferenceBase
+import datetime
 
 
 class _ReferenceValue(waldoReferenceBase._ReferenceBase):
@@ -59,7 +60,7 @@ class _ReferenceValueVersion(waldoReferenceBase._ReferenceVersion):
     def modified(self,invalidation_listener):
         return self.has_been_written_to
     
-    def update_obj_val_and_version(self,w_obj,val):
+    def update_obj_val_and_version(self,w_obj,val, str_uuid, host_uuid):
         '''
         @param {_WaldoObject} w_obj --- We know that w_obj must be one
         of the value type objects at this point.  That means that if
@@ -69,9 +70,18 @@ class _ReferenceValueVersion(waldoReferenceBase._ReferenceVersion):
         @param {val}
         '''
 
+        #print "W_obj is " + str(w_obj)
         if not self.has_been_written_to:
+            log = str_uuid + "|" + host_uuid + "|Read|" + str(datetime.datetime.now())  + "|" + str(w_obj) + "|" + str(val) + "\n"
+            print log
+            f = open("./log/" + str(str_uuid) + ".txt", "a")
+            f.write(log)
+            #print "The read was " + str(val)
             return
-
+        log = str_uuid + "|" + host_uuid + "|Write|" + str(datetime.datetime.now()) + "|" + str(w_obj) + "|" + str(val) + "|" + str(w_obj.val) + "\n"
+        print log
+        f = open("./log/" + str(str_uuid) + ".txt", "a")
+        f.write(log)
         w_obj.version_obj.update(self)
         w_obj.val = val
         

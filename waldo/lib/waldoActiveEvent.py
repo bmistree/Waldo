@@ -7,6 +7,8 @@ from abc import abstractmethod
 from util import Queue
 import waldoDeadlockDetector
 import datetime
+import os
+from os import path
 
 
 
@@ -99,11 +101,15 @@ class _ActiveEvent(_InvalidationListener):
         
         self.local_endpoint = local_endpoint
         endpointID = ''.join(x.encode('hex') for x in self.local_endpoint.id())
-        log = self.str_uuid + "|" + "Endpoint|" + str(endpointID) + "|" + str(datetime.datetime.now()) + "\n"
+        log = self.str_uuid + "|" + str(endpointID) + "|Endpoint|" + str(datetime.datetime.now()) + "\n"
         print log
-        f = open(str(self.str_uuid), "a")
+        filename = "./log/"
+        directory = os.path.dirname(filename)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        f = open("./log/" + str(self.str_uuid) + ".txt", "a")
         f.write(log)
-        f = open(str("master.txt"), "a")
+        f = open(str("./log/master.txt"), "a")
         f.write(str(self.str_uuid)+"\n")
         # If we hit any sequences that have oncomplete handlers, we
         # keep track of each that we must fire.
@@ -1042,10 +1048,12 @@ class _ActiveEvent(_InvalidationListener):
                 except Queue.Empty:
                     break
         endpointID = ''.join(x.encode('hex') for x in self.local_endpoint.id())
-        log = self.str_uuid + "|" + "Finished|" + endpointID + "|" + str(datetime.datetime.now()) + "\n"
+        log = self.str_uuid + "|" + endpointID + "|Finished|" + str(datetime.datetime.now()) + "\n"
         print log
-        f = open(str(self.str_uuid), "a")
+        f = open("./log/" + str(self.str_uuid) + ".txt", "a")
         f.write(log)
+        #f = open(str(self.str_uuid), "a")
+        #f.write(log)
                 
     def set_breakout(self):
         self._breakout_mutex.acquire()
