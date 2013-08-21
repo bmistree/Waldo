@@ -255,6 +255,8 @@ class LockedActiveEvent(object):
         5) Forward messages to all other endpoints in event to roll
            back.
         '''
+
+        
         # 0
         if self.state == LockedActiveEvent.STATE_BACKED_OUT:
             # Can get multiple backout requests if, for instance,

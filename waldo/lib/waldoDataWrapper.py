@@ -65,7 +65,12 @@ class ReferenceTypeDataWrapper(DataWrapper):
 
         if isinstance(val, ReferenceTypeDataWrapper):
             val = val.val
-        
+
+        if isinstance(val,list):
+            val = list(val)
+        else:
+            val = dict(val)
+            
         self.val = val
 
         
