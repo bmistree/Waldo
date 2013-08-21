@@ -14,7 +14,7 @@ from waldo.lib.waldoLockedVariables import LockedListVariable
 from locked_test_util import DummyEndpoint
 
 def check_len (active_event,container_var,err_string_msg,expected_val):
-    if container_var.get_len(active_event) != expected_val:
+    if container_var.get_val(active_event).get_len(active_event) != expected_val:
         print '\nIncorrect %s len' % err_string_msg
         return False
 

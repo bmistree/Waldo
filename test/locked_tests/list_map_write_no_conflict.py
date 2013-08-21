@@ -14,7 +14,7 @@ from waldo.lib.waldoLockedVariables import LockedListVariable
 from locked_test_util import DummyEndpoint
 
 def check_len (active_event,container_var,err_string_msg,expected_val):
-    if container_var.get_len(active_event) != expected_val:
+    if container_var.get_val(active_event).get_len(active_event) != expected_val:
         print '\nIncorrect %s len' % err_string_msg
         return False
 
@@ -40,10 +40,10 @@ def run_test():
     ### load each container with elements
     load_event = endpoint._act_event_map.create_root_event()
     for map_index in init_map_val.keys():
-        map_var.add_key(load_event,map_index,init_map_val[map_index])
+        map_var.get_val(load_event).add_key(load_event,map_index,init_map_val[map_index])
 
     for list_index in range(0,len(init_list_val)):
-        list_var.append_val(load_event,init_list_val[list_index])
+        list_var.get_val(load_event).append_val(load_event,init_list_val[list_index])
         
     load_event.begin_first_phase_commit()
         
@@ -70,13 +70,13 @@ def run_test():
     # now try to read each value from list and map
     read_element_event = endpoint._act_event_map.create_root_event()
     for list_val_index in range(0,len(init_list_val)):
-        list_val = list_var.get_val_on_key(read_element_event,list_val_index)
+        list_val = list_var.get_val(read_element_event).get_val_on_key(read_element_event,list_val_index)
         if list_val != init_list_val[list_val_index]:
             print 'Incorrect internal val in list'
             return False
 
     for map_val_index in init_map_val.keys():
-        map_val = map_var.get_val_on_key(read_element_event,map_val_index)
+        map_val = map_var.get_val(read_element_event).get_val_on_key(read_element_event,map_val_index)
         if map_val != init_map_val[map_val_index]:
             print 'Incorrect internal val in map'
             return False

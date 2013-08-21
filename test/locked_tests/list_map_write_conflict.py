@@ -14,7 +14,7 @@ from waldo.lib.waldoLockedVariables import LockedListVariable
 from locked_test_util import DummyEndpoint
 
 def check_len (active_event,container_var,err_string_msg,expected_val):
-    if container_var.get_len(active_event) != expected_val:
+    if container_var.get_val(active_event).get_len(active_event) != expected_val:
         print '\nIncorrect %s len' % err_string_msg
         return False
 
@@ -41,10 +41,10 @@ def run_test():
     ### load each container with elements
     load_event = endpoint._act_event_map.create_root_event()
     for map_index in init_map_val.keys():
-        map_var.add_key(load_event,map_index,init_map_val[map_index])
+        map_var.get_val(load_event).add_key(load_event,map_index,init_map_val[map_index])
 
     for list_index in range(0,len(init_list_val)):
-        list_var.append_val(load_event,init_list_val[list_index])
+        list_var.get_val(load_event).append_val(load_event,init_list_val[list_index])
         
     load_event.begin_first_phase_commit()
         
@@ -54,17 +54,17 @@ def run_test():
 
     should_commit = 57
     should_not_commit = should_commit + 1
-    list_var.append_val(younger_event,should_not_commit)
-    list_var.append_val(older_event,should_commit)
+    list_var.get_val(younger_event).append_val(younger_event,should_not_commit)
+    list_var.get_val(older_event).append_val(older_event,should_commit)
 
     older_event.begin_first_phase_commit()
 
     read_event = endpoint._act_event_map.create_root_event()
-    if list_var.get_len(read_event) != (len(init_list_val) + 1):
+    if list_var.get_val(read_event).get_len(read_event) != (len(init_list_val) + 1):
         print 'Error did not commit anything'
         return False
 
-    if list_var.get_val_on_key(read_event,len(init_list_val)) != should_commit:
+    if list_var.get_val(read_event).get_val_on_key(read_event,len(init_list_val)) != should_commit:
         print 'Error did not commit correct value'
         return False
     
