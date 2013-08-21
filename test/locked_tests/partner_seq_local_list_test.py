@@ -47,14 +47,14 @@ class PartnerEndpoint(DummyPartnerEndpoint):
 
         
         # check to ensure that got correct val from other side
-        a_val = map_var.get_val_on_key(active_event,0)
+        a_val = map_var.get_val(active_event).get_val_on_key(active_event,0)
         if a_val != VAL_A:
             global failed_on_partner
             failed_on_partner = True
 
         # now write change to both
-        map_var.set_val_on_key(active_event,0,VAL_B)
-        map_var.append_val(active_event,VAL_B)
+        map_var.get_val(active_event).set_val_on_key(active_event,0,VAL_B)
+        map_var.get_val(active_event).append_val(active_event,VAL_B)
             
         context.hide_sequence_completed_call(self,active_event)
 
@@ -80,7 +80,7 @@ def run_test():
     map_var = ctx_a.sequence_local_store.get_var_if_exists(
         SEQ_LOC_VAR_NAME)
 
-    map_var.append_val(write_event,VAL_A)
+    map_var.get_val(write_event).append_val(write_event,VAL_A)
         
     ctx_a.hide_partner_call(
         end_a,write_event,'test_partner_write',True)
@@ -93,11 +93,11 @@ def run_test():
         print '\nPartner could not read correct data in sequence\n'
         return False
     
-    if map_var.get_val_on_key(write_event,0) != VAL_B:
+    if map_var.get_val(write_event).get_val_on_key(write_event,0) != VAL_B:
         print '\nDid not incorporate other side changes on key a\n'
         return False
 
-    if map_var.get_val_on_key(write_event,1) != VAL_B:
+    if map_var.get_val(write_event).get_val_on_key(write_event,1) != VAL_B:
         print '\nDid not incorporate other side changes on key b\n'
         return False    
     
