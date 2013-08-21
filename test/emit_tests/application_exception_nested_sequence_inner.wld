@@ -1,0 +1,39 @@
+ApplicationExceptionInnerSequence
+Endpoint InnerPing;
+Endpoint InnerPong;
+
+Sequences 
+{
+    innerSequence: InnerPing.ping1 -> InnerPong.pong1 -> InnerPing.ping2 -> InnerPong.pong2;
+}
+
+Sequence innerSequence(Number int) returns Number intToReturn
+{
+    InnerPing.ping1 {
+        int += 1;
+    }
+    InnerPong.pong1 {
+        int += 1;
+        1 / 0; // throw exception here and pray that it is correctly propagated
+    }
+    InnerPing.ping2 {
+        int += 1;
+    }
+    InnerPong.pong2 {
+        int += 1;
+        intToReturn = int;
+    }
+}
+
+
+InnerPing
+{
+    Public Function beginInnerSequence(Number int) returns Number
+    {
+        return innerSequence(int);
+    }
+}
+
+InnerPong
+{
+}
