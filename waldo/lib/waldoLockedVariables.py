@@ -98,6 +98,7 @@ class LockedListVariable(LockedValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
             init_val = []
+
         if isinstance(init_val,list):
             init_val = LockedInternalListVariable(ensure_locked_obj,host_uuid,peered,init_val)
 
@@ -117,8 +118,8 @@ class SingleThreadedLockedMapVariable(SingleThreadedLockedValueVariable):
 class SingleThreadedLockedListVariable(SingleThreadedLockedValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
-            init_val = {}
-        if isinstance(init_val,dict):
+            init_val = []
+        if isinstance(init_val,list):
             init_val = SingleThreadedLockedInternalListVariable(ensure_locked_obj,host_uuid,peered,init_val)
 
         super(SingleThreadedLockedListVariable,self).__init__(host_uuid,peered,init_val)
