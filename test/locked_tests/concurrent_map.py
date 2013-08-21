@@ -36,7 +36,8 @@ def run_test():
     ### load each container with elements
     load_event = endpoint._act_event_map.create_root_event()
     for map_index in init_map_val.keys():
-        map_var.get_val(load_event).add_key(load_event,map_index,init_map_val[map_index])
+        internal_map = map_var.get_val(load_event)        
+        internal_map.add_key(load_event,map_index,init_map_val[map_index])
 
     load_event.begin_first_phase_commit()
         
@@ -48,7 +49,11 @@ def run_test():
 
     a_val = 'test it'
     b_val = 'test other'
-    map_var.get_val(map_change_event_1).set_val_on_key(map_change_event_1,'a',a_val)
+
+
+    internal_map = map_var.get_val(map_change_event_1)
+    internal_map.set_val_on_key(map_change_event_1,'a',a_val)
+    map_var.get_val(map_change_event_1).get_val_on_key(map_change_event_1,'a')
     map_var.get_val(map_change_event_2).set_val_on_key(map_change_event_2,'b',b_val)
     
     # try to commit both events

@@ -63,6 +63,9 @@ class ReferenceTypeDataWrapper(DataWrapper):
         # (Note: only used for peered data.)
         self.partner_change_log = []
 
+        if isinstance(val, ReferenceTypeDataWrapper):
+            val = val.val
+        
         self.val = val
 
         
@@ -92,7 +95,10 @@ class ReferenceTypeDataWrapper(DataWrapper):
         if self.peered and (not incorporating_deltas):
             self.partner_change_log.append(write_key_tuple(key))
 
-        return self.val[key].set_val(active_event,to_write)
+        if isinstance(to_write,WaldoLockedObj):
+            return self.val[key].set_val(active_event,to_write.get_val(active_event))
+        else:
+            return self.val[key].set_val(active_event,to_write)
 
     def del_key (self,active_event,key_to_delete,incorporating_deltas=False):
         if self.peered and (not incorporating_deltas):
