@@ -35,6 +35,12 @@ def signal_func(endpoint):
     acceptor_process.terminate()
 
 def run_test():
+    '''
+    Tests that Waldo can detect a network exception mid-sequence and propagate
+    that exception back through an endpoint call.
+
+    Returns true if the test passes and false otherwise.
+    '''
     Waldo.set_default_heartbeat_period(1)
     Waldo.set_default_partner_timeout(2)
     acceptor_process.start()

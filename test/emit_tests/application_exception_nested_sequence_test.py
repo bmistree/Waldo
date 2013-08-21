@@ -15,6 +15,15 @@ PORT_INNER = 8777
 PORT_OUTER = 8778
 
 def run_test():
+    '''
+    Tests Waldo's capability of propagating an exception back through nested
+    sequences. Here we have two pairs of endpoints: (a,b), (c,d). Endpoint a 
+    begins a sequence with b, which makes and endpoint call to c, which 
+    initiates a sequence with d, which raises an exception.
+
+    Returns true if the exception is propagated back to the root of the
+    event and handled and false otherwise.
+    '''
     Waldo.tcp_accept(InnerPong, HOST, PORT_INNER)
     inner_ping = Waldo.tcp_connect(InnerPing, HOST, PORT_INNER)
     Waldo.tcp_accept(OuterPong, HOST, PORT_OUTER, inner_ping)

@@ -47,10 +47,7 @@ def run_test():
     time.sleep(SLEEP_TIME)
     connector = Waldo.tcp_connect(Ping,HOST,PORT,signal_func)
     connector.testNetworkExceptionRollback(VALUE)
-    if connector.getValue() == VALUE:
-        return True
-    else:
-        return False
+    return (connector.getValue() == VALUE):
 
 if __name__ == "__main__":
     print run_test()

@@ -10,6 +10,12 @@ from application_exception_endpoint_call_test_v4 import SingleSide
 from multiprocessing import Process
 
 def run_test():
+    '''
+    Tests whether Waldo can propagate an application exception back through an
+    endpoint call.
+
+    Returns true if the test passes and false otherwise.
+    '''
     thrower = Waldo.no_partner_create(SingleSide, None)
     catcher = Waldo.no_partner_create(SingleSide, thrower)
     return catcher.test_catch()

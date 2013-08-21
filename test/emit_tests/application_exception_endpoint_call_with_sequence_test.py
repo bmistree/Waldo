@@ -15,9 +15,8 @@ PORT = 8001
 
 def run_test():
     '''
-    Tests Waldo's ability to detect an application exception on the partner
-    endpoint mid-sequence and propagate that exception back to the root endpoint
-    for handling.
+    Tests Waldo's ability to propagate an exception back through a sequence within
+    an endpoint call.
     
     Returns true if the exception is caught and handled, and false otherwise.
     '''
