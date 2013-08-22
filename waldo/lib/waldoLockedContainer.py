@@ -13,7 +13,13 @@ class WaldoLockedContainer(MultiThreadedObj):
         
     def get_val_on_key(self,active_event,key):
         wrapped_val = self.acquire_read_lock(active_event)
-        return wrapped_val.val[key].get_val(active_event)
+
+        internal_key_val = wrapped_val.val[key]
+        if (isinstance(internal_key_val,WaldoLockedContainer) or
+            isinstance(internal_key_val,SingleThreadedLockedContainer)):
+            return internal_key_val
+        
+        return internal_key_val.get_val(active_event)
         
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
         util.logger_warn('Not handling copy_if_peered: should not copy in this case')
@@ -80,8 +86,12 @@ class SingleThreadedLockedContainer(SingleThreadedObj):
         util.logger_assert('Cannot call set val on a container object')        
         
     def get_val_on_key(self,active_event,key):
-        return self.val.val[key].get_val(active_event)
+        internal_key_val = self.val.val[key]
+        if (isinstance(internal_key_val,WaldoLockedContainer) or
+            isinstance(internal_key_val,SingleThreadedLockedContainer)):
+            return internal_key_val
 
+        return internal_key_val.get_val(active_event)    
     
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
         util.logger_warn('Not handling copy_if_peered: should not copy in this case')

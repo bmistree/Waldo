@@ -34,6 +34,10 @@ def ensure_locked_obj(new_val,host_uuid):
         return LockedNumberVariable(host_uuid,False,new_val)
     elif util.is_string(new_val):
         return LockedTextVariable(host_uuid,False,new_val)
+    elif isinstance(new_val,list):
+        return LockedListVariable(host_uuid,False,new_val)
+    elif isinstance(new_val,dict):
+        return LockedMapVariable(host_uuid,False,new_val)
     else:
         util.logger_assert('Unknown object type.')
 
