@@ -109,7 +109,7 @@ class ReferenceTypeDataWrapper(DataWrapper):
         if self.peered and (not incorporating_deltas):
             self.partner_change_log.append(delete_key_tuple(key_to_delete))
             
-        del wrapped_val.val[key_to_delete]
+        del self.val[key_to_delete]
 
     def add_key(self, active_event, key_added, new_val, incorporating_deltas=False):
         if self.peered and (not incorporating_deltas):
