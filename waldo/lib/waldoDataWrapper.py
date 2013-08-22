@@ -97,6 +97,10 @@ class ReferenceTypeDataWrapper(DataWrapper):
         the changes: we do not want our partner to replay the same
         changes they already have.
         '''
+        if isinstance(self.val,dict) and (key not in self.val):
+            return self.add_key(active_event,key,to_write,incorporating_deltas)
+
+        
         if self.peered and (not incorporating_deltas):
             self.partner_change_log.append(write_key_tuple(key))
 

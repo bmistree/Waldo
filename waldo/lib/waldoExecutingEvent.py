@@ -489,7 +489,7 @@ class _ExecutingEventContext(object):
         elif is_reference_container(lhs):
             # just write the value explicitly for now.  Later, will
             # need to check if we need to wrap it first.
-            lhs.set_val_on_key(active_event,raw_key,rhs)
+            lhs.get_val(active_event).set_val_on_key(active_event,raw_key,rhs)
         else:
             # just write the value explicitly for now.  Later, will
             # need to check if we need to wrap it first.
