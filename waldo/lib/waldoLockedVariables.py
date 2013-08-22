@@ -78,6 +78,12 @@ class LockedTextVariable(LockedValueVariable):
 class LockedTrueFalseVariable(LockedValueVariable):
     pass
 
+class LockedEndpointVariable(LockedValueVariable):
+    def __init__(self,host_uuid,peered=False,init_val=None):
+        if peered:
+            util.logger_assert('Cannot have peered endpoint variable')
+        super(LockedEndpointVariable,self).__init__(host_uuid,peered,init_val)
+
 
 ##### Single threaded value variables #####
 class SingleThreadedLockedNumberVariable(SingleThreadedLockedValueVariable):
@@ -88,6 +94,12 @@ class SingleThreadedLockedTextVariable(SingleThreadedLockedValueVariable):
 
 class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
     pass
+
+class SingleThreadedLockedEndpointVariable(SingleThreadedLockedValueVariable):
+    def __init__(self,host_uuid,peered=False,init_val=None):
+        if peered:
+            util.logger_assert('Cannot have peered endpoint variable')
+        super(SingleThreadedLockedEndpointVariable,self).__init__(host_uuid,peered,init_val)
 
 
 ##### Multi-threaded container variables ######
@@ -139,20 +151,20 @@ class SingleThreadedLockedListVariable(SingleThreadedContainerReference):
 class WaldoExternalTextVariable(WaldoExternalValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
-            init_val = MultiThreadedTextVariable(host_uuid,False,'')
-        super(WaldoExternalMultiThreadedTextVariable,self).__init__(host_uuid,False,init_val)
+            init_val = LockedTextVariable(host_uuid,False,'')
+        super(WaldoExternalTextVariable,self).__init__(host_uuid,False,init_val)
 
         
 class WaldoExternalNumberVariable(WaldoExternalValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
-            init_val = MultiThreadedTextVariable(host_uuid,False,0)
-        super(WaldoExternalMultiThreadedTextVariable,self).__init__(host_uuid,False,init_val)
+            init_val = LockedNumberVariable(host_uuid,False,0)
+        super(WaldoExternalNumberVariable,self).__init__(host_uuid,False,init_val)
 
 class WaldoExternalTrueFalseVariable(WaldoExternalValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
-            init_val = MultiThreadedTextVariable(host_uuid,False,False)
-        super(WaldoExternalMultiThreadedTextVariable,self).__init__(host_uuid,False,init_val)
+            init_val = LockedTrueFalseVariable(host_uuid,False,False)
+        super(WaldoExternalTrueFalseVariable,self).__init__(host_uuid,False,init_val)
         
 
