@@ -753,15 +753,15 @@ class _ExecutingEventContext(object):
         # handles Python string case
         if util.is_string(rhs):
             return lhs_val in rhs
-
+        
         elif is_non_ext_text_var(rhs):
             return lhs_val in rhs.get_val(active_event)
 
         elif is_non_ext_map_var(rhs):
-            return rhs.contains_key_called(active_event,lhs_val)
+            return rhs.get_val(active_event).contains_key_called(active_event,lhs_val)
         
         elif is_non_ext_list_var(rhs):
-            return rhs.contains_val_called(active_event,lhs_val)
+            return rhs.get_val(active_event).contains_val_called(active_event,lhs_val)
 
         util.logger_assert(
             'Error when calling in: unknown right hand side of expression')

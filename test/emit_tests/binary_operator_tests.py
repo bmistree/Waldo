@@ -50,15 +50,15 @@ def test_in(single_side):
     # testing on list
     init_list = ['a','b','c','d']
     if not single_side.in_list(init_list,'c'):
-        print '\nErr on list in'
+        print '\nErr on list in 1'
         return False
 
     if single_side.in_list(init_list,'cd'):
-        print '\nErr on list in'
+        print '\nErr on list in 2'
         return False
 
     if single_side.in_list(init_list,'n'):
-        print '\nErr on list in'
+        print '\nErr on list in 3'
         return False
 
     # testing on text
