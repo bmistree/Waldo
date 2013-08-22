@@ -2,6 +2,7 @@ import waldo.lib.util as util
 from waldo.lib.waldoLockedContainerHelpers import container_incorporate_deltas
 from waldo.lib.waldoLockedSingleThreadedObj import SingleThreadedObj
 from waldo.lib.waldoLockedMultiThreadedObj import MultiThreadedObj
+from waldo.lib.waldoLockedContainerReference import is_reference_container
 
 
 class WaldoLockedContainer(MultiThreadedObj):
@@ -13,10 +14,8 @@ class WaldoLockedContainer(MultiThreadedObj):
         
     def get_val_on_key(self,active_event,key):
         wrapped_val = self.acquire_read_lock(active_event)
-
         internal_key_val = wrapped_val.val[key]
-        if (isinstance(internal_key_val,WaldoLockedContainer) or
-            isinstance(internal_key_val,SingleThreadedLockedContainer)):
+        if is_reference_container(internal_key_val):
             return internal_key_val
         
         return internal_key_val.get_val(active_event)
@@ -87,10 +86,8 @@ class SingleThreadedLockedContainer(SingleThreadedObj):
         
     def get_val_on_key(self,active_event,key):
         internal_key_val = self.val.val[key]
-        if (isinstance(internal_key_val,WaldoLockedContainer) or
-            isinstance(internal_key_val,SingleThreadedLockedContainer)):
+        if is_reference_container(internal_key_val):
             return internal_key_val
-
         return internal_key_val.get_val(active_event)    
     
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):

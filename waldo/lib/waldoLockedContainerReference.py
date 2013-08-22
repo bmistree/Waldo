@@ -8,6 +8,11 @@ deserialize them to send changes over the network.
 '''
 
 
+def is_reference_container(to_check):
+    return (isinstance(to_check,MultiThreadedContainerReference) or
+            isinstance(to_check,SingleThreadedContainerReference))
+
+
 def serializable_var_tuple_for_network(ref_obj,parent_delta,var_name,active_event,force):
     var_data = ref_obj.get_val(active_event)
     return var_data.serializable_var_tuple_for_network(

@@ -46,10 +46,6 @@ def is_non_ext_text_var (to_check):
     return (isinstance(to_check,LockedTextVariable) or
             isinstance(to_check,SingleThreadedLockedTextVariable))
 
-def is_reference_container(to_check):
-    return (isinstance(to_check,MultiThreadedContainerReference) or
-            isinstance(to_check,SingleThreadedContainerReference))
-
 
 def is_non_ext_map_var (to_check):
     return (isinstance(to_check,LockedMapVariable) or

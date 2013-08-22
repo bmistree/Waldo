@@ -9,7 +9,8 @@ from waldo.lib.util import Queue
 from waldo.lib.waldoLockedObj import WaldoLockedObj
 from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
 from waldo.lib.waldoLockedVariables import is_non_ext_num_var, is_non_ext_true_false_var
-from waldo.lib.waldoLockedVariables import is_non_ext_text_var, is_reference_container
+from waldo.lib.waldoLockedVariables import is_non_ext_text_var
+from waldo.lib.waldoLockedContainerReference import is_reference_container
 from waldo.lib.waldoLockedVariables import is_non_ext_map_var, is_non_ext_list_var
 from waldo.lib.waldoLockedVariables import WaldoExternalTextVariable
 
