@@ -14,7 +14,7 @@ NODE_FIELD_3 = "y"
 NODE_FIELD_4 = "found"
 ARC_FIELD_1 = "node1"
 ARC_FIELD_2 = "node2"
-OMID_PORT = 6768
+OMID_PORT = 6770
 
 def load_game_info():
     game_file = open(OMID_FILE, 'r', 0)

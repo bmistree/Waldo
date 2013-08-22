@@ -32,6 +32,10 @@ OmidServer {
         arcs = arc_list;
     }
 
+    Public Function add_to_waiting(Text username, Endpoint endpt) {
+        waiting_room[username] = endpt;
+    }
+
     Public Function start_game() {
         game_in_session = True;
         for (Text player in game) {
@@ -81,10 +85,14 @@ OmidServer {
         return game[username].score;
     }
     
-    Public Function remove_user(Text username) {
-        game.remove(username);
+    Public Function add_player(Text username) {
+        Text message = username + " is in the game room.\n";
+        Struct player_data player;
+        player.score = 0;
+        player.player_helper = waiting_room[username];
+        game[username] = player;
+        broadcastWaitingMessage(message);
     }
-    
     /*  Public Function broadcastMessage(Text message) {
         for (Text username in game) {
             game[username].player_helper.get_new_game_message(message);
@@ -95,6 +103,9 @@ OmidServer {
         for (Text username in waiting_room) {
             waiting_room[username].get_new_waiting_message(message);
         }
+    }
+    Public Function check_game_in_session() returns TrueFalse {
+        return game_in_session;
     }
 
     Public Function end_game() {

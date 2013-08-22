@@ -44,7 +44,7 @@ class OmidGamePlayer(Frame):
 
     def clear_map(self, endpoint):
         self.diagram.DeleteAllShapes()
-#Make draw arc function
+
     
     def draw_arc(self, endpoint, x1, y1, x2, y2):
         line = LineShape()

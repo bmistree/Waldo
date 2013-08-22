@@ -6,12 +6,13 @@ Endpoint OmidPlayerHelper;
 
 Sequences {
   AddUser: OmidPlayer.doNothing -> OmidPlayerHelper.add_to_server;
-  JoinWaiting: OmidPlayer.doNothing -> OmidPlayerHelper.addPlayer;
+  JoinWaiting: OmidPlayer.doNothing -> OmidPlayerHelper.addToWaiting;
   LeaveWaiting: OmidPlayer.doNothing -> OmidPlayerHelper.removePlayer;
-  CheckGameOver: OmidPlayer.doNothing -> OmidPlayerHelper.checkServer;
+  CheckGameInSession: OmidPlayer.doNothing -> OmidPlayerHelper.checkServer;
   SendWaitingMsg: OmidPlayer.doNothing -> OmidPlayerHelper.sendServer;
   DisplayWaiting: OmidPlayerHelper.doNothing -> OmidPlayer.displayWaitingMessage;
   UpdateGame: OmidPlayerHelper.setMap -> OmidPlayer.updateMap;
+  AddToGame: OmidPlayer.doNothing -> OmidPlayerHelper.addPlayer;
 }
 
 Struct node_information {
@@ -45,9 +46,16 @@ Sequence SendWaitingMsg(Text message) {
     }        
 }
 
+Sequence AddToGame() {
+    OmidPlayer.doNothing{}
+    OmidPlayerHelper.addPlayer {
+        game_server.add_player(username);
+    }
+}
+
 Sequence JoinWaiting() {
     OmidPlayer.doNothing {}
-    OmidPlayerHelper.addPlayer {
+    OmidPlayerHelper.addToWaiting {
         game_server.add_to_waiting(username, self);
     }
 }
@@ -59,10 +67,10 @@ Sequence LeaveWaiting() {
     }
 }
 
-Sequence CheckGameOver() returns TrueFalse game_over {
+Sequence CheckGameInSession() returns TrueFalse game_in_sess {
     OmidPlayer.doNothing{}
     OmidPlayerHelper.checkServer{
-        game_over = game_server.game_ended();
+        game_in_sess = game_server.check_game_in_session();
     }
 }
 
@@ -81,6 +89,7 @@ Sequence UpdateGame() {
         arc_map = arcs;
     }
     OmidPlayer.updateMap{
+        print("about to update map");
         clear_map();
         for (Text answer in node_map) {
             Struct node_information info = node_map[answer];
@@ -106,10 +115,18 @@ OmidPlayer {
         waiting_message = gui;
         draw_circle = draw;
         clear_map = clear;
+        JoinWaiting();
     }
-    Public Function game_ended() returns TrueFalse {
+    Public Function add_to_game() {
+        AddToGame();
+    }
+
+    Public Function game_in_session() returns TrueFalse {
+        return CheckGameInSession();
+    }
+    /* Public Function game_ended() returns TrueFalse {
         return CheckGameOver();
-    }
+        }*/
     Public Function send_to_waiting(Text message) {
         SendWaitingMsg(message);
     }
@@ -126,6 +143,7 @@ OmidPlayerHelper {
     Public Function init_map(Map(from: Text, to: Struct node_information) node_info, List(element: Struct arc_information) arc_info) {
         nodes = node_info;
         arcs = arc_info;
+        print("nodes and arcs received");
         UpdateGame();
     }
     Public Function update_map(Text answer_found) {

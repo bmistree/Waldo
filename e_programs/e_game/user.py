@@ -3,14 +3,13 @@ from user_login_emitted import UserLogin
 from server_emitted import Server
 from player_emitted import Player
 from anagram_player import AnagramPlayer
-from omid_player import OmidPlayer
+from omid_player import OmidGamePlayer
 from gui_string import GUI_String_Ext
 from login import LoginWindow, MenuWindow
 from wx import *
 import sys, os, time
 sys.path.append(os.path.join("../../"))
 from waldo.lib import Waldo
-import OpenSSL
 HOSTNAME = '127.0.0.1'
 PORT = 6922
 WORD_MIN = 3
@@ -148,8 +147,8 @@ def read_command(message):
     elif message.startswith('anagram_game'):
         anagram_player = AnagramPlayer(name)
 
-    elif message.startswith('iwanttoplaywithomid'):
-        omid_player = OmidPlayer(name)
+    elif message.startswith('omid'):
+        omid_player = OmidGamePlayer(name)
 
     elif message.startswith('h'):
         text_display.AppendText('Commands:\n\t/quit - to leave the chatroom.\n\t/private [username] [message] - to send a private message.\n\t/users_list - to see a list of users.\n\t/anagram_game - to enter the anagram game.\n')
