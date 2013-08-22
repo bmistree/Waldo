@@ -81,7 +81,7 @@ class ReferenceTypeDataWrapper(DataWrapper):
                 to_return.append(item.de_waldoify(active_event))
                 
         else:
-            to_return = []
+            to_return = {}
             for key in self.val:
                 val = self.val[key]
                 to_return[key] = val.de_waldoify(active_event)
