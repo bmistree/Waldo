@@ -257,7 +257,7 @@ def emit_statement(
                 what_to_insert_txt)
         
         statement_txt = (
-            to_insert_into_txt + '.get_val(_active_event).insert_into(_active_event,' +
+            to_insert_into_txt + '.get_val(_active_event).insert_val(_active_event,' +
             ('_context.get_val_if_waldo(%s,_active_event),' % index_to_insert_into_txt) +
             what_to_insert_txt + ')')
 
@@ -1054,6 +1054,7 @@ def emit_ext_assign(
             '.set_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event),%s)' %
             (inside_bracket_node_txt,to_assign_from_node_txt))
 
+        
     elif emit_utils.is_method_call(to_assign_to_node):
 
         # emitting function call
