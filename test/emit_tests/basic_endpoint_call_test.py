@@ -38,7 +38,7 @@ def run_test():
     # endpoint call can change its value.
     original_num = 32
     ext_num = Waldo._waldo_classes['WaldoExtNumVariable'](
-        'garbage',sideA._host_uuid,False,original_num)
+        sideA._host_uuid,False,original_num)
     sideA.assign_external_number(ext_num)
     new_num = 50
     if sideA.test_updated_val(new_num) != new_num:
