@@ -58,7 +58,7 @@ class PartnerEndpoint(DummyPartnerEndpoint):
         # now write change to both
         map_var.get_val(active_event).add_key(active_event,KEY_A,VAL_B)
         map_var.get_val(active_event).add_key(active_event,KEY_B,VAL_B)
-            
+
         context.hide_sequence_completed_call(self,active_event)
 
 
@@ -95,7 +95,9 @@ def run_test():
     if failed_on_partner:
         print '\nPartner could not read correct data in sequence\n'
         return False
-    
+
+
+    tmp = map_var.get_val(write_event).get_val_on_key(write_event,KEY_A)
     if map_var.get_val(write_event).get_val_on_key(write_event,KEY_A) != VAL_B:
         print '\nDid not incorporate other side changes on key a\n'
         return False

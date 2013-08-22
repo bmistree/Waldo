@@ -77,7 +77,6 @@ def container_serializable_var_tuple_for_network(
     return internal_has_been_written or written_since_last_message or force
 
 
-
 def internal_container_variable_serialize_var_tuple_for_network(
     locked_container,parent_delta,var_name,active_event, force):
     '''

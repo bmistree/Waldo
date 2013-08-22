@@ -8,6 +8,7 @@ from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
 from waldo.lib.waldoLockedInternalContainers import SingleThreadedLockedInternalListVariable
 from waldo.lib.waldoLockedInternalContainers import SingleThreadedLockedInternalMapVariable
 from waldo.lib.waldoLockedInternalContainers import LockedInternalListVariable, LockedInternalMapVariable
+from waldo.lib.waldoLockedContainerReference import MultiThreadedContainerReference, SingleThreadedContainerReference
 
 
 #### HELPER FUNCTIONS ####
@@ -85,7 +86,7 @@ class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
 
 
 ##### Multi-threaded container variables ######
-class LockedMapVariable(LockedValueVariable):
+class LockedMapVariable(MultiThreadedContainerReference):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
             init_val = {}
@@ -94,7 +95,9 @@ class LockedMapVariable(LockedValueVariable):
 
         super(LockedMapVariable,self).__init__(host_uuid,peered,init_val)
 
-class LockedListVariable(LockedValueVariable):
+
+        
+class LockedListVariable(MultiThreadedContainerReference):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
             init_val = []
@@ -104,9 +107,10 @@ class LockedListVariable(LockedValueVariable):
 
         super(LockedListVariable,self).__init__(host_uuid,peered,init_val)
 
+
         
 ##### Single-threaded container variables ######
-class SingleThreadedLockedMapVariable(SingleThreadedLockedValueVariable):
+class SingleThreadedLockedMapVariable(SingleThreadedContainerReference):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
             init_val = {}
@@ -115,7 +119,8 @@ class SingleThreadedLockedMapVariable(SingleThreadedLockedValueVariable):
 
         super(SingleThreadedLockedMapVariable,self).__init__(host_uuid,peered,init_val)
 
-class SingleThreadedLockedListVariable(SingleThreadedLockedValueVariable):
+        
+class SingleThreadedLockedListVariable(SingleThreadedContainerReference):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
             init_val = []
@@ -123,7 +128,6 @@ class SingleThreadedLockedListVariable(SingleThreadedLockedValueVariable):
             init_val = SingleThreadedLockedInternalListVariable(ensure_locked_obj,host_uuid,peered,init_val)
 
         super(SingleThreadedLockedListVariable,self).__init__(host_uuid,peered,init_val)
-
 
         
 ###### External value variables #####

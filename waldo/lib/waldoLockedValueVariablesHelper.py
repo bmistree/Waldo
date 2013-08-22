@@ -20,16 +20,14 @@ def value_variable_serializable_var_tuple_for_network(
         # written.  NOTE: for list/dict types, must actually
         # go through to ensure no subelements were written.
         return False
-
+    
     # check if this is a python value type.  if it is, append it
     # to delta.
     if not value_variable_py_val_serialize(
         value_variable,parent_delta,var_data,var_name):
-        
-        util.logger_assert(
-            'Error when serializing variable for network.  ' +
-            'Expected python value type')
 
+        util.logger_assert('Should only use python values when serializing')
+        
     return True
 
 
