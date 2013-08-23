@@ -25,7 +25,7 @@ def run_test():
     
     original_num = 30
     ext_num = Waldo._waldo_classes['WaldoExtNumVariable'](
-        'garbage',sideA._host_uuid,False,original_num)
+        sideA._host_uuid,False,original_num)
 
 
     sideA.load_ext_num(ext_num)
