@@ -665,6 +665,11 @@ class MultiThreadedObj(WaldoLockedObj):
 
 
     def get_val(self,active_event):
+        if active_event is None:
+            # used for debugging: allows python code to read into and
+            # check the value of an external reference.
+            return self.val.val
+        
         data_wrapper = self.acquire_read_lock(active_event)
         return data_wrapper.val
 
