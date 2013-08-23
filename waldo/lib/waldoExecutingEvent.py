@@ -707,7 +707,7 @@ class _ExecutingEventContext(object):
         to_exec_next = queue_elem.to_exec_next_name_msg_field
         if to_exec_next != None:
             # means that we do not have any additional functions to exec
-            to_exec = getattr(endpoitn,_to_exec_next)
+            to_exec = getattr(endpoint,to_exec_next)
             to_exec(active_event,self)
         else:
             # end of sequence: reset to_reply_with_uuid in context.  we do
