@@ -15,33 +15,48 @@ from waldo.lib.waldoLockedContainerReference import MultiThreadedContainerRefere
 
 #### HELPER FUNCTIONS ####
 
-def ensure_locked_obj(new_val,host_uuid):
+def ensure_locked_obj(new_val,host_uuid,single_threaded):
     '''
     @param {Anything} new_val --- If new_val is a non-Waldo object,
     convert it to a Waldo object.  Otherwise, return it unchanged.
 
     This method is used to ensure that each individual entry in a
     map/list is also protected.
-    '''
-    util.logger_warn('In ensure locked obj should think about single threaded variables.')
-    util.logger_warn(
-        'If single threaded variable is not peered, then do not need to actually use waldo variables.')
+
+    @param {bool} single_threaded --- True if the variable should be
+    single threaded.
     
+    '''
     if isinstance(new_val, WaldoLockedObj):
         return new_val
 
-    if isinstance(new_val, bool):
-        return LockedTrueFalseVariable(host_uuid,False,new_val)
-    elif isinstance(new_val, numbers.Number):
-        return LockedNumberVariable(host_uuid,False,new_val)
-    elif util.is_string(new_val):
-        return LockedTextVariable(host_uuid,False,new_val)
-    elif isinstance(new_val,list):
-        return LockedListVariable(host_uuid,False,new_val)
-    elif isinstance(new_val,dict):
-        return LockedMapVariable(host_uuid,False,new_val)
+    if single_threaded:
+        if isinstance(new_val, bool):
+            return SingleThreadedLockedTrueFalseVariable(host_uuid,False,new_val)
+        elif isinstance(new_val, numbers.Number):
+            return SingleThreadedLockedNumberVariable(host_uuid,False,new_val)
+        elif util.is_string(new_val):
+            return SingleThreadedLockedTextVariable(host_uuid,False,new_val)
+        elif isinstance(new_val,list):
+            return SingleThreadedLockedListVariable(host_uuid,False,new_val)
+        elif isinstance(new_val,dict):
+            return SingleThreadedLockedMapVariable(host_uuid,False,new_val)
+        else:
+            util.logger_assert('Unknown object type.')
+
     else:
-        util.logger_assert('Unknown object type.')
+        if isinstance(new_val, bool):
+            return LockedTrueFalseVariable(host_uuid,False,new_val)
+        elif isinstance(new_val, numbers.Number):
+            return LockedNumberVariable(host_uuid,False,new_val)
+        elif util.is_string(new_val):
+            return LockedTextVariable(host_uuid,False,new_val)
+        elif isinstance(new_val,list):
+            return LockedListVariable(host_uuid,False,new_val)
+        elif isinstance(new_val,dict):
+            return LockedMapVariable(host_uuid,False,new_val)
+        else:
+            util.logger_assert('Unknown object type.')
 
 
 def is_non_ext_text_var (to_check):
@@ -106,7 +121,8 @@ class LockedMapVariable(MultiThreadedContainerReference):
         if init_val is None:
             init_val = {}
         if isinstance(init_val,dict):
-            init_val = LockedInternalMapVariable(ensure_locked_obj,host_uuid,peered,init_val)
+            init_val = LockedInternalMapVariable(
+                ensure_locked_obj,host_uuid,peered,init_val)
 
         super(LockedMapVariable,self).__init__(host_uuid,peered,init_val)
 
@@ -118,7 +134,8 @@ class LockedListVariable(MultiThreadedContainerReference):
             init_val = []
 
         if isinstance(init_val,list):
-            init_val = LockedInternalListVariable(ensure_locked_obj,host_uuid,peered,init_val)
+            init_val = LockedInternalListVariable(
+                ensure_locked_obj,host_uuid,peered,init_val)
 
         super(LockedListVariable,self).__init__(host_uuid,peered,init_val)
 
@@ -130,7 +147,8 @@ class LockedStructVariable(MultiThreadedContainerReference):
                 'User structs must always have init_vals.  ' 
                 'Otherwise, not initializing struct data')
         else:
-            init_val = LockedInternalStructVariable(ensure_locked_obj,host_uuid,peered,init_val)
+            init_val = LockedInternalStructVariable(
+                ensure_locked_obj,host_uuid,peered,init_val)
             
         super(LockedStructVariable,self).__init__(host_uuid,peered,init_val)
         
@@ -141,7 +159,8 @@ class SingleThreadedLockedMapVariable(SingleThreadedContainerReference):
         if init_val is None:
             init_val = {}
         if isinstance(init_val,dict):
-            init_val = SingleThreadedLockedInternalMapVariable(ensure_locked_obj,host_uuid,peered,init_val)
+            init_val = SingleThreadedLockedInternalMapVariable(
+                ensure_locked_obj,host_uuid,peered,init_val)
 
         super(SingleThreadedLockedMapVariable,self).__init__(host_uuid,peered,init_val)
 
@@ -151,7 +170,8 @@ class SingleThreadedLockedListVariable(SingleThreadedContainerReference):
         if init_val is None:
             init_val = []
         if isinstance(init_val,list):
-            init_val = SingleThreadedLockedInternalListVariable(ensure_locked_obj,host_uuid,peered,init_val)
+            init_val = SingleThreadedLockedInternalListVariable(
+                ensure_locked_obj,host_uuid,peered,init_val)
 
         super(SingleThreadedLockedListVariable,self).__init__(host_uuid,peered,init_val)
 
@@ -163,12 +183,12 @@ class SingleThreadedLockedStructVariable(SingleThreadedContainerReference):
                 'Otherwise, not initializing struct data')
 
         if isinstance(init_val,dict):
-            init_val = SingleThreadedLockedInternalStructVariable(ensure_locked_obj,host_uuid,peered,init_val)
+            init_val = SingleThreadedLockedInternalStructVariable(
+                ensure_locked_obj,host_uuid,peered,init_val)
 
         super(SingleThreadedLockedStructVariable,self).__init__(host_uuid,peered,init_val)
 
         
-
         
         
 ###### External value variables #####

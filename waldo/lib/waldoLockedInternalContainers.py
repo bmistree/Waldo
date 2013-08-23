@@ -18,14 +18,14 @@ class LockedInternalStructVariable(WaldoLockedContainer,InternalStructBaseClass)
         if init_val is not None:
             # initialize with new data
             for key in init_val.keys():
-                val = self.ensure_locked_obj(init_val[key],self.host_uuid)
+                val = self.ensure_locked_obj(init_val[key],self.host_uuid,False)
                 self.val.add_key(None,key,val,True)
 
     def add_key(self,active_event,key_added,new_val,incorporating_deltas=False):
         '''
         Struct specific
         '''
-        new_val = self.ensure_locked_obj(new_val,self.host_uuid)
+        new_val = self.ensure_locked_obj(new_val,self.host_uuid,False)
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.add_key(active_event,key_added,new_val,incorporating_deltas)
 
@@ -36,7 +36,7 @@ class LockedInternalStructVariable(WaldoLockedContainer,InternalStructBaseClass)
             self,parent_delta,var_name,active_event,force)
 
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
-        to_write = self.ensure_locked_obj(to_write,self.host_uuid)
+        to_write = self.ensure_locked_obj(to_write,self.host_uuid,False)
         return super (LockedInternalStructVariable,self).set_val_on_key(
             active_event,key,to_write,copy_if_peered)
 
@@ -51,7 +51,7 @@ class SingleThreadedLockedInternalStructVariable(
         if init_val is not None:
             # initialize with new data
             for key in init_val.keys():
-                val = self.ensure_locked_obj(init_val[key],self.host_uuid)
+                val = self.ensure_locked_obj(init_val[key],self.host_uuid,True)
                 self.val.add_key(None,key,val,True)
 
         
@@ -59,11 +59,11 @@ class SingleThreadedLockedInternalStructVariable(
         '''
         Map specific
         '''
-        new_val = self.ensure_locked_obj(new_val,self.host_uuid)
+        new_val = self.ensure_locked_obj(new_val,self.host_uuid,True)
         self.val.add_key(active_event,key_added,new_val,incorporating_deltas)
 
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
-        to_write = self.ensure_locked_obj(to_write,self.host_uuid)
+        to_write = self.ensure_locked_obj(to_write,self.host_uuid,True)
         return super (SingleThreadedLockedInternalStructVariable,self).set_val_on_key(
             active_event,key,to_write,copy_if_peered)
         
@@ -87,7 +87,7 @@ class LockedInternalMapVariable(WaldoLockedContainer,InternalMapBaseClass):
         if init_val is not None:
             # initialize with new data
             for key in init_val.keys():
-                val = self.ensure_locked_obj(init_val[key],self.host_uuid)
+                val = self.ensure_locked_obj(init_val[key],self.host_uuid,False)
                 self.val.add_key(None,key,val,True)
 
 
@@ -95,7 +95,7 @@ class LockedInternalMapVariable(WaldoLockedContainer,InternalMapBaseClass):
         '''
         Map specific
         '''
-        new_val = self.ensure_locked_obj(new_val,self.host_uuid)
+        new_val = self.ensure_locked_obj(new_val,self.host_uuid,False)
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.add_key(active_event,key_added,new_val,incorporating_deltas)
 
@@ -106,7 +106,7 @@ class LockedInternalMapVariable(WaldoLockedContainer,InternalMapBaseClass):
             self,parent_delta,var_name,active_event,force)
 
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
-        to_write = self.ensure_locked_obj(to_write,self.host_uuid)
+        to_write = self.ensure_locked_obj(to_write,self.host_uuid,False)
         return super (LockedInternalMapVariable,self).set_val_on_key(
             active_event,key,to_write,copy_if_peered)
     
@@ -122,7 +122,7 @@ class SingleThreadedLockedInternalMapVariable(
         if init_val is not None:
             # initialize with new data
             for key in init_val.keys():
-                val = self.ensure_locked_obj(init_val[key],self.host_uuid)
+                val = self.ensure_locked_obj(init_val[key],self.host_uuid,True)
                 self.val.add_key(None,key,val,True)
 
         
@@ -130,11 +130,11 @@ class SingleThreadedLockedInternalMapVariable(
         '''
         Map specific
         '''
-        new_val = self.ensure_locked_obj(new_val,self.host_uuid)
+        new_val = self.ensure_locked_obj(new_val,self.host_uuid,True)
         self.val.add_key(active_event,key_added,new_val,incorporating_deltas)
 
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
-        to_write = self.ensure_locked_obj(to_write,self.host_uuid)
+        to_write = self.ensure_locked_obj(to_write,self.host_uuid,True)
         return super (SingleThreadedLockedInternalMapVariable,self).set_val_on_key(
             active_event,key,to_write,copy_if_peered)
         
@@ -157,7 +157,7 @@ class LockedInternalListVariable(WaldoLockedContainer,InternalListBaseClass):
         if init_val is not None:
             # initialize with new data
             for key in range(0,len(init_val)):
-                val = self.ensure_locked_obj(init_val[key],self.host_uuid)                
+                val = self.ensure_locked_obj(init_val[key],self.host_uuid,False)
                 self.val.append(None,val,True)
 
         
@@ -165,12 +165,12 @@ class LockedInternalListVariable(WaldoLockedContainer,InternalListBaseClass):
         '''
         List specific
         '''
-        new_val = self.ensure_locked_obj(new_val,self.host_uuid)
+        new_val = self.ensure_locked_obj(new_val,self.host_uuid,False)
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.insert(active_event,where_to_insert,new_val,incorporating_deltas)
 
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
-        to_write = self.ensure_locked_obj(to_write,self.host_uuid)
+        to_write = self.ensure_locked_obj(to_write,self.host_uuid,False)
         return super (LockedInternalListVariable,self).set_val_on_key(
             active_event,key,to_write,copy_if_peered)
         
@@ -178,7 +178,7 @@ class LockedInternalListVariable(WaldoLockedContainer,InternalListBaseClass):
         '''
         List specific
         '''
-        new_val = self.ensure_locked_obj(new_val,self.host_uuid)
+        new_val = self.ensure_locked_obj(new_val,self.host_uuid,False)
         wrapped_val = self.acquire_write_lock(active_event)
         wrapped_val.append(active_event,new_val)
 
@@ -200,12 +200,12 @@ class SingleThreadedLockedInternalListVariable(
         if init_val is not None:
             # initialize with new data
             for key in range(0,len(init_val)):
-                val = self.ensure_locked_obj(init_val[key],self.host_uuid)                            
+                val = self.ensure_locked_obj(init_val[key],self.host_uuid,True)
                 self.val.append(None,val,True)
 
 
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
-        to_write = self.ensure_locked_obj(to_write,self.host_uuid)
+        to_write = self.ensure_locked_obj(to_write,self.host_uuid,True)
         return super (SingleThreadedLockedInternalListVariable,self).set_val_on_key(
             active_event,key,to_write,copy_if_peered)
         
@@ -213,14 +213,14 @@ class SingleThreadedLockedInternalListVariable(
         '''
         List specific
         '''
-        new_val = self.ensure_locked_obj(new_val,self.host_uuid)
+        new_val = self.ensure_locked_obj(new_val,self.host_uuid,True)
         self.val.insert(active_event,where_to_insert,new_val,incorporating_deltas)
 
     def append_val(self,active_event,new_val):
         '''
         List specific
         '''
-        new_val = self.ensure_locked_obj(new_val,self.host_uuid)
+        new_val = self.ensure_locked_obj(new_val,self.host_uuid,True)
         self.val.append(active_event,new_val)
 
     def serializable_var_tuple_for_network(
