@@ -8,6 +8,7 @@ import threading
 import time
 from waldo.lib.waldoHeartbeat import Heartbeat
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
+from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
 
 HEARTBEAT_TIMEOUT = 30
 
@@ -273,7 +274,7 @@ class _Endpoint(object):
         '''
         self._act_event_map.inform_events_of_network_failure()
 
-    def _propagate_back_exception(self,event_uuid,error):
+    def _propagate_back_exception(self,event_uuid,exception):
         '''
         Called by the active event when an exception has occured in the midst
         of a sequence and it needs to be propagated back towards the 
@@ -285,6 +286,10 @@ class _Endpoint(object):
         error = general_message.error
         error.event_uuid.data = event_uuid
         error.host_uuid.data = self._uuid
+        if isinstance(exception, util.NetworkException):
+            error.type = PartnerError.NETWORK
+        else:
+            error.type = PartnerError.APPLICATION
         self._conn_obj.write(general_message.SerializeToString(),self)
 
     def _receive_msg_from_partner(self,string_msg):
