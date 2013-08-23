@@ -10,12 +10,16 @@ MESSAGE_BOX_HEIGHT = 450
 class WaitingRoom(Frame):
 
     def __init__(self, window_title):
-        app = App(False)
+        self.app = App(False)
         Frame.__init__(self, None, title = window_title, size = (WAITING_WINDOW_WIDTH, WAITING_WINDOW_HEIGHT))
         self.text_display = TextCtrl(self, size = (WAITING_WINDOW_WIDTH, MESSAGE_BOX_HEIGHT), style = TE_READONLY | TE_MULTILINE)
         self.text_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (0,WAITING_WINDOW_HEIGHT - TEXT_BOX_HEIGHT), size = (WAITING_WINDOW_WIDTH - BUTTON_WIDTH, TEXT_BOX_HEIGHT))
         self.send_button = Button(self, label = "Send", size = (BUTTON_WIDTH, TEXT_BOX_HEIGHT), pos = (WAITING_WINDOW_WIDTH - BUTTON_WIDTH, WAITING_WINDOW_HEIGHT - TEXT_BOX_HEIGHT))
         self.Show(True)
+
+
+    def mainloop(self):
+        self.app.MainLoop()
 
     def bind_functs(self, read_message):
         self.text_input.Bind(EVT_TEXT_ENTER, read_message)    
