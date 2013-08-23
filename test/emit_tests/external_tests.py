@@ -100,12 +100,11 @@ def test_ext_num(single_side):
         print '\nErr: could not copy into indexed structure'
         return False
 
-    
-    
     return True
 
 
-
-
 if __name__ == '__main__':
-    run_test()
+    if run_test():
+        print '\nSucceeded\n'
+    else:
+        print '\nFailed\n'

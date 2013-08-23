@@ -1,5 +1,8 @@
 from waldo.lib.waldoLockedValueVariablesHelper import LockedValueVariable
 
+def is_external(val):
+    return isinstance(val,WaldoExternalVariable)
+
 class WaldoExternalVariable(object):
     pass
 
