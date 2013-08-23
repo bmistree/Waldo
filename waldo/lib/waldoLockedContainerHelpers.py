@@ -1,6 +1,25 @@
 import waldo.lib.util as util
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 
+def create_struct_delta(parent_delta):
+    is_var_store = False
+    if parent_delta.parent_type == VarStoreDeltas.VAR_STORE_DELTA:
+        is_var_store = True
+        struct_delta = parent_delta.struct_deltas.add()
+    elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_WRITTEN:            
+        struct_delta = parent_delta.what_written_struct
+    elif parent_delta.parent_type  == VarStoreDeltas.CONTAINER_ADDED:
+        struct_delta = parent_delta.added_what_struct
+    elif parent_delta.parent_type == VarStoreDeltas.SUB_ELEMENT_ACTION:
+        struct_delta = parent_delta.struct_delta
+    else:
+        util.logger_assert(
+            'Unexpected parent container type when serializing struct')
+
+    struct_delta.parent_type = VarStoreDeltas.STRUCT_CONTAINER            
+    return struct_delta,is_var_store
+
+
 
 def create_map_delta(parent_delta):
     is_var_store = False
@@ -38,21 +57,32 @@ def create_list_delta(parent_delta):
     list_delta.parent_type = VarStoreDeltas.LIST_CONTAINER        
 
     return list_delta,is_var_store
-    
+
+# VAR_TYPE
+FOR_STRUCT_CONTAINER_SERIALIZABLE = 0
+FOR_MAP_CONTAINER_SERIALIZABLE = 1
+FOR_LIST_CONTAINER_SERIALIZABLE = 2
 
 def container_serializable_var_tuple_for_network(
-    container_obj,parent_delta,var_name,active_event,force,for_map):
+    container_obj,parent_delta,var_name,active_event,force,var_type):
     '''
     @see waldoReferenceBase.serializable_var_tuple_for_network
+
+    @param {VAR_TYPE} var_type --- One of the enumerated var types
+    
     '''
     # reset has been written to
     has_been_written_since_last_msg = (
         container_obj.get_and_reset_has_been_written_since_last_msg(active_event))
 
-    if for_map:
+    if var_type is FOR_MAP_CONTAINER_SERIALIZABLE:
         container_delta,is_var_store = create_map_delta(parent_delta)
-    else:
+    elif var_type is FOR_LIST_CONTAINER_SERIALIZABLE:
         container_delta,is_var_store = create_list_delta(parent_delta)
+    elif var_type is FOR_STRUCT_CONTAINER_SERIALIZABLE:
+        container_delta, is_var_store = create_struct_delta(parent_delta)
+    else:
+        util.logger_assert('Unknown var type when serializing')
 
     container_delta.var_name = var_name
     container_delta.has_been_written = has_been_written_since_last_msg
@@ -68,11 +98,15 @@ def container_serializable_var_tuple_for_network(
     if (not internal_has_been_written) and is_var_store and (not has_been_written_since_last_message):
         # remove the newly added map delta because there were no
         # changes that it encoded
-        if for_map:
+        if var_type is FOR_MAP_CONTAINER_SERIALIZABLE:
             del parent_delta.map_deltas[-1]
-        else:
+        elif var_type is FOR_LIST_CONTAINER_SERIALIZABLE:
             del parent_delta.list_deltas[-1]
-
+        elif var_type is FOR_STRUCT_CONTAINER_SERIALIZABLE:
+            del parent_delta.struct_deltas[-1]
+        else:
+            util.logger_assert('Unknown var type when serializing')            
+            
         
     return internal_has_been_written or written_since_last_message or force
 

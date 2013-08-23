@@ -31,16 +31,13 @@ _waldo_classes = {
     'WaldoMapVariable': waldoLockedVariables.LockedMapVariable,
     'WaldoListVariable': waldoLockedVariables.LockedListVariable,
     'WaldoEndpointVariable': waldoLockedVariables.LockedEndpointVariable,
+    'WaldoUserStructVariable': waldoLockedVariables.LockedStructVariable,
     
     # NOTE: must build these methods
-    'WaldoUserStructVariable': None,
     'WaldoFunctionVariable': None,
-
-    # 'WaldoUserStructVariable': wVariables.WaldoUserStructVariable,
     # 'WaldoFunctionVariable': wVariables.WaldoFunctionVariable,
-    # 'WaldoEndpointVariable': wVariables.WaldoEndpointVariable,
 
-    
+
     'WaldoExtNumVariable': waldoLockedVariables.WaldoExternalNumberVariable,
     'WaldoExtTrueFalseVariable': waldoLockedVariables.WaldoExternalTrueFalseVariable,
     'WaldoExtTextVariable': waldoLockedVariables.WaldoExternalTextVariable,
@@ -53,10 +50,7 @@ _waldo_classes = {
     'WaldoSingleThreadMapVariable': waldoLockedVariables.SingleThreadedLockedMapVariable,
     'WaldoSingleThreadListVariable': waldoLockedVariables.SingleThreadedLockedListVariable,
     'WaldoSingleThreadEndpointVariable': waldoLockedVariables.SingleThreadedLockedEndpointVariable,
-    
-    # 'WaldoSingleThreadUserStructVariable': wVariables.WaldoSingleThreadUserStructVariable,
-    # 'WaldoSingleThreadEndpointVariable': wVariables.WaldoSingleThreadEndpointVariable,
-    'WaldoSingleThreadUserStructVariable': None,
+    'WaldoSingleThreadUserStructVariable': waldoLockedVariables.SingleThreadedLockedStructVariable,
     
     # call results
     'CompleteRootCallResult': waldoCallResults._CompleteRootCallResult,

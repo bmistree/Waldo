@@ -7,7 +7,9 @@ from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
 
 from waldo.lib.waldoLockedInternalContainers import SingleThreadedLockedInternalListVariable
 from waldo.lib.waldoLockedInternalContainers import SingleThreadedLockedInternalMapVariable
+from waldo.lib.waldoLockedInternalContainers import SingleThreadedLockedInternalStructVariable
 from waldo.lib.waldoLockedInternalContainers import LockedInternalListVariable, LockedInternalMapVariable
+from waldo.lib.waldoLockedInternalContainers import LockedInternalStructVariable
 from waldo.lib.waldoLockedContainerReference import MultiThreadedContainerReference, SingleThreadedContainerReference
 
 
@@ -121,6 +123,17 @@ class LockedListVariable(MultiThreadedContainerReference):
         super(LockedListVariable,self).__init__(host_uuid,peered,init_val)
 
 
+class LockedStructVariable(MultiThreadedContainerReference):
+    def __init__(self,host_uuid,peered=False,init_val=None):
+        if not isinstance(init_val,dict):
+            util.logger_assert(
+                'User structs must always have init_vals.  ' 
+                'Otherwise, not initializing struct data')
+        else:
+            init_val = LockedInternalStructVariable(ensure_locked_obj,host_uuid,peered,init_val)
+            
+        super(LockedStructVariable,self).__init__(host_uuid,peered,init_val)
+        
         
 ##### Single-threaded container variables ######
 class SingleThreadedLockedMapVariable(SingleThreadedContainerReference):
@@ -142,6 +155,21 @@ class SingleThreadedLockedListVariable(SingleThreadedContainerReference):
 
         super(SingleThreadedLockedListVariable,self).__init__(host_uuid,peered,init_val)
 
+class SingleThreadedLockedStructVariable(SingleThreadedContainerReference):
+    def __init__(self,host_uuid,peered=False,init_val=None):
+        if init_val is None:
+            util.logger_assert(
+                'User structs must always have init_vals.  ' 
+                'Otherwise, not initializing struct data')
+
+        if isinstance(init_val,dict):
+            init_val = SingleThreadedLockedInternalStructVariable(ensure_locked_obj,host_uuid,peered,init_val)
+
+        super(SingleThreadedLockedStructVariable,self).__init__(host_uuid,peered,init_val)
+
+        
+
+        
         
 ###### External value variables #####
 class WaldoExternalTextVariable(WaldoExternalValueVariable):
