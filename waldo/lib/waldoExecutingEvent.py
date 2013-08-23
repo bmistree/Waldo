@@ -19,6 +19,7 @@ from waldo.lib.waldoLockedVariables import SingleThreadedLockedNumberVariable, L
 from waldo.lib.waldoLockedVariables import SingleThreadedLockedTrueFalseVariable, LockedTrueFalseVariable
 from waldo.lib.waldoLockedVariables import SingleThreadedLockedMapVariable, LockedMapVariable
 from waldo.lib.waldoLockedVariables import SingleThreadedLockedListVariable, LockedListVariable
+from waldo.lib.waldoLockedVariables import SingleThreadedLockedStructVariable, LockedStructVariable
 
 
 class _ExecutingEventContext(object):
@@ -249,9 +250,7 @@ class _ExecutingEventContext(object):
             elif isinstance(val,list):
                 constructor = LockedListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
-                util.logger_warn ('UPDATE-REFACTOR')
-                util.logger_assert('Must finish')
-                # constructor = wVariables.WaldoEndpointVariable
+                constructor = LockedEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
                 # checks if is function
@@ -277,9 +276,7 @@ class _ExecutingEventContext(object):
             elif isinstance(val,list):
                 constructor = SingleThreadedLockedListVariable
             elif isinstance(val,waldoEndpoint._Endpoint):
-                util.logger_warn ('UPDATE-REFACTOR')
-                util.logger_assert('Must finish')
-                # constructor = wVariables.WaldoSingleThreadEndpointVariable
+                constructor = SingleThreadedLockedEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
                 # checks if is function
