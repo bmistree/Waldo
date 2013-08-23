@@ -9,7 +9,7 @@ from waldo.lib.util import Queue
 from waldo.lib.waldoLockedObj import WaldoLockedObj
 from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
 from waldo.lib.waldoLockedVariables import is_non_ext_num_var, is_non_ext_true_false_var
-from waldo.lib.waldoLockedVariables import is_non_ext_text_var
+from waldo.lib.waldoLockedVariables import is_non_ext_text_var, is_non_ext_func_var
 from waldo.lib.waldoLockedContainerReference import is_reference_container
 from waldo.lib.waldoLockedVariables import is_non_ext_map_var, is_non_ext_list_var
 from waldo.lib.waldoLockedVariables import WaldoExternalTextVariable
@@ -20,6 +20,7 @@ from waldo.lib.waldoLockedVariables import SingleThreadedLockedTrueFalseVariable
 from waldo.lib.waldoLockedVariables import SingleThreadedLockedMapVariable, LockedMapVariable
 from waldo.lib.waldoLockedVariables import SingleThreadedLockedListVariable, LockedListVariable
 from waldo.lib.waldoLockedVariables import SingleThreadedLockedStructVariable, LockedStructVariable
+from waldo.lib.waldoLockedVariables import SingleThreadedLockedFunctionVariable, LockedFunctionVariable
 
 
 class _ExecutingEventContext(object):
@@ -303,30 +304,35 @@ class _ExecutingEventContext(object):
         are and are not external) to populate their ext_args_array.
         This is passed in in this function.
         '''
-        util.logger_assert('Must finish turn into wald var')
-        # if isinstance(val,wVariables.WaldoFunctionVariable):
-        #     if force_copy:
-        #         # means that it was a WaldoVariable: just call its copy
-        #         # method
-        #         return val.copy(active_event,new_peered,new_multi_threaded)
-        #     # otherwise, just return val
-        #     return val
-        # elif hasattr(val,'__call__'):
-        #     # python function
-        #     pass
-        # #### DEBUG
-        # else:
-        #     util.logger_assert(
-        #         'incorrect type passed into func_turn_into_waldo_var')
-        # #### END DEBUG
+        if is_non_ext_func_var(val):
+            if force_copy:
+                # means that it was a WaldoVariable: just call its copy
+                # method
+                return val.copy(active_event,new_peered,new_multi_threaded)
+            # otherwise, just return val
+            return val
+        elif hasattr(val,'__call__'):
+            # python function
+            pass
+        #### DEBUG
+        else:
+            util.logger_assert(
+                'incorrect type passed into func_turn_into_waldo_var')
+        #### END DEBUG
 
-        # waldo_func = wVariables.WaldoFunctionVariable(
-        #     'garbage',
-        #     host_uuid,
-        #     new_peered,
-        #     val).set_external_args_array(ext_args_array)
+        if new_multi_threaded:
+            waldo_func = LockedFunctionVariable(
+                host_uuid,
+                new_peered,
+                val).set_external_args_array(ext_args_array)
+        else:
+            waldo_func = SingleThreadedLockedFunctionVariable(
+                host_uuid,
+                new_peered,
+                val).set_external_args_array(ext_args_array)            
+                
 
-        # return waldo_func
+        return waldo_func
     
     
     def call_func_obj(
@@ -359,7 +365,7 @@ class _ExecutingEventContext(object):
 
         internal_func = func_obj.get_val(active_event)
         returned_val = internal_func(
-            active_event.local_endpoint,*call_arg_list)
+            active_event.event_parent.local_endpoint,*call_arg_list)
 
         if isinstance(returned_val,list):
             return waldoLockedVariables.SingleThreadedLockedListVariable(

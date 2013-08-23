@@ -27,6 +27,10 @@ def ensure_locked_obj(new_val,host_uuid,single_threaded):
     single threaded.
     
     '''
+
+    util.logger_warn(
+        'Need to include function object check in ensure locked obj')
+    
     if isinstance(new_val, WaldoLockedObj):
         return new_val
 
@@ -59,6 +63,10 @@ def ensure_locked_obj(new_val,host_uuid,single_threaded):
             util.logger_assert('Unknown object type.')
 
 
+def is_non_ext_func_var(to_check):
+    return (isinstance(to_check, LockedFunctionVariable) or
+            isinstance(to_check, SingleThreadedLockedFunctionVariable))
+            
 def is_non_ext_text_var (to_check):
     return (isinstance(to_check,LockedTextVariable) or
             isinstance(to_check,SingleThreadedLockedTextVariable))
@@ -98,6 +106,42 @@ class LockedEndpointVariable(LockedValueVariable):
         super(LockedEndpointVariable,self).__init__(host_uuid,peered,init_val)
 
 
+class LockedFunctionVariable(LockedValueVariable):
+    def __init__(
+        self,host_uuid,peered=False,init_val=None):
+
+        if peered:
+            util.logger_assert(
+                'Function variables may not be peered')
+
+        def _default_helper_func(*args,**kwargs):
+            pass
+
+        if init_val == None:
+            init_val = _default_helper_func
+        super(LockedFunctionVariable,self).__init__(host_uuid,peered,init_val)
+
+        # {Array} --- Each element is an int.  When making a call to a
+        # function object, the function object takes in arguments.
+        # For non-externals, we de-waldoify these arguments.  However,
+        # for external arguments, we do not.  If an argument is
+        # supposed to be an external, then we just pass it through
+        # directly
+        self.ext_args_array = None
+
+    def set_external_args_array(self,ext_args_array):
+        '''
+        @see comment above declartion of ext_args_array.  Used by
+        _ExecutingEventContext.call_func_obj to de-waldo-ify arguments
+        passed to non-Waldo function objects.
+
+        As soon as we create a new WaldoFunctionObject, we instantly
+        set its args array.
+        '''
+        self.ext_args_array = ext_args_array
+        return self
+
+        
 ##### Single threaded value variables #####
 class SingleThreadedLockedNumberVariable(SingleThreadedLockedValueVariable):
     pass
@@ -114,6 +158,43 @@ class SingleThreadedLockedEndpointVariable(SingleThreadedLockedValueVariable):
             util.logger_assert('Cannot have peered endpoint variable')
         super(SingleThreadedLockedEndpointVariable,self).__init__(host_uuid,peered,init_val)
 
+
+
+class SingleThreadedLockedFunctionVariable(SingleThreadedLockedValueVariable):
+    def __init__(
+        self,host_uuid,peered=False,init_val=None):
+
+        if peered:
+            util.logger_assert(
+                'Function variables may not be peered')
+
+        def _default_helper_func(*args,**kwargs):
+            pass
+
+        if init_val == None:
+            init_val = _default_helper_func
+        super(SingleThreadedLockedFunctionVariable,self).__init__(host_uuid,peered,init_val)
+
+        # {Array} --- Each element is an int.  When making a call to a
+        # function object, the function object takes in arguments.
+        # For non-externals, we de-waldoify these arguments.  However,
+        # for external arguments, we do not.  If an argument is
+        # supposed to be an external, then we just pass it through
+        # directly
+        self.ext_args_array = None
+
+    def set_external_args_array(self,ext_args_array):
+        '''
+        @see comment above declartion of ext_args_array.  Used by
+        _ExecutingEventContext.call_func_obj to de-waldo-ify arguments
+        passed to non-Waldo function objects.
+
+        As soon as we create a new WaldoFunctionObject, we instantly
+        set its args array.
+        '''
+        self.ext_args_array = ext_args_array
+        return self
+        
 
 ##### Multi-threaded container variables ######
 class LockedMapVariable(MultiThreadedContainerReference):
