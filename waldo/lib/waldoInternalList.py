@@ -428,7 +428,7 @@ class _InternalListVersion(
 
                 sub_element_action.key_num = index
 
-                if map_val.serializable_var_tuple_for_network(sub_element_action,'',action_event,False):
+                if list_val.serializable_var_tuple_for_network(sub_element_action,'',action_event,False):
                     changes_made = True
                 else:
                     # no change made to subtree: go ahead and delete added subaction
