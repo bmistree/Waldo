@@ -68,9 +68,11 @@ class EventParent(object):
             # send message to all other endpoints that we made direct
             # endpoint calls on that they should attempt first phase
             # commit
+            if self.local_endpoint._uuid == waiting_on_uuid:
+                continue
+            
             endpoint = same_host_endpoints_contacted_dict[waiting_on_uuid].endpoint_object
             endpoint._receive_request_commit(self.uuid,self.local_endpoint)
-
 
         
     def second_phase_transition_success(
@@ -178,7 +180,9 @@ class RootEventParent(EventParent):
         for waiting_on_uuid in same_host_endpoints_contacted_dict.keys():
             self.endpoints_waiting_on_commit[waiting_on_uuid] = False
 
-        
+        # not waiting on self.
+        self.endpoints_waiting_on_commit[self.local_endpoint._uuid] = True
+            
         # after first phase has completed, should check if can
         # transition directly to second phase (ie, no other endpoints
         # were involved in event.)
@@ -193,7 +197,7 @@ class RootEventParent(EventParent):
         for endpt_transitioned in self.endpoints_waiting_on_commit.values():
             if not endpt_transitioned:
                 return
-        
+
         self.event.second_phase_commit()
 
     def rollback(
