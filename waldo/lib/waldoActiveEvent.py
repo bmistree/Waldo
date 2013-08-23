@@ -8,6 +8,7 @@ from util import Queue
 import waldoDeadlockDetector
 from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
 import Waldo
+import traceback
 
 NETWORK = 'NETWORK'
 BACKOUT = 'BACKOUT'
@@ -1082,7 +1083,7 @@ class _ActiveEvent(_InvalidationListener):
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
             if error.type == PartnerError.APPLICATION:
                 message_listening_queue.put(
-                    waldoCallResults._ApplicationExceptionCallResult())
+                    waldoCallResults._ApplicationExceptionCallResult(error.trace))
             elif error.type == PartnerError.NETWORK:
                 message_listening_queue.put(
                     waldoCallResults._NetworkFailureCallResult())
@@ -1606,6 +1607,10 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         if isinstance(error, util.NetworkException):
             self.result_queue.put(
                 waldoCallResults._NetworkFailureCallResult())
-        elif isinstance(error, Exception):
+        elif isinstance(error, util.ApplicationException):
             self.result_queue.put(
-                waldoCallResults._ApplicationExceptionCallResult())
+                waldoCallResults._ApplicationExceptionCallResult(error.trace))
+        elif isinstance(error, Exception):
+            tb = traceback.format_exc()
+            self.result_queue.put(
+                waldoCallResults._ApplicationExceptionCallResult(tb))

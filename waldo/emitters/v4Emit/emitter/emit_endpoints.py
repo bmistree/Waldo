@@ -927,7 +927,7 @@ if isinstance(_queue_elem,%s):
 elif isinstance(_queue_elem,%s):
     raise %s()
 elif isinstance(_queue_elem,%s):
-    raise %s()
+    raise %s(_queue_elem.trace)
 
 _context.set_to_reply_with(_queue_elem.reply_with_msg_field)
 

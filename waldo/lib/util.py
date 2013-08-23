@@ -72,5 +72,5 @@ class StoppedException(Exception):
 class NetworkException(Exception):
     pass
 class ApplicationException(Exception):
-    pass
-
+    def __init__(self, trace):
+        self.trace = trace

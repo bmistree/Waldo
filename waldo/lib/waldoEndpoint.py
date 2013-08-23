@@ -6,6 +6,7 @@ import waldoCallResults
 from util import Queue
 import threading
 import time
+import traceback
 from waldo.lib.waldoHeartbeat import Heartbeat
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
@@ -288,7 +289,11 @@ class _Endpoint(object):
         error.host_uuid.data = self._uuid
         if isinstance(exception, util.NetworkException):
             error.type = PartnerError.NETWORK
+        elif isinstance(exception, util.ApplicationException):
+            error.type = PartnerError.APPLICATION
+            error.trace = exception.trace
         else:
+            error.trace = traceback.format_exc()
             error.type = PartnerError.APPLICATION
         self._conn_obj.write(general_message.SerializeToString(),self)
 

@@ -650,7 +650,7 @@ class _ExecutingEventContext(object):
         queue_elem = threadsafe_result_queue.get()
 
         if isinstance(queue_elem, waldoCallResults._ApplicationExceptionCallResult):
-            raise util.ApplicationException()
+            raise util.ApplicationException(queue_elem.trace)
         elif isinstance(queue_elem, waldoCallResults._NetworkFailureCallResult):
             raise util.NetworkException()
         # FIXME: there may be other errors that are not from

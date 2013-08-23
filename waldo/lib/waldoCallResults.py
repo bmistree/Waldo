@@ -95,4 +95,5 @@ class _NetworkFailureCallResult(object):
     pass
 
 class _ApplicationExceptionCallResult(object):
-    pass
+    def __init__(self, trace):
+        self.trace = trace
