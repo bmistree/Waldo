@@ -3,12 +3,16 @@ from user_emitted import UserHelper
 from player_emitted import PlayerHelper
 from anagram_server_emitted import AnagramServer
 from server_emitted import Server
+from omid_server_emitted import OmidServer
+from omid_player_emitted import OmidPlayerHelper
 from password_server_emitted import PasswordServer
 from optparse import OptionParser
 import sys, os, time, random, thread
 from login import LoginWindow
+import ssl
 sys.path.append(os.path.join("../../"))
 from waldo.lib import Waldo
+
 HOSTNAME = '127.0.0.1'
 PORT = 6922
 ANAGRAM_PORT = 6767
@@ -78,11 +82,11 @@ def start_omid_server():
         print 'Waiting for omid players'
         while omid_server.get_player_count() <= 0:
             time.sleep(0.1)
-            omid_server.broadcastWaitingMessage('Game will begin in 10 seconds. Type "/ready" to join.\n')
-            time.sleep(10)
-            omid_server.start_game()
-            time.sleep(20)
-            omid_server.end_game()
+        omid_server.broadcastWaitingMessage('Game will begin in 10 seconds. Type "/ready" to join.\n')
+        time.sleep(10)
+        omid_server.start_game()
+        time.sleep(20)
+        omid_server.end_game()
         
 
 def hasher(event, password, salt):
@@ -170,9 +174,9 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-g", "--generate", action ="store_true", dest = "generate", default = False)
     (option, args) = parser.parse_args()
-    Waldo.start_ca(option.generate, host = KEY_MANAGER_HOST, port = KEY_MANAGER_PORT, cert_end = 60*60*24*365)
+    Waldo.start_ca(option.generate, host = HOSTNAME, port = KEY_MANAGER_PORT, cert_end = 60*60*24*365)
     if option.generate:
-        Waldo.add_ca_to_list("ca_list.pem", KEY_MANAGER_HOST, KEY_MANAGER_PORT)
+        Waldo.add_ca_to_list("ca_list.pem", HOSTNAME, KEY_MANAGER_PORT)
     load_database()
     password_server = create_password_server()
     create_server()

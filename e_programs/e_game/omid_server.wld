@@ -50,13 +50,17 @@ OmidServer {
         }
     }
 
-    Public Function check_node(Text username, Text answer, Text node_number) returns TrueFalse{
-        if (username in nodes) {
+    Public Function check_node(Text username, Text node_number, Text answer) returns TrueFalse{
+        print("starting check node function");
+        if (answer in nodes) {
+            print("answer is in nodes");
             if (node_number == nodes[answer].node_num) {
-                if (not nodes[username].found) {
-                    nodes[username].found = True;
+                print("correct node number");
+                if (not nodes[answer].found) {
+                    print(answer + " was not already found.");
+                    nodes[answer].found = True;
                     update_maps(answer);
-                    //Update score
+                    game[username].score += 5;
                     return True;
                 }
                 //Tell user node has already been found

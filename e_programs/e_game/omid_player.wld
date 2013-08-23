@@ -13,6 +13,7 @@ Sequences {
   DisplayWaiting: OmidPlayerHelper.doNothing -> OmidPlayer.displayWaitingMessage;
   UpdateGame: OmidPlayerHelper.setMap -> OmidPlayer.updateMap;
   AddToGame: OmidPlayer.doNothing -> OmidPlayerHelper.addPlayer;
+  SendAnswer: OmidPlayer.doNothing -> OmidPlayerHelper.send;
 }
 
 Struct node_information {
@@ -31,6 +32,15 @@ Struct arc_information {
 
 Peered {
     Text username;
+}
+
+Sequence SendAnswer(Text node_num, Text answer) {
+    OmidPlayer.doNothing{}
+    OmidPlayerHelper.send{
+        print("about to execute game_server checknode");
+        game_server.checkNode(username, node_num, answer);
+        print("sent. Still in sequence");
+    }
 }
 
 Sequence AddUser() {
@@ -90,26 +100,21 @@ Sequence UpdateGame() {
         arc_map = arcs;
     }
     OmidPlayer.updateMap{
-        print("about to update map");
-        /*clear_map();
+        clear_map();
         for (Text answer in node_map) {
             Struct node_information info = node_map[answer];
-            print("drawing node " + answer);
             //extCopy info to draw_circle;
-            //signal(draw_circle, info.x, info.x, info.found, info.node_num, info.answer);
+            draw_circle(info.x, info.x, info.found, info.node_num, info.answer);
         }
         for (Struct arc_information arc_info in arc_map) {
             Struct node_information node1 = node_map[arc_info.node1];
             Struct node_information node2 = node_map[arc_info.node2];
-            print(arc_info.node1);
-            print(arc_info.node2);
             if (node1.found and node2.found) {
-                print("drawing arc");
-                signal(draw_arc, node1.x, node1.y, node2.x, node2.y);
+                draw_arc(node1.x, node1.y, node2.x, node2.y);
                 //List(element: Number) arc_pos = [node1.x, node1.y, node2.x, node2.y];
                 //extCopy arc_pos to draw_arc;
                 }
-                }*/
+        }
         print("finished updating");
     }
 }
@@ -140,6 +145,12 @@ OmidPlayer {
     Public Function send_to_waiting(Text message) {
         SendWaitingMsg(message);
     }
+
+    Public Function send_answer(Text node_num, Text answer) {
+        print("about to send node num: " + node_num + " answer: " + answer);
+        SendAnswer(node_num, answer);
+        print("answer sent");
+    }
 }
 
 OmidPlayerHelper {
@@ -154,7 +165,6 @@ OmidPlayerHelper {
         nodes = node_info;
         arcs = arc_info;
         UpdateGame();
-        print("done initializing");
     }
     Public Function update_map(Text answer_found) {
         nodes[answer_found].found = True;

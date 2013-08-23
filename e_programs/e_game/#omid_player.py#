@@ -82,7 +82,6 @@ class OmidGamePlayer(Frame):
         self.circle.SetX(x_pos)
         self.circle.SetY(y_pos)
         self.canvas.AddShape(self.circle)
-        print('printed circle at %d %d' %(x_pos, y_pos))
         self.circle.Show(True)
         self.Show(False)
         self.Show(True)
