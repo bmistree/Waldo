@@ -43,6 +43,7 @@ class OmidGamePlayer(Frame):
         self.Centre()
         self.answer_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (0, WINDOW_HEIGHT - TEXT_BOX_HEIGHT), size = (WINDOW_WIDTH - BUTTON_WIDTH - NUMBER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
         self.number_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (0, WINDOW_HEIGHT - TEXT_BOX_HEIGHT), size = (NUMBER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
+        self.waiting.mainloop() #remove after debugging
 
     def draw_map(self):
         while True:

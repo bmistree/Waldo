@@ -7,9 +7,6 @@ from password_server_emitted import PasswordServer
 from optparse import OptionParser
 import sys, os, time, random, thread
 from login import LoginWindow
-import OpenSSL
-from OpenSSL import crypto
-import ssl
 sys.path.append(os.path.join("../../"))
 from waldo.lib import Waldo
 HOSTNAME = '127.0.0.1'
@@ -25,9 +22,7 @@ STRUCT_FIELD_TWO = "encryptKey"
 STRUCT_FIELD_THREE = "cert"
 STRUCT_FIELD_FOUR = "salt"
 STRUCT_FIELD_FIVE = "type"
-SEP = "(--^^--)\n"
 USER_SEP = "\n----------END USER----------\n\n----------BEGIN USER----------\n"
-KEY_MANAGER_HOST = '127.0.0.1'
 KEY_MANAGER_PORT = 6974
 OMID_FILE = "omid_game_data.txt"
 NODE_DIVIDER = "--NODES--"
@@ -78,7 +73,7 @@ def start_omid_server():
     load_game_info()
     omid_server = Waldo.no_partner_create(OmidServer)
     omid_server.set_map(nodes, arcs)
-    Waldo.tcp_accept(OmidPlayerHelper, '127.0.0.1', OMID_PORT, omid_server)
+    Waldo.tcp_accept(OmidPlayerHelper, HOSTNAME, OMID_PORT, omid_server)
     while True:
         print 'Waiting for omid players'
         while omid_server.get_player_count() <= 0:
@@ -98,7 +93,7 @@ def load_database():
     users = database_file.read().split(USER_SEP)
     for line in users:
         if (len(line) > 0):
-            split_line = line.split(SEP)
+            split_line = line.split(DELIMITER)
             global database
             user_info = {}
             user_info[STRUCT_FIELD_ONE] = split_line[1]
@@ -112,13 +107,13 @@ def save_database(endpoint, user_dict):
     database_file = open(FILENAME, 'w', 0)
     for user in user_dict:
         user_info = user_dict[user]
-        line = user + SEP + user_info[STRUCT_FIELD_ONE] + SEP + user_info[STRUCT_FIELD_TWO] + SEP + user_info[STRUCT_FIELD_THREE] + SEP + user_info[STRUCT_FIELD_FOUR] + USER_SEP
+        line = user + DELIMITER + user_info[STRUCT_FIELD_ONE] + DELIMITER + user_info[STRUCT_FIELD_TWO] + DELIMITER + user_info[STRUCT_FIELD_THREE] + DELIMITER + user_info[STRUCT_FIELD_FOUR] + USER_SEP
         database_file.write(line)
     database_file.close()
 
 
 def create_password_server():
-    password_server = Waldo.no_partner_create(PasswordServer, Waldo.get_ca_endpoint(KEY_MANAGER_HOST, KEY_MANAGER_PORT), database, save_database, hasher)
+    password_server = Waldo.no_partner_create(PasswordServer, Waldo.get_ca_endpoint(HOSTNAME, KEY_MANAGER_PORT), database, save_database, hasher)
     Waldo.stcp_accept(UserLoginHelper, HOSTNAME, PORT + 1, password_server)
     return password_server
 
