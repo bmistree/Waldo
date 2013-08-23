@@ -1,8 +1,0 @@
-from omid_server_emitted import OmidServer
-from omid_player_emitted import OmidPlayerHelper
-import sys, os, time
-sys.path.append(os.path.join("../../"))
-from waldo.lib import Waldo
-
-
-
