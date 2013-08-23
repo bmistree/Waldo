@@ -102,7 +102,11 @@ def value_variable_py_val_serialize(value_variable,parent,var_data,var_name):
 
 
 class LockedValueVariable(MultiThreadedObj):
-    def __init__(self,host_uuid,peered,init_val):
+    DEFAULT_VALUE = None
+    def __init__(self,host_uuid,peered,init_val=None):
+        if init_val is None:
+            init_val = self.DEFAULT_VALUE
+            
         super(LockedValueVariable,self).__init__(
             ValueTypeDataWrapper,host_uuid,peered,init_val)
 
@@ -121,7 +125,11 @@ class LockedValueVariable(MultiThreadedObj):
 
     
 class SingleThreadedLockedValueVariable(SingleThreadedObj):
-    def __init__(self,host_uuid,peered,init_val):
+    DEFAULT_VALUE = None
+    def __init__(self,host_uuid,peered,init_val=None):
+        if init_val is None:
+            init_val = self.DEFAULT_VALUE
+        
         super(SingleThreadedLockedValueVariable,self).__init__(
             ValueTypeDataWrapper,host_uuid,peered,init_val)
 

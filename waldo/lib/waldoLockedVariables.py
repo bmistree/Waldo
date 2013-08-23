@@ -11,6 +11,7 @@ from waldo.lib.waldoLockedInternalContainers import SingleThreadedLockedInternal
 from waldo.lib.waldoLockedInternalContainers import LockedInternalListVariable, LockedInternalMapVariable
 from waldo.lib.waldoLockedInternalContainers import LockedInternalStructVariable
 from waldo.lib.waldoLockedContainerReference import MultiThreadedContainerReference, SingleThreadedContainerReference
+from waldo.lib.waldoEndpointBase import EndpointBase
 
 
 #### HELPER FUNCTIONS ####
@@ -45,6 +46,8 @@ def ensure_locked_obj(new_val,host_uuid,single_threaded):
             return SingleThreadedLockedListVariable(host_uuid,False,new_val)
         elif isinstance(new_val,dict):
             return SingleThreadedLockedMapVariable(host_uuid,False,new_val)
+        elif isinstance(new_val,EndpointBase):
+            return SingleThreadedLockedEndpointVariable(host_uuid,False,new_val)
         else:
             util.logger_assert('Unknown object type.')
 
@@ -59,6 +62,8 @@ def ensure_locked_obj(new_val,host_uuid,single_threaded):
             return LockedListVariable(host_uuid,False,new_val)
         elif isinstance(new_val,dict):
             return LockedMapVariable(host_uuid,False,new_val)
+        elif isinstance(new_val,EndpointBase):
+            return LockedEndpointVariable(host_uuid,False,new_val)
         else:
             util.logger_assert('Unknown object type.')
 
@@ -91,13 +96,13 @@ def is_non_ext_true_false_var (to_check):
 
 ##### Multi-threaded value variables #####
 class LockedNumberVariable(LockedValueVariable):
-    pass
+    DEFAULT_VALUE = 0
 
 class LockedTextVariable(LockedValueVariable):
-    pass
+    DEFAULT_VALUE = ''
 
 class LockedTrueFalseVariable(LockedValueVariable):
-    pass
+    DEFAULT_VALUE = False
 
 class LockedEndpointVariable(LockedValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
@@ -144,13 +149,13 @@ class LockedFunctionVariable(LockedValueVariable):
         
 ##### Single threaded value variables #####
 class SingleThreadedLockedNumberVariable(SingleThreadedLockedValueVariable):
-    pass
+    DEFAULT_VALUE = 0
 
 class SingleThreadedLockedTextVariable(SingleThreadedLockedValueVariable):
-    pass
+    DEFAULT_VALUE = ''
 
 class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
-    pass
+    DEFAULT_VALUE = False
 
 class SingleThreadedLockedEndpointVariable(SingleThreadedLockedValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):

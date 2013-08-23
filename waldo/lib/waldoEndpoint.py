@@ -5,10 +5,10 @@ import waldoCallResults
 from util import Queue
 import threading
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
+from waldo.lib.waldoEndpointBase import EndpointBase
 
 
-
-class _Endpoint(object):
+class _Endpoint(EndpointBase):
     '''
     All methods that begin with _receive, are called by other
     endpoints or from connection object's receiving a message from
