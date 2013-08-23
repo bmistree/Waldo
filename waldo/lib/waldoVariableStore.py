@@ -69,20 +69,14 @@ class _VariableStore(object):
         def __init__(self):
             self.list_constructor = waldoLockedVariables.LockedListVariable
             self.map_constructor = waldoLockedVariables.LockedMapVariable
-            self.struct_constructor = None
-            util.logger_warn(
-                'Have not specified a struct constructor in variable store. ' +
-                'Also, no longer have single threaded variables.')
+            self.struct_constructor = waldoLockedVariables.LockedStructVariable
 
             self.single_thread_list_constructor = waldoLockedVariables.SingleThreadedLockedListVariable
             self.single_thread_map_constructor = waldoLockedVariables.SingleThreadedLockedMapVariable
-            
-            # self.single_thread_struct_constructor = wVariables.WaldoSingleThreadUserStructVariable
-            self.single_thread_struct_constructor = None
+            self.single_thread_struct_constructor = waldoLockedVariables.SingleThreadedLockedStructVariable            
 
             
     var_constructors = VarConstructors()
-
     
     def __init__(self,host_uuid):
 
