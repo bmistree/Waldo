@@ -14,7 +14,7 @@ import util_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='partnerError.proto',
   package='',
-  serialized_pb='\n\x12partnerError.proto\x1a\nutil.proto\"\x95\x01\n\x0cPartnerError\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x18\n\thost_uuid\x18\x02 \x02(\x0b\x32\x05.UUID\x12%\n\x04type\x18\x03 \x02(\x0e\x32\x17.PartnerError.ErrorType\")\n\tErrorType\x12\x0f\n\x0b\x41PPLICATION\x10\x01\x12\x0b\n\x07NETWORK\x10\x02')
+  serialized_pb='\n\x12partnerError.proto\x1a\nutil.proto\"\xa4\x01\n\x0cPartnerError\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x18\n\thost_uuid\x18\x02 \x02(\x0b\x32\x05.UUID\x12%\n\x04type\x18\x03 \x02(\x0e\x32\x17.PartnerError.ErrorType\x12\r\n\x05trace\x18\x04 \x01(\t\")\n\tErrorType\x12\x0f\n\x0b\x41PPLICATION\x10\x01\x12\x0b\n\x07NETWORK\x10\x02')
 
 
 
@@ -35,8 +35,8 @@ _PARTNERERROR_ERRORTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=143,
-  serialized_end=184,
+  serialized_start=158,
+  serialized_end=199,
 )
 
 
@@ -68,6 +68,13 @@ _PARTNERERROR = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='PartnerError.trace', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -79,7 +86,7 @@ _PARTNERERROR = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=35,
-  serialized_end=184,
+  serialized_end=199,
 )
 
 _PARTNERERROR.fields_by_name['event_uuid'].message_type = util_pb2._UUID
