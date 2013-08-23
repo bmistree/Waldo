@@ -26,7 +26,7 @@ def test_ext_num(single_side):
     original_num = 32
 
     ext_num = Waldo._waldo_classes['WaldoExtNumVariable'](
-        'garbage',single_side._host_uuid,False,original_num)
+        single_side._host_uuid,False,original_num)
 
     single_side.input_ext_num(ext_num)
     map_ext_index = 3
@@ -64,7 +64,7 @@ def test_ext_num(single_side):
     # creating another external number.  using it to test whether can
     # assign after a function call
     ext_num2 = Waldo._waldo_classes['WaldoExtNumVariable'](
-        'garbage',single_side._host_uuid,False,original_num)
+        single_side._host_uuid,False,original_num)
     single_side.test_assign_from_func_call(ext_num2)
     if single_side.get_endpoint_ext_value() != original_num:
         print '\nErr: did not overwrite previous with new value'

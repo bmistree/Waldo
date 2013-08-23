@@ -276,20 +276,29 @@ class SingleThreadedLockedStructVariable(SingleThreadedContainerReference):
 class WaldoExternalTextVariable(WaldoExternalValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
-            init_val = LockedTextVariable(host_uuid,False,'')
+            init_val = ''
+        if util.is_string(init_val):
+            init_val = LockedTextVariable(host_uuid,False,init_val)
+
         super(WaldoExternalTextVariable,self).__init__(host_uuid,False,init_val)
 
         
 class WaldoExternalNumberVariable(WaldoExternalValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
-            init_val = LockedNumberVariable(host_uuid,False,0)
+            init_val = 0
+        if isinstance(init_val,numbers.Number):
+            init_val = LockedNumberVariable(host_uuid,False,init_val)
+            
         super(WaldoExternalNumberVariable,self).__init__(host_uuid,False,init_val)
 
 class WaldoExternalTrueFalseVariable(WaldoExternalValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
+            init_val = False
+        if isinstance(init_val,bool):
             init_val = LockedTrueFalseVariable(host_uuid,False,False)
+            
         super(WaldoExternalTrueFalseVariable,self).__init__(host_uuid,False,init_val)
         
 
