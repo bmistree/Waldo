@@ -1065,7 +1065,7 @@ def emit_ext_assign(
         # endpoint call(if it were a message call, then we
         # wouldn't be able to write an external back)
         statement_txt = (
-            to_assign_to_txt + '.set_val(_active_event,%s)' %
+            to_assign_to_txt + '.set_val(_active_event,%s.get_val(_active_event))' %
             to_assign_from_node_txt)
     else:
 
