@@ -365,7 +365,7 @@ class _Endpoint(object):
             
         elif general_msg.HasField('error'):
             event = self._act_event_map.get_event(general_msg.error.event_uuid.data)
-            event.send_application_exception_to_listener()
+            event.send_exception_to_listener(general_msg.error)
 
         elif general_msg.HasField('heartbeat'):
             self._heartbeat.receive_heartbeat(general_msg.heartbeat.msg)

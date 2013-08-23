@@ -196,7 +196,8 @@ class _ActiveEventMap(object):
         previously sent or received a message.
         '''
         if event.message_sent:
-            event.put_network_exception()
+            event.set_network_failure()
+            event.put_exception(util.NetworkException())
 
     def inform_events_of_network_failure(self):
         '''

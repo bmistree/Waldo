@@ -440,7 +440,7 @@ def %s(self,_active_event,_context%s):
     except_str = '''
 except Exception as err: # ApplicationExceptions should be backed out and the partner should be
         # notified
-    _active_event.put_application_exception(err)
+    _active_event.put_exception(err)
     raise
     '''
 

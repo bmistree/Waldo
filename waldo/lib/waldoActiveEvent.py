@@ -6,6 +6,8 @@ import waldoExecutingEvent
 from abc import abstractmethod
 from util import Queue
 import waldoDeadlockDetector
+from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
+import Waldo
 
 NETWORK = 'NETWORK'
 BACKOUT = 'BACKOUT'
@@ -1063,19 +1065,28 @@ class _ActiveEvent(_InvalidationListener):
         self._breakout_mutex.release()
         return to_return
 
-    def send_application_exception_to_listener(self):
+    def send_exception_to_listener(self, error):
         '''
+        @param     error     GeneralMessage.error
+
         Places an ApplicationExceptionCallResult in the event complete queue to 
         indicate to the endpoint that an application exception has been raised 
         somewhere down the call graph.
+
+        Note that the type of error is 
         '''
         # Send an ApplicationExceptionCallResult to each listening queue
         for reply_with_uuid in self.message_listening_queues_map.keys():
             ### FIXME: It probably isn't necessary to send an exception result to
             ### each queue.
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
-            message_listening_queue.put(
-                waldoCallResults._ApplicationExceptionCallResult())
+            if error.type == PartnerError.APPLICATION:
+                message_listening_queue.put(
+                    waldoCallResults._ApplicationExceptionCallResult())
+            elif error.type == PartnerError.NETWORK:
+                message_listening_queue.put(
+                    waldoCallResults._NetworkFailureCallResult())
+
         
         
 # FIXME: are there any cases where we need to flush threadsafe queues
@@ -1166,17 +1177,18 @@ class RootActiveEvent(_ActiveEvent):
         else:
             self.reschedule()
 
-    def put_network_exception(self):
+    def put_exception(self, error):
         '''
-        Places a  NetworkFailureCallResult in the event complete queue to 
-        indicate to the endpoint that the network has failed and a 
-        NetworkException should be raised.
+        Places the appropriate call result in the event complete queue to 
+        indicate to the endpoint that an error has occured and the event
+        must be handled.
         '''
-        # Send a NetworkFailureCallResult to each listening queue
-        for reply_with_uuid in self.message_listening_queues_map.keys():
-            message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
-            message_listening_queue.put(
-                waldoCallResults._NetworkFailureCallResult())
+        if isinstance(error, util.NetworkException):
+            # Send a NetworkFailureCallResult to each listening queue
+            for reply_with_uuid in self.message_listening_queues_map.keys():
+                message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
+                message_listening_queue.put(
+                    waldoCallResults._NetworkFailureCallResult())
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
@@ -1467,9 +1479,7 @@ class PartnerActiveEvent(_ActiveEvent):
 
         return can_commit
         
-    def put_application_exception(self, error):
-        ### FIXME: make this more general -- e.g. put_exception instead
-        ### of put_application_exception
+    def put_exception(self, error):
         '''
         Informs the partner that an exception has occured at runtime (thus the
         event should be backed out).
@@ -1587,17 +1597,15 @@ class EndpointCalledActiveEvent(_ActiveEvent):
                 self.subscriber._receive_first_phase_commit_unsuccessful(
                     self.uuid,self.local_endpoint._uuid)
 
-    def put_application_exception(self,error):
+    def put_exception(self,error):
         '''
-        Places an ApplicationExceptionCallResult in the event complete queue to 
-        indicate to the endpoint that an ApplicationException has been raised.
-        This allows ApplicationExceptions to be propagated back through endpoint 
-        calls.
+        Places an ApplicationExceptionCallResult or NetworkFailureCallResult in 
+        the event complete queue to indicate to the endpoint that an exception
+        has been raised. This allows the exception to be propagated back.
         '''
-        self.result_queue.put(
-                waldoCallResults._ApplicationExceptionCallResult())
-
-    def put_network_exception(self):
-        self.result_queue.put(
+        if isinstance(error, util.NetworkException):
+            self.result_queue.put(
                 waldoCallResults._NetworkFailureCallResult())
-
+        elif isinstance(error, Exception):
+            self.result_queue.put(
+                waldoCallResults._ApplicationExceptionCallResult())
