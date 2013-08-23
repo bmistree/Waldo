@@ -8,13 +8,13 @@ sys.path.append(base_dir)
 
 from waldo.lib import Waldo
 from exception_nested_sequence_inner_v4 import InnerPing, InnerPong
-from exception_nested_sequence_outer_v4 import OuterPing, OuterPong
+from application_exception_nested_sequence_outer_v4 import OuterPing, OuterPong
 
 HOST = 'localhost'
 PORT_INNER = 8777
 PORT_OUTER = 8778
 
-def throw_func():
+def throw_func(endpoint):
     '''
     Throws an ApplicationException in Waldo.
     '''
