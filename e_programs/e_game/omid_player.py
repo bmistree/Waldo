@@ -3,6 +3,9 @@ from wx.lib.ogl import *
 from waiting_room import WaitingRoom
 from omid_player_emitted import OmidPlayer
 from gui_string import GUI_String_Ext
+import threading
+#from gui_node import GUI_Node_Ext
+#from gui_arc import GUI_Arc_Ext
 import time, sys, os
 sys.path.append(os.path.join('../../'))
 from waldo.lib import Waldo
@@ -22,7 +25,7 @@ class OmidGamePlayer(Frame):
         self.name = name
         self.waiting = WaitingRoom(name + "'s Omid Game Waiting Room")
         self.waiting.bind_functs(self.read_waiting_room_message)
-        self.player = Waldo.tcp_connect(OmidPlayer, HOSTNAME, OMID_PORT, name, GUI_String_Ext(self.waiting.get_gui_screen()), self.draw_circle, self.clear_map)
+        self.player = Waldo.tcp_connect(OmidPlayer, HOSTNAME, OMID_PORT, name, GUI_String_Ext(self.waiting.get_gui_screen()), self.draw_circle, self.draw_arc, self.clear_map)
         
         self.app = App(False)
         Frame.__init__(self, None, title = name + "'s Omid Game", size = (WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -40,27 +43,32 @@ class OmidGamePlayer(Frame):
         self.Centre()
         self.answer_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (0, WINDOW_HEIGHT - TEXT_BOX_HEIGHT), size = (WINDOW_WIDTH - BUTTON_WIDTH - NUMBER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
         self.number_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (0, WINDOW_HEIGHT - TEXT_BOX_HEIGHT), size = (NUMBER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
+        threading.Thread(self.draw_map, None).start()
 
+    def draw_map(self):
+        while True:
+            self.player.service_signal()
+            time.sleep(0.1)
 
     def clear_map(self, endpoint):
         self.diagram.DeleteAllShapes()
-#Make draw arc function
+
     
-    def draw_arc(self, endpoint, x1, y1, x2, y2):
+    def draw_arc(self, endpt, x1, y1, x2, y2):
         line = LineShape()
         line.SetEnds(x1, y1, x2, y2)
         line.SetBrush(Brush('BLACK', style = SOLID))
 
-    def draw_circle(self, endpoint, x_pos, y_pos, found, num, text):
+    def draw_circle(self, endpt, x_pos, y_pos, found, num, answer):
         circle = CircleShape(CIRCLE_DIAMETER)
         if found:
             circle.SetBrush(Brush('BLACK', style = SOLID))
             circle.SetTextColour('WHITE')
-            circle.AddText(text)
+            circle.AddText(answer)
         else:
             circle.SetBrush(Brush('WHITE', style = SOLID))
             circle.SetTextColour('BLACK')
-            circle.AddText(str(num))
+            circle.AddText(num)
         circle.SetX(x_pos)
         circle.SetY(y_pos)
         self.canvas.AddShape(circle)

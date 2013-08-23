@@ -4,10 +4,11 @@ import sys, os, time
 sys.path.append(os.path.join("../../"))
 from waldo.lib import Waldo
 OMID_FILE = "omid_game_data.txt"
-NODE_DIVIDER = "--NODES--\n"
-ARC_DIVIDER = "--ARCS--\n"
-GAME_DIVIDER = "-----GAME-----\n"
+NODE_DIVIDER = "--NODES--"
+ARC_DIVIDER = "--ARCS--"
+GAME_DIVIDER = "-----GAME-----"
 DELIMITER = " -- "
+NODE_FIELD_0 = "answer"
 NODE_FIELD_1 = "node_num"
 NODE_FIELD_2 = "x"
 NODE_FIELD_3 = "y"
@@ -23,26 +24,27 @@ def load_game_info():
     nodes = {}
     arcs = []
     while True:
-        line = game_file.readline()
+        line = game_file.readline().rstrip()
         if line == NODE_DIVIDER:
-            line = game_file.readline()
+            line = game_file.readline().rstrip()
             while line != ARC_DIVIDER:
                 split_line = line.split(DELIMITER)
                 node_struct = {}
-                node_struct[NODE_FIELD_1] = int(split_line[1])
+                node_struct[NODE_FIELD_0] = split_line[0]
+                node_struct[NODE_FIELD_1] = split_line[1]
                 node_struct[NODE_FIELD_2] = int(split_line[2])
                 node_struct[NODE_FIELD_3] = int(split_line[3])
                 node_struct[NODE_FIELD_4] = True if split_line[4] == "T" else False
                 nodes[split_line[0]] = node_struct
-                line = game_file.readline()
-            line = game_file.readline()
+                line = game_file.readline().rstrip()
+            line = game_file.readline().rstrip()
             while line != "" and line != GAME_DIVIDER:
                 split_line = line.split(DELIMITER)
                 arc_struct = {}
                 arc_struct[ARC_FIELD_1] = split_line[0]
                 arc_struct[ARC_FIELD_2] = split_line[1]
                 arcs.append(arc_struct)
-                line = game_file.readline()
+                line = game_file.readline().rstrip()
             if line == "":
                 break
                 

@@ -1,6 +1,8 @@
 import sys
 import os
 sys.path.append(os.path.join("../../waldo/lib"))
+sys.path.append(os.path.join("../../"))
+from waldo.lib import Waldo
 from wVariables import WaldoExtTextVariable, WaldoTextVariable
 from Waldo import _host_uuid
 

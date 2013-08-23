@@ -8,7 +8,8 @@ Struct player_data {
 }
 
 Struct node_information {
-    Number node_num;
+    Text answer;
+    Text node_num;
     Number x;
     Number y;
     TrueFalse found;
@@ -49,7 +50,7 @@ OmidServer {
         }
     }
 
-    Public Function check_node(Text username, Text answer, Number node_number) returns TrueFalse{
+    Public Function check_node(Text username, Text answer, Text node_number) returns TrueFalse{
         if (username in nodes) {
             if (node_number == nodes[answer].node_num) {
                 if (not nodes[username].found) {

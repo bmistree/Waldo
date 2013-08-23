@@ -16,7 +16,8 @@ Sequences {
 }
 
 Struct node_information {
-    Number node_num;
+    Text answer;
+    Text node_num;
     Number x;
     Number y;
     TrueFalse found;
@@ -90,30 +91,39 @@ Sequence UpdateGame() {
     }
     OmidPlayer.updateMap{
         print("about to update map");
-        clear_map();
+        /*clear_map();
         for (Text answer in node_map) {
             Struct node_information info = node_map[answer];
-            draw_circle(info.x, info.y, info.found, info.node_num, answer);
+            print("drawing node " + answer);
+            //extCopy info to draw_circle;
+            //signal(draw_circle, info.x, info.x, info.found, info.node_num, info.answer);
         }
         for (Struct arc_information arc_info in arc_map) {
             Struct node_information node1 = node_map[arc_info.node1];
             Struct node_information node2 = node_map[arc_info.node2];
+            print(arc_info.node1);
+            print(arc_info.node2);
             if (node1.found and node2.found) {
-                draw_arc(node1.x, node1.y, node2.x, node2.y);
-            }
-        }
+                print("drawing arc");
+                signal(draw_arc, node1.x, node1.y, node2.x, node2.y);
+                //List(element: Number) arc_pos = [node1.x, node1.y, node2.x, node2.y];
+                //extCopy arc_pos to draw_arc;
+                }
+                }*/
+        print("finished updating");
     }
 }
 
 OmidPlayer {
     External Text waiting_message;
-    Function(in: Number, Number, TrueFalse, Number, Text; returns: Nothing) draw_circle;
+    Function(in: Number, Number, TrueFalse, Text, Text; returns: Nothing) draw_circle;
     Function(in: Number, Number, Number, Number; returns: Nothing) draw_arc;
     Function(returns: Nothing) clear_map;
-    onCreate(Text name, External Text gui, Function(returns: Nothing) draw, Function(returns: Nothing) clear) {
+    onCreate(Text name, External Text gui, Function(in: Number, Number, TrueFalse, Text, Text; returns: Nothing) node, Function(in: Number, Number, Number, Number; returns: Nothing) arc /*External Struct node_information node, External List(element: Number) arc*/, Function(returns: Nothing) clear) {
         username = name;
         waiting_message = gui;
-        draw_circle = draw;
+        draw_circle = node;
+        draw_arc = arc;
         clear_map = clear;
         JoinWaiting();
     }
@@ -143,13 +153,14 @@ OmidPlayerHelper {
     Public Function init_map(Map(from: Text, to: Struct node_information) node_info, List(element: Struct arc_information) arc_info) {
         nodes = node_info;
         arcs = arc_info;
-        print("nodes and arcs received");
         UpdateGame();
+        print("done initializing");
     }
     Public Function update_map(Text answer_found) {
         nodes[answer_found].found = True;
         UpdateGame();
     }
+
     Public Function get_new_waiting_message(Text message) {
         DisplayWaiting(message);
     }
