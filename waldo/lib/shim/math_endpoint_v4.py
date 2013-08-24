@@ -18,23 +18,19 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 self._waldo_classes["VariableStore"](_host_uuid))
 
             self._global_var_store.add_var(
-                '0__math',self._waldo_classes["WaldoUserStructVariable"]("0__math",_host_uuid,False,{"min_func": self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
-                'min_func', # variable's name
+                '0__math',self._waldo_classes["WaldoUserStructVariable"](_host_uuid,False,{"min_func": self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
                 _host_uuid, # host uuid var name
                 False,  # if peered, True, otherwise, False
                 None
             ).set_external_args_array([]), "max_func": self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
-                'max_func', # variable's name
                 _host_uuid, # host uuid var name
                 False,  # if peered, True, otherwise, False
                 None
             ).set_external_args_array([]), "mod_func": self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
-                'mod_func', # variable's name
                 _host_uuid, # host uuid var name
                 False,  # if peered, True, otherwise, False
                 None
             ).set_external_args_array([]), "rand_int_func": self._waldo_classes["WaldoFunctionVariable"](  # the type of waldo variable to create
-                'rand_int_func', # variable's name
                 _host_uuid, # host uuid var name
                 False,  # if peered, True, otherwise, False
                 None
@@ -58,8 +54,8 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # transaction might return over-written/inconsistent values.
                 _to_return = self._onCreate(_root_event,_ctx ,in_min_func,in_max_func,in_mod_func,in_rand_int_func,[])
                 # try committing root event
-                _root_event.request_commit()
-                _commit_resp = _root_event.event_complete_queue.get()
+                _root_event.begin_first_phase_commit()
+                _commit_resp = _root_event.event_parent.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
 
@@ -108,7 +104,7 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
         ### USER DEFINED METHODS ###
 
-        def min_func(self,in_nums):
+        def min_func(self,in_nums, **kwargs):
 
             # ensure that both sides have completed their onCreate calls
             # before continuing
@@ -121,6 +117,8 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
 
+                _retry_cb = kwargs.get('retry_cb',None)
+
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
                 # arguments (while inside transaction) so that this method may
@@ -129,11 +127,18 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # transaction might return over-written/inconsistent values.
                 _to_return = self._endpoint_func_call_prefix__waldo__min_func(_root_event,_ctx ,in_nums,[])
                 # try committing root event
-                _root_event.request_commit()
-                _commit_resp = _root_event.event_complete_queue.get()
+                _root_event.begin_first_phase_commit()
+                _commit_resp = _root_event.event_parent.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
                     return _to_return
+                elif isinstance(_commit_resp,self._waldo_classes["StopRootCallResult"]):
+                    raise self._waldo_classes["StoppedException"]()
+
+                if _retry_cb is not None:
+                    if not _retry_cb(self):
+                        raise self._waldo_classes["RetryCanceledException"]()
+
 
 
         def _endpoint_func_call_prefix__waldo__min_func(self,_active_event,_context,in_nums,_returning_to_public_ext_array=None):
@@ -159,7 +164,7 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
 
 
-        def max_func(self,in_nums):
+        def max_func(self,in_nums, **kwargs):
 
             # ensure that both sides have completed their onCreate calls
             # before continuing
@@ -172,6 +177,8 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
 
+                _retry_cb = kwargs.get('retry_cb',None)
+
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
                 # arguments (while inside transaction) so that this method may
@@ -180,11 +187,18 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # transaction might return over-written/inconsistent values.
                 _to_return = self._endpoint_func_call_prefix__waldo__max_func(_root_event,_ctx ,in_nums,[])
                 # try committing root event
-                _root_event.request_commit()
-                _commit_resp = _root_event.event_complete_queue.get()
+                _root_event.begin_first_phase_commit()
+                _commit_resp = _root_event.event_parent.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
                     return _to_return
+                elif isinstance(_commit_resp,self._waldo_classes["StopRootCallResult"]):
+                    raise self._waldo_classes["StoppedException"]()
+
+                if _retry_cb is not None:
+                    if not _retry_cb(self):
+                        raise self._waldo_classes["RetryCanceledException"]()
+
 
 
         def _endpoint_func_call_prefix__waldo__max_func(self,_active_event,_context,in_nums,_returning_to_public_ext_array=None):
@@ -210,7 +224,7 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
 
 
-        def mod_func(self,lhs,rhs):
+        def mod_func(self,lhs,rhs, **kwargs):
 
             # ensure that both sides have completed their onCreate calls
             # before continuing
@@ -223,6 +237,8 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
 
+                _retry_cb = kwargs.get('retry_cb',None)
+
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
                 # arguments (while inside transaction) so that this method may
@@ -231,11 +247,18 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # transaction might return over-written/inconsistent values.
                 _to_return = self._endpoint_func_call_prefix__waldo__mod_func(_root_event,_ctx ,lhs,rhs,[])
                 # try committing root event
-                _root_event.request_commit()
-                _commit_resp = _root_event.event_complete_queue.get()
+                _root_event.begin_first_phase_commit()
+                _commit_resp = _root_event.event_parent.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
                     return _to_return
+                elif isinstance(_commit_resp,self._waldo_classes["StopRootCallResult"]):
+                    raise self._waldo_classes["StoppedException"]()
+
+                if _retry_cb is not None:
+                    if not _retry_cb(self):
+                        raise self._waldo_classes["RetryCanceledException"]()
+
 
 
         def _endpoint_func_call_prefix__waldo__mod_func(self,_active_event,_context,lhs,rhs,_returning_to_public_ext_array=None):
@@ -263,7 +286,7 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
 
 
 
-        def rand_int_func(self,a,b):
+        def rand_int_func(self,a,b, **kwargs):
 
             # ensure that both sides have completed their onCreate calls
             # before continuing
@@ -276,6 +299,8 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                     # not using sequence local store
                     self._waldo_classes["VariableStore"](self._host_uuid))
 
+                _retry_cb = kwargs.get('retry_cb',None)
+
                 # call internal function... note True as last param tells internal
                 # version of function that it needs to de-waldo-ify all return
                 # arguments (while inside transaction) so that this method may
@@ -284,11 +309,18 @@ def MathEndpoint (_waldo_classes,_host_uuid,_conn_obj,*args):
                 # transaction might return over-written/inconsistent values.
                 _to_return = self._endpoint_func_call_prefix__waldo__rand_int_func(_root_event,_ctx ,a,b,[])
                 # try committing root event
-                _root_event.request_commit()
-                _commit_resp = _root_event.event_complete_queue.get()
+                _root_event.begin_first_phase_commit()
+                _commit_resp = _root_event.event_parent.event_complete_queue.get()
                 if isinstance(_commit_resp,self._waldo_classes["CompleteRootCallResult"]):
                     # means it isn't a backout message: we're done
                     return _to_return
+                elif isinstance(_commit_resp,self._waldo_classes["StopRootCallResult"]):
+                    raise self._waldo_classes["StoppedException"]()
+
+                if _retry_cb is not None:
+                    if not _retry_cb(self):
+                        raise self._waldo_classes["RetryCanceledException"]()
+
 
 
         def _endpoint_func_call_prefix__waldo__rand_int_func(self,_active_event,_context,a,b,_returning_to_public_ext_array=None):

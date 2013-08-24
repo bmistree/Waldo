@@ -7,7 +7,7 @@
 PROTOCOL_FILES := $(wildcard *.wld)
 GENERATED_FILES := $(PROTOCOL_FILES:.wld=_v4.py)
 COMPILE_ARGS= 
-WCOMPILE_COMMAND = ../../bin/wcompile.py
+WCOMPILE_COMMAND = ../../../bin/wcompile.py
 
 .PHONY : v4
 v4 : $(GENERATED_FILES)
