@@ -2,8 +2,6 @@ import waldo.lib.util as util
 from waldo.lib.waldoLockedContainerHelpers import container_incorporate_deltas
 from waldo.lib.waldoLockedSingleThreadedObj import SingleThreadedObj
 from waldo.lib.waldoLockedMultiThreadedObj import MultiThreadedObj
-from waldo.lib.waldoLockedContainerReference import is_reference_container
-from waldo.lib.waldoExternalValueVariables import is_external
 
 class WaldoLockedContainer(MultiThreadedObj):
         
@@ -15,12 +13,10 @@ class WaldoLockedContainer(MultiThreadedObj):
     def get_val_on_key(self,active_event,key):
         wrapped_val = self.acquire_read_lock(active_event)
         internal_key_val = wrapped_val.val[key]
-        if is_reference_container(internal_key_val):
-            return internal_key_val
-        if is_external(internal_key_val):
-            return internal_key_val
-        
-        return internal_key_val.get_val(active_event)
+        if internal_key_val.return_internal_val_from_container():
+            return internal_key_val.get_val(active_event)
+        return internal_key_val
+
         
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
         util.logger_warn('Not handling copy_if_peered: should not copy in this case')
@@ -43,6 +39,9 @@ class WaldoLockedContainer(MultiThreadedObj):
         wrapped_val = self.acquire_read_lock(active_event)
         return contains_key in wrapped_val.val
 
+    def return_internal_val_from_container(self):
+        return False
+    
     def contains_val_called(self,active_event,contains_val):
         wrapped_val = self.acquire_read_lock(active_event)
 
@@ -85,12 +84,15 @@ class SingleThreadedLockedContainer(SingleThreadedObj):
         util.logger_assert('Cannot call get val on a container object')
     def set_val(self,active_event,new_val):
         util.logger_assert('Cannot call set val on a container object')        
-        
+
     def get_val_on_key(self,active_event,key):
         internal_key_val = self.val.val[key]
-        if is_reference_container(internal_key_val):
-            return internal_key_val
-        return internal_key_val.get_val(active_event)    
+        if internal_key_val.return_internal_val_from_container():
+            return internal_key_val.get_val(active_event)
+        return internal_key_val
+
+    def return_internal_val_from_container(self):
+        return False
     
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
         util.logger_warn('Not handling copy_if_peered: should not copy in this case')

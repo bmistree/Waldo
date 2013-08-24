@@ -119,6 +119,9 @@ class LockedValueVariable(MultiThreadedObj):
         else:
             return self.SINGLE_THREADED_CONSTRUCTOR(
                 self.host_uuid,peered,self.get_val(active_event))
+
+    def return_internal_val_from_container(self):
+        return True
         
     def write_if_different(self,active_event,data):
         to_write_on = self.acquire_write_lock(active_event)
@@ -147,6 +150,9 @@ class SingleThreadedLockedValueVariable(SingleThreadedObj):
 
     def write_if_different(self,active_event,data):
         self.val.write(data,True)
+
+    def return_internal_val_from_container(self):
+        return True
         
     def serializable_var_tuple_for_network(
         self,parent_delta,var_name,active_event,force):

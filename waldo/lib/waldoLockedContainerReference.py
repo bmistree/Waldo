@@ -30,7 +30,10 @@ class MultiThreadedContainerReference(LockedValueVariable):
     def serializable_var_tuple_for_network(self,parent_delta,var_name,active_event,force):
         return serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force)
-        
+
+    def return_internal_val_from_container(self):
+        return False
+    
     def incorporate_deltas(self,delta_to_incorporate,constructors,active_event):
         return incorporate_deltas(self,delta_to_incorporate,constructors,active_event)
 
@@ -47,3 +50,6 @@ class SingleThreadedContainerReference(SingleThreadedLockedValueVariable):
 
     def de_waldoify(self,active_event):
         return de_waldoify(self,active_event)
+    
+    def return_internal_val_from_container(self):
+        return False

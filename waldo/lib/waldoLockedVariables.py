@@ -128,6 +128,7 @@ class LockedEndpointVariable(LockedValueVariable):
         #### END DEBUG            
         super(LockedEndpointVariable,self).__init__(host_uuid,peered,init_val)
 
+        
 
 class LockedFunctionVariable(LockedValueVariable):
     def __init__(
@@ -154,7 +155,10 @@ class LockedFunctionVariable(LockedValueVariable):
         # supposed to be an external, then we just pass it through
         # directly
         self.ext_args_array = None
-
+        
+    def return_internal_val_from_container(self):
+        return False
+        
     def set_external_args_array(self,ext_args_array):
         '''
         @see comment above declartion of ext_args_array.  Used by
@@ -202,6 +206,8 @@ class SingleThreadedLockedEndpointVariable(SingleThreadedLockedValueVariable):
         self.MULTI_THREADED_CONSTRUCTOR = LockedEndpointVariable
         self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedEndpointVariable
         super(SingleThreadedLockedEndpointVariable,self).__init__(host_uuid,peered,init_val)
+    def return_internal_val_from_container(self):
+        return False
 
 
 
@@ -245,6 +251,8 @@ class SingleThreadedLockedFunctionVariable(SingleThreadedLockedValueVariable):
         '''
         self.ext_args_array = ext_args_array
         return self
+    def return_internal_val_from_container(self):
+        return False
         
 
 ##### Multi-threaded container variables ######

@@ -15,6 +15,9 @@ class WaldoExternalValueVariable(LockedValueVariable,WaldoExternalVariable):
         wrapped_val = self.acquire_read_lock(active_event)
         return wrapped_val.val.de_waldoify(active_event)
 
+    def return_internal_val_from_container(self):
+        return False
+    
     def copy(self,active_event,peered,multi_threaded):
         if multi_threaded:
             return self.MULTI_THREADED_CONSTRUCTOR(

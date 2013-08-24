@@ -13,6 +13,16 @@ class WaldoLockedObj(object):
     def set_val(self,active_event,new_val):
         util.logger_assert('set_val is pure virtual in WaldoLockedObj')
 
+    def return_internal_val_from_container(self):
+        '''
+        @returns {bool} --- True if when call get_val_from_key on a
+        container should call get_val on it.  False otherwise.
+        '''
+        util.logger_assert(
+            'return_internal_val_from_container is pure virtual '
+            'in WaldoLockedObj.')
+
+        
     def get_and_reset_has_been_written_since_last_msg(self,active_event):
         '''
         @returns {bool} --- True if the object has been written to
