@@ -23,6 +23,7 @@ from waldo.lib.waldoLockedVariables import SingleThreadedLockedStructVariable, L
 from waldo.lib.waldoLockedVariables import SingleThreadedLockedFunctionVariable, LockedFunctionVariable
 
 
+
 class _ExecutingEventContext(object):
     def __init__(self,global_store,sequence_local_store):
         '''
@@ -372,15 +373,15 @@ class _ExecutingEventContext(object):
             active_event.event_parent.local_endpoint,*call_arg_list)
 
         if isinstance(returned_val,list):
-            return waldoLockedVariables.SingleThreadedLockedListVariable(
-                active_event.local_endpoint._host_uuid,
+            return SingleThreadedLockedListVariable(
+                active_event.event_parent.local_endpoint._host_uuid,
                 False, # not peered
                 returned_val# used as initial value
                 )
-
+        
         elif isinstance(returned_val,dict):
-            return waldoLockedVariables.SingleThreadedLockedMapVariable(
-                active_event.local_endpoint._host_uuid,
+            return SingleThreadedLockedMapVariable(
+                active_event.event_parent.local_endpoint._host_uuid,
                 False, # not peered
                 returned_val# used as initial value
                 )        
