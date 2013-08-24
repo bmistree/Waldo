@@ -11,11 +11,9 @@ lib_dir = os.path.join(
 sys.path.append(lib_dir)
 from waldo.lib import Waldo
 
-    
-
 '''
-   Tests coercing externals to value types when passing into sequence
-   data and functions.
+Tests coercing externals to value types when passing into sequence
+data and functions.
 '''
 
 def run_test():
@@ -44,4 +42,7 @@ def run_test():
 
 
 if __name__ == '__main__':
-    run_test()
+    if run_test():
+        print '\nSucceeded\n'
+    else:
+        print '\nFailed\n'

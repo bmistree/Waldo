@@ -13,7 +13,7 @@ class SingleThreadedObj(WaldoLockedObj):
         
         self.host_uuid = host_uuid
         self.peered = peered
-
+        
         # still using data wrappers because data wrappers keep track
         # whether this variable was written since last message.
         self.val = self.data_wrapper_constructor(init_val,self.peered)

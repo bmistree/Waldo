@@ -14,4 +14,11 @@ class WaldoExternalValueVariable(LockedValueVariable,WaldoExternalVariable):
         '''
         wrapped_val = self.acquire_read_lock(active_event)
         return wrapped_val.val.de_waldoify(active_event)
-    
+
+    def copy(self,active_event,peered,multi_threaded):
+        if multi_threaded:
+            return self.MULTI_THREADED_CONSTRUCTOR(
+                self.host_uuid,peered,self.get_val(active_event).get_val(active_event))
+        else:
+            return self.SINGLE_THREADED_CONSTRUCTOR(
+                self.host_uuid,peered,self.get_val(active_event).get_val(active_event))

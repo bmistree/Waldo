@@ -97,17 +97,35 @@ def is_non_ext_true_false_var (to_check):
 ##### Multi-threaded value variables #####
 class LockedNumberVariable(LockedValueVariable):
     DEFAULT_VALUE = 0
-
+    def __init__(self,host_uuid,peered,init_val=None):
+        self.MULTI_THREADED_CONSTRUCTOR = LockedNumberVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedNumberVariable
+        super(LockedNumberVariable,self).__init__(host_uuid,peered,init_val)
+    
+    
 class LockedTextVariable(LockedValueVariable):
     DEFAULT_VALUE = ''
+    def __init__(self,host_uuid,peered,init_val=None):
+        self.MULTI_THREADED_CONSTRUCTOR = LockedTextVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedTextVariable
+        super(LockedTextVariable,self).__init__(host_uuid,peered,init_val)
 
 class LockedTrueFalseVariable(LockedValueVariable):
     DEFAULT_VALUE = False
+    def __init__(self,host_uuid,peered,init_val=None):
+        self.MULTI_THREADED_CONSTRUCTOR = LockedTrueFalseVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedTrueFalseVariable
+        super(LockedTrueFalseVariable,self).__init__(host_uuid,peered,init_val)
 
 class LockedEndpointVariable(LockedValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
+        self.MULTI_THREADED_CONSTRUCTOR = LockedEndpointVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedEndpointVariable
+
+        #### DEBUG
         if peered:
             util.logger_assert('Cannot have peered endpoint variable')
+        #### END DEBUG            
         super(LockedEndpointVariable,self).__init__(host_uuid,peered,init_val)
 
 
@@ -115,6 +133,9 @@ class LockedFunctionVariable(LockedValueVariable):
     def __init__(
         self,host_uuid,peered=False,init_val=None):
 
+        self.MULTI_THREADED_CONSTRUCTOR = LockedFunctionVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedFunctionVariable
+        
         if peered:
             util.logger_assert(
                 'Function variables may not be peered')
@@ -150,29 +171,54 @@ class LockedFunctionVariable(LockedValueVariable):
 ##### Single threaded value variables #####
 class SingleThreadedLockedNumberVariable(SingleThreadedLockedValueVariable):
     DEFAULT_VALUE = 0
-
+    def __init__(self,host_uuid,peered,init_val=None):
+        self.MULTI_THREADED_CONSTRUCTOR = LockedNumberVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedNumberVariable
+        super(SingleThreadedLockedNumberVariable,self).__init__(host_uuid,peered,init_val)
+    
 class SingleThreadedLockedTextVariable(SingleThreadedLockedValueVariable):
     DEFAULT_VALUE = ''
+    def __init__(self,host_uuid,peered,init_val=None):
+        self.MULTI_THREADED_CONSTRUCTOR = LockedTextVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedTextVariable
+        super(SingleThreadedLockedTextVariable,self).__init__(host_uuid,peered,init_val)
 
 class SingleThreadedLockedTrueFalseVariable(SingleThreadedLockedValueVariable):
     DEFAULT_VALUE = False
+    def __init__(self,host_uuid,peered,init_val=None):
+        self.MULTI_THREADED_CONSTRUCTOR = LockedTrueFalseVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedTrueFalseVariable
+        super(SingleThreadedLockedTrueFalseVariable,self).__init__(host_uuid,peered,init_val)
+    
 
 class SingleThreadedLockedEndpointVariable(SingleThreadedLockedValueVariable):
+
     def __init__(self,host_uuid,peered=False,init_val=None):
+        #### DEBUG
         if peered:
             util.logger_assert('Cannot have peered endpoint variable')
+        #### END DEBUG
+            
+        self.MULTI_THREADED_CONSTRUCTOR = LockedEndpointVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedEndpointVariable
         super(SingleThreadedLockedEndpointVariable,self).__init__(host_uuid,peered,init_val)
 
 
 
 class SingleThreadedLockedFunctionVariable(SingleThreadedLockedValueVariable):
+    
     def __init__(
         self,host_uuid,peered=False,init_val=None):
 
+        #### DEBUG
         if peered:
             util.logger_assert(
                 'Function variables may not be peered')
+        #### END DEBUG
 
+        self.MULTI_THREADED_CONSTRUCTOR = LockedFunctionVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedFunctionVariable
+            
         def _default_helper_func(*args,**kwargs):
             pass
 
@@ -203,6 +249,7 @@ class SingleThreadedLockedFunctionVariable(SingleThreadedLockedValueVariable):
 
 ##### Multi-threaded container variables ######
 class LockedMapVariable(MultiThreadedContainerReference):
+
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
             init_val = {}
@@ -210,8 +257,9 @@ class LockedMapVariable(MultiThreadedContainerReference):
             init_val = LockedInternalMapVariable(
                 ensure_locked_obj,host_uuid,peered,init_val)
 
+        self.MULTI_THREADED_CONSTRUCTOR = LockedMapVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedMapVariable
         super(LockedMapVariable,self).__init__(host_uuid,peered,init_val)
-
 
         
 class LockedListVariable(MultiThreadedContainerReference):
@@ -222,6 +270,9 @@ class LockedListVariable(MultiThreadedContainerReference):
         if isinstance(init_val,list):
             init_val = LockedInternalListVariable(
                 ensure_locked_obj,host_uuid,peered,init_val)
+            
+        self.MULTI_THREADED_CONSTRUCTOR = LockedListVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedListVariable
 
         super(LockedListVariable,self).__init__(host_uuid,peered,init_val)
 
@@ -236,29 +287,37 @@ class LockedStructVariable(MultiThreadedContainerReference):
             init_val = LockedInternalStructVariable(
                 ensure_locked_obj,host_uuid,peered,init_val)
             
+        self.MULTI_THREADED_CONSTRUCTOR = LockedStructVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedStructVariable
         super(LockedStructVariable,self).__init__(host_uuid,peered,init_val)
         
         
 ##### Single-threaded container variables ######
 class SingleThreadedLockedMapVariable(SingleThreadedContainerReference):
+    
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
             init_val = {}
         if isinstance(init_val,dict):
             init_val = SingleThreadedLockedInternalMapVariable(
                 ensure_locked_obj,host_uuid,peered,init_val)
-
+            
+        self.MULTI_THREADED_CONSTRUCTOR = LockedMapVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedMapVariable
         super(SingleThreadedLockedMapVariable,self).__init__(host_uuid,peered,init_val)
 
         
 class SingleThreadedLockedListVariable(SingleThreadedContainerReference):
+    
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
             init_val = []
         if isinstance(init_val,list):
             init_val = SingleThreadedLockedInternalListVariable(
                 ensure_locked_obj,host_uuid,peered,init_val)
-
+            
+        self.MULTI_THREADED_CONSTRUCTOR = LockedListVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedListVariable
         super(SingleThreadedLockedListVariable,self).__init__(host_uuid,peered,init_val)
 
 class SingleThreadedLockedStructVariable(SingleThreadedContainerReference):
@@ -271,7 +330,9 @@ class SingleThreadedLockedStructVariable(SingleThreadedContainerReference):
         if isinstance(init_val,dict):
             init_val = SingleThreadedLockedInternalStructVariable(
                 ensure_locked_obj,host_uuid,peered,init_val)
-
+            
+        self.MULTI_THREADED_CONSTRUCTOR = LockedStructVariable
+        self.SINGLE_THREADED_CONSTRUCTOR = SingleThreadedLockedStructVariable    
         super(SingleThreadedLockedStructVariable,self).__init__(host_uuid,peered,init_val)
 
         
@@ -279,12 +340,15 @@ class SingleThreadedLockedStructVariable(SingleThreadedContainerReference):
         
 ###### External value variables #####
 class WaldoExternalTextVariable(WaldoExternalValueVariable):
-    def __init__(self,host_uuid,peered=False,init_val=None):
+    def __init__(self,host_uuid,peered=False,init_val=None):        
         if init_val is None:
             init_val = ''
         if util.is_string(init_val):
             init_val = LockedTextVariable(host_uuid,False,init_val)
-
+            
+        # FIXME: Have no single threaded external variables.
+        self.SINGLE_THREADED_CONSTRUCTOR = LockedTextVariable
+        self.MULTI_THREADED_CONSTRUCTOR = LockedTextVariable
         super(WaldoExternalTextVariable,self).__init__(host_uuid,False,init_val)
 
         
@@ -295,8 +359,12 @@ class WaldoExternalNumberVariable(WaldoExternalValueVariable):
         if isinstance(init_val,numbers.Number):
             init_val = LockedNumberVariable(host_uuid,False,init_val)
             
+        # FIXME: Have no single threaded external variables.
+        self.SINGLE_THREADED_CONSTRUCTOR = LockedNumberVariable
+        self.MULTI_THREADED_CONSTRUCTOR = LockedNumberVariable
         super(WaldoExternalNumberVariable,self).__init__(host_uuid,False,init_val)
 
+        
 class WaldoExternalTrueFalseVariable(WaldoExternalValueVariable):
     def __init__(self,host_uuid,peered=False,init_val=None):
         if init_val is None:
@@ -304,6 +372,8 @@ class WaldoExternalTrueFalseVariable(WaldoExternalValueVariable):
         if isinstance(init_val,bool):
             init_val = LockedTrueFalseVariable(host_uuid,False,False)
             
+        # FIXME: Have no single threaded external variables.
+        self.SINGLE_THREADED_CONSTRUCTOR = LockedTrueFalseVariable
+        self.MULTI_THREADED_CONSTRUCTOR = LockedTrueFalseVariable
         super(WaldoExternalTrueFalseVariable,self).__init__(host_uuid,False,init_val)
         
-
