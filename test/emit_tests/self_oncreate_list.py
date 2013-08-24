@@ -21,13 +21,13 @@ def run_test():
     single_side = Waldo.no_partner_create(SingleSide, wlist)
 
     internal_list = wlist.get_val(None)
-    raw_internal_list = internal_list.val
+    raw_internal_list = internal_list.val.val
     
     if len(raw_internal_list) != 1:
         print '\nErr: did not append self to list'
         return False
 
-    if raw_internal_list[0] != single_side:
+    if raw_internal_list[0].val.val != single_side:
         print '\nErr: incorrect endpoint value appended to list'
         return False
     
