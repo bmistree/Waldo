@@ -242,16 +242,13 @@ class _VariableStore(object):
             self._name_to_var_map[list_delta.var_name].incorporate_deltas(
                 list_delta,self.var_constructors,invalidation_listener)
 
+        # incorporate all structs
+        for struct_delta in var_store_deltas.struct_deltas:
+            if struct_delta.var_name not in self._name_to_var_map:
+                # need to create a new map and put all values in
+                self._name_to_var_map[struct_delta.var_name] = (
+                    waldoLockedVariables.SingleThreadedLockedStructVariable(
+                    self.host_uuid,True,{}))
+            self._name_to_var_map[struct_delta.var_name].incorporate_deltas(
+                struct_delta,self.var_constructors,invalidation_listener)
 
-        if len(var_store_deltas.struct_deltas) != 0:
-            util.logger_assert('Must add method back for peered structs')
-        # # incorporate all structs
-        # for struct_delta in var_store_deltas.struct_deltas:
-        #     if struct_delta.var_name not in self._name_to_var_map:
-        #         # need to create a new map and put all values in
-        #         self._name_to_var_map[struct_delta.var_name] = wVariables.WaldoUserStructVariable(
-        #             struct_delta.var_name,self.host_uuid,True,{})
-        #     self._name_to_var_map[struct_delta.var_name].incorporate_deltas(
-        #         struct_delta,self.var_constructors,invalidation_listener)
-
-            

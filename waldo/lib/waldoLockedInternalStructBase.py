@@ -16,4 +16,4 @@ class InternalStructBaseClass(InternalMapBaseClass):
         
     def handle_added_key_incorporate_deltas(
         self,active_event,index_to_add_to,new_val):
-        self.insert_val(active_event,index_to_add_to,new_val,FOR_STRUCT_CONTAINER_SERIALIZABLE)
+        self.add_key(active_event,index_to_add_to,new_val,FOR_STRUCT_CONTAINER_SERIALIZABLE)

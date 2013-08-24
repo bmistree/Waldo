@@ -351,15 +351,15 @@ class ReferenceTypeDataWrapper(DataWrapper):
                 sub_element_action = delta_to_add_to.sub_element_update_actions.add()
                 sub_element_action.parent_type = VarStoreDeltas.SUB_ELEMENT_ACTION
 
-                if isinstance(map_key,numbers.Number):
+                if isinstance(index,numbers.Number):
                     sub_element_action.key_num = index
-                elif util.is_string(map_key):
+                elif util.is_string(index):
                     sub_element_action.key_text = index
                 else:
                     sub_element_action.key_tf = index
 
 
-                if map_val.serializable_var_tuple_for_network(sub_element_action,'',action_event,False):
+                if list_val.serializable_var_tuple_for_network(sub_element_action,'',action_event,False):
                     changes_made = True
                 else:
                     # no change made to subtree: go ahead and delete added subaction
