@@ -4,6 +4,7 @@ from waldoActiveEvent import RootActiveEvent
 from waldoActiveEvent import NETWORK,BACKOUT
 import threading
 import util
+import traceback
 
 class _ActiveEventMap(object):
     '''
@@ -197,7 +198,13 @@ class _ActiveEventMap(object):
         '''
         if event.message_sent:
             event.set_network_failure()
-            event.put_exception(util.NetworkException())
+            tb_list = traceback.format_stack()
+            trace_str = "Traceback (most recent call last):\n"
+            trace_str += "".join(tb_list)
+            trace_str += "NetworkException: raised in endpoint "
+            trace_str += str(event.local_endpoint)
+            trace_str += "; connection with partner failed.\n"
+            event.put_exception(util.NetworkException(trace_str))
 
     def inform_events_of_network_failure(self):
         '''

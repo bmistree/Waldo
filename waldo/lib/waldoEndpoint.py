@@ -289,6 +289,7 @@ class _Endpoint(object):
         error.host_uuid.data = self._uuid
         if isinstance(exception, util.NetworkException):
             error.type = PartnerError.NETWORK
+            error.trace = exception.trace
         elif isinstance(exception, util.ApplicationException):
             error.type = PartnerError.APPLICATION
             error.trace = exception.trace

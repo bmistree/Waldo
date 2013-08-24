@@ -925,7 +925,7 @@ _queue_elem = _threadsafe_queue.get()
 if isinstance(_queue_elem,%s):
     raise %s()
 elif isinstance(_queue_elem,%s):
-    raise %s()
+    raise %s(_queue_elem.trace)
 elif isinstance(_queue_elem,%s):
     raise %s(_queue_elem.trace)
 

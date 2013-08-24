@@ -91,9 +91,12 @@ class _StopRootCallResult(object):
 class _CompleteRootCallResult(object):
     pass
 
-class _NetworkFailureCallResult(object):
-    pass
-
-class _ApplicationExceptionCallResult(object):
+class _HandleableCallResult(object):
     def __init__(self, trace):
         self.trace = trace
+
+class _NetworkFailureCallResult(_HandleableCallResult):
+    pass
+
+class _ApplicationExceptionCallResult(_HandleableCallResult):
+    pass

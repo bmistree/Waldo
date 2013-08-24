@@ -69,8 +69,10 @@ class BackoutException(Exception):
     pass
 class StoppedException(Exception):
     pass
-class NetworkException(Exception):
-    pass
-class ApplicationException(Exception):
+class WaldoHandleableException(Exception):
     def __init__(self, trace):
         self.trace = trace
+class NetworkException(WaldoHandleableException):
+    pass
+class ApplicationException(WaldoHandleableException):
+    pass

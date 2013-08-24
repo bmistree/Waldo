@@ -1086,7 +1086,7 @@ class _ActiveEvent(_InvalidationListener):
                     waldoCallResults._ApplicationExceptionCallResult(error.trace))
             elif error.type == PartnerError.NETWORK:
                 message_listening_queue.put(
-                    waldoCallResults._NetworkFailureCallResult())
+                    waldoCallResults._NetworkFailureCallResult(error.trace))
 
         
         
@@ -1189,7 +1189,7 @@ class RootActiveEvent(_ActiveEvent):
             for reply_with_uuid in self.message_listening_queues_map.keys():
                 message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
                 message_listening_queue.put(
-                    waldoCallResults._NetworkFailureCallResult())
+                    waldoCallResults._NetworkFailureCallResult(error.trace))
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
@@ -1606,7 +1606,7 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         '''
         if isinstance(error, util.NetworkException):
             self.result_queue.put(
-                waldoCallResults._NetworkFailureCallResult())
+                waldoCallResults._NetworkFailureCallResult(error.trace))
         elif isinstance(error, util.ApplicationException):
             self.result_queue.put(
                 waldoCallResults._ApplicationExceptionCallResult(error.trace))
