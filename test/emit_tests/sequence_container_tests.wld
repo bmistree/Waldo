@@ -1,0 +1,62 @@
+SeqContTests
+Symmetric A, B;
+
+Sequences
+{
+  TestMap: A.start_map -> B.end_map;
+//  TestStruct: A.start_struct -> B.end_struct;
+}
+
+Struct Struct_
+{
+    Number num;
+}
+
+Sequence TestMap (Text internal_index, Number internal_num)
+    returns Map(from: Text, to: Number) to_return
+{
+    A.start_map
+    {
+    }
+    B.end_map
+    {
+        //to_return[internal_index] = internal_num;
+        to_return = get_map(internal_index,internal_num);
+    }
+}
+/*
+Sequence TestStruct(Number internal_num) returns Struct Struct_ to_return
+{
+    A.start_struct
+    {
+        to_return.num = internal_num;
+    }
+    B.end_struct
+    {
+    }
+}
+*/
+A
+{
+    Public Function map_test(Text internal_index,Number internal_num) returns Number
+    {
+        Map(from:Text, to: Number) map_;
+        map_ = TestMap(internal_index,internal_num);
+        return map_[internal_index];
+    }
+
+    Public Function get_map(Text internal_index,Number internal_num)
+        returns Map(from:Text, to: Number)
+    {
+        Map(from:Text, to: Number) map_;
+        map_[internal_index] = internal_num;
+        return map_;
+    }
+
+    // Public Function struct_test(Number internal_num) returns Number
+    // {
+    //     Struct Struct_ struct_;
+    //     struct_ = TestStruct(internal_num);
+    //     return struct_.num;
+    // }
+}
