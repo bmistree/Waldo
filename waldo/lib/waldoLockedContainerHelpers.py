@@ -95,7 +95,7 @@ def container_serializable_var_tuple_for_network(
 
     # FIXME: check to ensure that second part of condition will
     # still hide elements that do not change
-    if (not internal_has_been_written) and is_var_store and (not has_been_written_since_last_message):
+    if (not internal_has_been_written) and is_var_store and (not has_been_written_since_last_msg):
         # remove the newly added map delta because there were no
         # changes that it encoded
         if var_type is FOR_MAP_CONTAINER_SERIALIZABLE:
@@ -108,7 +108,7 @@ def container_serializable_var_tuple_for_network(
             util.logger_assert('Unknown var type when serializing')            
             
         
-    return internal_has_been_written or written_since_last_message or force
+    return internal_has_been_written or has_been_written_since_last_msg or force
 
 
 def internal_container_variable_serialize_var_tuple_for_network(

@@ -87,6 +87,7 @@ class SingleThreadedLockedContainer(SingleThreadedObj):
 
     def get_val_on_key(self,active_event,key):
         internal_key_val = self.val.val[key]
+        
         if internal_key_val.return_internal_val_from_container():
             return internal_key_val.get_val(active_event)
         return internal_key_val
