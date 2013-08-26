@@ -448,7 +448,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                         # missing entry, then we might have
                         # field_to_update not be in w_obj.val.  In
                         # that case, we cannot delete it.
-                        log = str_uuid + "|" + host_uuid + "|DeleteContainerValue|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"DeleteContainerValue\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}" +"\n"
                         f = open("./log/" + str(str_uuid) + ".txt", "a")
                         f.write(log)
                         del w_obj.val[field_to_update]
@@ -461,9 +461,9 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-                        log = str_uuid + "|" + host_uuid + "|UpdateContainer|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                         print log
-                        f = open("./log/" + str(str_uuid) + ".txt", "a")
+                        f = open("./log/master.txt", "a")
                         f.write(log)
                        # f = open(str(self.get_host()), "a")
                        # f.write(log)
@@ -475,9 +475,9 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-                        log = str_uuid + "|" + host_uuid + "|UpdateContainer|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                         print log
-                        f = open("./log/" + str(str_uuid) + ".txt", "a")
+                        f = open("./log/master.txt", "a")
                         f.write(log)
                        # f = open(str(self.get_host()), "a")
                        # f.write(log)
@@ -485,7 +485,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     
         elif isinstance(val,list):
             if len(w_obj.val) > len(val):
-                log = str_uuid + "|" + host_uuid + "|DeleteContainerValue|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"DeleteContainerValue\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                 f = open("./log/" + str(str_uuid) + ".txt", "a")
                 f.write(log)
                 del w_obj.val[len(val):]
@@ -510,16 +510,16 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
                 if isinstance(
                     val[field_to_update],_SingleThreadReferenceContainer):
-                    log = str_uuid + "|" + host_uuid + "|UpdateContainer|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                    log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                     print log
-                    f = open("./log/" + str(str_uuid) + ".txt", "a")
+                    f = open("./log/master.txt", "a")
                     f.write(log)
                     w_obj.val[field_to_update] = (
                         val[field_to_update].promote_multithreaded(self.peered))
                 else:
-                    log = str_uuid + "|" + host_uuid + "|UpdateContainer|" + str(datetime.datetime.now()) + "|" + str(self.get_parent()) + "|" + str(field_to_update) + "|" + value + "|" + str(val[field_to_update]) + "\n"
+                    log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                     print log
-                    f = open("./log/" + str(str_uuid) + ".txt", "a")
+                    f = open("./log/master.txt", "a")
                     f.write(log)
                   #  f = open(str(self.get_host()), "a")
                   #  f.write(log)

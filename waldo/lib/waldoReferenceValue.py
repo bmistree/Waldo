@@ -70,17 +70,16 @@ class _ReferenceValueVersion(waldoReferenceBase._ReferenceVersion):
         @param {val}
         '''
 
-        #print "W_obj is " + str(w_obj)
         if not self.has_been_written_to:
-            log = str_uuid + "|" + host_uuid + "|Read|" + str(datetime.datetime.now())  + "|" + str(w_obj) + "|" + str(val) + "\n"
+            log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"Read\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(w_obj) + "\",\"value\":\"" + str(val) + "\"},\n"
             print log
-            f = open("./log/" + str(str_uuid) + ".txt", "a")
+            f = open("./log/master.txt", "a")
             f.write(log)
             #print "The read was " + str(val)
             return
-        log = str_uuid + "|" + host_uuid + "|Write|" + str(datetime.datetime.now()) + "|" + str(w_obj) + "|" + str(val) + "|" + str(w_obj.val) + "\n"
+        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"Write\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(w_obj) + "\",\"oldValue\":\"" + str(val) + "\",\"newValue\":\"" +str(w_obj.val) + "\"},\n"
         print log
-        f = open("./log/" + str(str_uuid) + ".txt", "a")
+        f = open("./log/master.txt", "a")
         f.write(log)
         w_obj.version_obj.update(self)
         w_obj.val = val

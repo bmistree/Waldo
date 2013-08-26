@@ -24,63 +24,127 @@
 
 		<input type="file" id="files" name="file" /> Read bytes: 
 		<span class="readBytesButtons">
-		  <button>entire file</button>
+		  <button>Visualize</button>
 		</span>
 		<div id="byte_range"></div>
 		<div id="byte_content"></div>
 
 		<script>
+			function extend(arr) {
+				for (var i = 0; i < arr.length; i++) {
+					console.log(arr[i].time);
+					console.log(Object.prototype.toString.call(arr[i].time));
+
+				}
+				return arr;
+			}
+			function serialize(arr) {
+				for (var i = 0; i < arr.length; i++) {
+					arr[i].time = new Date(arr[i].time);
+					console.log(arr[i].time);
+					console.log(arr[i].time.getUTCMilliseconds())
+				}
+				/*arr.sort(function(x, y){
+					console.log(x.time);
+					x.time = new Date(x.time);
+					console.log(Object.prototype.toString.call(x.time));
+					console.log("Time is " + (x.time - y.time));
+    				return x.time - y.time;
+				});
+				for (var i = 0; i < arr.length; i++) {
+					console.log("Changing " + arr[i].time  +"to " + (i+1))
+					arr[i].time = i+1;
+				}*/
+				return arr;
+			}
+
 			function loadData(content) {
-				var dataset = content.split("\n");
-				var uniqueNames = [];
+				var dataset = jQuery.parseJSON(content);
+
+				var eventIDs = [];
 				$.each(dataset, function(i, el){
-    				if($.inArray(el, uniqueNames) === -1) uniqueNames.push(el);
+    				if($.inArray(el.eventID, eventIDs) === -1) eventIDs.push(el.eventID);
 				});
 
-				dataset = uniqueNames;
-				index = dataset.indexOf("");
-				dataset.splice(index,1);
+				var holder = {};
+
+				for (var i = 0; i < eventIDs.length; i++) {
+					holder[eventIDs[i]] = new Array();
+				}
+				for (var x = 0; x < dataset.length; x++) {
+					var e = dataset[x];
+					var eID = e.eventID;
+				    holder[eID].push(e);
+				}
+				
+
 				var w = 5000;
 				var h = 5000;
 				var svg = d3.select("body")
 				            .append("svg")
 				            .attr("width", w)   // <-- Here
 				            .attr("height", h);	
-				var elem = svg.selectAll("g myCircleText")
-        			.data(dataset)	
 
-        		var elemEnter = elem.enter()
-        			.append("g")
 				
-				var circles = elemEnter.selectAll("circle")
-    				.data(dataset)
+				var list = {};
+				var circles = svg.selectAll("circle")
+    				.data(eventIDs)
     				.enter()
     				.append("circle")
+    				.attr("cx", function(d, i) {
+            		return 50; 
+        			})
+       				.attr("cy", function(d, i) {
+       					list[d] = i;
+            			return (i * 50) + 25;
+        			})
+       				.attr("r", function(d, i) {
+            			return 20;
+       				});
 
-    			circles.attr("cx", function(d, i) {
-            		return 50;
-        		})
-       			.attr("cy", function(d, i) {
-            		return (i * 50) + 25;
-        		})
-       			.attr("r", function(d, i) {
-            		return 20;
-       			});
-
-       			elemEnter.selectAll("text")
-       			.data(dataset)
+       			svg.selectAll("text")
+       			.data(eventIDs)
        			.enter()
        			.append("text")
        			.attr("x", function(d, i) {
-            		return 50;
+            		return 75;
         		})
         		.attr("y", function(d, i) {
             		return (i * 50) + 25;
         		})
-        		.attr("font-size", "20px")
+        		.attr("font-size", "15px")
         		.text(function(d){return d});
+        		
+        		var keys = Object.keys(holder);
+        		
+        		for (var data = 0; data < keys.length; data++) {
+        			console.log("Data up top is " + data);
+        			var keep = holder[keys[data]];
+        			console.log(keys[data]);
+        			console.log(keep)
+        			console.log(keep.length)
+        			for (var p = 0; p < keep.length; p++) {
+        				//console.log(keep[p]);
+        			}
+        			var xAxis = 0;
+	    			svg.selectAll("rect")
+	    				.data(keep)
+	    				.enter()
+	    				.append("rect")
+	    				.attr("class", keys[data])
+	    				.attr("x", function(d, i) {
+	    					xAxis++;
+	            			return 75 + (xAxis * 25); 
+	        			})
+	       				.attr("y", function(d, i) {
+	       					console.log("Data is " + data);
+	       					console.log(d);
+	            			return 25+(50*data);
+	        			})
+	       				.attr("width", 20)
+	       				.attr("height", 20);
+       			}
 
-    			
 
 
 			}

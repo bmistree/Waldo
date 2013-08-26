@@ -366,20 +366,14 @@ class _ReferenceBase(WaldoObj):
             self._lock()
             internal_val = self.val
             self._unlock()
-           # log = str(self) + "|Read|" + str(internal_val) + "|" + self.str_uuid + "|" + str(datetime.datetime.now()) + "\n"
-           # print log
-           # f = open(str(self.str_uuid), "a")
-           # f.write(log)
+
             return internal_val
         
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_val = self._dirty_map[invalid_listener.uuid].val
         self._unlock()
-       # log = str(self) + "|Read|" + str(dirty_val) + "|" + self.str_uuid + "|" + str(datetime.datetime.now()) 
-       # print log
-       # f = open(str(self.str_uuid), "a")
-       # f.write(log)
+
         return dirty_val
 
     def write_if_different(self,invalid_listener,new_val):
@@ -400,10 +394,7 @@ class _ReferenceBase(WaldoObj):
         self._lock()
         self._add_invalid_listener(invalid_listener)
         dirty_element = self._dirty_map[invalid_listener.uuid]
-       # log = str(self) + "|Update|" + str(dirty_element.val) + "|" + str(new_val) + "|" + self.str_uuid + "|" + str(datetime.datetime.now())
-       # print log
-       # f = open(str(self.str_uuid), "a")
-       # f.write(log)    
+
         self._dirty_map[invalid_listener.uuid].set_has_been_written_to(new_val)
 
         if self.peered:
