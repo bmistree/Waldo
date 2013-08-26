@@ -5,14 +5,14 @@ deps_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..','deps')
 sys.path.insert(0,deps_dir)
 
-import util
-import waldoConnectionObj
+import waldo.lib.util as util
+import waldo.lib.waldoConnectionObj as waldoConnectionObj
 from util import Queue
-import waldoCallResults
-import waldoEndpoint
-import waldoExecutingEvent
-import waldoVariableStore
-import shim.get_math_endpoint
+import waldo.lib.waldoCallResults as waldoCallResults
+import waldo.lib.waldoEndpoint as waldoEndpoint
+import waldo.lib.waldoExecutingEvent as waldoExecutingEvent
+import waldo.lib.waldoVariableStore as waldoVariableStore
+import waldo.lib.shim.get_math_endpoint 
 import waldo.lib.waldoLockedVariables as waldoLockedVariables
 
 StoppedException = util.StoppedException
@@ -248,7 +248,7 @@ def math_endpoint_lib():
       missing from the Waldo langauge.
 
     '''
-    return shim.get_math_endpoint.math_endpoint(no_partner_create)
+    return waldo.lib.shim.get_math_endpoint.math_endpoint(no_partner_create)
 
 def no_partner_create(constructor,*args):
     '''

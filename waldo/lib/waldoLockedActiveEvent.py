@@ -1,9 +1,9 @@
 import threading
-import util
-from waldoEventSubscribedTo import EventSubscribedTo
-from waldoCallResults import _BackoutBeforeEndpointCallResult
-from waldoCallResults import _SequenceMessageCallResult
-from waldoCallResults import _BackoutBeforeReceiveMessageResult
+import waldo.lib.util as util
+from waldo.lib.waldoEventSubscribedTo import EventSubscribedTo
+from waldo.lib.waldoCallResults import _BackoutBeforeEndpointCallResult
+from waldo.lib.waldoCallResults import _SequenceMessageCallResult
+from waldo.lib.waldoCallResults import _BackoutBeforeReceiveMessageResult
 
 class LockedActiveEvent(object):
 

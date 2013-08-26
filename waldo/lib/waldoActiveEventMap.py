@@ -1,10 +1,10 @@
 import threading
-import util
+import waldo.lib.util as util
 
-from waldoLockedActiveEvent import LockedActiveEvent
-from waldoEventParent import RootEventParent
-from waldoEventParent import PartnerEventParent
-from waldoEventParent import EndpointEventParent
+from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
+from waldo.lib.waldoEventParent import RootEventParent
+from waldo.lib.waldoEventParent import PartnerEventParent
+from waldo.lib.waldoEventParent import EndpointEventParent
 
 
 class _ActiveEventMap(object):

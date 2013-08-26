@@ -1,7 +1,7 @@
-import util
-import waldoCallResults
+import waldo.lib.util as util
+import waldo.lib.waldoCallResults as waldoCallResults
 import threading
-import waldoExecutingEvent
+import waldo.lib.waldoExecutingEvent as waldoExecutingEvent
 
 
 class _Action(object):

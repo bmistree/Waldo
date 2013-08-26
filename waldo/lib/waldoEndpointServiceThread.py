@@ -1,7 +1,8 @@
+import waldo.lib.util as util
 from util import Queue
 import threading
-import waldoServiceActions
-import util
+import waldo.lib.waldoServiceActions as waldoServiceActions
+
 
 '''
 Previous Waldo design used a thread pool.  Each thread would read from

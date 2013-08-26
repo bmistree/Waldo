@@ -1,5 +1,5 @@
-import util
-from waldoCallResults import _RescheduleRootCallResult, _CompleteRootCallResult
+import waldo.lib.util as util
+from waldo.lib.waldoCallResults import _RescheduleRootCallResult, _CompleteRootCallResult
 
 class EventParent(object):
     '''

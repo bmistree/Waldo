@@ -1,4 +1,4 @@
-import util
+import waldo.lib.util as util
 from util import Queue
 import threading
 import thread

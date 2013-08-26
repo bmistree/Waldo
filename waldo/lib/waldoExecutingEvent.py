@@ -1,7 +1,7 @@
 import threading
 import waldo.lib.waldoCallResults as waldoCallResults
 import numbers
-import util
+import waldo.lib.util as util
 from waldo.lib.waldoEndpointBase import EndpointBase
 from waldo.lib.util import Queue
 from waldo.lib.waldoLockedObj import WaldoLockedObj
