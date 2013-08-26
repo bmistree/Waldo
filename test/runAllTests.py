@@ -106,15 +106,14 @@ def run_emit_tests():
     # import emit_tests.basic_endpoint_call_test
     # import emit_tests.two_sided_oncreate_test
     # import emit_tests.network_two_sided_modify_peer_check_update_test
+    # import emit_tests.basic_message_sequence_tests
 
-    # Must add back in
-    # import emit_tests.signal_tests
     
     import emit_tests.set_get_value_test
     import emit_tests.binary_operator_tests
     import emit_tests.tuple_return_tests
     import emit_tests.single_endpoint_initialization_tests
-    import emit_tests.basic_message_sequence_tests
+    import emit_tests.signal_tests
     import emit_tests.conditional_tests
     import emit_tests.pass_references_through_methods
     import emit_tests.loop_tests
@@ -161,9 +160,10 @@ def run_emit_tests():
         # ('Emit test TCP connection test peered data',
         #  emit_tests.network_two_sided_modify_peer_check_update_test.run_test),
 
-        # Signal is currently broken
-        # ('Tests signal code',
-        #  emit_tests.signal_tests.run_test),
+        # ('Emit test update peered data across several sequence blocks',
+        #  emit_tests.basic_message_sequence_tests.run_test),
+
+        
 
         
         ('Emit test set endpoint value/get endpoint value',
@@ -177,9 +177,9 @@ def run_emit_tests():
 
         ('Emit test endpoint and local var initialization',
          emit_tests.single_endpoint_initialization_tests.run_test),
-
-        ('Emit test update peered data across several sequence blocks',
-         emit_tests.basic_message_sequence_tests.run_test),
+        
+        ('Tests signal code',
+         emit_tests.signal_tests.run_test),
         
         ('Emit test conditional statements',
          emit_tests.conditional_tests.run_test),

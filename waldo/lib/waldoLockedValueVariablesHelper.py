@@ -102,8 +102,6 @@ def value_variable_py_val_serialize(value_variable,parent,var_data,var_name):
 
 class LockedValueVariable(MultiThreadedObj):
     DEFAULT_VALUE = None
-    MULTI_THREADED_CONSTRUCTOR = None
-    SINGLE_THREADED_CONSTRUCTOR = None
     
     def __init__(self,host_uuid,peered,init_val=None):
         if init_val is None:
@@ -112,13 +110,6 @@ class LockedValueVariable(MultiThreadedObj):
         super(LockedValueVariable,self).__init__(
             ValueTypeDataWrapper,host_uuid,peered,init_val)
 
-    def copy(self,active_event,peered,multi_threaded):
-        if multi_threaded:
-            return self.MULTI_THREADED_CONSTRUCTOR(
-                self.host_uuid,peered,self.get_val(active_event))
-        else:
-            return self.SINGLE_THREADED_CONSTRUCTOR(
-                self.host_uuid,peered,self.get_val(active_event))
 
     def return_internal_val_from_container(self):
         return True
@@ -138,8 +129,6 @@ class LockedValueVariable(MultiThreadedObj):
 
 class SingleThreadedLockedValueVariable(SingleThreadedObj):
     DEFAULT_VALUE = None
-    MULTI_THREADED_CONSTRUCTOR = None
-    SINGLE_THREADED_CONSTRUCTOR = None
     
     def __init__(self,host_uuid,peered,init_val=None):
         if init_val is None:
@@ -162,12 +151,3 @@ class SingleThreadedLockedValueVariable(SingleThreadedObj):
         return value_variable_serializable_var_tuple_for_network(
             self,parent_delta,var_name,active_event,force)
         
-    
-    def copy(self,active_event,peered,multi_threaded):
-        if multi_threaded:
-            return self.MULTI_THREADED_CONSTRUCTOR(
-                self.host_uuid,peered,self.get_val(active_event))
-        else:
-            return self.SINGLE_THREADED_CONSTRUCTOR(
-                self.host_uuid,peered,self.get_val(active_event))
-

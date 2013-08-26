@@ -67,6 +67,7 @@ class MultiThreadedObj(WaldoLockedObj):
     (eg., it's an endpoint global or peered variable.)
 
     '''
+    
     def __init__(self,data_wrapper_constructor,host_uuid,peered,init_val):
         '''
         @param {DataWrapper object} --- Used to store dirty values.
@@ -110,7 +111,7 @@ class MultiThreadedObj(WaldoLockedObj):
         self._mutex.acquire()
     def _unlock(self):
         self._mutex.release()
-        
+
     def de_waldoify(self,active_event):
         wrapped_val = self.acquire_read_lock(active_event)
         return wrapped_val.de_waldoify(active_event)

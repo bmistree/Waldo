@@ -181,9 +181,9 @@ class _VariableStore(object):
         gennerated from util._generate_serialization_named_tuple for
         each waldo variable.
         '''
-        
-        util.logger_warn(
-            'Fixme: allow incorporating deltas on multi-threaded variables.')
+
+        # FIXME: allow incorporating deltas on multi-threaded
+        # variables.
         
         # incorporate all numbers
         for num_delta in var_store_deltas.num_deltas:

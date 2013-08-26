@@ -6,6 +6,19 @@ class WaldoLockedObj(object):
     '''
     Base class from which all other waldo objects inherit.
     '''
+
+    MULTI_THREADED_CONSTRUCTOR = None
+    SINGLE_THREADED_CONSTRUCTOR = None
+
+    def copy(self,active_event,peered,multi_threaded):
+        if multi_threaded:
+            return self.MULTI_THREADED_CONSTRUCTOR(
+                self.host_uuid,peered,self.get_val(active_event))
+        else:
+            return self.SINGLE_THREADED_CONSTRUCTOR(
+                self.host_uuid,peered,self.get_val(active_event))
+
+
     
     def get_val(self,active_event):
         util.logger_assert('get_val is pure virtual in WaldoLockedObj')

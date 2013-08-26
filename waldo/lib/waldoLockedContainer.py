@@ -2,6 +2,8 @@ import waldo.lib.util as util
 from waldo.lib.waldoLockedContainerHelpers import container_incorporate_deltas
 from waldo.lib.waldoLockedSingleThreadedObj import SingleThreadedObj
 from waldo.lib.waldoLockedMultiThreadedObj import MultiThreadedObj
+from waldo.lib.waldoLockedObj import WaldoLockedObj
+
 
 class WaldoLockedContainer(MultiThreadedObj):
         
@@ -17,10 +19,11 @@ class WaldoLockedContainer(MultiThreadedObj):
             return internal_key_val.get_val(active_event)
         return internal_key_val
 
-        
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
-        util.logger_warn('Not handling copy_if_peered: should not copy in this case')
         wrapped_val =  self.acquire_read_lock(active_event)
+        if copy_if_peered:
+            if isinstance(to_write,WaldoLockedObj):
+                to_write = to_write.copy(active_event,True,True)
         return wrapped_val.set_val_on_key(active_event,key,to_write)
 
     def del_key_called(self,active_event,key_to_delete):
@@ -96,7 +99,9 @@ class SingleThreadedLockedContainer(SingleThreadedObj):
         return False
     
     def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
-        util.logger_warn('Not handling copy_if_peered: should not copy in this case')
+        if copy_if_peered:
+            if isinstance(to_write,WaldoLockedObj):
+                to_write = to_write.copy(active_event,True,True)
         return self.val.set_val_on_key(active_event,key,to_write)
 
     def del_key_called(self,active_event,key_to_delete):

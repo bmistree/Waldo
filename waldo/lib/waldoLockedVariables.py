@@ -28,9 +28,8 @@ def ensure_locked_obj(new_val,host_uuid,single_threaded):
     single threaded.
     
     '''
-
-    util.logger_warn(
-        'Need to include function object check in ensure locked obj')
+    # FIXME: Need to include function object check in ensure locked
+    # obj
     
     if isinstance(new_val, WaldoLockedObj):
         return new_val
