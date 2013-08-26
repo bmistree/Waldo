@@ -13,7 +13,6 @@ import waldoEndpoint
 import waldoExecutingEvent
 import waldoVariableStore
 import shim.get_math_endpoint
-import waldoReferenceBase
 import waldo.lib.waldoLockedVariables as waldoLockedVariables
 
 StoppedException = util.StoppedException

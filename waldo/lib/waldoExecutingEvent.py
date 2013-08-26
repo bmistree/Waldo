@@ -1,10 +1,8 @@
 import threading
-import waldoCallResults
-import waldoReferenceBase
-import waldoReferenceContainerBase
+import waldo.lib.waldoCallResults as waldoCallResults
 import numbers
 import util
-import waldoEndpoint, waldoInternalMap, waldoInternalList
+from waldo.lib.waldoEndpointBase import EndpointBase
 from waldo.lib.util import Queue
 from waldo.lib.waldoLockedObj import WaldoLockedObj
 from waldo.lib.waldoExternalValueVariables import WaldoExternalValueVariable
@@ -251,7 +249,7 @@ class _ExecutingEventContext(object):
                 constructor = LockedMapVariable
             elif isinstance(val,list):
                 constructor = LockedListVariable
-            elif isinstance(val,waldoEndpoint._Endpoint):
+            elif isinstance(val,EndpointBase):
                 constructor = LockedEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
@@ -277,7 +275,7 @@ class _ExecutingEventContext(object):
                 constructor = SingleThreadedLockedMapVariable
             elif isinstance(val,list):
                 constructor = SingleThreadedLockedListVariable
-            elif isinstance(val,waldoEndpoint._Endpoint):
+            elif isinstance(val,EndpointBase):
                 constructor = SingleThreadedLockedEndpointVariable
             #### DEBUG
             elif hasattr(val,'__call__'):
