@@ -630,7 +630,7 @@ class _ExecutingEventContext(object):
                 for arg in args:
                     self.args.append(de_waldoify(arg,active_event))
             def call(self):
-                self.func(active_event.local_endpoint,*self.args)
+                self.func(active_event.event_parent.local_endpoint,*self.args)
 
         active_event.add_signal_call(Signal(func,*args))
                 

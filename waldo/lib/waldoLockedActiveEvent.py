@@ -74,7 +74,12 @@ class LockedActiveEvent(object):
         # waldoExecutingEvent._ExecutingEventContext.to_reply_with_uuid.)
         self.message_listening_queues_map = {}
 
-        
+        # keeps a list of functions that we should exec when we
+        # complete.  Starts as None, because unlikely to use.  If we
+        # do use, then turn it into a proper Queue.Queue().  
+        # self.signal_queue = Queue.Queue()
+        self.signal_queue = None
+
         
     def _lock(self):
         self.mutex.acquire()
@@ -156,11 +161,7 @@ class LockedActiveEvent(object):
 
         self.state = LockedActiveEvent.STATE_SECOND_PHASE_COMMITTED
         # complete commit on each individual object that we touched
-        for obj in self.touched_objs.values():
-            obj.complete_commit(self)
-            
-        self.touched_objs = {}
-        
+        self.complete_commit_local()
         self._unlock()
 
         self.event_map.remove_event(self.uuid)
@@ -209,10 +210,13 @@ class LockedActiveEvent(object):
         @returns {bool} --- True if did not get backed out in the
         middle.
         '''
-
         # FIXME: actually fill this method in
         return True
-        
+
+    def add_signal_call(self,signaler):
+        if self.signal_queue is None:
+            self.signal_queue = util.Queue.Queue()
+        self.signal_queue.put(signaler)
         
     def complete_commit_local(self):
         '''
@@ -227,6 +231,17 @@ class LockedActiveEvent(object):
         for obj in self.touched_objs.values():
             obj.complete_commit(self)
 
+        self.touched_objs = {}
+            
+        if self.signal_queue is not None:
+            while True:
+                try:
+                    signaler = self.signal_queue.get_nowait()
+                    self.event_parent.local_endpoint._signal_queue.put(signaler)
+                except util.Queue.Empty:
+                    break
+
+            
 
     def _backout(self,backout_requester_endpoint_uuid):
         '''
