@@ -116,34 +116,36 @@
         		.text(function(d){return d});
         		
         		var keys = Object.keys(holder);
-        		
+        		var tracker = {};
+        		for (var key = 0; key < keys.length; key++) {
+        			tracker[keys[key]] = 0;
+        		}
+        		var superArray = [];
         		for (var data = 0; data < keys.length; data++) {
-        			console.log("Data up top is " + data);
-        			var keep = holder[keys[data]];
-        			console.log(keys[data]);
-        			console.log(keep)
-        			console.log(keep.length)
-        			for (var p = 0; p < keep.length; p++) {
-        				//console.log(keep[p]);
-        			}
+        			console.log(holder[keys[data]]);
+        			superArray = superArray.concat(holder[keys[data]]);
+        		}
+        		console.log("super Array length:" + superArray.length)
         			var xAxis = 0;
-	    			svg.selectAll("rect")
-	    				.data(keep)
+	    			var rects = svg.selectAll("rect")
+	    				.data(superArray)
 	    				.enter()
 	    				.append("rect")
-	    				.attr("class", keys[data])
+						.attr("class", keys[data])
 	    				.attr("x", function(d, i) {
-	    					xAxis++;
-	            			return 75 + (xAxis * 25); 
+	    					tracker[d.eventID]++;
+	            			return 75 + (tracker[d.eventID] * 50); 
 	        			})
 	       				.attr("y", function(d, i) {
-	       					console.log("Data is " + data);
+	       					console.log("Data is " + i);
 	       					console.log(d);
-	            			return 25+(50*data);
+	            			return 25+(50*list[d.eventID]);
 	        			})
-	       				.attr("width", 20)
-	       				.attr("height", 20);
-       			}
+	       				.attr("width", 40)
+	       				.attr("height", 20)
+	       				.attr("rx", 2)
+	       				.attr("ry", 2);
+       		//	}
 
 
 
