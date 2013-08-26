@@ -75,7 +75,7 @@ Requester
         Struct ConnectionListenerInfo next;
         Struct ConnectionListenerInfo prev;
 
-        uuid, finger_table_, next, prev = start_register();
+        uuid, finger_table_, next, prev = Register();
         
         //return start_register();
         return uuid, finger_table_, next, prev;

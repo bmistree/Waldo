@@ -7,7 +7,7 @@ def run():
     to_kill = []
     
     # start coordinator
-    cmd = ['python', dht_util.SETUP_BIN,dht_util.CMD_START_COORDINATOR]
+    cmd = ['pypy', dht_util.SETUP_BIN,dht_util.CMD_START_COORDINATOR]
     print '\nStarting discovery coordinator'
     proc = subprocess.Popen(cmd,shell=False)
     to_kill.append(proc)
@@ -20,7 +20,7 @@ def run():
         encoded_node_host_port_pair = dht_util.encode_node_start_args(
             host_port_pair)
         cmd = (
-            ['python',dht_util.SETUP_BIN,dht_util.CMD_START_NODE] +
+            ['pypy',dht_util.SETUP_BIN,dht_util.CMD_START_NODE] +
             encoded_node_host_port_pair)
         proc = subprocess.Popen(cmd,shell=False)
         to_kill.append(proc)        

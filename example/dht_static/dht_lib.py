@@ -3,8 +3,10 @@ import conf, util_funcs, data, dht_util
 
 import os,sys, time
 sys.path.append(
-    os.path.join('..','..','lib'))
-import Waldo,util
+    os.path.join('..','..'))
+import waldo.lib.Waldo as Waldo
+import waldo.lib.util as util
+
 
 from coordinator_master_v4 import CoordinatorMaster
 from coordinator_connection_v4 import Coordinator, Requester

@@ -127,7 +127,7 @@ NodeSideA
      */
     Public Function add_connection_to_node()
     {
-        Text other_node_uuid = start_get_other_uuid();
+        Text other_node_uuid = GetOtherSideUUID();
         add_connection_to_node_and_connect_other(True,other_node_uuid);
     }
 
@@ -136,22 +136,22 @@ NodeSideA
     {
         node_manager.add_connection(other_node_uuid,self);
         if (connect_other)
-            start_other_side_add_connection_to_node();
+            OtherSideAddConnectionToNode();
     }
 
     Public Function forward_add_data(Text data_id, Text data)
     {
-        start_add_data(data_id,data);
+        AddData(data_id,data);
     }
 
     Public Function forward_remove_data(Text data_id)
     {
-        start_remove_data(data_id);
+        RemoveData(data_id);
     }
 
     Public Function forward_get_data(Text data_id)
         returns Text, Number, TrueFalse
     {
-        return start_get_data(data_id);
+        return GetData(data_id);
     }
 }
