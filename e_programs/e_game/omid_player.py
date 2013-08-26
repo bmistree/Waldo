@@ -17,7 +17,9 @@ WINDOW_HEIGHT = 500
 BUTTON_WIDTH = 50
 TEXT_BOX_HEIGHT = 30
 NUMBER_INPUT_WIDTH = 50
+ANSWER_INPUT_WIDTH = 300
 LABEL_WIDTH = 50
+BUFFER = 10
 
 class OmidGamePlayer(Frame):
 
@@ -25,8 +27,8 @@ class OmidGamePlayer(Frame):
         self.name = name
         self.waiting = WaitingRoom(name + "'s Omid Game Waiting Room")
         self.waiting.bind_functs(self.read_waiting_room_message)
-        self.player = Waldo.tcp_connect(OmidPlayer, HOSTNAME, OMID_PORT, name, GUI_String_Ext(self.waiting.get_gui_screen()), self.draw_circle, self.draw_arc, self.clear_map)
-        
+        self.player = Waldo.tcp_connect(OmidPlayer, HOSTNAME, OMID_PORT, name, GUI_String_Ext(
+self.waiting.get_gui_screen()), self.draw_circle, self.draw_arc, self.clear_map, self.update_score)        
         self.app = App(False)
         Frame.__init__(self, None, title = name + "'s Omid Game", size = (WINDOW_WIDTH, WINDOW_HEIGHT))
         OGLInitialize() 
@@ -36,18 +38,19 @@ class OmidGamePlayer(Frame):
         self.canvas.SetBackgroundColour("WHITE")
         self.diagram = Diagram()
         self.canvas.SetDiagram(self.diagram)
-        self.dc = ClientDC(self.canvas)
-        self.canvas.PrepareDC(self.dc)
-        self.diagram.SetCanvas(self.canvas)
+ #       self.dc = ClientDC(self.canvas)
+  #      self.canvas.PrepareDC(self.dc)
+       # self.diagram.SetCanvas(self.canvas)
         self.SetSizer(sizer)
         self.SetAutoLayout(1)
         self.Centre()
-        num_label = StaticText(self.canvas, label = "#", pos = (10, WINDOW_HEIGHT - TEXT_BOX_HEIGHT))
-        answer_label = StaticText(self.canvas, label = "answer", pos = (num_label.GetSize().x + NUMBER_INPUT_WIDTH, WINDOW_HEIGHT - TEXT_BOX_HEIGHT))
-        self.number_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (num_label.GetSize().x, WINDOW_HEIGHT - TEXT_BOX_HEIGHT), size = (NUMBER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
-        self.answer_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (answer_label.GetPosition().x + answer_label.GetSize().x, WINDOW_HEIGHT - TEXT_BOX_HEIGHT), size = (WINDOW_WIDTH - BUTTON_WIDTH - NUMBER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
+        num_label = StaticText(self.canvas, label = "#", pos = (BUFFER, WINDOW_HEIGHT - TEXT_BOX_HEIGHT))
+        answer_label = StaticText(self.canvas, label = "answer", pos = (num_label.GetSize().x + BUFFER+ NUMBER_INPUT_WIDTH, WINDOW_HEIGHT - TEXT_BOX_HEIGHT))
+        self.number_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (num_label.GetSize().x + BUFFER, WINDOW_HEIGHT - (TEXT_BOX_HEIGHT + BUFFER)), size = (NUMBER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
+        self.answer_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (answer_label.GetPosition().x + answer_label.GetSize().x + BUFFER, WINDOW_HEIGHT - (TEXT_BOX_HEIGHT + BUFFER)), size = (ANSWER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
         self.number_input.Bind(EVT_TEXT_ENTER, self.read_answer)
         self.answer_input.Bind(EVT_TEXT_ENTER, self.read_answer)
+        self.score = StaticText(self.canvas, pos = (WINDOW_WIDTH - 30, BUFFER)) 
         self.waiting.mainloop()
 
     def draw_map(self):
@@ -57,6 +60,10 @@ class OmidGamePlayer(Frame):
 
     def clear_map(self, endpoint):
         self.diagram.DeleteAllShapes()
+
+    def update_score(self, endpoint, number):
+        self.score.SetLabel(str(number).replace(".0", ""))
+        
 
     
     def draw_arc(self, endpt, x1, y1, x2, y2):
@@ -82,7 +89,6 @@ class OmidGamePlayer(Frame):
         self.circle.SetX(x_pos)
         self.circle.SetY(y_pos)
         self.canvas.AddShape(self.circle)
-        print('printed circle at %d %d' %(x_pos, y_pos))
         self.circle.Show(True)
         self.Show(False)
         self.Show(True)

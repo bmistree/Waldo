@@ -35,10 +35,11 @@ Peered {
 }
 
 Sequence SendAnswer(Text node_num, Text answer) {
+    Number score;
     OmidPlayer.doNothing{}
     OmidPlayerHelper.send{
         print("about to execute game_server checknode");
-        game_server.checkNode(username, node_num, answer);
+        score = game_server.checkNode(username, node_num, answer);
         print("sent. Still in sequence");
     }
 }
@@ -95,12 +96,15 @@ Sequence DisplayWaiting(Text message) {
 Sequence UpdateGame() {
     Map(from: Text, to: Struct node_information) node_map;
     List(element: Struct arc_information) arc_map;
+    Number score;
     OmidPlayerHelper.setMap{
         node_map = nodes;
         arc_map = arcs;
+        score = game_server.get_score(username);
     }
     OmidPlayer.updateMap{
         clear_map();
+        update_score(score);
         for (Text answer in node_map) {
             Struct node_information info = node_map[answer];
             //extCopy info to draw_circle;
@@ -124,12 +128,14 @@ OmidPlayer {
     Function(in: Number, Number, TrueFalse, Text, Text; returns: Nothing) draw_circle;
     Function(in: Number, Number, Number, Number; returns: Nothing) draw_arc;
     Function(returns: Nothing) clear_map;
-    onCreate(Text name, External Text gui, Function(in: Number, Number, TrueFalse, Text, Text; returns: Nothing) node, Function(in: Number, Number, Number, Number; returns: Nothing) arc /*External Struct node_information node, External List(element: Number) arc*/, Function(returns: Nothing) clear) {
+    Function(in: Number; returns: Nothing) update_score;
+    onCreate(Text name, External Text gui, Function(in: Number, Number, TrueFalse, Text, Text; returns: Nothing) node, Function(in: Number, Number, Number, Number; returns: Nothing) arc /*External Struct node_information node, External List(element: Number) arc*/, Function(returns: Nothing) clear, Function (in: Number; returns: Nothing) score) {
         username = name;
         waiting_message = gui;
         draw_circle = node;
         draw_arc = arc;
         clear_map = clear;
+        update_score = score;
         JoinWaiting();
     }
     Public Function add_to_game() {
@@ -147,7 +153,7 @@ OmidPlayer {
     }
 
     Public Function send_answer(Text node_num, Text answer) {
-        print("about to send node num: " + node_num + " answer: " + answer);
+        print("about to send a: " + node_num + " answer: " + answer);
         SendAnswer(node_num, answer);
         print("answer sent");
     }
