@@ -260,6 +260,20 @@ class PartnerEventParent(EventParent):
         self,same_host_endpoints_contacted_dict,partner_contacted):
         super(PartnerEventParent,self).second_phase_transition_success(
             same_host_endpoints_contacted_dict,partner_contacted)
+
+
+    def receive_successful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid,
+        children_event_endpoint_uuids):
+        '''
+        @see super class comments
+
+        Forward message on to parent
+        '''
+        self.local_endpoint._forward_first_phase_commit_successful(
+            self.uuid,msg_originator_endpoint_uuid,children_event_endpoint_uuids)
+        
+
         
 class EndpointEventParent(EventParent):
     def __init__(self,uuid,parent_endpoint,local_endpoint,result_queue):
