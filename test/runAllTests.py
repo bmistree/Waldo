@@ -6,67 +6,41 @@ import subprocess
 sys.path.append(
     os.path.join('..','waldo','lib'))
 
-
-
-import ind_tests.test_nested_list
-import ind_tests.test_num
-import ind_tests.test_value_list
-import ind_tests.test_value_map
-import ind_tests.test_peered_nested_map_list
-import ind_tests.test_serialized_deserialized_num
-import ind_tests.test_serialized_deserialized_nested_map
-import ind_tests.test_single_request_block_between_endpoints_sequence_local_data
-import ind_tests.test_single_request_block_between_endpoints_peered_data
-import ind_tests.test_reschedule_on_conflict
-import ind_tests.test_one_side_changes_peered
-import ind_tests.test_endpoint_calls
-import ind_tests.dd_wrapper
-import ind_tests.test_de_waldoified
-import ind_tests.tcp_encapsulate_decapsulate
+import locked_tests.chained_endpoint_call_no_conflict_test
+import locked_tests.endpoint_call_no_conflict_test
+import locked_tests.no_conflict_test
+import locked_tests.preempted_chained_endpoint_call
+import locked_tests.preemption_test
+import locked_tests.read_read_test
+import locked_tests.partner_no_conflict_test
+import locked_tests.list_map_write_no_conflict
+import locked_tests.list_map_write_conflict
+import locked_tests.concurrent_map
+import locked_tests.partner_seq_local_test
+import locked_tests.partner_seq_local_map_test
+import locked_tests.partner_seq_local_list_test
 
 emit_test_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), 'emit_tests')
 
-
 def run_lib_tests():
     to_run = [
-        ('Nested list', ind_tests.test_nested_list.run_test),
-        ('Basic num test', ind_tests.test_num.run_test),
-        ('List of values', ind_tests.test_value_list.run_test),
-        ('Map of values', ind_tests.test_value_map.run_test),
-        ('Nested peered list', ind_tests.test_peered_nested_map_list.run_test),
-
-        ('Test de-waldo-ify', ind_tests.test_de_waldoified.run_test),
-
-        ('Serialization of single number',
-         ind_tests.test_serialized_deserialized_num.run_test),
-
-        ('Serialization of a nested map',
-         ind_tests.test_serialized_deserialized_nested_map.run_test),
-
-        ('Test update of sequence local data no commit',
-         ind_tests.test_single_request_block_between_endpoints_sequence_local_data.run_test),
-
-        ('Test update of peered data + commit',
-         ind_tests.test_single_request_block_between_endpoints_peered_data.run_test),
-
-        ('Test reschedule root on conflict',
-         ind_tests.test_reschedule_on_conflict.run_test),
-
-        ('Test one side changes peered, does other see change?',
-         ind_tests.test_one_side_changes_peered.run_test),
-
-        ('Test commit and backout for endpoint calls on external data',
-         ind_tests.test_endpoint_calls.run_test),
-
-        ('Test deadlock detection and rollback',
-         ind_tests.dd_wrapper.run_test),
-
-        ('Test tcp message encapsulation and decapsulation',
-         ind_tests.tcp_encapsulate_decapsulate.run_test),
-        
+        ('Chained endpoint call with no conflict', locked_tests.chained_endpoint_call_no_conflict_test.run_test),
+        ('Single endpoint call with no conflict', locked_tests.endpoint_call_no_conflict_test.run_test),
+        ('Single event, no conflict', locked_tests.no_conflict_test.run_test),
+        ('Preempted, chained endpoint call', locked_tests.preempted_chained_endpoint_call.run_test),
+        ('Preempted single endpoint', locked_tests.preemption_test.run_test),
+        ('Concurrent reads', locked_tests.read_read_test.run_test),
+        ('Partner writes', locked_tests.partner_no_conflict_test.run_test),
+        ('Non-conflicting writes to list and map', locked_tests.list_map_write_no_conflict.run_test),
+        ('Conflicting writes to list and map', locked_tests.list_map_write_conflict.run_test),
+        ('Concurrent writes on different map elements',locked_tests.concurrent_map.run_test),
+        ('Sequence local data',locked_tests.partner_seq_local_test.run_test),
+        ('Sequence local map',locked_tests.partner_seq_local_map_test.run_test),
+        ('Sequence local list',locked_tests.partner_seq_local_list_test.run_test),
         ]
     run_tests(to_run)
+
 
 def run_tests(to_run):
     print ('\n\n')
@@ -108,7 +82,6 @@ def run_emit_tests():
     # import emit_tests.network_two_sided_modify_peer_check_update_test
     # import emit_tests.basic_message_sequence_tests
 
-    
     import emit_tests.set_get_value_test
     import emit_tests.binary_operator_tests
     import emit_tests.tuple_return_tests
@@ -140,7 +113,6 @@ def run_emit_tests():
     import emit_tests.id_method
     import emit_tests.retry_cb
 
-
     
     emit_tests_to_run = [
 
@@ -162,8 +134,6 @@ def run_emit_tests():
 
         # ('Emit test update peered data across several sequence blocks',
         #  emit_tests.basic_message_sequence_tests.run_test),
-
-        
 
         
         ('Emit test set endpoint value/get endpoint value',
