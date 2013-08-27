@@ -5,6 +5,8 @@ from waldo.lib.waldoCallResults import _BackoutBeforeEndpointCallResult
 from waldo.lib.waldoCallResults import _SequenceMessageCallResult
 from waldo.lib.waldoCallResults import _BackoutBeforeReceiveMessageResult
 from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
+from waldo.lib.waldoCallResults import _NetworkFailureCallResult
+from waldo.lib.waldoCallResults import _ApplicationExceptionCallResult
 
 NETWORK = 'NETWORK'
 BACKOUT = 'BACKOUT'
