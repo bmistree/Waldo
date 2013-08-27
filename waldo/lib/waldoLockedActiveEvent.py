@@ -472,7 +472,7 @@ class LockedActiveEvent(object):
                 self.other_endpoints_contacted[endpoint_calling._uuid] = EventSubscribedTo(
                     endpoint_calling,result_queue)
             else:
-                self.other_endpoints_cnotacted[endpoint_calling._uuid].add_result_queue(
+                self.other_endpoints_contacted[endpoint_calling._uuid].add_result_queue(
                     result_queue)
 
         self._unlock()
