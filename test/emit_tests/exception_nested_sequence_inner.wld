@@ -1,0 +1,45 @@
+ApplicationExceptionInnerSequence
+Endpoint InnerPing;
+Endpoint InnerPong;
+
+Sequences 
+{
+    innerSequence: InnerPing.ping1 -> InnerPong.pong1 -> InnerPing.ping2 -> InnerPong.pong2;
+}
+
+Sequence innerSequence(Number int) returns Number intToReturn
+{
+    InnerPing.ping1 {
+        int += 1;
+    }
+    InnerPong.pong1 {
+        int += 1;
+        throw_func(); // throw exception using foreign function
+    }
+    InnerPing.ping2 {
+        int += 1;
+    }
+    InnerPong.pong2 {
+        int += 1;
+        intToReturn = int;
+    }
+}
+
+
+InnerPing
+{
+    Public Function beginInnerSequence(Number int) returns Number
+    {
+        return innerSequence(int);
+    }
+}
+
+InnerPong
+{
+    Function (in: Nothing; returns: Nothing) throw_func;
+
+    onCreate(Function (in: Nothing; returns: Nothing) func)
+    {
+        throw_func = func;
+    }
+}

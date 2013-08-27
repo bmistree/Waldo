@@ -6,8 +6,12 @@ import waldoExecutingEvent
 from abc import abstractmethod
 from util import Queue
 import waldoDeadlockDetector
+from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
+import Waldo
+import traceback
 
-
+NETWORK = 'NETWORK'
+BACKOUT = 'BACKOUT'
 
 class _SubscribedToElement(object):
     '''
@@ -183,6 +187,13 @@ class _ActiveEvent(_InvalidationListener):
         self.holding_locks_on = []
         self.breakout = False
 
+        # Before we attempt to request a commit after a sequence, we need
+        # to keep track of whether or not the network has failed; if it has
+        # we will not be able to forward a request commit message to our 
+        # partner. This variable is only set to True at runtime if a network
+        # exception is caught during an event.
+        self._network_failure = False
+
 
     def _lock(self):
         self._mutex.acquire()
@@ -236,6 +247,17 @@ class _ActiveEvent(_InvalidationListener):
 
         self._state = _ActiveEvent.STATE_COMPLETED_COMMIT
 
+    def set_network_failure(self):
+        self._lock()
+        self._network_failure = True
+        self._unlock()
+
+    def get_network_failure(self):
+        self._lock()
+        failure = self._network_failure
+        self._unlock()
+        return failure
+
     def stop(self,skip_partner):
         '''
         If not in first or second phase of commit, then backout.
@@ -259,7 +281,6 @@ class _ActiveEvent(_InvalidationListener):
         
         self._unlock()
 
-        
         
     def must_check_partner(self):
         '''
@@ -441,7 +462,7 @@ class _ActiveEvent(_InvalidationListener):
         self._unlock()
 
         
-        if must_send_update:
+        if must_send_update and not self.get_network_failure():
             # send update message and block until we receive a
             # response
             waiting_queue = Queue.Queue()
@@ -563,7 +584,8 @@ class _ActiveEvent(_InvalidationListener):
         return endpoint_call_requested
 
     def forward_backout_request_and_backout_self(
-        self,skip_partner=False,already_backed_out=False,stop_request=False):
+        self,skip_partner=False,already_backed_out=False,stop_request=False,
+        reason=BACKOUT):
         '''
         @param {bool} skip_partner --- @see forward_commit_request
 
@@ -613,18 +635,16 @@ class _ActiveEvent(_InvalidationListener):
                 if stop_request:
                     queue_feeder = waldoCallResults._StopAlreadyCalledEndpointCallResult()
                 else:
-                    queue_feeder = waldoCallResults._BackoutBeforeEndpointCallResult()
-
+                    queue_feeder = waldoCallResults._BackoutBeforeReceiveMessageResult()
                 res_queue.put(queue_feeder)
 
         for reply_with_uuid in self.message_listening_queues_map.keys():
             message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
             if stop_request:
-                queue_feeder =  waldoCallResults._StopRootCallResult()
+                queue_feeder = waldoCallResults._StopAlreadyCalledEndpointCallResult()
             else:
                 queue_feeder = waldoCallResults._BackoutBeforeReceiveMessageResult()
             message_listening_queue.put(queue_feeder)
-
 
         if ((not skip_partner) and self.must_check_partner()):
             self.local_endpoint._forward_backout_request_partner(self)
@@ -1045,6 +1065,30 @@ class _ActiveEvent(_InvalidationListener):
         to_return = self.breakout
         self._breakout_mutex.release()
         return to_return
+
+    def send_exception_to_listener(self, error):
+        '''
+        @param     error     GeneralMessage.error
+
+        Places an ApplicationExceptionCallResult in the event complete queue to 
+        indicate to the endpoint that an application exception has been raised 
+        somewhere down the call graph.
+
+        Note that the type of error is 
+        '''
+        # Send an ApplicationExceptionCallResult to each listening queue
+        for reply_with_uuid in self.message_listening_queues_map.keys():
+            ### FIXME: It probably isn't necessary to send an exception result to
+            ### each queue.
+            message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
+            if error.type == PartnerError.APPLICATION:
+                message_listening_queue.put(
+                    waldoCallResults._ApplicationExceptionCallResult(error.trace))
+            elif error.type == PartnerError.NETWORK:
+                message_listening_queue.put(
+                    waldoCallResults._NetworkFailureCallResult(error.trace))
+
+        
         
 # FIXME: are there any cases where we need to flush threadsafe queues
 # when completing a commit?
@@ -1099,7 +1143,8 @@ class RootActiveEvent(_ActiveEvent):
         # FIXME: there may be instances/topologies where do not have
         # to issue this call.
         self.wait_if_modified_peered()
-        self.forward_commit_request_and_try_holding_commit_on_myself()
+        self.forward_commit_request_and_try_holding_commit_on_myself(
+                skip_partner=self.get_network_failure())
 
     def receive_unsuccessful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid):
@@ -1118,11 +1163,12 @@ class RootActiveEvent(_ActiveEvent):
         self._unlock()
 
     def forward_backout_request_and_backout_self(
-        self,skip_partner=False,already_backed_out=False,stop_request=False):
-        
+        self,skip_partner=False,already_backed_out=False,stop_request=False,
+        reason=BACKOUT):
+
         # whenever we backout, we must also reschedule
         super(RootActiveEvent,self).forward_backout_request_and_backout_self(
-            skip_partner,already_backed_out)
+            skip_partner,already_backed_out,reason=reason)
 
         if stop_request:
             # notify queue that we have stopped and are not processing
@@ -1131,8 +1177,20 @@ class RootActiveEvent(_ActiveEvent):
                 waldoCallResults._StopRootCallResult())
         else:
             self.reschedule()
-        
-        
+
+    def put_exception(self, error):
+        '''
+        Places the appropriate call result in the event complete queue to 
+        indicate to the endpoint that an error has occured and the event
+        must be handled.
+        '''
+        if isinstance(error, util.NetworkException):
+            # Send a NetworkFailureCallResult to each listening queue
+            for reply_with_uuid in self.message_listening_queues_map.keys():
+                message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
+                message_listening_queue.put(
+                    waldoCallResults._NetworkFailureCallResult(error.trace))
+
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
         children_event_endpoint_uuids):
@@ -1422,7 +1480,12 @@ class PartnerActiveEvent(_ActiveEvent):
 
         return can_commit
         
-
+    def put_exception(self, error):
+        '''
+        Informs the partner that an exception has occured at runtime (thus the
+        event should be backed out).
+        '''
+        self.local_endpoint._propagate_back_exception(self.uuid,error)
 
     
 class EndpointCalledActiveEvent(_ActiveEvent):
@@ -1432,6 +1495,7 @@ class EndpointCalledActiveEvent(_ActiveEvent):
         
         _ActiveEvent.__init__(self,uuid,local_endpoint)
         self.subscriber = endpoint_making_call
+        self.result_queue = result_queue
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
@@ -1533,3 +1597,20 @@ class EndpointCalledActiveEvent(_ActiveEvent):
                 # message.                
                 self.subscriber._receive_first_phase_commit_unsuccessful(
                     self.uuid,self.local_endpoint._uuid)
+
+    def put_exception(self,error):
+        '''
+        Places an ApplicationExceptionCallResult or NetworkFailureCallResult in 
+        the event complete queue to indicate to the endpoint that an exception
+        has been raised. This allows the exception to be propagated back.
+        '''
+        if isinstance(error, util.NetworkException):
+            self.result_queue.put(
+                waldoCallResults._NetworkFailureCallResult(error.trace))
+        elif isinstance(error, util.ApplicationException):
+            self.result_queue.put(
+                waldoCallResults._ApplicationExceptionCallResult(error.trace))
+        elif isinstance(error, Exception):
+            tb = traceback.format_exc()
+            self.result_queue.put(
+                waldoCallResults._ApplicationExceptionCallResult(tb))

@@ -50,8 +50,10 @@ _waldo_classes = {
     # call results
     'CompleteRootCallResult': waldoCallResults._CompleteRootCallResult,
     'StopRootCallResult' : waldoCallResults._StopRootCallResult,
-
+    'NetworkFailureCallResult' : waldoCallResults._NetworkFailureCallResult,
+    'ApplicationExceptionCallResult' : waldoCallResults._ApplicationExceptionCallResult,
     'BackoutBeforeReceiveMessageResult': waldoCallResults._BackoutBeforeReceiveMessageResult,
+    'BackoutDueToNetworkFailure': waldoCallResults._BackoutDueToNetworkFailure,
     'EndpointCallResult': waldoCallResults._EndpointCallResult,
 
     # misc
@@ -60,9 +62,15 @@ _waldo_classes = {
     'ExecutingEventContext': waldoExecutingEvent._ExecutingEventContext,
     'VariableStore': waldoVariableStore._VariableStore,
     'BackoutException': util.BackoutException,
-    'StoppedException': util.StoppedException
+    'StoppedException': util.StoppedException,
+    'NetworkException': util.NetworkException,
+    'ApplicationException': util.ApplicationException,
     }
 
+_default_values = {
+    'heartbeat_timeout_period': 300,
+    'heartbeat_send_period': 30,
+}
     
 
 def tcp_connect(constructor,host,port,*args):
@@ -280,3 +288,37 @@ def stop():
         stop()
     except:
         return
+
+
+def set_default_partner_timeout(timeout_period):
+    '''
+    Sets the default timeout period for connections between endpoints. 
+    When a heartbeat from a partner endpoint is not received within the
+    timeout window an exception is thrown to indicate connection failure.
+
+    Must be called before tcp_connect or tcp_accept for the period passed
+    in to be used correctly.
+
+    Args:
+    
+      timeout_period(number): Length of timeout in seconds.
+
+    '''
+    _default_values['heartbeat_timeout_period'] = timeout_period
+
+
+def set_default_heartbeat_period(heartbeat_period):
+    '''
+    Sets the default heartbeat period for connections between endpoints. 
+    The heartbeat period indicates how often each endpoint should send a
+    heartbeat message to its partner endpoint 
+
+    Must be called before tcp_connect or tcp_accept for the period passed
+    in to be used correctly.
+
+    Args:
+    
+      heartbeat_period(number): Length of heartbeat period in seconds.
+
+    '''
+    _default_values['heartbeat_send_period'] = heartbeat_period

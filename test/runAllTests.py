@@ -135,6 +135,19 @@ def run_emit_tests():
     import emit_tests.id_method
     import emit_tests.str_index_test
     import emit_tests.string_pass
+    import emit_tests.application_exception_test
+    import emit_tests.network_exception_mid_sequence_test
+    import emit_tests.network_exception_on_call_test
+    import emit_tests.network_exception_rollback_test
+    import emit_tests.application_exception_endpoint_call_test
+    import emit_tests.application_exception_sequence_propagate_test
+    import emit_tests.network_exception_test_propagate_endpoint_call
+    import emit_tests.application_exception_endpoint_call_with_sequence_test
+    import emit_tests.application_exception_sequence_with_endpoint_call_test
+    import emit_tests.application_exception_nested_sequence_test
+    import emit_tests.network_exception_nested_sequence_test
+    import emit_tests.try_finally_test
+
     
     emit_tests_to_run = [
         ('Emit test set endpoint value/get endpoint value',
@@ -249,8 +262,54 @@ def run_emit_tests():
         ('Tests passing strings in a variety of ways',
          emit_tests.string_pass.run_test),
 
-        ]
+        ('Tests application exception may be thrown and caught.',
+         emit_tests.application_exception_test.run_test),
 
+        ('Tests network exception may be thrown mid-sequence due '
+         'to socket closure and caught.',
+         emit_tests.network_exception_mid_sequence_test.run_test),
+
+        ('Tests network exception may be thrown at the beginning '
+         'of a sequence due to prior network failure.',
+         emit_tests.network_exception_on_call_test.run_test),
+
+        ('Tests network exception which is properly caught does ' +
+         'not back out of changes made during event.',
+         emit_tests.network_exception_rollback_test.run_test),
+    
+        ('Tests application exception may be propagated back through ' +
+         'endpoint call and caught.',
+         emit_tests.application_exception_endpoint_call_test.run_test),
+
+        ('Tests application exception may be propagated back across ' + 
+         'endpoint connection mid-sequence and caught.',
+         emit_tests.application_exception_sequence_propagate_test.run_test),
+
+        ('Tests network exception may be propagated back through ' +
+         'endpoint call and caught.',
+         emit_tests.network_exception_test_propagate_endpoint_call.run_test),
+
+        ('Tests application exception may be thrown on a remote endpoint ' + 
+         'mid-sequence and propagated back through both a network connection ' +
+         'and an endpoint call.',
+         emit_tests.application_exception_endpoint_call_with_sequence_test.run_test),
+        
+        ('Tests application exception may be thrown on a remote endpoint ' + 
+         'during an endpoint call invoked mid-sequence and propagated back to ' +
+         'the root.',
+         emit_tests.application_exception_sequence_with_endpoint_call_test.run_test),
+
+        ('Tests application exception may be thrown on in the middle of a nested ' +
+         'sequence and propagated back to be handled.',
+         emit_tests.application_exception_nested_sequence_test.run_test),
+
+        ('Tests network exception may be thrown in middle of a nested ' +
+         'sequence and propagated back to be handled.',
+         emit_tests.network_exception_nested_sequence_test.run_test),
+
+        ('Tests try...finally statement (no use of catch).',
+         emit_tests.try_finally_test.run_test),
+        ]
 
     run_tests(emit_tests_to_run)
     

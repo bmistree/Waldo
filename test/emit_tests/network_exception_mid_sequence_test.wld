@@ -1,0 +1,55 @@
+NetworkExceptionTest
+Endpoint Ping;
+Endpoint Pong;
+
+Sequences {
+    testSequence: Ping.ping1 -> Pong.pong1 -> Ping.ping2 -> Pong.pong2;
+}
+
+Sequence testSequence(Number int) returns Number pingPongNum
+{
+    Ping.ping1
+    {
+        int += 1;
+        terminate_pong(); // kill pong process to force network error
+    }
+    Pong.pong1
+    {
+        int += 1;
+    }
+    Ping.ping2
+    {
+        int += 1;
+    }
+    Pong.pong2
+    {
+        int += 1;
+        pingPongNum = int;
+    }
+}
+
+Ping
+{
+    Function (in: Nothing; returns: Nothing) terminate_pong;
+
+    onCreate(Function (in: Nothing; returns: Nothing) init)
+    {
+        terminate_pong = init;
+    }
+
+    Public Function testNetworkException() returns TrueFalse
+    {
+        TrueFalse caught = False;
+        try {
+            testSequence(1);
+        }
+        catch (NetworkException as e) {
+           caught = True;
+        }
+        return caught;
+    }
+}
+
+Pong
+{
+}
