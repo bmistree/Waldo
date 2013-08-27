@@ -212,7 +212,7 @@ class RootEventParent(EventParent):
             partner_contacted)
 
         self.event_complete_queue.put(_RescheduleRootCallResult())
-
+        
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,

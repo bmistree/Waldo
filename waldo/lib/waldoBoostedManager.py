@@ -1,13 +1,7 @@
-import os
 from waldo.lib.waldoEventParent import RootEventParent
 from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
 import waldo.lib.util as util
-
-def generate_boosted_uuid(timestamp_last_boosted_completed):
-    return '0' + timestamp_last_boosted_completed + os.urandom(8)
-
-def generate_timed_uuid(current_timestamp):
-    return '1' + current_timestamp + os.urandom(8)
+from waldo.lib.waldoEventUUID import generate_boosted_uuid, generate_timed_uuid
 
 
 class BoostedManager(object):
