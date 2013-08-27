@@ -1,14 +1,14 @@
-from invalidationListener import _InvalidationListener
-import util
+from waldo.lib.invalidationListener import _InvalidationListener
+import waldo.lib.util as util
 import threading, pickle, time
-import waldoCallResults
-import waldoExecutingEvent
+import waldo.lib.waldoCallResults as waldoCallResults
+import waldo.lib.waldoExecutingEvent 
 from abc import abstractmethod
-from util import Queue
-import waldoDeadlockDetector
 from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
 import Waldo
 import traceback
+from waldo.lib.util import Queue
+import waldo.lib.waldoDeadlockDetector as waldoDeadlockDetector
 
 NETWORK = 'NETWORK'
 BACKOUT = 'BACKOUT'
@@ -163,7 +163,7 @@ class _ActiveEvent(_InvalidationListener):
         # that it is the first message in a message sequence.  If it
         # does not match and is not None, there must be some error.
         # (@see
-        # waldoExecutingEvent._ExecutingEventContext.to_reply_with_uuid.)
+        # waldo.lib.waldoExecutingEvent._ExecutingEventContext.to_reply_with_uuid.)
         self.message_listening_queues_map = {}
 
         # used to lock subscribed_to and message_sent.  Essentially,
@@ -716,7 +716,7 @@ class _ActiveEvent(_InvalidationListener):
             seq_local_var_store.incorporate_deltas(
                 self,msg.sequence_local_var_store_deltas)
             
-            evt_ctx = waldoExecutingEvent._ExecutingEventContext(
+            evt_ctx = waldo.lib.waldoExecutingEvent._ExecutingEventContext(
                 # already incorporated deltas for global_var_store
                 # above.
                 self.local_endpoint._global_var_store,
@@ -728,7 +728,7 @@ class _ActiveEvent(_InvalidationListener):
             # of loop.  must start event outside of locks.  That way,
             # if the exec event leads to and endpoint call, etc., we
             # don't block waiting on its return.
-            exec_event = waldoExecutingEvent._ExecutingEvent(
+            exec_event = waldo.lib.waldoExecutingEvent._ExecutingEvent(
                 to_exec,self,evt_ctx,
                 None # using None here means that we do not need to
                      # bother with waiting for modified peered-s to

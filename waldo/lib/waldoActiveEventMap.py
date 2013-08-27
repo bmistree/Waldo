@@ -1,9 +1,9 @@
-from waldoActiveEvent import PartnerActiveEvent
-from waldoActiveEvent import EndpointCalledActiveEvent
-from waldoActiveEvent import RootActiveEvent
-from waldoActiveEvent import NETWORK,BACKOUT
+from waldo.lib.waldoActiveEvent import PartnerActiveEvent
+from waldo.lib.waldoActiveEvent import EndpointCalledActiveEvent
+from waldo.lib.waldoActiveEvent import RootActiveEvent
+from waldo.lib.waldoActiveEvent import NETWORK, BACKOUT
 import threading
-import util
+import waldo.lib.util as util
 import traceback
 
 class _ActiveEventMap(object):

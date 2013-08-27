@@ -1,9 +1,9 @@
 import util
-import waldoEndpointServiceThread
-import waldoActiveEvent
-import waldoActiveEventMap
-import waldoCallResults
-from util import Queue
+import waldo.lib.waldoEndpointServiceThread as waldoEndpointServiceThread
+import waldo.lib.waldoActiveEvent as waldoActiveEvent
+import waldo.lib.waldoActiveEventMap as waldoActiveEventMap
+import waldo.lib.waldoCallResults as waldoCallResults
+from waldo.lib.util import Queue
 import threading
 import time
 import traceback

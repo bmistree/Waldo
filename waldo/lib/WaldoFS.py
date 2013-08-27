@@ -1,7 +1,6 @@
-
-from wVariables import WaldoExtTextVariable, WaldoTextVariable
-import util
-from Waldo import _host_uuid
+from waldo.lib.wVariables import WaldoExtTextVariable, WaldoTextVariable
+import waldo.lib.util as util
+from waldo.lib.Waldo import _host_uuid
 
 class _WaldoFileVariable(WaldoTextVariable):
     '''

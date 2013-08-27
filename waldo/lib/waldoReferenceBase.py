@@ -1,9 +1,9 @@
 import threading, numbers
 import util
 from abc import abstractmethod
-import waldoNotificationMap
+import waldo.lib.waldoNotificationMap as waldoNotificationMap
 from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
-from  waldoObj import WaldoObj
+from waldo.lib.waldoObj import WaldoObj
 
 
 class _ReferenceBase(WaldoObj):
