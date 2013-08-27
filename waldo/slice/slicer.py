@@ -155,6 +155,32 @@ def slicer(node,functionDeps=None,typeStack=None):
         slicer (toIterateNode,functionDeps,typeStack);
         slicer (forBodyNode,functionDeps,typeStack);
 
+    elif node.label == AST_TRY_CATCH_STATEMENT:
+        if len(node.children) in [2,3]:
+            tryNode = node.children[0]
+            catchNode = node.children[1]
+            slicer(tryNode,functionDeps,typeStack)
+            slicer(catchNode,functionDeps,typeStack)
+            if len(node.children) == 3:
+                finallyNode = node.children[2]
+                slicer(finallyNode,functionDeps,typeStack)
+
+    elif node.label == AST_TRY_BLOCK:
+        tryBody = node.children[0]
+        slicer(tryBody,functionDeps,typeStack)
+
+    elif node.label == AST_CATCH_BLOCK:
+        exceptionType, exceptionIdentifier = node.children[0], node.children[1]
+        isMute = isMutable(exceptionType)
+        typeStack.addIdentifier(exceptionIdentifier.value,isMute,exceptionType)
+        typeStack.annotateNode(exceptionIdentifier,exceptionIdentifier.value)
+        catchBody = node.children[2]
+        slicer(catchBody,functionDeps,typeStack)
+
+    elif node.label == AST_FINALLY_BLOCK:
+        finallyBody = node.children[0]
+        slicer(finallyBody,functionDeps,typeStack)
+
     elif node.label == AST_IN_STATEMENT:
         lhsNode = node.children[0];
         rhsNode = node.children[1];

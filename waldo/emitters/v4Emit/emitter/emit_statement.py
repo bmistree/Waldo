@@ -63,7 +63,12 @@ def emit_statement(
         statement_txt = (
             pre_dot_txt + '.get_val(_active_event)' +
             ('.get_val_on_key(_active_event,"%s")' % post_dot_name))
-        
+
+    elif statement_node.label == AST_PRINT:
+        print_body_node = statement_node.children[0]
+        statement_txt = 'print ' + emit_statement(
+            print_body_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+
     elif statement_node.label == AST_EMPTY:
         pass
 
@@ -75,7 +80,42 @@ def emit_statement(
     elif statement_node.label == AST_FOR_STATEMENT:
         statement_txt = emit_for(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-    
+
+    elif statement_node.label == AST_TRY_CATCH_STATEMENT:
+        # emit try
+        statement_txt = emit_statement(statement_node.children[0],
+            endpoint_name,ast_root,fdep_dict,emit_ctx)
+        # emit catch
+        statement_txt += emit_statement(statement_node.children[1],
+            endpoint_name,ast_root,fdep_dict,emit_ctx)
+        # emit finally
+        if len(statement_node.children) == 3:
+            statement_txt += emit_statement(statement_node.children[2],
+                endpoint_name,ast_root,fdep_dict,emit_ctx)
+
+    elif statement_node.label == AST_TRY_BLOCK:
+        statement_txt = 'try:\n'
+        try_body_txt = emit_statement(statement_node.children[0],
+            endpoint_name,ast_root,fdep_dict,emit_ctx)
+        statement_txt += emit_utils.indent_str(try_body_txt)
+
+    elif statement_node.label == AST_CATCH_BLOCK:
+        exception = statement_node.children[0] 
+        identifier = statement_node.children[1]
+        catch_body = statement_node.children[2]
+
+        statement_txt = ('except ' + '(' + EXCEPTIONS[exception.value] + ')' + 
+            ' as ' + identifier.value + ':\n')
+        catch_body_txt = emit_statement(catch_body,endpoint_name,ast_root,
+            fdep_dict,emit_ctx)
+        statement_txt += emit_utils.indent_str(catch_body_txt)
+
+    elif statement_node.label == AST_FINALLY_BLOCK:
+        statement_txt = 'finally:\n'
+        finally_body_txt = emit_statement(statement_node.children[0],
+            endpoint_name,ast_root,fdep_dict,emit_ctx)
+        statement_txt += emit_utils.indent_str(finally_body_txt)
+
     elif statement_node.label == AST_RANGE:
         base_range_node = statement_node.children[0]
         limit_range_node = statement_node.children[1]
@@ -358,9 +398,15 @@ def emit_statement(
         interior_bracket_txt = emit_statement(
             rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-        statement_txt = (
-            '%s.get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event))'
-            %  (exterior_bracket_txt, interior_bracket_txt))
+
+        if TypeCheck.templateUtil.is_text(lhs_node.type):
+            statement_txt = (
+                '%s.get_val(_active_event)[_context.get_val_if_waldo(%s,_active_event)]'
+                %  (exterior_bracket_txt, interior_bracket_txt))
+        else:
+            statement_txt = (
+                '%s.get_val(_active_event).get_val_on_key(_active_event,_context.get_val_if_waldo(%s,_active_event))'
+                %  (exterior_bracket_txt, interior_bracket_txt))
 
         
     elif emit_utils.is_method_call(statement_node):

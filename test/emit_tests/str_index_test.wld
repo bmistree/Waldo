@@ -1,0 +1,12 @@
+str_test
+
+Endpoint StrTester;
+
+StrTester
+{
+    Text str_test = "hello";
+    Public Function return_str() returns Text
+    {
+        return str_test[0];
+    }
+}

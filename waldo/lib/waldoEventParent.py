@@ -1,5 +1,9 @@
 import waldo.lib.util as util
 from waldo.lib.waldoCallResults import _RescheduleRootCallResult, _CompleteRootCallResult
+from waldo.lib.waldoCallResults import _StopRootCallResult, _ApplicationExceptionCallResult
+from waldo.lib.waldoCallResults import _NetworkFailureCallResult
+import traceback
+
 
 class EventParent(object):
     '''
@@ -15,6 +19,14 @@ class EventParent(object):
         '''
         util.logger_assert('get_uuid is pure virtual in EventParent')
 
+    def put_exception(self,error):
+        '''
+        Places the appropriate call result in the event complete queue to 
+        indicate to the endpoint that an error has occured and the event
+        must be handled.
+        '''
+        util.logger_assert('put_exception is pure virtual in EventParent')
+        
         
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
@@ -100,7 +112,7 @@ class EventParent(object):
             
     def rollback(
         self,backout_requester_endpoint_uuid,
-        same_host_endpoints_contacted_dict,partner_contacted):
+        same_host_endpoints_contacted_dict,partner_contacted,stop_request):
         '''
         @param {uuid or None} backout_requester_endpoint_uuid --- If
         None, means that the call to backout originated on local
@@ -162,11 +174,23 @@ class RootEventParent(EventParent):
         self.event_complete_queue.put(_CompleteRootCallResult())
         super(RootEventParent,self).second_phase_transition_success(
             same_host_endpoints_contacted_dict,partner_contacted)
-
         
     def get_uuid(self):
         return self.uuid
 
+    def put_exception(self,error,message_listening_queues_map):
+        '''
+        Places the appropriate call result in the event complete queue to 
+        indicate to the endpoint that an error has occured and the event
+        must be handled.
+        '''
+        if isinstance(error, util.NetworkException):
+            # Send a NetworkFailureCallResult to each listening queue
+            for reply_with_uuid in message_listening_queues_map.keys():
+                message_listening_queue = message_listening_queues_map[reply_with_uuid]
+                message_listening_queue.put(_NetworkFailureCallResult(error.trace))
+
+                
     def first_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted,event):
         '''
@@ -205,13 +229,19 @@ class RootEventParent(EventParent):
 
     def rollback(
         self,backout_requester_endpoint_uuid,other_endpoints_contacted,
-        partner_contacted):
+        partner_contacted,stop_request):
 
         super(RootEventParent,self).rollback(
             backout_requester_endpoint_uuid, other_endpoints_contacted,
-            partner_contacted)
+            partner_contacted,stop_request)
 
-        self.event_complete_queue.put(_RescheduleRootCallResult())
+        # put val to read into event_complete_queue so can know
+        # whether or not to retry event.
+        if stop_request:
+            queue_feeder = _StopRootCallResult()
+        else:
+            queue_feeder = _RescheduleRootCallResult()
+        self.event_complete_queue.put(queue_feeder)
         
 
     def receive_successful_first_phase_commit_msg(
@@ -259,6 +289,14 @@ class PartnerEventParent(EventParent):
         self.local_endpoint._forward_first_phase_commit_successful(
             self.uuid,self.local_endpoint._uuid,children_endpoints)
 
+    def put_exception(self, error,message_listening_queues_map):
+        '''
+        Informs the partner that an exception has occured at runtime
+        (thus the event should be backed out).
+        '''
+        self.local_endpoint._propagate_back_exception(self.uuid,error)
+
+        
     def second_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted):
         super(PartnerEventParent,self).second_phase_transition_success(
@@ -306,6 +344,20 @@ class EndpointEventParent(EventParent):
 
         self.parent_endpoint._receive_first_phase_commit_successful(
             self.uuid,self.local_endpoint._uuid,children_endpoints)
+
+    def put_exception(self,error,message_listening_queues_map):
+        '''
+        Places an ApplicationExceptionCallResult or NetworkFailureCallResult in 
+        the event complete queue to indicate to the endpoint that an exception
+        has been raised. This allows the exception to be propagated back.
+        '''
+        if isinstance(error, util.NetworkException):
+            self.result_queue.put(_NetworkFailureCallResult(error.trace))
+        elif isinstance(error, util.ApplicationException):
+            self.result_queue.put(_ApplicationExceptionCallResult(error.trace))
+        elif isinstance(error, Exception):
+            tb = traceback.format_exc()
+            self.result_queue.put(_ApplicationExceptionCallResult(tb))
 
         
     def receive_successful_first_phase_commit_msg(

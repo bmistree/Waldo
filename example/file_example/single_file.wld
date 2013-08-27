@@ -1,0 +1,19 @@
+SingleFile
+
+Endpoint Single;
+
+
+Single
+{
+    External Text single_file;
+
+    onCreate(External Text file_to_use)
+    {
+        extAssign file_to_use to single_file;
+    }
+    
+    Public Function write_into_file(Text to_write)
+    {
+        extCopy to_write to single_file;
+    }
+}

@@ -184,6 +184,7 @@ while True:  # FIXME: currently using infinite retry
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
     _to_return = self.%s(_root_event,_ctx %s,[])
+
     # try committing root event
     _root_event.begin_first_phase_commit()
     _commit_resp = _root_event.event_parent.event_complete_queue.get()
@@ -418,18 +419,34 @@ def %s(self,_active_event,_context%s):
             # Similarly, we must initialize other sequence global
             # data.
             private_body = prefix
+
+    private_body += 'try:\n'
             
+    private_body_emitted = ''
     method_body_node = get_method_body_node_from_method_node(method_node)
     emitted_something = False
     for statement_node in method_body_node.children:
         emitted_something = True
-        private_body += emit_statement.emit_statement(
+        indented_body = emit_statement.emit_statement(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-        private_body += '\n'
-        
-    if private_body.strip() == '':
+        indented_body += '\n'
+        private_body_emitted += emit_utils.indent_str(indented_body)
+
+    if private_body_emitted.strip() == '':
         # in case of empty functions
-        private_body += 'pass\n'
+        private_body_emitted += emit_utils.indent_str('pass\n')
+
+    private_body += private_body_emitted
+
+    except_str = '''
+except Exception as err: # ApplicationExceptions should be backed out and the partner should be
+        # notified
+    _active_event.put_exception(err)
+    raise
+    '''
+
+    private_body += except_str
+        
     
     return private_header + emit_utils.indent_str(private_body)
         
@@ -631,10 +648,13 @@ while True:  # FIXME: currently using infinite retry
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
     _to_return = self.%s(_root_event,_ctx %s,%s)
+
     # try committing root event
+
     _root_event.begin_first_phase_commit()
     _commit_resp = _root_event.event_parent.event_complete_queue.get()
-    if isinstance(_commit_resp,%s):
+    if (isinstance(_commit_resp,%s) or
+        isinstance(_commit_resp,%s)):
         # means it isn't a backout message: we're done
         return _to_return
     elif isinstance(_commit_resp,%s):
@@ -650,6 +670,7 @@ while True:  # FIXME: currently using infinite retry
        comma_sep_arg_names,
        str(list_return_external_positions),
        emit_utils.library_transform('CompleteRootCallResult'),
+       emit_utils.library_transform('NetworkFailureCallResult'),
        emit_utils.library_transform('StopRootCallResult'),
        emit_utils.library_transform('StoppedException'),
        emit_utils.library_transform('RetryCanceledException')

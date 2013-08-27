@@ -4,9 +4,14 @@ import waldo.lib.waldoActiveEventMap as waldoActiveEventMap
 import waldo.lib.waldoCallResults as waldoCallResults
 from util import Queue
 import threading
+import time
+import traceback
+from waldo.lib.waldoHeartbeat import Heartbeat
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 from waldo.lib.waldoEndpointBase import EndpointBase
+from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
 
+HEARTBEAT_TIMEOUT = 30
 
 class _Endpoint(EndpointBase):
     '''
@@ -18,7 +23,7 @@ class _Endpoint(EndpointBase):
     active events on this endpoint.
     '''
 
-    def __init__(self,waldo_classes,host_uuid,conn_obj,global_var_store):
+    def __init__(self,waldo_classes,host_uuid,conn_obj,global_var_store,*args):
         '''
         @param {dict} waldo_classes --- Contains common utilities
         needed by emitted code, such as WaldoNumVariable
@@ -93,6 +98,14 @@ class _Endpoint(EndpointBase):
         self._stop_listener_id_assigner = 0
         self._stop_listeners = {}
 
+        self._conn_failed = False
+        self._conn_mutex = threading.Lock()
+
+        # start heartbeat thread
+        self._heartbeat = Heartbeat(socket=self._conn_obj, 
+            timeout_cb=self.partner_connection_failure,*args)
+        self._heartbeat.start()
+        
     def _stop_lock(self):
         self._stop_mutex.acquire()
         
@@ -104,7 +117,31 @@ class _Endpoint(EndpointBase):
 
     def _ready_waiting_list_unlock(self,additional):
         self._ready_waiting_list_mutex.release()        
-        
+
+    def partner_connection_failure(self):
+        '''
+        Called when it has been determined that the connection to the partner
+        endpoint has failed prematurely. Closes the socket and raises a network
+        exception, thus backing out from all current events, and sets the 
+        conn_failed flag, but only if this method has not been called before.
+        '''
+        self._conn_mutex.acquire()
+        self._conn_obj.close()
+        self._raise_network_exception()
+        self._conn_failed = True
+        self._conn_mutex.release()
+
+    def get_conn_failed(self):
+        '''
+        Returns true if the runtime has detected a network failure and false
+        otherwise.
+        '''
+        self._conn_mutex.acquire()
+        conn_failed = self._conn_failed    
+        self._conn_mutex.release()
+        return conn_failed
+
+
     def _block_ready(self):
         '''
         Returns True if both sides are initialized.  Otherwise, blocks
@@ -227,7 +264,41 @@ class _Endpoint(EndpointBase):
                   # endpoint.
             )
 
-            
+    def _raise_network_exception(self):
+        '''
+        Called by the connection object when a network error is detected.
+
+        Sends a message to each active event indicating that the connection
+        with the partner endpoint has failed. Any corresponding endpoint calls
+        waiting on an event involving the partner will throw a NetworkException,
+        which will result in a backout (and be re-raised) if not caught by
+        the programmer.
+        '''
+        self._act_event_map.inform_events_of_network_failure()
+
+    def _propagate_back_exception(self,event_uuid,exception):
+        '''
+        Called by the active event when an exception has occured in the midst
+        of a sequence and it needs to be propagated back towards the 
+        root of the active event. Sends a partner_error message to the partner
+        containing the event and endpoint uuids.
+        '''
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PARTNER_ERROR
+        error = general_message.error
+        error.event_uuid.data = event_uuid
+        error.host_uuid.data = self._uuid
+        if isinstance(exception, util.NetworkException):
+            error.type = PartnerError.NETWORK
+            error.trace = exception.trace
+        elif isinstance(exception, util.ApplicationException):
+            error.type = PartnerError.APPLICATION
+            error.trace = exception.trace
+        else:
+            error.trace = traceback.format_exc()
+            error.type = PartnerError.APPLICATION
+        self._conn_obj.write(general_message.SerializeToString(),self)
+
     def _receive_msg_from_partner(self,string_msg):
         '''
         Called by the connection object.
@@ -299,6 +370,13 @@ class _Endpoint(EndpointBase):
             self._endpoint_service_thread_pool.receive_partner_request_commit(
                 general_msg.commit_request)
             
+        elif general_msg.HasField('error'):
+            event = self._act_event_map.get_event(general_msg.error.event_uuid.data)
+            event.send_exception_to_listener(general_msg.error)
+
+        elif general_msg.HasField('heartbeat'):
+            self._heartbeat.receive_heartbeat(general_msg.heartbeat.msg)
+
         #### DEBUG
         else:
             util.logger_assert(
@@ -646,9 +724,9 @@ class _Endpoint(EndpointBase):
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_STOP
         general_message.stop.dummy = False
+
         self._conn_obj.write_stop(general_message.SerializeToString(),self)
 
-        
     def add_stop_listener(self, to_exec_on_stop):
         '''
         @param {callable} to_exec_on_stop --- When this endpoint
@@ -679,14 +757,17 @@ class _Endpoint(EndpointBase):
         self._stop_listeners.pop(stop_id,None)
         self._stop_unlock()
 
-        
-        
-    def stop(self):
+    def is_stopped(self):
+        '''
+        Returns whether the endpoint is stopped.
+        '''
+        return self._stop_complete
+
+    def stop(self,_skip_partner=False):
         '''
         Called from python or called when partner requests stop
         '''
         self._stop_lock()
-
         if self._stop_complete:
             # means that user called stop after we had already
             # stopped.  Do nothing
@@ -706,23 +787,23 @@ class _Endpoint(EndpointBase):
         request_callback = self._partner_stop_called and self._stop_called
             
         self._stop_unlock()
-        
+
         # act event map filters duplicate stop calls automatically
-        self._act_event_map.initiate_stop()
+        self._act_event_map.initiate_stop(_skip_partner)
 
         if not stop_already_called:
             # we do not want to send multiple stop messages to our
             # partner.  just one.  this check ensures that we don't
             # infinitely send messages back and forth.
             self._notify_partner_stop()
-
+            
         # 4 from above as well
         if request_callback:
             self._act_event_map.callback_when_stopped(self._stop_complete_cb)
 
         # blocking wait until ready to shut down.
         blocking_queue.get()
-            
+
             
     def _stop_complete_cb(self):
         '''
@@ -775,9 +856,9 @@ class _Endpoint(EndpointBase):
         self._partner_stop_called = True
 
         # 3 from above
-        t = threading.Thread(target = self.stop)
+        t = threading.Thread(target = self.stop, args=(True,))
         t.start()
-        
+
         # 4 from above
         request_callback = self._partner_stop_called and self._stop_called
         

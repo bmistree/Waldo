@@ -1,0 +1,11 @@
+import "util.proto";
+
+message Heartbeat
+{
+    /**
+       Regularly by one endpoint to it's partner to show that the
+       connection is still connected.
+     */
+    
+    required string msg = 1;
+}

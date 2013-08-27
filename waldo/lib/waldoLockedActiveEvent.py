@@ -5,6 +5,10 @@ from waldo.lib.waldoCallResults import _BackoutBeforeEndpointCallResult
 from waldo.lib.waldoCallResults import _SequenceMessageCallResult
 from waldo.lib.waldoCallResults import _BackoutBeforeReceiveMessageResult
 
+NETWORK = 'NETWORK'
+BACKOUT = 'BACKOUT'
+
+
 class LockedActiveEvent(object):
 
     STATE_RUNNING = 1
@@ -80,6 +84,13 @@ class LockedActiveEvent(object):
         # self.signal_queue = Queue.Queue()
         self.signal_queue = None
 
+        # Before we attempt to request a commit after a sequence, we need
+        # to keep track of whether or not the network has failed; if it has
+        # we will not be able to forward a request commit message to our 
+        # partner. This variable is only set to True at runtime if a network
+        # exception is caught during an event.
+        self._network_failure = False
+
         
     def _lock(self):
         self.mutex.acquire()
@@ -152,7 +163,11 @@ class LockedActiveEvent(object):
         # forwards message on to others and affirmatively replies that
         # now in first pahse of commit.
         self.event_parent.first_phase_transition_success(
-            self.other_endpoints_contacted,self.partner_contacted,self)
+            self.other_endpoints_contacted,
+            # If we had a network failure, then we shouldn't try to
+            # forward commit to partner.
+            self.partner_contacted and (not self.get_network_failure()),
+            self)
 
     def second_phase_commit(self):
         self._lock()
@@ -247,7 +262,7 @@ class LockedActiveEvent(object):
 
             
 
-    def _backout(self,backout_requester_endpoint_uuid):
+    def _backout(self,backout_requester_endpoint_uuid,stop_request):
         '''
         MUST BE CALLED FROM WITHIN LOCK
         
@@ -291,7 +306,7 @@ class LockedActiveEvent(object):
             touched_obj.backout(self)
             
         # 3
-        self.rollback_unblock_waiting_queues()
+        self.rollback_unblock_waiting_queues(stop_request)
 
         # 4
         self.event_map.remove_event(self.uuid)
@@ -299,10 +314,12 @@ class LockedActiveEvent(object):
         # 5
         self.event_parent.rollback(
             backout_requester_endpoint_uuid,self.other_endpoints_contacted,
-            self.partner_contacted)
+            self.partner_contacted,stop_request)
 
+    def put_exception(self,error):
+        return self.event_parent.put_exception(error,self.message_listening_queues_map)
         
-    def rollback_unblock_waiting_queues(self):
+    def rollback_unblock_waiting_queues(self,stop_request):
         '''
         To provide blocking, whenever issue an endpoint call or
         partner call, thread of execution blocks, waiting on a read
@@ -312,14 +329,23 @@ class LockedActiveEvent(object):
         '''
 
         for msg_queue_to_unblock in self.message_listening_queues_map.values():
-            msg_queue_to_unblock.put(_BackoutBeforeReceiveMessageResult())
-        
+            if stop_request:
+                queue_feeder = _StopAlreadyCalledEndpointCallResult()
+            else:
+                queue_feeder = _BackoutBeforeReceiveMessageResult()
+            msg_queue_to_unblock.put(queue_feeder)
+            
         for subscribed_to_element in self.other_endpoints_contacted.values():
             for res_queue in subscribed_to_element.result_queues:
-                res_queue.put(_BackoutBeforeEndpointCallResult())
-                    
+                if stop_request:
+                    queue_feeder = _StopAlreadyCalledEndpointCallResult()
+                else:
+                    queue_feeder = _BackoutBeforeReceiveMessageResult()
+
+                res_queue.put(queue_feeder)
+
         
-    def backout(self,backout_requester_endpoint_uuid):
+    def backout(self,backout_requester_endpoint_uuid,stop_request):
         '''
         @param {uuid or None} backout_requester_endpoint_uuid --- If
         None, means that the call to backout originated on local
@@ -329,7 +355,7 @@ class LockedActiveEvent(object):
         method on us.
         '''
         self._lock()
-        self._backout(backout_requester_endpoint_uuid)
+        self._backout(backout_requester_endpoint_uuid,stop_request)
         self._unlock()
 
         
@@ -342,7 +368,7 @@ class LockedActiveEvent(object):
         Called by a WaldoLockedObject to preempt this event.
 
         '''
-        self._backout(None)
+        self._backout(None,False)
         # unlock after method
         self._unlock()
 
@@ -527,14 +553,14 @@ class LockedActiveEvent(object):
         product of a stop request.  False otherwise.
         
         When this is called, we want to disable all further additions
-        to self.subscribed_to and self.message_sent.  (Ie, after we
+        to self.subscribed_to and self.partner_contacted.  (Ie, after we
         have requested to backout, we should not execute any further
         endpoint object calls or request partner to do any additional
         work for this event.)
         '''
         # FIXME: may be needlessly forwarding backouts to partners and
         # back to the endpoints that requested us to back out.
-        self.backout(None)
+        self.backout(None,stop_request)
 
 
     def handle_first_sequence_msg_from_partner(
@@ -686,3 +712,38 @@ class LockedActiveEvent(object):
         del self.message_listening_queues_map[msg.reply_to_uuid.data]
 
 
+    def send_exception_to_listener(self, error):
+        '''
+        @param     error     GeneralMessage.error
+
+        Places an ApplicationExceptionCallResult in the event complete queue to 
+        indicate to the endpoint that an application exception has been raised 
+        somewhere down the call graph.
+
+        Note that the type of error is 
+        '''
+        self._lock()
+        # Send an ApplicationExceptionCallResult to each listening queue
+        for reply_with_uuid in self.message_listening_queues_map.keys():
+            ### FIXME: It probably isn't necessary to send an exception result to
+            ### each queue.
+            message_listening_queue = self.message_listening_queues_map[reply_with_uuid]
+            if error.type == PartnerError.APPLICATION:
+                message_listening_queue.put(_ApplicationExceptionCallResult(error.trace))
+            elif error.type == PartnerError.NETWORK:
+                message_listening_queue.put(_NetworkFailureCallResult(error.trace))
+        self._unlock()                
+
+        
+    def set_network_failure(self):
+        self._lock()
+        self._network_failure = True
+        self._unlock()
+
+    def get_network_failure(self):
+        self._lock()
+        failure = self._network_failure
+        self._unlock()
+        return failure
+
+        

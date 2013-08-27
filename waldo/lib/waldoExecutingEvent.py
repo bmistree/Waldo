@@ -277,6 +277,7 @@ class _ExecutingEventContext(object):
                 constructor = SingleThreadedLockedListVariable
             elif isinstance(val,EndpointBase):
                 constructor = SingleThreadedLockedEndpointVariable
+
             #### DEBUG
             elif hasattr(val,'__call__'):
                 # checks if is function
@@ -698,7 +699,11 @@ class _ExecutingEventContext(object):
 
         if isinstance(queue_elem,waldoCallResults._BackoutBeforeReceiveMessageResult):
             raise util.BackoutException()
-
+        elif isinstance(queue_elem,waldoCallResults._NetworkFailureCallResult):
+            raise util.NetworkException(queue_elem.trace)
+        elif isinstance(queue_elem,waldoCallResults._ApplicationExceptionCallResult):
+            raise util.ApplicationException(queue_elem.trace)
+       
         self.set_to_reply_with(queue_elem.reply_with_msg_field)
 
         # apply changes to sequence variables.  Note: that the system
@@ -731,10 +736,14 @@ class _ExecutingEventContext(object):
 
         queue_elem = threadsafe_result_queue.get()
 
+        if isinstance(queue_elem, waldoCallResults._ApplicationExceptionCallResult):
+            raise util.ApplicationException(queue_elem.trace)
+        elif isinstance(queue_elem, waldoCallResults._NetworkFailureCallResult):
+            raise util.NetworkException(queue_elem.trace)
         # FIXME: there may be other errors that are not from
         # backout...we shouldn't treat all cases of not getting a
         # result as a backout exception
-        if not isinstance(queue_elem, waldoCallResults._EndpointCallResult):
+        elif not isinstance(queue_elem, waldoCallResults._EndpointCallResult):
             raise util.BackoutException()
         
         return queue_elem.result_array
@@ -770,6 +779,7 @@ class _ExecutingEventContext(object):
         
         elif is_non_ext_list_var(rhs):
             return rhs.get_val(active_event).contains_val_called(active_event,lhs_val)
+
 
         util.logger_assert(
             'Error when calling in: unknown right hand side of expression')

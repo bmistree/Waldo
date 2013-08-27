@@ -118,7 +118,8 @@ class _ReceiveRequestCommitAction(_Action):
             #     point.  Just ignore the request.
             pass
         else:
-            evt.begin_first_phase_commit(self.from_partner)
+            evt.begin_first_phase_commit(
+                self.from_partner or self.local_endpoint.get_conn_failed())
         
         
 class _ReceiveRequestCompleteCommitAction(_Action):
@@ -255,20 +256,20 @@ class _ReceiveEndpointCallAction(_Action):
             self.result_queue.put(
                 waldoCallResults._StopAlreadyCalledEndpointCallResult())
             return
-        
-        import waldoVariableStore
+
+        import waldo.lib.waldoVariableStore
         evt_ctx = waldoExecutingEvent._ExecutingEventContext(
             self.local_endpoint._global_var_store,
             # should not have any sequence local data from an endpoint
             # call.
-            waldoVariableStore._VariableStore(
+            waldo.lib.waldoVariableStore._VariableStore(
                 self.local_endpoint._host_uuid) )
         # receiving endpoint must know that this call was an endpoint
         # call.  This is so that it can ensure to make deep copies of
         # all non-external arguments (including lists,maps, and user
         # structs).
         evt_ctx.set_from_endpoint_true()
-        exec_event = waldoExecutingEvent._ExecutingEvent(
+        exec_event = waldo.lib.waldoExecutingEvent._ExecutingEvent(
             self.to_exec,act_event,evt_ctx,self.result_queue,
             *self.args)
 

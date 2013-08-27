@@ -1,3 +1,4 @@
+
 import threading
 import waldo.lib.util as util
 
@@ -6,6 +7,9 @@ from waldo.lib.waldoEventParent import RootEventParent
 from waldo.lib.waldoEventParent import PartnerEventParent
 from waldo.lib.waldoEventParent import EndpointEventParent
 from waldo.lib.waldoBoostedManager import BoostedManager
+import traceback
+from waldo.lib.waldoLockedActiveEvent import NETWORK, BACKOUT
+
 
 class _ActiveEventMap(object):
     '''
@@ -14,7 +18,7 @@ class _ActiveEventMap(object):
     
     def __init__(self,local_endpoint,clock):
         self.map = {}
-        self._mutex = threading.Lock()
+        self._mutex = threading.RLock()
         self.local_endpoint = local_endpoint
         self.in_stop_phase = False
         self.in_stop_complete_phase = False
@@ -22,24 +26,28 @@ class _ActiveEventMap(object):
         self.waiting_on_stop = {}
         self.boosted_manager = BoostedManager(clock)
         
-    def initiate_stop(self):
+
+    def initiate_stop(self,skip_partner):
         '''
         When the endpoint that this is on has said to start
         stoping, then
         '''
         self._lock()
-        
         if self.in_stop_phase:
             # can happen if simultaneously attempt to stop connection
             # on both ends or if programmer calls stop twice.
             self._unlock()
             return 
-
-        for evt in self.map.values():
-            evt.stop()
         
+        # note that when we stop events, they may try to remove
+        # themselves from the map.  To prevent invalidating the map as
+        # we iterate over it, we first copy all the elements into a
+        # list, then iterate.
+        map_list = list(self.map.values())
         self.in_stop_phase = True
         self._unlock()
+        for evt in map_list:
+            evt.stop(skip_partner)
         
     def callback_when_stopped(self,stop_callback):
         self._lock()
@@ -96,7 +104,6 @@ class _ActiveEventMap(object):
             self.stop_callback()
 
         return to_remove
-            
         
     def get_or_create_partner_event(self,uuid):
         '''
@@ -166,6 +173,65 @@ class _ActiveEventMap(object):
         to_return = self.map.get(uuid,None)
         self._unlock()
         return to_return        
+
+    def _map(self,func,dict):
+        '''
+        Applies the supplied function to each active event in the map.
+
+        Assumes that if modification is going to be made to the map then the
+        supplied function will lock and release the mutex.
+
+        @arg {dict} -- map of argument names to values. Unpacked when passed to
+        the provided function. May be None to indicate that there are no args.
+        '''
+        event_list = [pair[1] for pair in self.map.items()]
+        for event in event_list:
+            if dict:
+                func(event,**dict)
+            else:
+                func(event)
+        
+    def _stop_event(self,event,should_skip_partner,reason_for_backout):
+        '''
+        Backs out the event with the provided reason and removes it from the
+        active event map while setting stop_request=True to indicate that the
+        event should not be retried.
+        '''
+        event.forward_backout_request_and_backout_self(
+            skip_partner=should_skip_partner,reason=reason_for_backout,
+            stop_request=True) # Set stop_request since 
+
+        self.remove_event_if_exists(event.uuid)
+
+    def backout_from_all_events(self,skip_partner=False,reason=BACKOUT):
+        '''
+        Iterates through each active event in the map and backs out from each.
+        '''
+        dict = {'should_skip_partner':skip_partner,'reason_for_backout':reason}
+        self._map(self._stop_event,dict)
+
+    def _indicate_network_failure(self,event):
+        '''
+        Indicates to the event that a network failure has occured if it has
+        previously sent or received a message.
+        '''
+        if event.partner_contacted:
+            event.set_network_failure()
+            tb_list = traceback.format_stack()
+            trace_str = "Traceback (most recent call last):\n"
+            trace_str += "".join(tb_list)
+            trace_str += "NetworkException: raised in endpoint "
+            trace_str += str(event.event_parent.local_endpoint)
+            trace_str += "; connection with partner failed.\n"
+            event.put_exception(util.NetworkException(trace_str))
+
+    def inform_events_of_network_failure(self):
+        '''
+        Iterates through each active event in the map and sends it a message
+        indicating that a network failure has occured if it has previously
+        sent a message.
+        '''
+        self._map(self._indicate_network_failure, None)
 
     def _lock(self):
         self._mutex.acquire()
