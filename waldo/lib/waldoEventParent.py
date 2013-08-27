@@ -135,12 +135,15 @@ class EventParent(object):
         
         
 class RootEventParent(EventParent):
-    def __init__(self,local_endpoint):
+    def __init__(self,local_endpoint,uuid=None):
         '''
-        @param{uuid} partner_uuid --- UUID of the attached neighbor
-        endpoint
+        @param{uuid} uuid --- If None, then generate a random uuid and
+        use that.  Otherwise, use the uuid specified.  Note: not all
+        root events use a random uuid because some must be boosted.
         '''
-        self.uuid = util.generate_uuid()
+        if uuid is None:
+            uuid = util.generate_uuid()
+        self.uuid = uuid
         self.local_endpoint = local_endpoint
         # indices are event uuids.  Values are bools.  When all values
         # are true in this dict, then we can transition into second

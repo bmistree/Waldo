@@ -12,7 +12,7 @@ class _ActiveEventMap(object):
     Keeps track of all activeevent-s on an endpoint
     '''
     
-    def __init__(self,local_endpoint):
+    def __init__(self,local_endpoint,clock):
         self.map = {}
         self._mutex = threading.Lock()
         self.local_endpoint = local_endpoint
@@ -20,7 +20,8 @@ class _ActiveEventMap(object):
         self.in_stop_complete_phase = False
         self.stop_callback = None
         self.waiting_on_stop = {}
-    
+        self.clock = clock
+        
     def initiate_stop(self):
         '''
         When the endpoint that this is on has said to start

@@ -14,12 +14,15 @@ import waldo.lib.waldoExecutingEvent as waldoExecutingEvent
 import waldo.lib.waldoVariableStore as waldoVariableStore
 import waldo.lib.shim.get_math_endpoint 
 import waldo.lib.waldoLockedVariables as waldoLockedVariables
+from waldo.lib.waldoClock import Clock
 
 StoppedException = util.StoppedException
 
 
 _host_uuid = util.generate_uuid()
 _threadsafe_stoppable_cleanup_queue = Queue.Queue()
+
+_waldo_clock = Clock()
 
 
 _waldo_classes = {
@@ -63,6 +66,9 @@ _waldo_classes = {
     'BackoutException': util.BackoutException,
     'StoppedException': util.StoppedException,
     'RetryCanceledException': util.RetryCanceledException,
+
+    # Not a class, but global variable passed to everything:
+    'Clock': _waldo_clock,
     }
 
     

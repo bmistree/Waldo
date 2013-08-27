@@ -40,7 +40,8 @@ class _Endpoint(EndpointBase):
         
         self._waldo_classes = waldo_classes
         
-        self._act_event_map = waldoActiveEventMap._ActiveEventMap(self)
+        self._act_event_map = waldoActiveEventMap._ActiveEventMap(
+            self,waldo_classes['Clock'])
         self._conn_obj = conn_obj
         
         # whenever we create a new _ExecutingEvent, we point it at
