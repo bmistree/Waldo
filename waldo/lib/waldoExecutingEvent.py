@@ -349,12 +349,9 @@ class _ExecutingEventContext(object):
         # corresponding argument to func_obj is external and therefore
         # should not be de_waldo-ified.  If an argument does not have
         # its corresponding index in the array, then dewaldo-ify it.
-        try:
-            external_arg_list = func_obj.ext_args_array
-        except:
-            import pdb
-            pdb.set_trace()
+        external_arg_list = func_obj.ext_args_array
 
+        
         if external_arg_list == None:
             util.logger_assert(
                 'No external arg array for function object')
