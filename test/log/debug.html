@@ -26,6 +26,9 @@
 		<span class="readBytesButtons">
 		  <button>Visualize</button>
 		</span>
+		<div class="infobox">
+			<p class="change">Here is where we will say something.</p>
+		</div>
 		<div id="byte_range"></div>
 		<div id="byte_content"></div>
 
@@ -57,7 +60,15 @@
 				}*/
 				return arr;
 			}
-
+			var myMouseOverFunction = function() {
+				var rect = d3.select(this);
+ 				console.log("LOOK");
+				// show infobox div on mouseover.
+				// block means sorta "render on the page" whereas none would mean "don't render at all"
+				d3.select(".infobox").style("display", "block");	
+				// add test to p tag in infobox
+				d3.select(".change").text(rect.attr("rx"));
+			}
 			function loadData(content) {
 				var dataset = jQuery.parseJSON(content);
 
@@ -141,7 +152,7 @@
 						.attr("class", keys[data])
 	    				.attr("x", function(d, i) {
 	    					tracker[d.eventID]++;
-	            			return 75 + (tracker[d.eventID] * 50); 
+	            			return 50 + (tracker[d.eventID] * 50); 
 	        			})
 	       				.attr("y", function(d, i) {
 	       					console.log("Data is " + i);
@@ -155,7 +166,29 @@
 	       				.attr("fill", function(d) {
 	       					return colors[d.type];
 	       				})
-	       				.attr("stroke", "black");
+	       				.attr("stroke", "black")
+	       				.on('mouseover', function(d) {
+							var rect = d3.select(this);
+							// show infobox div on mouseover.
+							// block means sorta "render on the page" whereas none would mean "don't render at all"
+							d3.select(".infobox").style("display", "block");	
+							// add test to p tag in infobox
+							if (d.type == "Endpoint" || d.type == "Finished") {
+								d3.select(".change").text("EventID: " + d.eventID + "; endpointID: " + d.endpointID + "; type: " + d.type + "; time: " + d.time);
+							}
+							if (d.type == "Read") {
+								d3.select(".change").text("EventID: " + d.eventID + "; endpointID: " + d.endpointID + "; type: " + d.type + ";container: " + d.container + 
+									"; value: " + d.value + "; time: " + d.time);
+							}
+							if (d.type == "Write") {
+								d3.select(".change").text("EventID: " + d.eventID + "; endpointID: " + d.endpointID + "; type: " + d.type + ";container: " + d.container + 
+									"; oldValue" + d.oldValue + "; value: " + d.value + "; time: " + d.time);
+							}
+							if (d.type == "UpdateContainer") {
+								d3.select(".change").text("EventID: " + d.eventID + "; endpointID: " + d.endpointID + "; type: " + d.type + ";container: " + d.container + 
+									"; fieldUpdate: " + d.fieldUpdate + "; oldValue" + d.oldValue + "; value: " + d.value + "; time: " + d.time);
+							}
+						});
        		//	}
 
 
