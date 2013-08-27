@@ -115,6 +115,13 @@ def run_test():
     endpoint_a = DummyEndpointWithCalls()
     endpoint_b = DummyEndpointWithCalls()
     endpoint_c = DummyEndpointWithCalls()
+
+    # need to ensure that the write event has lower priority than the
+    # chained event.
+    write_event_c = endpoint_c._act_event_map.create_root_event()
+    # while write_event_c.uuid > chained_endpoint_event_a.uuid:
+    #     write_event_c = endpoint_c._act_event_map.create_root_event()
+
     
     if not initialize_data(endpoint_a):
         print '\nError Setting initial value A\n'
@@ -184,11 +191,6 @@ def run_test():
         endpoint_c.end_global_number_var_name)
 
     to_overwrite_with = 39
-    # need to ensure that the write event has lower priority than the
-    # chained event.
-    write_event_c = endpoint_c._act_event_map.create_root_event()
-    while write_event_c.uuid > chained_endpoint_event_a.uuid:
-        write_event_c = endpoint_c._act_event_map.create_root_event()
 
     num_var_c.set_val(write_event_c,to_overwrite_with)
     write_event_c.begin_first_phase_commit()

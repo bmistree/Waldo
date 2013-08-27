@@ -4,12 +4,10 @@ from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
 import waldo.lib.util as util
 
 def generate_boosted_uuid(timestamp_last_boosted_completed):
-    return os.urandom(16)
-    # return '0' + timestamp_last_boosted_completed + os.urandom(8)
+    return '0' + timestamp_last_boosted_completed + os.urandom(8)
 
 def generate_timed_uuid(current_timestamp):
-    return os.urandom(16)
-    # return '1' + current_timestamp + os.urandom(8)
+    return '1' + current_timestamp + os.urandom(8)
 
 
 class BoostedManager(object):
