@@ -4,10 +4,10 @@ from waldo.lib.waldoEventSubscribedTo import EventSubscribedTo
 from waldo.lib.waldoCallResults import _BackoutBeforeEndpointCallResult
 from waldo.lib.waldoCallResults import _SequenceMessageCallResult
 from waldo.lib.waldoCallResults import _BackoutBeforeReceiveMessageResult
+from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
 
 NETWORK = 'NETWORK'
 BACKOUT = 'BACKOUT'
-
 
 class LockedActiveEvent(object):
 
