@@ -5,7 +5,7 @@ from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
 from waldo.lib.waldoEventParent import RootEventParent
 from waldo.lib.waldoEventParent import PartnerEventParent
 from waldo.lib.waldoEventParent import EndpointEventParent
-
+from waldo.lib.waldoBoostedManager import BoostedManager
 
 class _ActiveEventMap(object):
     '''
@@ -20,7 +20,7 @@ class _ActiveEventMap(object):
         self.in_stop_complete_phase = False
         self.stop_callback = None
         self.waiting_on_stop = {}
-        self.clock = clock
+        self.boosted_manager = BoostedManager(clock)
         
     def initiate_stop(self):
         '''
@@ -62,12 +62,18 @@ class _ActiveEventMap(object):
             self._unlock()
             raise util.StoppedException()
 
-        rep = RootEventParent(self.local_endpoint)
-        root_event = LockedActiveEvent(rep,self)
-        self.map[rep.get_uuid()] = root_event
+        # rep = RootEventParent(self.local_endpoint)
+        # root_event = LockedActiveEvent(rep,self)
+        # self.map[rep.get_uuid()] = root_event
+        
+        root_event = self.boosted_manager.create_root_event(self.local_endpoint,self)
+        self.map[root_event.uuid] = root_event
         self._unlock()
+
         return root_event
 
+
+    
     def remove_event(self,event_uuid):
         self.remove_event_if_exists(event_uuid)
 
@@ -75,6 +81,11 @@ class _ActiveEventMap(object):
         self._lock()
         to_remove = self.map.pop(event_uuid,None)
 
+        # if ((to_remove is not None) and
+        #     isinstance(to_remove.event_parent,RootEventParent)):
+            
+        #     self.boosted_manager.complete_root_event(event_uuid)
+        
         fire_stop_complete_callback = False
         if (len(self.map) == 0) and (self.in_stop_complete_phase):
             fire_stop_complete_callback = True

@@ -105,7 +105,11 @@ class LockedActiveEvent(object):
         self._unlock()
         
         return still_running
-        
+
+    def promote_boosted(self,new_uuid):
+        util.logger_warn(
+            'Not performing any actions in promote boosted')
+
         
     def can_backout_and_hold_lock(self):
         '''
