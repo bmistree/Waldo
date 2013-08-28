@@ -70,18 +70,12 @@ class _ActiveEventMap(object):
             self._unlock()
             raise util.StoppedException()
 
-        # rep = RootEventParent(self.local_endpoint)
-        # root_event = LockedActiveEvent(rep,self)
-        # self.map[rep.get_uuid()] = root_event
-        
         root_event = self.boosted_manager.create_root_event(self.local_endpoint,self)
         self.map[root_event.uuid] = root_event
         self._unlock()
 
         return root_event
 
-
-    
     def remove_event(self,event_uuid):
         self.remove_event_if_exists(event_uuid)
 
@@ -89,10 +83,9 @@ class _ActiveEventMap(object):
         self._lock()
         to_remove = self.map.pop(event_uuid,None)
 
-        # if ((to_remove is not None) and
-        #     isinstance(to_remove.event_parent,RootEventParent)):
-            
-        #     self.boosted_manager.complete_root_event(event_uuid)
+        if ((to_remove is not None) and
+            isinstance(to_remove.event_parent, RootEventParent)):
+            self.boosted_manager.complete_root_event(event_uuid)
         
         fire_stop_complete_callback = False
         if (len(self.map) == 0) and (self.in_stop_complete_phase):
