@@ -2,7 +2,7 @@ from waldo.lib.waldoEventParent import RootEventParent
 from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
 import waldo.lib.util as util
 from waldo.lib.waldoEventUUID import generate_boosted_uuid, generate_timed_uuid
-from waldo.lib.waldoEventUUID import update_version_uuid
+from waldo.lib.waldoEventUUID import update_version_uuid, is_boosted_uuid
 
 
 class BoostedManager(object):
@@ -72,7 +72,27 @@ class BoostedManager(object):
 
         replacement_event = None
         if retry:
-            replacement_uuid = update_version_uuid(completed_event_uuid)
+            
+            # in certain cases, we do not actually promote each event_s uuid to boosted.
+            # For instance, if the event is already in process of committing.  However,
+            # if that commit goes awry and we backout, we want the replacement event
+            # generated to use a boosted event id, rather than its original id.
+            if counter == 0:
+                # new event should be boosted.  
+                if not is_boosted_uuid(completed_event_uuid):
+                    # if it wasn't already boosted, that means that we
+                    # tried to promote it while it was in the midst of
+                    # its commit and we ignored the promotion.
+                    # Therefore, we want to apply the promotion on
+                    # retry.
+                    replacement_uuid = generate_boosted_uuid(self.last_boosted_complete)
+                else:
+                    # it was already boosted, just increment the version number
+                    replacement_uuid = update_version_uuid(completed_event_uuid)
+            else:
+                # it was not boosted, just increment the version number
+                replacement_uuid = update_version_uuid(completed_event_uuid)
+                
             rep = RootEventParent(self.act_event_map.local_endpoint,replacement_uuid)
             replacement_event = LockedActiveEvent(rep,self.act_event_map)
             self.event_list[counter] = replacement_event
