@@ -1,21 +1,7 @@
 import threading
 import waldo.lib.util as util
 from waldo.lib.waldoLockedObj import WaldoLockedObj
-
-
-def gte_uuid(uuida,uuidb):
-    '''
-    Returns true if uuida is greater than or equal to uuidb.  That is,
-    returns True if uuida should be able to preempt uuidb.
-    '''
-    return uuida >= uuidb
-
-def gte_uuid_key(uuida):
-    '''
-    Returns an object that can be compared using >, >=, <, <= in
-    python.
-    '''
-    return uuida
+from waldo.lib.waldoEventUUID import gte_uuid, in_place_sort_uuid_list
 
 
 class WaitingElement(object):
@@ -425,7 +411,7 @@ class MultiThreadedObj(WaldoLockedObj):
         # note: do not have to explicitly include the write lock key
         # here because the event that is writing will be included in
         read_lock_holder_uuids = list(self.read_lock_holders.keys())
-        read_lock_holder_uuids.sort(key=gte_uuid_key,reverse=True)
+        in_place_sort_uuid_list(read_lock_holder_uuids)
         
         to_backout_list = []
         can_backout_all = True
@@ -640,7 +626,7 @@ class MultiThreadedObj(WaldoLockedObj):
         # sort event uuids from high to low to determine if should add
         # them.
         waiting_event_uuids = list(self.waiting_events.keys())
-        waiting_event_uuids.sort(key=gte_uuid_key,reverse=True)
+        in_place_sort_uuid_list(waiting_event_uuids)
 
 
         # Phase 2 from above

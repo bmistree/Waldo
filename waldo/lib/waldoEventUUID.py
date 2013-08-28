@@ -15,8 +15,36 @@ UUID structure:
 VERSION_NUM_CHARACTERS = 4
 
 
+def in_place_sort_uuid_list(list_to_sort):
+    '''
+    @param {list} --- Each element is an event uuid.
+    
+    Sorts the list in place.  Lower indices will contain higher
+    priority uuids.
+
+    @returns sorted list
+    '''
+    list_to_sort.sort(key=gte_uuid_sort_key,reverse=True)
+    return list_to_sort
+
+    
+def gte_uuid(uuida,uuidb):
+    '''
+    Returns true if uuida is greater than or equal to uuidb.  That is,
+    returns True if uuida should be able to preempt uuidb.
+    '''
+    return gte_uuid_sort_key(uuida) >= gte_uuid_sort_key(uuidb)
+
+def gte_uuid_sort_key(uuid):
+    '''
+    Returns an object that can be compared using >, >=, <, <= in
+    python.
+    '''
+    return uuid[0:-VERSION_NUM_CHARACTERS]
+
+
 def update_version_uuid(prev_uuid):
-    non_version_prefix = prev_uuid[0:-4]
+    non_version_prefix = prev_uuid[0:-VERSION_NUM_CHARACTERS]
     vnum = get_version_number(prev_uuid)
     return non_version_prefix + struct.pack('I',vnum+1)
     
@@ -31,3 +59,4 @@ def generate_timed_uuid(current_timestamp):
 def get_version_number(uuid):
     packed_v_num = uuid[-VERSION_NUM_CHARACTERS]
     return struct.unpack('I',v_num)[0]
+
