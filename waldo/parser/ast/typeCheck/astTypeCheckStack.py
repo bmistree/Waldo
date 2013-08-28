@@ -199,6 +199,19 @@ class TypeCheckContextStack(object):
             assert(False);
 
         self.currentFunctionNode = node;
+
+    def removeCurrentFunctionNode(self):
+        '''
+        Removes the current function node from the context. Should be called 
+        when leaving a function.
+        '''
+        if self.currentFunctionNode == None:
+            errMsg = '\nError: attempting to remove current function node '
+            errMsg += 'when the node is None.\n'
+            errPrint(errMsg)
+            assert(False)
+        else:
+            self.currentFunctionNode = None;
         
     def checkReturnStatement(self,returnNode,check_type_mismatch_func):
         '''
@@ -316,7 +329,6 @@ class TypeCheckContextStack(object):
             assert(False);
         self.stack.pop();
         self.funcStack.pop();
-        self.currentFunctionNode = None;
 
         
     def getIdentifierType(self,identifierName):

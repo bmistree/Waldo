@@ -1,0 +1,29 @@
+Test
+Endpoint SingleSide;
+
+SingleSide 
+{
+    Endpoint thrower;
+
+    onCreate(Endpoint temp)
+    {
+        thrower = temp;
+    }
+
+    Public Function throw()
+    {
+        1 / 0;
+    }
+
+    Public Function test_catch() returns TrueFalse
+    {
+        TrueFalse caught = False;
+        try {
+            thrower.throw();
+        }
+        catch (ApplicationException as err) {
+            caught = True;
+        }
+        return caught;
+    }
+}

@@ -597,6 +597,7 @@ def p_FunctionBodyStatement(p):
                              | ConditionStatement
                              | ForStatement
                              | WhileStatement
+                             | TryCatchStatement
                              | PlusEqual SEMI_COLON
                              | MinusEqual SEMI_COLON
                              | DivideEqual SEMI_COLON
@@ -1066,7 +1067,7 @@ def p_Number(p):
         assert(False);
         
     p[0].type = TYPE_NUMBER;
-    
+
 def p_String(p):
     '''String : MULTI_LINE_STRING
               | SINGLE_LINE_STRING''';
@@ -1316,7 +1317,41 @@ def p_ForStatement (p):
         print(errMsg);
         assert(False);
 
-        
+def p_TryCatchStatement(p):
+    '''
+    TryCatchStatement : TryBlock CatchBlock
+                      | TryBlock FinallyBlock
+                      | TryBlock CatchBlock FinallyBlock
+    '''
+    p[0] = AstNode(AST_TRY_CATCH_STATEMENT,p.lineno(1),p.lexpos(1));
+    if len(p) == 3:
+        # Try-catch without finally or try-finally
+        p[0].addChildren([p[1],p[2]])
+    elif len(p) == 4:
+        # Includes finally
+        p[0].addChildren([p[1],p[2],p[3]])
+
+def p_TryBlock(p):
+    '''TryBlock : TRY SingleLineOrMultilineCurliedBlock'''
+    p[0] = AstNode(AST_TRY_BLOCK,p.lineno(1),p.lexpos(1))
+    p[0].addChild(p[2])
+
+def p_CatchBlock(p):
+    '''CatchBlock : CATCH LEFT_PAREN Exception AS Identifier RIGHT_PAREN SingleLineOrMultilineCurliedBlock'''
+    p[0] = AstNode(AST_CATCH_BLOCK,p.lineno(1),p.lexpos(1))
+    p[0].addChildren([p[3],p[5],p[7]])
+
+def p_Exception(p):
+    '''Exception : Identifier'''
+    p[0] = AstNode(AST_EXCEPTION,p.lineno(1),p.lexpos(1),p[1])
+    p[0].value = p[1].value
+    p[0].type = TYPE_EXCEPTION
+
+def p_FinallyBlock(p):
+    '''FinallyBlock : FINALLY SingleLineOrMultilineCurliedBlock'''
+    p[0] = AstNode(AST_FINALLY_BLOCK,p.lineno(1),p.lexpos(1))
+    p[0].addChild(p[2])
+
 def p_ConditionStatement(p):
     '''ConditionStatement : IfStatement ElseIfStatements ElseStatement'''
     

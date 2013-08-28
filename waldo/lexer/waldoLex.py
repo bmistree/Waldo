@@ -56,6 +56,10 @@ reserved = {
     'Struct': 'STRUCT',
     'self': 'SELF',
     'Symmetric': 'SYMMETRIC',
+    'try': 'TRY',
+    'catch': 'CATCH',
+    'finally': 'FINALLY',
+    'as': 'AS',
     };
 
 
@@ -401,7 +405,6 @@ def t_MULTIPLY(t):
     '\*';
     return mStateMachine.addToken(t);
 
-
 def t_PLUS(t):
     '\+';
     return mStateMachine.addToken(t);
@@ -410,11 +413,9 @@ def t_MINUS(t):
     '\-';
     return mStateMachine.addToken(t);
 
-
 def t_DOT(t):
     '[.]';
     return mStateMachine.addToken(t);
-
 
 def t_NUMBER(t):
     '\d+(\.\d*)?'
@@ -437,13 +438,13 @@ def t_SINGLE_LINE_STRING(t):
     r'[\']'
     return mStateMachine.addToken(t);
 
-
 def t_ALL_ELSE(t):
     '.'
     return mStateMachine.addToken(t);
 
 def t_error(t):
     raise WaldoLexException("Unknown text '%s'  at line number '%s'" % (t.value,t.lexer.lineno));
+
 
 
 class WaldoLexException(Exception):

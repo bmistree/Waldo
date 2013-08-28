@@ -1,0 +1,41 @@
+ExceptionPropagation
+Endpoint Ping;
+Endpoint Pong;
+
+Sequences {
+    testSequence: Ping.ping1 -> Pong.pong1 -> Ping.ping2 -> Pong.pong2;
+}
+
+Sequence testSequence(Number int) returns Number pingPongNum
+{
+    Ping.ping1
+    {
+        int += 1;
+    }
+    Pong.pong1
+    {
+        int += 1;
+        1 / 0; //throw exception on remote endpoint
+    }
+    Ping.ping2
+    {
+        int += 1;
+    }
+    Pong.pong2
+    {
+        int += 1;
+        pingPongNum = int;
+    }
+}
+
+Ping
+{
+    Public Function testPropagateException()
+    {
+        testSequence(1);
+    }
+}
+
+Pong
+{
+}

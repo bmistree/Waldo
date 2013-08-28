@@ -14,6 +14,7 @@ def make_temp():
     except:
         os.mkdir(temp)
 ACCEPTING_TIMEOUT = 1
+CONNECTING_TIMEOUT = 2
 
 class _WaldoConnectionObject(object):
 
@@ -109,10 +110,11 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         @param {socket} sock --- If not passed in a socket, then
         create a new connection to dst_host, dst_port.
         '''
-
+        
         if sock == None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            self.sock.settimeout(CONNECTING_TIMEOUT)
             self.sock.connect((dst_host,int(dst_port)))
 
             
@@ -141,8 +143,11 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
             try:
                 data = self.sock.recv(1024)
                 if not data:
-                    # socket closed: note: may want to catch this error to
-                    # ensure it happened because close had been called
+                    if not self.local_endpoint.is_stopped():
+                        # socket closed before stop called
+                        # indicate failure to endpoint and backout
+                        self.local_endpoint.partner_connection_failure()
+                    self.close()
                     break
 
                 self.received_data += data
@@ -253,15 +258,18 @@ class _WaldoTCPConnectionObj(_WaldoConnectionObject):
         other.
         '''
         msg_str_to_send = self._encapsulate_msg_str(msg_str_to_write)
+<<<<<<< HEAD
         self.sock.sendall(msg_str_to_send)
-
+        try:
+            self.sock.sendall(msg_str_to_send)
+        except socket.error as err:
+            self.local_endpoint.partner_connection_failure()
 class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
     HEADER_LEN_OCTETS = 4
     '''
     Inherits from _WaldoTCPConnectionObj. The only difference is in the initialization, so
     we can perform SSL there.
     '''
-
     
     def __init__(self, dst_host, dst_port, sock=None, **kwargs):
         '''
