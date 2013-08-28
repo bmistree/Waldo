@@ -32,12 +32,6 @@ def run_test():
     older_event = endpoint._act_event_map.create_root_event()
     younger_event = endpoint._act_event_map.create_root_event()
 
-    # If older, have larger uuid.  
-    if older_event.uuid < younger_event.uuid:
-        tmp = older_event
-        older_event = younger_event
-        younger_event = tmp
-
     if num_var.get_val(younger_event) != initial_value:
         return False
 

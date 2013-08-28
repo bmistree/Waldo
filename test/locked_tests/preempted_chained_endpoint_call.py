@@ -119,10 +119,7 @@ def run_test():
     # need to ensure that the write event has lower priority than the
     # chained event.
     write_event_c = endpoint_c._act_event_map.create_root_event()
-    # while write_event_c.uuid > chained_endpoint_event_a.uuid:
-    #     write_event_c = endpoint_c._act_event_map.create_root_event()
 
-    
     if not initialize_data(endpoint_a):
         print '\nError Setting initial value A\n'
         return False
@@ -133,24 +130,21 @@ def run_test():
         print '\nError Setting initial value C\n'
         return False    
 
+    
     ### endpoint call
-
     num_var_a = endpoint_a._global_var_store.get_var_if_exists(
         endpoint_a.end_global_number_var_name)
     num_var_b = endpoint_b._global_var_store.get_var_if_exists(
         endpoint_b.end_global_number_var_name)
     num_var_c = endpoint_c._global_var_store.get_var_if_exists(
         endpoint_c.end_global_number_var_name)    
+
     
     # create event for endpoint call
-    chained_endpoint_event_a = endpoint_a._act_event_map.create_root_event()
     preempting_endpoint_event_a = endpoint_a._act_event_map.create_root_event()
+    chained_endpoint_event_a = endpoint_a._act_event_map.create_root_event()
 
-    if chained_endpoint_event_a.uuid > preempting_endpoint_event_a.uuid:
-        tmp = preempting_endpoint_event_a
-        preempting_endpoint_event_a = chained_endpoint_event_a
-        chained_endpoint_event_a = tmp
-        
+    
     # start chained endpoint call
     chained_ctx_a = create_context(endpoint_a)
     num_var_a.get_val(chained_endpoint_event_a)

@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 sys.path.append(
     os.path.join(
@@ -47,14 +48,8 @@ class DummyEndpoint(_Endpoint):
 
     def create_older_and_younger_root_events(self):
         older_event = self._act_event_map.create_root_event()
+        time.sleep(.005)
         younger_event = self._act_event_map.create_root_event()
-
-        # If older, have larger uuid.  
-        if older_event.uuid < younger_event.uuid:
-            tmp = older_event
-            older_event = younger_event
-            younger_event = tmp
-
         return older_event,younger_event
 
 
