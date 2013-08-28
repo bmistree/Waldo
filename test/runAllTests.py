@@ -124,7 +124,8 @@ def run_emit_tests():
     import emit_tests.application_exception_nested_sequence_test
     import emit_tests.network_exception_nested_sequence_test
     import emit_tests.try_finally_test
-
+    import emit_tests.retry_test
+    
     
     emit_tests_to_run = [
 
@@ -292,6 +293,10 @@ def run_emit_tests():
         
         ('Tests try...finally statement (no use of catch).',
          emit_tests.try_finally_test.run_test),
+
+        ('Tests vanilla retry',
+         emit_tests.retry_test.run_test),
+        
         ]
 
     run_tests(emit_tests_to_run)
