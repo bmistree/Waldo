@@ -287,8 +287,8 @@ def run_emit_tests():
          'sequence and propagated back to be handled.',
          emit_tests.network_exception_nested_sequence_test.run_test),
 
-        # ('Tests retry callbacks',
-        #  emit_tests.retry_cb.run_test),
+        ('Tests retry callbacks',
+         emit_tests.retry_cb.run_test),
         
         ('Tests try...finally statement (no use of catch).',
          emit_tests.try_finally_test.run_test),

@@ -1,0 +1,37 @@
+RetryTest
+Endpoint SingleHost;
+
+
+SingleHost
+{
+    Function (returns: Nothing) long_func;
+    Number shared_state = 0;
+    
+    onCreate(Function (returns: Nothing) long_funcer)
+    {
+        long_func = long_funcer;
+    }
+
+    Public Function long_write_long() returns Number
+    {
+        long_func();
+        shared_state += 1;
+        long_func();
+        return shared_state;
+    }
+
+    Public Function write_long_long() returns Number
+    {
+        shared_state += 1;        
+        long_func();
+        long_func();
+        return shared_state;
+    }
+
+    
+    Public Function short() returns Number
+    {
+        shared_state += 1;
+        return shared_state;
+    }
+}
