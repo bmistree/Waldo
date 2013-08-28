@@ -652,7 +652,10 @@ while True:  # FIXME: currently using infinite retry
     # return them....if it were false, might just get back refrences
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
-    _to_return = self.%s(_root_event,_ctx %s,%s)
+    try:
+        _to_return = self.%s(_root_event,_ctx %s,%s)
+    except Exception as _ex:
+        _root_event.put_exception(_ex)
 
     # try committing root event
 

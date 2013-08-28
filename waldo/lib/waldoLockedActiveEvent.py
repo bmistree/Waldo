@@ -298,7 +298,6 @@ class LockedActiveEvent(object):
         5) Forward messages to all other endpoints in event to roll
            back.
         '''
-
         
         # 0
         if self.state == LockedActiveEvent.STATE_BACKED_OUT:
@@ -329,8 +328,15 @@ class LockedActiveEvent(object):
             self.partner_contacted,stop_request)
 
     def put_exception(self,error):
-        return self.event_parent.put_exception(error,self.message_listening_queues_map)
-        
+        '''
+        @param error {Exception}
+        '''
+        if isinstance(error, util.BackoutException):
+            self.backout(None,False)
+        else:
+            self.event_parent.put_exception(error,self.message_listening_queues_map)
+            
+
     def rollback_unblock_waiting_queues(self,stop_request):
         '''
         To provide blocking, whenever issue an endpoint call or

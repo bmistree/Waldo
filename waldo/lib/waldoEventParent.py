@@ -354,7 +354,7 @@ class EndpointEventParent(EventParent):
         if isinstance(error, util.NetworkException):
             self.result_queue.put(_NetworkFailureCallResult(error.trace))
         elif isinstance(error, util.ApplicationException):
-            self.result_queue.put(_ApplicationExceptionCallResult(error.trace))
+            self.result_queue.put(_ApplicationExceptionCallResult(error.trace))        
         elif isinstance(error, Exception):
             tb = traceback.format_exc()
             self.result_queue.put(_ApplicationExceptionCallResult(tb))
