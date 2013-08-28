@@ -93,6 +93,13 @@ class LockedActiveEvent(object):
         # exception is caught during an event.
         self._network_failure = False
 
+
+        # If this is a root event and it gets backed out, we want to
+        # reuse the current root event's priority/uuid.  when we
+        # backout then, we ask the active event map to generate a new
+        # root event with the correct uuid for us.  we put that event
+        # in retry_event so that it can be acccessed by emitted code.
+        self.retry_event = None
         
     def _lock(self):
         self.mutex.acquire()
@@ -185,7 +192,7 @@ class LockedActiveEvent(object):
         self.complete_commit_local()
         self._unlock()
 
-        self.event_map.remove_event(self.uuid)
+        self.event_map.remove_event(self.uuid,False)
         
         # FIXME: which should happen first, notifying others or
         # releasing locks locally?
@@ -310,8 +317,11 @@ class LockedActiveEvent(object):
         # 3
         self.rollback_unblock_waiting_queues(stop_request)
 
-        # 4
-        self.event_map.remove_event(self.uuid)
+        # 4 ignore the first return arguemnt.  Second return argument
+        # is either None (if this is not a root event) or a new root
+        # event (if this is a root event).  @see comments on
+        # retry_event in constructor.
+        _, self.retry_event = self.event_map.remove_event(self.uuid,True)
 
         # 5
         self.event_parent.rollback(

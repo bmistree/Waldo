@@ -170,8 +170,9 @@ def emit_oncreate_call(endpoint_name,ast_root):
 
         # run the initializer
         oncreate_call_txt = '''
-while True:  # FIXME: currently using infinite retry 
+while True:  # FIXME: currently using infinite retry
     _root_event = self._act_event_map.create_root_event()
+
     _ctx = %s(
         self._global_var_store,
         # not using sequence local store
@@ -632,8 +633,12 @@ self._block_ready()
     #### create a root event + ctx for event, call internal, and reurn
     internal_method_name = lib_util.endpoint_call_func_name(method_name)
     public_body += '''
-while True:  # FIXME: currently using infinite retry 
-    _root_event = self._act_event_map.create_root_event()
+_root_retrier = None
+while True:  # FIXME: currently using infinite retry
+    _root_event = _root_retrier
+    if _root_event is None:
+        _root_event = self._act_event_map.create_root_event()
+
     _ctx = %s(
         self._global_var_store,
         # not using sequence local store
@@ -658,10 +663,20 @@ while True:  # FIXME: currently using infinite retry
         # means it isn't a backout message: we're done
         return _to_return
     elif isinstance(_commit_resp,%s):
+        # backout got called: that means that we must remove the retry
+        # event that we generated when backing out from active event map
+        self._act_event_map.remove_event(_root_event.retry_event)
+
         raise %s()
+
+    # event was backed out.  we have a retry event
+    _root_retrier = _root_event.retry_event
 
     if _retry_cb is not None:
         if not _retry_cb(self):
+            # user canceled event in retry callback.  unschedule retry
+            # event.
+            self._act_event_map.remove_event(_root_retrier.uuid,False)
             raise %s()
 
 ''' % (emit_utils.library_transform('ExecutingEventContext'),

@@ -204,8 +204,6 @@ class _ReceiveRequestBackoutAction(_Action):
         # FIXME: should probably be in a separate thread
         evt.forward_backout_request_and_backout_self(skip_partner)
 
-        
-        
 
 class _ReceiveEndpointCallAction(_Action):
     '''

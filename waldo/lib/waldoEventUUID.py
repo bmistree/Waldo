@@ -57,6 +57,6 @@ def generate_timed_uuid(current_timestamp):
     return '1' + current_timestamp + os.urandom(8) + STARTING_VERSION_NUMBER
 
 def get_version_number(uuid):
-    packed_v_num = uuid[-VERSION_NUM_CHARACTERS]
-    return struct.unpack('I',v_num)[0]
+    packed_v_num = uuid[-VERSION_NUM_CHARACTERS:]
+    return struct.unpack('I',packed_v_num)[0]
 

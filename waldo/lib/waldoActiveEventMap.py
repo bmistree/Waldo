@@ -24,7 +24,7 @@ class _ActiveEventMap(object):
         self.in_stop_complete_phase = False
         self.stop_callback = None
         self.waiting_on_stop = {}
-        self.boosted_manager = BoostedManager(clock)
+        self.boosted_manager = BoostedManager(self,clock)
         
 
     def initiate_stop(self,skip_partner):
@@ -70,23 +70,54 @@ class _ActiveEventMap(object):
             self._unlock()
             raise util.StoppedException()
 
-        root_event = self.boosted_manager.create_root_event(self.local_endpoint,self)
+        root_event = self.boosted_manager.create_root_event()
         self.map[root_event.uuid] = root_event
         self._unlock()
 
         return root_event
 
-    def remove_event(self,event_uuid):
-        self.remove_event_if_exists(event_uuid)
+    def remove_event(self,event_uuid,retry):
+        '''
+        @param {bool} retry --- If retry is true, when we remove the
+        event, we create another root event whose uuid is either:
+           1) Boosted and/or
+           
+           2) Has the same highlevel bits in its uuid as the removed
+              event.  (The high level bits hold the time stamp that
+              the event began as well as whether the event is
+              boosted.)
 
-    def remove_event_if_exists(self,event_uuid):
+        This way, if we are removing an event because the event is
+        retrying, the event will not lose its priority in the event
+        map on retry.
+
+        @returns --- @see remove_event_if_exists' return statement
+        '''
+        return self.remove_event_if_exists(event_uuid, retry)
+
+    def remove_event_if_exists(self,event_uuid,retry):
+        '''
+        @param {bool} retry --- @see remove_event
+
+        @returns {2-tuple} --- (a,b)
+        
+           a {Event or None} --- If an event existed in the map, then
+                                 we return it.  Otherwise, return None.
+
+           b {Event or None} --- If we requested retry-ing, then
+                                 return a new root event with
+                                 successor uuid to event_uuid.
+                                 Otherwise, return None.
+        
+        '''
         self._lock()
         to_remove = self.map.pop(event_uuid,None)
-
+        successor_event = None
+        
         if ((to_remove is not None) and
             isinstance(to_remove.event_parent, RootEventParent)):
-            self.boosted_manager.complete_root_event(event_uuid)
-        
+            successor_event = self.boosted_manager.complete_root_event(event_uuid,retry)
+
         fire_stop_complete_callback = False
         if (len(self.map) == 0) and (self.in_stop_complete_phase):
             fire_stop_complete_callback = True
@@ -96,7 +127,7 @@ class _ActiveEventMap(object):
         if fire_stop_complete_callback:
             self.stop_callback()
 
-        return to_remove
+        return to_remove, successor_event
         
     def get_or_create_partner_event(self,uuid):
         '''
@@ -153,7 +184,8 @@ class _ActiveEventMap(object):
         existed in map, None otherwise.  (Also, if it existed, remove
         it.)
         '''
-        return self.remove_event_if_exists(uuid)
+        evt,_ = self.remove_event_if_exists(uuid,False)
+        return evt
 
     
     def get_event(self,uuid):
@@ -194,7 +226,7 @@ class _ActiveEventMap(object):
             skip_partner=should_skip_partner,reason=reason_for_backout,
             stop_request=True) # Set stop_request since 
 
-        self.remove_event_if_exists(event.uuid)
+        self.remove_event_if_exists(event.uuid,False)
 
     def backout_from_all_events(self,skip_partner=False,reason=BACKOUT):
         '''

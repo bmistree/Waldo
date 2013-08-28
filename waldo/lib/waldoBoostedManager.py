@@ -2,6 +2,7 @@ from waldo.lib.waldoEventParent import RootEventParent
 from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
 import waldo.lib.util as util
 from waldo.lib.waldoEventUUID import generate_boosted_uuid, generate_timed_uuid
+from waldo.lib.waldoEventUUID import update_version_uuid
 
 
 class BoostedManager(object):
@@ -10,12 +11,14 @@ class BoostedManager(object):
     manager keeps track of all 
     '''
 
-    def __init__(self,clock):
+    def __init__(self,act_event_map,clock):
         '''
         @param {Clock} clock --- Host's global clock.  
         '''
         self.clock = clock
         self.last_boosted_complete = self.clock.get_timestamp()
+
+        self.act_event_map = act_event_map
         
         # Each element is a root event.  the closer to zero index an
         # event is in this list, the older it is.  The oldest event in
@@ -23,26 +26,35 @@ class BoostedManager(object):
         self.event_list = []
 
 
-    def create_root_event(self,local_endpoint,act_event_map):
+    def create_root_event(self):
         if len(self.event_list) == 0:
             evt_uuid = generate_boosted_uuid(self.last_boosted_complete)
         else:
             evt_uuid = generate_timed_uuid(self.clock.get_timestamp())
             
-        rep = RootEventParent(act_event_map.local_endpoint,evt_uuid)
-        root_event = LockedActiveEvent(rep,act_event_map)
+        rep = RootEventParent(self.act_event_map.local_endpoint,evt_uuid)
+        root_event = LockedActiveEvent(rep,self.act_event_map)
         self.event_list.append(root_event)
         return root_event
         
 
-    def complete_root_event(self,completed_event_uuid):
+    def complete_root_event(self,completed_event_uuid,retry):
         '''
         @param {UUID} completed_event_uuid
+
+        @param {bool} retry --- If the event that we are removing is
+        being removed because backout was called, we want to generate
+        a new event with a successor UUID (the same high-level bits
+        that control priority/precedence, but different low-level
+        version bits)
         
         Whenever any root event completes, this method gets called.
         If this event had been a boosted event, then we boost the next
         waiting event.  Otherwise, we remove it from the list of
         waiting uuids.
+
+        @returns {None/Event} --- If retry is True, we return a new
+        event with successor uuid.  Otherwise, return None.
         '''
         counter = 0
         remove_counter = None
@@ -58,13 +70,22 @@ class BoostedManager(object):
                 'Completing a root event that does not exist')
         #### END DEBUG
 
-        self.event_list.pop(counter)
+        replacement_event = None
+        if retry:
+            replacement_uuid = update_version_uuid(completed_event_uuid)
+            rep = RootEventParent(self.act_event_map.local_endpoint,replacement_uuid)
+            replacement_event = LockedActiveEvent(rep,self.act_event_map)
+            self.event_list[counter] = replacement_event
+        else:
+            # we are not retrying this event: remove the event from
+            # the list and if there are any other outstanding events,
+            # check if they should be promoted to boosted status.
+            self.event_list.pop(counter)
+            if counter == 0:
+                self.last_boosted_complete = self.clock.get_timestamp()
+                self.promote_first_to_boosted()
 
-        if counter == 0:
-            self.last_boosted_complete = self.clock.get_timestamp()
-            self.promote_first_to_boosted()
-
-        return None
+        return replacement_event
             
     def promote_first_to_boosted(self):
         '''
