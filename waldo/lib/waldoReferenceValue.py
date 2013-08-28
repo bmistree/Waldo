@@ -60,7 +60,7 @@ class _ReferenceValueVersion(waldoReferenceBase._ReferenceVersion):
     def modified(self,invalidation_listener):
         return self.has_been_written_to
     
-    def update_obj_val_and_version(self,w_obj,val, str_uuid, host_uuid):
+    def update_obj_val_and_version(self,w_obj,val, str_uuid, host_uuid, endpointID):
         '''
         @param {_WaldoObject} w_obj --- We know that w_obj must be one
         of the value type objects at this point.  That means that if
@@ -71,13 +71,13 @@ class _ReferenceValueVersion(waldoReferenceBase._ReferenceVersion):
         '''
 
         if not self.has_been_written_to:
-            log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"Read\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(w_obj) + "\",\"value\":\"" + str(val) + "\"},\n"
+            log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + endpointID + "\", \"type\":\"Read\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(w_obj) + "\",\"value\":\"" + str(val) + "\"},\n"
             print log
             f = open("./log/master.txt", "a")
             f.write(log)
             #print "The read was " + str(val)
             return
-        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"Write\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(w_obj) + "\",\"oldValue\":\"" + str(val) + "\",\"newValue\":\"" +str(w_obj.val) + "\"},\n"
+        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + endpointID + "\", \"type\":\"Write\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(w_obj) + "\",\"oldValue\":\"" + str(val) + "\",\"newValue\":\"" +str(w_obj.val) + "\"},\n"
         print log
         f = open("./log/master.txt", "a")
         f.write(log)

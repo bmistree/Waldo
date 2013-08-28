@@ -466,8 +466,9 @@ class _ReferenceBase(WaldoObj):
         # will update version obj as well
         str_uuid = ''.join(x.encode('hex') for x in invalid_listener.uuid)
         host_uuid = ''.join(x.encode('hex') for x in self.host_uuid)
+        endpoint_id = ''.join(x.encode('hex') for x in invalid_listener.local_endpoint.id())
 
-        dirty_map_elem.update_obj_val_and_version(self, str_uuid, host_uuid)
+        dirty_map_elem.update_obj_val_and_version(self, str_uuid, host_uuid, endpoint_id)
         #
 
         # determine who we need to send invalidation messages to
@@ -555,7 +556,7 @@ class _DirtyMapElement(object):
         self.val = new_val
         return old_val, self.val
 
-    def update_obj_val_and_version(self,w_obj, str_uuid, host_uuid):
+    def update_obj_val_and_version(self,w_obj, str_uuid, host_uuid, endpointID):
         '''
         @param {_WaldoObject} w_obj --- Take our version object and
         determine if we need to update w_obj's val and version.  This
@@ -563,7 +564,7 @@ class _DirtyMapElement(object):
         conflict and is in the process of committing.  Similarly, we
         are already inside of w_obj's internal lock.
         '''
-        self.version_obj.update_obj_val_and_version(w_obj,self.val, str_uuid, host_uuid)
+        self.version_obj.update_obj_val_and_version(w_obj,self.val, str_uuid, host_uuid, endpointID)
         
 
     def modified(self,invalidation_listener):

@@ -427,7 +427,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
         return False
 
         
-    def update_obj_val_and_version(self,w_obj,val, str_uuid, host_uuid):
+    def update_obj_val_and_version(self,w_obj,val,str_uuid,host_uuid, endpointID):
         '''
         @param {_WaldoObject} w_obj --- We know that w_obj must be one
         of the value type objects at this point.  That means that if
@@ -448,7 +448,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                         # missing entry, then we might have
                         # field_to_update not be in w_obj.val.  In
                         # that case, we cannot delete it.
-                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"DeleteContainerValue\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}" +"\n"
+                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + endpointID + "\", \"type\":\"DeleteContainerValue\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}" +"\n"
                         f = open("./log/" + str(str_uuid) + ".txt", "a")
                         f.write(log)
                         del w_obj.val[field_to_update]
@@ -461,7 +461,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
+                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + endpointID + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                         print log
                         f = open("./log/master.txt", "a")
                         f.write(log)
@@ -475,7 +475,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                             value = str(w_obj.val[field_to_update])
                         else:
                             value = "None"
-                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
+                        log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + endpointID + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                         print log
                         f = open("./log/master.txt", "a")
                         f.write(log)
@@ -485,7 +485,7 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
                     
         elif isinstance(val,list):
             if len(w_obj.val) > len(val):
-                log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"DeleteContainerValue\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
+                log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + endpointID + "\", \"type\":\"DeleteContainerValue\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                 f = open("./log/" + str(str_uuid) + ".txt", "a")
                 f.write(log)
                 del w_obj.val[len(val):]
@@ -510,14 +510,14 @@ class _ReferenceContainerVersion(waldoReferenceBase._ReferenceVersion):
 
                 if isinstance(
                     val[field_to_update],_SingleThreadReferenceContainer):
-                    log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
+                    log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + endpointID + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                     print log
                     f = open("./log/master.txt", "a")
                     f.write(log)
                     w_obj.val[field_to_update] = (
                         val[field_to_update].promote_multithreaded(self.peered))
                 else:
-                    log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + host_uuid + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
+                    log = "{\"eventID\":\"" + str_uuid + "\", \"endpointID\":\"" + endpointID + "\", \"type\":\"UpdateContainer\",\"time\":\"" + str(datetime.datetime.now()) + "\", \"container\":\"" + str(self.get_parent()) + "\",\"fieldUpdate\":\"" + str(field_to_update) + "\",\"oldValue\":\"" + value + "\", \"newValue\":\"" + str(val[field_to_update]) +"\"}," +"\n"
                     print log
                     f = open("./log/master.txt", "a")
                     f.write(log)
