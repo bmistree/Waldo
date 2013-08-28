@@ -30,6 +30,9 @@
 		<span class="readBytesButtons">
 		  <button>Visualize</button>
 		</span>
+		<p>Endpoint IDs</p>
+		<span class="endPointIDs">
+		</span>
 		<div class="infobox">
 			<p class="change">Here is where we will say something.</p>
 		</div>
@@ -62,9 +65,20 @@
 				}
 
 				var eventIDs = [];
+				var endpointIDs = [];
 				$.each(dataset, function(i, el){
     				if($.inArray(el.eventID, eventIDs) === -1) eventIDs.push(el.eventID);
+    				if($.inArray(el.endpointID, endpointIDs) === -1) endpointIDs.push(el.endpointID);
 				});
+				d3.selectAll(".endpointIDs")
+					.data([]).exit().remove();
+				d3.select("body").selectAll(".endpointIDs")
+					.data(endpointIDs).enter()
+					.append("input").attr("type","button").attr("class","endpointIDs").attr("value", function (d) {return d;} )
+					.on("click", function(d) {
+						document.getElementById("bar").value = d;
+						loadData(true, null);
+					});
 
 				var holder = {};
 
