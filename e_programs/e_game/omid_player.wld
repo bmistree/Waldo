@@ -39,7 +39,7 @@ Sequence SendAnswer(Text node_num, Text answer) {
     OmidPlayer.doNothing{}
     OmidPlayerHelper.send{
         print("about to execute game_server checknode");
-        score = game_server.checkNode(username, node_num, answer);
+        score = game_server.check_node(username, node_num, answer);
         print("sent. Still in sequence");
     }
 }
@@ -104,38 +104,38 @@ Sequence UpdateGame() {
     }
     OmidPlayer.updateMap{
         clear_map();
-        update_score(score);
+        //update_score(score);
         for (Text answer in node_map) {
             Struct node_information info = node_map[answer];
-            //extCopy info to draw_circle;
-            draw_circle(info.x, info.x, info.found, info.node_num, info.answer);
+            extCopy info to draw_circle;
         }
         for (Struct arc_information arc_info in arc_map) {
             Struct node_information node1 = node_map[arc_info.node1];
             Struct node_information node2 = node_map[arc_info.node2];
             if (node1.found and node2.found) {
-                draw_arc(node1.x, node1.y, node2.x, node2.y);
-                //List(element: Number) arc_pos = [node1.x, node1.y, node2.x, node2.y];
-                //extCopy arc_pos to draw_arc;
-                }
+                print('about to draw arc');
+                List(element: Number) arc_pos = [node1.x, node1.y, node2.x, node2.y];
+                extCopy arc_pos to draw_arc;
+            }
         }
+        refresh_window();
         print("finished updating");
     }
 }
 
 OmidPlayer {
     External Text waiting_message;
-    Function(in: Number, Number, TrueFalse, Text, Text; returns: Nothing) draw_circle;
-    Function(in: Number, Number, Number, Number; returns: Nothing) draw_arc;
+    External Struct node_information draw_circle;
+    External List(element: Number) draw_arc;
     Function(returns: Nothing) clear_map;
-    Function(in: Number; returns: Nothing) update_score;
-    onCreate(Text name, External Text gui, Function(in: Number, Number, TrueFalse, Text, Text; returns: Nothing) node, Function(in: Number, Number, Number, Number; returns: Nothing) arc /*External Struct node_information node, External List(element: Number) arc*/, Function(returns: Nothing) clear, Function (in: Number; returns: Nothing) score) {
+    Function(returns: Nothing) refresh_window;
+    onCreate(Text name, External Text gui, External Struct node_information node, External List(element: Number) arc, Function(returns: Nothing) clear, Function(returns: Nothing) refresh_game) {
         username = name;
-        waiting_message = gui;
-        draw_circle = node;
-        draw_arc = arc;
+        extAssign gui to waiting_message;
+        extAssign node to draw_circle;
+        extAssign arc to draw_arc;
         clear_map = clear;
-        update_score = score;
+        refresh_window = refresh_game;
         JoinWaiting();
     }
     Public Function add_to_game() {

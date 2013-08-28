@@ -4,8 +4,8 @@ from waiting_room import WaitingRoom
 from omid_player_emitted import OmidPlayer
 from gui_string import GUI_String_Ext
 import threading
-#from gui_node import GUI_Node_Ext
-#from gui_arc import GUI_Arc_Ext
+from gui_node import GUI_Node
+from gui_arc import GUI_Arc
 import time, sys, os
 sys.path.append(os.path.join('../../'))
 from waldo.lib import Waldo
@@ -27,8 +27,6 @@ class OmidGamePlayer(Frame):
         self.name = name
         self.waiting = WaitingRoom(name + "'s Omid Game Waiting Room")
         self.waiting.bind_functs(self.read_waiting_room_message)
-        self.player = Waldo.tcp_connect(OmidPlayer, HOSTNAME, OMID_PORT, name, GUI_String_Ext(
-self.waiting.get_gui_screen()), self.draw_circle, self.draw_arc, self.clear_map, self.update_score)        
         self.app = App(False)
         Frame.__init__(self, None, title = name + "'s Omid Game", size = (WINDOW_WIDTH, WINDOW_HEIGHT))
         OGLInitialize() 
@@ -38,9 +36,6 @@ self.waiting.get_gui_screen()), self.draw_circle, self.draw_arc, self.clear_map,
         self.canvas.SetBackgroundColour("WHITE")
         self.diagram = Diagram()
         self.canvas.SetDiagram(self.diagram)
- #       self.dc = ClientDC(self.canvas)
-  #      self.canvas.PrepareDC(self.dc)
-       # self.diagram.SetCanvas(self.canvas)
         self.SetSizer(sizer)
         self.SetAutoLayout(1)
         self.Centre()
@@ -51,9 +46,11 @@ self.waiting.get_gui_screen()), self.draw_circle, self.draw_arc, self.clear_map,
         self.number_input.Bind(EVT_TEXT_ENTER, self.read_answer)
         self.answer_input.Bind(EVT_TEXT_ENTER, self.read_answer)
         self.score = StaticText(self.canvas, pos = (WINDOW_WIDTH - 30, BUFFER)) 
+        self.player = Waldo.tcp_connect(OmidPlayer, HOSTNAME, OMID_PORT, name, GUI_String_Ext(
+self.waiting.get_gui_screen()), GUI_Node(self.draw_circle), GUI_Arc(self.draw_arc), self.clear_map, self.refresh_window)       
         self.waiting.mainloop()
 
-    def draw_map(self):
+    def check_signal(self):
         while True:
             self.player.service_signal()
             time.sleep(0.1)
@@ -64,32 +61,30 @@ self.waiting.get_gui_screen()), self.draw_circle, self.draw_arc, self.clear_map,
     def update_score(self, endpoint, number):
         self.score.SetLabel(str(number).replace(".0", ""))
         
-
-    
-    def draw_arc(self, endpt, x1, y1, x2, y2):
+    def draw_arc(self, endpt, arc):
         line = LineShape()
-        line.SetEnds(x1, y1, x2, y2)
+        line.SetEnds(arc[0], arc[1], arc[2], arc[3])
         line.SetBrush(Brush('BLACK', style = SOLID))
         self.canvas.AddShape(line)
         line.Show(True)
-        self.Show(False)
-        self.Show(True)
-        print('arc drawn')
+    
 
-    def draw_circle(self, endpt, x_pos, y_pos, found, num, answer):
+    def draw_circle(self, node):
         self.circle = CircleShape(CIRCLE_DIAMETER)
-        if found:
+        if node['found']:
             self.circle.SetBrush(Brush('BLACK', style = SOLID))
             self.circle.SetTextColour('WHITE')
-            self.circle.AddText(answer)
+            self.circle.AddText(node['answer'])
         else:
             self.circle.SetBrush(Brush('WHITE', style = SOLID))
             self.circle.SetTextColour('BLACK')
-            self.circle.AddText(num)
-        self.circle.SetX(x_pos)
-        self.circle.SetY(y_pos)
+            self.circle.AddText(node['node_num'])
+        self.circle.SetX(node['x'])
+        self.circle.SetY(node['y'])
         self.canvas.AddShape(self.circle)
         self.circle.Show(True)
+
+    def refresh_window(self, endpt):
         self.Show(False)
         self.Show(True)
 
