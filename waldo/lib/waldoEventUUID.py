@@ -33,7 +33,7 @@ def gte_uuid(uuida,uuidb):
     Returns true if uuida is greater than or equal to uuidb.  That is,
     returns True if uuida should be able to preempt uuidb.
     '''
-    return gte_uuid_sort_key(uuida) >= gte_uuid_sort_key(uuidb)
+    return gte_uuid_sort_key(uuida) < gte_uuid_sort_key(uuidb)
 
 def gte_uuid_sort_key(uuid):
     '''

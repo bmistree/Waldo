@@ -268,7 +268,7 @@ class MultiThreadedObj(WaldoLockedObj):
         write_waiting_event = WaitingElement(
             active_event,False,self.data_wrapper_constructor,self.peered)
         self._unlock()
-        return write_waiting_event.get()
+        return write_waiting_event.queue.get()
 
     def get_dirty_wrapped_val(self,active_event):
         '''
