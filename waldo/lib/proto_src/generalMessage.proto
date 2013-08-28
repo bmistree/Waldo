@@ -9,8 +9,6 @@ import "partnerBackoutCommitRequest.proto";
 import "partnerCompleteCommitRequest.proto";
 import "partnerCommitRequest.proto";
 import "partnerStop.proto";
-import "partnerError.proto";
-import "heartbeat.proto";
 
 message GeneralMessage
 {
@@ -26,8 +24,6 @@ message GeneralMessage
         PARTNER_COMPLETE_COMMIT_REQUEST = 8;
         PARTNER_COMMIT_REQUEST = 9;
         PARTNER_STOP = 10;
-        PARTNER_ERROR = 11;
-        HEARTBEAT = 12;
     }
 
     required MessageType message_type = 1;
@@ -42,6 +38,4 @@ message GeneralMessage
     optional PartnerCompleteCommitRequest complete_commit_request = 10;
     optional PartnerCommitRequest commit_request = 11;
     optional PartnerStop stop = 12;
-    optional PartnerError error = 13;
-    optional Heartbeat heartbeat = 14;
 }

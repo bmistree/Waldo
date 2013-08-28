@@ -652,14 +652,10 @@ class _ExecutingEventContext(object):
 
         queue_elem = threadsafe_result_queue.get()
 
-        if isinstance(queue_elem, waldoCallResults._ApplicationExceptionCallResult):
-            raise util.ApplicationException(queue_elem.trace)
-        elif isinstance(queue_elem, waldoCallResults._NetworkFailureCallResult):
-            raise util.NetworkException(queue_elem.trace)
         # FIXME: there may be other errors that are not from
         # backout...we shouldn't treat all cases of not getting a
         # result as a backout exception
-        elif not isinstance(queue_elem, waldoCallResults._EndpointCallResult):
+        if not isinstance(queue_elem, waldoCallResults._EndpointCallResult):
             raise util.BackoutException()
         
         return queue_elem.result_array

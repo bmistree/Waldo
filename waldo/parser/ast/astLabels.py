@@ -37,10 +37,6 @@ AST_ENDPOINT_FUNCTION_SECTION = 'ENDPOINT_FUNCTION_SECTION';
 AST_FOR_STATEMENT = 'FOR_STATEMENT';
 AST_WHILE_STATEMENT = 'WHILE_STATEMENT'
 AST_IN_STATEMENT = 'IN_STATEMENT';
-AST_TRY_CATCH_STATEMENT = 'TRY_CATCH_STATEMENT';
-AST_TRY_BLOCK = 'TRY_BLOCK';
-AST_CATCH_BLOCK = 'CATCH_BLOCK';
-AST_FINALLY_BLOCK = 'FINALLY_BLOCK';
 
 #functions
 ##function types
@@ -139,7 +135,6 @@ AST_OPERATABLE_ON_COMMA_LIST = 'COMMA_LIST'
 
 AST_RETURN_STATEMENT = 'RETURN_STATEMENT';
 
-AST_EXCEPTION = 'Exception'
 
 TYPE_BOOL = 'TrueFalse';
 TYPE_NUMBER = 'Number';
@@ -150,7 +145,6 @@ TYPE_LIST = 'List';
 TYPE_MAP = 'Map';
 TYPE_STRUCT = 'Struct'
 TYPE_ENDPOINT = 'Endpoint'
-TYPE_EXCEPTION = 'Exception'
 
 TYPE_RETURNED_TUPLE = 'Tuple'
 
@@ -173,14 +167,3 @@ AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION = 'MessageReceiveSequenceFunction';
 
 # endpoint function call
 TYPE_ENDPOINT_FUNCTION_CALL = 'EndpointFunctionCall'
-
-# Dict of Waldo exception names to lists of corresponding Python errors.
-# Values are strings of comma-delimited lists of Python errors.
-EXCEPTIONS = {
-    'Exception' : 'BaseException',    # mostly for testing purposes
-    'ApplicationException' : 'Exception', # FIXME: ApplicationException 
-                                      # includes Network Exception
-    'NetworkException' : 'self._waldo_classes["NetworkException"]'
-                                      # FIXME: this exact string is also
-                                      # emitted by a function in emit_utils.
-}

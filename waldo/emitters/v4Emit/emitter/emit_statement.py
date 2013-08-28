@@ -80,42 +80,7 @@ def emit_statement(
     elif statement_node.label == AST_FOR_STATEMENT:
         statement_txt = emit_for(
             statement_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-
-    elif statement_node.label == AST_TRY_CATCH_STATEMENT:
-        # emit try
-        statement_txt = emit_statement(statement_node.children[0],
-            endpoint_name,ast_root,fdep_dict,emit_ctx)
-        # emit catch
-        statement_txt += emit_statement(statement_node.children[1],
-            endpoint_name,ast_root,fdep_dict,emit_ctx)
-        # emit finally
-        if len(statement_node.children) == 3:
-            statement_txt += emit_statement(statement_node.children[2],
-                endpoint_name,ast_root,fdep_dict,emit_ctx)
-
-    elif statement_node.label == AST_TRY_BLOCK:
-        statement_txt = 'try:\n'
-        try_body_txt = emit_statement(statement_node.children[0],
-            endpoint_name,ast_root,fdep_dict,emit_ctx)
-        statement_txt += emit_utils.indent_str(try_body_txt)
-
-    elif statement_node.label == AST_CATCH_BLOCK:
-        exception = statement_node.children[0] 
-        identifier = statement_node.children[1]
-        catch_body = statement_node.children[2]
-
-        statement_txt = ('except ' + '(' + EXCEPTIONS[exception.value] + ')' + 
-            ' as ' + identifier.value + ':\n')
-        catch_body_txt = emit_statement(catch_body,endpoint_name,ast_root,
-            fdep_dict,emit_ctx)
-        statement_txt += emit_utils.indent_str(catch_body_txt)
-
-    elif statement_node.label == AST_FINALLY_BLOCK:
-        statement_txt = 'finally:\n'
-        finally_body_txt = emit_statement(statement_node.children[0],
-            endpoint_name,ast_root,fdep_dict,emit_ctx)
-        statement_txt += emit_utils.indent_str(finally_body_txt)
-
+    
     elif statement_node.label == AST_RANGE:
         base_range_node = statement_node.children[0]
         limit_range_node = statement_node.children[1]

@@ -17,9 +17,6 @@ class _EndpointCallResult(object):
 class _BackoutBeforeEndpointCallResult(object):
     pass
 
-class _BackoutDueToNetworkFailure(object):
-    pass
-
 class _StopAlreadyCalledEndpointCallResult(object):
     pass
 
@@ -89,14 +86,4 @@ class _StopRootCallResult(object):
     pass
 
 class _CompleteRootCallResult(object):
-    pass
-
-class _HandleableCallResult(object):
-    def __init__(self, trace):
-        self.trace = trace
-
-class _NetworkFailureCallResult(_HandleableCallResult):
-    pass
-
-class _ApplicationExceptionCallResult(_HandleableCallResult):
     pass

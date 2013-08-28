@@ -295,42 +295,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         
         body.typeCheck(progText,typeStack,avoidFunctionObjects)
         
-    elif node.label == AST_TRY_CATCH_STATEMENT:
-        tryNode = node.children[0]
-        tryNode.typeCheck(progText,typeStack,avoidFunctionObjects)
-        catchOrFinallyNode = node.children[1]
-        catchOrFinallyNode.typeCheck(progText,typeStack,avoidFunctionObjects)
-        if len(node.children) == 3:
-            finallyNode = node.children[2]
-            finallyNode.typeCheck(progText,typeStack,avoidFunctionObjects)
-
-    elif node.label == AST_TRY_BLOCK:
-        node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects)
-
-    elif node.label == AST_FINALLY_BLOCK:
-        node.children[0].typeCheck(progText,typeStack,avoidFunctionObjects)
-
-    elif node.label == AST_CATCH_BLOCK:
-        exception = node.children[0]
-        exception.typeCheck(progText,typeStack,avoidFunctionObjects)
-        identifier = node.children[1]
-        block = node.children[2]
-        typeStack.pushContext() # Add type binding for exception to identifier
-        typeStack.addIdentifier(identifier.value,exception.type,None,node,node.lineNo)
-        block.typeCheck(progText,typeStack,avoidFunctionObjects)
-        typeStack.popContext()
-
-    elif node.label == AST_EXCEPTION:
-        if not node.value in EXCEPTIONS:
-            err_msg = 'Error in Catch block. Exception type '
-            err_msg += node.value
-            err_msg += ' not recognized as valid exception type.'
-            err_nodes = [node]
-            err_line_nos = [node.lineNo]
-            errorFunction(err_msg,err_nodes,err_line_nos,progText)
-        node.type = generate_type_as_dict(TYPE_EXCEPTION,False)
-        
-
 
     # FIXME: hae disabled tuple assignment with extAssign and extCopy
     # elif node.label in [AST_EXT_ASSIGN_FOR_TUPLE, AST_EXT_COPY_FOR_TUPLE]:
@@ -2240,7 +2204,6 @@ def typeCheck(node,progText,typeStack=None,avoidFunctionObjects=False):
         node.children[funcBodyIndex].typeCheck(progText,typeStack,avoidFunctionObjects);
 
         ## remove the created type context
-        typeStack.removeCurrentFunctionNode();
         typeStack.popContext();
 
     elif(node.label == AST_FUNCTION_BODY):
@@ -2704,7 +2667,6 @@ def typeCheckMessageFunctions(msgSeqNode,progText,typeStack,currentEndpointName)
             # function so can ensure return type is valid.
             typeStack.addCurrentFunctionNode(msgSeqFuncNode);
             msgBodyNode.typeCheck(progText,typeStack,False);
-            typeStack.removeCurrentFunctionNode();
             typeStack.popContext();
 
             if msgSeqFuncNode.label == AST_ONCOMPLETE_FUNCTION:
