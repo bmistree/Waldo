@@ -1,8 +1,7 @@
 from waldo.lib.waldoEventParent import RootEventParent
 from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
 import waldo.lib.util as util
-from waldo.lib.waldoEventUUID import generate_boosted_uuid, generate_timed_uuid
-from waldo.lib.waldoEventUUID import update_version_uuid, is_boosted_uuid
+from waldo.lib.waldoEventPriority import generate_boosted_priority, generate_timed_priority
 
 
 class BoostedManager(object):
@@ -27,12 +26,13 @@ class BoostedManager(object):
 
 
     def create_root_event(self):
+        evt_uuid = util.generate_uuid()
         if len(self.event_list) == 0:
-            evt_uuid = generate_boosted_uuid(self.last_boosted_complete)
+            evt_priority = generate_boosted_priority(self.last_boosted_complete)
         else:
-            evt_uuid = generate_timed_uuid(self.clock.get_timestamp())
-            
-        rep = RootEventParent(self.act_event_map.local_endpoint,evt_uuid)
+            evt_priority = generate_timed_priority(self.clock.get_timestamp())
+
+        rep = RootEventParent(self.act_event_map.local_endpoint,evt_uuid,evt_priority)
         root_event = LockedActiveEvent(rep,self.act_event_map)
         self.event_list.append(root_event)
         return root_event
@@ -61,6 +61,7 @@ class BoostedManager(object):
         for event in self.event_list:
             if event.uuid == completed_event_uuid:
                 remove_counter = counter
+                completed_event = event
                 break
             counter += 1
 
@@ -72,28 +73,31 @@ class BoostedManager(object):
 
         replacement_event = None
         if retry:
-            
-            # in certain cases, we do not actually promote each event_s uuid to boosted.
-            # For instance, if the event is already in process of committing.  However,
-            # if that commit goes awry and we backout, we want the replacement event
-            # generated to use a boosted event id, rather than its original id.
+            # in certain cases, we do not actually promote each
+            # event's priority to boosted.  For instance, if the event
+            # is already in process of committing.  However, if that
+            # commit goes awry and we backout, we want the replacement
+            # event generated to use a boosted event priority, rather
+            # than its original priority.
             if counter == 0:
                 # new event should be boosted.  
-                if not is_boosted_uuid(completed_event_uuid):
+                if not is_boosted_priority(completed_event.get_priority()):
                     # if it wasn't already boosted, that means that we
                     # tried to promote it while it was in the midst of
                     # its commit and we ignored the promotion.
                     # Therefore, we want to apply the promotion on
                     # retry.
-                    replacement_uuid = generate_boosted_uuid(self.last_boosted_complete)
+                    replacement_priority = generate_boosted_priority(self.last_boosted_complete)
                 else:
-                    # it was already boosted, just increment the version number
-                    replacement_uuid = update_version_uuid(completed_event_uuid)
+                    # it was already boosted, just reuse it
+                    replacement_priority = completed_event.get_priority()
             else:
                 # it was not boosted, just increment the version number
-                replacement_uuid = update_version_uuid(completed_event_uuid)
-                
-            rep = RootEventParent(self.act_event_map.local_endpoint,replacement_uuid)
+                replacement_priority = completed_event.get_priority()
+
+            rep = RootEventParent(
+                self.act_event_map.local_endpoint,util.generate_uuid(),
+                replacement_priority)
             replacement_event = LockedActiveEvent(rep,self.act_event_map)
             self.event_list[counter] = replacement_event
         else:
@@ -116,5 +120,5 @@ class BoostedManager(object):
         if len(self.event_list) == 0:
             return
 
-        boosted_uuid = generate_boosted_uuid(self.last_boosted_complete)
-        self.event_list[0].promote_boosted(boosted_uuid)
+        boosted_priority = generate_boosted_priority(self.last_boosted_complete)
+        self.event_list[0].promote_boosted(boosted_priority)

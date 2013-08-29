@@ -276,17 +276,19 @@ class _Endpoint(EndpointBase):
         '''
         self._act_event_map.inform_events_of_network_failure()
 
-    def _propagate_back_exception(self,event_uuid,exception):
+    def _propagate_back_exception(self,event_uuid,priority,exception):
         '''
-        Called by the active event when an exception has occured in the midst
-        of a sequence and it needs to be propagated back towards the 
-        root of the active event. Sends a partner_error message to the partner
-        containing the event and endpoint uuids.
+        Called by the active event when an exception has occured in
+        the midst of a sequence and it needs to be propagated back
+        towards the root of the active event. Sends a partner_error
+        message to the partner containing the event and endpoint
+        uuids.
         '''
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_ERROR
         error = general_message.error
         error.event_uuid.data = event_uuid
+
         error.host_uuid.data = self._uuid
         if isinstance(exception, util.NetworkException):
             error.type = PartnerError.NETWORK
@@ -516,8 +518,10 @@ class _Endpoint(EndpointBase):
         self._endpoint_service_thread_pool.receive_removed_subscriber(
             event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid)
 
+        
     def _receive_endpoint_call(
-        self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
+        self,endpoint_making_call,event_uuid,priority,func_name,
+        result_queue,*args):
         '''
         For params, @see _EndpointServiceThread.endpoint_call
         
@@ -534,7 +538,8 @@ class _Endpoint(EndpointBase):
         self._stop_unlock()
 
         self._endpoint_service_thread_pool.receive_endpoint_call(
-            endpoint_making_call,event_uuid,func_name,result_queue,*args)
+            endpoint_making_call,event_uuid,priority,func_name,
+            result_queue,*args)
 
 
     def _receive_first_phase_commit_successful(
@@ -569,7 +574,7 @@ class _Endpoint(EndpointBase):
 
 
     def _send_partner_message_sequence_block_request(
-        self,block_name,event_uuid,reply_with_uuid,reply_to_uuid,
+        self,block_name,event_uuid,priority,reply_with_uuid,reply_to_uuid,
         invalidation_listener,sequence_local_store,first_msg):
         '''
         Sends a message using connection object to the partner
@@ -621,6 +626,7 @@ class _Endpoint(EndpointBase):
 
         # event uuid
         request_sequence_block_msg.event_uuid.data = event_uuid
+        request_sequence_block_msg.priority.data = priority
         
         # name of block requesting
         if block_name != None:

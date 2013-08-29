@@ -159,7 +159,8 @@ class _EndpointServiceThreadPool():
         self.threadsafe_queue.put(first_phase_commit_act)
         
     def receive_endpoint_call(
-        self,endpoint_making_call,event_uuid,func_name,result_queue,*args):
+        self,endpoint_making_call,event_uuid,priority,func_name,
+        result_queue,*args):
         '''
         @param{_Endpoint object} endpoint_making_call --- The endpoint
         that made the endpoint call into this endpoint.
@@ -182,8 +183,8 @@ class _EndpointServiceThreadPool():
         external non-Waldo code).
         '''
         endpt_call_action = waldoServiceActions._ReceiveEndpointCallAction(
-            self.endpoint,endpoint_making_call,event_uuid,func_name,
-            result_queue,*args)
+            self.endpoint,endpoint_making_call,event_uuid,priority,
+            func_name,result_queue,*args)
         self.threadsafe_queue.put(endpt_call_action)
 
         

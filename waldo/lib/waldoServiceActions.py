@@ -36,8 +36,10 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
 
     def service(self):
         try:
+            uuid = self.partner_request_block_msg.event_uuid.data
+            priority = self.partner_request_block_msg.priority.data
             evt = self.local_endpoint._act_event_map.get_or_create_partner_event(
-                self.partner_request_block_msg.event_uuid.data)
+                uuid,priority)
             evt.recv_partner_sequence_call_msg(self.partner_request_block_msg)
         except util.StoppedException:
             # FIXME: Think through, should I send message to other
@@ -213,7 +215,7 @@ class _ReceiveEndpointCallAction(_Action):
 
     def __init__(
         self,local_endpoint,endpoint_making_call,
-        event_uuid,func_name,result_queue,*args):
+        event_uuid,priority,func_name,result_queue,*args):
         '''
         @param {_Endpoint object} local_endpoint --- The endpoint
         which was requested to backout.  (Ie, the endpoint on which
@@ -224,6 +226,7 @@ class _ReceiveEndpointCallAction(_Action):
         self.local_endpoint = local_endpoint
         self.endpoint_making_call = endpoint_making_call
         self.event_uuid = event_uuid
+        self.priority = priority
         self.func_name = func_name
         self.result_queue = result_queue
         self.args = args
@@ -248,7 +251,8 @@ class _ReceiveEndpointCallAction(_Action):
 
         try:
             act_event = act_evt_map.get_or_create_endpoint_called_event(
-                self.endpoint_making_call,self.event_uuid,self.result_queue)
+                self.endpoint_making_call,self.event_uuid,
+                self.priority,self.result_queue)
             
         except util.StoppedException:
             self.result_queue.put(
@@ -318,7 +322,9 @@ class _ReceivePeeredModifiedMsg(_Action):
 
     def service(self):
         event_uuid = self.msg.event_uuid.data
-        event = self.local_endpoint._act_event_map.get_or_create_partner_event(event_uuid)
+        priority = self.msg.priority.data
+        event = self.local_endpoint._act_event_map.get_or_create_partner_event(
+            event_uuid,priority)
         event.generate_partner_modified_peered_response(self.msg)
         
 

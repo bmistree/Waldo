@@ -17,8 +17,11 @@ class EventParent(object):
         '''
         The uuid of the event
         '''
-        util.logger_assert('get_uuid is pure virtual in EventParent')
+        return self.uuid
 
+    def get_priority(self):
+        return self.priority
+    
     def put_exception(self,error):
         '''
         Places the appropriate call result in the event complete queue to 
@@ -147,7 +150,7 @@ class EventParent(object):
         
         
 class RootEventParent(EventParent):
-    def __init__(self,local_endpoint,uuid=None):
+    def __init__(self,local_endpoint,uuid, priority):
         '''
         @param{uuid} uuid --- If None, then generate a random uuid and
         use that.  Otherwise, use the uuid specified.  Note: not all
@@ -156,6 +159,8 @@ class RootEventParent(EventParent):
         if uuid is None:
             uuid = util.generate_uuid()
         self.uuid = uuid
+        self.priority = priority
+        
         self.local_endpoint = local_endpoint
         # indices are event uuids.  Values are bools.  When all values
         # are true in this dict, then we can transition into second
@@ -175,8 +180,6 @@ class RootEventParent(EventParent):
         super(RootEventParent,self).second_phase_transition_success(
             same_host_endpoints_contacted_dict,partner_contacted)
         
-    def get_uuid(self):
-        return self.uuid
 
     def put_exception(self,error,message_listening_queues_map):
         '''
@@ -266,12 +269,11 @@ class RootEventParent(EventParent):
             
 
 class PartnerEventParent(EventParent):
-    def __init__(self,uuid,local_endpoint):
+    def __init__(self,uuid,local_endpoint,priority):
         self.uuid = uuid
         self.local_endpoint = local_endpoint
-    def get_uuid(self):
-        return self.uuid
-
+        self.priority = priority
+        
     def first_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted,event):
                 
@@ -294,7 +296,8 @@ class PartnerEventParent(EventParent):
         Informs the partner that an exception has occured at runtime
         (thus the event should be backed out).
         '''
-        self.local_endpoint._propagate_back_exception(self.uuid,error)
+        self.local_endpoint._propagate_back_exception(
+            self.uuid,self.get_priority(),error)
 
         
     def second_phase_transition_success(
@@ -317,15 +320,14 @@ class PartnerEventParent(EventParent):
 
         
 class EndpointEventParent(EventParent):
-    def __init__(self,uuid,parent_endpoint,local_endpoint,result_queue):
+    def __init__(self,uuid,parent_endpoint,local_endpoint,result_queue,priority):
         
         self.uuid = uuid
         self.parent_endpoint = parent_endpoint
         self.local_endpoint = local_endpoint
         self.result_queue = result_queue
+        self.priority = priority
         
-    def get_uuid(self):
-        return self.uuid
 
     def first_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted,event):

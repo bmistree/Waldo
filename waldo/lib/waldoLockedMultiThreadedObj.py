@@ -1,9 +1,32 @@
 import threading
 import waldo.lib.util as util
 from waldo.lib.waldoLockedObj import WaldoLockedObj
-from waldo.lib.waldoEventUUID import gte_uuid, in_place_sort_uuid_list
+from waldo.lib.waldoEventPriority import gte_priority
+
+def in_place_sort_event_list_by_priority(list_to_sort):
+    '''
+    @param {list} --- Each element is an event's priority.
+    
+    Sorts the list in place.  Lower indices will contain higher
+    priorities.
+
+    @returns sorted list
+    '''
+    list_to_sort.sort(key=get_priority_key_from_event,reverse=True)
+    return list_to_sort
+
+def get_priority_key_from_event(evt):
+    return evt.get_priority()
+
+def in_place_sort_waiting_event_list_by_priority(list_to_sort):
+    list_to_sort.sort(key=get_priority_key_from_waiting_element,reverse=True)
+    return list_to_sort
+
+def get_priority_key_from_waiting_element(el):
+    return el.event.get_priority()
 
 
+    
 class WaitingElement(object):
     def __init__(self,event,read,data_wrapper_constructor,peered):
         '''
@@ -182,7 +205,7 @@ class MultiThreadedObj(WaldoLockedObj):
             return to_return
 
         # check 2b
-        if gte_uuid(active_event.uuid, self.write_lock_holder.uuid):
+        if gte_priority(active_event.get_priority(), self.write_lock_holder.get_priority()):
 
             # backout write lock if can
             if self.write_lock_holder.can_backout_and_hold_lock():
@@ -250,7 +273,7 @@ class MultiThreadedObj(WaldoLockedObj):
             return to_return
             
 
-        if self.is_gte_than_lock_holding_events(active_event.uuid):
+        if self.is_gte_than_lock_holding_events(active_event.get_priority()):
             # Stage 2 from above
             if self.test_and_backout_all(active_event.uuid):
                 # Stage 3 from above
@@ -410,16 +433,16 @@ class MultiThreadedObj(WaldoLockedObj):
         
         # note: do not have to explicitly include the write lock key
         # here because the event that is writing will be included in
-        read_lock_holder_uuids = list(self.read_lock_holders.keys())
-        in_place_sort_uuid_list(read_lock_holder_uuids)
-        
+        read_lock_holder_events = list(self.read_lock_holders.values())
+        in_place_sort_event_list_by_priority(read_lock_holder_events)
+
         to_backout_list = []
         can_backout_all = True
-        for read_uuid in read_lock_holder_uuids:
+        for read_event in read_lock_holder_events:
+            read_uuid = read_event.uuid
             if read_uuid != event_to_not_backout_uuid:
-                event = self.read_lock_holders[read_uuid]
-                if event.can_backout_and_hold_lock():
-                    to_backout_list.append(event)
+                if read_event.can_backout_and_hold_lock():
+                    to_backout_list.append(read_event)
                 else:
                     can_backout_all = False
                     break
@@ -441,10 +464,11 @@ class MultiThreadedObj(WaldoLockedObj):
                 
         return can_backout_all
 
-    
-    def is_gte_than_lock_holding_events(self,waiting_event_uuid):
+
+
+    def is_gte_than_lock_holding_events(self,waiting_event_priority):
         '''
-        @param {uuid} waiting_event_uuid --- 
+        @param {priority} waiting_event_priority --- 
         
         @returns {bool} --- Returns True if waiting_event_uuid is
         greater than or equal to all other events that are currently
@@ -453,16 +477,19 @@ class MultiThreadedObj(WaldoLockedObj):
 
         # check write lock
         if ((self.write_lock_holder is not None) and
-            (not gte_uuid(waiting_event_uuid,self.write_lock_holder.uuid))):
+            (not gte_priority(waiting_event_priority,self.write_lock_holder.get_priority()))):
             
             return False
 
         # check read locks
         for read_lock_uuid in self.read_lock_holders:
-            if not gte_uuid(waiting_event_uuid,read_lock_uuid):
+            read_lock_holder = self.read_lock_holders[read_lock_uuid]
+            if not gte_priority(waiting_event_priority,read_lock_holder.get_priority()):
                 return False
             
         return True
+
+    
 
     def try_schedule_read_waiting_event(self,waiting_event):
         '''
@@ -499,7 +526,7 @@ class MultiThreadedObj(WaldoLockedObj):
 
         # 2 a --- check if write lock holder is younger (ie, it should be
         #         preempted).
-        if gte_uuid(self.write_lock_holder.uuid,waiting_event.event.uuid):
+        if gte_priority(self.write_lock_holder.get_priority(),waiting_event.event.get_priority()):
             # do not preempt write lock: it has been around longer
             return False
 
@@ -571,7 +598,7 @@ class MultiThreadedObj(WaldoLockedObj):
 
             
         # Stage 1 from above
-        if self.is_gte_than_lock_holding_events(waiting_event.event.uuid):
+        if self.is_gte_than_lock_holding_events(waiting_event.event.get_priority()):
             # Stage 2 from above
             if self.test_and_backout_all(waiting_event.event.uuid):
                 # Stage 3 from above
@@ -625,17 +652,15 @@ class MultiThreadedObj(WaldoLockedObj):
         # Phase 1 from above:
         # sort event uuids from high to low to determine if should add
         # them.
-        waiting_event_uuids = list(self.waiting_events.keys())
-        in_place_sort_uuid_list(waiting_event_uuids)
+        waiting_events = list(self.waiting_events.values())
+        in_place_sort_waiting_event_list_by_priority(waiting_events)
 
 
         # Phase 2 from above
         # Run through all waiting events.  If the waiting event is a
         # write, first check that
-        
-        for waiting_event_uuid in waiting_event_uuids:
-            waiting_event = self.waiting_events[waiting_event_uuid]
 
+        for waiting_event in waiting_events:
             if waiting_event.is_write():
                 if self.try_schedule_write_waiting_event(waiting_event):
                     del self.waiting_events[waiting_event.event.uuid]

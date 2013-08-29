@@ -128,8 +128,9 @@ class _ActiveEventMap(object):
             self.stop_callback()
 
         return to_remove, successor_event
-        
-    def get_or_create_partner_event(self,uuid):
+
+    
+    def get_or_create_partner_event(self,uuid,priority):
         '''
         Get or create an event because partner endpoint requested it.
         Note: if we have to create an event and are in stop phase,
@@ -147,7 +148,7 @@ class _ActiveEventMap(object):
                 self._unlock()
                 raise util.StoppedException()
             else:
-                pep = PartnerEventParent(uuid,self.local_endpoint)
+                pep = PartnerEventParent(uuid,self.local_endpoint,priority)
                 new_event = LockedActiveEvent(pep,self)
                 self.map[uuid] = new_event
                 
@@ -155,7 +156,9 @@ class _ActiveEventMap(object):
         self._unlock()
         return to_return
 
-    def get_or_create_endpoint_called_event(self,endpoint,uuid,result_queue):
+
+    def get_or_create_endpoint_called_event(
+        self,endpoint,uuid,priority,result_queue):
         '''
         @param {Endpoint object} endpoint --- The endpoint that made
         the endpoint call onto us.
@@ -170,7 +173,8 @@ class _ActiveEventMap(object):
                 self._unlock()
                 raise util.StoppedException()
             else:
-                eep = EndpointEventParent(uuid,endpoint,self.local_endpoint,result_queue)
+                eep = EndpointEventParent(
+                    uuid,endpoint,self.local_endpoint,result_queue,priority)
                 new_event = LockedActiveEvent(eep,self)
                 self.map[uuid] = new_event
 

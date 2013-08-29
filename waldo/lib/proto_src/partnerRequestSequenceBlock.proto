@@ -4,7 +4,8 @@ import "varStoreDeltas.proto";
 message PartnerRequestSequenceBlock
 {
         required UUID event_uuid = 1;
-
+        required Priority priority = 2;
+    
         /*
         {String or empty} block_name --- The name of the
         sequence block we want to execute on the partner
@@ -13,7 +14,7 @@ message PartnerRequestSequenceBlock
         compiler into a function.)  It can also be empty if this is the
         final message sequence block's execution.
         */
-        optional bytes name_of_block_requesting = 2;
+        optional bytes name_of_block_requesting = 3;
 
         /*
         When the partner endpoint                       
@@ -21,7 +22,7 @@ message PartnerRequestSequenceBlock
         message field.  That way, we can determine which message the
         partner endpoint was replying to.
         */
-        required UUID reply_with_uuid = 3;
+        required UUID reply_with_uuid = 4;
 
         /*
         @param {uuid or empty} reply_to_uuid --- If this is the
@@ -31,8 +32,8 @@ message PartnerRequestSequenceBlock
         reply_with message field of the last message that the partner
         said as part of this sequence in.
         */      
-        optional UUID reply_to_uuid = 4;
+        optional UUID reply_to_uuid = 5;
 
-        required VarStoreDeltas sequence_local_var_store_deltas = 5;
-        required VarStoreDeltas peered_var_store_deltas = 6;
+        required VarStoreDeltas sequence_local_var_store_deltas = 6;
+        required VarStoreDeltas peered_var_store_deltas = 7;
 }

@@ -1,5 +1,11 @@
 
 message UUID
 {
-        required bytes data = 1;
+    required bytes data = 1;
 }
+
+message Priority
+{
+    required bytes data = 1;
+}
+

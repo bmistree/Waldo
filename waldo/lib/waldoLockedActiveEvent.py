@@ -446,7 +446,7 @@ class LockedActiveEvent(object):
             # here, the local endpoint uses the connection object to
             # actually send the message.
             self.event_parent.local_endpoint._send_partner_message_sequence_block_request(
-                func_name, self.uuid, reply_with_uuid,
+                func_name, self.uuid, self.get_priority(),reply_with_uuid,
                 ctx.to_reply_with_uuid, self,
                 # sending sequence_local_store so that can determine
                 # deltas in sequence local state made from this call.
@@ -511,7 +511,8 @@ class LockedActiveEvent(object):
             # perform the actual endpoint function call.  note that this
             # does not block until it completes.  It just schedules the 
             endpoint_calling._receive_endpoint_call(
-                self.event_parent.local_endpoint,self.uuid,func_name,result_queue,
+                self.event_parent.local_endpoint,self.uuid,
+                self.event_parent.get_priority(),func_name,result_queue,
                 *args)
 
 
@@ -526,7 +527,9 @@ class LockedActiveEvent(object):
         self._unlock()
         return endpoint_call_requested
         
-
+    def get_priority(self):
+        return self.event_parent.get_priority()
+    
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
         children_event_endpoint_uuids):
