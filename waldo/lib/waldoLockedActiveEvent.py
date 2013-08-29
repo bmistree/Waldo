@@ -40,7 +40,15 @@ class LockedActiveEvent(object):
         # and complete commit.  On backout, must run through each and
         # call backout.
         self.touched_objs = {}
-
+        # using a separate lock for touched objects so that if we are
+        # holding the commit lock on this event, we can still access
+        # the touched_objs map (for promoting priority).  note that
+        # the only time we will write to touched_objs is when we have
+        # already used the event's _lock method.  Therefore, if we are
+        # already inside of a _lock and just reading, we do not need
+        # to acquire _touched_objs_mutex.
+        self._touched_objs_mutex = threading.Lock()
+        
 
         # a dict.  keys are uuids, values are EventSubscribedTo
         # objects, which contain all endpoints that this event has
@@ -123,12 +131,14 @@ class LockedActiveEvent(object):
 
         still_running = (self.state == LockedActiveEvent.STATE_RUNNING)
         if still_running:
+            self._touched_objs_lock()
             self.touched_objs[obj.uuid] = obj
+            self._touched_objs_unlock()
         self._unlock()
         
         return still_running
 
-    def promote_boosted(self,new_uuid):
+    def promote_boosted(self,new_priority):
         util.logger_warn(
             'Not performing any actions in promote boosted')
 
@@ -250,6 +260,8 @@ class LockedActiveEvent(object):
         
     def complete_commit_local(self):
         '''
+        ASSUMES ALREADY WITHIN _LOCK
+        
         Runs through all touched objects and calls their
         complete_commit methods.  These just remove this event from
         list of lock holders, and, if we wrote, to the object,
@@ -261,7 +273,9 @@ class LockedActiveEvent(object):
         for obj in self.touched_objs.values():
             obj.complete_commit(self)
 
+        self._touched_objs_lock()
         self.touched_objs = {}
+        self._touched_objs_unlock()        
             
         if self.signal_queue is not None:
             while True:
@@ -312,9 +326,14 @@ class LockedActiveEvent(object):
         self.state = LockedActiveEvent.STATE_BACKED_OUT
 
         # 2
+        # Note that we are already inside of _lock.  The only times
+        # that we write to self.touched_objs is when we are inside of
+        # _lock.  Therefore, if we're just reading from touched_objs,
+        # and are aleady inside of _lock, we do not need to acquire
+        # touched_objs_lock.
         for touched_obj in self.touched_objs.values():
             touched_obj.backout(self)
-            
+
         # 3
         self.rollback_unblock_waiting_queues(stop_request)
 
@@ -763,6 +782,11 @@ class LockedActiveEvent(object):
         self._unlock()                
 
 
+    def _touched_objs_lock(self):
+        self._touched_objs_mutex.acquire()
+    def _touched_objs_unlock(self):
+        self._touched_objs_mutex.release()
+        
     def _nflock(self):
         self._nfmutex.acquire()
     def _nfunlock(self):
