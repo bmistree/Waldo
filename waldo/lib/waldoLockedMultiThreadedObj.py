@@ -23,12 +23,12 @@ def in_place_sort_waiting_event_list_by_priority(list_to_sort):
     return list_to_sort
 
 def get_priority_key_from_waiting_element(el):
-    return el.event.get_priority()
+    return el.cached_priority
 
 
     
 class WaitingElement(object):
-    def __init__(self,event,read,data_wrapper_constructor,peered):
+    def __init__(self,event,priority,read,data_wrapper_constructor,peered):
         '''
         @param {bool} read --- True if the element that is waiting is
         waiting on a read lock (not a write lock).
@@ -37,6 +37,18 @@ class WaitingElement(object):
         self.read = read
         self.data_wrapper_consructor = data_wrapper_constructor
         self.peered = peered
+
+        # Each event has a priority associated with it.  This priority
+        # can change when an event gets promoted to be boosted.  To
+        # avoid the read/write conflicts this might cause, instead of
+        # operating on an event's real-time priority, when trying to
+        # acquire read and write locks on events, we initially request
+        # their priorities and use them for the main body of that
+        # operation.  This priority gets cached in WaitingElements and
+        # can get updated, asynchronously, when an event requests
+        # promotion.
+        self.cached_priority = priority
+
         
         # when add a waiting element, that waiting element's read or
         # write blocks.  The way that it blocks is by listening at a
@@ -93,11 +105,15 @@ class MultiThreadedObj(WaldoLockedObj):
         self.dirty_val = None
         
         # If write_lock_holder is not None, then the only element in
-        # read_lock_holders is the write lock holder.  
+        # read_lock_holders is the write lock holder.
         self.read_lock_holders = {}
         self.write_lock_holder = None
 
-        # A dict of event ids to WaitingEventTypes
+        # FIXME: read_lock_holders and write_lock_holders should have
+        # cached priorities
+
+        
+        # A dict of event uuids to WaitingEventTypes
         self.waiting_events = {}
 
         # In try_next, can cause events to backout.  If we do cause
@@ -164,6 +180,16 @@ class MultiThreadedObj(WaldoLockedObj):
         '''
         self._lock()
 
+        # Each event has a priority associated with it.  This priority
+        # can change when an event gets promoted to be boosted.  To
+        # avoid the read/write conflicts this might cause, at the
+        # beginning of acquring read lock, get priority and use that
+        # for majority of time trying to acquire read lock.  If cached
+        # priority ends up in WaitingElement, another thread can later
+        # update it.
+        cached_priority = active_event.get_priority()
+
+        
         # must be careful to add obj to active_event's touched_objs.
         # That way, if active_event needs to backout, we're guaranteed
         # that the state we've allocated for accounting the
@@ -205,7 +231,7 @@ class MultiThreadedObj(WaldoLockedObj):
             return to_return
 
         # check 2b
-        if gte_priority(active_event.get_priority(), self.write_lock_holder.get_priority()):
+        if gte_priority(cached_priority, self.write_lock_holder.get_priority()):
 
             # backout write lock if can
             if self.write_lock_holder.can_backout_and_hold_lock():
@@ -223,10 +249,10 @@ class MultiThreadedObj(WaldoLockedObj):
                 return to_return
 
         # Condition 2c + 3
-            
+
         # create a waiting read element
         waiting_element = WaitingElement(
-            active_event,True,self.data_wrapper_constructor,self.peered)
+            active_event,cached_priority,True,self.data_wrapper_constructor,self.peered)
         
         self.waiting_events[active_event.uuid] = waiting_element
         self._unlock()
@@ -243,8 +269,17 @@ class MultiThreadedObj(WaldoLockedObj):
         2) There are existing read and/or write lock holders.  Check
            if our uuid is larger than their uuids.
         
-        '''
+        '''        
         self._lock()
+        # Each event has a priority associated with it.  This priority
+        # can change when an event gets promoted to be boosted.  To
+        # avoid the read/write conflicts this might cause, at the
+        # beginning of acquring write lock, get priority and use that
+        # for majority of time trying to acquire read lock.  If cached
+        # priority ends up in WaitingElement, another thread can later
+        # update it.
+        cached_priority = active_event.get_priority()
+
 
         # must be careful to add obj to active_event's touched_objs.
         # That way, if active_event needs to backout, we're guaranteed
@@ -273,7 +308,7 @@ class MultiThreadedObj(WaldoLockedObj):
             return to_return
             
 
-        if self.is_gte_than_lock_holding_events(active_event.get_priority()):
+        if self.is_gte_than_lock_holding_events(cached_priority):
             # Stage 2 from above
             if self.test_and_backout_all(active_event.uuid):
                 # Stage 3 from above
@@ -289,7 +324,9 @@ class MultiThreadedObj(WaldoLockedObj):
 
         # case 3: add to wait queue and wait
         write_waiting_event = WaitingElement(
-            active_event,False,self.data_wrapper_constructor,self.peered)
+            active_event,cached_priority,False,self.data_wrapper_constructor,
+            self.peered)
+        
         self._unlock()
         return write_waiting_event.queue.get()
 
@@ -526,7 +563,7 @@ class MultiThreadedObj(WaldoLockedObj):
 
         # 2 a --- check if write lock holder is younger (ie, it should be
         #         preempted).
-        if gte_priority(self.write_lock_holder.get_priority(),waiting_event.event.get_priority()):
+        if gte_priority(self.write_lock_holder.get_priority(),waiting_event.event.cached_priority):
             # do not preempt write lock: it has been around longer
             return False
 
@@ -598,7 +635,7 @@ class MultiThreadedObj(WaldoLockedObj):
 
             
         # Stage 1 from above
-        if self.is_gte_than_lock_holding_events(waiting_event.event.get_priority()):
+        if self.is_gte_than_lock_holding_events(waiting_event.event.cached_priority):
             # Stage 2 from above
             if self.test_and_backout_all(waiting_event.event.uuid):
                 # Stage 3 from above
