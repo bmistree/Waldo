@@ -59,7 +59,8 @@ Sequence SendWaitingMsg(Text message) {
 }
 
 Sequence AddToGame() {
-    OmidPlayer.doNothing{}
+    OmidPlayer.doNothing{
+    }
     OmidPlayerHelper.addPlayer {
         game_server.add_player(username);
     }
@@ -107,18 +108,24 @@ Sequence UpdateGame() {
         //update_score(score);
         for (Text answer in node_map) {
             Struct node_information info = node_map[answer];
-            extCopy info to draw_circle;
+            //extCopy info to draw_circle;
         }
         for (Struct arc_information arc_info in arc_map) {
             Struct node_information node1 = node_map[arc_info.node1];
             Struct node_information node2 = node_map[arc_info.node2];
             if (node1.found and node2.found) {
                 print('about to draw arc');
-                List(element: Number) arc_pos = [node1.x, node1.y, node2.x, node2.y];
-                extCopy arc_pos to draw_arc;
+                while (len(draw_arc) != 0) {
+                    draw_arc.remove(0);
+                }
+
+                draw_arc.append(node1.x);
+                draw_arc.append(node1.y);
+                draw_arc.append(node2.x);
+                draw_arc.append(node2.y);
+                print("drew one arc");
             }
         }
-        refresh_window();
         print("finished updating");
     }
 }
@@ -132,7 +139,7 @@ OmidPlayer {
     onCreate(Text name, External Text gui, External Struct node_information node, External List(element: Number) arc, Function(returns: Nothing) clear, Function(returns: Nothing) refresh_game) {
         username = name;
         extAssign gui to waiting_message;
-        extAssign node to draw_circle;
+        //extAssign node to draw_circle;
         extAssign arc to draw_arc;
         clear_map = clear;
         refresh_window = refresh_game;
