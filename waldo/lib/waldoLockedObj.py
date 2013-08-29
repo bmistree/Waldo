@@ -18,7 +18,15 @@ class WaldoLockedObj(object):
             return self.SINGLE_THREADED_CONSTRUCTOR(
                 self.host_uuid,peered,self.get_val(active_event))
 
-
+    def update_event_priority(self,uuid,new_priority):
+        '''
+        Called when an event with uuid "uuid" is promoted to boosted
+        with priority "priority"
+        '''
+        util.logger_warn(
+            'FIXME: must finish writing update event priority.')
+        # util.logger_assert(
+        #     'update_event_priority is pure virtual in WaldoLockedObj')
     
     def get_val(self,active_event):
         util.logger_assert('get_val is pure virtual in WaldoLockedObj')

@@ -57,6 +57,17 @@ class LockedActiveEvent(object):
         # each and tell it to enter first phase commit.
         self.other_endpoints_contacted = {}
         self.partner_contacted = False
+        # using a separate lock for partner_contaced and
+        # other_endpoints_contacted so that if we are holding the
+        # commit lock on this event, we can still access
+        # other_endpoints_contaced and partner_contacted (for
+        # promoting priority).  note that the only time we will write
+        # to either variable is when we have already used the event's
+        # _lock method.  Therefore, if we are already inside of a
+        # _lock and just reading, we do not need to acquire
+        # _others_contacted_mutex_mutex.
+        self._others_contacted_mutex = threading.Lock()
+
         
         self.event_parent = event_parent
 
@@ -139,10 +150,56 @@ class LockedActiveEvent(object):
         return still_running
 
     def promote_boosted(self,new_priority):
-        util.logger_warn(
-            'Not performing any actions in promote boosted')
+        '''
+        Gets called either from active event map or from a service
+        action.  Used to update event priorities.
 
+        1: Set new priority on event parent.
+
+        2: Copy touched objects.  And run through copy.  For each, ask
+           the obj to update its cached version of the event's
+           priority.  And check for preemption if the event had been
+           waiting (instead of if the event had been a lock holder).
+           It's important to *copy* touched objs first.  This is
+           because when we call update priority on the object, the
+           object will acquire a lock on itself.  Ie, using this
+           pattern, we're first acquiring a lock on touched_objs and
+           then acquiring a lock on the obj itself.  However, there's
+           another path in the code that first acquires a lock on the
+           obj and then acquires a lock on touched obj.  (When an obj
+           calls add_touced_obj.)  It is okay to make a copy of
+           touched objs instead of using the real-time values of objs
+           in the dict because by setting the priority first, we
+           guarantee that any objects that are added to the dict after
+           we make the copy will have the correct, new priority
+           anyways.
         
+        3: For each object in the copied touched obj, request it to
+           update its priority for this event.
+
+        4: Copy endpoints contacted and partner contacted and send a
+           promotion message to each endpoint we've already contacted
+           and partner.  (Note: lots of similar reasoning to 2.)
+        '''
+        self.event_parent.set_priority(new_priority)
+        
+        self._touched_objs_lock()
+        touched_objs_copy = dict(self.touched_objs)
+        self._touched_objs_unlock()
+
+        for obj in touched_objs_copy.values():
+            obj.update_event_priority(self.uuid,new_priority)
+
+        self._others_contacted_lock()
+        util.logger_warn(
+            'Actually need to send promotion messages to endpoints contacted '
+            'and to partner.')
+        # other_endpoints_contacted
+        # partner_contacted
+        self._others_contacted_unlock()
+        
+
+            
     def can_backout_and_hold_lock(self):
         '''
         @returns {bool} --- True if not in the midst of two phase
@@ -181,8 +238,12 @@ class LockedActiveEvent(object):
         self.state = LockedActiveEvent.STATE_FIRST_PHASE_COMMIT
         self._unlock()
 
-        # forwards message on to others and affirmatively replies that
-        # now in first pahse of commit.
+
+        # do not need to acquire locks on other_endpoints_contacted
+        # and partner_contacted because once enter first phase commit,
+        # these are immutable.
+        #forwards message on to others and
+        # affirmatively replies that now in first pahse of commit.
         self.event_parent.first_phase_transition_success(
             self.other_endpoints_contacted,
             # If we had a network failure, then we shouldn't try to
@@ -208,6 +269,10 @@ class LockedActiveEvent(object):
         
         # FIXME: which should happen first, notifying others or
         # releasing locks locally?
+
+        # do not need to acquire locks for partner_contacted and
+        # other_endpoints_contacted because once entered commit, these
+        # values are immutable.
         
         # notify other endpoints to also complete their commits
         self.event_parent.second_phase_transition_success(
@@ -344,6 +409,10 @@ class LockedActiveEvent(object):
         _, self.retry_event = self.event_map.remove_event(self.uuid,True)
 
         # 5
+        # do not need to acquire locks on other_endpoints_contacted
+        # because the only place that it can be written to is when
+        # already holding _lock.  Therefore, we already have exclusive
+        # access to variable.
         self.event_parent.rollback(
             backout_requester_endpoint_uuid,self.other_endpoints_contacted,
             self.partner_contacted,stop_request)
@@ -360,6 +429,8 @@ class LockedActiveEvent(object):
 
     def rollback_unblock_waiting_queues(self,stop_request):
         '''
+        ASSUMES ALREADY WITHIN _LOCK
+        
         To provide blocking, whenever issue an endpoint call or
         partner call, thread of execution blocks, waiting on a read
         into a threadsafe queue.  When we rollback, we must put a
@@ -373,7 +444,11 @@ class LockedActiveEvent(object):
             else:
                 queue_feeder = _BackoutBeforeReceiveMessageResult()
             msg_queue_to_unblock.put(queue_feeder)
-            
+
+        # do not need to acquire locks on other_endpoints_contacted
+        # because the only place that it can be written to is when
+        # already holding _lock.  Therefore, we already have exclusive
+        # access to variable.
         for subscribed_to_element in self.other_endpoints_contacted.values():
             for res_queue in subscribed_to_element.result_queues:
                 if stop_request:
@@ -449,7 +524,9 @@ class LockedActiveEvent(object):
 
         if self.state == self.STATE_RUNNING:
             partner_call_requested = True
+            self._others_contacted_lock()
             self.partner_contacted = True
+            self._others_contacted_unlock()
 
             # code is listening on threadsafe result_queue.  when we
             # receive a response, put it inside of the result queue.
@@ -537,7 +614,7 @@ class LockedActiveEvent(object):
                 self.event_parent.get_priority(),func_name,result_queue,
                 *args)
 
-
+            self._others_contacted_lock()
             # add the endpoint to subscribed to
             if endpoint_calling._uuid not in self.other_endpoints_contacted:
                 self.other_endpoints_contacted[endpoint_calling._uuid] = EventSubscribedTo(
@@ -545,7 +622,8 @@ class LockedActiveEvent(object):
             else:
                 self.other_endpoints_contacted[endpoint_calling._uuid].add_result_queue(
                     result_queue)
-
+            self._others_contacted_unlock()
+                
         self._unlock()
         return endpoint_call_requested
         
@@ -782,6 +860,11 @@ class LockedActiveEvent(object):
         self._unlock()                
 
 
+    def _others_contacted_lock(self):
+        self._others_contacted_mutex.acquire()
+    def _others_contacted_unlock(self):
+        self._others_contacted_mutex.release()
+        
     def _touched_objs_lock(self):
         self._touched_objs_mutex.acquire()
     def _touched_objs_unlock(self):
