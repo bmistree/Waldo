@@ -31,6 +31,8 @@ class LockedActiveEvent(object):
         self.mutex = threading.RLock()
         self.state = LockedActiveEvent.STATE_RUNNING
 
+        self._nfmutex = threading.Lock()
+        
         self.event_map = event_map
         
         # a dict containing all local objects that this event has
@@ -455,6 +457,7 @@ class LockedActiveEvent(object):
                 ctx.sequence_local_store,
                 first_msg)
 
+            
         self._unlock()
         return partner_call_requested
 
@@ -713,7 +716,11 @@ class LockedActiveEvent(object):
         if msg.reply_to_uuid.data not in self.message_listening_queues_map:
             util.logger_assert(
                 'Error: partner response message responding to ' +
-                'unknown _ActiveEvent message.')
+                'unknown _ActiveEvent message.' +
+                str(msg.reply_to_uuid.data) +
+                '    ' +
+                str(list(self.message_listening_queues_map.keys()))
+                )
         #### END DEBUG
 
         # unblock waiting listening queue.
@@ -755,16 +762,21 @@ class LockedActiveEvent(object):
                 message_listening_queue.put(_NetworkFailureCallResult(error.trace))
         self._unlock()                
 
+
+    def _nflock(self):
+        self._nfmutex.acquire()
+    def _nfunlock(self):
+        self._nfmutex.release()
         
     def set_network_failure(self):
-        self._lock()
+        self._nflock()
         self._network_failure = True
-        self._unlock()
+        self._nfunlock()
 
     def get_network_failure(self):
-        self._lock()
+        self._nflock()
         failure = self._network_failure
-        self._unlock()
+        self._nfunlock()
         return failure
 
         
