@@ -3,7 +3,7 @@ from waldo.lib.waldoCallResults import _RescheduleRootCallResult, _CompleteRootC
 from waldo.lib.waldoCallResults import _StopRootCallResult, _ApplicationExceptionCallResult
 from waldo.lib.waldoCallResults import _NetworkFailureCallResult
 import traceback
-
+import threading
 
 class EventParent(object):
     '''
@@ -13,6 +13,18 @@ class EventParent(object):
     object would keep a reference to endpoint object so that it can
     forward responses back to partner.
     '''
+
+    def __init__(self,uuid,priority):
+        self.uuid = uuid
+        self.priority = priority
+        self._priority_mutex = threading.Lock()
+
+
+    def _priority_lock(self):
+        self._priority_mutex.acquire()
+    def _priority_unlock(self):
+        self._priority_mutex.release()
+        
     def get_uuid(self):
         '''
         The uuid of the event
@@ -20,7 +32,16 @@ class EventParent(object):
         return self.uuid
 
     def get_priority(self):
-        return self.priority
+        self._priority_lock()
+        priority = self.priority
+        self._priority_unlock()
+        return priority
+
+    def set_priority(self,new_priority):
+        self._priority_lock()
+        self.priority = new_priority
+        self._priority_unlock()
+
     
     def put_exception(self,error):
         '''
@@ -158,8 +179,6 @@ class RootEventParent(EventParent):
         '''
         if uuid is None:
             uuid = util.generate_uuid()
-        self.uuid = uuid
-        self.priority = priority
         
         self.local_endpoint = local_endpoint
         # indices are event uuids.  Values are bools.  When all values
@@ -170,7 +189,9 @@ class RootEventParent(EventParent):
         # when the root tries to commit the event, it blocks while
         # reading the event_complete_queue
         self.event_complete_queue = util.Queue.Queue()
+        super(RootEventParent,self).__init__(uuid,priority)
 
+        
     def second_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted):
         '''
@@ -270,9 +291,9 @@ class RootEventParent(EventParent):
 
 class PartnerEventParent(EventParent):
     def __init__(self,uuid,local_endpoint,priority):
-        self.uuid = uuid
         self.local_endpoint = local_endpoint
-        self.priority = priority
+        super(PartnerEventParent,self).__init__(uuid,priority)
+
         
     def first_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted,event):
@@ -321,13 +342,11 @@ class PartnerEventParent(EventParent):
         
 class EndpointEventParent(EventParent):
     def __init__(self,uuid,parent_endpoint,local_endpoint,result_queue,priority):
-        
-        self.uuid = uuid
         self.parent_endpoint = parent_endpoint
         self.local_endpoint = local_endpoint
         self.result_queue = result_queue
-        self.priority = priority
-        
+        super(EndpointEventParent,self).__init__(uuid,priority)
+
 
     def first_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted,event):
