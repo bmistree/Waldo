@@ -419,7 +419,7 @@ class _Endpoint(EndpointBase):
         general_message.message_type = GeneralMessage.PROMOTION
         promotion_message = general_message.promotion
         promotion_message.event_uuid.data = uuid
-        promotion_mesage.new_priority.data = new_priority
+        promotion_message.new_priority.data = new_priority
         self._conn_obj.write(general_message.SerializeToString(),self)
         
     def _notify_partner_removed_subscriber(

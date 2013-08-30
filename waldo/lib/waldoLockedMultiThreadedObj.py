@@ -166,7 +166,7 @@ class MultiThreadedObj(WaldoLockedObj):
             may_require_update = True
         
         self._unlock()
-
+        
         if may_require_update:
             update_thread = threading.Thread(target=self.try_next)
             update_thread.start()
@@ -718,7 +718,6 @@ class MultiThreadedObj(WaldoLockedObj):
                    event that is holding a write lock.)
         
         '''
-        
         self._lock()
 
         

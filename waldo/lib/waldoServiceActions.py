@@ -33,8 +33,8 @@ class _ReceivePromotionAction(_Action):
        self.local_endpoint = local_endpoint
        self.event_uuid = event_uuid
        self.new_priority = new_priority
-       
-    def run(self):
+
+    def service(self):
         evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
         if evt is not None:
             evt.promote_boosted(self.new_priority)

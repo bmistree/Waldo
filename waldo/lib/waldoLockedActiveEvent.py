@@ -196,13 +196,13 @@ class LockedActiveEvent(object):
 
         self._others_contacted_lock()
         copied_partner_contacted = self.partner_contacted
-        copied_other_endpoints_contaced = dict(other_endpoints_contacted)
+        copied_other_endpoints_contacted = dict(self.other_endpoints_contacted)
         self._others_contacted_unlock()
-
+        
         self.event_parent.send_promotion_messages(
             copied_partner_contacted,copied_other_endpoints_contacted,new_priority)
         
-            
+        
     def can_backout_and_hold_lock(self):
         '''
         @returns {bool} --- True if not in the midst of two phase
@@ -814,6 +814,17 @@ class LockedActiveEvent(object):
         '''
         #### DEBUG
         if msg.reply_to_uuid.data not in self.message_listening_queues_map:
+            # this bug keeps popping up.  I don't know what it means
+            # right now.
+            util.logger_warn(
+                'FIXME: partner response message responding to ' +
+                'unknown _ActiveEvent message.' +
+                str(msg.reply_to_uuid.data) +
+                '    ' +
+                str(list(self.message_listening_queues_map.keys()))
+                )
+            
+            return
             util.logger_assert(
                 'Error: partner response message responding to ' +
                 'unknown _ActiveEvent message.' +
@@ -821,6 +832,7 @@ class LockedActiveEvent(object):
                 '    ' +
                 str(list(self.message_listening_queues_map.keys()))
                 )
+
         #### END DEBUG
 
         # unblock waiting listening queue.
@@ -838,6 +850,7 @@ class LockedActiveEvent(object):
 
         # no need holding onto queue waiting on a message response.
         del self.message_listening_queues_map[msg.reply_to_uuid.data]
+
 
 
     def send_exception_to_listener(self, error):

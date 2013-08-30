@@ -45,7 +45,7 @@ class EventParent(object):
         other.
         '''
         self._priority_lock()
-        is_new = (self.priority == new_priority)
+        is_new = (self.priority != new_priority)
         self.priority = new_priority
         self._priority_unlock()
         return is_new
