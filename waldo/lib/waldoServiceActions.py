@@ -304,7 +304,13 @@ class _ReceiveEndpointCallAction(_Action):
             *self.args)
 
         # don't start as separte thread
-        exec_event.run()
+        try:
+            exec_event.run()
+        except Exception as ex:
+            if hasattr(ex,'waldo_handled'):
+                # Already processed exception in put exception
+                return
+            raise
 #         exec_event.start()
 
 
