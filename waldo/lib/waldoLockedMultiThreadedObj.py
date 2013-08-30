@@ -3,20 +3,22 @@ import waldo.lib.util as util
 from waldo.lib.waldoLockedObj import WaldoLockedObj
 from waldo.lib.waldoEventPriority import gte_priority
 
-def in_place_sort_event_list_by_priority(list_to_sort):
+def in_place_sort_event_cached_priority_list_by_priority(list_to_sort):
     '''
-    @param {list} --- Each element is an event's priority.
+    @param {list} ---
     
     Sorts the list in place.  Lower indices will contain higher
     priorities.
 
     @returns sorted list
     '''
-    list_to_sort.sort(key=get_priority_key_from_event,reverse=True)
+    list_to_sort.sort(key=get_priority_key_from_event_cached_priority_obj,reverse=True)
     return list_to_sort
 
-def get_priority_key_from_event(evt):
-    return evt.get_priority()
+def get_priority_key_from_event_cached_priority_obj(evt_cached_priority_obj):
+    return evt_cached_priority_obj.cached_priority
+
+
 
 def in_place_sort_waiting_event_list_by_priority(list_to_sort):
     list_to_sort.sort(key=get_priority_key_from_waiting_element,reverse=True)
@@ -25,6 +27,11 @@ def in_place_sort_waiting_event_list_by_priority(list_to_sort):
 def get_priority_key_from_waiting_element(el):
     return el.cached_priority
 
+
+class EventCachedPriorityObj(object):
+    def __init__(self,event,cached_priority):
+        self.event = event
+        self.cached_priority = cached_priority
 
     
 class WaitingElement(object):
@@ -106,11 +113,9 @@ class MultiThreadedObj(WaldoLockedObj):
         
         # If write_lock_holder is not None, then the only element in
         # read_lock_holders is the write lock holder.
+        # read_lock_holders maps from uuids to EventCachedPriorityObj.
         self.read_lock_holders = {}
         self.write_lock_holder = None
-
-        # FIXME: read_lock_holders and write_lock_holders should have
-        # cached priorities
 
         
         # A dict of event uuids to WaitingEventTypes
@@ -226,7 +231,9 @@ class MultiThreadedObj(WaldoLockedObj):
         # check 2a
         if self.write_lock_holder is None:
             to_return = self.val
-            self.read_lock_holders[active_event.uuid] = active_event
+            self.read_lock_holders[active_event.uuid] = (
+                EventCachedPriorityObj(active_event,cached_priority))
+            
             self._unlock()
             return to_return
 
@@ -243,7 +250,8 @@ class MultiThreadedObj(WaldoLockedObj):
                 self.dirty_val = None
                 self.write_lock_holder = None
                 self.read_lock_holders = {}
-                self.read_lock_holders[active_event.uuid] = active_event
+                self.read_lock_holders[active_event.uuid] = (
+                    EventCachedPriorityObj(active_event,cached_priority))
                 to_return = self.val
                 self._unlock()
                 return to_return
@@ -302,7 +310,8 @@ class MultiThreadedObj(WaldoLockedObj):
             (len(self.read_lock_holders) == 0)):
             self.dirty_val = self.data_wrapper_constructor(self.val,self.peered)
             self.write_lock_holder = active_event
-            self.read_lock_holders[active_event.uuid] = active_event
+            self.read_lock_holders[active_event.uuid] = (
+                EventCachedPriorityObj(active_event,cached_priority))
             to_return = self.dirty_val
             self._unlock()
             return to_return
@@ -313,7 +322,8 @@ class MultiThreadedObj(WaldoLockedObj):
             if self.test_and_backout_all(active_event.uuid):
                 # Stage 3 from above
                 # actually update the read/write lock holders
-                self.read_lock_holders[active_event.uuid] = active_event
+                self.read_lock_holders[active_event.uuid] = (
+                    EventCachedPriorityObj(active_event,cached_priority))
                 self.write_lock_holder = active_event
 
                 self.dirty_val = self.data_wrapper_constructor(self.val,self.peered)
@@ -470,12 +480,14 @@ class MultiThreadedObj(WaldoLockedObj):
         
         # note: do not have to explicitly include the write lock key
         # here because the event that is writing will be included in
-        read_lock_holder_events = list(self.read_lock_holders.values())
-        in_place_sort_event_list_by_priority(read_lock_holder_events)
+        read_lock_holder_event_cached_priorities = list(self.read_lock_holders.values())
+        in_place_sort_event_cached_priority_list_by_priority(
+            read_lock_holder_event_cached_priorities)
 
         to_backout_list = []
         can_backout_all = True
-        for read_event in read_lock_holder_events:
+        for event_cached_priority_obj in read_lock_holder_event_cached_priorities:
+            read_event = event_cached_priority_obj.event
             read_uuid = read_event.uuid
             if read_uuid != event_to_not_backout_uuid:
                 if read_event.can_backout_and_hold_lock():
@@ -489,12 +501,12 @@ class MultiThreadedObj(WaldoLockedObj):
             for event_to_backout in to_backout_list:
                 event_to_backout.obj_request_backout_and_release_lock()
 
-            event = self.read_lock_holders.get(event_to_not_backout_uuid,None)
+            event_cached_priority = self.read_lock_holders.get(event_to_not_backout_uuid,None)
             self.read_lock_holders = {}
             self.write_lock_holder = None
-            if event is not None:
-                self.read_lock_holders[event.uuid] = event
-                
+            if event_cached_priority is not None:
+                self.read_lock_holders[event_cached_priority.event.uuid] = event_cached_priority
+
         else:
             for event_not_to_backout in to_backout_list:
                 event_not_to_backout.obj_request_no_backout_and_release_lock()
@@ -520,8 +532,9 @@ class MultiThreadedObj(WaldoLockedObj):
 
         # check read locks
         for read_lock_uuid in self.read_lock_holders:
-            read_lock_holder = self.read_lock_holders[read_lock_uuid]
-            if not gte_priority(waiting_event_priority,read_lock_holder.get_priority()):
+            read_lock_holder_event_cached_priority = self.read_lock_holders[read_lock_uuid]
+            if not gte_priority(
+                waiting_event_priority,read_lock_holder_event_cached_priority.cached_priority):
                 return False
             
         return True
@@ -550,10 +563,10 @@ class MultiThreadedObj(WaldoLockedObj):
         @returns {bool} --- Returns True if could schedule read
         waiting event.  False if could not.
         '''
-
         # CASE 1
         if self.write_lock_holder is None:
-            self.read_lock_holders[waiting_event.event.uuid] = waiting_event.event
+            self.read_lock_holders[waiting_event.event.uuid] = (
+                EventCachedPriorityObj(waiting_event.event,waiting_event.cached_priority))
             waiting_event.unwait(self)
             return True
 
@@ -586,7 +599,8 @@ class MultiThreadedObj(WaldoLockedObj):
         self.write_lock_holder = None
         self.read_lock_holders = {}
         # 3
-        self.read_lock_holders[waiting_event.event.uuid] = waiting_event.event        
+        self.read_lock_holders[waiting_event.event.uuid] = (
+            EventCachedPriorityObj(waiting_event.event,waiting_event.cached_priority))
         # 4
         waiting_event.unwait(self)
         return True
@@ -640,7 +654,8 @@ class MultiThreadedObj(WaldoLockedObj):
             if self.test_and_backout_all(waiting_event.event.uuid):
                 # Stage 3 from above
                 # actually update the read/write lock holders
-                self.read_lock_holders[waiting_event.event.uuid] = waiting_event.event
+                self.read_lock_holders[waiting_event.event.uuid] = (
+                    EventCachedPriorityObj(waiting_event.event,waiting_event.cached_priority))
                 self.write_lock_holder = waiting_event.event
                 waiting_event.unwait(self)
                 return True
