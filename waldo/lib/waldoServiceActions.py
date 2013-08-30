@@ -70,7 +70,11 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
             # side that I am stopped?  Right now, I don't think that I
             # need to.
             return
-        
+        except Exception as ex:
+            if hasattr(ex,'waldo_handled'):
+                # Already processed exception in put exception
+                return
+            raise
 
 
 class _ReceiveSubscriberAction(_Action):

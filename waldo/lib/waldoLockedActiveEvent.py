@@ -424,6 +424,8 @@ class LockedActiveEvent(object):
         '''
         @param error {Exception}
         '''
+        error.waldo_handled = True
+        
         if isinstance(error, util.BackoutException):
             self.backout(None,False)
         else:
