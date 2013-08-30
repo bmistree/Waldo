@@ -25,3 +25,6 @@ def generate_boosted_priority(timestamp_last_boosted_completed):
 
 def generate_timed_priority(current_timestamp):
     return '1' + current_timestamp + os.urandom(8)
+
+def is_boosted_priority(priority):
+    return (priority[0] == '0')

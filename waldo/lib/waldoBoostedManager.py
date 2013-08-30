@@ -2,7 +2,7 @@ from waldo.lib.waldoEventParent import RootEventParent
 from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
 import waldo.lib.util as util
 from waldo.lib.waldoEventPriority import generate_boosted_priority, generate_timed_priority
-
+from waldo.lib.waldoEventPriority import is_boosted_priority
 
 class BoostedManager(object):
     '''
