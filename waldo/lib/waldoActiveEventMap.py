@@ -214,29 +214,30 @@ class _ActiveEventMap(object):
         the provided function. May be None to indicate that there are no args.
         '''
         event_list = [pair[1] for pair in self.map.items()]
+        self._lock()
         for event in event_list:
             if dict:
                 func(event,**dict)
             else:
                 func(event)
+        self._unlock()
         
-    def _stop_event(self,event,should_skip_partner,reason_for_backout):
+    def _stop_event(self,event,should_skip_partner):
         '''
-        Backs out the event with the provided reason and removes it from the
+        Backs out the event and removes it from the
         active event map while setting stop_request=True to indicate that the
         event should not be retried.
         '''
         event.forward_backout_request_and_backout_self(
-            skip_partner=should_skip_partner,reason=reason_for_backout,
-            stop_request=True) # Set stop_request since 
+            skip_partner=should_skip_partner, stop_request=True)
 
         self.remove_event_if_exists(event.uuid,False)
 
-    def backout_from_all_events(self,skip_partner=False,reason=BACKOUT):
+    def backout_from_all_events(self,skip_partner=False):
         '''
         Iterates through each active event in the map and backs out from each.
         '''
-        dict = {'should_skip_partner':skip_partner,'reason_for_backout':reason}
+        dict = {'should_skip_partner':skip_partner}
         self._map(self._stop_event,dict)
 
     def _indicate_network_failure(self,event):
