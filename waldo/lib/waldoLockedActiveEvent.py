@@ -887,6 +887,10 @@ class LockedActiveEvent(object):
         self._nflock()
         self._network_failure = True
         self._nfunlock()
+        self._lock()
+        if self.state == STATE_FIRST_PHASE_COMMIT:
+            self.forward_backout_request_and_backout_self()
+        self._unlock()
 
     def get_network_failure(self):
         self._nflock()
