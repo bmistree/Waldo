@@ -224,7 +224,7 @@ class RootEventParent(EventParent):
         self.event_complete_queue.put(_CompleteRootCallResult())
         super(RootEventParent,self).second_phase_transition_success(
             same_host_endpoints_contacted_dict,partner_contacted)
-        
+
 
     def put_exception(self,error,message_listening_queues_map):
         '''
@@ -324,7 +324,11 @@ class PartnerEventParent(EventParent):
                 
         # forwards the message to others
         super(PartnerEventParent,self).first_phase_transition_success(
-            same_host_endpoints_contacted_dict,partner_contacted,event)
+            same_host_endpoints_contacted_dict,
+            # using false for partner contacted, because we know that
+            # we do not have to forward the commit request back to
+            # partner: our partner must have sent it to us.
+            False,event)
 
         # tell parent endpoint that first phase has gone well and that
         # it should wait on receiving responses from all the following
@@ -348,8 +352,11 @@ class PartnerEventParent(EventParent):
     def second_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted):
         super(PartnerEventParent,self).second_phase_transition_success(
-            same_host_endpoints_contacted_dict,partner_contacted)
-
+            same_host_endpoints_contacted_dict,
+            # using false for partner contacted, because we know that
+            # we do not have to forward the commit request back to
+            # partner: our partner must have sent it to us.
+            False)
 
     def receive_successful_first_phase_commit_msg(
         self,event_uuid,msg_originator_endpoint_uuid,
