@@ -67,7 +67,7 @@ class EventParent(object):
             endpoint._receive_promotion(self.uuid,new_priority)
             
     
-    def put_exception(self,error):
+    def put_exception(self,error,message_listening_queues_map):
         '''
         Places the appropriate call result in the event complete queue to 
         indicate to the endpoint that an error has occured and the event

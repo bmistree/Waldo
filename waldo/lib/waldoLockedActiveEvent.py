@@ -538,13 +538,14 @@ class LockedActiveEvent(object):
             # put result queue in map so that can demultiplex messages
             # from partner to determine which result queue is finished
             reply_with_uuid = util.generate_uuid()
-
+            
             if threadsafe_unblock_queue != None:
                 # may get None for result queue for the last message
                 # sequence block requested.  It does not need to await
                 # a response.
                 self.message_listening_queues_map[
                     reply_with_uuid] = threadsafe_unblock_queue
+                
                 
             # here, the local endpoint uses the connection object to
             # actually send the message.
@@ -816,17 +817,6 @@ class LockedActiveEvent(object):
         '''
         #### DEBUG
         if msg.reply_to_uuid.data not in self.message_listening_queues_map:
-            # this bug keeps popping up.  I don't know what it means
-            # right now.
-            util.logger_warn(
-                'FIXME: partner response message responding to ' +
-                'unknown _ActiveEvent message.' +
-                str(msg.reply_to_uuid.data) +
-                '    ' +
-                str(list(self.message_listening_queues_map.keys()))
-                )
-            
-            return
             util.logger_assert(
                 'Error: partner response message responding to ' +
                 'unknown _ActiveEvent message.' +

@@ -28,3 +28,4 @@ def generate_timed_priority(current_timestamp):
 
 def is_boosted_priority(priority):
     return (priority[0] == '0')
+

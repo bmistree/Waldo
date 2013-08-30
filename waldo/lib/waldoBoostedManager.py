@@ -98,6 +98,7 @@ class BoostedManager(object):
             rep = RootEventParent(
                 self.act_event_map.local_endpoint,util.generate_uuid(),
                 replacement_priority)
+            
             replacement_event = LockedActiveEvent(rep,self.act_event_map)
             self.event_list[counter] = replacement_event
         else:

@@ -111,13 +111,16 @@ class _ActiveEventMap(object):
         
         '''
         self._lock()
+        
         to_remove = self.map.pop(event_uuid,None)
         successor_event = None
         
         if ((to_remove is not None) and
             isinstance(to_remove.event_parent, RootEventParent)):
             successor_event = self.boosted_manager.complete_root_event(event_uuid,retry)
-
+            if successor_event is not None:
+                self.map[successor_event.uuid] = successor_event
+            
         fire_stop_complete_callback = False
         if (len(self.map) == 0) and (self.in_stop_complete_phase):
             fire_stop_complete_callback = True
