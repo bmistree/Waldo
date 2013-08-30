@@ -607,7 +607,7 @@ class MultiThreadedObj(WaldoLockedObj):
         # 2 a --- check if write lock holder is younger (ie, it should be
         #         preempted).
         if gte_priority(
-            self.write_lock_holder.cached_priority,waiting_event.event.cached_priority):
+            self.write_lock_holder.cached_priority,waiting_event.cached_priority):
             # do not preempt write lock: it has been around longer
             return False
 
@@ -680,7 +680,7 @@ class MultiThreadedObj(WaldoLockedObj):
 
             
         # Stage 1 from above
-        if self.is_gte_than_lock_holding_events(waiting_event.event.cached_priority):
+        if self.is_gte_than_lock_holding_events(waiting_event.cached_priority):
             # Stage 2 from above
             if self.test_and_backout_all(waiting_event.event.uuid):
                 # Stage 3 from above
