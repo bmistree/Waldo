@@ -162,9 +162,9 @@ class MultiThreadedObj(WaldoLockedObj):
             self.read_lock_holders[uuid].cached_priority = new_priority
 
         if uuid in self.waiting_events:
-            self.waiting_events.cached_priority = new_priority
+            self.waiting_events[uuid].cached_priority = new_priority
             may_require_update = True
-        
+
         self._unlock()
         
         if may_require_update:
