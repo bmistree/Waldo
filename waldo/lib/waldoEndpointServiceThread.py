@@ -57,7 +57,12 @@ class _EndpointServiceThreadPool():
             worker = WorkerThread(self.threadsafe_queue)
             self.workers.append(worker)
             worker.start()
-        
+
+
+    def receive_promotion(self,event_uuid,new_priority):
+        promotion_action = waldoServiceActions._ReceivePromotionAction(
+            self.endpoint,event_uuid,new_priority)
+        self.threadsafe_queue.put(promotion_action)
             
     def receive_request_backout(self,uuid,requesting_endpoint):
         '''

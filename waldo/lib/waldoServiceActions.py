@@ -15,7 +15,31 @@ class _Action(object):
         util.logger_assert(
             'Error.  Action\'s run method is pure virtual.')
 
-        
+class _ReceivePromotionAction(_Action):
+    '''
+    When an action gets promoted, partner endpoint and other endpoints
+    that called methods on this endpoint forward the promotion message
+    to us.  We handle the promotion message by finding the event (if
+    it exists), and requesting it to promote its uuid.
+    '''
+    def __init__(self,local_endpoint,event_uuid,new_priority):
+       '''
+       @param {Endpoint } local_endpoint
+
+       @param {uuid} event_uuid
+
+       @param {priority} new_priority
+       '''
+       self.local_endpoint = local_endpoint
+       self.event_uuid = event_uuid
+       self.new_priority = new_priority
+       
+    def run(self):
+        evt = self.local_endpoint._act_event_map.get_event(self.event_uuid)
+        if evt is not None:
+            evt.promote_boosted(self.new_priority)
+
+            
 class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
     '''
     Corresponds to case when partner endpoint receives a request for

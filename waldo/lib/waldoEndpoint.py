@@ -352,6 +352,11 @@ class _Endpoint(EndpointBase):
                 general_msg.additional_subscriber.host_uuid.data,
                 general_msg.additional_subscriber.resource_uuid.data)
 
+        elif general_msg.HasField('promotion'):
+            self._receive_promotion(
+                general_msg.promotion.event_uuid.data,
+                general_msg.promotion.new_priority.data)
+            
         elif general_msg.HasField('removed_subscriber'):
             self._receive_removed_subscriber(
                 general_msg.removed_subscriber.event_uuid.data,
@@ -387,7 +392,9 @@ class _Endpoint(EndpointBase):
         #### END DEBUG
 
 
-
+    def _receive_promotion(self,event_uuid,new_priority):
+        self._endpoint_service_thread_pool.receive_promotion(
+            event_uuid,new_priority)
         
     def _receive_partner_ready(self,partner_uuid = None):
         self._endpoint_service_thread_pool.receive_partner_ready()
@@ -404,6 +411,16 @@ class _Endpoint(EndpointBase):
         endpoint_uuid.data = self._uuid
         self._conn_obj.write(general_message.SerializeToString(),self)
 
+    def _forward_promotion_message(self,uuid,new_priority):
+        '''
+        Send partner message that event has been promoted
+        '''
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.PROMOTION
+        promotion_message = general_message.promotion
+        promotion_message.event_uuid.data = uuid
+        promotion_mesage.new_priority.data = new_priority
+        self._conn_obj.write(general_message.SerializeToString(),self)
         
     def _notify_partner_removed_subscriber(
         self,event_uuid,removed_subscriber_uuid,host_uuid,resource_uuid):

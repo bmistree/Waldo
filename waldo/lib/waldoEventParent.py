@@ -37,11 +37,35 @@ class EventParent(object):
         self._priority_unlock()
         return priority
 
-    def set_priority(self,new_priority):
+    def set_new_priority(self,new_priority):
+        '''
+        @returns {bool} --- True if the new_priority is actually
+        different from the old one.  False otherwise.  Used to check
+        whether forwarding cycles of promotion messages on to each
+        other.
+        '''
         self._priority_lock()
+        is_new = (self.priority == new_priority)
         self.priority = new_priority
         self._priority_unlock()
+        return is_new
 
+    def send_promotion_messages(
+        self,copied_partner_contacted,copied_other_endpoints_contacted,
+        new_priority):
+        '''
+        @param {bool} copied_partner_contacted --- True if
+
+        @param {dict} copied_other_endpoints_contacted --- indices are
+        uuids, values are endpoints.
+        '''
+
+        if copied_partner_contacted:
+            self.local_endpoint._forward_promotion_message(self.uuid,new_priority)
+
+        for endpoint in copied_other_endpoints_contacted.values():
+            endpoint._receive_promotion(self.uuid,new_priority)
+            
     
     def put_exception(self,error):
         '''

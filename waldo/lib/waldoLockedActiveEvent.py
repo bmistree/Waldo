@@ -181,7 +181,11 @@ class LockedActiveEvent(object):
            promotion message to each endpoint we've already contacted
            and partner.  (Note: lots of similar reasoning to 2.)
         '''
-        self.event_parent.set_priority(new_priority)
+        if not self.event_parent.set_new_priority(new_priority):
+            # to avoid cycles, if the event's priority has already
+            # been increased, then do not continue to forward messages
+            # about it, notify touched objs, etc.
+            return
         
         self._touched_objs_lock()
         touched_objs_copy = dict(self.touched_objs)
@@ -191,14 +195,13 @@ class LockedActiveEvent(object):
             obj.update_event_priority(self.uuid,new_priority)
 
         self._others_contacted_lock()
-        util.logger_warn(
-            'Actually need to send promotion messages to endpoints contacted '
-            'and to partner.')
-        # other_endpoints_contacted
-        # partner_contacted
+        copied_partner_contacted = self.partner_contacted
+        copied_other_endpoints_contaced = dict(other_endpoints_contacted)
         self._others_contacted_unlock()
-        
 
+        self.event_parent.send_promotion_messages(
+            copied_partner_contacted,copied_other_endpoints_contacted,new_priority)
+        
             
     def can_backout_and_hold_lock(self):
         '''
