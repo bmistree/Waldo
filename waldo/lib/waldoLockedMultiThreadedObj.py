@@ -146,7 +146,33 @@ class MultiThreadedObj(WaldoLockedObj):
     def de_waldoify(self,active_event):
         wrapped_val = self.acquire_read_lock(active_event)
         return wrapped_val.de_waldoify(active_event)
+
+    def update_event_priority(self,uuid,new_priority):
+        '''
+        Called when an event with uuid "uuid" is promoted to boosted
+        with priority "priority"
+        '''
+        self._lock()
+        may_require_update = False
+        if ((self.write_lock_holder is not None) and
+            (self.write_lock_holder.event.uuid == uuid)):
+            self.write_lock_holder.cached_priority = new_priority
+
+        if uuid in self.read_lock_holders:
+            self.read_lock_holders[uuid].cached_priority = new_priority
+
+        if uuid in self.waiting_events:
+            self.waiting_events.cached_priority = new_priority
+            may_require_update = True
         
+        self._unlock()
+
+        if may_require_update:
+            update_thread = threading.Thread(target=self.try_next)
+            update_thread.start()
+
+        
+    
     def acquire_read_lock(self,active_event):
         '''
         DOES NOT ASSUME ALREADY WITHIN LOCK

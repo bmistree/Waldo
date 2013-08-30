@@ -18,6 +18,11 @@ class SingleThreadedObj(WaldoLockedObj):
         # whether this variable was written since last message.
         self.val = self.data_wrapper_constructor(init_val,self.peered)
 
+    def update_event_priority(self,uuid,new_priority):
+        # nothing to do: have no read or write lock holders, so can
+        # just ignore.
+        pass
+        
 
     def get_val(self,active_event):
         return self.val.val
