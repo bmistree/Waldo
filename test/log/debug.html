@@ -33,6 +33,8 @@
 		<p>Endpoint IDs</p>
 		<span class="endPointIDs">
 		</span>
+		<span class="varIDs">
+		</span>
 		<div class="infobox">
 			<p class="change">Here is where we will say something.</p>
 		</div>
@@ -44,17 +46,12 @@
 			var dataset;
 			function extend(arr) {
 				for (var i = 0; i < arr.length; i++) {
-					console.log(arr[i].time);
-					console.log(Object.prototype.toString.call(arr[i].time));
-
 				}
 				return arr;
 			}
 			function serialize(arr) {
 				for (var i = 0; i < arr.length; i++) {
-					arr[i].time = new Date(arr[i].time);
-					console.log(arr[i].time);
-					console.log(arr[i].time.getUTCMilliseconds())
+					arr[i].time = new Date(arr[i].time);				
 				}
 				return arr;
 			}
@@ -66,9 +63,12 @@
 
 				var eventIDs = [];
 				var endpointIDs = [];
+				var varIDs = []
 				$.each(dataset, function(i, el){
     				if($.inArray(el.eventID, eventIDs) === -1) eventIDs.push(el.eventID);
     				if($.inArray(el.endpointID, endpointIDs) === -1) endpointIDs.push(el.endpointID);
+    				if($.inArray(el.container, varIDs) === -1 && el.container != undefined) varIDs.push(el.container);
+
 				});
 				d3.selectAll(".endpointIDs")
 					.data([]).exit().remove();
@@ -77,6 +77,17 @@
 					.append("input").attr("type","button").attr("class","endpointIDs").attr("value", function (d) {return d;} )
 					.on("click", function(d) {
 						document.getElementById("bar").value = d;
+						loadData(true, null);
+					});
+
+				d3.selectAll(".varIDs")
+					.data([]).exit().remove();
+				d3.select("body").selectAll(".varIDs")
+					.data(varIDs).enter()
+					.append("input").attr("type","button").attr("class","varIDs").attr("value", function (d) {return d;} )
+					.on("click", function(d) {
+						document.getElementById("bar").value = d;
+						console.log(d);
 						loadData(true, null);
 					});
 
@@ -142,7 +153,6 @@
         		}
         		var superArray = [];
         		for (var data = 0; data < keys.length; data++) {
-        			console.log(holder[keys[data]]);
         			superArray = superArray.concat(holder[keys[data]]);
         		}
         			var xAxis = 0;
@@ -156,8 +166,6 @@
 	            			return 50 + (tracker[d.eventID] * 50); 
 	        			})
 	       				.attr("y", function(d, i) {
-	       					console.log("Data is " + i);
-	       					console.log(d);
 	            			return 25+(50*list[d.eventID]);
 	        			})
 	       				.attr("width", 40)
@@ -168,15 +176,21 @@
 	       					return colors[d.type];
 	       				})
 	       				.attr("opacity", function(d) {
-	       					console.log("Editing opacity")
-	       					console.log(bool);
 	       					if (bool) {
 	       						var name = document.getElementById("bar").value;
+	       						console.log(d);
 	       						if (d.endpointID.indexOf(name) != -1) {
 	       							return 1;
 	       						}
+	       						else if (d.container != undefined) {
+	       							if (d.container.indexOf(name) != -1) {
+	       								return 1;
+	       							}
+	       							else {
+	       								return 0.25;
+	       							}
+	       						}
 	       						else {
-	       							console.log("Returning 0")
 	       							return 0.25;
 	       						}
 	       					}
