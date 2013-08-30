@@ -38,9 +38,7 @@ Sequence SendAnswer(Text node_num, Text answer) {
     Number score;
     OmidPlayer.doNothing{}
     OmidPlayerHelper.send{
-        print("about to execute game_server checknode");
         score = game_server.check_node(username, node_num, answer);
-        print("sent. Still in sequence");
     }
 }
 
@@ -105,25 +103,18 @@ Sequence UpdateGame() {
     }
     OmidPlayer.updateMap{
         clear_map();
-        //update_score(score);
+        signal(update_score, score);
         for (Text answer in node_map) {
-            Struct node_information info = node_map[answer];
-            //extCopy info to draw_circle;
+            node_list.append(node_map[answer]);
         }
         for (Struct arc_information arc_info in arc_map) {
             Struct node_information node1 = node_map[arc_info.node1];
             Struct node_information node2 = node_map[arc_info.node2];
             if (node1.found and node2.found) {
-                print('about to draw arc');
-                while (len(draw_arc) != 0) {
-                    draw_arc.remove(0);
-                }
-
                 draw_arc.append(node1.x);
                 draw_arc.append(node1.y);
                 draw_arc.append(node2.x);
                 draw_arc.append(node2.y);
-                print("drew one arc");
             }
         }
         print("finished updating");
@@ -132,17 +123,17 @@ Sequence UpdateGame() {
 
 OmidPlayer {
     External Text waiting_message;
-    External Struct node_information draw_circle;
+    External List(element: Struct node_information) node_list;
     External List(element: Number) draw_arc;
+    Function (in: Text; returns: Nothing) update_score;
     Function(returns: Nothing) clear_map;
-    Function(returns: Nothing) refresh_window;
-    onCreate(Text name, External Text gui, External Struct node_information node, External List(element: Number) arc, Function(returns: Nothing) clear, Function(returns: Nothing) refresh_game) {
+    onCreate(Text name, External Text gui, External List(element: Struct node_information) nodes, External List(element: Number) arc, Function(in: Text; returns: Nothing) score, Function(returns: Nothing) clear) {
         username = name;
         extAssign gui to waiting_message;
-        //extAssign node to draw_circle;
+        extAssign nodes to node_list;
         extAssign arc to draw_arc;
+        update_score = score;
         clear_map = clear;
-        refresh_window = refresh_game;
         JoinWaiting();
     }
     Public Function add_to_game() {

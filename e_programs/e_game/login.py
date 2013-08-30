@@ -21,23 +21,23 @@ class LoginWindow(Frame):
 
     def __init__(self):
         self.app = App(False)
-        Frame.__init__(self, None, title = "Log In", size = (LOGIN_WINDOW_WIDTH, LOGIN_WINDOW_HEIGHT))
-
-        self.username_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (LABEL_BUFFER + BORDER, TEXT_BOX_BUFFER), size = (self.GetSizeTuple()[X_INDEX] - LABEL_BUFFER - BORDER * 2, TEXT_BOX_HEIGHT))
-        self.password_input = TextCtrl(self, style = TE_PROCESS_ENTER | TE_PASSWORD, pos = (LABEL_BUFFER + BORDER,self.username_input.GetPositionTuple()[Y_INDEX] + TEXT_BOX_HEIGHT + TEXT_BOX_BUFFER), size = (self.GetSizeTuple()[X_INDEX] - LABEL_BUFFER - BORDER * 2,TEXT_BOX_HEIGHT))
-        self.password_input_2 =  TextCtrl(self, style = TE_PROCESS_ENTER | TE_PASSWORD, pos = (LABEL_BUFFER + BORDER,self.password_input.GetPositionTuple()[Y_INDEX] + TEXT_BOX_HEIGHT + TEXT_BOX_BUFFER), size = (LOGIN_WINDOW_WIDTH - LABEL_BUFFER - BORDER * 2,TEXT_BOX_HEIGHT))
+        Frame.__init__(self, None, name = "Log In", size = (LOGIN_WINDOW_WIDTH, LOGIN_WINDOW_HEIGHT), title = "Login Window")
+        self.panel = Panel(self, size = (LOGIN_WINDOW_WIDTH, LOGIN_WINDOW_HEIGHT))
+        self.username_input = TextCtrl(self.panel, style = TE_PROCESS_ENTER, pos = (LABEL_BUFFER + BORDER, TEXT_BOX_BUFFER), size = (self.GetSizeTuple()[X_INDEX] - LABEL_BUFFER - BORDER * 2, TEXT_BOX_HEIGHT))
+        self.password_input = TextCtrl(self.panel, style = TE_PROCESS_ENTER | TE_PASSWORD, pos = (LABEL_BUFFER + BORDER,self.username_input.GetPositionTuple()[Y_INDEX] + TEXT_BOX_HEIGHT + TEXT_BOX_BUFFER), size = (self.GetSizeTuple()[X_INDEX] - LABEL_BUFFER - BORDER * 2,TEXT_BOX_HEIGHT))
+        self.password_input_2 =  TextCtrl(self.panel, style = TE_PROCESS_ENTER | TE_PASSWORD, pos = (LABEL_BUFFER + BORDER,self.password_input.GetPositionTuple()[Y_INDEX] + TEXT_BOX_HEIGHT + TEXT_BOX_BUFFER), size = (LOGIN_WINDOW_WIDTH - LABEL_BUFFER - BORDER * 2,TEXT_BOX_HEIGHT))
         self.password_input_2.Hide()
 
-        StaticText(self, label = "Username", pos = (BORDER, self.username_input.GetPositionTuple()[Y_INDEX]))
-        StaticText(self, label = "Password", pos = (BORDER, self.password_input.GetPositionTuple()[Y_INDEX]))
-        self.register_text = HyperlinkCtrl(self, id = ID_ANY, url = "", pos = (LABEL_BUFFER + BORDER, self.password_input.GetPositionTuple()[Y_INDEX] + TEXT_BOX_HEIGHT), label = "New here? Register here")
+        StaticText(self.panel, label = "Username", pos = (BORDER, self.username_input.GetPositionTuple()[Y_INDEX]))
+        StaticText(self.panel, label = "Password", pos = (BORDER, self.password_input.GetPositionTuple()[Y_INDEX]))
+        self.register_text = HyperlinkCtrl(self.panel, id = ID_ANY, url = "", pos = (LABEL_BUFFER + BORDER, self.password_input.GetPositionTuple()[Y_INDEX] + TEXT_BOX_HEIGHT), label = "New here? Register here")
         self.register_text.Bind(EVT_HYPERLINK, self.register_mode)
         #self.register_text.Hide()
-        self.login_button = Button(self, label = "Login", size = (BUTTON_WIDTH,TEXT_BOX_HEIGHT), pos = ((self.GetSizeTuple()[X_INDEX] - BUTTON_WIDTH) / 2, self.register_text.GetPositionTuple()[Y_INDEX] + self.register_text.GetSizeTuple()[Y_INDEX] + BORDER))
+        self.login_button = Button(self.panel, label = "Login", size = (BUTTON_WIDTH,TEXT_BOX_HEIGHT), pos = ((self.GetSizeTuple()[X_INDEX] - BUTTON_WIDTH) / 2, self.register_text.GetPositionTuple()[Y_INDEX] + self.register_text.GetSizeTuple()[Y_INDEX] + BORDER))
 
-        self.register_button =  Button(self, label = "Register", size = (REGISTER_BUTTON_WIDTH,TEXT_BOX_HEIGHT))
+        self.register_button =  Button(self.panel, label = "Register", size = (REGISTER_BUTTON_WIDTH,TEXT_BOX_HEIGHT))
         self.register_button.Hide()
-        self.message = StaticText(self, pos = (BORDER, self.GetSizeTuple()[Y_INDEX] - BORDER * 2))
+        self.message = StaticText(self.panel, pos = (BORDER, self.GetSizeTuple()[Y_INDEX] - BORDER * 2))
         self.Show(True)
         
     def close(self):

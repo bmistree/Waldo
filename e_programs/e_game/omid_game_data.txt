@@ -2,7 +2,7 @@
 --NODES--
 STANFORD -- 1 -- 350 -- 350 -- T
 GATES -- 2 -- 250 -- 250 -- F
-BUILDINGS -- 5 -- 25 -- 25 -- T
+BUILDINGS -- 5 -- 50 -- 50 -- T
 --ARCS--
 BUILDINGS -- GATES
 GATES -- STANFORD

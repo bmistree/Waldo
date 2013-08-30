@@ -4,9 +4,8 @@ from waiting_room import WaitingRoom
 from omid_player_emitted import OmidPlayer
 from gui_string import GUI_String_Ext
 import threading
-from internal_list import Test
-from gui_node import GUI_Node
-from gui_arc import GUI_Arc
+from gui_draw import GUI_Draw
+from gui_score import GUI_Score_Ext
 import time, sys, os, thread
 sys.path.append(os.path.join('../../'))
 from waldo.lib import Waldo
@@ -48,9 +47,9 @@ class OmidGamePlayer(Frame):
         self.answer_input.Bind(EVT_TEXT_ENTER, self.read_answer)
         self.score = StaticText(self.canvas, pos = (WINDOW_WIDTH - 30, BUFFER)) 
         self.player = Waldo.tcp_connect(OmidPlayer, HOSTNAME, OMID_PORT, name, GUI_String_Ext(
-self.waiting.get_gui_screen()), GUI_Node(self.draw_circle), GUI_Arc(self.draw_arc), self.clear_map, self.refresh_window)       
+self.waiting.get_gui_screen()), GUI_Draw(self.draw_circle), GUI_Draw(self.draw_arc), self.update_score, self.clear_map)   
+        thread.start_new_thread(self.check_signal, ())
         self.waiting.mainloop()
-        thread.start_new_thread(check_signal, ())
 
     def check_signal(self):
         while True:
@@ -66,34 +65,40 @@ self.waiting.get_gui_screen()), GUI_Node(self.draw_circle), GUI_Arc(self.draw_ar
     def draw_arc(self, arc):
         print 'arc draw'
         print arc
-        line = LineShape()
-        line.Initialise()
-        line.MakeLineControlPoints(2)
-        line.SetEnds(arc[0], arc[1], arc[2], arc[3])
-        line.SetBrush(Brush('BLACK', style = SOLID))
-        self.canvas.AddShape(line)
-        line.SetSpline(True)
-        line.Show(True)
+        nums_in_arc_list = 4
+        for i in range(len(arc)/nums_in_arc_list):
+            line = LineShape()
+            line.Initialise()
+            line.MakeLineControlPoints(2)
+            first_num = i * nums_in_arc_list
+            line.SetEnds(arc[first_num], arc[first_num + 1], arc[first_num + 2], arc[first_num + 3])
+            line.SetBrush(Brush('BLACK', style = SOLID))
+            self.canvas.AddShape(line)
+            line.SetSpline(True)
+            line.Show(True)
         self.Show(False)
         self.Show(True)
     
 
-    def draw_circle(self, node):
-        self.circle = CircleShape(CIRCLE_DIAMETER)
-        if node['found']:
-            self.circle.SetBrush(Brush('BLACK', style = SOLID))
-            self.circle.SetTextColour('WHITE')
-            self.circle.AddText(node['answer'])
-        else:
-            self.circle.SetBrush(Brush('WHITE', style = SOLID))
-            self.circle.SetTextColour('BLACK')
-            self.circle.AddText(node['node_num'])
-        self.circle.SetX(node['x'])
-        self.circle.SetY(node['y'])
-        self.canvas.AddShape(self.circle)
-        self.circle.Show(True)
-
-    def refresh_window(self, endpt):
+    def draw_circle(self, node_list):
+        for i in range(len(node_list)):
+            node = node_list[i].val.val
+            print node
+            if node != {}:
+                print 'not empty'
+                circle = CircleShape(CIRCLE_DIAMETER)
+                if node['found']:
+                    circle.SetBrush(Brush('GREEN', style = SOLID))
+                    circle.SetTextColour('WHITE')
+                    circle.AddText(node['answer'])
+                else:
+                    circle.SetBrush(Brush('WHITE', style = SOLID))
+                    circle.SetTextColour('BLACK')
+                    circle.AddText(node['node_num'])
+                circle.SetX(node['x'])
+                circle.SetY(node['y'])
+                self.canvas.AddShape(circle)
+                circle.Show(True)
         self.Show(False)
         self.Show(True)
 

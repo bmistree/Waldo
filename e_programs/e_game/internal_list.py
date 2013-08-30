@@ -13,12 +13,12 @@ from wx.lib.ogl import *
 class IList(InternalList):
 
     def __init__(self, draw):
-        self.draw_arc = draw
+        self.draw_obj = draw
         InternalList.__init__(self, _host_uuid, False, [])
 
     def complete_commit(self, invalid_listener):
         dirty_map_elem = self._dirty_map[invalid_listener.uuid]
-        arc_vals = dirty_map_elem.val
-        self.draw_arc(arc_vals)
+        list_vals = dirty_map_elem.val
+        self.draw_obj(list_vals)
         super(IList, self).complete_commit(invalid_listener)
 

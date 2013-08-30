@@ -59,5 +59,5 @@ while True:
     omid_server.broadcastWaitingMessage('Game will begin in 10 seconds. Type "/ready" to join.\n')
     time.sleep(3)
     omid_server.start_game()
-    time.sleep(20)
+    time.sleep(60)
     omid_server.end_game()

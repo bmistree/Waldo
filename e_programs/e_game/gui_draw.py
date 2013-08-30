@@ -6,10 +6,10 @@ from waldo.lib import Waldo
 from wVariables import WaldoListVariable
 from Waldo import _host_uuid
 from internal_list import IList
-from wx.lib.ogl import *
 
 
-class GUI_Arc(WaldoListVariable):
+
+class GUI_Draw(WaldoListVariable):
 
     def __init__(self, draw):
         WaldoListVariable.__init__(self, "", _host_uuid)
@@ -17,4 +17,4 @@ class GUI_Arc(WaldoListVariable):
 
 
     def complete_commit(self, invalid_listener):
-        super(GUI_Arc, self).complete_commit(invalid_listener)
+        super(GUI_Draw, self).complete_commit(invalid_listener)

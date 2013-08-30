@@ -51,13 +51,9 @@ OmidServer {
     }
 
     Public Function check_node(Text username, Text node_number, Text answer) returns Number{
-        print("starting check node function");
         if (answer in nodes) {
-            print("answer is in nodes");
             if (node_number == nodes[answer].node_num) {
-                print("correct node number");
                 if (not nodes[answer].found) {
-                    print(answer + " was not already found.");
                     nodes[answer].found = True;
                     update_maps(answer);
                     game[username].score += 5;
