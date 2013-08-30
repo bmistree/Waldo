@@ -1,0 +1,7 @@
+import "util.proto";
+
+message Promotion
+{
+    required UUID event_uuid = 1;
+    required Priority new_priority = 2;
+}
