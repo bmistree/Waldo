@@ -15,6 +15,7 @@ import waldo.lib.waldoVariableStore as waldoVariableStore
 import waldo.lib.shim.get_math_endpoint 
 import waldo.lib.waldoLockedVariables as waldoLockedVariables
 from waldo.lib.waldoClock import Clock
+from waldo.lib.waldoThreadPool import ThreadPool
 
 StoppedException = util.StoppedException
 
@@ -22,8 +23,14 @@ StoppedException = util.StoppedException
 _host_uuid = util.generate_uuid()
 _threadsafe_stoppable_cleanup_queue = Queue.Queue()
 
+_default_values = {
+    'heartbeat_timeout_period': 300,
+    'heartbeat_send_period': 30,
+    'thread_pool_count': 100
+}
+    
 _waldo_clock = Clock()
-
+_waldo_thread_pool = ThreadPool(_default_values['thread_pool_count'])
 
 _waldo_classes = {
     # waldo variables
@@ -72,13 +79,9 @@ _waldo_classes = {
     
     # Not a class, but global variable passed to everything:
     'Clock': _waldo_clock,
+    'ThreadPool': _waldo_thread_pool
     }
 
-_default_values = {
-    'heartbeat_timeout_period': 300,
-    'heartbeat_send_period': 30,
-}
-    
 
 def tcp_connect(constructor,host,port,*args):
     '''
