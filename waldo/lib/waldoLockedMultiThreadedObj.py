@@ -366,6 +366,7 @@ class MultiThreadedObj(WaldoLockedObj):
         write_waiting_event = WaitingElement(
             active_event,cached_priority,False,self.data_wrapper_constructor,
             self.peered)
+        self.waiting_events[active_event.uuid] = write_waiting_event
         
         self._unlock()
         return write_waiting_event.queue.get()
