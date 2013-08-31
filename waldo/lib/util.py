@@ -49,11 +49,22 @@ def internal_oncreate_func_call_name(func_name):
 # def generate_py_uuid():
 #     return uuid.uuid4()
 
-import random, os
 def generate_uuid():
     return os.urandom(16)
+    # return debug_generate_incremented_uuid()
 
 
+import threading
+num = 0
+num_lock = threading.Lock()
+def debug_generate_incremented_uuid():
+    global num, num_lock
+    num_lock.acquire()
+    to_return = num
+    num += 1
+    num_lock.release()
+    return '{:16}'.format(num)
+    
 
 def logger_assert(assert_msg):
     assert_msg = 'Compiler error: ' + assert_msg
