@@ -217,13 +217,13 @@ class _ActiveEventMap(object):
         the provided function. May be None to indicate that there are no args.
         '''
         event_list = [pair[1] for pair in self.map.items()]
-        self._lock()
+        # self._lock()
         for event in event_list:
             if dict:
                 func(event,**dict)
             else:
                 func(event)
-        self._unlock()
+        # self._unlock()
         
     def _stop_event(self,event,should_skip_partner):
         '''
