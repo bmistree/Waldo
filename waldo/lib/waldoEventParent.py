@@ -347,6 +347,16 @@ class PartnerEventParent(EventParent):
         self.local_endpoint._forward_first_phase_commit_successful(
             self.uuid,self.local_endpoint._uuid,children_endpoints)
 
+    def rollback(
+        self,backout_requester_endpoint_uuid,other_endpoints_contacted,
+        partner_contacted,stop_request):
+
+        util.logger_warn('May not need to always rollback')
+        super(PartnerEventParent,self).rollback(
+            backout_requester_endpoint_uuid,other_endpoints_contacted,
+            True,stop_request)
+        
+        
     def put_exception(self, error,message_listening_queues_map):
         '''
         Informs the partner that an exception has occured at runtime
@@ -385,6 +395,17 @@ class EndpointEventParent(EventParent):
         self.result_queue = result_queue
         super(EndpointEventParent,self).__init__(uuid,priority)
 
+    def rollback(
+        self,backout_requester_endpoint_uuid,other_endpoints_contacted,
+        partner_contacted,stop_request):
+
+        util.logger_warn('May not need to always rollback')
+        copy_other_endpoints_contacted = dict(other_endpoints_contacted)
+        copy_other_endpoints_contacted[self.parent_endpoint._uuid] = self.parent_endpoint
+        super(PartnerEventParent,self).rollback(
+            backout_requester_endpoint_uuid,copy_other_endpoints_contacted,
+            partner_contacted,stop_request)
+        
 
     def first_phase_transition_success(
         self,same_host_endpoints_contacted_dict,partner_contacted,event):
