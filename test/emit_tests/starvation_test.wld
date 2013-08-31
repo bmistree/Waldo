@@ -1,0 +1,37 @@
+StarvationTest
+
+Symmetric SideA,SideB;
+
+Sequences
+{
+  Seq: SideA.start_seq -> SideB.finish_seq;
+}
+
+Sequence Seq () 
+{
+    SideA.start_seq
+    {
+        shared_data += 1;
+    }
+    SideB.finish_seq
+    {
+        shared_data += 1;
+        delay();
+    }
+}
+
+SideA
+{
+    Number shared_data = 0;
+    Function (returns: Nothing) delay;
+    onCreate(Function (returns: Nothing) delay_)
+    {
+        delay =delay_;
+    }
+    
+    Public Function seq(Number num) returns Number
+    {
+        Seq();
+        return num;
+    }
+}
