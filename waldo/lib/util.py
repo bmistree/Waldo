@@ -1,6 +1,5 @@
 import uuid, os
 
-SIZE_THREAD_POOL = 2
 
 # Queue was changed to queue in Python 3.  
 try:

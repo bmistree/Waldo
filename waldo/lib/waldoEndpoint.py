@@ -1,5 +1,4 @@
 import waldo.lib.util as util
-import waldo.lib.waldoEndpointServiceThread as waldoEndpointServiceThread
 import waldo.lib.waldoActiveEventMap as waldoActiveEventMap
 import waldo.lib.waldoCallResults as waldoCallResults
 from util import Queue
@@ -10,6 +9,7 @@ from waldo.lib.waldoHeartbeat import Heartbeat
 from waldo.lib.proto_compiled.generalMessage_pb2 import GeneralMessage
 from waldo.lib.waldoEndpointBase import EndpointBase
 from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
+import waldo.lib.waldoServiceActions as waldoServiceActions
 
 HEARTBEAT_TIMEOUT = 30
 
@@ -54,10 +54,8 @@ class _Endpoint(EndpointBase):
         # variables.
         self._global_var_store = global_var_store
 
-
-        self._endpoint_service_thread_pool = (
-            waldoEndpointServiceThread._EndpointServiceThreadPool(
-                self,util.SIZE_THREAD_POOL))
+        # put service actions into thread pool to be executed
+        self._thread_pool = waldo_classes['ThreadPool']
 
 
         self._host_uuid = host_uuid
@@ -228,41 +226,70 @@ class _Endpoint(EndpointBase):
         '''
         self._partner_uuid = uuid
 
-        
-    def _request_commit(self,uuid,requesting_endpoint):
-        '''
-        @see _EndpointServiceThread.request_commit
-        '''
-        self._endpoint_service_thread_pool.request_commit(
-            uuid,requesting_endpoint)
 
     def _receive_request_backout(self,uuid,requesting_endpoint):
         '''
-        @see _EndpointServiceThread.receive_request_backout
+        @param {uuid} uuid --- The uuid of the _ActiveEvent that we
+        want to backout.
+
+        @param {either Endpoint object or
+        util.PARTNER_ENDPOINT_SENTINEL} requesting_endpoint ---
+        Endpoint object if was requested to backout by endpoint objects
+        on this same host (from endpoint object calls).
+        util.PARTNER_ENDPOINT_SENTINEL if was requested to backout
+        by partner.
+        
+        Called by another endpoint on this endpoint (not called by
+        external non-Waldo code).
         '''
-        self._endpoint_service_thread_pool.receive_request_backout(
-            uuid,requesting_endpoint)
+        req_backout_action = waldoServiceActions._ReceiveRequestBackoutAction(
+            self,uuid,requesting_endpoint)
+        self._thread_pool.add_service_action(req_backout_action)
 
     def _receive_request_commit(self,uuid,requesting_endpoint):
         '''
         Called by another endpoint on the same host as this endpoint
         to begin the first phase of the commit of the active event
         with uuid "uuid."
-        '''
-        self._endpoint_service_thread_pool.receive_request_commit_from_endpoint(
-            uuid,requesting_endpoint)
+
+        @param {uuid} uuid --- The uuid of the _ActiveEvent that we
+        want to commit.
+
+        @param {Endpoint object} requesting_endpoint --- 
+        Endpoint object if was requested to commit by endpoint objects
+        on this same host (from endpoint object calls).
         
-    def _receive_request_complete_commit(self,uuid):
+        Called by another endpoint on this endpoint (not called by
+        external non-Waldo code).
+
+        Forward the commit request to any other endpoints that were
+        touched when the event was processed on this side.
+        '''
+        endpoint_request_commit_action = (
+            waldoServiceActions._ReceiveRequestCommitAction(
+                self,uuid,False))
+        self._thread_pool.add_service_action(endpoint_request_commit_action)
+
+    def _receive_request_complete_commit(self,event_uuid):
         '''
         Called by another endpoint on the same host as this endpoint
         to finish the second phase of the commit of active event with
         uuid "uuid."
+
+        Another endpoint (either on the same host as I am or my
+        partner) asked me to complete the second phase of the commit
+        for an event with uuid event_uuid.
+        
+        @param {uuid} event_uuid --- The uuid of the event we are
+        trying to commit.
+
         '''
-        self._endpoint_service_thread_pool.receive_request_complete_commit(
-            uuid,
-            False # complete commit request was not from partner
-                  # endpoint.
-            )
+        req_complete_commit_action = (
+            waldoServiceActions._ReceiveRequestCompleteCommitAction(
+                self,event_uuid,False))
+
+        self._thread_pool.add_service_action(req_complete_commit_action)
+
 
     def _raise_network_exception(self):
         '''
@@ -321,19 +348,24 @@ class _Endpoint(EndpointBase):
             endpoint_uuid = general_msg.notify_ready.endpoint_uuid
             self._receive_partner_ready(endpoint_uuid.data)
         elif general_msg.HasField('notify_of_peered_modified_resp'):
-            self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_rsp_msg(
-                general_msg.notify_of_peered_modified_resp)
+            service_action = waldoServiceActions._ReceivePeeredModifiedResponseMsg(
+                self,general_msg.notify_of_peered_modified_resp)
+            self._thread_pool.add_service_action(service_action)
+            
         elif general_msg.HasField('request_sequence_block'):
-            self._endpoint_service_thread_pool.receive_partner_request_message_sequence_block(
-                general_msg.request_sequence_block)
+            service_action =  waldoServiceActions._ReceivePartnerMessageRequestSequenceBlockAction(
+                self,general_msg.request_sequence_block)
+            self._thread_pool.add_service_action(service_action)
+            
         elif general_msg.HasField('notify_of_peered_modified'):
-            self._endpoint_service_thread_pool.receive_partner_notify_of_peered_modified_msg(
-                general_msg.notify_of_peered_modified)
+            service_action = waldoServiceActions._ReceivePeeredModifiedMsg(
+                self,general_msg.notify_of_peered_modified)
+            self._thread_pool.add_service_action(service_action)
 
         elif general_msg.HasField('stop'):
             t = threading.Thread(target= self._handle_partner_stop_msg,args=(general_msg.stop,))
             t.start()
-            
+
         elif general_msg.HasField('first_phase_result'):
             if general_msg.first_phase_result.successful:
                 self._receive_first_phase_commit_successful(
@@ -370,12 +402,16 @@ class _Endpoint(EndpointBase):
                 util.PARTNER_ENDPOINT_SENTINEL)
 
         elif general_msg.HasField('complete_commit_request'):
-            self._endpoint_service_thread_pool.receive_partner_request_complete_commit(
-                general_msg.complete_commit_request)
+            service_action = (
+                waldoServiceActions._ReceiveRequestCompleteCommitAction(
+                    self,general_msg.complete_commit_request.event_uuid.data,True))
+            self._thread_pool.add_service_action(service_action)
 
         elif general_msg.HasField('commit_request'):
-            self._endpoint_service_thread_pool.receive_partner_request_commit(
-                general_msg.commit_request)
+            service_action = (
+                waldoServiceActions._ReceiveRequestCommitAction(
+                    self,general_msg.commit_request.event_uuid.data,True))
+            self._thread_pool.add_service_action(service_action)
             
         elif general_msg.HasField('error'):
             event = self._act_event_map.get_event(general_msg.error.event_uuid.data)
@@ -393,12 +429,16 @@ class _Endpoint(EndpointBase):
 
 
     def _receive_promotion(self,event_uuid,new_priority):
-        self._endpoint_service_thread_pool.receive_promotion(
-            event_uuid,new_priority)
+        promotion_action = waldoServiceActions._ReceivePromotionAction(
+            self,event_uuid,new_priority)
+        self._thread_pool.add_service_action(promotion_action)
+
         
     def _receive_partner_ready(self,partner_uuid = None):
-        self._endpoint_service_thread_pool.receive_partner_ready()
+        service_action = waldoServiceActions._ReceivePartnerReadyAction(self)
+        self._thread_pool.add_service_action(service_action)
         self._set_partner_uuid(partner_uuid)
+
         
     def _notify_partner_ready(self):
         '''
@@ -524,23 +564,48 @@ class _Endpoint(EndpointBase):
 
         @see notify_additional_subscriber (in _ActiveEvent.py)
         '''
-        self._endpoint_service_thread_pool.receive_additional_subscriber(
-            event_uuid,subscriber_event_uuid,host_uuid,resource_uuid)
+        service_action = waldoServiceActions._ReceiveSubscriberAction(
+            self,event_uuid,subscriber_event_uuid,
+            host_uuid,resource_uuid,False)
+        self._thread_pool.add_service_action(service_action)
 
+        
     def _receive_removed_subscriber(
         self,event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid):
         '''
         @see _receive_additional_subscriber
         '''
-        self._endpoint_service_thread_pool.receive_removed_subscriber(
-            event_uuid,removed_subscriber_event_uuid,host_uuid,resource_uuid)
-
+        service_action = waldoServiceActions._ReceiveSubscriberAction(
+            self,event_uuid,removed_subscriber_event_uuid,
+            host_uuid,resource_uuid,True)
+        self._thread_pool.add_service_action(service_action)
+        
         
     def _receive_endpoint_call(
         self,endpoint_making_call,event_uuid,priority,func_name,
         result_queue,*args):
         '''
-        For params, @see _EndpointServiceThread.endpoint_call
+        @param{_Endpoint object} endpoint_making_call --- The endpoint
+        that made the endpoint call into this endpoint.
+
+        @param {uuid} event_uuid --- 
+
+        @param {priority} priority
+        
+        @param {string} func_name --- The name of the Public function
+        to execute (in the Waldo source file).
+
+        @param {Queue.Queue} result_queue --- When the function
+        returns, wrap it in a
+        waldoEndpointCallResult._EndpointCallResult object and put it
+        into this threadsafe queue.  The endpoint that made the call
+        is blocking waiting for the result of the call. 
+
+        @param {*args} *args --- additional arguments that the
+        function requires.
+
+        Called by another endpoint on this endpoint (not called by
+        external non-Waldo code).
         
         Non-blocking.  Requests the endpoint_service_thread to perform
         the endpoint function call listed as func_name.
@@ -554,9 +619,10 @@ class _Endpoint(EndpointBase):
             return
         self._stop_unlock()
 
-        self._endpoint_service_thread_pool.receive_endpoint_call(
-            endpoint_making_call,event_uuid,priority,func_name,
-            result_queue,*args)
+        endpt_call_action = waldoServiceActions._ReceiveEndpointCallAction(
+            self,endpoint_making_call,event_uuid,priority,
+            func_name,result_queue,*args)
+        self._thread_pool.add_service_action(endpt_call_action)
 
 
     def _receive_first_phase_commit_successful(
@@ -566,7 +632,9 @@ class _Endpoint(EndpointBase):
         subscribed to was able to complete first phase commit for
         event with uuid event_uuid.
 
-        @param {uuid} event_uuid
+        @param {uuid} event_uuid --- The uuid of the event associated
+        with this message.  (Used to index into local endpoint's
+        active event map.)
         
         @param {uuid} endpoint_uuid --- The uuid of the endpoint that
         was able to complete the first phase of the commit.  (Note:
@@ -574,21 +642,38 @@ class _Endpoint(EndpointBase):
         called _receive_first_phase_commit_successful on this
         endpoint.  We only keep track of the endpoint that originally
         committed.)
+
+        @param {None or list} children_event_endpoint_uuids --- None
+        if successful is False.  Otherwise, a set of uuids.  The root
+        endpoint should not transition from being in first phase of
+        commit to completing commit until it has received a first
+        phase successful message from endpoints with each of these
+        uuids.
         
         Forward the message on to the root.  
         '''
-        self._endpoint_service_thread_pool.receive_first_phase_commit_message(
-            event_uuid,endpoint_uuid,True,children_event_endpoint_uuids)
+        service_action = waldoServiceActions._ReceiveFirstPhaseCommitMessage(
+            self,event_uuid,endpoint_uuid,True,children_event_endpoint_uuids)
+        self._thread_pool.add_service_action(service_action)
         
-
     def _receive_first_phase_commit_unsuccessful(
         self,event_uuid,endpoint_uuid):
         '''
-        @see _receive_first_phase_commit_successful
-        '''
-        self._endpoint_service_thread_pool.receive_first_phase_commit_message(
-            event_uuid,endpoint_uuid,False)
+        @param {uuid} event_uuid --- The uuid of the event associated
+        with this message.  (Used to index into local endpoint's
+        active event map.)
 
+        @param {uuid} endpoint_uuid --- The endpoint
+        that tried to perform the first phase of the commit.  (Other
+        endpoints may have forwarded the result on to us.)
+
+
+        '''
+        service_action = waldoServiceActions._ReceiveFirstPhaseCommitMessage(
+            self,event_uuid,endpoint_uuid,False,None)
+        self._thread_pool.add_service_action(service_action)
+
+        
 
     def _send_partner_message_sequence_block_request(
         self,block_name,event_uuid,priority,reply_with_uuid,reply_to_uuid,

@@ -15,6 +15,13 @@ class ThreadPool(object):
             t.daemon = True
             t.start()
 
+    def add_service_action(self,service_action):
+        '''
+        @param {WaldoServiceAction} service_action --- 
+        '''
+        self.work_queue.put(service_action)
+        
+            
     def thread_listen_and_wait_for_work(self):
         while True:
             service_action = self.work_queue.get()
