@@ -42,7 +42,7 @@ class WaitingElement(object):
         '''
         self.event = event
         self.read = read
-        self.data_wrapper_consructor = data_wrapper_constructor
+        self.data_wrapper_constructor = data_wrapper_constructor
         self.peered = peered
 
         # Each event has a priority associated with it.  This priority
