@@ -10,6 +10,17 @@ from waldo.lib.waldoBoostedManager import BoostedManager
 import traceback
 from waldo.lib.waldoLockedActiveEvent import NETWORK, BACKOUT
 
+#### DEBUG
+import time, random
+class Monitor(threading.Thread):
+    def __init__(self,active_event_map):
+        self.active_event_map = active_event_map
+        super(Monitor,self).__init__()
+    def run(self):
+        time.sleep(5 + random.random())
+        print '\nActive event map after: '
+        print('\n'.join(self.active_event_map.map.keys()))
+        print '\n\n'
 
 class _ActiveEventMap(object):
     '''
@@ -17,6 +28,8 @@ class _ActiveEventMap(object):
     '''
     
     def __init__(self,local_endpoint,clock):
+        # m = Monitor(self)
+        # m.start()
         self.map = {}
         self._mutex = threading.RLock()
         self.local_endpoint = local_endpoint
