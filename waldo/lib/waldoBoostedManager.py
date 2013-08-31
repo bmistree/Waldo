@@ -3,6 +3,7 @@ from waldo.lib.waldoLockedActiveEvent import LockedActiveEvent
 import waldo.lib.util as util
 from waldo.lib.waldoEventPriority import generate_boosted_priority, generate_timed_priority
 from waldo.lib.waldoEventPriority import is_boosted_priority
+from waldo.lib.waldoServiceActions import PromoteBoostedAction
 
 class BoostedManager(object):
     '''
@@ -122,4 +123,7 @@ class BoostedManager(object):
             return
 
         boosted_priority = generate_boosted_priority(self.last_boosted_complete)
-        self.event_list[0].promote_boosted(boosted_priority)
+        service_action = PromoteBoostedAction(self.event_list[0],boosted_priority)
+        self.act_event_map.local_endpoint._thread_pool.add_service_action(service_action)
+
+        

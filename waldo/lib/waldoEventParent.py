@@ -18,7 +18,8 @@ class EventParent(object):
         self.uuid = uuid
         self.priority = priority
         self._priority_mutex = threading.Lock()
-
+        self.has_been_boosted = False
+        
 
     def _priority_lock(self):
         self._priority_mutex.acquire()
@@ -45,8 +46,14 @@ class EventParent(object):
         other.
         '''
         self._priority_lock()
-        is_new = (self.priority != new_priority)
-        self.priority = new_priority
+        
+        if self.has_been_boosted:
+            is_new = False
+        else:
+            self.has_been_boosted = True
+            is_new = True
+            self.priority = new_priority
+            
         self._priority_unlock()
         return is_new
 

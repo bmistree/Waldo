@@ -26,4 +26,3 @@ class ThreadPool(object):
         while True:
             service_action = self.work_queue.get()
             service_action.service()
-            

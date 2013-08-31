@@ -71,9 +71,9 @@ class _ReceivePartnerMessageRequestSequenceBlockAction(_Action):
             # need to.
             return
         except Exception as ex:
-            if hasattr(ex,'waldo_handled'):
-                # Already processed exception in put exception
-                return
+            # if hasattr(ex,'waldo_handled'):
+            #     # Already processed exception in put exception
+            #     return
             raise
 
 
@@ -307,9 +307,9 @@ class _ReceiveEndpointCallAction(_Action):
         try:
             exec_event.run()
         except Exception as ex:
-            if hasattr(ex,'waldo_handled'):
-                # Already processed exception in put exception
-                return
+            # if hasattr(ex,'waldo_handled'):
+            #     # Already processed exception in put exception
+            #     return
             raise
 #         exec_event.start()
 
@@ -387,3 +387,12 @@ class _ReceivePartnerReadyAction(_Action):
 
     def service(self):
         self.local_endpoint._other_side_ready()
+
+
+class PromoteBoostedAction(_Action):
+    def __init__(self,evt_to_promote,new_priority):
+        self.evt_to_promote = evt_to_promote
+        self.new_priority = new_priority
+
+    def service(self):
+        self.evt_to_promote.promote_boosted(self.new_priority)
