@@ -89,6 +89,25 @@ class WaitingElement(object):
             self.queue.put(locked_obj.dirty_val)
 
 
+import time, random
+class Monitor(threading.Thread):
+    def __init__(self,multi_threaded_obj):
+        self.multi_threaded_obj = multi_threaded_obj
+        super(Monitor,self).__init__()
+    def run(self):
+        time.sleep(6 + random.random())
+        print '\nOn ' + self.multi_threaded_obj.host_uuid + ' with obj ' +  self.multi_threaded_obj.uuid
+        print 'Multi-threaded object read lock holders: '
+        print('\n'.join(self.multi_threaded_obj.read_lock_holders.keys()))
+        if self.multi_threaded_obj.write_lock_holder is None:
+            print 'No write holders'
+        else:
+            print 'Write lock holder ' + self.multi_threaded_obj.write_lock_holder.event.uuid
+        print 'Waiting elements: '
+        print ('\n'.join(self.multi_threaded_obj.waiting_events.keys()))
+        print '\n\n'
+            
+
 class MultiThreadedObj(WaldoLockedObj):
     '''
     This object can be accessed by multiple transactions at once.
@@ -102,8 +121,12 @@ class MultiThreadedObj(WaldoLockedObj):
         For value types, can just use ValueTypeDataWrapper.  For
         reference types, should use ReferenceTypeDataWrpper.
         '''
+        # m = Monitor(self)
+        # m.start()
+        
         self.data_wrapper_constructor = data_wrapper_constructor
         self.uuid = util.generate_uuid()
+
         
         self.host_uuid = host_uuid
         self.peered = peered
