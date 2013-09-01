@@ -448,9 +448,12 @@ class LockedActiveEvent(object):
         through all touched objects and backs out of them.
         '''
         self._touched_objs_lock()
-        for touched_obj in self.touched_objs.values():
-            touched_obj.backout(self)
+        copied_touched_objs = dict(self.touched_objs)
         self._touched_objs_unlock()
+        
+        for touched_obj in copied_touched_objs.values():
+            touched_obj.backout(self)
+
 
         
         
