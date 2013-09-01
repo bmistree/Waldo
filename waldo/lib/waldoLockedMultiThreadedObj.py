@@ -318,6 +318,8 @@ class MultiThreadedObj(WaldoLockedObj):
 
                 # actually back out the event
                 self.write_lock_holder.event.obj_request_backout_and_release_lock(self)
+                # following code will remove all write lock holders
+                # and read lock holders.
 
                 # add active event as read lock holder and return
                 self.dirty_val = None
@@ -582,7 +584,9 @@ class MultiThreadedObj(WaldoLockedObj):
         if can_backout_all:
             for event_to_backout in to_backout_list:
                 event_to_backout.obj_request_backout_and_release_lock(self)
-
+                # following code will remove all write lock holders
+                # and read lock holders.
+                
             event_cached_priority = self.read_lock_holders.get(event_to_not_backout_uuid,None)
             self.read_lock_holders = {}
             self.write_lock_holder = None
@@ -678,6 +682,9 @@ class MultiThreadedObj(WaldoLockedObj):
 
         # 1
         self.write_lock_holder.event.obj_request_backout_and_release_lock(self)
+        # following code will remove all write lock holders and read
+        # lock holders.
+        
         # 2
         self.write_lock_holder = None
         self.read_lock_holders = {}

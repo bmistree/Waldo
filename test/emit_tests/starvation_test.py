@@ -27,7 +27,7 @@ completing a SideA event to completing a SideB event.
 result_queue = Queue()
 SIDE_A_RESULT = 0
 SIDE_B_RESULT = 1
-NUM_EVENTS_TO_START_PER_ENDPOINT = 2
+NUM_EVENTS_TO_START_PER_ENDPOINT = 10
 
 
 class EndpointThread(threading.Thread):

@@ -226,11 +226,6 @@ class LockedActiveEvent(object):
         '''
         If can enter Should send a message back to parent that 
         '''
-        print (
-            '\nEvt ' + str(int(self.uuid)) + ' on ' +
-            str(int(self.event_parent.local_endpoint._uuid)) + 
-            ' is beginning first phase commit')
-
         self._lock()
 
         if self.state != LockedActiveEvent.STATE_RUNNING:
@@ -388,10 +383,6 @@ class LockedActiveEvent(object):
         5) Forward messages to all other endpoints in event to roll
            back.
         '''
-        print (
-            '\nInternal backout on evt ' + str(int(self.uuid)) + ' host ' +
-            str(int(self.event_parent.local_endpoint._uuid)) + '\n')
-        
         # 0
         if self.state == LockedActiveEvent.STATE_BACKED_OUT:
             # Can get multiple backout requests if, for instance,
@@ -425,13 +416,6 @@ class LockedActiveEvent(object):
         # retry_event in constructor.
         _, self.retry_event = self.event_map.remove_event(self.uuid,True)
 
-        from waldo.lib.waldoEventParent import RootEventParent
-        if isinstance(self.event_parent, RootEventParent):
-            print(
-                '\nRetry event on ' + str(int(self.uuid)) + ' is ' +
-                str(self.retry_event) + '     ' + str(_) + '\n')
-
-
         # 5
         # do not need to acquire locks on other_endpoints_contacted
         # because the only place that it can be written to is when
@@ -461,10 +445,6 @@ class LockedActiveEvent(object):
         '''
         @param error {Exception}
         '''
-        print (
-            '\nPut exception on evt ' + str(int(self.uuid)) + ' host ' +
-            str(int(self.event_parent.local_endpoint._uuid)) + '\n')
-        
         error.waldo_handled = True
         if isinstance(error, util.BackoutException):
             self.backout(None,False)
@@ -515,18 +495,9 @@ class LockedActiveEvent(object):
         endpoint method on, or an endpoint that called an endpoint
         method on us.
         '''
-        print (
-            '\nBefore external backout on evt ' + str(int(self.uuid)) + ' host ' +
-            str(int(self.event_parent.local_endpoint._uuid)) + '\n')
-        
         self._lock()
         self._backout(backout_requester_endpoint_uuid,stop_request)
         self._unlock()
-        
-        print (
-            '\nAfter external backout on evt ' + str(int(self.uuid)) + ' host ' +
-            str(int(self.event_parent.local_endpoint._uuid)) + '\n')
-        
         
         
     def obj_request_backout_and_release_lock(self,obj_requesting):
@@ -544,7 +515,7 @@ class LockedActiveEvent(object):
         self._touched_objs_lock()
         self.touched_objs.pop(obj_requesting.uuid,None)
         self._touched_objs_unlock()
-        obj_requesting.backout(self)
+        # obj_requesting.backout(self)
         
         self._backout(None,False)
 
