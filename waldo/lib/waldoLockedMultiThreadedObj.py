@@ -315,11 +315,8 @@ class MultiThreadedObj(WaldoLockedObj):
 
             # backout write lock if can
             if self.write_lock_holder.event.can_backout_and_hold_lock():
-
                 # actually back out the event
-                self.write_lock_holder.event.obj_request_backout_and_release_lock(self)
-                # following code will remove all write lock holders
-                # and read lock holders.
+                self.obj_request_backout_and_release_lock(self.write_lock_holder.event)
 
                 # add active event as read lock holder and return
                 self.dirty_val = None
@@ -342,6 +339,48 @@ class MultiThreadedObj(WaldoLockedObj):
 
         return waiting_element.queue.get()
 
+
+    def obj_request_backout_and_release_lock(self,active_event):
+        '''
+        ASSUMES CALLED FROM WITHIN LOCK
+        
+        When preempting a lock holder, we first call
+        can_backout_and_hold_lock on the method.  If this returns
+        True, then it means that the active event is holding its lock
+        on the event and preparing for a command to complete its
+        backout (via obj_request_backout_and_release_lock).
+
+        The active event's obj_request_backout_and_release_lock method
+        will not call backout back on this object.  This means that we
+        must remove active_event from the read lock holders, write
+        lock holders, and waiting elements.
+
+        Note: Previously, immediately after calling
+        request_and_release_lock on each obj, we just overwrote
+        write_lock_holders and read_lock holders.  This is
+        insufficient however because the active event may also be a
+        waiting element.  Consider the case where we have a read lock
+        holder that is waiting to become a write lock holder.  If we
+        then backout of the read lock holder, we should also back out
+        of its waiting element.  Otherwise, the waiting element will
+        eventually be scheduled.
+        
+        '''
+        active_event.obj_request_backout_and_release_lock(self)
+
+        # remove write lock holder if it was one
+        self.read_lock_holders.pop(active_event.uuid,None)
+        if ((self.write_lock_holder is not None) and 
+            (self.write_lock_holder.event.uuid == active_event.uuid)):
+            self.write_lock_holder = None
+
+        # un-jam threadsafe queue waiting for event
+        waiting_event = self.waiting_events.pop(active_event.uuid,None)
+        if waiting_event is not None:
+            waiting_event.unwait(self)
+
+
+            
     def acquire_write_lock(self,active_event):
         '''
         0) If already holding a write lock, then return the dirty value
@@ -583,9 +622,7 @@ class MultiThreadedObj(WaldoLockedObj):
         # Phase 2:
         if can_backout_all:
             for event_to_backout in to_backout_list:
-                event_to_backout.obj_request_backout_and_release_lock(self)
-                # following code will remove all write lock holders
-                # and read lock holders.
+                self.obj_request_backout_and_release_lock(event_to_backout)
                 
             event_cached_priority = self.read_lock_holders.get(event_to_not_backout_uuid,None)
             self.read_lock_holders = {}
@@ -681,7 +718,8 @@ class MultiThreadedObj(WaldoLockedObj):
         #    4) Unjam waiting event's read queue, which returns value.
 
         # 1
-        self.write_lock_holder.event.obj_request_backout_and_release_lock(self)
+        self.obj_request_backout_and_release_lock(write_lock_holder.event)
+        
         # following code will remove all write lock holders and read
         # lock holders.
         
