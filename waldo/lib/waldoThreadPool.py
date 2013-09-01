@@ -25,4 +25,9 @@ class ThreadPool(object):
     def thread_listen_and_wait_for_work(self):
         while True:
             service_action = self.work_queue.get()
-            service_action.service()
+            try:
+                service_action.service()
+            except util.BackoutException:
+                # do not want to lose worker threads just because we
+                # were backing out
+                pass                
