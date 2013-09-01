@@ -96,7 +96,15 @@ class Monitor(threading.Thread):
         super(Monitor,self).__init__()
     def run(self):
         time.sleep(6 + random.random())
-        print '\nOn ' + self.multi_threaded_obj.host_uuid + ' with obj ' +  self.multi_threaded_obj.uuid
+
+        if self.multi_threaded_obj.write_lock_holder is None:
+            return
+        
+        print (
+            '\nOn ' +
+            str(int(self.multi_threaded_obj.write_lock_holder.event.event_parent.local_endpoint._uuid)) +
+            ' with obj ' +  str(int(self.multi_threaded_obj.uuid)))
+
         print 'Multi-threaded object read lock holders: '
         print('\n'.join(self.multi_threaded_obj.read_lock_holders.keys()))
         if self.multi_threaded_obj.write_lock_holder is None:
@@ -294,8 +302,8 @@ class MultiThreadedObj(WaldoLockedObj):
             if self.write_lock_holder.event.can_backout_and_hold_lock():
 
                 # actually back out the event
-                self.write_lock_holder.event.obj_request_backout_and_release_lock()
-                
+                self.write_lock_holder.event.obj_request_backout_and_release_lock(self)
+
                 # add active event as read lock holder and return
                 self.dirty_val = None
                 self.write_lock_holder = None
@@ -466,7 +474,6 @@ class MultiThreadedObj(WaldoLockedObj):
         
         # FIXME: Are there chances that could process a stale backout?
         # I think so.
-        
         self._lock()
         # note: there are cases where an active event may try to
         # backout after it's
@@ -553,7 +560,7 @@ class MultiThreadedObj(WaldoLockedObj):
         # Phase 2:
         if can_backout_all:
             for event_to_backout in to_backout_list:
-                event_to_backout.obj_request_backout_and_release_lock()
+                event_to_backout.obj_request_backout_and_release_lock(self)
 
             event_cached_priority = self.read_lock_holders.get(event_to_not_backout_uuid,None)
             self.read_lock_holders = {}
@@ -649,7 +656,7 @@ class MultiThreadedObj(WaldoLockedObj):
         #    4) Unjam waiting event's read queue, which returns value.
 
         # 1
-        self.write_lock_holder.event.obj_request_backout_and_release_lock()
+        self.write_lock_holder.event.obj_request_backout_and_release_lock(self)
         # 2
         self.write_lock_holder = None
         self.read_lock_holders = {}

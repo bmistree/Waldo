@@ -7,6 +7,7 @@ from waldo.lib.waldoCallResults import _BackoutBeforeReceiveMessageResult
 from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
 from waldo.lib.waldoCallResults import _NetworkFailureCallResult
 from waldo.lib.waldoCallResults import _ApplicationExceptionCallResult
+from waldo.lib.waldoServiceActions import EventBackoutTouchedObjs
 
 NETWORK = 'NETWORK'
 BACKOUT = 'BACKOUT'
@@ -139,7 +140,6 @@ class LockedActiveEvent(object):
         out.  Returns False otherwise.
         '''
         self._lock()
-
         still_running = (self.state == LockedActiveEvent.STATE_RUNNING)
         if still_running:
             self._touched_objs_lock()
@@ -382,26 +382,30 @@ class LockedActiveEvent(object):
         5) Forward messages to all other endpoints in event to roll
            back.
         '''
-        
         # 0
         if self.state == LockedActiveEvent.STATE_BACKED_OUT:
             # Can get multiple backout requests if, for instance,
             # multiple partner endpoints get preempted and forward
             # message to this node.  Do nothing: cannot backout twice.
             return
-
+        
         # 1
         self.state = LockedActiveEvent.STATE_BACKED_OUT
 
-        # 2
-        # Note that we are already inside of _lock.  The only times
-        # that we write to self.touched_objs is when we are inside of
-        # _lock.  Therefore, if we're just reading from touched_objs,
-        # and are aleady inside of _lock, we do not need to acquire
-        # touched_objs_lock.
-        for touched_obj in self.touched_objs.values():
-            touched_obj.backout(self)
-
+        
+        # 2: Using a separate thread to backout from objects.  This is
+        # because: 1) does not violate any correctness guarantees to
+        # backout individually and 2) prevents deadlock.  Can get a
+        # case where locked obj holds lock on obj and then tries to
+        # insert iteslf into touched objs, which acquires _lock on
+        # this event.  If, while we are trying to do this, we call
+        # backout (eg., if a backout exception is raised) we will hold
+        # a lock on this event, and then try to lock the object during
+        # backout.  These two together can cause deadlock.  Using a
+        # separate thread instead.
+        service_action = EventBackoutTouchedObjs(self)
+        self.event_parent.local_endpoint._thread_pool.add_service_action(service_action)
+            
         # 3
         self.rollback_unblock_waiting_queues(stop_request)
 
@@ -420,12 +424,24 @@ class LockedActiveEvent(object):
             backout_requester_endpoint_uuid,self.other_endpoints_contacted,
             self.partner_contacted,stop_request)
 
+
+    def _backout_touched_objs(self):
+        '''
+        Called from a separate thread in waldoServiceActions.  Runs
+        through all touched objects and backs out of them.
+        '''
+        self._touched_objs_lock()
+        for touched_obj in self.touched_objs.values():
+            touched_obj.backout(self)
+        self._touched_objs_unlock()
+
+        
+        
     def put_exception(self,error):
         '''
         @param error {Exception}
         '''
         error.waldo_handled = True
-        
         if isinstance(error, util.BackoutException):
             self.backout(None,False)
         else:
@@ -478,7 +494,7 @@ class LockedActiveEvent(object):
         self._unlock()
 
         
-    def obj_request_backout_and_release_lock(self):
+    def obj_request_backout_and_release_lock(self,obj_requesting):
         '''
         Either this or obj_request_no_backout_and_release_lock
         are called after can_backout_and_hold_lock returns
@@ -487,7 +503,17 @@ class LockedActiveEvent(object):
         Called by a WaldoLockedObject to preempt this event.
 
         '''
+        # note that because _backout creates a new thread to run
+        # through each touched object and back them out separately, we
+        # backout the requesting object now.
+        self._touched_objs_lock()
+        self.touched_objs.pop(obj_requesting.uuid,None)
+        self._touched_objs_unlock()
+        obj_requesting.backout(self)
+        
         self._backout(None,False)
+
+        
         # unlock after method
         self._unlock()
 

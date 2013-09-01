@@ -396,3 +396,9 @@ class PromoteBoostedAction(_Action):
 
     def service(self):
         self.evt_to_promote.promote_boosted(self.new_priority)
+
+class EventBackoutTouchedObjs(_Action):
+    def __init__(self,evt_to_backout_touched_on):
+        self.evt_to_backout_touched_on = evt_to_backout_touched_on
+    def service(self):
+        self.evt_to_backout_touched_on._backout_touched_objs()
