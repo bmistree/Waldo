@@ -5,6 +5,8 @@ from waldo.lib.waldoCallResults import _NetworkFailureCallResult
 import traceback
 import threading
 
+from waldo.lib.waldoEventSubscribedTo import EventSubscribedTo
+
 class EventParent(object):
     '''
     Each event has an event parent.  The parent serves as a connection
@@ -190,6 +192,7 @@ class EventParent(object):
         # back out their changes.
         for subscribed_elements_to_rollback in same_host_endpoints_contacted_dict.values():
             endpoint_to_rollback = subscribed_elements_to_rollback.endpoint_object
+            
             if endpoint_to_rollback._uuid != backout_requester_endpoint_uuid:
                 endpoint_to_rollback._receive_request_backout(
                     self.uuid,self.local_endpoint)
@@ -401,8 +404,10 @@ class EndpointEventParent(EventParent):
 
         util.logger_warn('May not need to always rollback')
         copy_other_endpoints_contacted = dict(other_endpoints_contacted)
-        copy_other_endpoints_contacted[self.parent_endpoint._uuid] = self.parent_endpoint
-        super(PartnerEventParent,self).rollback(
+        copy_other_endpoints_contacted[self.parent_endpoint._uuid] = (
+            EventSubscribedTo(self.parent_endpoint,self.result_queue))
+        
+        super(EndpointEventParent,self).rollback(
             backout_requester_endpoint_uuid,copy_other_endpoints_contacted,
             partner_contacted,stop_request)
         
