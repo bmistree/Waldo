@@ -19,6 +19,21 @@ def get_priority_key_from_event_cached_priority_obj(evt_cached_priority_obj):
     return evt_cached_priority_obj.cached_priority
 
 
+def in_place_sort_event_cached_priority_list_by_uuid(list_to_sort):
+    '''
+    @param {list} ---
+    
+    Sorts the list in place.  Lower indices will contain higher uuids
+
+    @returns sorted list
+    '''
+    list_to_sort.sort(key=get_uuid_key_from_event_cached_priority_obj,reverse=True)
+    return list_to_sort
+
+def get_uuid_key_from_event_cached_priority_obj(evt_cached_priority_obj):
+    return evt_cached_priority_obj.event.uuid
+
+
 
 def in_place_sort_waiting_event_list_by_priority(list_to_sort):
     list_to_sort.sort(key=get_priority_key_from_waiting_element,reverse=True)
@@ -541,8 +556,14 @@ class MultiThreadedObj(WaldoLockedObj):
         
         # note: do not have to explicitly include the write lock key
         # here because the event that is writing will be included in
+        # read locks
+
+        # Note: it is important to sort the list of events by uuid
+        # before iterating through them.  This is so that we can
+        # prevent deadlock when two different objects are iterating
+        # through their lists.
         read_lock_holder_event_cached_priorities = list(self.read_lock_holders.values())
-        in_place_sort_event_cached_priority_list_by_priority(
+        in_place_sort_event_cached_priority_list_by_uuid(
             read_lock_holder_event_cached_priorities)
 
         to_backout_list = []
