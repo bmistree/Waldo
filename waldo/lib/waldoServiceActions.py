@@ -216,8 +216,7 @@ class _ReceiveRequestBackoutAction(_Action):
 
         
     def service(self):
-        evt = self.local_endpoint._act_event_map.get_and_remove_event(
-            self.uuid)
+        evt = self.local_endpoint._act_event_map.get_event(self.uuid)
 
         if evt == None:
             # could happen for instance if there are loops in endpoint
