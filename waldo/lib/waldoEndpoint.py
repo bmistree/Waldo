@@ -44,9 +44,11 @@ class _Endpoint(EndpointBase):
         self._endpoint_uuid_str = str(self._uuid)
         
         self._waldo_classes = waldo_classes
-        
+
+        self._clock = waldo_classes['Clock']
         self._act_event_map = waldoActiveEventMap._ActiveEventMap(
-            self,waldo_classes['Clock'])
+            self,self._clock)
+
         self._conn_obj = conn_obj
         
         # whenever we create a new _ExecutingEvent, we point it at
@@ -145,6 +147,16 @@ class _Endpoint(EndpointBase):
         conn_failed = self._conn_failed    
         self._conn_mutex.release()
         return conn_failed
+
+
+    def _clock_update(self):
+        '''
+        Grab timestamp from clock and send it over to partner.
+        '''
+        current_clock_time_stamp = self._clock.get_timestamp()
+        util.logger_warn(
+            'Actually must send clock timestamp across the network ' +
+            'to partner.')
 
 
     def _block_ready(self):

@@ -10,7 +10,18 @@ class AllEndpoints(object):
         self._mutex.acquire()
     def _unlock(self):
         self._mutex.release()
-        
+
+    def send_clock_update(self):
+        self._lock()
+        copied_endpoint_map = dict(self.endpoint_map)
+        self._unlock()
+
+        # note: okay that running through after release lock because
+        # new endpoints will already grab new clock dates
+        for endpt in copied_endpoint_map.values():
+            endpt._clock_update()
+            
+            
     def add_endpoint(self,endpoint):
         self._lock()
         self.endpoint_map[endpoint._uuid] = endpoint
