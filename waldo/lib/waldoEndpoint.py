@@ -154,9 +154,11 @@ class _Endpoint(EndpointBase):
         Grab timestamp from clock and send it over to partner.
         '''
         current_clock_time_stamp = self._clock.get_timestamp()
-        util.logger_warn(
-            'Actually must send clock timestamp across the network ' +
-            'to partner.')
+        general_message = GeneralMessage()
+        general_message.message_type = GeneralMessage.TIMESTAMP_UPDATE
+        timestamp_updated = general_message.timestamp_updated
+        timestamp_updated.data = current_clock_timestamp
+        self._conn_obj.write(general_message.SerializeToString(),self)
 
 
     def _block_ready(self):

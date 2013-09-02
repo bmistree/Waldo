@@ -29,11 +29,11 @@ _default_values = {
     'heartbeat_send_period': 30,
     'thread_pool_count': 100
 }
-    
-_waldo_clock = Clock()
-_waldo_thread_pool = ThreadPool(_default_values['thread_pool_count'])
 
 _waldo_all_endpoints = AllEndpoints()
+_waldo_clock = Clock(_waldo_all_endpoints)
+_waldo_thread_pool = ThreadPool(_default_values['thread_pool_count'])
+
 
 _waldo_classes = {
     # waldo variables
