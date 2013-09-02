@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='util.proto',
   package='',
-  serialized_pb='\n\nutil.proto\"\x14\n\x04UUID\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\x18\n\x08Priority\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c')
+  serialized_pb='\n\nutil.proto\"\x14\n\x04UUID\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\x18\n\x08Priority\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\x19\n\tTimestamp\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c')
 
 
 
@@ -71,8 +71,37 @@ _PRIORITY = descriptor.Descriptor(
   serialized_end=60,
 )
 
+
+_TIMESTAMP = descriptor.Descriptor(
+  name='Timestamp',
+  full_name='Timestamp',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='data', full_name='Timestamp.data', index=0,
+      number=1, type=12, cpp_type=9, label=2,
+      has_default_value=False, default_value="",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=62,
+  serialized_end=87,
+)
+
 DESCRIPTOR.message_types_by_name['UUID'] = _UUID
 DESCRIPTOR.message_types_by_name['Priority'] = _PRIORITY
+DESCRIPTOR.message_types_by_name['Timestamp'] = _TIMESTAMP
 
 class UUID(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
@@ -85,5 +114,11 @@ class Priority(message.Message):
   DESCRIPTOR = _PRIORITY
   
   # @@protoc_insertion_point(class_scope:Priority)
+
+class Timestamp(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _TIMESTAMP
+  
+  # @@protoc_insertion_point(class_scope:Timestamp)
 
 # @@protoc_insertion_point(module_scope)

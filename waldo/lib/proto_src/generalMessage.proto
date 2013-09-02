@@ -12,6 +12,7 @@ import "partnerStop.proto";
 import "partnerError.proto";
 import "heartbeat.proto";
 import "promotionMessage.proto";
+import "util.proto";
 
 message GeneralMessage
 {
@@ -30,6 +31,7 @@ message GeneralMessage
         PARTNER_ERROR = 11;
         HEARTBEAT = 12;
         PROMOTION = 13;
+        TIMESTAMP_UPDATE = 14;
     }
 
     required MessageType message_type = 1;
@@ -47,4 +49,5 @@ message GeneralMessage
     optional PartnerError error = 13;
     optional Heartbeat heartbeat = 14;
     optional Promotion promotion = 15;
+    optional Timestamp timestamp_updated = 16;
 }

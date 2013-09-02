@@ -9,3 +9,7 @@ message Priority
     required bytes data = 1;
 }
 
+message Timestamp
+{
+    required bytes data = 1;
+}

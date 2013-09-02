@@ -365,6 +365,8 @@ class _Endpoint(EndpointBase):
 
         if general_msg.HasField('notify_ready'):
             endpoint_uuid = general_msg.notify_ready.endpoint_uuid
+            clock_timestamp = general_msg.notify_ready.timestamp.data
+            self._clock.got_partner_timestamp(clock_timestamp)
             self._receive_partner_ready(endpoint_uuid.data)
         elif general_msg.HasField('notify_of_peered_modified_resp'):
             service_action = waldoServiceActions._ReceivePeeredModifiedResponseMsg(
@@ -466,8 +468,14 @@ class _Endpoint(EndpointBase):
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.PARTNER_NOTIFY_READY
         partner_notify_ready = general_message.notify_ready
+
+        # endpoint uuid
         endpoint_uuid = partner_notify_ready.endpoint_uuid
         endpoint_uuid.data = self._uuid
+        
+        # timestamps
+        timestamp = partner_notify_ready.timestamp
+        timestamp.data = self._clock.get_timestamp()
         self._conn_obj.write(general_message.SerializeToString(),self)
 
     def _forward_promotion_message(self,uuid,new_priority):

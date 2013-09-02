@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerNotifyReady.proto',
   package='',
-  serialized_pb='\n\x18partnerNotifyReady.proto\x1a\nutil.proto\"2\n\x12PartnerNotifyReady\x12\x1c\n\rendpoint_uuid\x18\x01 \x02(\x0b\x32\x05.UUID')
+  serialized_pb='\n\x18partnerNotifyReady.proto\x1a\nutil.proto\"Q\n\x12PartnerNotifyReady\x12\x1c\n\rendpoint_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x1d\n\ttimestamp\x18\x02 \x02(\x0b\x32\n.Timestamp')
 
 
 
@@ -31,6 +31,13 @@ _PARTNERNOTIFYREADY = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    descriptor.FieldDescriptor(
+      name='timestamp', full_name='PartnerNotifyReady.timestamp', index=1,
+      number=2, type=11, cpp_type=10, label=2,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -41,10 +48,11 @@ _PARTNERNOTIFYREADY = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=40,
-  serialized_end=90,
+  serialized_end=121,
 )
 
 _PARTNERNOTIFYREADY.fields_by_name['endpoint_uuid'].message_type = util_pb2._UUID
+_PARTNERNOTIFYREADY.fields_by_name['timestamp'].message_type = util_pb2._TIMESTAMP
 DESCRIPTOR.message_types_by_name['PartnerNotifyReady'] = _PARTNERNOTIFYREADY
 
 class PartnerNotifyReady(message.Message):
