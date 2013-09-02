@@ -3,5 +3,4 @@ import "util.proto";
 message PartnerNotifyReady
 {
     required UUID endpoint_uuid = 1;
-    required Timestamp timestamp = 2;
 }

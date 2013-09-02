@@ -108,6 +108,8 @@ class _Endpoint(EndpointBase):
         self._heartbeat = Heartbeat(socket=self._conn_obj, 
             timeout_cb=self.partner_connection_failure,*args)
         self._heartbeat.start()
+        self._send_clock_update()
+        
         
     def _stop_lock(self):
         self._stop_mutex.acquire()
@@ -149,11 +151,11 @@ class _Endpoint(EndpointBase):
         return conn_failed
 
 
-    def _clock_update(self):
+    def _send_clock_update(self):
         '''
         Grab timestamp from clock and send it over to partner.
         '''
-        current_clock_time_stamp = self._clock.get_timestamp()
+        current_clock_timestamp = self._clock.get_timestamp()
         general_message = GeneralMessage()
         general_message.message_type = GeneralMessage.TIMESTAMP_UPDATE
         timestamp_updated = general_message.timestamp_updated
@@ -234,7 +236,7 @@ class _Endpoint(EndpointBase):
         # any future events that try to check if ready, will get True
         setattr(
             self,'_block_ready',self._swapped_in_block_ready)
-
+        
         self._ready_waiting_list_lock('set_ready')        
         for queue in self._ready_waiting_list:
             queue.put(True)
@@ -367,13 +369,15 @@ class _Endpoint(EndpointBase):
 
         if general_msg.HasField('notify_ready'):
             endpoint_uuid = general_msg.notify_ready.endpoint_uuid
-            clock_timestamp = general_msg.notify_ready.timestamp.data
-            self._clock.got_partner_timestamp(clock_timestamp)
             self._receive_partner_ready(endpoint_uuid.data)
         elif general_msg.HasField('notify_of_peered_modified_resp'):
             service_action = waldoServiceActions._ReceivePeeredModifiedResponseMsg(
                 self,general_msg.notify_of_peered_modified_resp)
             self._thread_pool.add_service_action(service_action)
+
+        elif general_msg.HasField('timestamp_updated'):
+            clock_timestamp = general_msg.timestamp_updated.data
+            self._clock.got_partner_timestamp(clock_timestamp)            
             
         elif general_msg.HasField('request_sequence_block'):
             service_action =  waldoServiceActions._ReceivePartnerMessageRequestSequenceBlockAction(

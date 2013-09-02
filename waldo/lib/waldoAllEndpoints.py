@@ -19,7 +19,7 @@ class AllEndpoints(object):
         # note: okay that running through after release lock because
         # new endpoints will already grab new clock dates
         for endpt in copied_endpoint_map.values():
-            endpt._clock_update()
+            endpt._send_clock_update()
             
             
     def add_endpoint(self,endpoint):
