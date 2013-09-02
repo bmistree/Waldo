@@ -47,10 +47,12 @@ class Clock(object):
         # note: need to change delta atomically: therefore cannot call
         # get_timestamp separately
         self._delta_lock()
+        # timestamp = float('{:10.6f}'.format(time.time() + self.delta))
         timestamp = time.time() + self.delta
         if partner_float > timestamp:
-            self.delta = partner_float - timestamp
+            self.delta = self.delta + partner_float - timestamp
             needs_update = True
+            
         self._delta_unlock()
 
         if needs_update:
