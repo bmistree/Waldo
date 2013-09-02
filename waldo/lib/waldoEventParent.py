@@ -219,11 +219,28 @@ class RootEventParent(EventParent):
         # are true in this dict, then we can transition into second
         # phase commit.
         self.endpoints_waiting_on_commit = {}
+        # we can add and remove events to waiting on commit lock from
+        # multiple threads.  it appears that this can desynchronize
+        # operations on endpoints_waiting_on_commit.  For instance, if
+        # one thread puts in that it's waiting on a particular
+        # endpoint and another thread puts in that the other
+        # endpoint's first phase transition has been received, we can
+        # get a case where the first message overwrites the operations
+        # of the second.
+        self._endpoints_waiting_on_commit_lock = threading.Lock()
 
+        
         # when the root tries to commit the event, it blocks while
         # reading the event_complete_queue
         self.event_complete_queue = util.Queue.Queue()
         super(RootEventParent,self).__init__(uuid,priority)
+
+
+    def _lock_endpoints_waiting_on_commit(self):
+        self._endpoints_waiting_on_commit_lock.acquire()
+    
+    def _unlock_endpoints_waiting_on_commit(self):
+        self._endpoints_waiting_on_commit_lock.release()
 
         
     def second_phase_transition_success(
@@ -254,10 +271,8 @@ class RootEventParent(EventParent):
         '''
         For arguments, @see EventParent.
         '''
-        super(RootEventParent,self).first_phase_transition_success(
-            same_host_endpoints_contacted_dict,partner_contacted,event)
-
         # note that we should not wait on ourselves to commit
+        self._lock_endpoints_waiting_on_commit()
         self.endpoints_waiting_on_commit[self.local_endpoint._uuid] = True
         if partner_contacted:
             self.endpoints_waiting_on_commit[self.local_endpoint._partner_uuid] = False
@@ -267,7 +282,12 @@ class RootEventParent(EventParent):
 
         # not waiting on self.
         self.endpoints_waiting_on_commit[self.local_endpoint._uuid] = True
-            
+        self._unlock_endpoints_waiting_on_commit()
+
+        
+        super(RootEventParent,self).first_phase_transition_success(
+            same_host_endpoints_contacted_dict,partner_contacted,event)
+
         # after first phase has completed, should check if can
         # transition directly to second phase (ie, no other endpoints
         # were involved in event.)
@@ -279,10 +299,13 @@ class RootEventParent(EventParent):
         If we are no longer waiting on any endpoint to acknowledge
         first phase commit, then transition into second phase commit.
         '''
+        self._lock_endpoints_waiting_on_commit()
         for endpt_transitioned in self.endpoints_waiting_on_commit.values():
             if not endpt_transitioned:
+                self._unlock_endpoints_waiting_on_commit()                
                 return
-
+            
+        self._unlock_endpoints_waiting_on_commit()
         self.event.second_phase_commit()
 
     def rollback(
@@ -312,13 +335,15 @@ class RootEventParent(EventParent):
         committing.  Check whether should transition into second phase
         of commit.
         '''
+        self._lock_endpoints_waiting_on_commit()
         self.endpoints_waiting_on_commit[msg_originator_endpoint_uuid] = True
         may_transition = True
         for end_uuid in children_event_endpoint_uuids:
             val = self.endpoints_waiting_on_commit.setdefault(end_uuid,False)
             if not val:
                 may_transition = False
-
+        self._unlock_endpoints_waiting_on_commit()
+                
         if may_transition:
             self.check_transition()
             
