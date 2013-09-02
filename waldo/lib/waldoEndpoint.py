@@ -478,10 +478,7 @@ class _Endpoint(EndpointBase):
         # endpoint uuid
         endpoint_uuid = partner_notify_ready.endpoint_uuid
         endpoint_uuid.data = self._uuid
-        
-        # timestamps
-        timestamp = partner_notify_ready.timestamp
-        timestamp.data = self._clock.get_timestamp()
+
         self._conn_obj.write(general_message.SerializeToString(),self)
 
     def _forward_promotion_message(self,uuid,new_priority):
