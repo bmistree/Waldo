@@ -25,9 +25,9 @@ completing a SideA event to completing a SideB event.
 # If it's an event from SideA that finished, it puts SIDE_A_RESULT in;
 # if it's an event from SideB, then puts SIDE_B_RESULT in queue.
 result_queue = Queue()
-SIDE_A_RESULT = 0
-SIDE_B_RESULT = 1
-NUM_EVENTS_TO_START_PER_ENDPOINT = 10
+SIDE_A_RESULT = 1
+SIDE_B_RESULT = -1
+NUM_EVENTS_TO_START_PER_ENDPOINT = 50
 
 
 class EndpointThread(threading.Thread):
@@ -37,7 +37,6 @@ class EndpointThread(threading.Thread):
         super(EndpointThread,self).__init__()
     def run(self):
         result = self.endpt.seq(self.result_to_use)
-        print '\nGot result: ' + str(result)
         global result_queue
         result_queue.put(result)
         
@@ -66,10 +65,10 @@ def run_test():
     side_a, side_b=(
         Waldo.same_host_create(SideA,delay).same_host_create(SideB,delay))
 
-    print '\n\n'
-    print 'A: ' + str(side_a)
-    print 'B: ' + str(side_b)
-    print '\n\n'
+    # print '\n\n'
+    # print 'A: ' + str(side_a)
+    # print 'B: ' + str(side_b)
+    # print '\n\n'
     
     # start events on each endpoint
     all_as = start_endpt(side_a,SIDE_A_RESULT)
@@ -87,14 +86,28 @@ def delay(endpt):
 
 def check_result_queue():
     global result_queue
-    print '\n\n'
+    running_sum = 0
+    unfair = False
+    result_list= []
     while True:
         try:
             result = result_queue.get_nowait()
-            print result
+            running_sum += result
+            result_list.append(result)
+            
+            if abs(running_sum) >= 2:
+                unfair = True
+            
         except:
             break
-    print '\n\n'
+
+    if unfair:
+        print '\nUnfair\n'
+        print result_list
+        print '\n'
+        return False
+
+        
     return True
 
     

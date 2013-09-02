@@ -125,7 +125,8 @@ def run_emit_tests():
     import emit_tests.network_exception_nested_sequence_test
     import emit_tests.try_finally_test
     import emit_tests.retry_test
-    
+    import emit_tests.starvation_test
+
     
     emit_tests_to_run = [
 
@@ -296,6 +297,9 @@ def run_emit_tests():
 
         ('Tests vanilla retry',
          emit_tests.retry_test.run_test),
+
+        ('Tests boosted starvation guarantees',
+         emit_tests.starvation_test.run_test),
         
         ]
 
