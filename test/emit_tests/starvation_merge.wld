@@ -1,0 +1,61 @@
+StarvationTest
+
+Symmetric SideA,SideB;
+
+Sequences
+{
+  SeqOne: SideA.start_seq_one -> SideB.finish_seq_one;
+  SeqTwo: SideA.start_seq_two -> SideB.finish_seq_two;
+}
+
+Sequence SeqOne () 
+{
+    SideA.start_seq_one
+    {
+        shared_data_one += 1;
+    }
+    SideB.finish_seq_one
+    {
+        shared_data_one += 1;
+        delay();
+    }
+}
+
+Sequence SeqTwo () 
+{
+    SideA.start_seq_two
+    {
+        shared_data_two += 1;
+    }
+    SideB.finish_seq_two
+    {
+        shared_data_two += 1;
+        delay();
+    }
+}
+
+
+
+SideA
+{
+    Number shared_data_one = 0;
+    Number shared_data_two = 0;
+    Function (returns: Nothing) delay;
+    onCreate(Function (returns: Nothing) delay_)
+    {
+        delay =delay_;
+    }
+    
+    Public Function seq_one(Number num) returns Number
+    {
+        SeqOne();
+        return num;
+    }
+    
+    Public Function seq_two(Number num) returns Number
+    {
+        SeqTwo();
+        return num;
+    }
+    
+}
