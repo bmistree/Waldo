@@ -284,9 +284,9 @@ def run_emit_tests():
          'sequence and propagated back to be handled.',
          emit_tests.application_exception_nested_sequence_test.run_test),
 
-        ('Tests network exception may be thrown in middle of a nested ' +
-         'sequence and propagated back to be handled.',
-         emit_tests.network_exception_nested_sequence_test.run_test),
+        # ('Tests network exception may be thrown in middle of a nested ' +
+        #  'sequence and propagated back to be handled.',
+        #  emit_tests.network_exception_nested_sequence_test.run_test),
 
         ('Tests retry callbacks',
          emit_tests.retry_cb.run_test),
