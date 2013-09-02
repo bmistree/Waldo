@@ -57,7 +57,10 @@ class _Endpoint(EndpointBase):
         # put service actions into thread pool to be executed
         self._thread_pool = waldo_classes['ThreadPool']
 
-
+        self._all_endpoints = waldo_classes['AllEndpoints']
+        self._all_endpoints.add_endpoint(self)
+        
+        
         self._host_uuid = host_uuid
 
         self._signal_queue = Queue.Queue()
@@ -123,6 +126,10 @@ class _Endpoint(EndpointBase):
         exception, thus backing out from all current events, and sets the 
         conn_failed flag, but only if this method has not been called before.
         '''
+        # notify all_endpoints to remove this endpoint because it has
+        # been stopped
+        self._all_endpoints.network_exception(self)
+        
         self._conn_mutex.acquire()
         self._conn_obj.close()
         self._raise_network_exception()
@@ -958,6 +965,11 @@ class _Endpoint(EndpointBase):
           3) If have already called stop myself then tell active event
              map we're ready for a shutdown when it is
         '''
+
+        # notify all_endpoints to remove this endpoint because it has
+        # been stopped
+        self._all_endpoints.endpoint_stopped(self)
+        
         self._stop_lock()
 
         # 2 from above

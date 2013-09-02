@@ -16,6 +16,7 @@ import waldo.lib.shim.get_math_endpoint
 import waldo.lib.waldoLockedVariables as waldoLockedVariables
 from waldo.lib.waldoClock import Clock
 from waldo.lib.waldoThreadPool import ThreadPool
+from waldo.lib.waldoAllEndpoints import AllEndpoints
 
 StoppedException = util.StoppedException
 
@@ -31,6 +32,8 @@ _default_values = {
     
 _waldo_clock = Clock()
 _waldo_thread_pool = ThreadPool(_default_values['thread_pool_count'])
+
+_waldo_all_endpoints = AllEndpoints()
 
 _waldo_classes = {
     # waldo variables
@@ -79,7 +82,8 @@ _waldo_classes = {
     
     # Not a class, but global variable passed to everything:
     'Clock': _waldo_clock,
-    'ThreadPool': _waldo_thread_pool
+    'ThreadPool': _waldo_thread_pool,
+    'AllEndpoints': _waldo_all_endpoints,
     }
 
 
