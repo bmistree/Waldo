@@ -379,7 +379,6 @@ class PartnerEventParent(EventParent):
         self,backout_requester_endpoint_uuid,other_endpoints_contacted,
         partner_contacted,stop_request):
 
-        util.logger_warn('May not need to always rollback')
         super(PartnerEventParent,self).rollback(
             backout_requester_endpoint_uuid,other_endpoints_contacted,
             True,stop_request)
@@ -427,7 +426,6 @@ class EndpointEventParent(EventParent):
         self,backout_requester_endpoint_uuid,other_endpoints_contacted,
         partner_contacted,stop_request):
 
-        util.logger_warn('May not need to always rollback')
         copy_other_endpoints_contacted = dict(other_endpoints_contacted)
         copy_other_endpoints_contacted[self.parent_endpoint._uuid] = (
             EventSubscribedTo(self.parent_endpoint,self.result_queue))
