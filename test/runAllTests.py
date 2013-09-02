@@ -17,6 +17,8 @@ import locked_tests.concurrent_map
 import locked_tests.partner_seq_local_test
 import locked_tests.partner_seq_local_map_test
 import locked_tests.partner_seq_local_list_test
+import locked_tests.clock_update_test
+
 
 emit_test_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), 'emit_tests')
@@ -36,6 +38,7 @@ def run_lib_tests():
         ('Sequence local data',locked_tests.partner_seq_local_test.run_test),
         ('Sequence local map',locked_tests.partner_seq_local_map_test.run_test),
         ('Sequence local list',locked_tests.partner_seq_local_list_test.run_test),
+        ('Check clock updates',locked_tests.clock_update_test.run_test),
         ]
     run_tests(to_run)
 
