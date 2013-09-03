@@ -55,8 +55,8 @@ OmidServer {
             if (node_number == nodes[answer].node_num) {
                 if (not nodes[answer].found) {
                     nodes[answer].found = True;
-                    update_maps(answer);
                     game[username].score += 5;
+                    update_maps(answer);
                 }
                 //Tell user node has already been found
             }

@@ -152,7 +152,6 @@ class InternalList(waldoReferenceContainerBase._ReferenceContainer):
 
         Returns a deep copy of the object.
         '''
-
         # will be used as initial_val when constructing copied
         # InternalMap that we return.
         new_internal_val = []
@@ -251,6 +250,7 @@ class _InternalListVersion(
             'Cannot call del_key on list.  Use del_key_list instead.')
 
     def copy(self):
+
         '''
         @see _ReferenceContainerVersion.copy
         '''

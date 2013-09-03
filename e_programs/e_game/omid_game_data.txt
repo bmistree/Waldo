@@ -1,8 +1,14 @@
 -----GAME-----
 --NODES--
 STANFORD -- 1 -- 350 -- 350 -- T
-GATES -- 2 -- 250 -- 250 -- F
-BUILDINGS -- 5 -- 50 -- 50 -- T
+STUDENTS -- 2 -- 50 -- 250 -- T
+BUILDINGS -- 3 -- 50 -- 50 -- T
+GATES -- 4 -- 250 -- 250 -- F
+PHIL LEVIS -- 5 -- 250 -- 350 -- F
+BEHRAM -- 6 -- 125 -- 300 -- F
 --ARCS--
 BUILDINGS -- GATES
 GATES -- STANFORD
+GATES -- PHIL LEVIS
+PHIL LEVIS -- BEHRAM
+

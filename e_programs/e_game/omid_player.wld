@@ -103,19 +103,23 @@ Sequence UpdateGame() {
     }
     OmidPlayer.updateMap{
         clear_map();
-        signal(update_score, score);
-        for (Text answer in node_map) {
-            node_list.append(node_map[answer]);
-        }
+        print('about to call update score');
+        signal(update_score,toText(score));
         for (Struct arc_information arc_info in arc_map) {
             Struct node_information node1 = node_map[arc_info.node1];
             Struct node_information node2 = node_map[arc_info.node2];
-            if (node1.found and node2.found) {
+            //extCopy [node1.x, node1.y, node2.x, node2.y] to draw_arc; not allowed
+            if (node1.found or node2.found) {
                 draw_arc.append(node1.x);
                 draw_arc.append(node1.y);
                 draw_arc.append(node2.x);
                 draw_arc.append(node2.y);
             }
+        }
+        for (Text answer in node_map) {
+            print(answer);
+            print(node_map[answer].answer);
+            node_list.append(node_map[answer]);
         }
         print("finished updating");
     }
@@ -151,9 +155,9 @@ OmidPlayer {
     }
 
     Public Function send_answer(Text node_num, Text answer) {
-        print("about to send a: " + node_num + " answer: " + answer);
-        SendAnswer(node_num, answer);
-        print("answer sent");
+        if (game_in_session()) {
+            SendAnswer(node_num, answer);
+        }
     }
 }
 

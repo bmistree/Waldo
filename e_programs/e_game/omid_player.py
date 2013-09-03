@@ -45,7 +45,7 @@ class OmidGamePlayer(Frame):
         self.answer_input = TextCtrl(self, style = TE_PROCESS_ENTER, pos = (answer_label.GetPosition().x + answer_label.GetSize().x + BUFFER, WINDOW_HEIGHT - (TEXT_BOX_HEIGHT + BUFFER)), size = (ANSWER_INPUT_WIDTH, TEXT_BOX_HEIGHT))
         self.number_input.Bind(EVT_TEXT_ENTER, self.read_answer)
         self.answer_input.Bind(EVT_TEXT_ENTER, self.read_answer)
-        self.score = StaticText(self.canvas, pos = (WINDOW_WIDTH - 30, BUFFER)) 
+        self.score = None
         self.player = Waldo.tcp_connect(OmidPlayer, HOSTNAME, OMID_PORT, name, GUI_String_Ext(
 self.waiting.get_gui_screen()), GUI_Draw(self.draw_circle), GUI_Draw(self.draw_arc), self.update_score, self.clear_map)   
         thread.start_new_thread(self.check_signal, ())
@@ -60,11 +60,13 @@ self.waiting.get_gui_screen()), GUI_Draw(self.draw_circle), GUI_Draw(self.draw_a
         self.diagram.DeleteAllShapes()
 
     def update_score(self, endpoint, number):
-        self.score.SetLabel(str(number).replace(".0", ""))
+        print number
+        print 'update score called'
+        if self.score != None:
+            self.score.Destroy()
+        self.score = StaticText(self.canvas, pos = (WINDOW_WIDTH - 30, BUFFER), label = str(number).replace(".0", "")) 
         
     def draw_arc(self, arc):
-        print 'arc draw'
-        print arc
         nums_in_arc_list = 4
         for i in range(len(arc)/nums_in_arc_list):
             line = LineShape()
@@ -88,7 +90,7 @@ self.waiting.get_gui_screen()), GUI_Draw(self.draw_circle), GUI_Draw(self.draw_a
                 print 'not empty'
                 circle = CircleShape(CIRCLE_DIAMETER)
                 if node['found']:
-                    circle.SetBrush(Brush('GREEN', style = SOLID))
+                    circle.SetBrush(Brush('BLUE', style = SOLID))
                     circle.SetTextColour('WHITE')
                     circle.AddText(node['answer'])
                 else:

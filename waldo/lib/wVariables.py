@@ -1,5 +1,5 @@
 from waldo.lib.waldoReferenceValue import _ReferenceValue
-from waldo.lib.waldoInternalList import InternalList, SingleThreadInternalList
+from waldo.lib.waldoInternalList import SingleThreadInternalList, InternalList
 from waldo.lib.waldoInternalMap import InternalMap, SingleThreadInternalMap
 from abc import abstractmethod
 import waldo.lib.util as util
@@ -9,6 +9,8 @@ from waldo.lib.proto_compiled.varStoreDeltas_pb2 import VarStoreDeltas
 from waldo.lib.waldoObj import WaldoObj
 
 from waldo.lib.singleThreadReferenceValue import _SingleThreadReferenceValue
+import sys
+import os
 
 class _WaldoSingleThreadVariable(_SingleThreadReferenceValue):
     '''
@@ -489,6 +491,7 @@ def is_non_ext_list_var (to_check):
             
     
 class WaldoListVariable(_WaldoExternalVariable):
+ 
     def __init__(self,name,host_uuid,peered=False,init_val=None):
         # see comments in recursive_map_list
         if init_val == None:
