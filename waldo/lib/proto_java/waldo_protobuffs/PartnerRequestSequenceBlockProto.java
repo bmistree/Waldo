@@ -21,9 +21,9 @@ public final class PartnerRequestSequenceBlockProto {
     waldo_protobuffs.UtilProto.Priority getPriority();
     waldo_protobuffs.UtilProto.PriorityOrBuilder getPriorityOrBuilder();
     
-    // optional bytes name_of_block_requesting = 3;
+    // optional string name_of_block_requesting = 3;
     boolean hasNameOfBlockRequesting();
-    com.google.protobuf.ByteString getNameOfBlockRequesting();
+    String getNameOfBlockRequesting();
     
     // required .UUID reply_with_uuid = 4;
     boolean hasReplyWithUuid();
@@ -100,14 +100,36 @@ public final class PartnerRequestSequenceBlockProto {
       return priority_;
     }
     
-    // optional bytes name_of_block_requesting = 3;
+    // optional string name_of_block_requesting = 3;
     public static final int NAME_OF_BLOCK_REQUESTING_FIELD_NUMBER = 3;
-    private com.google.protobuf.ByteString nameOfBlockRequesting_;
+    private java.lang.Object nameOfBlockRequesting_;
     public boolean hasNameOfBlockRequesting() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    public com.google.protobuf.ByteString getNameOfBlockRequesting() {
-      return nameOfBlockRequesting_;
+    public String getNameOfBlockRequesting() {
+      java.lang.Object ref = nameOfBlockRequesting_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          nameOfBlockRequesting_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getNameOfBlockRequestingBytes() {
+      java.lang.Object ref = nameOfBlockRequesting_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        nameOfBlockRequesting_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
     }
     
     // required .UUID reply_with_uuid = 4;
@@ -165,7 +187,7 @@ public final class PartnerRequestSequenceBlockProto {
     private void initFields() {
       eventUuid_ = waldo_protobuffs.UtilProto.UUID.getDefaultInstance();
       priority_ = waldo_protobuffs.UtilProto.Priority.getDefaultInstance();
-      nameOfBlockRequesting_ = com.google.protobuf.ByteString.EMPTY;
+      nameOfBlockRequesting_ = "";
       replyWithUuid_ = waldo_protobuffs.UtilProto.UUID.getDefaultInstance();
       replyToUuid_ = waldo_protobuffs.UtilProto.UUID.getDefaultInstance();
       sequenceLocalVarStoreDeltas_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.getDefaultInstance();
@@ -236,7 +258,7 @@ public final class PartnerRequestSequenceBlockProto {
         output.writeMessage(2, priority_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, nameOfBlockRequesting_);
+        output.writeBytes(3, getNameOfBlockRequestingBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeMessage(4, replyWithUuid_);
@@ -269,7 +291,7 @@ public final class PartnerRequestSequenceBlockProto {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, nameOfBlockRequesting_);
+          .computeBytesSize(3, getNameOfBlockRequestingBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
@@ -429,7 +451,7 @@ public final class PartnerRequestSequenceBlockProto {
           priorityBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000002);
-        nameOfBlockRequesting_ = com.google.protobuf.ByteString.EMPTY;
+        nameOfBlockRequesting_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
         if (replyWithUuidBuilder_ == null) {
           replyWithUuid_ = waldo_protobuffs.UtilProto.UUID.getDefaultInstance();
@@ -904,15 +926,22 @@ public final class PartnerRequestSequenceBlockProto {
         return priorityBuilder_;
       }
       
-      // optional bytes name_of_block_requesting = 3;
-      private com.google.protobuf.ByteString nameOfBlockRequesting_ = com.google.protobuf.ByteString.EMPTY;
+      // optional string name_of_block_requesting = 3;
+      private java.lang.Object nameOfBlockRequesting_ = "";
       public boolean hasNameOfBlockRequesting() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public com.google.protobuf.ByteString getNameOfBlockRequesting() {
-        return nameOfBlockRequesting_;
+      public String getNameOfBlockRequesting() {
+        java.lang.Object ref = nameOfBlockRequesting_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          nameOfBlockRequesting_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
       }
-      public Builder setNameOfBlockRequesting(com.google.protobuf.ByteString value) {
+      public Builder setNameOfBlockRequesting(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -926,6 +955,11 @@ public final class PartnerRequestSequenceBlockProto {
         nameOfBlockRequesting_ = getDefaultInstance().getNameOfBlockRequesting();
         onChanged();
         return this;
+      }
+      void setNameOfBlockRequesting(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000004;
+        nameOfBlockRequesting_ = value;
+        onChanged();
       }
       
       // required .UUID reply_with_uuid = 4;
@@ -1317,7 +1351,7 @@ public final class PartnerRequestSequenceBlockProto {
       "l.proto\032\024varStoreDeltas.proto\"\241\002\n\033Partne" +
       "rRequestSequenceBlock\022\031\n\nevent_uuid\030\001 \002(" +
       "\0132\005.UUID\022\033\n\010priority\030\002 \002(\0132\t.Priority\022 \n" +
-      "\030name_of_block_requesting\030\003 \001(\014\022\036\n\017reply" +
+      "\030name_of_block_requesting\030\003 \001(\t\022\036\n\017reply" +
       "_with_uuid\030\004 \002(\0132\005.UUID\022\034\n\rreply_to_uuid" +
       "\030\005 \001(\0132\005.UUID\0228\n\037sequence_local_var_stor" +
       "e_deltas\030\006 \002(\0132\017.VarStoreDeltas\0220\n\027peere" +

@@ -13,7 +13,7 @@ import varStoreDeltas_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerRequestSequenceBlock.proto',
   package='',
-  serialized_pb='\n!partnerRequestSequenceBlock.proto\x1a\nutil.proto\x1a\x14varStoreDeltas.proto\"\xa1\x02\n\x1bPartnerRequestSequenceBlock\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x1b\n\x08priority\x18\x02 \x02(\x0b\x32\t.Priority\x12 \n\x18name_of_block_requesting\x18\x03 \x01(\x0c\x12\x1e\n\x0freply_with_uuid\x18\x04 \x02(\x0b\x32\x05.UUID\x12\x1c\n\rreply_to_uuid\x18\x05 \x01(\x0b\x32\x05.UUID\x12\x38\n\x1fsequence_local_var_store_deltas\x18\x06 \x02(\x0b\x32\x0f.VarStoreDeltas\x12\x30\n\x17peered_var_store_deltas\x18\x07 \x02(\x0b\x32\x0f.VarStoreDeltasB4\n\x10waldo_protobuffsB PartnerRequestSequenceBlockProto')
+  serialized_pb='\n!partnerRequestSequenceBlock.proto\x1a\nutil.proto\x1a\x14varStoreDeltas.proto\"\xa1\x02\n\x1bPartnerRequestSequenceBlock\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x1b\n\x08priority\x18\x02 \x02(\x0b\x32\t.Priority\x12 \n\x18name_of_block_requesting\x18\x03 \x01(\t\x12\x1e\n\x0freply_with_uuid\x18\x04 \x02(\x0b\x32\x05.UUID\x12\x1c\n\rreply_to_uuid\x18\x05 \x01(\x0b\x32\x05.UUID\x12\x38\n\x1fsequence_local_var_store_deltas\x18\x06 \x02(\x0b\x32\x0f.VarStoreDeltas\x12\x30\n\x17peered_var_store_deltas\x18\x07 \x02(\x0b\x32\x0f.VarStoreDeltasB4\n\x10waldo_protobuffsB PartnerRequestSequenceBlockProto')
 
 
 
@@ -41,8 +41,8 @@ _PARTNERREQUESTSEQUENCEBLOCK = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='name_of_block_requesting', full_name='PartnerRequestSequenceBlock.name_of_block_requesting', index=2,
-      number=3, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),

@@ -196,17 +196,17 @@ public final class VarStoreDeltasProto {
     public interface SingleNumberDeltaOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
       
-      // required bytes var_name = 1;
+      // required string var_name = 1;
       boolean hasVarName();
-      com.google.protobuf.ByteString getVarName();
+      String getVarName();
       
       // required double var_data = 2;
       boolean hasVarData();
       double getVarData();
       
-      // optional bytes version_obj = 3;
+      // optional string version_obj = 3;
       boolean hasVersionObj();
-      com.google.protobuf.ByteString getVersionObj();
+      String getVersionObj();
     }
     public static final class SingleNumberDelta extends
         com.google.protobuf.GeneratedMessage
@@ -237,14 +237,36 @@ public final class VarStoreDeltasProto {
       }
       
       private int bitField0_;
-      // required bytes var_name = 1;
+      // required string var_name = 1;
       public static final int VAR_NAME_FIELD_NUMBER = 1;
-      private com.google.protobuf.ByteString varName_;
+      private java.lang.Object varName_;
       public boolean hasVarName() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public com.google.protobuf.ByteString getVarName() {
-        return varName_;
+      public String getVarName() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            varName_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVarNameBytes() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          varName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
       // required double var_data = 2;
@@ -257,20 +279,42 @@ public final class VarStoreDeltasProto {
         return varData_;
       }
       
-      // optional bytes version_obj = 3;
+      // optional string version_obj = 3;
       public static final int VERSION_OBJ_FIELD_NUMBER = 3;
-      private com.google.protobuf.ByteString versionObj_;
+      private java.lang.Object versionObj_;
       public boolean hasVersionObj() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public com.google.protobuf.ByteString getVersionObj() {
-        return versionObj_;
+      public String getVersionObj() {
+        java.lang.Object ref = versionObj_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            versionObj_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVersionObjBytes() {
+        java.lang.Object ref = versionObj_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          versionObj_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
       private void initFields() {
-        varName_ = com.google.protobuf.ByteString.EMPTY;
+        varName_ = "";
         varData_ = 0D;
-        versionObj_ = com.google.protobuf.ByteString.EMPTY;
+        versionObj_ = "";
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
@@ -293,13 +337,13 @@ public final class VarStoreDeltasProto {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, varName_);
+          output.writeBytes(1, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           output.writeDouble(2, varData_);
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          output.writeBytes(3, versionObj_);
+          output.writeBytes(3, getVersionObjBytes());
         }
         getUnknownFields().writeTo(output);
       }
@@ -312,7 +356,7 @@ public final class VarStoreDeltasProto {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(1, varName_);
+            .computeBytesSize(1, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
@@ -320,7 +364,7 @@ public final class VarStoreDeltasProto {
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(3, versionObj_);
+            .computeBytesSize(3, getVersionObjBytes());
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -446,11 +490,11 @@ public final class VarStoreDeltasProto {
         
         public Builder clear() {
           super.clear();
-          varName_ = com.google.protobuf.ByteString.EMPTY;
+          varName_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
           varData_ = 0D;
           bitField0_ = (bitField0_ & ~0x00000002);
-          versionObj_ = com.google.protobuf.ByteString.EMPTY;
+          versionObj_ = "";
           bitField0_ = (bitField0_ & ~0x00000004);
           return this;
         }
@@ -587,15 +631,22 @@ public final class VarStoreDeltasProto {
         
         private int bitField0_;
         
-        // required bytes var_name = 1;
-        private com.google.protobuf.ByteString varName_ = com.google.protobuf.ByteString.EMPTY;
+        // required string var_name = 1;
+        private java.lang.Object varName_ = "";
         public boolean hasVarName() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
-        public com.google.protobuf.ByteString getVarName() {
-          return varName_;
+        public String getVarName() {
+          java.lang.Object ref = varName_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            varName_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVarName(com.google.protobuf.ByteString value) {
+        public Builder setVarName(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -609,6 +660,11 @@ public final class VarStoreDeltasProto {
           varName_ = getDefaultInstance().getVarName();
           onChanged();
           return this;
+        }
+        void setVarName(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000001;
+          varName_ = value;
+          onChanged();
         }
         
         // required double var_data = 2;
@@ -632,15 +688,22 @@ public final class VarStoreDeltasProto {
           return this;
         }
         
-        // optional bytes version_obj = 3;
-        private com.google.protobuf.ByteString versionObj_ = com.google.protobuf.ByteString.EMPTY;
+        // optional string version_obj = 3;
+        private java.lang.Object versionObj_ = "";
         public boolean hasVersionObj() {
           return ((bitField0_ & 0x00000004) == 0x00000004);
         }
-        public com.google.protobuf.ByteString getVersionObj() {
-          return versionObj_;
+        public String getVersionObj() {
+          java.lang.Object ref = versionObj_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            versionObj_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVersionObj(com.google.protobuf.ByteString value) {
+        public Builder setVersionObj(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -654,6 +717,11 @@ public final class VarStoreDeltasProto {
           versionObj_ = getDefaultInstance().getVersionObj();
           onChanged();
           return this;
+        }
+        void setVersionObj(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000004;
+          versionObj_ = value;
+          onChanged();
         }
         
         // @@protoc_insertion_point(builder_scope:VarStoreDeltas.SingleNumberDelta)
@@ -670,17 +738,17 @@ public final class VarStoreDeltasProto {
     public interface SingleTextDeltaOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
       
-      // required bytes var_name = 1;
+      // required string var_name = 1;
       boolean hasVarName();
-      com.google.protobuf.ByteString getVarName();
+      String getVarName();
       
-      // required bytes var_data = 2;
+      // required string var_data = 2;
       boolean hasVarData();
-      com.google.protobuf.ByteString getVarData();
+      String getVarData();
       
-      // optional bytes version_obj = 3;
+      // optional string version_obj = 3;
       boolean hasVersionObj();
-      com.google.protobuf.ByteString getVersionObj();
+      String getVersionObj();
     }
     public static final class SingleTextDelta extends
         com.google.protobuf.GeneratedMessage
@@ -711,40 +779,106 @@ public final class VarStoreDeltasProto {
       }
       
       private int bitField0_;
-      // required bytes var_name = 1;
+      // required string var_name = 1;
       public static final int VAR_NAME_FIELD_NUMBER = 1;
-      private com.google.protobuf.ByteString varName_;
+      private java.lang.Object varName_;
       public boolean hasVarName() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public com.google.protobuf.ByteString getVarName() {
-        return varName_;
+      public String getVarName() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            varName_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVarNameBytes() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          varName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
-      // required bytes var_data = 2;
+      // required string var_data = 2;
       public static final int VAR_DATA_FIELD_NUMBER = 2;
-      private com.google.protobuf.ByteString varData_;
+      private java.lang.Object varData_;
       public boolean hasVarData() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public com.google.protobuf.ByteString getVarData() {
-        return varData_;
+      public String getVarData() {
+        java.lang.Object ref = varData_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            varData_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVarDataBytes() {
+        java.lang.Object ref = varData_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          varData_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
-      // optional bytes version_obj = 3;
+      // optional string version_obj = 3;
       public static final int VERSION_OBJ_FIELD_NUMBER = 3;
-      private com.google.protobuf.ByteString versionObj_;
+      private java.lang.Object versionObj_;
       public boolean hasVersionObj() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public com.google.protobuf.ByteString getVersionObj() {
-        return versionObj_;
+      public String getVersionObj() {
+        java.lang.Object ref = versionObj_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            versionObj_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVersionObjBytes() {
+        java.lang.Object ref = versionObj_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          versionObj_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
       private void initFields() {
-        varName_ = com.google.protobuf.ByteString.EMPTY;
-        varData_ = com.google.protobuf.ByteString.EMPTY;
-        versionObj_ = com.google.protobuf.ByteString.EMPTY;
+        varName_ = "";
+        varData_ = "";
+        versionObj_ = "";
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
@@ -767,13 +901,13 @@ public final class VarStoreDeltasProto {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, varName_);
+          output.writeBytes(1, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeBytes(2, varData_);
+          output.writeBytes(2, getVarDataBytes());
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          output.writeBytes(3, versionObj_);
+          output.writeBytes(3, getVersionObjBytes());
         }
         getUnknownFields().writeTo(output);
       }
@@ -786,15 +920,15 @@ public final class VarStoreDeltasProto {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(1, varName_);
+            .computeBytesSize(1, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(2, varData_);
+            .computeBytesSize(2, getVarDataBytes());
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(3, versionObj_);
+            .computeBytesSize(3, getVersionObjBytes());
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -920,11 +1054,11 @@ public final class VarStoreDeltasProto {
         
         public Builder clear() {
           super.clear();
-          varName_ = com.google.protobuf.ByteString.EMPTY;
+          varName_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
-          varData_ = com.google.protobuf.ByteString.EMPTY;
+          varData_ = "";
           bitField0_ = (bitField0_ & ~0x00000002);
-          versionObj_ = com.google.protobuf.ByteString.EMPTY;
+          versionObj_ = "";
           bitField0_ = (bitField0_ & ~0x00000004);
           return this;
         }
@@ -1061,15 +1195,22 @@ public final class VarStoreDeltasProto {
         
         private int bitField0_;
         
-        // required bytes var_name = 1;
-        private com.google.protobuf.ByteString varName_ = com.google.protobuf.ByteString.EMPTY;
+        // required string var_name = 1;
+        private java.lang.Object varName_ = "";
         public boolean hasVarName() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
-        public com.google.protobuf.ByteString getVarName() {
-          return varName_;
+        public String getVarName() {
+          java.lang.Object ref = varName_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            varName_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVarName(com.google.protobuf.ByteString value) {
+        public Builder setVarName(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -1084,16 +1225,28 @@ public final class VarStoreDeltasProto {
           onChanged();
           return this;
         }
+        void setVarName(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000001;
+          varName_ = value;
+          onChanged();
+        }
         
-        // required bytes var_data = 2;
-        private com.google.protobuf.ByteString varData_ = com.google.protobuf.ByteString.EMPTY;
+        // required string var_data = 2;
+        private java.lang.Object varData_ = "";
         public boolean hasVarData() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
-        public com.google.protobuf.ByteString getVarData() {
-          return varData_;
+        public String getVarData() {
+          java.lang.Object ref = varData_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            varData_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVarData(com.google.protobuf.ByteString value) {
+        public Builder setVarData(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -1108,16 +1261,28 @@ public final class VarStoreDeltasProto {
           onChanged();
           return this;
         }
+        void setVarData(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000002;
+          varData_ = value;
+          onChanged();
+        }
         
-        // optional bytes version_obj = 3;
-        private com.google.protobuf.ByteString versionObj_ = com.google.protobuf.ByteString.EMPTY;
+        // optional string version_obj = 3;
+        private java.lang.Object versionObj_ = "";
         public boolean hasVersionObj() {
           return ((bitField0_ & 0x00000004) == 0x00000004);
         }
-        public com.google.protobuf.ByteString getVersionObj() {
-          return versionObj_;
+        public String getVersionObj() {
+          java.lang.Object ref = versionObj_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            versionObj_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVersionObj(com.google.protobuf.ByteString value) {
+        public Builder setVersionObj(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -1131,6 +1296,11 @@ public final class VarStoreDeltasProto {
           versionObj_ = getDefaultInstance().getVersionObj();
           onChanged();
           return this;
+        }
+        void setVersionObj(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000004;
+          versionObj_ = value;
+          onChanged();
         }
         
         // @@protoc_insertion_point(builder_scope:VarStoreDeltas.SingleTextDelta)
@@ -1147,17 +1317,17 @@ public final class VarStoreDeltasProto {
     public interface SingleTrueFalseDeltaOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
       
-      // required bytes var_name = 1;
+      // required string var_name = 1;
       boolean hasVarName();
-      com.google.protobuf.ByteString getVarName();
+      String getVarName();
       
       // required bool var_data = 2;
       boolean hasVarData();
       boolean getVarData();
       
-      // required bytes version_obj = 3;
+      // required string version_obj = 3;
       boolean hasVersionObj();
-      com.google.protobuf.ByteString getVersionObj();
+      String getVersionObj();
     }
     public static final class SingleTrueFalseDelta extends
         com.google.protobuf.GeneratedMessage
@@ -1188,14 +1358,36 @@ public final class VarStoreDeltasProto {
       }
       
       private int bitField0_;
-      // required bytes var_name = 1;
+      // required string var_name = 1;
       public static final int VAR_NAME_FIELD_NUMBER = 1;
-      private com.google.protobuf.ByteString varName_;
+      private java.lang.Object varName_;
       public boolean hasVarName() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public com.google.protobuf.ByteString getVarName() {
-        return varName_;
+      public String getVarName() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            varName_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVarNameBytes() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          varName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
       // required bool var_data = 2;
@@ -1208,20 +1400,42 @@ public final class VarStoreDeltasProto {
         return varData_;
       }
       
-      // required bytes version_obj = 3;
+      // required string version_obj = 3;
       public static final int VERSION_OBJ_FIELD_NUMBER = 3;
-      private com.google.protobuf.ByteString versionObj_;
+      private java.lang.Object versionObj_;
       public boolean hasVersionObj() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public com.google.protobuf.ByteString getVersionObj() {
-        return versionObj_;
+      public String getVersionObj() {
+        java.lang.Object ref = versionObj_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            versionObj_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVersionObjBytes() {
+        java.lang.Object ref = versionObj_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          versionObj_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
       private void initFields() {
-        varName_ = com.google.protobuf.ByteString.EMPTY;
+        varName_ = "";
         varData_ = false;
-        versionObj_ = com.google.protobuf.ByteString.EMPTY;
+        versionObj_ = "";
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
@@ -1248,13 +1462,13 @@ public final class VarStoreDeltasProto {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, varName_);
+          output.writeBytes(1, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           output.writeBool(2, varData_);
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          output.writeBytes(3, versionObj_);
+          output.writeBytes(3, getVersionObjBytes());
         }
         getUnknownFields().writeTo(output);
       }
@@ -1267,7 +1481,7 @@ public final class VarStoreDeltasProto {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(1, varName_);
+            .computeBytesSize(1, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
@@ -1275,7 +1489,7 @@ public final class VarStoreDeltasProto {
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(3, versionObj_);
+            .computeBytesSize(3, getVersionObjBytes());
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -1401,11 +1615,11 @@ public final class VarStoreDeltasProto {
         
         public Builder clear() {
           super.clear();
-          varName_ = com.google.protobuf.ByteString.EMPTY;
+          varName_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
           varData_ = false;
           bitField0_ = (bitField0_ & ~0x00000002);
-          versionObj_ = com.google.protobuf.ByteString.EMPTY;
+          versionObj_ = "";
           bitField0_ = (bitField0_ & ~0x00000004);
           return this;
         }
@@ -1546,15 +1760,22 @@ public final class VarStoreDeltasProto {
         
         private int bitField0_;
         
-        // required bytes var_name = 1;
-        private com.google.protobuf.ByteString varName_ = com.google.protobuf.ByteString.EMPTY;
+        // required string var_name = 1;
+        private java.lang.Object varName_ = "";
         public boolean hasVarName() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
-        public com.google.protobuf.ByteString getVarName() {
-          return varName_;
+        public String getVarName() {
+          java.lang.Object ref = varName_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            varName_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVarName(com.google.protobuf.ByteString value) {
+        public Builder setVarName(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -1568,6 +1789,11 @@ public final class VarStoreDeltasProto {
           varName_ = getDefaultInstance().getVarName();
           onChanged();
           return this;
+        }
+        void setVarName(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000001;
+          varName_ = value;
+          onChanged();
         }
         
         // required bool var_data = 2;
@@ -1591,15 +1817,22 @@ public final class VarStoreDeltasProto {
           return this;
         }
         
-        // required bytes version_obj = 3;
-        private com.google.protobuf.ByteString versionObj_ = com.google.protobuf.ByteString.EMPTY;
+        // required string version_obj = 3;
+        private java.lang.Object versionObj_ = "";
         public boolean hasVersionObj() {
           return ((bitField0_ & 0x00000004) == 0x00000004);
         }
-        public com.google.protobuf.ByteString getVersionObj() {
-          return versionObj_;
+        public String getVersionObj() {
+          java.lang.Object ref = versionObj_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            versionObj_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVersionObj(com.google.protobuf.ByteString value) {
+        public Builder setVersionObj(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -1613,6 +1846,11 @@ public final class VarStoreDeltasProto {
           versionObj_ = getDefaultInstance().getVersionObj();
           onChanged();
           return this;
+        }
+        void setVersionObj(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000004;
+          versionObj_ = value;
+          onChanged();
         }
         
         // @@protoc_insertion_point(builder_scope:VarStoreDeltas.SingleTrueFalseDelta)
@@ -1751,9 +1989,9 @@ public final class VarStoreDeltasProto {
       public interface ContainerDeletedKeyOrBuilder
           extends com.google.protobuf.MessageOrBuilder {
         
-        // optional bytes deleted_key_text = 1;
+        // optional string deleted_key_text = 1;
         boolean hasDeletedKeyText();
-        com.google.protobuf.ByteString getDeletedKeyText();
+        String getDeletedKeyText();
         
         // optional double deleted_key_num = 2;
         boolean hasDeletedKeyNum();
@@ -1792,14 +2030,36 @@ public final class VarStoreDeltasProto {
         }
         
         private int bitField0_;
-        // optional bytes deleted_key_text = 1;
+        // optional string deleted_key_text = 1;
         public static final int DELETED_KEY_TEXT_FIELD_NUMBER = 1;
-        private com.google.protobuf.ByteString deletedKeyText_;
+        private java.lang.Object deletedKeyText_;
         public boolean hasDeletedKeyText() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
-        public com.google.protobuf.ByteString getDeletedKeyText() {
-          return deletedKeyText_;
+        public String getDeletedKeyText() {
+          java.lang.Object ref = deletedKeyText_;
+          if (ref instanceof String) {
+            return (String) ref;
+          } else {
+            com.google.protobuf.ByteString bs = 
+                (com.google.protobuf.ByteString) ref;
+            String s = bs.toStringUtf8();
+            if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+              deletedKeyText_ = s;
+            }
+            return s;
+          }
+        }
+        private com.google.protobuf.ByteString getDeletedKeyTextBytes() {
+          java.lang.Object ref = deletedKeyText_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            deletedKeyText_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
         }
         
         // optional double deleted_key_num = 2;
@@ -1823,7 +2083,7 @@ public final class VarStoreDeltasProto {
         }
         
         private void initFields() {
-          deletedKeyText_ = com.google.protobuf.ByteString.EMPTY;
+          deletedKeyText_ = "";
           deletedKeyNum_ = 0D;
           deletedKeyTf_ = false;
         }
@@ -1840,7 +2100,7 @@ public final class VarStoreDeltasProto {
                             throws java.io.IOException {
           getSerializedSize();
           if (((bitField0_ & 0x00000001) == 0x00000001)) {
-            output.writeBytes(1, deletedKeyText_);
+            output.writeBytes(1, getDeletedKeyTextBytes());
           }
           if (((bitField0_ & 0x00000002) == 0x00000002)) {
             output.writeDouble(2, deletedKeyNum_);
@@ -1859,7 +2119,7 @@ public final class VarStoreDeltasProto {
           size = 0;
           if (((bitField0_ & 0x00000001) == 0x00000001)) {
             size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(1, deletedKeyText_);
+              .computeBytesSize(1, getDeletedKeyTextBytes());
           }
           if (((bitField0_ & 0x00000002) == 0x00000002)) {
             size += com.google.protobuf.CodedOutputStream
@@ -1993,7 +2253,7 @@ public final class VarStoreDeltasProto {
           
           public Builder clear() {
             super.clear();
-            deletedKeyText_ = com.google.protobuf.ByteString.EMPTY;
+            deletedKeyText_ = "";
             bitField0_ = (bitField0_ & ~0x00000001);
             deletedKeyNum_ = 0D;
             bitField0_ = (bitField0_ & ~0x00000002);
@@ -2126,15 +2386,22 @@ public final class VarStoreDeltasProto {
           
           private int bitField0_;
           
-          // optional bytes deleted_key_text = 1;
-          private com.google.protobuf.ByteString deletedKeyText_ = com.google.protobuf.ByteString.EMPTY;
+          // optional string deleted_key_text = 1;
+          private java.lang.Object deletedKeyText_ = "";
           public boolean hasDeletedKeyText() {
             return ((bitField0_ & 0x00000001) == 0x00000001);
           }
-          public com.google.protobuf.ByteString getDeletedKeyText() {
-            return deletedKeyText_;
+          public String getDeletedKeyText() {
+            java.lang.Object ref = deletedKeyText_;
+            if (!(ref instanceof String)) {
+              String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+              deletedKeyText_ = s;
+              return s;
+            } else {
+              return (String) ref;
+            }
           }
-          public Builder setDeletedKeyText(com.google.protobuf.ByteString value) {
+          public Builder setDeletedKeyText(String value) {
             if (value == null) {
     throw new NullPointerException();
   }
@@ -2148,6 +2415,11 @@ public final class VarStoreDeltasProto {
             deletedKeyText_ = getDefaultInstance().getDeletedKeyText();
             onChanged();
             return this;
+          }
+          void setDeletedKeyText(com.google.protobuf.ByteString value) {
+            bitField0_ |= 0x00000001;
+            deletedKeyText_ = value;
+            onChanged();
           }
           
           // optional double deleted_key_num = 2;
@@ -2210,9 +2482,9 @@ public final class VarStoreDeltasProto {
         boolean hasParentType();
         waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType getParentType();
         
-        // optional bytes write_key_text = 2;
+        // optional string write_key_text = 2;
         boolean hasWriteKeyText();
-        com.google.protobuf.ByteString getWriteKeyText();
+        String getWriteKeyText();
         
         // optional double write_key_num = 3;
         boolean hasWriteKeyNum();
@@ -2222,9 +2494,9 @@ public final class VarStoreDeltasProto {
         boolean hasWriteKeyTf();
         boolean getWriteKeyTf();
         
-        // optional bytes what_written_text = 5;
+        // optional string what_written_text = 5;
         boolean hasWhatWrittenText();
-        com.google.protobuf.ByteString getWhatWrittenText();
+        String getWhatWrittenText();
         
         // optional double what_written_num = 6;
         boolean hasWhatWrittenNum();
@@ -2288,14 +2560,36 @@ public final class VarStoreDeltasProto {
           return parentType_;
         }
         
-        // optional bytes write_key_text = 2;
+        // optional string write_key_text = 2;
         public static final int WRITE_KEY_TEXT_FIELD_NUMBER = 2;
-        private com.google.protobuf.ByteString writeKeyText_;
+        private java.lang.Object writeKeyText_;
         public boolean hasWriteKeyText() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
-        public com.google.protobuf.ByteString getWriteKeyText() {
-          return writeKeyText_;
+        public String getWriteKeyText() {
+          java.lang.Object ref = writeKeyText_;
+          if (ref instanceof String) {
+            return (String) ref;
+          } else {
+            com.google.protobuf.ByteString bs = 
+                (com.google.protobuf.ByteString) ref;
+            String s = bs.toStringUtf8();
+            if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+              writeKeyText_ = s;
+            }
+            return s;
+          }
+        }
+        private com.google.protobuf.ByteString getWriteKeyTextBytes() {
+          java.lang.Object ref = writeKeyText_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            writeKeyText_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
         }
         
         // optional double write_key_num = 3;
@@ -2318,14 +2612,36 @@ public final class VarStoreDeltasProto {
           return writeKeyTf_;
         }
         
-        // optional bytes what_written_text = 5;
+        // optional string what_written_text = 5;
         public static final int WHAT_WRITTEN_TEXT_FIELD_NUMBER = 5;
-        private com.google.protobuf.ByteString whatWrittenText_;
+        private java.lang.Object whatWrittenText_;
         public boolean hasWhatWrittenText() {
           return ((bitField0_ & 0x00000010) == 0x00000010);
         }
-        public com.google.protobuf.ByteString getWhatWrittenText() {
-          return whatWrittenText_;
+        public String getWhatWrittenText() {
+          java.lang.Object ref = whatWrittenText_;
+          if (ref instanceof String) {
+            return (String) ref;
+          } else {
+            com.google.protobuf.ByteString bs = 
+                (com.google.protobuf.ByteString) ref;
+            String s = bs.toStringUtf8();
+            if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+              whatWrittenText_ = s;
+            }
+            return s;
+          }
+        }
+        private com.google.protobuf.ByteString getWhatWrittenTextBytes() {
+          java.lang.Object ref = whatWrittenText_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            whatWrittenText_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
         }
         
         // optional double what_written_num = 6;
@@ -2389,10 +2705,10 @@ public final class VarStoreDeltasProto {
         
         private void initFields() {
           parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
-          writeKeyText_ = com.google.protobuf.ByteString.EMPTY;
+          writeKeyText_ = "";
           writeKeyNum_ = 0D;
           writeKeyTf_ = false;
-          whatWrittenText_ = com.google.protobuf.ByteString.EMPTY;
+          whatWrittenText_ = "";
           whatWrittenNum_ = 0D;
           whatWrittenTf_ = false;
           whatWrittenMap_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleMapDelta.getDefaultInstance();
@@ -2437,7 +2753,7 @@ public final class VarStoreDeltasProto {
             output.writeEnum(1, parentType_.getNumber());
           }
           if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            output.writeBytes(2, writeKeyText_);
+            output.writeBytes(2, getWriteKeyTextBytes());
           }
           if (((bitField0_ & 0x00000004) == 0x00000004)) {
             output.writeDouble(3, writeKeyNum_);
@@ -2446,7 +2762,7 @@ public final class VarStoreDeltasProto {
             output.writeBool(4, writeKeyTf_);
           }
           if (((bitField0_ & 0x00000010) == 0x00000010)) {
-            output.writeBytes(5, whatWrittenText_);
+            output.writeBytes(5, getWhatWrittenTextBytes());
           }
           if (((bitField0_ & 0x00000020) == 0x00000020)) {
             output.writeDouble(6, whatWrittenNum_);
@@ -2478,7 +2794,7 @@ public final class VarStoreDeltasProto {
           }
           if (((bitField0_ & 0x00000002) == 0x00000002)) {
             size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(2, writeKeyText_);
+              .computeBytesSize(2, getWriteKeyTextBytes());
           }
           if (((bitField0_ & 0x00000004) == 0x00000004)) {
             size += com.google.protobuf.CodedOutputStream
@@ -2490,7 +2806,7 @@ public final class VarStoreDeltasProto {
           }
           if (((bitField0_ & 0x00000010) == 0x00000010)) {
             size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(5, whatWrittenText_);
+              .computeBytesSize(5, getWhatWrittenTextBytes());
           }
           if (((bitField0_ & 0x00000020) == 0x00000020)) {
             size += com.google.protobuf.CodedOutputStream
@@ -2641,13 +2957,13 @@ public final class VarStoreDeltasProto {
             super.clear();
             parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
             bitField0_ = (bitField0_ & ~0x00000001);
-            writeKeyText_ = com.google.protobuf.ByteString.EMPTY;
+            writeKeyText_ = "";
             bitField0_ = (bitField0_ & ~0x00000002);
             writeKeyNum_ = 0D;
             bitField0_ = (bitField0_ & ~0x00000004);
             writeKeyTf_ = false;
             bitField0_ = (bitField0_ & ~0x00000008);
-            whatWrittenText_ = com.google.protobuf.ByteString.EMPTY;
+            whatWrittenText_ = "";
             bitField0_ = (bitField0_ & ~0x00000010);
             whatWrittenNum_ = 0D;
             bitField0_ = (bitField0_ & ~0x00000020);
@@ -2958,15 +3274,22 @@ public final class VarStoreDeltasProto {
             return this;
           }
           
-          // optional bytes write_key_text = 2;
-          private com.google.protobuf.ByteString writeKeyText_ = com.google.protobuf.ByteString.EMPTY;
+          // optional string write_key_text = 2;
+          private java.lang.Object writeKeyText_ = "";
           public boolean hasWriteKeyText() {
             return ((bitField0_ & 0x00000002) == 0x00000002);
           }
-          public com.google.protobuf.ByteString getWriteKeyText() {
-            return writeKeyText_;
+          public String getWriteKeyText() {
+            java.lang.Object ref = writeKeyText_;
+            if (!(ref instanceof String)) {
+              String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+              writeKeyText_ = s;
+              return s;
+            } else {
+              return (String) ref;
+            }
           }
-          public Builder setWriteKeyText(com.google.protobuf.ByteString value) {
+          public Builder setWriteKeyText(String value) {
             if (value == null) {
     throw new NullPointerException();
   }
@@ -2980,6 +3303,11 @@ public final class VarStoreDeltasProto {
             writeKeyText_ = getDefaultInstance().getWriteKeyText();
             onChanged();
             return this;
+          }
+          void setWriteKeyText(com.google.protobuf.ByteString value) {
+            bitField0_ |= 0x00000002;
+            writeKeyText_ = value;
+            onChanged();
           }
           
           // optional double write_key_num = 3;
@@ -3024,15 +3352,22 @@ public final class VarStoreDeltasProto {
             return this;
           }
           
-          // optional bytes what_written_text = 5;
-          private com.google.protobuf.ByteString whatWrittenText_ = com.google.protobuf.ByteString.EMPTY;
+          // optional string what_written_text = 5;
+          private java.lang.Object whatWrittenText_ = "";
           public boolean hasWhatWrittenText() {
             return ((bitField0_ & 0x00000010) == 0x00000010);
           }
-          public com.google.protobuf.ByteString getWhatWrittenText() {
-            return whatWrittenText_;
+          public String getWhatWrittenText() {
+            java.lang.Object ref = whatWrittenText_;
+            if (!(ref instanceof String)) {
+              String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+              whatWrittenText_ = s;
+              return s;
+            } else {
+              return (String) ref;
+            }
           }
-          public Builder setWhatWrittenText(com.google.protobuf.ByteString value) {
+          public Builder setWhatWrittenText(String value) {
             if (value == null) {
     throw new NullPointerException();
   }
@@ -3046,6 +3381,11 @@ public final class VarStoreDeltasProto {
             whatWrittenText_ = getDefaultInstance().getWhatWrittenText();
             onChanged();
             return this;
+          }
+          void setWhatWrittenText(com.google.protobuf.ByteString value) {
+            bitField0_ |= 0x00000010;
+            whatWrittenText_ = value;
+            onChanged();
           }
           
           // optional double what_written_num = 6;
@@ -3378,9 +3718,9 @@ public final class VarStoreDeltasProto {
         boolean hasParentType();
         waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType getParentType();
         
-        // optional bytes added_key_text = 2;
+        // optional string added_key_text = 2;
         boolean hasAddedKeyText();
-        com.google.protobuf.ByteString getAddedKeyText();
+        String getAddedKeyText();
         
         // optional double added_key_num = 3;
         boolean hasAddedKeyNum();
@@ -3390,9 +3730,9 @@ public final class VarStoreDeltasProto {
         boolean hasAddedKeyTf();
         boolean getAddedKeyTf();
         
-        // optional bytes added_what_text = 5;
+        // optional string added_what_text = 5;
         boolean hasAddedWhatText();
-        com.google.protobuf.ByteString getAddedWhatText();
+        String getAddedWhatText();
         
         // optional double added_what_num = 6;
         boolean hasAddedWhatNum();
@@ -3456,14 +3796,36 @@ public final class VarStoreDeltasProto {
           return parentType_;
         }
         
-        // optional bytes added_key_text = 2;
+        // optional string added_key_text = 2;
         public static final int ADDED_KEY_TEXT_FIELD_NUMBER = 2;
-        private com.google.protobuf.ByteString addedKeyText_;
+        private java.lang.Object addedKeyText_;
         public boolean hasAddedKeyText() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
-        public com.google.protobuf.ByteString getAddedKeyText() {
-          return addedKeyText_;
+        public String getAddedKeyText() {
+          java.lang.Object ref = addedKeyText_;
+          if (ref instanceof String) {
+            return (String) ref;
+          } else {
+            com.google.protobuf.ByteString bs = 
+                (com.google.protobuf.ByteString) ref;
+            String s = bs.toStringUtf8();
+            if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+              addedKeyText_ = s;
+            }
+            return s;
+          }
+        }
+        private com.google.protobuf.ByteString getAddedKeyTextBytes() {
+          java.lang.Object ref = addedKeyText_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            addedKeyText_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
         }
         
         // optional double added_key_num = 3;
@@ -3486,14 +3848,36 @@ public final class VarStoreDeltasProto {
           return addedKeyTf_;
         }
         
-        // optional bytes added_what_text = 5;
+        // optional string added_what_text = 5;
         public static final int ADDED_WHAT_TEXT_FIELD_NUMBER = 5;
-        private com.google.protobuf.ByteString addedWhatText_;
+        private java.lang.Object addedWhatText_;
         public boolean hasAddedWhatText() {
           return ((bitField0_ & 0x00000010) == 0x00000010);
         }
-        public com.google.protobuf.ByteString getAddedWhatText() {
-          return addedWhatText_;
+        public String getAddedWhatText() {
+          java.lang.Object ref = addedWhatText_;
+          if (ref instanceof String) {
+            return (String) ref;
+          } else {
+            com.google.protobuf.ByteString bs = 
+                (com.google.protobuf.ByteString) ref;
+            String s = bs.toStringUtf8();
+            if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+              addedWhatText_ = s;
+            }
+            return s;
+          }
+        }
+        private com.google.protobuf.ByteString getAddedWhatTextBytes() {
+          java.lang.Object ref = addedWhatText_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            addedWhatText_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
         }
         
         // optional double added_what_num = 6;
@@ -3557,10 +3941,10 @@ public final class VarStoreDeltasProto {
         
         private void initFields() {
           parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
-          addedKeyText_ = com.google.protobuf.ByteString.EMPTY;
+          addedKeyText_ = "";
           addedKeyNum_ = 0D;
           addedKeyTf_ = false;
-          addedWhatText_ = com.google.protobuf.ByteString.EMPTY;
+          addedWhatText_ = "";
           addedWhatNum_ = 0D;
           addedWhatTf_ = false;
           addedWhatMap_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleMapDelta.getDefaultInstance();
@@ -3605,7 +3989,7 @@ public final class VarStoreDeltasProto {
             output.writeEnum(1, parentType_.getNumber());
           }
           if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            output.writeBytes(2, addedKeyText_);
+            output.writeBytes(2, getAddedKeyTextBytes());
           }
           if (((bitField0_ & 0x00000004) == 0x00000004)) {
             output.writeDouble(3, addedKeyNum_);
@@ -3614,7 +3998,7 @@ public final class VarStoreDeltasProto {
             output.writeBool(4, addedKeyTf_);
           }
           if (((bitField0_ & 0x00000010) == 0x00000010)) {
-            output.writeBytes(5, addedWhatText_);
+            output.writeBytes(5, getAddedWhatTextBytes());
           }
           if (((bitField0_ & 0x00000020) == 0x00000020)) {
             output.writeDouble(6, addedWhatNum_);
@@ -3646,7 +4030,7 @@ public final class VarStoreDeltasProto {
           }
           if (((bitField0_ & 0x00000002) == 0x00000002)) {
             size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(2, addedKeyText_);
+              .computeBytesSize(2, getAddedKeyTextBytes());
           }
           if (((bitField0_ & 0x00000004) == 0x00000004)) {
             size += com.google.protobuf.CodedOutputStream
@@ -3658,7 +4042,7 @@ public final class VarStoreDeltasProto {
           }
           if (((bitField0_ & 0x00000010) == 0x00000010)) {
             size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(5, addedWhatText_);
+              .computeBytesSize(5, getAddedWhatTextBytes());
           }
           if (((bitField0_ & 0x00000020) == 0x00000020)) {
             size += com.google.protobuf.CodedOutputStream
@@ -3809,13 +4193,13 @@ public final class VarStoreDeltasProto {
             super.clear();
             parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
             bitField0_ = (bitField0_ & ~0x00000001);
-            addedKeyText_ = com.google.protobuf.ByteString.EMPTY;
+            addedKeyText_ = "";
             bitField0_ = (bitField0_ & ~0x00000002);
             addedKeyNum_ = 0D;
             bitField0_ = (bitField0_ & ~0x00000004);
             addedKeyTf_ = false;
             bitField0_ = (bitField0_ & ~0x00000008);
-            addedWhatText_ = com.google.protobuf.ByteString.EMPTY;
+            addedWhatText_ = "";
             bitField0_ = (bitField0_ & ~0x00000010);
             addedWhatNum_ = 0D;
             bitField0_ = (bitField0_ & ~0x00000020);
@@ -4126,15 +4510,22 @@ public final class VarStoreDeltasProto {
             return this;
           }
           
-          // optional bytes added_key_text = 2;
-          private com.google.protobuf.ByteString addedKeyText_ = com.google.protobuf.ByteString.EMPTY;
+          // optional string added_key_text = 2;
+          private java.lang.Object addedKeyText_ = "";
           public boolean hasAddedKeyText() {
             return ((bitField0_ & 0x00000002) == 0x00000002);
           }
-          public com.google.protobuf.ByteString getAddedKeyText() {
-            return addedKeyText_;
+          public String getAddedKeyText() {
+            java.lang.Object ref = addedKeyText_;
+            if (!(ref instanceof String)) {
+              String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+              addedKeyText_ = s;
+              return s;
+            } else {
+              return (String) ref;
+            }
           }
-          public Builder setAddedKeyText(com.google.protobuf.ByteString value) {
+          public Builder setAddedKeyText(String value) {
             if (value == null) {
     throw new NullPointerException();
   }
@@ -4148,6 +4539,11 @@ public final class VarStoreDeltasProto {
             addedKeyText_ = getDefaultInstance().getAddedKeyText();
             onChanged();
             return this;
+          }
+          void setAddedKeyText(com.google.protobuf.ByteString value) {
+            bitField0_ |= 0x00000002;
+            addedKeyText_ = value;
+            onChanged();
           }
           
           // optional double added_key_num = 3;
@@ -4192,15 +4588,22 @@ public final class VarStoreDeltasProto {
             return this;
           }
           
-          // optional bytes added_what_text = 5;
-          private com.google.protobuf.ByteString addedWhatText_ = com.google.protobuf.ByteString.EMPTY;
+          // optional string added_what_text = 5;
+          private java.lang.Object addedWhatText_ = "";
           public boolean hasAddedWhatText() {
             return ((bitField0_ & 0x00000010) == 0x00000010);
           }
-          public com.google.protobuf.ByteString getAddedWhatText() {
-            return addedWhatText_;
+          public String getAddedWhatText() {
+            java.lang.Object ref = addedWhatText_;
+            if (!(ref instanceof String)) {
+              String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+              addedWhatText_ = s;
+              return s;
+            } else {
+              return (String) ref;
+            }
           }
-          public Builder setAddedWhatText(com.google.protobuf.ByteString value) {
+          public Builder setAddedWhatText(String value) {
             if (value == null) {
     throw new NullPointerException();
   }
@@ -4214,6 +4617,11 @@ public final class VarStoreDeltasProto {
             addedWhatText_ = getDefaultInstance().getAddedWhatText();
             onChanged();
             return this;
+          }
+          void setAddedWhatText(com.google.protobuf.ByteString value) {
+            bitField0_ |= 0x00000010;
+            addedWhatText_ = value;
+            onChanged();
           }
           
           // optional double added_what_num = 6;
@@ -5304,9 +5712,9 @@ public final class VarStoreDeltasProto {
       boolean hasParentType();
       waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType getParentType();
       
-      // required bytes var_name = 2;
+      // required string var_name = 2;
       boolean hasVarName();
-      com.google.protobuf.ByteString getVarName();
+      String getVarName();
       
       // required bool has_been_written = 3;
       boolean hasHasBeenWritten();
@@ -5356,14 +5764,36 @@ public final class VarStoreDeltasProto {
         return parentType_;
       }
       
-      // required bytes var_name = 2;
+      // required string var_name = 2;
       public static final int VAR_NAME_FIELD_NUMBER = 2;
-      private com.google.protobuf.ByteString varName_;
+      private java.lang.Object varName_;
       public boolean hasVarName() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public com.google.protobuf.ByteString getVarName() {
-        return varName_;
+      public String getVarName() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            varName_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVarNameBytes() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          varName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
       // required bool has_been_written = 3;
@@ -5391,7 +5821,7 @@ public final class VarStoreDeltasProto {
       
       private void initFields() {
         parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
-        varName_ = com.google.protobuf.ByteString.EMPTY;
+        varName_ = "";
         hasBeenWritten_ = false;
         internalListDelta_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalListDelta.getDefaultInstance();
       }
@@ -5431,7 +5861,7 @@ public final class VarStoreDeltasProto {
           output.writeEnum(1, parentType_.getNumber());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeBytes(2, varName_);
+          output.writeBytes(2, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           output.writeBool(3, hasBeenWritten_);
@@ -5454,7 +5884,7 @@ public final class VarStoreDeltasProto {
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(2, varName_);
+            .computeBytesSize(2, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           size += com.google.protobuf.CodedOutputStream
@@ -5591,7 +6021,7 @@ public final class VarStoreDeltasProto {
           super.clear();
           parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
           bitField0_ = (bitField0_ & ~0x00000001);
-          varName_ = com.google.protobuf.ByteString.EMPTY;
+          varName_ = "";
           bitField0_ = (bitField0_ & ~0x00000002);
           hasBeenWritten_ = false;
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -5798,15 +6228,22 @@ public final class VarStoreDeltasProto {
           return this;
         }
         
-        // required bytes var_name = 2;
-        private com.google.protobuf.ByteString varName_ = com.google.protobuf.ByteString.EMPTY;
+        // required string var_name = 2;
+        private java.lang.Object varName_ = "";
         public boolean hasVarName() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
-        public com.google.protobuf.ByteString getVarName() {
-          return varName_;
+        public String getVarName() {
+          java.lang.Object ref = varName_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            varName_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVarName(com.google.protobuf.ByteString value) {
+        public Builder setVarName(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -5820,6 +6257,11 @@ public final class VarStoreDeltasProto {
           varName_ = getDefaultInstance().getVarName();
           onChanged();
           return this;
+        }
+        void setVarName(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000002;
+          varName_ = value;
+          onChanged();
         }
         
         // required bool has_been_written = 3;
@@ -5951,9 +6393,9 @@ public final class VarStoreDeltasProto {
       boolean hasParentType();
       waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType getParentType();
       
-      // required bytes var_name = 2;
+      // required string var_name = 2;
       boolean hasVarName();
-      com.google.protobuf.ByteString getVarName();
+      String getVarName();
       
       // required bool has_been_written = 3;
       boolean hasHasBeenWritten();
@@ -6003,14 +6445,36 @@ public final class VarStoreDeltasProto {
         return parentType_;
       }
       
-      // required bytes var_name = 2;
+      // required string var_name = 2;
       public static final int VAR_NAME_FIELD_NUMBER = 2;
-      private com.google.protobuf.ByteString varName_;
+      private java.lang.Object varName_;
       public boolean hasVarName() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public com.google.protobuf.ByteString getVarName() {
-        return varName_;
+      public String getVarName() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            varName_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVarNameBytes() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          varName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
       // required bool has_been_written = 3;
@@ -6038,7 +6502,7 @@ public final class VarStoreDeltasProto {
       
       private void initFields() {
         parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
-        varName_ = com.google.protobuf.ByteString.EMPTY;
+        varName_ = "";
         hasBeenWritten_ = false;
         internalMapDelta_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalMapDelta.getDefaultInstance();
       }
@@ -6078,7 +6542,7 @@ public final class VarStoreDeltasProto {
           output.writeEnum(1, parentType_.getNumber());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeBytes(2, varName_);
+          output.writeBytes(2, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           output.writeBool(3, hasBeenWritten_);
@@ -6101,7 +6565,7 @@ public final class VarStoreDeltasProto {
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(2, varName_);
+            .computeBytesSize(2, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           size += com.google.protobuf.CodedOutputStream
@@ -6238,7 +6702,7 @@ public final class VarStoreDeltasProto {
           super.clear();
           parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
           bitField0_ = (bitField0_ & ~0x00000001);
-          varName_ = com.google.protobuf.ByteString.EMPTY;
+          varName_ = "";
           bitField0_ = (bitField0_ & ~0x00000002);
           hasBeenWritten_ = false;
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -6445,15 +6909,22 @@ public final class VarStoreDeltasProto {
           return this;
         }
         
-        // required bytes var_name = 2;
-        private com.google.protobuf.ByteString varName_ = com.google.protobuf.ByteString.EMPTY;
+        // required string var_name = 2;
+        private java.lang.Object varName_ = "";
         public boolean hasVarName() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
-        public com.google.protobuf.ByteString getVarName() {
-          return varName_;
+        public String getVarName() {
+          java.lang.Object ref = varName_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            varName_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVarName(com.google.protobuf.ByteString value) {
+        public Builder setVarName(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -6467,6 +6938,11 @@ public final class VarStoreDeltasProto {
           varName_ = getDefaultInstance().getVarName();
           onChanged();
           return this;
+        }
+        void setVarName(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000002;
+          varName_ = value;
+          onChanged();
         }
         
         // required bool has_been_written = 3;
@@ -8448,13 +8924,13 @@ public final class VarStoreDeltasProto {
       boolean hasParentType();
       waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType getParentType();
       
-      // optional bytes var_name = 2;
+      // optional string var_name = 2;
       boolean hasVarName();
-      com.google.protobuf.ByteString getVarName();
+      String getVarName();
       
-      // optional bytes key_text = 3;
+      // optional string key_text = 3;
       boolean hasKeyText();
-      com.google.protobuf.ByteString getKeyText();
+      String getKeyText();
       
       // optional double key_num = 4;
       boolean hasKeyNum();
@@ -8518,24 +8994,68 @@ public final class VarStoreDeltasProto {
         return parentType_;
       }
       
-      // optional bytes var_name = 2;
+      // optional string var_name = 2;
       public static final int VAR_NAME_FIELD_NUMBER = 2;
-      private com.google.protobuf.ByteString varName_;
+      private java.lang.Object varName_;
       public boolean hasVarName() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public com.google.protobuf.ByteString getVarName() {
-        return varName_;
+      public String getVarName() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            varName_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getVarNameBytes() {
+        java.lang.Object ref = varName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          varName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
-      // optional bytes key_text = 3;
+      // optional string key_text = 3;
       public static final int KEY_TEXT_FIELD_NUMBER = 3;
-      private com.google.protobuf.ByteString keyText_;
+      private java.lang.Object keyText_;
       public boolean hasKeyText() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public com.google.protobuf.ByteString getKeyText() {
-        return keyText_;
+      public String getKeyText() {
+        java.lang.Object ref = keyText_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            keyText_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getKeyTextBytes() {
+        java.lang.Object ref = keyText_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          keyText_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
       }
       
       // optional double key_num = 4;
@@ -8599,8 +9119,8 @@ public final class VarStoreDeltasProto {
       
       private void initFields() {
         parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
-        varName_ = com.google.protobuf.ByteString.EMPTY;
-        keyText_ = com.google.protobuf.ByteString.EMPTY;
+        varName_ = "";
+        keyText_ = "";
         keyNum_ = 0D;
         keyTf_ = false;
         mapDelta_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleMapDelta.getDefaultInstance();
@@ -8645,10 +9165,10 @@ public final class VarStoreDeltasProto {
           output.writeEnum(1, parentType_.getNumber());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeBytes(2, varName_);
+          output.writeBytes(2, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          output.writeBytes(3, keyText_);
+          output.writeBytes(3, getKeyTextBytes());
         }
         if (((bitField0_ & 0x00000008) == 0x00000008)) {
           output.writeDouble(4, keyNum_);
@@ -8680,11 +9200,11 @@ public final class VarStoreDeltasProto {
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(2, varName_);
+            .computeBytesSize(2, getVarNameBytes());
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(3, keyText_);
+            .computeBytesSize(3, getKeyTextBytes());
         }
         if (((bitField0_ & 0x00000008) == 0x00000008)) {
           size += com.google.protobuf.CodedOutputStream
@@ -8835,9 +9355,9 @@ public final class VarStoreDeltasProto {
           super.clear();
           parentType_ = waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ParentType.VAR_STORE_DELTA;
           bitField0_ = (bitField0_ & ~0x00000001);
-          varName_ = com.google.protobuf.ByteString.EMPTY;
+          varName_ = "";
           bitField0_ = (bitField0_ & ~0x00000002);
-          keyText_ = com.google.protobuf.ByteString.EMPTY;
+          keyText_ = "";
           bitField0_ = (bitField0_ & ~0x00000004);
           keyNum_ = 0D;
           bitField0_ = (bitField0_ & ~0x00000008);
@@ -9124,15 +9644,22 @@ public final class VarStoreDeltasProto {
           return this;
         }
         
-        // optional bytes var_name = 2;
-        private com.google.protobuf.ByteString varName_ = com.google.protobuf.ByteString.EMPTY;
+        // optional string var_name = 2;
+        private java.lang.Object varName_ = "";
         public boolean hasVarName() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
-        public com.google.protobuf.ByteString getVarName() {
-          return varName_;
+        public String getVarName() {
+          java.lang.Object ref = varName_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            varName_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setVarName(com.google.protobuf.ByteString value) {
+        public Builder setVarName(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -9147,16 +9674,28 @@ public final class VarStoreDeltasProto {
           onChanged();
           return this;
         }
+        void setVarName(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000002;
+          varName_ = value;
+          onChanged();
+        }
         
-        // optional bytes key_text = 3;
-        private com.google.protobuf.ByteString keyText_ = com.google.protobuf.ByteString.EMPTY;
+        // optional string key_text = 3;
+        private java.lang.Object keyText_ = "";
         public boolean hasKeyText() {
           return ((bitField0_ & 0x00000004) == 0x00000004);
         }
-        public com.google.protobuf.ByteString getKeyText() {
-          return keyText_;
+        public String getKeyText() {
+          java.lang.Object ref = keyText_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            keyText_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
         }
-        public Builder setKeyText(com.google.protobuf.ByteString value) {
+        public Builder setKeyText(String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -9170,6 +9709,11 @@ public final class VarStoreDeltasProto {
           keyText_ = getDefaultInstance().getKeyText();
           onChanged();
           return this;
+        }
+        void setKeyText(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000004;
+          keyText_ = value;
+          onChanged();
         }
         
         // optional double key_num = 4;
@@ -11550,12 +12094,12 @@ public final class VarStoreDeltasProto {
       "MapDelta\0224\n\013list_deltas\030\006 \003(\0132\037.VarStore" +
       "Deltas.SingleListDelta\0225\n\rstruct_deltas\030",
       "\007 \003(\0132\036.VarStoreDeltas.SingleMapDelta\032L\n" +
-      "\021SingleNumberDelta\022\020\n\010var_name\030\001 \002(\014\022\020\n\010" +
-      "var_data\030\002 \002(\001\022\023\n\013version_obj\030\003 \001(\014\032J\n\017S" +
-      "ingleTextDelta\022\020\n\010var_name\030\001 \002(\014\022\020\n\010var_" +
-      "data\030\002 \002(\014\022\023\n\013version_obj\030\003 \001(\014\032O\n\024Singl" +
-      "eTrueFalseDelta\022\020\n\010var_name\030\001 \002(\014\022\020\n\010var" +
-      "_data\030\002 \002(\010\022\023\n\013version_obj\030\003 \002(\014\032\353\t\n\017Con" +
+      "\021SingleNumberDelta\022\020\n\010var_name\030\001 \002(\t\022\020\n\010" +
+      "var_data\030\002 \002(\001\022\023\n\013version_obj\030\003 \001(\t\032J\n\017S" +
+      "ingleTextDelta\022\020\n\010var_name\030\001 \002(\t\022\020\n\010var_" +
+      "data\030\002 \002(\t\022\023\n\013version_obj\030\003 \001(\t\032O\n\024Singl" +
+      "eTrueFalseDelta\022\020\n\010var_name\030\001 \002(\t\022\020\n\010var" +
+      "_data\030\002 \002(\010\022\023\n\013version_obj\030\003 \002(\t\032\353\t\n\017Con" +
       "tainerAction\022M\n\020container_action\030\001 \002(\01623" +
       ".VarStoreDeltas.ContainerAction.Containe" +
       "rActionType\022D\n\twrite_key\030\002 \001(\01321.VarStor",
@@ -11564,13 +12108,13 @@ public final class VarStoreDeltasProto {
       "ntainerAction.ContainerAddedKey\022H\n\013delet" +
       "ed_key\030\004 \001(\01323.VarStoreDeltas.ContainerA" +
       "ction.ContainerDeletedKey\032`\n\023ContainerDe" +
-      "letedKey\022\030\n\020deleted_key_text\030\001 \001(\014\022\027\n\017de" +
+      "letedKey\022\030\n\020deleted_key_text\030\001 \001(\t\022\027\n\017de" +
       "leted_key_num\030\002 \001(\001\022\026\n\016deleted_key_tf\030\003 " +
       "\001(\010\032\212\003\n\021ContainerWriteKey\022/\n\013parent_type" +
       "\030\001 \002(\0162\032.VarStoreDeltas.ParentType\022\026\n\016wr" +
-      "ite_key_text\030\002 \001(\014\022\025\n\rwrite_key_num\030\003 \001(",
+      "ite_key_text\030\002 \001(\t\022\025\n\rwrite_key_num\030\003 \001(",
       "\001\022\024\n\014write_key_tf\030\004 \001(\010\022\031\n\021what_written_" +
-      "text\030\005 \001(\014\022\030\n\020what_written_num\030\006 \001(\001\022\027\n\017" +
+      "text\030\005 \001(\t\022\030\n\020what_written_num\030\006 \001(\001\022\027\n\017" +
       "what_written_tf\030\007 \001(\010\0228\n\020what_written_ma" +
       "p\030\010 \001(\0132\036.VarStoreDeltas.SingleMapDelta\022" +
       ":\n\021what_written_list\030\t \001(\0132\037.VarStoreDel" +
@@ -11578,9 +12122,9 @@ public final class VarStoreDeltasProto {
       "ct\030\n \001(\0132\036.VarStoreDeltas.SingleMapDelta" +
       "\032\376\002\n\021ContainerAddedKey\022/\n\013parent_type\030\001 " +
       "\002(\0162\032.VarStoreDeltas.ParentType\022\026\n\016added" +
-      "_key_text\030\002 \001(\014\022\025\n\radded_key_num\030\003 \001(\001\022\024",
+      "_key_text\030\002 \001(\t\022\025\n\radded_key_num\030\003 \001(\001\022\024",
       "\n\014added_key_tf\030\004 \001(\010\022\027\n\017added_what_text\030" +
-      "\005 \001(\014\022\026\n\016added_what_num\030\006 \001(\001\022\025\n\radded_w" +
+      "\005 \001(\t\022\026\n\016added_what_num\030\006 \001(\001\022\025\n\radded_w" +
       "hat_tf\030\007 \001(\010\0226\n\016added_what_map\030\010 \001(\0132\036.V" +
       "arStoreDeltas.SingleMapDelta\0228\n\017added_wh" +
       "at_list\030\t \001(\0132\037.VarStoreDeltas.SingleLis" +
@@ -11589,12 +12133,12 @@ public final class VarStoreDeltasProto {
       "tionType\022\017\n\013WRITE_VALUE\020\004\022\013\n\007ADD_KEY\020\005\022\016" +
       "\n\nDELETE_KEY\020\006\032\264\001\n\017SingleListDelta\022/\n\013pa" +
       "rent_type\030\001 \002(\0162\032.VarStoreDeltas.ParentT",
-      "ype\022\020\n\010var_name\030\002 \002(\014\022\030\n\020has_been_writte" +
+      "ype\022\020\n\010var_name\030\002 \002(\t\022\030\n\020has_been_writte" +
       "n\030\003 \002(\010\022D\n\023internal_list_delta\030\004 \002(\0132\'.V" +
       "arStoreDeltas.SingleInternalListDelta\032\261\001" +
       "\n\016SingleMapDelta\022/\n\013parent_type\030\001 \002(\0162\032." +
       "VarStoreDeltas.ParentType\022\020\n\010var_name\030\002 " +
-      "\002(\014\022\030\n\020has_been_written\030\003 \002(\010\022B\n\022interna" +
+      "\002(\t\022\030\n\020has_been_written\030\003 \002(\010\022B\n\022interna" +
       "l_map_delta\030\004 \002(\0132&.VarStoreDeltas.Singl" +
       "eInternalMapDelta\032\316\001\n\027SingleInternalList" +
       "Delta\022/\n\013parent_type\030\001 \002(\0162\032.VarStoreDel" +
@@ -11609,7 +12153,7 @@ public final class VarStoreDeltasProto {
       "oreDeltas.SubElementUpdateActions\032\255\002\n\027Su" +
       "bElementUpdateActions\022/\n\013parent_type\030\001 \002" +
       "(\0162\032.VarStoreDeltas.ParentType\022\020\n\010var_na",
-      "me\030\002 \001(\014\022\020\n\010key_text\030\003 \001(\014\022\017\n\007key_num\030\004 " +
+      "me\030\002 \001(\t\022\020\n\010key_text\030\003 \001(\t\022\017\n\007key_num\030\004 " +
       "\001(\001\022\016\n\006key_tf\030\005 \001(\010\0221\n\tmap_delta\030\006 \001(\0132\036" +
       ".VarStoreDeltas.SingleMapDelta\0223\n\nlist_d" +
       "elta\030\007 \001(\0132\037.VarStoreDeltas.SingleListDe" +

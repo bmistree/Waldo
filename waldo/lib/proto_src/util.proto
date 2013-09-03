@@ -15,5 +15,5 @@ message Priority
 
 message Timestamp
 {
-    required bytes data = 1;
+    required string data = 1;
 }

@@ -18,7 +18,7 @@ message PartnerRequestSequenceBlock
         compiler into a function.)  It can also be empty if this is the
         final message sequence block's execution.
         */
-        optional bytes name_of_block_requesting = 3;
+        optional string name_of_block_requesting = 3;
 
         /*
         When the partner endpoint                       

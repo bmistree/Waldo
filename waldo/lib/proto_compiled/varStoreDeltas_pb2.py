@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='varStoreDeltas.proto',
   package='',
-  serialized_pb='\n\x14varStoreDeltas.proto\x1a\nutil.proto\"\x82\x19\n\x0eVarStoreDeltas\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x35\n\nnum_deltas\x18\x02 \x03(\x0b\x32!.VarStoreDeltas.SingleNumberDelta\x12\x34\n\x0btext_deltas\x18\x03 \x03(\x0b\x32\x1f.VarStoreDeltas.SingleTextDelta\x12?\n\x11true_false_deltas\x18\x04 \x03(\x0b\x32$.VarStoreDeltas.SingleTrueFalseDelta\x12\x32\n\nmap_deltas\x18\x05 \x03(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x12\x34\n\x0blist_deltas\x18\x06 \x03(\x0b\x32\x1f.VarStoreDeltas.SingleListDelta\x12\x35\n\rstruct_deltas\x18\x07 \x03(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x1aL\n\x11SingleNumberDelta\x12\x10\n\x08var_name\x18\x01 \x02(\x0c\x12\x10\n\x08var_data\x18\x02 \x02(\x01\x12\x13\n\x0bversion_obj\x18\x03 \x01(\x0c\x1aJ\n\x0fSingleTextDelta\x12\x10\n\x08var_name\x18\x01 \x02(\x0c\x12\x10\n\x08var_data\x18\x02 \x02(\x0c\x12\x13\n\x0bversion_obj\x18\x03 \x01(\x0c\x1aO\n\x14SingleTrueFalseDelta\x12\x10\n\x08var_name\x18\x01 \x02(\x0c\x12\x10\n\x08var_data\x18\x02 \x02(\x08\x12\x13\n\x0bversion_obj\x18\x03 \x02(\x0c\x1a\xeb\t\n\x0f\x43ontainerAction\x12M\n\x10\x63ontainer_action\x18\x01 \x02(\x0e\x32\x33.VarStoreDeltas.ContainerAction.ContainerActionType\x12\x44\n\twrite_key\x18\x02 \x01(\x0b\x32\x31.VarStoreDeltas.ContainerAction.ContainerWriteKey\x12\x44\n\tadded_key\x18\x03 \x01(\x0b\x32\x31.VarStoreDeltas.ContainerAction.ContainerAddedKey\x12H\n\x0b\x64\x65leted_key\x18\x04 \x01(\x0b\x32\x33.VarStoreDeltas.ContainerAction.ContainerDeletedKey\x1a`\n\x13\x43ontainerDeletedKey\x12\x18\n\x10\x64\x65leted_key_text\x18\x01 \x01(\x0c\x12\x17\n\x0f\x64\x65leted_key_num\x18\x02 \x01(\x01\x12\x16\n\x0e\x64\x65leted_key_tf\x18\x03 \x01(\x08\x1a\x8a\x03\n\x11\x43ontainerWriteKey\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x16\n\x0ewrite_key_text\x18\x02 \x01(\x0c\x12\x15\n\rwrite_key_num\x18\x03 \x01(\x01\x12\x14\n\x0cwrite_key_tf\x18\x04 \x01(\x08\x12\x19\n\x11what_written_text\x18\x05 \x01(\x0c\x12\x18\n\x10what_written_num\x18\x06 \x01(\x01\x12\x17\n\x0fwhat_written_tf\x18\x07 \x01(\x08\x12\x38\n\x10what_written_map\x18\x08 \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x12:\n\x11what_written_list\x18\t \x01(\x0b\x32\x1f.VarStoreDeltas.SingleListDelta\x12;\n\x13what_written_struct\x18\n \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x1a\xfe\x02\n\x11\x43ontainerAddedKey\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x16\n\x0e\x61\x64\x64\x65\x64_key_text\x18\x02 \x01(\x0c\x12\x15\n\radded_key_num\x18\x03 \x01(\x01\x12\x14\n\x0c\x61\x64\x64\x65\x64_key_tf\x18\x04 \x01(\x08\x12\x17\n\x0f\x61\x64\x64\x65\x64_what_text\x18\x05 \x01(\x0c\x12\x16\n\x0e\x61\x64\x64\x65\x64_what_num\x18\x06 \x01(\x01\x12\x15\n\radded_what_tf\x18\x07 \x01(\x08\x12\x36\n\x0e\x61\x64\x64\x65\x64_what_map\x18\x08 \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x12\x38\n\x0f\x61\x64\x64\x65\x64_what_list\x18\t \x01(\x0b\x32\x1f.VarStoreDeltas.SingleListDelta\x12\x39\n\x11\x61\x64\x64\x65\x64_what_struct\x18\n \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\"C\n\x13\x43ontainerActionType\x12\x0f\n\x0bWRITE_VALUE\x10\x04\x12\x0b\n\x07\x41\x44\x44_KEY\x10\x05\x12\x0e\n\nDELETE_KEY\x10\x06\x1a\xb4\x01\n\x0fSingleListDelta\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x10\n\x08var_name\x18\x02 \x02(\x0c\x12\x18\n\x10has_been_written\x18\x03 \x02(\x08\x12\x44\n\x13internal_list_delta\x18\x04 \x02(\x0b\x32\'.VarStoreDeltas.SingleInternalListDelta\x1a\xb1\x01\n\x0eSingleMapDelta\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x10\n\x08var_name\x18\x02 \x02(\x0c\x12\x18\n\x10has_been_written\x18\x03 \x02(\x08\x12\x42\n\x12internal_map_delta\x18\x04 \x02(\x0b\x32&.VarStoreDeltas.SingleInternalMapDelta\x1a\xce\x01\n\x17SingleInternalListDelta\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x35\n\x0clist_actions\x18\x02 \x03(\x0b\x32\x1f.VarStoreDeltas.ContainerAction\x12K\n\x1asub_element_update_actions\x18\x03 \x03(\x0b\x32\'.VarStoreDeltas.SubElementUpdateActions\x1a\xcc\x01\n\x16SingleInternalMapDelta\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x34\n\x0bmap_actions\x18\x02 \x03(\x0b\x32\x1f.VarStoreDeltas.ContainerAction\x12K\n\x1asub_element_update_actions\x18\x03 \x03(\x0b\x32\'.VarStoreDeltas.SubElementUpdateActions\x1a\xad\x02\n\x17SubElementUpdateActions\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x10\n\x08var_name\x18\x02 \x01(\x0c\x12\x10\n\x08key_text\x18\x03 \x01(\x0c\x12\x0f\n\x07key_num\x18\x04 \x01(\x01\x12\x0e\n\x06key_tf\x18\x05 \x01(\x08\x12\x31\n\tmap_delta\x18\x06 \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x12\x33\n\nlist_delta\x18\x07 \x01(\x0b\x32\x1f.VarStoreDeltas.SingleListDelta\x12\x34\n\x0cstruct_delta\x18\x08 \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\"\xdb\x01\n\nParentType\x12\x13\n\x0fVAR_STORE_DELTA\x10\x01\x12\x11\n\rMAP_CONTAINER\x10\x02\x12\x12\n\x0eLIST_CONTAINER\x10\x03\x12\x1b\n\x17INTERNAL_LIST_CONTAINER\x10\x04\x12\x1a\n\x16INTERNAL_MAP_CONTAINER\x10\x05\x12\x13\n\x0f\x43ONTAINER_ADDED\x10\x06\x12\x15\n\x11\x43ONTAINER_WRITTEN\x10\x07\x12\x16\n\x12SUB_ELEMENT_ACTION\x10\x08\x12\x14\n\x10STRUCT_CONTAINER\x10\tB\'\n\x10waldo_protobuffsB\x13VarStoreDeltasProto')
+  serialized_pb='\n\x14varStoreDeltas.proto\x1a\nutil.proto\"\x82\x19\n\x0eVarStoreDeltas\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x35\n\nnum_deltas\x18\x02 \x03(\x0b\x32!.VarStoreDeltas.SingleNumberDelta\x12\x34\n\x0btext_deltas\x18\x03 \x03(\x0b\x32\x1f.VarStoreDeltas.SingleTextDelta\x12?\n\x11true_false_deltas\x18\x04 \x03(\x0b\x32$.VarStoreDeltas.SingleTrueFalseDelta\x12\x32\n\nmap_deltas\x18\x05 \x03(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x12\x34\n\x0blist_deltas\x18\x06 \x03(\x0b\x32\x1f.VarStoreDeltas.SingleListDelta\x12\x35\n\rstruct_deltas\x18\x07 \x03(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x1aL\n\x11SingleNumberDelta\x12\x10\n\x08var_name\x18\x01 \x02(\t\x12\x10\n\x08var_data\x18\x02 \x02(\x01\x12\x13\n\x0bversion_obj\x18\x03 \x01(\t\x1aJ\n\x0fSingleTextDelta\x12\x10\n\x08var_name\x18\x01 \x02(\t\x12\x10\n\x08var_data\x18\x02 \x02(\t\x12\x13\n\x0bversion_obj\x18\x03 \x01(\t\x1aO\n\x14SingleTrueFalseDelta\x12\x10\n\x08var_name\x18\x01 \x02(\t\x12\x10\n\x08var_data\x18\x02 \x02(\x08\x12\x13\n\x0bversion_obj\x18\x03 \x02(\t\x1a\xeb\t\n\x0f\x43ontainerAction\x12M\n\x10\x63ontainer_action\x18\x01 \x02(\x0e\x32\x33.VarStoreDeltas.ContainerAction.ContainerActionType\x12\x44\n\twrite_key\x18\x02 \x01(\x0b\x32\x31.VarStoreDeltas.ContainerAction.ContainerWriteKey\x12\x44\n\tadded_key\x18\x03 \x01(\x0b\x32\x31.VarStoreDeltas.ContainerAction.ContainerAddedKey\x12H\n\x0b\x64\x65leted_key\x18\x04 \x01(\x0b\x32\x33.VarStoreDeltas.ContainerAction.ContainerDeletedKey\x1a`\n\x13\x43ontainerDeletedKey\x12\x18\n\x10\x64\x65leted_key_text\x18\x01 \x01(\t\x12\x17\n\x0f\x64\x65leted_key_num\x18\x02 \x01(\x01\x12\x16\n\x0e\x64\x65leted_key_tf\x18\x03 \x01(\x08\x1a\x8a\x03\n\x11\x43ontainerWriteKey\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x16\n\x0ewrite_key_text\x18\x02 \x01(\t\x12\x15\n\rwrite_key_num\x18\x03 \x01(\x01\x12\x14\n\x0cwrite_key_tf\x18\x04 \x01(\x08\x12\x19\n\x11what_written_text\x18\x05 \x01(\t\x12\x18\n\x10what_written_num\x18\x06 \x01(\x01\x12\x17\n\x0fwhat_written_tf\x18\x07 \x01(\x08\x12\x38\n\x10what_written_map\x18\x08 \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x12:\n\x11what_written_list\x18\t \x01(\x0b\x32\x1f.VarStoreDeltas.SingleListDelta\x12;\n\x13what_written_struct\x18\n \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x1a\xfe\x02\n\x11\x43ontainerAddedKey\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x16\n\x0e\x61\x64\x64\x65\x64_key_text\x18\x02 \x01(\t\x12\x15\n\radded_key_num\x18\x03 \x01(\x01\x12\x14\n\x0c\x61\x64\x64\x65\x64_key_tf\x18\x04 \x01(\x08\x12\x17\n\x0f\x61\x64\x64\x65\x64_what_text\x18\x05 \x01(\t\x12\x16\n\x0e\x61\x64\x64\x65\x64_what_num\x18\x06 \x01(\x01\x12\x15\n\radded_what_tf\x18\x07 \x01(\x08\x12\x36\n\x0e\x61\x64\x64\x65\x64_what_map\x18\x08 \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x12\x38\n\x0f\x61\x64\x64\x65\x64_what_list\x18\t \x01(\x0b\x32\x1f.VarStoreDeltas.SingleListDelta\x12\x39\n\x11\x61\x64\x64\x65\x64_what_struct\x18\n \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\"C\n\x13\x43ontainerActionType\x12\x0f\n\x0bWRITE_VALUE\x10\x04\x12\x0b\n\x07\x41\x44\x44_KEY\x10\x05\x12\x0e\n\nDELETE_KEY\x10\x06\x1a\xb4\x01\n\x0fSingleListDelta\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x10\n\x08var_name\x18\x02 \x02(\t\x12\x18\n\x10has_been_written\x18\x03 \x02(\x08\x12\x44\n\x13internal_list_delta\x18\x04 \x02(\x0b\x32\'.VarStoreDeltas.SingleInternalListDelta\x1a\xb1\x01\n\x0eSingleMapDelta\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x10\n\x08var_name\x18\x02 \x02(\t\x12\x18\n\x10has_been_written\x18\x03 \x02(\x08\x12\x42\n\x12internal_map_delta\x18\x04 \x02(\x0b\x32&.VarStoreDeltas.SingleInternalMapDelta\x1a\xce\x01\n\x17SingleInternalListDelta\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x35\n\x0clist_actions\x18\x02 \x03(\x0b\x32\x1f.VarStoreDeltas.ContainerAction\x12K\n\x1asub_element_update_actions\x18\x03 \x03(\x0b\x32\'.VarStoreDeltas.SubElementUpdateActions\x1a\xcc\x01\n\x16SingleInternalMapDelta\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x34\n\x0bmap_actions\x18\x02 \x03(\x0b\x32\x1f.VarStoreDeltas.ContainerAction\x12K\n\x1asub_element_update_actions\x18\x03 \x03(\x0b\x32\'.VarStoreDeltas.SubElementUpdateActions\x1a\xad\x02\n\x17SubElementUpdateActions\x12/\n\x0bparent_type\x18\x01 \x02(\x0e\x32\x1a.VarStoreDeltas.ParentType\x12\x10\n\x08var_name\x18\x02 \x01(\t\x12\x10\n\x08key_text\x18\x03 \x01(\t\x12\x0f\n\x07key_num\x18\x04 \x01(\x01\x12\x0e\n\x06key_tf\x18\x05 \x01(\x08\x12\x31\n\tmap_delta\x18\x06 \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\x12\x33\n\nlist_delta\x18\x07 \x01(\x0b\x32\x1f.VarStoreDeltas.SingleListDelta\x12\x34\n\x0cstruct_delta\x18\x08 \x01(\x0b\x32\x1e.VarStoreDeltas.SingleMapDelta\"\xdb\x01\n\nParentType\x12\x13\n\x0fVAR_STORE_DELTA\x10\x01\x12\x11\n\rMAP_CONTAINER\x10\x02\x12\x12\n\x0eLIST_CONTAINER\x10\x03\x12\x1b\n\x17INTERNAL_LIST_CONTAINER\x10\x04\x12\x1a\n\x16INTERNAL_MAP_CONTAINER\x10\x05\x12\x13\n\x0f\x43ONTAINER_ADDED\x10\x06\x12\x15\n\x11\x43ONTAINER_WRITTEN\x10\x07\x12\x16\n\x12SUB_ELEMENT_ACTION\x10\x08\x12\x14\n\x10STRUCT_CONTAINER\x10\tB\'\n\x10waldo_protobuffsB\x13VarStoreDeltasProto')
 
 
 
@@ -100,8 +100,8 @@ _VARSTOREDELTAS_SINGLENUMBERDELTA = descriptor.Descriptor(
   fields=[
     descriptor.FieldDescriptor(
       name='var_name', full_name='VarStoreDeltas.SingleNumberDelta.var_name', index=0,
-      number=1, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -114,8 +114,8 @@ _VARSTOREDELTAS_SINGLENUMBERDELTA = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='version_obj', full_name='VarStoreDeltas.SingleNumberDelta.version_obj', index=2,
-      number=3, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -141,22 +141,22 @@ _VARSTOREDELTAS_SINGLETEXTDELTA = descriptor.Descriptor(
   fields=[
     descriptor.FieldDescriptor(
       name='var_name', full_name='VarStoreDeltas.SingleTextDelta.var_name', index=0,
-      number=1, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='var_data', full_name='VarStoreDeltas.SingleTextDelta.var_data', index=1,
-      number=2, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='version_obj', full_name='VarStoreDeltas.SingleTextDelta.version_obj', index=2,
-      number=3, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -182,8 +182,8 @@ _VARSTOREDELTAS_SINGLETRUEFALSEDELTA = descriptor.Descriptor(
   fields=[
     descriptor.FieldDescriptor(
       name='var_name', full_name='VarStoreDeltas.SingleTrueFalseDelta.var_name', index=0,
-      number=1, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -196,8 +196,8 @@ _VARSTOREDELTAS_SINGLETRUEFALSEDELTA = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='version_obj', full_name='VarStoreDeltas.SingleTrueFalseDelta.version_obj', index=2,
-      number=3, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -223,8 +223,8 @@ _VARSTOREDELTAS_CONTAINERACTION_CONTAINERDELETEDKEY = descriptor.Descriptor(
   fields=[
     descriptor.FieldDescriptor(
       name='deleted_key_text', full_name='VarStoreDeltas.ContainerAction.ContainerDeletedKey.deleted_key_text', index=0,
-      number=1, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -271,8 +271,8 @@ _VARSTOREDELTAS_CONTAINERACTION_CONTAINERWRITEKEY = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='write_key_text', full_name='VarStoreDeltas.ContainerAction.ContainerWriteKey.write_key_text', index=1,
-      number=2, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -292,8 +292,8 @@ _VARSTOREDELTAS_CONTAINERACTION_CONTAINERWRITEKEY = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='what_written_text', full_name='VarStoreDeltas.ContainerAction.ContainerWriteKey.what_written_text', index=4,
-      number=5, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -361,8 +361,8 @@ _VARSTOREDELTAS_CONTAINERACTION_CONTAINERADDEDKEY = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='added_key_text', full_name='VarStoreDeltas.ContainerAction.ContainerAddedKey.added_key_text', index=1,
-      number=2, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -382,8 +382,8 @@ _VARSTOREDELTAS_CONTAINERACTION_CONTAINERADDEDKEY = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='added_what_text', full_name='VarStoreDeltas.ContainerAction.ContainerAddedKey.added_what_text', index=4,
-      number=5, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -500,8 +500,8 @@ _VARSTOREDELTAS_SINGLELISTDELTA = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='var_name', full_name='VarStoreDeltas.SingleListDelta.var_name', index=1,
-      number=2, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -548,8 +548,8 @@ _VARSTOREDELTAS_SINGLEMAPDELTA = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='var_name', full_name='VarStoreDeltas.SingleMapDelta.var_name', index=1,
-      number=2, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -678,15 +678,15 @@ _VARSTOREDELTAS_SUBELEMENTUPDATEACTIONS = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='var_name', full_name='VarStoreDeltas.SubElementUpdateActions.var_name', index=1,
-      number=2, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='key_text', full_name='VarStoreDeltas.SubElementUpdateActions.key_text', index=2,
-      number=3, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value="",
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),

@@ -25,27 +25,27 @@ message VarStoreDeltas
     
     message SingleNumberDelta
     {
-        required bytes var_name = 1;
+        required string var_name = 1;
         required double var_data = 2;
 
         // only globally peered variables need to send their
         // version objects as well.  Otherwise, we can just send
         // the sequence variable by itself.
-        optional bytes version_obj = 3;
+        optional string version_obj = 3;
     }
 
     message SingleTextDelta
     {
-        required bytes var_name = 1;
-        required bytes var_data = 2;
-        optional bytes version_obj = 3;
+        required string var_name = 1;
+        required string var_data = 2;
+        optional string version_obj = 3;
     }
 
     message SingleTrueFalseDelta
     {
-        required bytes var_name = 1;
+        required string var_name = 1;
         required bool var_data = 2;
-        required bytes version_obj = 3;            
+        required string version_obj = 3;            
     }
 
     message ContainerAction
@@ -63,7 +63,7 @@ message VarStoreDeltas
             // these are the indices
 
             // NOTE 2: For a list, key should always be a number
-            optional bytes deleted_key_text = 1;
+            optional string deleted_key_text = 1;
             optional double deleted_key_num = 2;
             optional bool deleted_key_tf = 3;
         }
@@ -72,11 +72,11 @@ message VarStoreDeltas
         {
             required ParentType parent_type = 1;
             
-            optional bytes write_key_text = 2;
+            optional string write_key_text = 2;
             optional double write_key_num = 3;
             optional bool write_key_tf = 4;
 
-            optional bytes what_written_text = 5;
+            optional string what_written_text = 5;
             optional double what_written_num = 6;
             optional bool what_written_tf = 7;
 
@@ -89,12 +89,12 @@ message VarStoreDeltas
         {
             required ParentType parent_type = 1;
             
-            optional bytes added_key_text = 2;
+            optional string added_key_text = 2;
             optional double added_key_num = 3;
             optional bool added_key_tf = 4;
 
             // what was actually added
-            optional bytes added_what_text = 5;
+            optional string added_what_text = 5;
             optional double added_what_num = 6;
             optional bool added_what_tf = 7;
             
@@ -113,7 +113,7 @@ message VarStoreDeltas
     message SingleListDelta
     {
         required ParentType parent_type = 1;
-        required bytes var_name = 2;
+        required string var_name = 2;
 
         required bool has_been_written = 3;
         required SingleInternalListDelta internal_list_delta = 4;
@@ -122,7 +122,7 @@ message VarStoreDeltas
     message SingleMapDelta
     {
         required ParentType parent_type = 1;
-        required bytes var_name = 2;
+        required string var_name = 2;
 
         required bool has_been_written = 3;
         required SingleInternalMapDelta internal_map_delta = 4;
@@ -168,9 +168,9 @@ message VarStoreDeltas
         // do not actually need var name.  including it to simplify
         // code which deals with this subtype as well as container
         // added/written actions, which do have var_names.
-        optional bytes var_name = 2;
+        optional string var_name = 2;
         
-        optional bytes key_text = 3;
+        optional string key_text = 3;
         optional double key_num = 4;
         optional bool key_tf = 5;
         
