@@ -2,6 +2,10 @@ import "util.proto";
 
 // This is a response message to _PartnerNotifyOfPeeredModified
 
+option java_package = "waldo_protobuffs";
+option java_outer_classname = "PartnerNotifyOfPeeredModifiedResponseProto";
+
+
 message PartnerNotifyOfPeeredModifiedResponse
 {
         required UUID event_uuid = 1;

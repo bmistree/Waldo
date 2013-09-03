@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerStop.proto',
   package='',
-  serialized_pb='\n\x11partnerStop.proto\"\x1c\n\x0bPartnerStop\x12\r\n\x05\x64ummy\x18\x01 \x02(\x08')
+  serialized_pb='\n\x11partnerStop.proto\"\x1c\n\x0bPartnerStop\x12\r\n\x05\x64ummy\x18\x01 \x02(\x08\x42$\n\x10waldo_protobuffsB\x10PartnerStopProto')
 
 
 

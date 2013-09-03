@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerNotifyOfPeeredModifiedResponse.proto',
   package='',
-  serialized_pb='\n+partnerNotifyOfPeeredModifiedResponse.proto\x1a\nutil.proto\"u\n%PartnerNotifyOfPeeredModifiedResponse\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x13\n\x0binvalidated\x18\x02 \x02(\x08\x12\x1c\n\rreply_to_uuid\x18\x03 \x02(\x0b\x32\x05.UUID')
+  serialized_pb='\n+partnerNotifyOfPeeredModifiedResponse.proto\x1a\nutil.proto\"u\n%PartnerNotifyOfPeeredModifiedResponse\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x13\n\x0binvalidated\x18\x02 \x02(\x08\x12\x1c\n\rreply_to_uuid\x18\x03 \x02(\x0b\x32\x05.UUIDB>\n\x10waldo_protobuffsB*PartnerNotifyOfPeeredModifiedResponseProto')
 
 
 

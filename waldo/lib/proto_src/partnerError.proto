@@ -1,5 +1,9 @@
 import "util.proto";
 
+option java_package = "waldo_protobuffs";
+option java_outer_classname = "PartnerErrorProto";
+
+
 message PartnerError {
     /**
        When an exception occurs on a partner endpoint during a sequence

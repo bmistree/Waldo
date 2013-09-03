@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerCompleteCommitRequest.proto',
   package='',
-  serialized_pb='\n\"partnerCompleteCommitRequest.proto\x1a\nutil.proto\"9\n\x1cPartnerCompleteCommitRequest\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID')
+  serialized_pb='\n\"partnerCompleteCommitRequest.proto\x1a\nutil.proto\"9\n\x1cPartnerCompleteCommitRequest\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUIDB5\n\x10waldo_protobuffsB!PartnerCompleteCommitRequestProto')
 
 
 

@@ -1,4 +1,8 @@
 
+option java_package = "waldo_protobuffs";
+option java_outer_classname = "UtilProto";
+
+
 message UUID
 {
     required bytes data = 1;

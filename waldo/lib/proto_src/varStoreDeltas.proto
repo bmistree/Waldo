@@ -2,6 +2,9 @@ import "util.proto";
 
 // FIXME: for all numeric types, add [packed = true];
 
+option java_package = "waldo_protobuffs";
+option java_outer_classname = "VarStoreDeltasProto";
+
 
 message VarStoreDeltas
 {

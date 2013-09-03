@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='heartbeat.proto',
   package='',
-  serialized_pb='\n\x0fheartbeat.proto\x1a\nutil.proto\"\x18\n\tHeartbeat\x12\x0b\n\x03msg\x18\x01 \x02(\t')
+  serialized_pb='\n\x0fheartbeat.proto\x1a\nutil.proto\"\x18\n\tHeartbeat\x12\x0b\n\x03msg\x18\x01 \x02(\tB\"\n\x10waldo_protobuffsB\x0eHeartbeatProto')
 
 
 

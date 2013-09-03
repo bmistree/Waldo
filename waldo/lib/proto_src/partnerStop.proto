@@ -1,4 +1,7 @@
 
+option java_package = "waldo_protobuffs";
+option java_outer_classname = "PartnerStopProto";
+
 message PartnerStop
 {
     required bool dummy = 1;

@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='promotionMessage.proto',
   package='',
-  serialized_pb='\n\x16promotionMessage.proto\x1a\nutil.proto\"G\n\tPromotion\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x1f\n\x0cnew_priority\x18\x02 \x02(\x0b\x32\t.Priority')
+  serialized_pb='\n\x16promotionMessage.proto\x1a\nutil.proto\"G\n\tPromotion\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x1f\n\x0cnew_priority\x18\x02 \x02(\x0b\x32\t.PriorityB\"\n\x10waldo_protobuffsB\x0ePromotionProto')
 
 
 

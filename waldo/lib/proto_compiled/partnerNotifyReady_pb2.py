@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerNotifyReady.proto',
   package='',
-  serialized_pb='\n\x18partnerNotifyReady.proto\x1a\nutil.proto\"2\n\x12PartnerNotifyReady\x12\x1c\n\rendpoint_uuid\x18\x01 \x02(\x0b\x32\x05.UUID')
+  serialized_pb='\n\x18partnerNotifyReady.proto\x1a\nutil.proto\"2\n\x12PartnerNotifyReady\x12\x1c\n\rendpoint_uuid\x18\x01 \x02(\x0b\x32\x05.UUIDB+\n\x10waldo_protobuffsB\x17PartnerNotifyReadyProto')
 
 
 

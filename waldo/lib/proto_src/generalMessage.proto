@@ -14,6 +14,9 @@ import "heartbeat.proto";
 import "promotionMessage.proto";
 import "util.proto";
 
+option java_package = "waldo_protobuffs";
+option java_outer_classname = "GeneralMessageProto";
+
 message GeneralMessage
 {
     enum MessageType {

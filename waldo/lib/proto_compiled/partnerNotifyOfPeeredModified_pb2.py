@@ -13,7 +13,7 @@ import varStoreDeltas_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerNotifyOfPeeredModified.proto',
   package='',
-  serialized_pb='\n#partnerNotifyOfPeeredModified.proto\x1a\nutil.proto\x1a\x14varStoreDeltas.proto\"\x9d\x01\n\x1dPartnerNotifyOfPeeredModified\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x1b\n\x08priority\x18\x02 \x02(\x0b\x32\t.Priority\x12\x1e\n\x0freply_with_uuid\x18\x03 \x02(\x0b\x32\x05.UUID\x12$\n\x0bglob_deltas\x18\x04 \x02(\x0b\x32\x0f.VarStoreDeltas')
+  serialized_pb='\n#partnerNotifyOfPeeredModified.proto\x1a\nutil.proto\x1a\x14varStoreDeltas.proto\"\x9d\x01\n\x1dPartnerNotifyOfPeeredModified\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12\x1b\n\x08priority\x18\x02 \x02(\x0b\x32\t.Priority\x12\x1e\n\x0freply_with_uuid\x18\x03 \x02(\x0b\x32\x05.UUID\x12$\n\x0bglob_deltas\x18\x04 \x02(\x0b\x32\x0f.VarStoreDeltasB6\n\x10waldo_protobuffsB\"PartnerNotifyOfPeeredModifiedProto')
 
 
 

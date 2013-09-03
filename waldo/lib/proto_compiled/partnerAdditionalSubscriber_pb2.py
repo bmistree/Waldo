@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerAdditionalSubscriber.proto',
   package='',
-  serialized_pb='\n!partnerAdditionalSubscriber.proto\x1a\nutil.proto\"\x9b\x01\n\x1bPartnerAdditionalSubscriber\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12)\n\x1a\x61\x64\x64itional_subscriber_uuid\x18\x02 \x02(\x0b\x32\x05.UUID\x12\x18\n\thost_uuid\x18\x03 \x02(\x0b\x32\x05.UUID\x12\x1c\n\rresource_uuid\x18\x04 \x02(\x0b\x32\x05.UUID')
+  serialized_pb='\n!partnerAdditionalSubscriber.proto\x1a\nutil.proto\"\x9b\x01\n\x1bPartnerAdditionalSubscriber\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12)\n\x1a\x61\x64\x64itional_subscriber_uuid\x18\x02 \x02(\x0b\x32\x05.UUID\x12\x18\n\thost_uuid\x18\x03 \x02(\x0b\x32\x05.UUID\x12\x1c\n\rresource_uuid\x18\x04 \x02(\x0b\x32\x05.UUIDB4\n\x10waldo_protobuffsB PartnerAdditionalSubscriberProto')
 
 
 

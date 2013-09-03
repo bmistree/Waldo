@@ -12,7 +12,7 @@ import util_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='partnerFirstPhaseResultMessage.proto',
   package='',
-  serialized_pb='\n$partnerFirstPhaseResultMessage.proto\x1a\nutil.proto\"\xa3\x01\n\x1ePartnerFirstPhaseResultMessage\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12$\n\x15sending_endpoint_uuid\x18\x02 \x02(\x0b\x32\x05.UUID\x12\x12\n\nsuccessful\x18\x03 \x02(\x08\x12,\n\x1d\x63hildren_event_endpoint_uuids\x18\x04 \x03(\x0b\x32\x05.UUID')
+  serialized_pb='\n$partnerFirstPhaseResultMessage.proto\x1a\nutil.proto\"\xa3\x01\n\x1ePartnerFirstPhaseResultMessage\x12\x19\n\nevent_uuid\x18\x01 \x02(\x0b\x32\x05.UUID\x12$\n\x15sending_endpoint_uuid\x18\x02 \x02(\x0b\x32\x05.UUID\x12\x12\n\nsuccessful\x18\x03 \x02(\x08\x12,\n\x1d\x63hildren_event_endpoint_uuids\x18\x04 \x03(\x0b\x32\x05.UUIDB7\n\x10waldo_protobuffsB#PartnerFirstPhaseResultMessageProto')
 
 
 
