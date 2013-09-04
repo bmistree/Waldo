@@ -7,7 +7,7 @@ public class LockedVariables {
 	final static ValueTypeDataWrapperConstructor<Number> number_value_type_data_wrapper_constructor = new ValueTypeDataWrapperConstructor<Number>();
 	final static Number default_number = new Double(0);
 	
-	public class SingleThreadedLockedNumberVariable extends SingleThreadedLockedValueVariable<Number>
+	public static class SingleThreadedLockedNumberVariable extends SingleThreadedLockedValueVariable<Number>
 	{
 		public SingleThreadedLockedNumberVariable(String _host_uuid, boolean _peered,
 			Number init_val)
