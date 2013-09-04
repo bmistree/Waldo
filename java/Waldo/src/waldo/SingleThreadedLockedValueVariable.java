@@ -77,9 +77,26 @@ public abstract class SingleThreadedLockedValueVariable<T> extends SingleThreade
         return true;		
 	}
 	
+	/**
+	 * Put current internal value into each of the parent_deltas.
+	 * 
+	 * If is python value type, then adds a delta message to
+       parent.  Otherwise, does nothing.
+
+	 * 
+	 * @param parent_delta
+	 * @param var_data
+	 * @param var_name
+	 * @return  ---- For historical reasons, always returns true.
+	 */
     protected abstract boolean value_variable_py_val_serialize(VarStoreDeltas.Builder parent_delta,T var_data,String var_name);
     protected abstract boolean value_variable_py_val_serialize(waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey.Builder parent_delta,T var_data,String var_name);
     protected abstract boolean value_variable_py_val_serialize(waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerWriteKey.Builder parent_delta,T var_data,String var_name);
+    
+    /**
+     * Should really only be serializing VarStoreDeltas.Builder, ContainerAddedKey.Builder, 
+     * and ContainerWriteKey.Builder.  If get any other, then something's gone wrong: assert out. 
+     */
     private boolean value_variable_py_val_serialize(Builder parent_delta,T var_data,String var_name)
     {
     	Util.logger_assert("Unknown builder type");
