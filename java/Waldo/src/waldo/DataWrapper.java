@@ -1,6 +1,9 @@
 package waldo;
 
 public class DataWrapper<T> {
+	
+	
+	
 	protected T val;
 	protected boolean has_been_written_since_last_msg = false;
 	
