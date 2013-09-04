@@ -1,8 +1,10 @@
 package waldo;
 
-import com.google.protobuf.Message.Builder;
 
+import waldo_protobuffs.VarStoreDeltasProto;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerWriteKey;
 
 
 public abstract class SingleThreadedLockedValueVariable<T> extends SingleThreadedLockedObject<T>
@@ -64,9 +66,9 @@ public abstract class SingleThreadedLockedValueVariable<T> extends SingleThreade
 	 * @return
 	 */
 	private boolean _serializable_var_tuple_for_network(
-		Builder parent_delta,String var_name, LockedActiveEvent active_event, boolean force)
+		VarStoreDeltas.Builder parent_delta,String var_name, LockedActiveEvent active_event, boolean force)
 	{
-        T var_data = get_val(active_event);
+		T var_data = get_val(active_event);
         boolean has_been_written_since_last_msg = get_and_reset_has_been_written_since_last_msg(active_event);
             
         if ((! force) && (! has_been_written_since_last_msg))
@@ -76,6 +78,36 @@ public abstract class SingleThreadedLockedValueVariable<T> extends SingleThreade
         	Util.logger_assert("Failed serialization in value variable");
         return true;		
 	}
+	
+	private boolean _serializable_var_tuple_for_network(
+			ContainerAddedKey.Builder parent_delta,String var_name, LockedActiveEvent active_event, boolean force)
+		{
+			T var_data = get_val(active_event);
+	        boolean has_been_written_since_last_msg = get_and_reset_has_been_written_since_last_msg(active_event);
+	            
+	        if ((! force) && (! has_been_written_since_last_msg))
+	            return false;
+
+	        if (! value_variable_py_val_serialize(parent_delta,var_data,var_name))
+	        	Util.logger_assert("Failed serialization in value variable");
+	        return true;		
+		}
+			
+	private boolean _serializable_var_tuple_for_network(
+			ContainerWriteKey.Builder parent_delta,String var_name, LockedActiveEvent active_event, boolean force)
+		{
+			T var_data = get_val(active_event);
+	        boolean has_been_written_since_last_msg = get_and_reset_has_been_written_since_last_msg(active_event);
+	            
+	        if ((! force) && (! has_been_written_since_last_msg))
+	            return false;
+
+	        if (! value_variable_py_val_serialize(parent_delta,var_data,var_name))
+	        	Util.logger_assert("Failed serialization in value variable");
+	        return true;		
+		}
+
+	
 	
 	/**
 	 * Put current internal value into each of the parent_deltas.
@@ -89,20 +121,12 @@ public abstract class SingleThreadedLockedValueVariable<T> extends SingleThreade
 	 * @param var_name
 	 * @return  ---- For historical reasons, always returns true.
 	 */
-    protected abstract boolean value_variable_py_val_serialize(VarStoreDeltas.Builder parent_delta,T var_data,String var_name);
-    protected abstract boolean value_variable_py_val_serialize(waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey.Builder parent_delta,T var_data,String var_name);
-    protected abstract boolean value_variable_py_val_serialize(waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerWriteKey.Builder parent_delta,T var_data,String var_name);
+    protected abstract boolean value_variable_py_val_serialize(
+    		VarStoreDeltasProto.VarStoreDeltas.Builder parent_delta,T var_data,String var_name);
     
-    /**
-     * Should really only be serializing VarStoreDeltas.Builder, ContainerAddedKey.Builder, 
-     * and ContainerWriteKey.Builder.  If get any other, then something's gone wrong: assert out. 
-     */
-    private boolean value_variable_py_val_serialize(Builder parent_delta,T var_data,String var_name)
-    {
-    	Util.logger_assert("Unknown builder type");
-    	return false;
-    }
-
+    protected abstract boolean value_variable_py_val_serialize(ContainerAddedKey.Builder parent_delta,T var_data,String var_name);
+    protected abstract boolean value_variable_py_val_serialize(ContainerWriteKey.Builder parent_delta,T var_data,String var_name);
+    
 
     
 

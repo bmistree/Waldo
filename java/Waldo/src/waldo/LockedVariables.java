@@ -1,5 +1,6 @@
 package waldo;
 
+import waldo_protobuffs.VarStoreDeltasProto;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleNumberDelta;
 
@@ -18,12 +19,15 @@ public class LockedVariables {
 
 		
 		@Override
-		protected boolean value_variable_py_val_serialize(VarStoreDeltas.Builder parent_delta,
+		protected boolean value_variable_py_val_serialize(
+				waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.Builder parent_delta,
 				Number var_data, String var_name) 
 		{
 			// can only add a pure number to var store a holder or to
 	        // an added key
 			SingleNumberDelta.Builder delta = SingleNumberDelta.newBuilder();
+			delta.setVarName(var_name);
+			delta.setVarData(var_data.doubleValue());
 			parent_delta.addNumDeltas(delta);			
 			return true;
 		}
