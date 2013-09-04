@@ -1,5 +1,7 @@
 package WaldoCallResults;
 
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
+
 public class SequenceMessageCallResult {
 
 	/**
