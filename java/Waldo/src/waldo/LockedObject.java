@@ -102,12 +102,6 @@ public abstract class LockedObject<T> {
     public abstract boolean serializable_var_tuple_for_network(
         VarStoreDeltas.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force);
     public abstract boolean serializable_var_tuple_for_network(
-            SingleNumberDelta.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force);
-    public abstract boolean serializable_var_tuple_for_network(
-            SingleTextDelta.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force);
-	public abstract boolean serializable_var_tuple_for_network(
-            SingleTrueFalseDelta.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force);
-	public abstract boolean serializable_var_tuple_for_network(
             SingleListDelta.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force);
 	public abstract boolean serializable_var_tuple_for_network(
             SingleMapDelta.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force);

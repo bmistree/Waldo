@@ -1,6 +1,7 @@
 package waldo;
 
-import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.Builder;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
+
 
 public abstract class SingleThreadedLockedObject<T> extends LockedObject<T> {
 	
@@ -10,7 +11,9 @@ public abstract class SingleThreadedLockedObject<T> extends LockedObject<T> {
 	private DataWrapperConstructor<T> data_wrapper_constructor;
 	public DataWrapper<T> val = null;
 	
-	public SingleThreadedLockedObject(
+	public SingleThreadedLockedObject(){}
+	
+	public void init(
 			DataWrapperConstructor<T> dwc, String _host_uuid,boolean _peered, T init_val)
 	{
 		data_wrapper_constructor = dwc;
@@ -91,24 +94,7 @@ public abstract class SingleThreadedLockedObject<T> extends LockedObject<T> {
 	}
 
 	@Override
-	public abstract boolean serializable_var_tuple_for_network(Builder parent_delta,
-			String var_name, LockedActiveEvent active_event, boolean force);
-
-	@Override
-	public abstract boolean serializable_var_tuple_for_network(
-			waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleNumberDelta.Builder parent_delta,
-			String var_name, LockedActiveEvent active_event, boolean force);
-
-
-	@Override
-	public abstract boolean serializable_var_tuple_for_network(
-			waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta.Builder parent_delta,
-			String var_name, LockedActiveEvent active_event, boolean force);
-
-
-	@Override
-	public abstract boolean serializable_var_tuple_for_network(
-			waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta.Builder parent_delta,
+	public abstract boolean serializable_var_tuple_for_network(VarStoreDeltas.Builder parent_delta,
 			String var_name, LockedActiveEvent active_event, boolean force);
 
 	@Override

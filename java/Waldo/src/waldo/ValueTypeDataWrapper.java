@@ -1,8 +1,10 @@
 package waldo;
 
-public class ValueTypeDataWrapper extends DataWrapper {
+public class ValueTypeDataWrapper<T> extends DataWrapper<T> {
 
-	public ValueTypeDataWrapper(Object _val, boolean peered) {
+	public ValueTypeDataWrapper(T _val, boolean peered) {
 		super(_val, peered);
 	}
+	
+	
 }
