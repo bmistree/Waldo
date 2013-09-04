@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleNumberDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta;
 
 /**
  * '''
@@ -202,9 +203,6 @@ public class VariableStore
 				existing_value.write_if_different(active_event,num_delta.getVarData());			
 		}
 		
-		
-		System.out.println("\n\nNote: still must print incorporate all non-numeric deltas\n\n");
-		/*
 		// incorporate all texts
 		for (SingleTextDelta text_delta : var_store_deltas.getTextDeltasList())
 		{
@@ -242,10 +240,9 @@ public class VariableStore
 		}
 
 
-		*
-		*/
 		
-
+		System.out.println("\n\nNote: still must print incorporate all non-vlaue type deltas\n\n");
+		
 	}
 
 }
