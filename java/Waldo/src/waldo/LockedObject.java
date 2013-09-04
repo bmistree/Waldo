@@ -28,6 +28,8 @@ public abstract class LockedObject<T> {
 	}
 	
 	
+	public abstract void write_if_different(LockedActiveEvent active_event, T new_val);
+	
 	/**
 	 * 
         Called when an event with uuid "uuid" is promoted to boosted
