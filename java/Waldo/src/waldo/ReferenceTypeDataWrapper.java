@@ -16,7 +16,13 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalMapDelt
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SubElementUpdateActions;
 
-
+/**
+ * 
+ * @author bmistree
+ *
+ * @param <K> --- The key type
+ * @param <T> --- The actual java type of the values holding (ie, outside of locked object)
+ */
 public class ReferenceTypeDataWrapper<K,T> extends DataWrapper<HashMap<K,LockedObject<T>>, HashMap<K,T>>{
 	
 	class OpTuple
