@@ -3,18 +3,25 @@ package waldo;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 
 
-public abstract class SingleThreadedLockedObject<T> extends LockedObject<T> {
+/**
+ * 
+ * @author bmistree
+ *
+ * @param <T> --- The java type of the internal data
+ * @param <D> --- The type that gets returned from dewaldoify
+ */
+public abstract class SingleThreadedLockedObject<T,D> extends LockedObject<T,D> {
 	
 	public String uuid = Util.generate_uuid();
 	public String host_uuid = null;
 	public boolean peered;
-	private DataWrapperConstructor<T> data_wrapper_constructor;
-	public DataWrapper<T,T> val = null;
+	private DataWrapperConstructor<T,D> data_wrapper_constructor;
+	public DataWrapper<T,D> val = null;
 	
 	public SingleThreadedLockedObject(){}
 	
 	public void init(
-			DataWrapperConstructor<T> dwc, String _host_uuid,boolean _peered, T init_val)
+			DataWrapperConstructor<T,D> dwc, String _host_uuid,boolean _peered, T init_val)
 	{
 		data_wrapper_constructor = dwc;
 		host_uuid = _host_uuid;
@@ -89,7 +96,7 @@ public abstract class SingleThreadedLockedObject<T> extends LockedObject<T> {
 	}
 
 	@Override
-	public T de_waldoify(LockedActiveEvent active_event) {
+	public D de_waldoify(LockedActiveEvent active_event) {
         return val.de_waldoify(active_event);
 	}
 

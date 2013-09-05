@@ -11,15 +11,21 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SubElementUpdateActions;
 
-
-public abstract class LockedObject<T> {
+/**
+ * 
+ * @author bmistree
+ *
+ * @param <T> --- The internal, Java type of the data
+ * @param <D> --- The java type that gets returned when call dewaldoify
+ */
+public abstract class LockedObject<T,D> {
 
 	private MultiThreadedConstructor multi_threaded_constructor = null;
 	private SingleThreadedConstructor single_threaded_constructor = null;
 	
 	protected String host_uuid = null;
 	
-	public LockedObject<T> copy(LockedActiveEvent active_event, boolean peered, boolean multi_threaded)
+	public LockedObject<T,D> copy(LockedActiveEvent active_event, boolean peered, boolean multi_threaded)
 	{
 		if (multi_threaded)
 			return multi_threaded_constructor.construct(host_uuid,peered,get_val(active_event));
@@ -64,7 +70,7 @@ public abstract class LockedObject<T> {
 
     public abstract void backout(LockedActiveEvent active_event);
 
-    public abstract T de_waldoify(LockedActiveEvent active_event);
+    public abstract D de_waldoify(LockedActiveEvent active_event);
 
 
     /**

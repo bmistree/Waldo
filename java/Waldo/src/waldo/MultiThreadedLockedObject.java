@@ -1,4 +1,4 @@
 package waldo;
 
-public class MultiThreadedLockedObject<T> extends LockedObject<T> {
+public class MultiThreadedLockedObject<T,D> extends LockedObject<T,D> {
 }
