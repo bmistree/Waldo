@@ -30,7 +30,9 @@ public class SingleThreadedLockedContainer<K,V,D>
 				    >  
      implements ContainerInterface<K,V,D>
 {
+	
 
+	protected ReferenceTypeDataWrapper<K,V,D> val = null;
 
 	public V get_val_on_key(LockedActiveEvent active_event, K key) 
 	{
@@ -58,6 +60,16 @@ public class SingleThreadedLockedContainer<K,V,D>
 	public void set_val_on_key(LockedActiveEvent active_event, K key,
 			V to_write, boolean copy_if_peered) 
 	{
+		// note: may need to change this to cast to LockedObject<V,D> and use other set_val.
+		Util.logger_assert(
+				"Should never be setting value directly on container.  " +
+				"Instead, should have wrapped V in a LockedObject at an earlier call.");
+		
+	}
+	
+	public void set_val_on_key(
+			LockedActiveEvent active_event, K key, LockedObject<V,D> to_write, boolean copy_if_peered)
+	{
 		//def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
 		//    if copy_if_peered:
 		//        if isinstance(to_write,WaldoLockedObj):
@@ -65,10 +77,8 @@ public class SingleThreadedLockedContainer<K,V,D>
 		//    return self.val.set_val_on_key(active_event,key,to_write)
 		
 		if (copy_if_peered)
-			if (LockedObject.class.isInstance(to_write))
-				to_write = (V)(((LockedObject)to_write).copy(active_event, true, true));
+			to_write = to_write.copy(active_event, true, true);
 		
-		// Note: problem is that it's treating val as a DataWrapper instead of as a ReferenceDataWrapper.
 		val.set_val_on_key(active_event,key,to_write);
 	}
 

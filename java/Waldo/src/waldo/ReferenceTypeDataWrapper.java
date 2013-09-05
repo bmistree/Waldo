@@ -115,12 +115,13 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
 		return;	
 	}
 		
+	public void set_val_on_key(
+			LockedActiveEvent active_event,K key, LockedObject<T,D> to_write)
+	{
+		set_val_on_key(active_event,key,to_write,false);
+	}
 	
-    public void set_val_on_key(
-    		LockedActiveEvent active_event,K key, LockedObject<T,D> to_write)
-    {
-    	set_val_on_key(active_event,key,to_write,false);
-    }
+	
 
     public void del_key(
     		LockedActiveEvent active_event, K key_to_delete,boolean incorporating_deltas)
