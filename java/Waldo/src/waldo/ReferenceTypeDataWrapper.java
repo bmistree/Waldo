@@ -211,7 +211,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
      * @param for_map
      */
     public void add_all_data_to_delta_list(
-    		SingleInternalMapDelta.Builder delta_to_add_to, HashMap<K,Object> current_internal_val,LockedActiveEvent active_event,boolean for_map)
+    		SingleInternalMapDelta.Builder delta_to_add_to, HashMap<K,LockedObject<T,D>> current_internal_val,LockedActiveEvent active_event,boolean for_map)
     {
     	if (!for_map)
     		Util.logger_assert("Using incorrect ReferenceTypeDataWrapper");
@@ -298,7 +298,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
      * @return
      */
     public boolean add_to_delta_list(
-    		SingleInternalMapDelta.Builder delta_to_add_to, HashMap<K,Object> current_internal_val,
+    		SingleInternalMapDelta.Builder delta_to_add_to, HashMap<K,LockedObject<T,D>> current_internal_val,
     		LockedActiveEvent active_event,boolean for_map)
     {
     	HashMap<K,Boolean> modified_indices = new HashMap<K,Boolean>();
@@ -473,16 +473,9 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     	} // ends for partner change loop
     	
     	
-    	for (Map.Entry<K, Object> entry : current_internal_val.entrySet())
+    	for (Map.Entry<K, LockedObject<T,D>> entry : current_internal_val.entrySet())
     	{
-    		Object internal_val = entry.getValue();
-    		
-    		// if not isinstance(list_val,WaldoLockedObj):
-    		//     break
-    		if (!LockedObject.class.isInstance(internal_val))
-    			break;
-    		
-    		LockedObject casted_internal_val = (LockedObject)internal_val;
+    		LockedObject<T,D> casted_internal_val = entry.getValue();
     		K index = entry.getKey();
     		if (!modified_indices.containsKey(index))
     		{
