@@ -53,18 +53,70 @@ public class SingleThreadedLockedContainer<K,V,D>
     public boolean serializable_var_tuple_for_network (
     		VarStoreDeltas.Builder parent_delta,String var_name, LockedActiveEvent active_event,boolean force)
     {
-		SingleMapDelta.Builder single_map_delta = create_internal_map_delta(var_name,active_event,force);
-		if (single_map_delta != null)
-			parent_delta.addMapDeltas(single_map_delta);
-    	
-        return single_map_delta != null;
-    }
+		CreateInternalMapReturnObj map_return_obj = create_internal_map_delta(var_name,active_event,force);
+		
+		// this contains an extra pruning condition: if we've gotten all the way back to the root context 
+		// and haven't observed any change in the subtree, it means that we don't have to send data over 
+		// to other side.
+		if (map_return_obj.internal_has_been_written || map_return_obj.has_been_written_since_last_msg)
+			parent_delta.addMapDeltas(map_return_obj.single_map_delta);
 
+		return (force || map_return_obj.internal_has_been_written || map_return_obj.has_been_written_since_last_msg);
+    }
+	@Override
+	public boolean serializable_var_tuple_for_network(
+			ContainerWriteKey.Builder parent_delta,
+			String var_name, LockedActiveEvent active_event, boolean force) 
+	{
+		CreateInternalMapReturnObj map_return_obj = create_internal_map_delta(var_name,active_event,force);
+		parent_delta.setWhatWrittenMap(map_return_obj.single_map_delta);
+		return (force || map_return_obj.internal_has_been_written || map_return_obj.has_been_written_since_last_msg);
+	}
+
+	@Override
+	public boolean serializable_var_tuple_for_network(
+			ContainerAddedKey.Builder parent_delta,
+			String var_name, LockedActiveEvent active_event, boolean force) 
+	{
+		CreateInternalMapReturnObj map_return_obj = create_internal_map_delta(var_name,active_event,force);
+		parent_delta.setAddedWhatMap(map_return_obj.single_map_delta);
+		return (force || map_return_obj.internal_has_been_written || map_return_obj.has_been_written_since_last_msg);
+	}
+
+	@Override
+	public boolean serializable_var_tuple_for_network(
+			SubElementUpdateActions.Builder parent_delta,
+			String var_name, LockedActiveEvent active_event, boolean force) 
+	{
+		CreateInternalMapReturnObj map_return_obj = create_internal_map_delta(var_name,active_event,force);
+		parent_delta.setMapDelta(map_return_obj.single_map_delta);
+		return (force || map_return_obj.internal_has_been_written || map_return_obj.has_been_written_since_last_msg);
+	}
+
+	
+	
+	public class CreateInternalMapReturnObj
+	{
+		public boolean internal_has_been_written;
+		public boolean has_been_written_since_last_msg;
+		public SingleMapDelta.Builder single_map_delta;
+		public CreateInternalMapReturnObj(
+				boolean _internal_has_been_written,boolean _has_been_written_since_last_msg,
+				SingleMapDelta.Builder _single_map_delta)
+		{
+			internal_has_been_written = _internal_has_been_written;
+			has_been_written_since_last_msg = _has_been_written_since_last_msg;
+			single_map_delta = _single_map_delta;
+		}
+		
+	}
+	
 	/**
 	 * Same parameters as serializable_var_tuple_for_network
 	 * @return --- null if no subtree has been written and we aren't being forced to create a builder
 	 */
-	private SingleMapDelta.Builder create_internal_map_delta(String var_name, LockedActiveEvent active_event, boolean force)
+	private CreateInternalMapReturnObj create_internal_map_delta(
+			String var_name, LockedActiveEvent active_event, boolean force)
 	{
     	boolean has_been_written_since_last_msg = get_and_reset_has_been_written_since_last_msg(active_event);
     	
@@ -82,10 +134,8 @@ public class SingleThreadedLockedContainer<K,V,D>
     			        // must force the write when we have written a new value over list
     					force || has_been_written_since_last_msg);
     	
-    	// only add the delta if a subelement has changed or we're being forced
-    	if (internal_has_been_written || has_been_written_since_last_msg || force)
-    		return single_map_delta;
-    	return null;
+    	return new CreateInternalMapReturnObj(
+    			internal_has_been_written,has_been_written_since_last_msg, single_map_delta);
 	}
     
     /**
@@ -160,29 +210,8 @@ public class SingleThreadedLockedContainer<K,V,D>
 		return false;
 	}
 
-	@Override
-	public boolean serializable_var_tuple_for_network(
-			ContainerAddedKey.Builder parent_delta,
-			String var_name, LockedActiveEvent active_event, boolean force) {
-		// TODO Auto-generated method stub
-		return false;
-	}
 
-	@Override
-	public boolean serializable_var_tuple_for_network(
-			SubElementUpdateActions.Builder parent_delta,
-			String var_name, LockedActiveEvent active_event, boolean force) {
-		// TODO Auto-generated method stub
-		return false;
-	}
 
-	@Override
-	public boolean serializable_var_tuple_for_network(
-			ContainerWriteKey.Builder parent_delta,
-			String var_name, LockedActiveEvent active_event, boolean force) {
-		// TODO Auto-generated method stub
-		return false;
-	}
 
 	public ReferenceTypeDataWrapper<K,V,D> get_dirty_wrapped_val(LockedActiveEvent active_event)
 	{
