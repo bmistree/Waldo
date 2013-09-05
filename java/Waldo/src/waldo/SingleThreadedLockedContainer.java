@@ -184,7 +184,7 @@ public class SingleThreadedLockedContainer<K,V,D>
     	
     	// Just doing maps for now
     	SingleMapDelta.Builder single_map_delta = SingleMapDelta.newBuilder();
-    	
+    	single_map_delta.setParentType(VarStoreDeltas.ParentType.MAP_CONTAINER);
     	
     	single_map_delta.setVarName(var_name);
     	single_map_delta.setHasBeenWritten(has_been_written_since_last_msg);

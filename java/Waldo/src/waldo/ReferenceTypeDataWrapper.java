@@ -223,16 +223,18 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     		
     		//action = delta_to_add_to.map_actions.add()
     		ContainerAction.Builder action = ContainerAction.newBuilder();
-    		delta_to_add_to.addMapActions(action);
-    		
     		//action.container_action = VarStoreDeltas.ContainerAction.ADD_KEY
     		action.setContainerAction(VarStoreDeltas.ContainerAction.ContainerActionType.ADD_KEY);
     		
+    		delta_to_add_to.addMapActions(action);
+    		
+    		
     		// add_action = action.added_key
     		ContainerAddedKey.Builder add_action = ContainerAddedKey.newBuilder();
-    		action.setAddedKey(add_action);
     		// add_action.parent_type = VarStoreDeltas.CONTAINER_ADDED
     		add_action.setParentType(VarStoreDeltas.ParentType.CONTAINER_ADDED);
+
+    		action.setAddedKey(add_action);
 
     		if (Number.class.isInstance(key))
     		{
