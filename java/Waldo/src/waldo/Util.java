@@ -49,7 +49,7 @@ public class Util {
 	static public void logger_assert(String to_assert)
 	{
 		System.out.println("Compiler error: " + to_assert);
-		assert(false);
+		assert false;
 	}
 	
 	static public void logger_warn(String to_warn)

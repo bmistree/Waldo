@@ -21,6 +21,28 @@ public class LockedVariables {
 	
 	
 	
+	public static LockedObject ensure_locked_obj(Object to_write,String host_uuid, boolean single_thread)
+	{
+		if (Boolean.class.isInstance(to_write))
+		{
+			return new LockedVariables.SingleThreadedLockedTrueFalseVariable(host_uuid,false,(Boolean) to_write);
+		}
+		else if (Number.class.isInstance(to_write))
+		{
+			return new LockedVariables.SingleThreadedLockedNumberVariable(host_uuid,false,(Number) to_write);
+		}
+		else if (String.class.isInstance(to_write))
+		{
+			return new LockedVariables.SingleThreadedLockedTextVariable(host_uuid,false,(String) to_write);
+		}
+		
+		System.out.println("Unknown type to ensure locked in SingleThreadedLockedMap");
+		return null;
+		
+	}
+	
+	
+	
 	
 	public static class SingleThreadedLockedNumberVariable extends SingleThreadedLockedValueVariable<Number,Number>
 	{
