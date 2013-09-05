@@ -40,13 +40,30 @@ public class BasicSingleThreadedMapTest {
 			return false;
 		}
 		
+		// check that got back value that put in on key.
 		if (string_to_num_map.get_val(null).get_val_on_key(null, key_to_set_on) != val_to_set_on_key)
 		{
 			System.out.println("Got incorrect value back");
 			return false;
 		}
 		
+		// update value on key:
+		Double new_val_on_key = new Double (4);
+		string_to_num_map.get_val(null).set_val_on_key(null, key_to_set_on, new_val_on_key);
+		if (string_to_num_map.get_val(null).get_val_on_key(null, key_to_set_on) != new_val_on_key)
+		{
+			System.out.println("Got incorrect value back after overwriting");
+			return false;
+		}
 		
+
+		// delete val on key
+		string_to_num_map.get_val(null).del_key_called(null, key_to_set_on);
+		if (string_to_num_map.get_val(null).contains_key_called(null, key_to_set_on))
+		{
+			System.out.println("Couldn't delete val in map.");
+			return false;
+		}
 		
 		return true;
 	}
