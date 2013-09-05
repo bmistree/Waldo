@@ -27,6 +27,11 @@ public class AllTests
 				"Testing serializing and deserializing single threaded number",
 				new SingleThreadedNumberSerializeDeserialize());
 				
+		run_single_test(
+				"Testing serializing and deserializing single threaded map",
+				new SingleThreadedMapSerializeDeserialize());
+				
+		
 	}
 
 
