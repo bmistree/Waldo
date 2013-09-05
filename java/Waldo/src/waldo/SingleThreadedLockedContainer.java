@@ -265,15 +265,17 @@ public class SingleThreadedLockedContainer<K,V,D>
 	public boolean serializable_var_tuple_for_network(
 			SingleListDelta.Builder parent_delta,
 			String var_name, LockedActiveEvent active_event, boolean force) {
-		// TODO Auto-generated method stub
+
+		Util.logger_assert("Should never have parent delta that is a single list in container");
 		return false;
 	}
 
 	@Override
 	public boolean serializable_var_tuple_for_network(
 			SingleMapDelta.Builder parent_delta,
-			String var_name, LockedActiveEvent active_event, boolean force) {
-		// TODO Auto-generated method stub
+			String var_name, LockedActiveEvent active_event, boolean force) 
+	{
+		Util.logger_assert("Should never have parent delta that is a single map in container");
 		return false;
 	}
 
