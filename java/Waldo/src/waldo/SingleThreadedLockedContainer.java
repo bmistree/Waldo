@@ -55,6 +55,11 @@ public class SingleThreadedLockedContainer<K,V,D>
 		return internal_key_val;
 	}
 
+	@Override
+	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write) {
+		set_val_on_key(active_event,key,to_write,false);		
+	}
+	
 	
 	@Override
 	public void set_val_on_key(LockedActiveEvent active_event, K key,
@@ -65,7 +70,14 @@ public class SingleThreadedLockedContainer<K,V,D>
 				"Should never be setting value directly on container.  " +
 				"Instead, should have wrapped V in a LockedObject at an earlier call.");
 		
+	}	
+	public void set_val_on_key(
+			LockedActiveEvent active_event, K key, LockedObject<V,D> to_write)
+	{
+		set_val_on_key(active_event,key,to_write,false);
 	}
+
+
 	
 	public void set_val_on_key(
 			LockedActiveEvent active_event, K key, LockedObject<V,D> to_write, boolean copy_if_peered)
@@ -195,7 +207,7 @@ public class SingleThreadedLockedContainer<K,V,D>
 	    // incorporating changes???  .get_dirty_wrapped_val returns
 	    // wrapped val that can use for serializing data.
 
-		ReferenceTypeDataWrapper <K,V,D> dirty_wrapped_val = get_dirty_wrapped_val(active_event);
+		ReferenceTypeDataWrapper <K,V,D> dirty_wrapped_val = get_dirty_wrapped_val_reference(active_event);
 		boolean sub_element_modified = false;
 		
 		SingleInternalMapDelta.Builder internal_map_delta = SingleInternalMapDelta.newBuilder();
@@ -220,6 +232,12 @@ public class SingleThreadedLockedContainer<K,V,D>
 	}
 
 	
+	
+	private ReferenceTypeDataWrapper<K, V, D> get_dirty_wrapped_val_reference(
+			LockedActiveEvent active_event)
+	{
+		return val;
+	}
 	@Override
 	public HashMap<K, LockedObject<V,D>> get_val(LockedActiveEvent active_event)
     {
@@ -260,49 +278,45 @@ public class SingleThreadedLockedContainer<K,V,D>
 	}
 
 
-	public ReferenceTypeDataWrapper<K,V,D> get_dirty_wrapped_val(LockedActiveEvent active_event)
+	public DataWrapper<HashMap<K, V>, HashMap<K, D>> get_dirty_wrapped_val(LockedActiveEvent active_event)
 	{
-		// TODO Auto-generated method stub
+		Util.logger_assert(
+				"Must use dirty_wrapped_val_reference for containers");
 		return null;
 	}
 
-
 	@Override
-	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write) {
-		// TODO Auto-generated method stub
-		
+	public int get_len(LockedActiveEvent active_event) 
+	{
+		return val.val.size();
 	}
 
 	@Override
-	public void del_key_called(LockedActiveEvent active_event, K key_to_delete) {
-		// TODO Auto-generated method stub
-		
+	public ArrayList<K> get_keys(LockedActiveEvent active_event) 
+	{
+		return new ArrayList<K>(val.val.keySet());
 	}
 
+	
+	
 	@Override
-	public int get_len(LockedActiveEvent active_event) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public ArrayList<K> get_keys(LockedActiveEvent active_event) {
-		// TODO Auto-generated method stub
-		return null;
+	public void del_key_called(LockedActiveEvent active_event, K key_to_delete) 
+	{
+		val.del_key(active_event, key_to_delete);
 	}
 
 	@Override
 	public boolean contains_key_called(LockedActiveEvent active_event,
-			K contains_key) {
-		// TODO Auto-generated method stub
-		return false;
+			K contains_key) 
+	{
+		return val.val.containsKey(contains_key);
 	}
 
 	@Override
 	public boolean contains_val_called(LockedActiveEvent active_event,
-			V contains_val) {
-		// TODO Auto-generated method stub
-		return false;
+			V contains_val) 
+	{
+		return val.val.containsValue(contains_val);
 	}
 
 	@Override
