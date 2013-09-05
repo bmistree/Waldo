@@ -53,6 +53,19 @@ public class SingleThreadedLockedContainer<K,V,D>
     public boolean serializable_var_tuple_for_network (
     		VarStoreDeltas.Builder parent_delta,String var_name, LockedActiveEvent active_event,boolean force)
     {
+		SingleMapDelta.Builder single_map_delta = create_internal_map_delta(var_name,active_event,force);
+		if (single_map_delta != null)
+			parent_delta.addMapDeltas(single_map_delta);
+    	
+        return single_map_delta != null;
+    }
+
+	/**
+	 * Same parameters as serializable_var_tuple_for_network
+	 * @return --- null if no subtree has been written and we aren't being forced to create a builder
+	 */
+	private SingleMapDelta.Builder create_internal_map_delta(String var_name, LockedActiveEvent active_event, boolean force)
+	{
     	boolean has_been_written_since_last_msg = get_and_reset_has_been_written_since_last_msg(active_event);
     	
     	// Just doing maps for now
@@ -71,11 +84,9 @@ public class SingleThreadedLockedContainer<K,V,D>
     	
     	// only add the delta if a subelement has changed or we're being forced
     	if (internal_has_been_written || has_been_written_since_last_msg || force)
-    		parent_delta.addMapDeltas(single_map_delta);
-    	
-        return internal_has_been_written || has_been_written_since_last_msg || force;
-    }
-    
+    		return single_map_delta;
+    	return null;
+	}
     
     /**
      * 
