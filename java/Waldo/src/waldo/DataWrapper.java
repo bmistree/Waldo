@@ -1,6 +1,13 @@
 package waldo;
 
-public class DataWrapper<T> {
+/**
+ * 
+ * @author bmistree
+ *
+ * @param <T> --- Type of internal data holding
+ * @param <D> --- Type of data when dewaldoified
+ */
+public class DataWrapper<T,D> {
 	
 	protected T val;
 	protected boolean has_been_written_since_last_msg = false;
@@ -34,9 +41,9 @@ public class DataWrapper<T> {
 	    return to_return;
     }
 
-    public T de_waldoify(LockedActiveEvent active_event)
+    public D de_waldoify(LockedActiveEvent active_event)
     {
-    	return val;
+    	return (D)val;
     }
 	
 }

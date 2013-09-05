@@ -17,7 +17,7 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SubElementUpdateActions;
 
 
-public class ReferenceTypeDataWrapper<K> {
+public class ReferenceTypeDataWrapper<K,T> extends DataWrapper<HashMap<K,LockedObject<T>>, HashMap<K,T>>{
 	
 	class OpTuple
 	{
@@ -36,7 +36,7 @@ public class ReferenceTypeDataWrapper<K> {
 	}
 	
 	private boolean peered;
-	protected HashMap<K,LockedObject> val;
+	//protected HashMap<K,LockedObject<T>> val;
 	protected boolean has_been_written_since_last_msg = false;
 	
 	
@@ -48,31 +48,28 @@ public class ReferenceTypeDataWrapper<K> {
 	private ArrayList <OpTuple> partner_change_log = new ArrayList<OpTuple>(); 
 
 	
-		
-	
-	public ReferenceTypeDataWrapper(Object v, boolean _peered)
+	public ReferenceTypeDataWrapper(HashMap<K,LockedObject<T>> v, boolean _peered)
 	{
+		super( (HashMap<K,LockedObject<T>>)v.clone(),_peered);
 		peered = _peered;
-		
-		// This is incredibly ugly
-		if(ReferenceTypeDataWrapper.class.isInstance(v))
-			val = ((ReferenceTypeDataWrapper)v).val;
-		else if (HashMap.class.isInstance(v))
-		{
-			Object cloned_map =((HashMap<K,LockedObject>)v).clone(); 
-			val = (HashMap<K,LockedObject>)cloned_map;
-		}
-		else
-			Util.logger_assert("Unknown reference type in reference tyep data wrapper");
-		
+		//val = (HashMap<K,LockedObject<T>>)v.clone();		
 	}
 	
-	public Object de_waldoify(LockedActiveEvent active_event)
+	
+	public ReferenceTypeDataWrapper(ReferenceTypeDataWrapper<K,T> v, boolean _peered)
 	{
-		HashMap<K,Object>to_return_map = new HashMap<K,Object>();			
-		for (Map.Entry<K, LockedObject> entry : val.entrySet())
+		super(v.val,_peered);
+		peered = _peered;
+	}
+	
+	
+	
+	public HashMap<K,T> de_waldoify(LockedActiveEvent active_event)
+	{
+		HashMap<K,T>to_return_map = new HashMap<K,T>();			
+		for (Map.Entry<K, LockedObject<T>> entry : val.entrySet())
 		{
-			LockedObject locked_obj = entry.getValue();
+			LockedObject<T> locked_obj = entry.getValue();
 			to_return_map.put(entry.getKey(), locked_obj.de_waldoify(active_event) );
 		}		
 		return to_return_map;        
@@ -92,7 +89,7 @@ public class ReferenceTypeDataWrapper<K> {
 	 * @param incorporating_deltas
 	 */
 	public void set_val_on_key(
-			LockedActiveEvent active_event,K key, LockedObject to_write, boolean incorporating_deltas)
+			LockedActiveEvent active_event,K key, LockedObject<T> to_write, boolean incorporating_deltas)
 	{
 		if (! val.containsKey(key))
 		{
@@ -113,7 +110,7 @@ public class ReferenceTypeDataWrapper<K> {
 		
 	
     public void set_val_on_key(
-    		LockedActiveEvent active_event,K key, LockedObject to_write)
+    		LockedActiveEvent active_event,K key, LockedObject<T> to_write)
     {
     	set_val_on_key(active_event,key,to_write,false);
     }
@@ -138,7 +135,7 @@ public class ReferenceTypeDataWrapper<K> {
     
 
     public void add_key(
-    		LockedActiveEvent active_event, K key_added, LockedObject new_object, boolean incorporating_deltas)
+    		LockedActiveEvent active_event, K key_added, LockedObject<T> new_object, boolean incorporating_deltas)
     {
     	/*
          if self.peered and (not incorporating_deltas):
@@ -153,7 +150,7 @@ public class ReferenceTypeDataWrapper<K> {
     	val.put(key_added,new_object);    	
     }
     
-    public void add_key(LockedActiveEvent active_event,K key_to_add,LockedObject new_object)
+    public void add_key(LockedActiveEvent active_event,K key_to_add,LockedObject<T> new_object)
     {
     	add_key(active_event,key_to_add,new_object,false);
     }
@@ -166,12 +163,12 @@ public class ReferenceTypeDataWrapper<K> {
      * @param new_val
      * @param incorporating_deltas
      */
-    public void insert(LockedActiveEvent active_event, int where_to_insert, LockedObject new_val, boolean incorporating_deltas)
+    public void insert(LockedActiveEvent active_event, int where_to_insert, LockedObject<T> new_val, boolean incorporating_deltas)
     {
     	Util.logger_assert("Cannot insert on map");
     }
 
-    public void insert(LockedActiveEvent active_event,int where_to_insert,LockedObject new_val)
+    public void insert(LockedActiveEvent active_event,int where_to_insert,LockedObject<T> new_val)
     {
     	insert(active_event,where_to_insert,new_val,false);
     }
@@ -182,12 +179,12 @@ public class ReferenceTypeDataWrapper<K> {
      * @param new_val
      * @param incorporating_deltas
      */
-    public void append(LockedActiveEvent active_event, LockedObject new_val,boolean incorporating_deltas)
+    public void append(LockedActiveEvent active_event, LockedObject<T> new_val,boolean incorporating_deltas)
     {
     	Util.logger_assert("Can only append to list");
     }
     
-    public void append(LockedActiveEvent active_event, LockedObject new_val)
+    public void append(LockedActiveEvent active_event, LockedObject<T> new_val)
     {
     	append(active_event,new_val,false);
     }
@@ -212,10 +209,9 @@ public class ReferenceTypeDataWrapper<K> {
     	if (!for_map)
     		Util.logger_assert("Using incorrect ReferenceTypeDataWrapper");
     	
-    	for (Map.Entry<K, LockedObject> entry : val.entrySet())
+    	for (Map.Entry<K, LockedObject<T>> entry : val.entrySet())
     	{
     		K key = entry.getKey();
-    		LockedObject val = entry.getValue();
     		
     		//action = delta_to_add_to.map_actions.add()
     		ContainerAction.Builder action = ContainerAction.newBuilder();

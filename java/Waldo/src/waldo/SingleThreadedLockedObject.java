@@ -9,7 +9,7 @@ public abstract class SingleThreadedLockedObject<T> extends LockedObject<T> {
 	public String host_uuid = null;
 	public boolean peered;
 	private DataWrapperConstructor<T> data_wrapper_constructor;
-	public DataWrapper<T> val = null;
+	public DataWrapper<T,T> val = null;
 	
 	public SingleThreadedLockedObject(){}
 	
