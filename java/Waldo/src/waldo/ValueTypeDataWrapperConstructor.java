@@ -1,10 +1,10 @@
 package waldo;
 
 
-public class ValueTypeDataWrapperConstructor<T> extends DataWrapperConstructor<T,T>
+public class ValueTypeDataWrapperConstructor<T,D> extends DataWrapperConstructor<T,D>
 {	
 	@Override
-	public DataWrapper<T,T> construct(T _val, boolean peered) {
-		return new ValueTypeDataWrapper<T>(_val,peered);
+	public DataWrapper<T,D> construct(T _val, boolean peered) {
+		return new ValueTypeDataWrapper<T,D>(_val,peered);
 	}
 }

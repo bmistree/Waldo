@@ -7,10 +7,10 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.Conta
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerWriteKey;
 
 
-public abstract class SingleThreadedLockedValueVariable<T> extends SingleThreadedLockedObject<T,T>
+public abstract class SingleThreadedLockedValueVariable<T,D> extends SingleThreadedLockedObject<T,D>
 {
 	public SingleThreadedLockedValueVariable(String _host_uuid, boolean _peered,
-			T init_val, T DEFAULT_VALUE, ValueTypeDataWrapperConstructor<T> vtdwc)
+			T init_val, T DEFAULT_VALUE, ValueTypeDataWrapperConstructor<T,D> vtdwc)
 	{
 		if (init_val == null)
 			init_val = DEFAULT_VALUE;

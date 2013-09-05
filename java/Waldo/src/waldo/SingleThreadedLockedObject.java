@@ -21,9 +21,9 @@ public abstract class SingleThreadedLockedObject<T,D> extends LockedObject<T,D> 
 	public SingleThreadedLockedObject(){}
 	
 	public void init(
-			DataWrapperConstructor<T,D> dwc, String _host_uuid,boolean _peered, T init_val)
+			ValueTypeDataWrapperConstructor<T,D> vtdwc, String _host_uuid,boolean _peered, T init_val)
 	{
-		data_wrapper_constructor = dwc;
+		data_wrapper_constructor = vtdwc;
 		host_uuid = _host_uuid;
 		peered = _peered;
 		val = data_wrapper_constructor.construct(init_val,peered);

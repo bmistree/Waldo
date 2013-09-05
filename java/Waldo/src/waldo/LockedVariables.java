@@ -5,19 +5,22 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta;
 
 public class LockedVariables {
-	final static ValueTypeDataWrapperConstructor<Number> number_value_type_data_wrapper_constructor = new ValueTypeDataWrapperConstructor<Number>();
+	final static ValueTypeDataWrapperConstructor<Number,Number> number_value_type_data_wrapper_constructor =
+			new ValueTypeDataWrapperConstructor<Number,Number>();
 	final static Number default_number = new Double(0);
 
-	final static ValueTypeDataWrapperConstructor<String> text_value_type_data_wrapper_constructor = new ValueTypeDataWrapperConstructor<String>();
+	final static ValueTypeDataWrapperConstructor<String,String> text_value_type_data_wrapper_constructor =
+			new ValueTypeDataWrapperConstructor<String,String>();
 	final static String default_text = new String();
 	
-	final static ValueTypeDataWrapperConstructor<Boolean> true_false_value_type_data_wrapper_constructor = 
-			new ValueTypeDataWrapperConstructor<Boolean>();
+	final static ValueTypeDataWrapperConstructor<Boolean,Boolean> true_false_value_type_data_wrapper_constructor = 
+			new ValueTypeDataWrapperConstructor<Boolean,Boolean>();
 	final static Boolean default_tf = false;
 	
 	
 	
-	public static class SingleThreadedLockedNumberVariable extends SingleThreadedLockedValueVariable<Number>
+	
+	public static class SingleThreadedLockedNumberVariable extends SingleThreadedLockedValueVariable<Number,Number>
 	{
 		public SingleThreadedLockedNumberVariable(String _host_uuid, boolean _peered,
 			Number init_val)
@@ -63,7 +66,7 @@ public class LockedVariables {
 		
 	}
 
-	public static class SingleThreadedLockedTextVariable extends SingleThreadedLockedValueVariable<String>
+	public static class SingleThreadedLockedTextVariable extends SingleThreadedLockedValueVariable<String,String>
 	{
 		public SingleThreadedLockedTextVariable(String _host_uuid, boolean _peered,
 			String init_val)
@@ -105,7 +108,7 @@ public class LockedVariables {
 		
 	}
 
-	public static class SingleThreadedLockedTrueFalseVariable extends SingleThreadedLockedValueVariable<Boolean>
+	public static class SingleThreadedLockedTrueFalseVariable extends SingleThreadedLockedValueVariable<Boolean,Boolean>
 	{
 		public SingleThreadedLockedTrueFalseVariable(String _host_uuid, boolean _peered,
 			Boolean init_val)
