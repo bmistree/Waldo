@@ -3,10 +3,13 @@ package waldo;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerWriteKey;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalListDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalMapDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleListDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleMapDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SubElementUpdateActions;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 
 
@@ -25,30 +28,52 @@ public class SingleThreadedLockedContainer<K,V,D>
 				    // When call dewaldoify on this container, what we should get back
 				    HashMap<K,D>
 				    >  
-     //implements ContainerInterface<K,V>
+     implements ContainerInterface<K,V,D>
 {
 
-	@Override
-	public HashMap<K, LockedObject<V,D>> get_val(LockedActiveEvent active_event)
-    {
-    	Util.logger_assert("Cannot call get val on a container object.");
-    	return null;
-    }
-    
-    @Override
-    public void set_val(LockedActiveEvent active_event, HashMap<K,LockedObject<V,D>> val_to_set_to)
-    {
-    	Util.logger_assert("Cannot call set val on a container object directly.");
-    }
 
-	@Override
-	public void write_if_different(LockedActiveEvent active_event,
-			HashMap<K, LockedObject<V,D>> new_val) {
-		// should only call this method on a value type
-		Util.logger_assert("Unable to call write if different on container");
-		
+	public V get_val_on_key(LockedActiveEvent active_event, K key) 
+	{
+		/*
+		 *         internal_key_val = self.val.val[key]
+        
+        if internal_key_val.return_internal_val_from_container():
+            return internal_key_val.get_val(active_event)
+        return internal_key_val
+
+		 */
+		Util.logger_warn(
+				"Note: disagrees with Python: use get_locked_obj_val_on_key to handle nested containers");
+		LockedObject<V,D> internal_key_val = val.val.get(key);
+		return internal_key_val.get_val(active_event);
 	}
-  
+	public LockedObject<V,D> get_locked_obj_val_on_key(LockedActiveEvent active_event,K key)
+	{
+		LockedObject<V,D> internal_key_val = val.val.get(key);
+		return internal_key_val;
+	}
+
+	
+	@Override
+	public void set_val_on_key(LockedActiveEvent active_event, K key,
+			V to_write, boolean copy_if_peered) 
+	{
+		//def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
+		//    if copy_if_peered:
+		//        if isinstance(to_write,WaldoLockedObj):
+		//            to_write = to_write.copy(active_event,True,True)
+		//    return self.val.set_val_on_key(active_event,key,to_write)
+		
+		if (copy_if_peered)
+			if (LockedObject.class.isInstance(to_write))
+				to_write = (V)(((LockedObject)to_write).copy(active_event, true, true));
+		
+		// Note: problem is that it's treating val as a DataWrapper instead of as a ReferenceDataWrapper.
+		val.set_val_on_key(active_event,key,to_write);
+	}
+
+    
+    
 	@Override
     public boolean serializable_var_tuple_for_network (
     		VarStoreDeltas.Builder parent_delta,String var_name, LockedActiveEvent active_event,boolean force)
@@ -183,17 +208,31 @@ public class SingleThreadedLockedContainer<K,V,D>
 		}
 		return sub_element_modified;
 	}
-			
-	
-/*
 
+	
 	@Override
-	public boolean serializable_var_tuple_for_network(VarStoreDeltas.Builder parent_delta,
-			String var_name, LockedActiveEvent active_event, boolean force) {
-		// TODO Auto-generated method stub
-		return false;
+	public HashMap<K, LockedObject<V,D>> get_val(LockedActiveEvent active_event)
+    {
+    	Util.logger_assert("Cannot call get val on a container object.");
+    	return null;
+    }
+    
+    @Override
+    public void set_val(LockedActiveEvent active_event, HashMap<K,LockedObject<V,D>> val_to_set_to)
+    {
+    	Util.logger_assert("Cannot call set val on a container object directly.");
+    }
+
+    @Override
+	public void write_if_different(LockedActiveEvent active_event,
+			HashMap<K, LockedObject<V,D>> new_val) {
+		// should only call this method on a value type
+		Util.logger_assert("Unable to call write if different on container");
+		
 	}
-*/
+  
+	
+
 	@Override
 	public boolean serializable_var_tuple_for_network(
 			SingleListDelta.Builder parent_delta,
@@ -211,12 +250,64 @@ public class SingleThreadedLockedContainer<K,V,D>
 	}
 
 
-
-
 	public ReferenceTypeDataWrapper<K,V,D> get_dirty_wrapped_val(LockedActiveEvent active_event)
 	{
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+
+	@Override
+	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void del_key_called(LockedActiveEvent active_event, K key_to_delete) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public int get_len(LockedActiveEvent active_event) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public ArrayList<K> get_keys(LockedActiveEvent active_event) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean contains_key_called(LockedActiveEvent active_event,
+			K contains_key) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean contains_val_called(LockedActiveEvent active_event,
+			V contains_val) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void incorporate_deltas(
+			SingleInternalListDelta delta_to_incorporate,
+			LockedActiveEvent active_event) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void incorporate_deltas(SingleInternalMapDelta delta_to_incorporate,
+			LockedActiveEvent active_event) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 
