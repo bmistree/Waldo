@@ -6,7 +6,7 @@ import waldo.VariableStore;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.Builder;
 
-public class SingleThreadedNumberSerializeDeserialize 
+public class SingleThreadedNumberSerializeDeserialize implements TestInterface
 {
 	/**
 	 * Tests that can change a single threaded number, serialize it 
@@ -19,15 +19,19 @@ public class SingleThreadedNumberSerializeDeserialize
 	 */
 	public static void main(String[] args) 
 	{
-		if (run_test())
+		if (run_static_test())
 			System.out.println("\nSucceeded\n");
 		else
 			System.out.println("\nFailed\n");
 				
 	}
 	
+	public static boolean run_static_test()
+	{
+		return (new SingleThreadedNumberSerializeDeserialize()).run_test();
+	}
 	
-	public static boolean run_test()
+	public boolean run_test()
 	{
 		String host_uuid_a = "a";
 		String host_uuid_b = "b";

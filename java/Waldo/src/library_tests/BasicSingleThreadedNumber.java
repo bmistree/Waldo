@@ -3,7 +3,7 @@ package library_tests;
 import waldo.LockedVariables;
 import waldo.LockedVariables.SingleThreadedLockedNumberVariable;
 
-public class BasicSingleThreadedNumber 
+public class BasicSingleThreadedNumber implements TestInterface
 {
 	/**
 	 * Tests that can perform basic sets and gets on single threaded number variable.
@@ -15,15 +15,20 @@ public class BasicSingleThreadedNumber
 	 */
 	public static void main(String[] args) 
 	{
-		if (run_test())
+		if (run_static_test())
 			System.out.println("\nSucceeded\n");
 		else
 			System.out.println("\nFailed\n");
 				
 	}
 	
+	public static boolean run_static_test()
+	{
+		return (new BasicSingleThreadedNumber()).run_test();
+	}
 	
-	public static boolean run_test()
+	
+	public boolean run_test()
 	{
 		SingleThreadedLockedNumberVariable num_var = 
 				new LockedVariables.SingleThreadedLockedNumberVariable("dummy_host",false,null);

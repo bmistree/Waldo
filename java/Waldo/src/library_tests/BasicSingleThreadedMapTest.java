@@ -10,18 +10,23 @@ import waldo.LockedVariables;
  *
  */
 
-public class BasicSingleThreadedMapTest {
+public class BasicSingleThreadedMapTest implements TestInterface{
 
 	public static void main(String[] args) 
 	{
-		if (run_test())
+		if (run_static_test())
 			System.out.println("\nSucceeded\n");
 		else
 			System.out.println("\nFailed\n");
 				
 	}
 	
-	public static boolean run_test()
+	public static boolean run_static_test()
+	{
+		return (new BasicSingleThreadedMapTest()).run_test();
+	}
+	
+	public boolean run_test()
 	{
 		String host_uuid = "some_host_uuid";
 		
