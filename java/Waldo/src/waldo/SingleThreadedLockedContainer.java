@@ -50,13 +50,14 @@ public class SingleThreadedLockedContainer<K,V,D>
 	}
   
 	@Override
-    public boolean serializable_var_tuple_for_network (VarStoreDeltas.Builder parent_delta,String var_name, LockedActiveEvent active_event,boolean force)
+    public boolean serializable_var_tuple_for_network (
+    		VarStoreDeltas.Builder parent_delta,String var_name, LockedActiveEvent active_event,boolean force)
     {
     	boolean has_been_written_since_last_msg = get_and_reset_has_been_written_since_last_msg(active_event);
     	
     	// Just doing maps for now
     	SingleMapDelta.Builder single_map_delta = SingleMapDelta.newBuilder();
-    	parent_delta.addMapDeltas(single_map_delta);
+    	
     	
     	single_map_delta.setVarName(var_name);
     	single_map_delta.setHasBeenWritten(has_been_written_since_last_msg);
@@ -67,6 +68,10 @@ public class SingleThreadedLockedContainer<K,V,D>
     					single_map_delta,var_name,active_event,
     			        // must force the write when we have written a new value over list
     					force || has_been_written_since_last_msg);
+    	
+    	// only add the delta if a subelement has changed or we're being forced
+    	if (internal_has_been_written || has_been_written_since_last_msg || force)
+    		parent_delta.addMapDeltas(single_map_delta);
     	
         return internal_has_been_written || has_been_written_since_last_msg || force;
     }
