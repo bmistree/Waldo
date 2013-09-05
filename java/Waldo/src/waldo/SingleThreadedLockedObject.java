@@ -29,6 +29,7 @@ public abstract class SingleThreadedLockedObject<T,D> extends LockedObject<T,D> 
 		val = data_wrapper_constructor.construct(init_val,peered);
 	}
 	
+	
 	@Override
 	public void update_event_priority(String uuid, String new_priority) {
 	}

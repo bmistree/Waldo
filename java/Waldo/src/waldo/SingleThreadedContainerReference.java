@@ -11,9 +11,12 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SubElementUpdateActio
 public class SingleThreadedContainerReference <K,V,D> extends SingleThreadedLockedValueVariable< SingleThreadedLockedContainer<K,V,D>,D>
 {
 	public SingleThreadedContainerReference(String _host_uuid, boolean _peered, 
-			SingleThreadedLockedContainer<K,V,D> init_val, SingleThreadedLockedContainer<K,V,D> default_value,
-			ValueTypeDataWrapperConstructor< SingleThreadedLockedContainer<K,V,D>, D> vtdwc)
+			SingleThreadedLockedContainer<K,V,D> init_val, 
+			SingleThreadedLockedContainer<K,V,D> default_value,
+			// using value type here: treating internal reference as value
+			ValueTypeDataWrapperConstructor<SingleThreadedLockedContainer<K,V,D>,D>vtdwc)
 	{
+		
 		super(_host_uuid,_peered,init_val,default_value,vtdwc);
 	}
 	

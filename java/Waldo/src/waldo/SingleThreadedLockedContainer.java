@@ -30,9 +30,24 @@ public class SingleThreadedLockedContainer<K,V,D>
 				    >  
      implements ContainerInterface<K,V,D>
 {
-	
+	private ReferenceTypeDataWrapperConstructor <K,V,D> reference_data_wrapper_constructor = null;
 
-	protected ReferenceTypeDataWrapper<K,V,D> val = null;
+	private ReferenceTypeDataWrapper<K,V,D> reference_type_val = null;
+	
+	public SingleThreadedLockedContainer()
+	{
+		super();
+	}
+	public void init(
+			String _host_uuid, boolean _peered, ReferenceTypeDataWrapperConstructor<K,V,D> rtdwc,
+			HashMap<K,LockedObject<V,D>>init_val)
+	{
+		host_uuid = _host_uuid;
+		peered = _peered;
+		reference_data_wrapper_constructor = rtdwc;
+		reference_type_val = (ReferenceTypeDataWrapper<K, V, D>) reference_data_wrapper_constructor.construct(init_val, peered); 
+		val = reference_type_val;		
+	}
 
 	public V get_val_on_key(LockedActiveEvent active_event, K key) 
 	{
@@ -91,7 +106,7 @@ public class SingleThreadedLockedContainer<K,V,D>
 		if (copy_if_peered)
 			to_write = to_write.copy(active_event, true, true);
 		
-		val.set_val_on_key(active_event,key,to_write);
+		reference_type_val.set_val_on_key(active_event,key,to_write);
 	}
 
     
@@ -236,7 +251,7 @@ public class SingleThreadedLockedContainer<K,V,D>
 	private ReferenceTypeDataWrapper<K, V, D> get_dirty_wrapped_val_reference(
 			LockedActiveEvent active_event)
 	{
-		return val;
+		return reference_type_val;
 	}
 	@Override
 	public HashMap<K, LockedObject<V,D>> get_val(LockedActiveEvent active_event)
@@ -304,7 +319,7 @@ public class SingleThreadedLockedContainer<K,V,D>
 	@Override
 	public void del_key_called(LockedActiveEvent active_event, K key_to_delete) 
 	{
-		val.del_key(active_event, key_to_delete);
+		reference_type_val.del_key(active_event, key_to_delete);
 	}
 
 	@Override

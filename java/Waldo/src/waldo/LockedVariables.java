@@ -1,5 +1,7 @@
 package waldo;
 
+import java.util.HashMap;
+
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleNumberDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta;
@@ -151,5 +153,47 @@ public class LockedVariables {
 	}
 
 	
+	/**
+	 * 
+	 * @author bmistree
+	 *
+	 * @param <K> --- Keys of the map
+	 * @param <V> --- Values in the map
+	 * @param <D> --- What map dewaldoifies into
+	 */
+	public static class SingleThreadedLockedMapVariable<K,V,D> extends SingleThreadedContainerReference<K,V,D>
+	{
+		public SingleThreadedLockedMapVariable(String _host_uuid, boolean _peered, SingleThreadedLockedInternalMapVariable<K,V,D> init_val)
+		{
+			super(
+					_host_uuid,_peered,
+					// initial value
+					init_val,
+					// default value
+					new SingleThreadedLockedInternalMapVariable<K,V,D>(_host_uuid, _peered),
+					new ValueTypeDataWrapperConstructor<SingleThreadedLockedContainer<K,V,D>,D>());
+		}
+		public SingleThreadedLockedMapVariable(String _host_uuid)
+		{
+			super(
+					_host_uuid,false,
+					// initial value
+					new SingleThreadedLockedInternalMapVariable<K,V,D>(_host_uuid,false),
+					// default value
+					new SingleThreadedLockedInternalMapVariable<K,V,D>(_host_uuid,false),
+					new ValueTypeDataWrapperConstructor<SingleThreadedLockedContainer<K,V,D>,D>());
+		}		
+		public SingleThreadedLockedMapVariable(String _host_uuid,boolean _peered)
+		{
+			super(
+					_host_uuid,_peered, 
+					// initial value
+					new SingleThreadedLockedInternalMapVariable<K,V,D>(_host_uuid,_peered),
+					// default value
+					new SingleThreadedLockedInternalMapVariable<K,V,D>(_host_uuid,_peered),
+					new ValueTypeDataWrapperConstructor<SingleThreadedLockedContainer<K,V,D>,D>());
+		}
+
+	}
 	
 }
