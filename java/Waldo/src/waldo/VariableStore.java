@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleMapDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleNumberDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta;
@@ -240,7 +241,27 @@ public class VariableStore
 		}
 
 
+		// incorporate all maps
+		for (SingleMapDelta map_delta : var_store_deltas.getMapDeltasList())
+		{
+			String var_name = map_delta.getVarName();
+			LockedVariables.SingleThreadedLockedMapVariable existing_value = 
+					(LockedVariables.SingleThreadedLockedMapVariable)name_to_var_map.get(var_name);
+			if (existing_value == null)
+			{
+				// FIXME: Is there any way that this is legal java????  I don't need the template types????
+				LockedVariables.SingleThreadedLockedMapVariable to_put_in = 
+						new LockedVariables.SingleThreadedLockedMapVariable(host_uuid,true);
+				
+				name_to_var_map.put(var_name,to_put_in);
+				to_put_in.incorporate_deltas(map_delta, active_event);						
+			}
+			else
+				existing_value.incorporate_deltas(map_delta, active_event);
+
+		}
 		
+		// FIXME: fill in the rest of the deserialization for other container types.
 		System.out.println("\n\nNote: still must print incorporate all non-vlaue type deltas\n\n");
 		
 	}
