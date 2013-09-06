@@ -84,7 +84,40 @@ public class SingleThreadedMapSerializeDeserialize implements TestInterface
 			return false;
 		}
 		
+		// now modify b, and ensure that updates got to other side
+		String updated_val = "This is updated";
+		Double new_key_to_use = new Double (key_to_use + 1);
+		String new_key_to_use_val = "vallll";
+		
+		updated_side_b.get_val(null).set_val_on_key(null, key_to_use, updated_val);
+		updated_side_b.get_val(null).set_val_on_key(null, new_key_to_use, new_key_to_use_val);
+		
+		// generate deltas and send them to initial side
+		VarStoreDeltas.Builder updated_deltas = var_store_b.generate_deltas(null, false);
+		var_store_a.incorporate_deltas(null, updated_deltas.build());
+		
+		// check that changes made it to other side
+		SingleThreadedLockedMapVariable<Double,String,HashMap<Double,String>> updated_side_a = 
+				(SingleThreadedLockedMapVariable<Double,String,HashMap<Double,String>>)var_store_a.get_var_if_exists(common_var_name);
+		
+		if (!updated_side_a.get_val(null).contains_key_called(null, new_key_to_use))
+		{
+			System.out.println("Missing key on a");
+			return false;
+		}
 
+		if (updated_side_a.get_val(null).get_val_on_key(null, new_key_to_use) != new_key_to_use_val)
+		{
+			System.out.println("Incorrect val on new key on a");
+			return false;
+		}
+		
+		if (updated_side_a.get_val(null).get_val_on_key(null, key_to_use) != updated_val)
+		{
+			System.out.println("Got incorrect preliminary value");
+			return false;
+		}
+		
 		return true;
 	}
 	
