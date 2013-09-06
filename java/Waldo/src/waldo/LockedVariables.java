@@ -1,6 +1,7 @@
 package waldo;
 
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleNumberDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta;
@@ -35,8 +36,19 @@ public class LockedVariables {
 		{
 			return new LockedVariables.SingleThreadedLockedTextVariable(host_uuid,false,(String) to_write);
 		}
+		/*
+		else if (HashMap.class.isInstance(to_write))
+		{
+			Util.logger_warn(
+					"Incorrectly assuming that always incorporating deltas in hash map");
+			return new LockedVariables.SingleThreadedLockedMapVariable(host_uuid,false,(HashMap)to_write,true);
+		}*/
+		else if (LockedObject.class.isInstance(to_write))
+		{
+			return (LockedObject)to_write;
+		}
 		
-		System.out.println("Unknown type to ensure locked in SingleThreadedLockedMap");
+		Util.logger_assert("Unknown type to ensure locked in SingleThreadedLockedMap");
 		return null;
 		
 	}
@@ -185,6 +197,32 @@ public class LockedVariables {
 	 */
 	public static class SingleThreadedLockedMapVariable<K,V,D> extends SingleThreadedContainerReference<K,V,D>
 	{
+
+		
+		public SingleThreadedLockedMapVariable(
+				String _host_uuid, boolean _peered, HashMap<K,LockedObject<V,D>> init_val,boolean incorporating_deltas)
+		{
+			// FIXME: I'm pretty sure that the type signature for the locked object above
+			// is incorrect: it shouldn't be D, right?
+			
+			super(
+					_host_uuid,_peered,
+					// initial value
+					new SingleThreadedLockedInternalMapVariable<K,V,D>(_host_uuid,false),
+					// default value
+					new SingleThreadedLockedInternalMapVariable<K,V,D>(_host_uuid, _peered),
+					new ValueTypeDataWrapperConstructor<SingleThreadedLockedContainer<K,V,D>,D>());
+			
+			//FIXME probably inefficient to add each field separately
+			for (Entry<K, LockedObject<V,D>> entry : init_val.entrySet())
+			{
+				ReferenceTypeDataWrapper<K,V,D>casted_wrapper = (ReferenceTypeDataWrapper<K,V,D>)val.val.val;
+				casted_wrapper.set_val_on_key(null, entry.getKey(), entry.getValue(), incorporating_deltas);
+			}
+			
+		}
+		
+
 		public SingleThreadedLockedMapVariable(String _host_uuid, boolean _peered, SingleThreadedLockedInternalMapVariable<K,V,D> init_val)
 		{
 			super(

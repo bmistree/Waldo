@@ -31,6 +31,10 @@ public class AllTests
 				"Testing serializing and deserializing single threaded map",
 				new SingleThreadedMapSerializeDeserialize());
 				
+		run_single_test(
+				"Nested serializing and deserializing single threaded map",
+				new NestedSingleThreadedMapSerializeDeserialize());
+
 		
 	}
 
