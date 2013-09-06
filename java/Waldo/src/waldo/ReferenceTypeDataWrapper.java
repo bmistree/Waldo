@@ -219,23 +219,18 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     	
     	for (Map.Entry<K, LockedObject<T,D>> entry : val.entrySet())
     	{
-    		K key = entry.getKey();
-    		
+    		K key = entry.getKey();    		
     		//action = delta_to_add_to.map_actions.add()
     		ContainerAction.Builder action = ContainerAction.newBuilder();
     		//action.container_action = VarStoreDeltas.ContainerAction.ADD_KEY
     		action.setContainerAction(VarStoreDeltas.ContainerAction.ContainerActionType.ADD_KEY);
-    		
-    		delta_to_add_to.addMapActions(action);
-    		
     		
     		// add_action = action.added_key
     		ContainerAddedKey.Builder add_action = ContainerAddedKey.newBuilder();
     		// add_action.parent_type = VarStoreDeltas.CONTAINER_ADDED
     		add_action.setParentType(VarStoreDeltas.ParentType.CONTAINER_ADDED);
 
-    		action.setAddedKey(add_action);
-
+    		
     		if (Number.class.isInstance(key))
     		{
     			Number n = (Number)key;
@@ -281,6 +276,8 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     		else
     			Util.logger_assert("Unknown intneral val");
     		
+    		action.setAddedKey(add_action);
+    		delta_to_add_to.addMapActions(action);
     	}
     	
     }
@@ -312,8 +309,6 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     		changes_made = true;
     		//action = delta_to_add_to.map_actions.add()
     		ContainerAction.Builder action = ContainerAction.newBuilder();
-    		delta_to_add_to.addMapActions(action);
-    		
     		
     		if (is_delete_key_tuple(partner_change))
     		{
@@ -332,7 +327,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     			 */
     			action.setContainerAction(VarStoreDeltas.ContainerAction.ContainerActionType.DELETE_KEY);
     			ContainerDeletedKey.Builder delete_action = ContainerDeletedKey.newBuilder();
-    			action.setDeletedKey(delete_action);
+    			
     			K key = partner_change.key;
     			modified_indices.put(key, true);
     			
@@ -347,6 +342,8 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     				delete_action.setDeletedKeyTf((Boolean)key);
     			else
     				Util.logger_assert("Unknown key type when serializing");
+    			
+    			action.setDeletedKey(delete_action);
     		}
     		else if (is_add_key_tuple(partner_change))
     		{
@@ -367,7 +364,6 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
         		
     				// add_action = action.added_key
     				ContainerAddedKey.Builder add_action = ContainerAddedKey.newBuilder();
-    				action.setAddedKey(add_action);
     				
     				//add_action.parent_type = VarStoreDeltas.CONTAINER_ADDED
     				add_action.setParentType(VarStoreDeltas.ParentType.CONTAINER_ADDED);
@@ -411,6 +407,9 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
                                 // copy of it.
                                 true);
     	            }
+    	            
+    	            action.setAddedKey(add_action);
+    				
     			} // ends if key_in_internal	
     		}
     		else if (is_write_key(partner_change))
@@ -425,7 +424,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
         			action.setContainerAction(VarStoreDeltas.ContainerAction.ContainerActionType.WRITE_VALUE);
         			//write_action = action.write_key
         			ContainerWriteKey.Builder write_action = ContainerWriteKey.newBuilder();
-        			action.setWriteKey(write_action);
+        			
         			
         			//write_action.parent_type = VarStoreDeltas.CONTAINER_WRITTEN
         			write_action.setParentType(VarStoreDeltas.ParentType.CONTAINER_WRITTEN);
@@ -471,8 +470,11 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
                             */
                             true);
                     }
+                    action.setWriteKey(write_action);
     			}// ends if key_in_internal
-    		} // ends else if 
+    		} // ends else if
+    		delta_to_add_to.addMapActions(action);
+    		
     	} // ends for partner change loop
     	
     	
@@ -485,7 +487,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     			// create action
     			// sub_element_action = delta_to_add_to.sub_element_update_actions.add()     
     			SubElementUpdateActions.Builder sub_element_action = SubElementUpdateActions.newBuilder();
-    			delta_to_add_to.addSubElementUpdateActions(sub_element_action);
+    			
     			
                 //sub_element_action.parent_type = VarStoreDeltas.SUB_ELEMENT_ACTION
     			sub_element_action.setParentType(VarStoreDeltas.ParentType.SUB_ELEMENT_ACTION);
@@ -506,6 +508,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
     				int size_sub_element_actions = delta_to_add_to.getSubElementUpdateActionsCount();
     				delta_to_add_to.removeSubElementUpdateActions(size_sub_element_actions -1);
     			}
+    			delta_to_add_to.addSubElementUpdateActions(sub_element_action);
     		}
     	} //closes for loop over current_internal_val
     	/*

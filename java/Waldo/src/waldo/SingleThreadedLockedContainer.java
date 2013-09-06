@@ -230,8 +230,7 @@ public class SingleThreadedLockedContainer<K,V,D>
 		boolean sub_element_modified = false;
 		
 		SingleInternalMapDelta.Builder internal_map_delta = SingleInternalMapDelta.newBuilder();
-		internal_map_delta.setParentType(VarStoreDeltas.ParentType.INTERNAL_MAP_CONTAINER);
-		single_map_delta.setInternalMapDelta(internal_map_delta);
+		internal_map_delta.setParentType(VarStoreDeltas.ParentType.INTERNAL_MAP_CONTAINER);		
 		if (force)
 		{
 			// for each item in map, add it to delta as a write action.
@@ -247,6 +246,7 @@ public class SingleThreadedLockedContainer<K,V,D>
 			sub_element_modified = dirty_wrapped_val.add_to_delta_list(
 					internal_map_delta, var_data, active_event, true);
 		}
+		single_map_delta.setInternalMapDelta(internal_map_delta);
 		return sub_element_modified;
 	}
 

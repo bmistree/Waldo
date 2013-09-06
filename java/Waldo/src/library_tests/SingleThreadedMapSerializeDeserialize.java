@@ -62,7 +62,7 @@ public class SingleThreadedMapSerializeDeserialize implements TestInterface
 		// generate the deltas on one side and send them to the other
 		VarStoreDeltas.Builder deltas = var_store_a.generate_deltas(null, true);
 
-		/*
+		
 		
 		var_store_b.incorporate_deltas(null, deltas.build());
 		
@@ -73,6 +73,7 @@ public class SingleThreadedMapSerializeDeserialize implements TestInterface
 		
 		if (! updated_side_b.get_val(null).contains_key_called(null, key_to_use) )
 		{
+			System.out.println(updated_side_b.get_val(null).get_len(null));
 			System.out.println("Side b is missing a key after deserialization.");
 			return false;
 		}
@@ -82,8 +83,8 @@ public class SingleThreadedMapSerializeDeserialize implements TestInterface
 			System.out.println("Side b has incorrect value stuffed into key");
 			return false;
 		}
-		*/
 		
+
 		return true;
 	}
 	
