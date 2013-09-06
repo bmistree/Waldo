@@ -262,7 +262,7 @@ public class VariableStore
 		}
 		
 		// FIXME: fill in the rest of the deserialization for other container types.
-		System.out.println("\n\nNote: still must print incorporate all non-vlaue type deltas\n\n");
+		Util.logger_warn("Note: still must print incorporate all non-vlaue type deltas\n");
 		
 	}
 

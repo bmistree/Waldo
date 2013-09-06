@@ -191,14 +191,24 @@ public class LockedVariables {
 	 * 
 	 * @author bmistree
 	 *
-	 * @param <K> --- Keys of the map
-	 * @param <V> --- Values in the map
-	 * @param <D> --- What map dewaldoifies into
+	 * @param <K>  ---- The keys used for indexing
+	 * @param <V>  ---- The type of each internal value in the internal hash map
+	 * @param <D>  ---- The type that each value in the internal hash map would dewaldoify into
+	 * 
+	 * An map of numbers to strings:
+	 * 
+	 * LockedMapVariable<Number,String,HashMap<String,Number>>
+	 * 
+	 * An map of numbers to maps of numbers to strings
+	 * 
+	 * LockedMapVariable<
+	 *     Number,
+	 *     LockedMapVariable< Number, String, HashMap<String,Number > >
+	 *     HashMap<Number,HashMap<String,Number>>>
+	 * 
 	 */
 	public static class SingleThreadedLockedMapVariable<K,V,D> extends SingleThreadedContainerReference<K,V,D>
 	{
-
-		
 		public SingleThreadedLockedMapVariable(
 				String _host_uuid, boolean _peered, HashMap<K,LockedObject<V,D>> init_val,boolean incorporating_deltas)
 		{

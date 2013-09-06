@@ -94,6 +94,10 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
 	 * @param key
 	 * @param to_write
 	 * @param incorporating_deltas
+	 * 
+	 * To ensure that we aren't copying references to value variables, we actually 
+	 * call get_val on to_write and use that value.
+	 * 
 	 */
 	public void set_val_on_key(
 			LockedActiveEvent active_event,K key, LockedObject<T,D> to_write, boolean incorporating_deltas)

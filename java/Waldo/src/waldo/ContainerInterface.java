@@ -6,17 +6,33 @@ import java.util.HashMap;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalListDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalMapDelta;
 
+
+/**
+ * 
+ * @author bmistree
+ *
+ * @param <K>  ---- The keys used for indexing
+ * @param <V>  ---- The type of each internal value in the internal hash map
+ * @param <D>  ---- The type that each value in the internal hash map would dewaldoify into
+ * 
+ * An internal map of numbers to strings:
+ * 
+ * ContainerInterface<Number,String,String>
+ * 
+ * An internal map of numbers to maps of numbers to strings
+ * 
+ * ContainerInterface<Number
+ *      LockedMap<Number, String, HashMap<Number,String> >,
+ *      HashMap<Number,String>>
+ * 
+ * If v is a non-external waldo object, then copy v's internal val out and 
+ * put in a separate locked object.
+ * 
+ */
 public interface ContainerInterface <K,V,D>{
 	
 	public V get_val_on_key(LockedActiveEvent active_event, K key);
-	/**
-	 * If we are trying to get a container variable or external variable, use this method instead.  It  
-	 * lets you keep using the locked object interface to access internal data.
-	 * @param active_event
-	 * @param key
-	 * @return
-	 */
-	public LockedObject<V,D> get_locked_obj_val_on_key(LockedActiveEvent active_event,K key);
+	
 	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write, boolean copy_if_peered);
 	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write);
 	public void del_key_called(LockedActiveEvent active_event,K key_to_delete);

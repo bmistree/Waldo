@@ -63,16 +63,14 @@ public class SingleThreadedLockedContainer<K,V,D>
         return internal_key_val
 
 		 */
-		Util.logger_warn(
-				"Note: disagrees with Python: use get_locked_obj_val_on_key to handle nested containers");
 		LockedObject<V,D> internal_key_val = val.val.get(key);
-		return internal_key_val.get_val(active_event);
+		
+		if (internal_key_val.return_internal_val_from_container())		
+			return (V) internal_key_val.get_val(active_event);
+		
+		return (V) internal_key_val;
 	}
-	public LockedObject<V,D> get_locked_obj_val_on_key(LockedActiveEvent active_event,K key)
-	{
-		LockedObject<V,D> internal_key_val = val.val.get(key);
-		return internal_key_val;
-	}
+
 
 	@Override
 	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write) {
