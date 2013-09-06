@@ -33,12 +33,14 @@ public class SingleThreadedContainerReference <K,V,D> extends SingleThreadedLock
 	
 	public void incorporate_deltas(SingleListDelta delta_to_incorporate, LockedActiveEvent active_event)
 	{
+		// just calls incorporate deltas on the internal list
 		SingleThreadedLockedContainer<K,V,D> internal_container = get_val(active_event);
 		internal_container.incorporate_deltas(delta_to_incorporate.getInternalListDelta(), active_event);
 	}
 	
 	public void incorporate_deltas(SingleMapDelta delta_to_incorporate, LockedActiveEvent active_event)
 	{
+		// just calls incorporate deltas on the internal map
 		SingleThreadedLockedContainer<K,V,D> internal_container = get_val(active_event);
 		internal_container.incorporate_deltas(delta_to_incorporate.getInternalMapDelta(), active_event);
 	}

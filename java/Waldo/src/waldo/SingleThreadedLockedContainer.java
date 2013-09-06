@@ -1,7 +1,11 @@
 package waldo;
 
+import waldo.LockedVariables.SingleThreadedLockedMapVariable;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerActionType;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerDeletedKey;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerWriteKey;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalListDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalMapDelta;
@@ -341,15 +345,172 @@ public class SingleThreadedLockedContainer<K,V,D>
 			SingleInternalListDelta delta_to_incorporate,
 			LockedActiveEvent active_event) {
 		// TODO Auto-generated method stub
+		Util.logger_assert("Must finish incorporate deltas for list type.");
 		
 	}
-
+	
+	
+	/**
+	@param {WaldoLockedContainer or SingleThreadedLockedContainer}
+	
+	@param {SingleListDelta or SingleMapDelta} delta_to_incorporate
+	
+	@param {SingleInternalListDelta or SingleInternalMapDelta}
+	delta_to_incorporate
+	
+	When a peered or sequence peered container (ie, map, list, or
+	struct) is modified by one endpoint, those changes must be
+	reflected on the other endpoint.  This method takes the
+	changes that one endpoint has made on a container, represented
+	by delta_to_incorporate, and applies them (if we can).    
+	*/
 	@Override
 	public void incorporate_deltas(SingleInternalMapDelta delta_to_incorporate,
-			LockedActiveEvent active_event) {
-		// TODO Auto-generated method stub
+			LockedActiveEvent active_event) 
+	{
+		for (ContainerAction action: delta_to_incorporate.getMapActionsList())
+		{
+			if (action.getContainerAction() == VarStoreDeltas.ContainerAction.ContainerActionType.WRITE_VALUE)
+			{
+				// data written to map
+				ContainerWriteKey container_written_action = action.getWriteKey();
+				K index_to_write_to = get_write_key_incorporate_deltas(container_written_action);
+				
+				V new_val = null;
+				if (container_written_action.hasWhatWrittenText())
+				{
+					new_val = (V) (container_written_action.getWhatWrittenText());
+				}
+				else if (container_written_action.hasWhatWrittenNum())
+					new_val = (V) (new Double(container_written_action.getWhatWrittenNum()));
+				else if (container_written_action.hasWhatWrittenTf())
+					new_val = (V) (new Boolean(container_written_action.getWhatWrittenTf()));
+				else if (container_written_action.hasWhatWrittenMap())
+				{
+					SingleThreadedLockedMapVariable new_sub_map = new LockedVariables.SingleThreadedLockedMapVariable(host_uuid,true);
+					new_val = (V) new_sub_map;
+					SingleMapDelta sub_map_delta = container_written_action.getWhatWrittenMap();
+					new_sub_map.incorporate_deltas(sub_map_delta, active_event);
+				}
+				else
+				{
+					Util.logger_assert("Not handling deserializing any nested containers yet beyond nested maps.");
+					
+				}
+				
+				// actually update the value on the target key
+				set_val_on_key(active_event, index_to_write_to, new_val);
+				
+			}// closes if WRITE_VALUE
+			else if (action.getContainerAction() == VarStoreDeltas.ContainerAction.ContainerActionType.ADD_KEY)
+			{
+				// data added to map
+				ContainerAddedKey container_added_action = action.getAddedKey();
+				K index_to_add_to = get_add_key_incorporate_deltas(container_added_action);
+				
+				V new_val = null;
+				if (container_added_action.hasAddedWhatText())
+				{
+					new_val = (V) (container_added_action.getAddedWhatText());
+				}
+				else if (container_added_action.hasAddedWhatNum())
+					new_val = (V) (new Double(container_added_action.getAddedWhatNum()));
+				else if (container_added_action.hasAddedWhatTf())
+					new_val = (V) (new Boolean(container_added_action.getAddedWhatTf()));
+				else if (container_added_action.hasAddedWhatMap())
+				{
+					SingleThreadedLockedMapVariable new_sub_map = new LockedVariables.SingleThreadedLockedMapVariable(host_uuid,true);
+					new_val = (V) new_sub_map;
+					SingleMapDelta sub_map_delta = container_added_action.getAddedWhatMap();
+					new_sub_map.incorporate_deltas(sub_map_delta, active_event);
+				}
+				else
+				{
+					Util.logger_assert("Not handling deserializing any nested containers yet beyond nested maps.");
+					
+				}
+				
+				// actually add the target key
+				handle_added_key_incorporate_deltas(active_event,index_to_add_to,new_val);
+				
+			}// closes if ADD_KEY
+			else if (action.getContainerAction() == VarStoreDeltas.ContainerAction.ContainerActionType.DELETE_KEY)
+			{
+				// data deleted from map
+				ContainerDeletedKey container_deleted_action = action.getDeletedKey();
+				K index_to_delete_from = get_delete_key_incorporate_deltas(container_deleted_action);
+				del_key_called(active_event,index_to_delete_from);
+
+			}
+			else
+			{
+				Util.logger_assert("Unknown action type when deserializing map.");
+			}
+			
+			
+			
+		}
 		
 	}
+	
+	
+	
+	private void handle_added_key_incorporate_deltas(
+			LockedActiveEvent active_event, K index_to_add_to, V new_val) {
+		// for map, just call set_val_on_key...will take care of inserting a 
+		// new entry in map for me.
+		this.set_val_on_key(active_event, index_to_add_to, new_val);
+	}
+
+
+	/**
+	 * Create separate methods to get appropriate keys out of container actions
+	 * @param container_deleted_action
+	 * @return
+	 */
+	private K get_delete_key_incorporate_deltas(
+			ContainerDeletedKey container_deleted_action) 
+	{
+		if (container_deleted_action.hasDeletedKeyText())
+			return (K) container_deleted_action.getDeletedKeyText();
+		else if (container_deleted_action.hasDeletedKeyNum())
+			return (K) (new Double(container_deleted_action.getDeletedKeyNum()));
+		else if (container_deleted_action.hasDeletedKeyTf())
+			return (K) (new Boolean(container_deleted_action.getDeletedKeyTf()));
+		
+		Util.logger_assert("Error: unknown key type for map in delete key");
+		return null;	
+	}
+	
+
+	private K get_add_key_incorporate_deltas(
+			ContainerAddedKey container_added_action) 
+	{
+		if (container_added_action.hasAddedKeyText())
+			return (K) container_added_action.getAddedKeyText();
+		else if (container_added_action.hasAddedKeyNum())
+			return (K) (new Double(container_added_action.getAddedKeyNum()));
+		else if (container_added_action.hasAddedKeyTf())
+			return (K) (new Boolean(container_added_action.getAddedKeyTf()));
+		
+		Util.logger_assert("Error: unknown key type for map in delete key");
+		return null;	
+	}
+
+	private K get_write_key_incorporate_deltas(ContainerWriteKey container_written_action)
+	{
+		if (container_written_action.hasWriteKeyText())
+			return (K) container_written_action.getWriteKeyText();
+		else if (container_written_action.hasWriteKeyNum())
+			return (K) (new Double(container_written_action.getWriteKeyNum()));
+		else if (container_written_action.hasWriteKeyTf())
+			return (K) (new Boolean(container_written_action.getWriteKeyTf()));
+		
+		Util.logger_assert("Error: unknown key type for map in write key");
+		return null;
+	}
+		
+
 	
 
 }
