@@ -23,7 +23,9 @@ public class WaitingElement <T,D>
 	//# when add a waiting element, that waiting element's read or
 	//# write blocks.  The way that it blocks is by listening at a
 	//# threadsafe queue.  This is that queue.
-	public java.util.concurrent.ConcurrentLinkedQueue<DataWrapper<T,D>> queue;
+	public java.util.concurrent.ArrayBlockingQueue<DataWrapper<T,D>> queue = 
+			new java.util.concurrent.ArrayBlockingQueue<DataWrapper<T,D>>(Util.QUEUE_CAPACITIES);
+	
 	
 	private boolean peered;
 	
