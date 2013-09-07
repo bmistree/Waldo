@@ -181,7 +181,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         }
 
 		//# check 2b
-        if (gte_priority(cached_priority, write_lock_holder.cached_priority))
+        if (EventPriority.gte_priority(cached_priority, write_lock_holder.cached_priority))
         {
 			//# backout write lock if can
         	if (write_lock_holder.event.can_backout_and_hold_lock())
@@ -233,7 +233,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
 	 * @param active_event
 	 * @return
 	 */
-	private DataWrapper<T,D> acquire_write_lock(LockedActiveVent active_event)
+	private DataWrapper<T,D> acquire_write_lock(LockedActiveEvent active_event)
 	{
         _lock();
 		//# Each event has a priority associated with it.  This priority
