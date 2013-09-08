@@ -1,6 +1,15 @@
 package waldo;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
+
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleListDelta;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleMapDelta;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SubElementUpdateActions;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerWriteKey;
 
 /**
  * 
@@ -310,8 +319,662 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         _unlock();
         return write_waiting_event.queue.take();
 	}
+
+	/**
+       Called when an event with uuid "uuid" is promoted to boosted
+       with priority "priority"
+	 */
+	public void update_event_priority(String uuid, String new_priority)
+	{
+        _lock();
+        boolean may_require_update = false;
+        
+        if ((write_lock_holder != null) && 
+        		(write_lock_holder.event.uuid == uuid))
+        {
+        	write_lock_holder.cached_priority = new_priority;
+        }
+
+
+        if (read_lock_holders.containsKey(uuid))
+        {
+        	read_lock_holders.get(uuid).cached_priority = new_priority;
+        }
+
+        if (waiting_events.containsKey(uuid))
+        {
+        	waiting_events.get(uuid).cached_priority = new_priority;
+        	may_require_update = true;
+        }
+
+        _unlock();
+        
+        if (may_require_update)
+        {
+        	// start anonymous thread to try next
+        	new Thread()
+        	{
+        		public void run()
+        		{
+        			try_next();
+        		}        		
+        	}.start();
+        }
+        _unlock();
+	}
 	
+	public D de_waldoify(LockedActiveEvent active_event)
+	{
+		DataWrapper<T,D> wrapped_val = acquire_read_lock(active_event);
+		return wrapped_val.de_waldoify(active_event);
+	}	
+
+	/**
+        ASSUMES CALLED FROM WITHIN LOCK
+        
+        When preempting a lock holder, we first call
+        can_backout_and_hold_lock on the method.  If this returns
+        True, then it means that the active event is holding its lock
+        on the event and preparing for a command to complete its
+        backout (via obj_request_backout_and_release_lock).
+
+        The active event's obj_request_backout_and_release_lock method
+        will not call backout back on this object.  This means that we
+        must remove active_event from the read lock holders, write
+        lock holders, and waiting elements.
+
+        Note: Previously, immediately after calling
+        request_and_release_lock on each obj, we just overwrote
+        write_lock_holders and read_lock holders.  This is
+        insufficient however because the active event may also be a
+        waiting element.  Consider the case where we have a read lock
+        holder that is waiting to become a write lock holder.  If we
+        then backout of the read lock holder, we should also back out
+        of its waiting element.  Otherwise, the waiting element will
+        eventually be scheduled.
+
+	 * @param active_event
+	 */
+	private void obj_request_backout_and_release_lock(LockedActiveEvent active_event)
+	{
+		active_event.obj_request_backout_and_release_lock(this);
+
+		//# remove write lock holder if it was one
+		read_lock_holders.remove(active_event.uuid);
+		if ((write_lock_holder != null) &&
+				(write_lock_holder.event.uuid == active_event.uuid))
+		{
+            write_lock_holder = null;
+		}
+		
+		//# un-jam threadsafe queue waiting for event
+		WaitingElement<T,D> waiting_event = waiting_events.remove(active_event.uuid);
+		if (waiting_event != null)
+            waiting_event.unwait(this);
+	}
+
+	/**
+	 * 
+		When serializing data to send to other side for peered
+		variables, need to get deltas across lifetime of variable,
+		this method returns a data wrapper that can be used to get
+		those deltas.
+	 * @param active_event
+	 */
+	public DataWrapper<T,D> get_dirty_wrapped_val(LockedActiveEvent active_event)
+	{
+        Util.logger_assert(
+            "Have not determined how to serialize multithreaded peered data.");
+        return null;
+	}
+
+	/**
+    @returns {bool} --- True if the object has been written to
+    since we sent the last message.  False otherwise.  (Including
+    if event has been preempted.)
+	*/
+	public boolean get_and_reset_has_been_written_since_last_msg(LockedActiveEvent active_event)
+	{
+		boolean has_been_written = false;
+        _lock();
+
+        //# check if active event even has ability to write to variable
+        if (write_lock_holder != null)
+        {
+        	if (write_lock_holder.event.uuid == active_event.uuid)
+        		has_been_written = dirty_val.get_and_reset_has_been_written_since_last_msg();
+        }
+        _unlock();
+        return has_been_written;
+	}
+
+	/**
+    Both readers and writers can complete commits.  If it's a
+    reader, we do not update the internal value of the object.  If
+    it's a writer, we do.  In either case, we remove the event
+    from holding a lock and check if any other events can be
+    scheduled.
+    */
+	public void complete_commit(LockedActiveEvent active_event)
+	{
+        _lock();
+        if ((write_lock_holder != null) &&
+        		(active_event.uuid == write_lock_holder.event.uuid))
+        {
+        	val.write(dirty_val.val);
+        	write_lock_holders= null;
+        	read_lock_holders = new HashMap<String,EventCachedPriorityObj>();
+        }
+        else
+        {
+        	EventCachedPriorityObj read_lock_holder = read_lock_holders.remove(active_event.uuid);
+        	//#### DEBUG
+        	if (read_lock_holder == null)
+        	{
+                Util.logger_assert(
+                    "Should not be completing a commit on a missing event");
+        	}
+            //#### END DEBUG
+        }
+        _unlock()
+
+		//# FIXME: may want to actually check whether the change could
+		//# have caused another read/write to be scheduled.
+        try_next();
+	}
 	
+	public boolean is_peered()
+	{
+		return peered;
+	}
+	
+
+	/**
+    When an event backs out, it calls this method on all the
+    objects it holds read/write locks on.  This just removes
+    active_event from our lists of read/write lock holders.
+    
+    If not already holding lock, then delete it from waiting
+    events
+	*/
+	public void backout (LockedActiveEvent active_event)
+	{        
+		//# FIXME: Are there chances that could process a stale backout?
+		//# I think so.
+        _lock();
+		//# note: there are cases where an active event may try to
+		//# backout after it's
+        read_lock_holders.remove(active_event.uuid);
+        if ((write_lock_holder != null) &&
+        		(write_lock_holder.event.uuid == active_event.uuid))
+        {
+            write_lock_holder = null;
+        }
+
+        //# un-jam threadsafe queue waiting for event
+        WaitingElement<T,D> waiting_event = waiting_events.remove(active_event.uuid);
+        if (waiting_event != null)
+        	waiting_event.unwait(this);
+
+        _unlock();
+        
+		//# check if removal might have freed up preforming another
+		//# operation that had blocked on it.
+
+		//# FIXME: may want to actually check whether the change could
+		//# have caused another read/write to be scheduled.
+        try_next();
+	}
+
+	
+	private boolean test_and_backout_all()
+	{
+		return test_and_backout_all(null);
+	}
+	
+
+	/**
+    ASSUMES ALREADY WITHIN LOCK
+
+    Checks if can backout all events that currently hold
+    read/write locks on this object.
+    
+    @param {uuid} event_to_not_backout_uuid --- If we had an event
+    that was going from being a reader of the data to a writer on
+    the data, it might call this method to upgrade itself.  In
+    that case, we do not want to back it out itself.  So we skip
+    over it.
+    
+    Happens in two phases:
+    
+      Phase 1: Iterate through each event holding a lock.  Request
+      that event to take a lock on itself so that the event cannot
+      transition into a different state (eg., begin two phase
+      commit).  Then it returns a bool for whether it's
+      backout-able.  (True, if it had not started 2-phase commit,
+      False otherwise).
+
+      Note: it is important to sort the list of events by uuid
+      before iterating through them.  This is so that we can
+      prevent deadlock when two different objects are iterating
+      through their lists.
+      
+
+      Phase 2:
+      
+        * If any return that they are not backout-able, then break
+          there and tell any that we had already held locks for to
+          release their locks and continue on about their
+          business.
+
+       * If all return that they are backout-able, then run
+         through all and back them out.
+
+       Return True if all were backed out.  False if they weren't.
+	*/
+	private boolean test_and_backout_all(String event_to_not_backout_uuid)
+	{
+		//# Phase 1:
+		//    
+		//# note: do not have to explicitly include the write lock key
+		//# here because the event that is writing will be included in
+		//# read locks
+		//
+		//# Note: it is important to sort the list of events by uuid
+		//# before iterating through them.  This is so that we can
+		//# prevent deadlock when two different objects are iterating
+		//# through their lists.
+		
+		ArrayList<EventCachedPriorityObj> read_lock_holder_event_cached_priorities =
+				new ArrayList<EventCachedPriorityObj>(read_lock_holders.values());
+
+		in_place_sort_event_cached_priority_list_by_uuid(read_lock_holder_event_cached_priorities);
+
+		ArrayList<LockedActiveEvent> to_backout_list = new ArrayList<LockedActiveEvent>();
+		boolean can_backout_all = true;
+		for (EventCachedPriorityObj event_cached_priority_obj : read_lock_holder_event_cached_priorities)
+		{
+			LockedActiveEvent read_event = event_cached_priority_obj.event;
+			String read_uuid = read_event.uuid;
+			if (read_uuid != event_to_not_backout_uuid)
+			{
+				if (read_event.can_backout_and_hold_lock())
+					to_backout_list.add(read_event);
+				else
+				{
+					can_backout_all = false;
+					break;
+				}
+			}
+		}
+
+		
+		//# Phase 2:
+        if (can_backout_all)
+        {
+        	for (LockedActiveEvent event_to_backout : to_backout_list)
+        		obj_request_backout_and_release_lock(event_to_backout);
+ 
+        	EventCachedPriorityObj event_cached_priority = read_lock_holders.get(event_to_not_backout_uuid);
+        	read_lock_holders = new HashMap<String,EventCachedPriorityObj>();
+        	write_lock_holder = null;
+        	if (event_cached_priority != null)
+        		read_lock_holders.put(event_cached_priority.event.uuid, event_cached_priority);
+        }
+        else
+        {
+        	for (LockedActiveEvent event_not_to_backout : to_backout_list)
+        		event_not_to_backout.obj_request_no_backout_and_release_lock();
+        }
+        return can_backout_all;		
+	}
+
+
+	/**
+    @param {priority} waiting_event_priority --- 
+    
+    @returns {bool} --- Returns True if waiting_event_uuid is
+    greater than or equal to all other events that are currently
+    holding read or read/write locks on data.
+    */
+	private boolean is_gte_than_lock_holding_events(String waiting_event_priority)
+	{
+		//# check write lock
+		if ((write_lock_holder != null) &&
+				(! EventPriority.gte_priority(waiting_event_priority,write_lock_holder.cached_priority)))
+			return false;
+		
+
+		//# check read locks
+		for (Entry<String,EventCachedPriorityObj> entry : read_lock_holders.entrySet())
+		{
+			String cached_priority = entry.getValue().cached_priority;
+			if (! EventPriority.gte_priority(waiting_event_priority,cached_priority))
+				return false;
+		}
+        return true;	
+	}
+
+	
+	/**
+	 * CALLED FROM WITHIN LOCK
+	 * 
+	 *  Check if can schedule the read event waiting_event
+
+        Should be able to schedule if:
+
+          1) There is not a write lock holder or 
+
+          2) There is a write lock holder that is not currently in two
+             phase commit, and has a uuid that is less than our uuid.
+
+              a) check if write lock holder is younger (ie, it should
+                 be preempted).
+                 
+              b) If it is younger and it's not in two phase commit,
+                 then go ahead and revoke it.
+             
+        @returns {bool} --- Returns True if could schedule read
+        waiting event.  False if could not.
+
+	 * 
+	 * @param waiting_event
+	 * @return
+	 */
+	private boolean try_schedule_read_waiting_event(WaitingElement waiting_event)
+	{
+		//# CASE 1
+		if (write_lock_holder == null)
+		{
+			read_lock_holders.put(
+					waiting_event.event.uuid, 
+					new EventCachedPriorityObj(waiting_event.event,waiting_event.cached_priority));
+			waiting_event.unwait(this);
+			return true;
+		}
+		//# CASE 2
+		//#   b) If it is younger and it's not in two phase commit, 
+		//#      then go ahead and revoke it.
+		//
+		//# 2 a --- check if write lock holder is younger (ie, it should be
+		//#         preempted).
+		if (EventPriority.gte_priority(
+				write_lock_holder.cached_priority, waiting_event.cached_priority))
+		{
+			//# do not preempt write lock: it has been around longer
+			return false;
+		}
+
+		//# 2 b --- If it is younger and it's not in two phase commit, 
+		//#         then go ahead and revoke it.
+		if (! write_lock_holder.event.can_backout_and_hold_lock())
+		{
+			//# cannot backout write lock holder
+            return false;
+		}
+
+		
+		//# Can backout write lock holder:
+		//#    1) Actually perform backout of writing event
+		//#    2) Clean up write lock holder and read lock holder state
+		//#       associated with write lock
+		//#    3) Waiting event gets included in read lock holder
+		//#    4) Unjam waiting event's read queue, which returns value.
+
+        //# 1
+        obj_request_backout_and_release_lock(write_lock_holder.event);
+        
+		//# following code will remove all write lock holders and read
+		//# lock holders.
+        
+        //# 2
+        write_lock_holder = null;
+        read_lock_holders = new HashMap<String,EventCachedPriorityObj>();
+        
+        //# 3
+        read_lock_holders.put(waiting_event.event.uuid, 
+        		new EventCachedPriorityObj(waiting_event.event,waiting_event.cached_priority));
+
+        //# 4
+        waiting_event.unwait(this);
+        return true;
+	}
+
+	/**
+	 * Called as an active event runs code.
+	 * @param active_event
+	 * @param new_val
+	 */
+    public void set_val(LockedActiveEvent active_event,T new_val)
+    {
+        DataWrapper<T,D> to_write_on = acquire_write_lock(active_event);
+        to_write_on.write(new_val);
+    }
+
+    /**
+    CALLED FROM WITHIN LOCK HOLDER
+    
+    Gets called when an event that had not been holding a write
+    lock tries to begin holding a write lock.
+
+    Three things must happen.
+    
+      1) Check that the event that is trying to assume the write
+         lock has a higher uuid than any other event that is
+         currently holding a lock (read or read/write).  
+
+      2) If 1 succeeded, then try to backout all events that
+         currently hold locks.  (May not be able to if an event is
+         in the midst of a commit.)  If can, roll back changes to
+         events that currently hold locks.
+    
+      3) If 1 and 2 succeeded, then updates self.write_lock_holder
+         and self.read_lock_holders.  Also, unjams
+         waiting_event's queue.
+
+    @param {Waiting Event object} --- Should be 
+    
+    @returns {bool} --- True if could successfully schedule the
+    waiting write.  False otherwise.
+     */
+    private boolean try_schedule_write_waiting_event(WaitingElement<T,D> waiting_event)
+    {    
+    	//#### DEBUG
+        if (! waiting_event.is_write())
+    	{
+            Util.logger_assert(
+                "Should only pass writes into try_schedule_write_waiting_event");
+    	}
+        //#### END DEBUG
+
+            
+        //# Stage 1 from above
+        if (is_gte_than_lock_holding_events(waiting_event.cached_priority))
+        {
+            //# Stage 2 from above
+        	if (test_and_backout_all(waiting_event.event.uuid))
+        	{
+        		//# Stage 3 from above
+                //# actually update the read/write lock holders
+        		read_lock_holders.put(
+        				waiting_event.event.uuid, 
+        				new EventCachedPriorityObj(waiting_event.event,waiting_event.cached_priority));
+        		write_lock_holder = new EventCachedPriorityObj(waiting_event.event,waiting_event.cached_priority);
+                waiting_event.unwait(this);
+                return true;
+        	}
+        }
+
+        return false;    
+    }
+
+    /**
+    Check if any events that have been waiting on read/write locks
+    can now be scheduled.
+    
+    All events that are not currently running, but waiting to be
+    scheduled on the Waldo object are in the self.waiting_events
+    dict.
+
+      #1: Sort all waiting events by uuid (part of time/wait
+          algo).
+
+      #2: Keep grabbing elements from the sorted list and trying
+          to apply them until:
+
+            a) We hit a write (we know that reads+writes cannot
+               function simultaneously) or
+
+            b) The waiting event that we try to schedule fails to
+               schedule.  (Eg., it is blocked by a higher-priority
+               event that is holding a write lock.)
+     */
+    private void try_next()
+    {
+        _lock();
+
+        if (waiting_events.isEmpty())
+        {
+            _unlock();
+            return;
+        }
+
+        //# see comment in class' __init__ for in_try_next.
+        if (in_try_next)
+        {
+        	_unlock();
+        	return;
+        }
+        in_try_next = true;
+
+        
+		//# Phase 1 from above:
+		//# sort event uuids from high to low to determine if should add
+		//# them.
+        ArrayList<WaitingElement<T,D>> _waiting_events = new ArrayList<WaitingElement<T,D>>(waiting_events.values());
+        in_place_sort_waiting_event_list_by_priority(_waiting_events);
+
+		//# Phase 2 from above
+		//# Run through all waiting events.  If the waiting event is a
+		//# write, first check that
+
+        for (WaitingElement<T,D> waiting_event : _waiting_events)
+        {
+            if (waiting_event.is_write())
+            {
+            	if (try_schedule_write_waiting_event(waiting_event))
+            		waiting_events.remove(waiting_event.event.uuid);
+                break;
+            }           
+            else
+            {
+            	if (try_schedule_read_waiting_event(waiting_event))
+            		waiting_events.remove(waiting_event.event.uuid);
+            	else
+            		break;
+            }
+        }
+        in_try_next = false;
+        _unlock();
+    }
+
+
+    public T get_val(LockedActiveEvent active_event)
+    {
+    	if (active_event == null)
+    	{
+			//# used for debugging: allows python code to read into and
+			//# check the value of an external reference.
+    		return val.val;
+    	}
+        
+        DataWrapper<T,D>data_wrapper = acquire_read_lock(active_event);
+        return data_wrapper.val;
+    }
+
+    /**
+        ASSUMES ALREADY HOLDING LOCK
+
+        @param {WaldoLockedActiveEvent} active_event --- 
+
+        @returns {bool} --- True if obj has been inserted into
+        active_event's touched_obj dict or already existed there.
+        False if did not exist there and the event has been backed
+        out.
+
+        This method ensures that this object is in the dict,
+        touched_objs, that the event active_event is holding.  It
+        tries to add self to that dict.  If the event has already been
+        backed out and we try to add self to event's touched_objs, we
+        do not add to touched objs and return false.
+
+     * @param active_event
+     * @return
+     */
+    private boolean insert_in_touched_objs(LockedActiveEvent active_event)
+    {
+    	if (waiting_events.containsKey(active_event.uuid) ||
+    			read_lock_holders.containsKey(active_event.uuid))
+    		return true;
+    	
+    	boolean in_running_state = active_event.add_touched_obj(this);
+        return in_running_state;
+    }
+
+    public boolean serializable_var_tuple_for_network(
+            VarStoreDeltas.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force)
+    {
+        Util.logger_assert(
+        		"Serializable var tuple for network is pure virtual " +
+                "in waldoLockedObj.");
+              
+    	return false;    	
+    }
+    public boolean serializable_var_tuple_for_network(
+    		SingleListDelta.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force)
+    {
+        Util.logger_assert(
+        		"Serializable var tuple for network is pure virtual " +
+                "in waldoLockedObj.");
+              
+    	return false;
+    }
+    public boolean serializable_var_tuple_for_network(
+    		SingleMapDelta.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force)
+    {
+        Util.logger_assert(
+        		"Serializable var tuple for network is pure virtual " +
+                "in waldoLockedObj.");
+              
+    	return false;
+    }
+    public boolean serializable_var_tuple_for_network(
+    		ContainerAddedKey.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force)
+    {
+        Util.logger_assert(
+        		"Serializable var tuple for network is pure virtual " +
+                "in waldoLockedObj.");
+              
+    	return false;
+    }
+    public boolean serializable_var_tuple_for_network(
+    		SubElementUpdateActions.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force)
+    {
+        Util.logger_assert(
+        		"Serializable var tuple for network is pure virtual " +
+                "in waldoLockedObj.");
+              
+    	return false;
+    }
+    public boolean serializable_var_tuple_for_network(
+    		ContainerWriteKey.Builder parent_delta,String var_name,LockedActiveEvent active_event,boolean force)
+    {
+        Util.logger_assert(
+        		"Serializable var tuple for network is pure virtual " +
+                "in waldoLockedObj.");
+              
+    	return false;
+    }
 
 	
 }
