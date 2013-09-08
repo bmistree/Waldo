@@ -872,6 +872,71 @@ public class LockedActiveEvent {
         backout(null,stop_request);
 	}
 
+
+	/**
+    ASSUMES ALREADY WITHIN LOCK
+
+    @param {PartnerMessageRequestSequenceBlock.proto} msg ---
+
+    @param {string} name_of_block_to_exec_next --- the name of the
+    sequence block to execute next.
+
+    @returns {Executing event}
+    
+    means that the other side has generated a first message create
+    a new context to execute that message and do so in a new
+    thread.
+	*/
+	private ExecutingEvent handle_first_sequence_msg_from_partner(
+			String msg, String name_of_block_to_exec_next)
+	{
+		//### FIGURE OUT WHAT TO EXECUTE NEXT
+
+        //#### DEBUG
+        if( name_of_block_to_exec_next == null)
+        {
+            Util.logger_assert(
+                "Error in _ActiveEvent.  Should not receive the " +
+                "beginning of a sequence message without some " +
+                "instruction for what to do next.");
+        }
+        //#### END DEBUG
+
+        String block_to_exec_internal_name = Util.partner_endpoint_msg_call_func_name(
+            name_of_block_to_exec_next);
+
+		//### SET UP CONTEXT FOR EXECUTING
+		//# FIXME: re-arrange code to avoid this import
+        VariableStore seq_local_var_store = new VariableStore(
+            event_parent.local_endpoint._host_uuid);
+
+		//# FIXME: eventually, want to remove pickle-ing here
+        seq_local_var_store.incorporate_deltas(
+            msg.sequence_local_var_store_deltas);
+        
+        ExecutingEventContext evt_ctx =  new ExecutingEventContext(
+			//# already incorporated deltas for global_var_store
+			//# above.
+        	event_parent.local_endpoint._global_var_store,
+            seq_local_var_store);
+
+        evt_ctx.set_to_reply_with(msg.reply_with_uuid.data)
+
+        
+		//# used to actually start execution of context thread at end
+		//# of loop.  must start event outside of locks.  That way,
+		//# if the exec event leads to and endpoint call, etc., we
+		//# don't block waiting on its return.
+        ExecutingEvent exec_event = new ExecutingEvent(
+            block_to_exec_internal_name,this,evt_ctx,
+            null //# using None here means that we do not need to
+                 //# bother with waiting for modified peered-s to
+                 //# update.
+            );
+
+        return exec_event;
+	}
+
 	
 }
 
