@@ -1,6 +1,8 @@
 package waldo;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -976,5 +978,59 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
     	return false;
     }
 
-	
+    private class CachedPriorityComparator implements Comparator<EventCachedPriorityObj>
+    {
+		public int compare(EventCachedPriorityObj o1, EventCachedPriorityObj o2) 
+		{
+	        return o1.cached_priority.compareTo(o2.cached_priority);
+	    }
+    }
+    private class CachedUUIDComparator implements Comparator<EventCachedPriorityObj>
+    {
+		public int compare(EventCachedPriorityObj o1, EventCachedPriorityObj o2) 
+		{
+	        return o1.event.uuid.compareTo(o2.event.uuid);
+	    }
+    }
+
+    private class WaitingElementPriorityComparator implements Comparator<WaitingElement<T,D>>
+    {
+		public int compare(WaitingElement<T,D> o1, WaitingElement<T,D> o2) 
+		{
+	        return o1.cached_priority.compareTo(o2.cached_priority);
+	    }
+    }
+    
+    // FIXME: Should create one instance of comparator class and reuse it instead 
+    // of creating one per multithreaded object
+    private CachedPriorityComparator event_cached_priority_comparator = new CachedPriorityComparator();
+    private CachedUUIDComparator event_cached_uuid_comparator = new CachedUUIDComparator();
+    
+    /**
+     *  @param {list} ---
+        
+        Sorts the list in place.  Lower indices will contain higher
+        priorities.
+
+        @returns sorted list
+
+     * @return
+     */    
+    private ArrayList<EventCachedPriorityObj> in_place_sort_event_cached_priority_list_by_priority(
+    		ArrayList<EventCachedPriorityObj> list_to_sort)
+    {
+    	Util.logger_warn("Check that sorting order is correct");
+    	Collections.sort(list_to_sort,event_cached_priority_comparator);
+    	return list_to_sort;
+    }
+    
+    private ArrayList<EventCachedPriorityObj> in_place_sort_event_cached_priority_list_by_uuid(
+    		ArrayList<EventCachedPriorityObj> list_to_sort)
+	{	
+    	Util.logger_warn("Check that sorting order is correct");
+    	Collections.sort(list_to_sort,event_cached_uuid_comparator);
+    	return list_to_sort;
+	}
+    
+
 }
