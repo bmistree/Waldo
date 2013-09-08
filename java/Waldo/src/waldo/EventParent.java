@@ -25,9 +25,14 @@ public abstract class EventParent {
 	private boolean has_been_boosted = false;
 	
 	
-	public EventParent(String _uuid, String _priority)
+	public EventParent(Endpoint _local_endpoint,String _uuid, String _priority)
 	{
+		local_endpoint = _local_endpoint;
 		uuid = _uuid;
+		
+		if (uuid == null)
+			uuid = Util.generate_uuid();
+		
 		priority = _priority;
 		
 	}

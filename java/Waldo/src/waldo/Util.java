@@ -12,6 +12,11 @@ public class Util {
 	static public int QUEUE_CAPACITIES = 100;
 
 	/**
+	 * For queues that are only really supposed to have one result returned in them.
+	 */
+	static public int SMALL_QUEUE_CAPACITIES = 3;
+	
+	/**
 	 * 	Takes in the name of the function that another endpoint has
 	    requested to be called.  Adds a prefix to distinguish the function
 	    as being called from an endpoint function call rather than from
