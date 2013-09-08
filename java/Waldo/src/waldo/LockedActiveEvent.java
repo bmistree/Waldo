@@ -3,6 +3,9 @@ package waldo;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import waldo_protobuffs.PartnerErrorProto.PartnerError;
+import waldo_protobuffs.PartnerRequestSequenceBlockProto.PartnerRequestSequenceBlock;
+
 public class LockedActiveEvent {
 	
 	private enum State 
@@ -888,7 +891,7 @@ public class LockedActiveEvent {
     thread.
 	*/
 	private ExecutingEvent handle_first_sequence_msg_from_partner(
-			String msg, String name_of_block_to_exec_next)
+			PartnerRequestSequenceBlock msg, String name_of_block_to_exec_next)
 	{
 		//### FIGURE OUT WHAT TO EXECUTE NEXT
 
@@ -910,9 +913,9 @@ public class LockedActiveEvent {
         VariableStore seq_local_var_store = new VariableStore(
             event_parent.local_endpoint._host_uuid);
 
-		//# FIXME: eventually, want to remove pickle-ing here
+        //# FIXME: eventually, want to remove pickle-ing here
         seq_local_var_store.incorporate_deltas(
-            msg.sequence_local_var_store_deltas);
+        		msg.getSequenceLocalVarStoreDeltas());
         
         ExecutingEventContext evt_ctx =  new ExecutingEventContext(
 			//# already incorporated deltas for global_var_store
@@ -920,7 +923,7 @@ public class LockedActiveEvent {
         	event_parent.local_endpoint._global_var_store,
             seq_local_var_store);
 
-        evt_ctx.set_to_reply_with(msg.reply_with_uuid.data)
+        evt_ctx.set_to_reply_with(msg.getReplyWithUuid());
 
         
 		//# used to actually start execution of context thread at end
@@ -937,6 +940,167 @@ public class LockedActiveEvent {
         return exec_event;
 	}
 
+	
+	/**
+	 * 
+	 * @param msg
+	 */
+	public void recv_partner_sequence_call_msg(
+			PartnerRequestSequenceBlock msg)
+	{
+		//# can be None... if it is means that the other side wants us
+		//# to decide what to do next (eg, the other side performed its
+		//# last message sequence action)
+        String name_of_block_to_exec_next = null;
+        if (msg.hasNameOfBlockRequesting())
+        	name_of_block_to_exec_next = msg.getNameOfBlockRequesting();
+
+        //# update peered data based on data contents of message.
+		//# (Note: still must update sequence local data from deltas
+		//# below.)
+
+		//# FIXME: pretty sure that do not need to incorporate deltas within
+		//# lock, but should check
+        event_parent.local_endpoint._global_var_store.incorporate_deltas(
+            this,msg.getPeeredVarStoreDeltas());
+
+        ExecutingEvent exec_event = null;
+
+        _lock();
+        if (! msg.hasReplyToUuid())
+        {
+        	exec_event = handle_first_sequence_msg_from_partner(
+                msg,name_of_block_to_exec_next);
+        }
+        else
+        {
+            handle_non_first_sequence_msg_from_partner(
+                msg,name_of_block_to_exec_next);
+        }
+        _unlock();
+        
+        if (exec_event != null)
+        {
+        	//### ACTUALLY START EXECUTION CONTEXT THREAD
+            exec_event.run();
+        }
+	}
+
+
+	/**
+	 * ASSUMES ALREADY WITHIN LOCK
+        @param {PartnerMessageRequestSequenceBlock.proto} msg ---
+
+        @param {string or None} name_of_block_to_exec_next --- the
+        name of the sequence block to execute next. None if nothing to
+        execute next (ie, last sequence message).
+	 * 
+	 */
+	private void handle_non_first_sequence_msg_from_partner(
+		PartnerRequestSequenceBlock msg, String name_of_block_to_exec_next)
+	{
+		String reply_to_uuid = msg.getReplyToUuid().getData();
+		
+        //#### DEBUG
+		if (! message_listening_queues_map.containsKey(reply_to_uuid))
+		{
+			Util.logger_assert(
+                "Error: partner response message responding to " +
+                "unknown _ActiveEvent message.");
+		}
+        //#### END DEBUG
+
+		String reply_with_uuid = msg.getReplyWithUuid().getData();
+        //# unblock waiting listening queue.
+		message_listening_queues_map.get(reply_to_uuid).add(
+				new WaldoCallResults.SequenceMessageCallResult(
+						reply_with_uuid,name_of_block_to_exec_next,
+						//# as soon as read from the listening message
+						//# queue, populate sequence local data from context
+						//# using sequence_local_var_store_deltas.						
+						msg.getSequenceLocalVarStoreDeltas()));
+						
+
+		//# no need holding onto queue waiting on a message response.
+		message_listening_queues_map.remove(reply_to_uuid);
+
+	}	
+
+	/**
+   		@param     error     GeneralMessage.error
+
+        Places an ApplicationExceptionCallResult in the event complete queue to 
+        indicate to the endpoint that an application exception has been raised 
+        somewhere down the call graph.
+
+        Note that the type of error is 
+	 */
+	public void send_exception_to_listener(PartnerError error)
+	{
+        _lock();
+        //# Send an ApplicationExceptionCallResult to each listening queue
+        for (String reply_with_uuid : message_listening_queues_map.keySet())
+        {
+			//### FIXME: It probably isn't necessary to send an exception result to
+			//### each queue.
+        	java.util.concurrent.ArrayBlockingQueue<MessageResultObject> message_listening_queue = 
+        			message_listening_queues_map.get(reply_with_uuid);
+
+        	if (error.getType() == PartnerError.ErrorType.APPLICATION)
+                message_listening_queue.add(ApplicationExceptionCallResult(error.getTrace()));
+        	else if (error.getType() == PartnerError.ErrorType.NETWORK)
+                message_listening_queue.add(NetworkFailureCallResult(error.getTrace()));
+        }
+        _unlock();
+	}
+
+	private void _others_contacted_lock()
+	{
+        _others_contacted_mutex.lock();
+	}
+
+	private void _others_contacted_unlock()
+	{
+        _others_contacted_mutex.unlock();
+	}
+     
+	private void _touched_objs_lock()
+	{
+        _touched_objs_mutex.lock();
+	}
+	private void _touched_objs_unlock()
+	{
+        _touched_objs_mutex.unlock();
+	}
+        
+    private void _nflock()
+    {
+        _nfmutex.lock();
+    }
+    
+    private void _nfunlock()
+    {
+        _nfmutex.unlock();
+    }
+     
+    private void set_network_failure()
+    {
+        _nflock();
+        _network_failure = true;
+        _nfunlock();
+		//# self._lock()
+		//# if self.state == LockedActiveEvent.STATE_FIRST_PHASE_COMMIT:
+		//#     self.forward_backout_request_and_backout_self()
+		//# self._unlock()
+    }
+    
+    private boolean get_network_failure()
+    {
+        _nflock();
+        boolean failure = _network_failure;
+        _nfunlock();
+        return failure;
+    }
 	
 }
 
