@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class EventSubscribedTo 
 {
-	private Endpoint endpoint_object = null;
+	public Endpoint endpoint_object = null;
 	public ArrayList<
 	    java.util.concurrent.ArrayBlockingQueue<EndpointResultObject>> result_queues = 
 	    

@@ -111,7 +111,7 @@ public class LockedActiveEvent {
     HashMap<String,
     	java.util.concurrent.ArrayBlockingQueue<MessageResultObject>> message_listening_queues_map = 
     	
-    	new HashMap<String, java.util.concurrent.ArrayBlockingQueue<MessageResultObject>>;
+    	new HashMap<String, java.util.concurrent.ArrayBlockingQueue<MessageResultObject>>();
 
     /**
      * # keeps a list of functions that we should exec when we
