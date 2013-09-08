@@ -6,9 +6,9 @@ public class EventSubscribedTo
 {
 	private Endpoint endpoint_object = null;
 	public ArrayList<
-	    java.util.concurrent.ArrayBlockingQueue<Object>> result_queues = 
+	    java.util.concurrent.ArrayBlockingQueue<EndpointResultObject>> result_queues = 
 	    
-	    new ArrayList<java.util.concurrent.ArrayBlockingQueue<Object>>(); 
+	    new ArrayList<java.util.concurrent.ArrayBlockingQueue<EndpointResultObject>>(); 
 	
 	
 	
@@ -18,7 +18,7 @@ public class EventSubscribedTo
 
     @param {Queue.Queue} result_queue --- @see add_result_queue
 	*/
-	public EventSubscribedTo(Endpoint _endpoint_object, java.util.concurrent.ArrayBlockingQueue<Object> queue)
+	public EventSubscribedTo(Endpoint _endpoint_object, java.util.concurrent.ArrayBlockingQueue<EndpointResultObject> queue)
 	{
 		endpoint_object = _endpoint_object;
 		add_result_queue(queue);
@@ -36,7 +36,7 @@ public class EventSubscribedTo
 	sentinel into them if we backout.  (Note: the sentinel is
 	waldoCallResults._BackoutBeforeEndpointCallResult)
 	*/
-	public void add_result_queue(java.util.concurrent.ArrayBlockingQueue<Object>result_queue)
+	public void add_result_queue(java.util.concurrent.ArrayBlockingQueue<EndpointResultObject>result_queue)
 	{
 		result_queues.add(result_queue);
 	}
