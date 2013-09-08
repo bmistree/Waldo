@@ -8,6 +8,11 @@ from waldo.lib.proto_compiled.partnerError_pb2 import PartnerError
 from waldo.lib.waldoCallResults import _NetworkFailureCallResult
 from waldo.lib.waldoCallResults import _ApplicationExceptionCallResult
 from waldo.lib.waldoServiceActions import EventBackoutTouchedObjs
+import waldo.lib.waldoVariableStore as waldoVariableStore
+from waldo.lib.waldoExecutingEvent import _ExecutingEventContext
+from waldo.lib.waldoExecutingEvent import _ExecutingEvent
+
+
 
 NETWORK = 'NETWORK'
 BACKOUT = 'BACKOUT'
@@ -764,18 +769,12 @@ class LockedActiveEvent(object):
         to_exec = getattr(self.event_parent.local_endpoint,block_to_exec_internal_name)
 
         ### SET UP CONTEXT FOR EXECUTING
-        # FIXME: re-arrange code to avoid this import
-        import waldoVariableStore
         seq_local_var_store = waldoVariableStore._VariableStore(
             self.event_parent.local_endpoint._host_uuid)
 
         # FIXME: eventually, want to remove pickle-ing here
         seq_local_var_store.incorporate_deltas(
             self,msg.sequence_local_var_store_deltas)
-
-        # FIXME: super ugly
-        from waldoExecutingEvent import _ExecutingEventContext
-        from waldoExecutingEvent import _ExecutingEvent
 
         
         evt_ctx = _ExecutingEventContext(
