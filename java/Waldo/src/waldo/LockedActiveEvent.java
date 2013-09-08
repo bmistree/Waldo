@@ -722,7 +722,8 @@ public class LockedActiveEvent {
 	 */
 	public boolean issue_endpoint_object_call(
             Endpoint endpoint_calling,String func_name,
-            java.util.concurrent.ArrayBlockingQueue<EndpointResultObject>result_queue,*args)
+            java.util.concurrent.ArrayBlockingQueue<EndpointResultObject>result_queue,
+            Object...args)            
 	{
 
 		boolean endpoint_call_requested = false;
@@ -758,7 +759,7 @@ public class LockedActiveEvent {
             endpoint_calling._receive_endpoint_call(
                 event_parent.local_endpoint,uuid,
                 event_parent.get_priority(),func_name,result_queue,
-                *args);
+                args);
 
             _others_contacted_lock();
             //# add the endpoint to subscribed to
@@ -829,7 +830,7 @@ public class LockedActiveEvent {
 	}
 	
 	public void forward_backout_request_and_backout_self(
-            boolean skip_partner=False, boolean already_backed_out=False, boolean stop_request=False)
+            boolean skip_partner)
 	{
 		forward_backout_request_and_backout_self(skip_partner,false,false);
 	}
