@@ -1,6 +1,5 @@
 package waldo;
 
-public class SignalFunction {
-	// FIXME: must finish
-	Acutally need to finish
+public interface SignalFunction {
+	public void fire(Endpoint endpt);
 }

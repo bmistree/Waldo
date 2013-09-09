@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import WaldoServiceActions.ServiceAction;
+
 import waldo_protobuffs.PartnerErrorProto.PartnerError;
 import waldo_protobuffs.PartnerRequestSequenceBlockProto.PartnerRequestSequenceBlock;
 

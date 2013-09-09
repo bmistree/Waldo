@@ -6,6 +6,8 @@ import java.util.HashMap;
 
 public class Util {
 	
+	public static final Endpoint PARTNER_ENDPOINT_SENTINEL = null;
+
 	/**
 	 * Queues must be declared with capacities.  All queues have this default capacity
 	 */
