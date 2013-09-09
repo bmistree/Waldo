@@ -3,6 +3,8 @@ package waldo;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import WaldoExceptions.BackoutException;
+
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleNumberDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta;
@@ -236,7 +238,14 @@ public class LockedVariables {
 			for (Entry<K, LockedObject<V,D>> entry : init_val.entrySet())
 			{
 				ReferenceTypeDataWrapper<K,V,D>casted_wrapper = (ReferenceTypeDataWrapper<K,V,D>)val.val.val;
-				casted_wrapper.set_val_on_key(null, entry.getKey(), entry.getValue(), incorporating_deltas);
+				
+				// single threaded variables will not throw backout exceptions.
+				try {
+					casted_wrapper.set_val_on_key(null, entry.getKey(), entry.getValue(), incorporating_deltas);
+				} catch (BackoutException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			
 		}

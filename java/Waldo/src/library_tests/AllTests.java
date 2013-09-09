@@ -39,6 +39,10 @@ public class AllTests
 				"Multithreaded concurrent read of number",
 				new MultithreadedNoConflict());
 
+		run_single_test(
+				"Multithreaded full read/write/commit number",
+				new MultiThreadedCommit());
+				
 		
 	}
 

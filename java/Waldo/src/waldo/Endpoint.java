@@ -48,7 +48,7 @@ public class Endpoint
 	
 	public VariableStore _global_var_store = null;
 	
-	private ThreadPool _thread_pool = null;
+	public ThreadPool _thread_pool = null;
 	private AllEndpoints _all_endpoints = null;
 	
 	public ArrayBlockingQueue<SignalFunction> _signal_queue = 

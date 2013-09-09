@@ -58,6 +58,10 @@ public class MultithreadedNoConflict implements TestInterface{
 			return false;
 		}
 		
+		
+		active_event.begin_first_phase_commit();
+		
+		
 		return true;
 	}
 

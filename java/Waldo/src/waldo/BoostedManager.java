@@ -2,6 +2,8 @@ package waldo;
 
 import java.util.ArrayList;
 
+import WaldoServiceActions.ServiceAction;
+
 public class BoostedManager {
 	private Clock clock = null;
 	private String last_boosted_complete = null;
@@ -160,11 +162,13 @@ public class BoostedManager {
     	if (event_list.isEmpty())
     		return;
 
+    	
         String boosted_priority = EventPriority.generate_boosted_priority(last_boosted_complete);
-        EndpointServiceAction service_action = new PromoteBoostedAction(
+        ServiceAction service_action = new WaldoServiceActions.PromoteBoostedAction(
         		event_list.get(0),boosted_priority);
         
         act_event_map.local_endpoint._thread_pool.add_service_action(service_action);
+        
     }
 
 }
