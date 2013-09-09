@@ -464,7 +464,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         		(active_event.uuid == write_lock_holder.event.uuid))
         {
         	val.write(dirty_val.val);
-        	write_lock_holders= null;
+        	write_lock_holder= null;
         	read_lock_holders = new HashMap<String,EventCachedPriorityObj>();
         }
         else
@@ -478,7 +478,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         	}
             //#### END DEBUG
         }
-        _unlock()
+        _unlock();
 
 		//# FIXME: may want to actually check whether the change could
 		//# have caused another read/write to be scheduled.
@@ -1005,6 +1005,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
     // of creating one per multithreaded object
     private CachedPriorityComparator event_cached_priority_comparator = new CachedPriorityComparator();
     private CachedUUIDComparator event_cached_uuid_comparator = new CachedUUIDComparator();
+    private WaitingElementPriorityComparator waiting_element_priority_comparator = new WaitingElementPriorityComparator(); 
     
     /**
      *  @param {list} ---
@@ -1032,5 +1033,12 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
     	return list_to_sort;
 	}
     
-
+    private ArrayList<WaitingElement<T,D>> in_place_sort_waiting_event_list_by_priority(
+    		ArrayList<WaitingElement<T,D>> list_to_sort)
+    {
+    	Util.logger_warn("Check that sorting order is correct");
+    	Collections.sort(list_to_sort,waiting_element_priority_comparator);
+    	return list_to_sort;
+    }
+    
 }

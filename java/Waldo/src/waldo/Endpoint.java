@@ -1070,7 +1070,7 @@ public class Endpoint
 	*/
     public void remove_stop_listener(Integer stop_id)
     {
-    	Util.logger_assert("Need to add stop listeners.")
+    	Util.logger_assert("Need to add stop listeners.");
 	}
     	
     /**
