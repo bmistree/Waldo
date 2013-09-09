@@ -852,7 +852,7 @@ public class Endpoint
     	WaldoServiceActions.ServiceAction service_action = 
     			new WaldoServiceActions.ReceiveFirstPhaseCommitMessage( this, event_uuid,endpoint_uuid,false,null);
                 
-        self._thread_pool.add_service_action(service_action);
+        _thread_pool.add_service_action(service_action);
     }
     
 
@@ -1050,7 +1050,105 @@ public class Endpoint
         _conn_obj.write_stop(general_message.build(),this);
     }
     
-    
-    
+    /**
+     * @param {callable} to_exec_on_stop --- When this endpoint
+        stops, we execute to_exec_on_stop and any other
+        stop listeners that were waiting.
 
+        @returns {int or None} --- int id should be passed back inot
+        remove_stop_listener to remove associated stop
+        listener.
+     */
+    public Integer add_stop_listener(StopListener to_exec_on_stop)
+    {
+    	Util.logger_assert("Need to add stop listeners.");
+    	return null;
+    }
+
+    /**
+    int returned from add_stop_listener
+	*/
+    public void remove_stop_listener(Integer stop_id)
+    {
+    	Util.logger_assert("Need to add stop listeners.")
+	}
+    	
+    /**
+     * Returns whether the endpoint is stopped.
+     * 
+     */
+    public boolean is_stopped()
+    {
+        return _stop_complete;
+    }
+
+    public void stop()
+    {
+    	Util.logger_assert("Not handling stop");
+    }
+    
+    public void stop(boolean skip_partner)
+    {
+    	Util.logger_assert("Not handling stop");
+    }
+
+    /**
+    Passed in as callback arugment to active event map, which calls it.
+    
+    When this is executed:
+       1) Stop was called on this side
+       
+       2) Stop was called on the other side
+       
+       3) There are no longer any running events in active event
+          map
+
+    Close the connection between both sides.  Unblock the stop call.
+	*/
+    private void _stop_complete_cb()
+    {
+    	Util.logger_assert("Not handling stop");
+    }
+    
+    /**
+    @param {PartnerStop message object} --- Has a single boolean
+    field, which is meaningless.
+            
+    Received a stop message from partner:
+      1) Label partner stop as having been called
+      2) Initiate stop locally
+      3) If have already called stop myself then tell active event
+         map we're ready for a shutdown when it is
+     */
+    private void _handle_partner_stop_msg(PartnerStop msg)
+    {
+    	Util.logger_assert("Not handling stop");
+    }
+
+    
+    //# Builtin Endpoint Functions
+    
+    /**
+     * Builtin id method. Returns the endpoint's uuid.
+
+        For use within Waldo code.
+     */
+    private String _endpoint_func_call_prefix__waldo__id(Object...args)
+    {
+        return _uuid;
+    }
+
+    /**
+    Builtin id method. Returns the endpoint's uuid.
+
+    For use on endpoints within Python code.
+	*/
+    private String id()
+    {
+    	return _uuid;
+    }
+
+        
+    
+    
 }
