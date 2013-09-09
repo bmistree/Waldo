@@ -3,6 +3,8 @@ package waldo;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import WaldoExceptions.BackoutException;
+
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalListDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleInternalMapDelta;
 
@@ -33,13 +35,13 @@ public interface ContainerInterface <K,V,D>{
 	
 	public V get_val_on_key(LockedActiveEvent active_event, K key);
 	
-	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write, boolean copy_if_peered);
-	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write);
-	public void del_key_called(LockedActiveEvent active_event,K key_to_delete);
-	public int get_len(LockedActiveEvent active_event);
-	public ArrayList<K> get_keys(LockedActiveEvent active_event);
-	public boolean contains_key_called(LockedActiveEvent active_event, K contains_key);
-	public boolean contains_val_called(LockedActiveEvent active_event,V contains_val);
+	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write, boolean copy_if_peered) throws BackoutException;
+	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write) throws BackoutException;
+	public void del_key_called(LockedActiveEvent active_event,K key_to_delete) throws BackoutException;
+	public int get_len(LockedActiveEvent active_event) throws BackoutException;
+	public ArrayList<K> get_keys(LockedActiveEvent active_event) throws BackoutException;
+	public boolean contains_key_called(LockedActiveEvent active_event, K contains_key) throws BackoutException;
+	public boolean contains_val_called(LockedActiveEvent active_event,V contains_val) throws BackoutException;
 	
 	/**
 	 * @see waldoLockedObj.waldoLockedObj

@@ -6,6 +6,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import WaldoExceptions.BackoutException;
+
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleListDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleMapDelta;
@@ -92,6 +94,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
 	/**
 	 * 
         DOES NOT ASSUME ALREADY WITHIN LOCK
+	 * @throws BackoutException 
 
         @returns {DataWrapper object}
 
@@ -125,7 +128,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
 
         Blocks until has acquired.
 	 */
-	private DataWrapper<T,D> acquire_read_lock(LockedActiveEvent active_event)
+	private DataWrapper<T,D> acquire_read_lock(LockedActiveEvent active_event) throws BackoutException
 	{
 		// FIXME: finish
 		
@@ -224,7 +227,15 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         waiting_events.put(active_event.uuid, waiting_element);
         _unlock();
 
-        return waiting_element.queue.take();
+        
+        DataWrapper<T,D> to_return = null;
+        try {
+			to_return = waiting_element.queue.take();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        return to_return;
 	}
 		
 	
@@ -243,8 +254,9 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         
 	 * @param active_event
 	 * @return
+	 * @throws BackoutException 
 	 */
-	private DataWrapper<T,D> acquire_write_lock(LockedActiveEvent active_event)
+	protected DataWrapper<T,D> acquire_write_lock(LockedActiveEvent active_event) throws BackoutException
 	{
         _lock();
 		//# Each event has a priority associated with it.  This priority
@@ -319,7 +331,16 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         		peered);
         waiting_events.put(active_event.uuid, write_waiting_event);        
         _unlock();
-        return write_waiting_event.queue.take();
+        
+        DataWrapper<T,D> to_return = null;
+        try {
+			to_return = write_waiting_event.queue.take();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
+        return to_return;
 	}
 
 	/**
@@ -365,7 +386,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         _unlock();
 	}
 	
-	public D de_waldoify(LockedActiveEvent active_event)
+	public D de_waldoify(LockedActiveEvent active_event) throws BackoutException
 	{
 		DataWrapper<T,D> wrapped_val = acquire_read_lock(active_event);
 		return wrapped_val.de_waldoify(active_event);
@@ -746,8 +767,9 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
 	 * Called as an active event runs code.
 	 * @param active_event
 	 * @param new_val
+	 * @throws BackoutException 
 	 */
-    public void set_val(LockedActiveEvent active_event,T new_val)
+    public void set_val(LockedActiveEvent active_event,T new_val) throws BackoutException
     {
         DataWrapper<T,D> to_write_on = acquire_write_lock(active_event);
         to_write_on.write(new_val);
@@ -881,7 +903,7 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
     }
 
 
-    public T get_val(LockedActiveEvent active_event)
+    public T get_val(LockedActiveEvent active_event) throws BackoutException
     {
     	if (active_event == null)
     	{

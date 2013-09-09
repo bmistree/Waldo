@@ -16,6 +16,8 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SubElementUpdateActio
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import WaldoExceptions.BackoutException;
+
 
 /**
  * 
@@ -65,22 +67,32 @@ public class SingleThreadedLockedContainer<K,V,D>
 		 */
 		LockedObject<V,D> internal_key_val = val.val.get(key);
 		
-		if (internal_key_val.return_internal_val_from_container())		
-			return (V) internal_key_val.get_val(active_event);
+		if (internal_key_val.return_internal_val_from_container())
+		{
+			Object to_return = null;
+			try {
+				to_return = internal_key_val.get_val(active_event);
+			} catch (BackoutException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return (V)to_return;
+			
+		}
 		
 		return (V) internal_key_val;
 	}
 
 
 	@Override
-	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write) {
+	public void set_val_on_key(LockedActiveEvent active_event, K key, V to_write) throws BackoutException {
 		set_val_on_key(active_event,key,to_write,false);		
 	}
 	
 	
 	@Override
 	public void set_val_on_key(LockedActiveEvent active_event, K key,
-			V to_write, boolean copy_if_peered) 
+			V to_write, boolean copy_if_peered) throws BackoutException 
 	{
 		// note: may need to change this to cast to LockedObject<V,D> and use other set_val.
 		Util.logger_assert(
@@ -89,7 +101,7 @@ public class SingleThreadedLockedContainer<K,V,D>
 		
 	}	
 	public void set_val_on_key(
-			LockedActiveEvent active_event, K key, LockedObject<V,D> to_write)
+			LockedActiveEvent active_event, K key, LockedObject<V,D> to_write) throws BackoutException
 	{
 		set_val_on_key(active_event,key,to_write,false);
 	}
@@ -97,7 +109,7 @@ public class SingleThreadedLockedContainer<K,V,D>
 
 	
 	public void set_val_on_key(
-			LockedActiveEvent active_event, K key, LockedObject<V,D> to_write, boolean copy_if_peered)
+			LockedActiveEvent active_event, K key, LockedObject<V,D> to_write, boolean copy_if_peered) throws BackoutException 
 	{
 		//def set_val_on_key(self,active_event,key,to_write,copy_if_peered=False):
 		//    if copy_if_peered:
@@ -106,8 +118,14 @@ public class SingleThreadedLockedContainer<K,V,D>
 		//    return self.val.set_val_on_key(active_event,key,to_write)
 		
 		if (copy_if_peered)
-			to_write = to_write.copy(active_event, true, true);
-		
+		{
+			try {
+				to_write = to_write.copy(active_event, true, true);
+			} catch (BackoutException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		reference_type_val.set_val_on_key(active_event,key,to_write);
 	}
 
@@ -397,7 +415,13 @@ public class SingleThreadedLockedContainer<K,V,D>
 				}
 				
 				// actually update the value on the target key
-				set_val_on_key(active_event, index_to_write_to, new_val);
+				// single threaded can't back out
+				try {
+					set_val_on_key(active_event, index_to_write_to, new_val);
+				} catch (BackoutException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				
 			}// closes if WRITE_VALUE
 			else if (action.getContainerAction() == VarStoreDeltas.ContainerAction.ContainerActionType.ADD_KEY)
@@ -457,7 +481,14 @@ public class SingleThreadedLockedContainer<K,V,D>
 			LockedActiveEvent active_event, K index_to_add_to, V new_val) {
 		// for map, just call set_val_on_key...will take care of inserting a 
 		// new entry in map for me.
-		this.set_val_on_key(active_event, index_to_add_to, new_val);
+		
+		// single threaded cannot back out
+		try {
+			this.set_val_on_key(active_event, index_to_add_to, new_val);
+		} catch (BackoutException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 

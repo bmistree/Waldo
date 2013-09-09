@@ -1,5 +1,6 @@
 package waldo;
 
+import WaldoExceptions.BackoutException;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey;
@@ -25,7 +26,7 @@ public abstract class LockedObject<T,D> {
 	
 	protected String host_uuid = null;
 	
-	public LockedObject<T,D> copy(LockedActiveEvent active_event, boolean peered, boolean multi_threaded)
+	public LockedObject<T,D> copy(LockedActiveEvent active_event, boolean peered, boolean multi_threaded) throws BackoutException
 	{
 		if (multi_threaded)
 			return multi_threaded_constructor.construct(host_uuid,peered,get_val(active_event));
@@ -34,7 +35,7 @@ public abstract class LockedObject<T,D> {
 	}
 	
 	
-	public abstract void write_if_different(LockedActiveEvent active_event, T new_val);
+	public abstract void write_if_different(LockedActiveEvent active_event, T new_val) throws BackoutException;
 	
 	/**
 	 * 
@@ -45,9 +46,9 @@ public abstract class LockedObject<T,D> {
 	 */
 	public abstract void update_event_priority(String uuid,String new_priority); 
 
-	public abstract T get_val(LockedActiveEvent active_event);
+	public abstract T get_val(LockedActiveEvent active_event) throws BackoutException;
 
-    public abstract void set_val(LockedActiveEvent active_event, T new_val);
+    public abstract void set_val(LockedActiveEvent active_event, T new_val) throws BackoutException;
 
     /**
      *         @returns {bool} --- True if when call get_val_from_key on a
@@ -70,7 +71,7 @@ public abstract class LockedObject<T,D> {
 
     public abstract void backout(LockedActiveEvent active_event);
 
-    public abstract D de_waldoify(LockedActiveEvent active_event);
+    public abstract D de_waldoify(LockedActiveEvent active_event) throws BackoutException;
 
 
     /**

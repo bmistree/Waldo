@@ -3,6 +3,8 @@ package waldo;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import WaldoExceptions.BackoutException;
+
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleMapDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleNumberDelta;
@@ -199,9 +201,16 @@ public class VariableStore
 	            //time.
 				name_to_var_map.put(var_name,
 						new LockedVariables.SingleThreadedLockedNumberVariable(host_uuid, true, num_delta.getVarData()));
+			} else
+			{
+				// only incorporating data on single threaded objects
+				try {
+					existing_value.write_if_different(active_event,num_delta.getVarData());
+				} catch (BackoutException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
-			else
-				existing_value.write_if_different(active_event,num_delta.getVarData());			
 		}
 		
 		// incorporate all texts
@@ -219,7 +228,15 @@ public class VariableStore
 						new LockedVariables.SingleThreadedLockedTextVariable(host_uuid, true, text_delta.getVarData()));
 			}
 			else
-				existing_value.write_if_different(active_event,text_delta.getVarData());			
+			{
+				// currently, only incorporating data on single-threaded objects
+				try {
+					existing_value.write_if_different(active_event,text_delta.getVarData());
+				} catch (BackoutException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 		
 		// incorporate all true falses
@@ -237,7 +254,15 @@ public class VariableStore
 						new LockedVariables.SingleThreadedLockedTrueFalseVariable(host_uuid, true, tf_delta.getVarData()));
 			}
 			else
-				existing_value.write_if_different(active_event,tf_delta.getVarData());			
+			{
+				// currently, only incorporating data on single-threaded objects
+				try {
+					existing_value.write_if_different(active_event,tf_delta.getVarData());
+				} catch (BackoutException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 
 

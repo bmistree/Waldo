@@ -50,9 +50,18 @@ public class LockedVariables {
 		
 		Util.logger_assert("Unknown type to ensure locked in SingleThreadedLockedMap");
 		return null;
-		
 	}
 	
+	
+	public static class LockedNumberVariable extends LockedValueVariable<Number,Number>
+	{
+		public LockedNumberVariable(String _host_uuid, boolean _peered,Number init_val)
+		{
+			super(_host_uuid,_peered,init_val,default_number,number_value_type_data_wrapper_constructor);
+		
+		}		
+	}
+
 	
 	
 	

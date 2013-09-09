@@ -34,7 +34,14 @@ public class AllEndpoints extends Thread {
 	{
 		while (true)
 		{
-			ArrayList<Endpoint> copied_endpoint_list = endpoints_to_update_queue.take();
+			
+			ArrayList<Endpoint> copied_endpoint_list = null;
+			try {
+				copied_endpoint_list = endpoints_to_update_queue.take();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			for (Endpoint endpt : copied_endpoint_list)
 				endpt._send_clock_update();
 		}
@@ -61,7 +68,7 @@ public class AllEndpoints extends Thread {
         
         //note: okay that running through after release lock because
         //new endpoints will already grab new clock dates
-        endpoints_to_update_queue.put(copied_endpoint_list);
+        endpoints_to_update_queue.add(copied_endpoint_list);
 	}
             
 	public void add_endpoint(Endpoint endpoint)

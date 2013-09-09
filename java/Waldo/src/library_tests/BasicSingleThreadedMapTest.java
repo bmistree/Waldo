@@ -1,6 +1,8 @@
 package library_tests;
 
 import java.util.HashMap;
+
+import WaldoExceptions.BackoutException;
 import waldo.LockedVariables;
 
 /**
@@ -36,7 +38,12 @@ public class BasicSingleThreadedMapTest implements TestInterface{
 		
 		String key_to_set_on = "hi";
 		Double val_to_set_on_key = new Double(3);
-		string_to_num_map.get_val(null).set_val_on_key(null, key_to_set_on, val_to_set_on_key);
+		try {
+			string_to_num_map.get_val(null).set_val_on_key(null, key_to_set_on, val_to_set_on_key);
+		} catch (BackoutException e) {
+			e.printStackTrace();
+			return false;
+		}
 		
 		// check that length should be 1
 		if (string_to_num_map.get_val(null).get_len(null) != 1)
@@ -54,7 +61,12 @@ public class BasicSingleThreadedMapTest implements TestInterface{
 		
 		// update value on key:
 		Double new_val_on_key = new Double (4);
-		string_to_num_map.get_val(null).set_val_on_key(null, key_to_set_on, new_val_on_key);
+		try {
+			string_to_num_map.get_val(null).set_val_on_key(null, key_to_set_on, new_val_on_key);
+		} catch (BackoutException e) {
+			e.printStackTrace();
+			return false;
+		}
 		if (string_to_num_map.get_val(null).get_val_on_key(null, key_to_set_on) != new_val_on_key)
 		{
 			System.out.println("Got incorrect value back after overwriting");

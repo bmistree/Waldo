@@ -10,6 +10,8 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import WaldoExceptions.BackoutException;
+
 
 public class NestedSingleThreadedMapSerializeDeserialize implements TestInterface
 {
@@ -73,8 +75,14 @@ public class NestedSingleThreadedMapSerializeDeserialize implements TestInterfac
 		String internal_val_to_use = "wow";
 		SingleThreadedLockedMapVariable<Double,String,HashMap<Double,String>> new_element = 
 				new SingleThreadedLockedMapVariable<Double,String,HashMap<Double,String>>(host_uuid_a,false);
-		new_element.get_val(null).set_val_on_key(null, internal_key_to_use,internal_val_to_use);
-		map_var_side_a.get_val(null).set_val_on_key(null,key_to_use,new_element);
+		try {
+			new_element.get_val(null).set_val_on_key(null, internal_key_to_use,internal_val_to_use);
+			map_var_side_a.get_val(null).set_val_on_key(null,key_to_use,new_element);
+		} catch (BackoutException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		
 		
 		var_store_a.add_var(common_var_name, map_var_side_a);

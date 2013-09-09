@@ -5,4 +5,11 @@ public class WaldoGlobals {
 	public AllEndpoints all_endpoints;
 	public ThreadPool thread_pool;
 	
+	public WaldoGlobals()
+	{
+		all_endpoints = new AllEndpoints();
+		clock = new Clock(all_endpoints);
+		thread_pool = new ThreadPool();		
+	}
+	
 }

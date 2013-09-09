@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
+import WaldoConnObj.SingleSideConnection;
+
 import com.google.protobuf.ByteString;
 
 import waldo_protobuffs.PromotionProto.Promotion;
@@ -40,8 +42,9 @@ public class Endpoint
 	public String _host_uuid = null;
 	
 	private Clock _clock = null;
-	private ConnectionObject _conn_obj = null;
-	private ActiveEventMap _act_event_map = null;
+	
+	private WaldoConnObj.ConnectionObj _conn_obj = null;
+	public ActiveEventMap _act_event_map = null;
 	
 	public VariableStore _global_var_store = null;
 	
@@ -114,7 +117,7 @@ public class Endpoint
         only make calls on them.
 	 */
 	public Endpoint (
-			WaldoGlobals waldo_classes,String host_uuid,ConnectionObject conn_obj,
+			WaldoGlobals waldo_classes,String host_uuid,WaldoConnObj.ConnectionObj conn_obj,
 			VariableStore global_var_store,Object...args)
 	{
         _clock = waldo_classes.clock;
@@ -145,7 +148,8 @@ public class Endpoint
         */
         
 	}
-	
+
+
 	private void _stop_lock()
 	{
         _stop_mutex.lock();
@@ -445,10 +449,8 @@ public class Endpoint
         function, we dispatch depending on message we receive.
 
 	 */
-	public void _receive_msg_from_partner(ByteString string_msg)
+	public void _receive_msg_from_partner(GeneralMessage general_msg)
 	{
-		GeneralMessage general_msg = GeneralMessage.parseFrom(string_msg);
-
         if (general_msg.hasNotifyReady())
         {
         	String endpoint_uuid = general_msg.getNotifyReady().getEndpointUuid().getData();

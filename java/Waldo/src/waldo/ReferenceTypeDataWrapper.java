@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import WaldoExceptions.BackoutException;
+
 
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey;
@@ -71,7 +73,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
 	
 	
 	
-	public HashMap<K,D> de_waldoify(LockedActiveEvent active_event)
+	public HashMap<K,D> de_waldoify(LockedActiveEvent active_event) throws BackoutException
 	{
 		HashMap<K,D>to_return_map = new HashMap<K,D>();			
 		for (Map.Entry<K, LockedObject<T,D>> entry : val.entrySet())
@@ -100,7 +102,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
 	 * 
 	 */
 	public void set_val_on_key(
-			LockedActiveEvent active_event,K key, LockedObject<T,D> to_write, boolean incorporating_deltas)
+			LockedActiveEvent active_event,K key, LockedObject<T,D> to_write, boolean incorporating_deltas) throws BackoutException
 	{
 		if (! val.containsKey(key))
 		{
@@ -120,7 +122,7 @@ public class ReferenceTypeDataWrapper<K,T,D> extends DataWrapper<HashMap<K,Locke
 	}
 		
 	public void set_val_on_key(
-			LockedActiveEvent active_event,K key, LockedObject<T,D> to_write)
+			LockedActiveEvent active_event,K key, LockedObject<T,D> to_write) throws BackoutException
 	{
 		set_val_on_key(active_event,key,to_write,false);
 	}

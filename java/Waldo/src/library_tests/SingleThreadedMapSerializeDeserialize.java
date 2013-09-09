@@ -8,6 +8,8 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.Builder;
 import java.util.HashMap;
 
+import WaldoExceptions.BackoutException;
+
 
 public class SingleThreadedMapSerializeDeserialize implements TestInterface
 {
@@ -54,7 +56,13 @@ public class SingleThreadedMapSerializeDeserialize implements TestInterface
 		
 		Double key_to_use = new Double(39);
 		String key_val_to_use = new String("Did it work?");
-		map_var_side_a.get_val(null).set_val_on_key(null, key_to_use,key_val_to_use);
+		try {
+			map_var_side_a.get_val(null).set_val_on_key(null, key_to_use,key_val_to_use);
+		} catch (BackoutException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
 		
 		var_store_a.add_var(common_var_name, map_var_side_a);
 		var_store_b.add_var(common_var_name, map_var_side_b);
@@ -89,8 +97,15 @@ public class SingleThreadedMapSerializeDeserialize implements TestInterface
 		Double new_key_to_use = new Double (key_to_use + 1);
 		String new_key_to_use_val = "vallll";
 		
-		updated_side_b.get_val(null).set_val_on_key(null, key_to_use, updated_val);
-		updated_side_b.get_val(null).set_val_on_key(null, new_key_to_use, new_key_to_use_val);
+		try {
+			updated_side_b.get_val(null).set_val_on_key(null, key_to_use, updated_val);
+			updated_side_b.get_val(null).set_val_on_key(null, new_key_to_use, new_key_to_use_val);
+
+		} catch (BackoutException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
 		
 		// generate deltas and send them to initial side
 		VarStoreDeltas.Builder updated_deltas = var_store_b.generate_deltas(null, false);

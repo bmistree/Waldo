@@ -1,5 +1,7 @@
 package waldo;
 
+import WaldoExceptions.BackoutException;
+
 /**
  * 
  * @author bmistree
@@ -41,7 +43,7 @@ public class DataWrapper<T,D> {
 	    return to_return;
     }
 
-    public D de_waldoify(LockedActiveEvent active_event)
+    public D de_waldoify(LockedActiveEvent active_event) throws BackoutException
     {
     	return (D)val;
     }

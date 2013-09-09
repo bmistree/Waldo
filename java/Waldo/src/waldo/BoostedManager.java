@@ -31,14 +31,14 @@ public class BoostedManager {
         
         String evt_priority;
         if (event_list.isEmpty())
-            evt_priority = generate_boosted_priority(last_boosted_complete);
+            evt_priority = EventPriority.generate_boosted_priority(last_boosted_complete);
         else
-            evt_priority = generate_timed_priority(clock.get_timestamp());
+            evt_priority = EventPriority.generate_timed_priority(clock.get_timestamp());
 
         RootEventParent rep = 
         		new RootEventParent(act_event_map.local_endpoint,evt_uuid,evt_priority);
         
-        LockedActiveEvent root_event = LockedActiveEvent(rep,act_event_map);
+        LockedActiveEvent root_event = new LockedActiveEvent(rep,act_event_map);
         event_list.add(root_event);        
         return root_event;
 	}
@@ -101,7 +101,7 @@ public class BoostedManager {
             {
                 // new event should be boosted.
             	
-                if( ! is_boosted_priority(completed_event.get_priority()))
+                if( ! EventPriority.is_boosted_priority(completed_event.get_priority()))
                 {
                     /* 
                      * if it wasn't already boosted, that means that we
@@ -110,24 +110,25 @@ public class BoostedManager {
                        Therefore, we want to apply the promotion on
                        retry.
                        */
-                    replacement_priority = generate_boosted_priority(last_boosted_complete);
+                    replacement_priority = EventPriority.generate_boosted_priority(last_boosted_complete);
                 }
                 else
                 {
                     // it was already boosted, just reuse it
                     replacement_priority = completed_event.get_priority();
                 }
+            }
             else
             {
                 // it was not boosted, just increment the version number
                 replacement_priority = completed_event.get_priority();
             }
 
-            RootEventParent rep = RootEventParent(
+            RootEventParent rep = new RootEventParent(
                 act_event_map.local_endpoint,Util.generate_uuid(),
                 replacement_priority);
             
-            replacement_event = LockedActiveEvent(rep,act_event_map);
+            replacement_event = new LockedActiveEvent(rep,act_event_map);
             event_list.set(counter, replacement_event);
         }
         else
@@ -159,7 +160,7 @@ public class BoostedManager {
     	if (event_list.isEmpty())
     		return;
 
-        String boosted_priority = generate_boosted_priority(last_boosted_complete);
+        String boosted_priority = EventPriority.generate_boosted_priority(last_boosted_complete);
         EndpointServiceAction service_action = new PromoteBoostedAction(
         		event_list.get(0),boosted_priority);
         

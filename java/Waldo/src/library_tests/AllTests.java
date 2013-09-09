@@ -34,6 +34,10 @@ public class AllTests
 		run_single_test(
 				"Nested serializing and deserializing single threaded map",
 				new NestedSingleThreadedMapSerializeDeserialize());
+		
+		run_single_test(
+				"Multithreaded concurrent read of number",
+				new MultithreadedNoConflict());
 
 		
 	}

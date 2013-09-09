@@ -8,15 +8,15 @@ public class ActiveEventMap {
 	private HashMap<String,LockedActiveEvent> map = new HashMap<String,LockedActiveEvent>();
 	private java.util.concurrent.locks.ReentrantLock _mutex = 
 			new java.util.concurrent.locks.ReentrantLock();
-	private Endpoint local_endpoint = null;
+	public Endpoint local_endpoint = null;
 	private boolean in_stop_phase = false;
     private boolean in_stop_complete_phase = false;
     private StopCallback stop_callback = null;
     private BoostedManager boosted_manager = null;
     
-    public ActiveEventMap(Endpoint local_endpoint, Clock clock)
+    public ActiveEventMap(Endpoint _local_endpoint, Clock clock)
     {
-    	local_endpoint = local_endpoint;
+    	local_endpoint = _local_endpoint;
     	boosted_manager = new BoostedManager(this, clock);    	
     }
 
@@ -137,7 +137,7 @@ public class ActiveEventMap {
         LockedActiveEvent successor_event = null;
         
         if ((to_remove != null) &&
-        	instanceof(to_remove.event_parent,RootEventParent))
+        		RootEventParent.class.isInstance(to_remove.event_parent))
         {
             successor_event = boosted_manager.complete_root_event(event_uuid,retry);
             if (successor_event != null)
@@ -158,6 +158,18 @@ public class ActiveEventMap {
         return to_return;
     }
 
+    /**
+     * @returns {None,_ActiveEvent} --- None if event with name uuid
+        is not in map.  Otherwise, reutrns the _ActiveEvent in the
+        map.
+     */
+    public LockedActiveEvent get_event(String uuid)
+    {
+        _lock();
+        LockedActiveEvent to_return = map.get(uuid);
+        _unlock();
+        return to_return;
+    }
     
 
     
