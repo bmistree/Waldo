@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='util.proto',
   package='',
-  serialized_pb='\n\nutil.proto\"\x14\n\x04UUID\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\x18\n\x08Priority\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\x19\n\tTimestamp\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\tB\x1d\n\x10waldo_protobuffsB\tUtilProto')
+  serialized_pb='\n\nutil.proto\"\x14\n\x04UUID\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\"\x18\n\x08Priority\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\"\x19\n\tTimestamp\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\tB\x1d\n\x10waldo_protobuffsB\tUtilProto')
 
 
 
@@ -25,8 +25,8 @@ _UUID = descriptor.Descriptor(
   fields=[
     descriptor.FieldDescriptor(
       name='data', full_name='UUID.data', index=0,
-      number=1, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -53,8 +53,8 @@ _PRIORITY = descriptor.Descriptor(
   fields=[
     descriptor.FieldDescriptor(
       name='data', full_name='Priority.data', index=0,
-      number=1, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value="",
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),

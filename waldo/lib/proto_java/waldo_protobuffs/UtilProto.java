@@ -11,9 +11,9 @@ public final class UtilProto {
   public interface UUIDOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
-    // required bytes data = 1;
+    // required string data = 1;
     boolean hasData();
-    com.google.protobuf.ByteString getData();
+    String getData();
   }
   public static final class UUID extends
       com.google.protobuf.GeneratedMessage
@@ -44,18 +44,40 @@ public final class UtilProto {
     }
     
     private int bitField0_;
-    // required bytes data = 1;
+    // required string data = 1;
     public static final int DATA_FIELD_NUMBER = 1;
-    private com.google.protobuf.ByteString data_;
+    private java.lang.Object data_;
     public boolean hasData() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    public com.google.protobuf.ByteString getData() {
-      return data_;
+    public String getData() {
+      java.lang.Object ref = data_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          data_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getDataBytes() {
+      java.lang.Object ref = data_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        data_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
     }
     
     private void initFields() {
-      data_ = com.google.protobuf.ByteString.EMPTY;
+      data_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -74,7 +96,7 @@ public final class UtilProto {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, data_);
+        output.writeBytes(1, getDataBytes());
       }
       getUnknownFields().writeTo(output);
     }
@@ -87,7 +109,7 @@ public final class UtilProto {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, data_);
+          .computeBytesSize(1, getDataBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -213,7 +235,7 @@ public final class UtilProto {
       
       public Builder clear() {
         super.clear();
-        data_ = com.google.protobuf.ByteString.EMPTY;
+        data_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
@@ -322,15 +344,22 @@ public final class UtilProto {
       
       private int bitField0_;
       
-      // required bytes data = 1;
-      private com.google.protobuf.ByteString data_ = com.google.protobuf.ByteString.EMPTY;
+      // required string data = 1;
+      private java.lang.Object data_ = "";
       public boolean hasData() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public com.google.protobuf.ByteString getData() {
-        return data_;
+      public String getData() {
+        java.lang.Object ref = data_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          data_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
       }
-      public Builder setData(com.google.protobuf.ByteString value) {
+      public Builder setData(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -344,6 +373,11 @@ public final class UtilProto {
         data_ = getDefaultInstance().getData();
         onChanged();
         return this;
+      }
+      void setData(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000001;
+        data_ = value;
+        onChanged();
       }
       
       // @@protoc_insertion_point(builder_scope:UUID)
@@ -360,9 +394,9 @@ public final class UtilProto {
   public interface PriorityOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
-    // required bytes data = 1;
+    // required string data = 1;
     boolean hasData();
-    com.google.protobuf.ByteString getData();
+    String getData();
   }
   public static final class Priority extends
       com.google.protobuf.GeneratedMessage
@@ -393,18 +427,40 @@ public final class UtilProto {
     }
     
     private int bitField0_;
-    // required bytes data = 1;
+    // required string data = 1;
     public static final int DATA_FIELD_NUMBER = 1;
-    private com.google.protobuf.ByteString data_;
+    private java.lang.Object data_;
     public boolean hasData() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    public com.google.protobuf.ByteString getData() {
-      return data_;
+    public String getData() {
+      java.lang.Object ref = data_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          data_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getDataBytes() {
+      java.lang.Object ref = data_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        data_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
     }
     
     private void initFields() {
-      data_ = com.google.protobuf.ByteString.EMPTY;
+      data_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -423,7 +479,7 @@ public final class UtilProto {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, data_);
+        output.writeBytes(1, getDataBytes());
       }
       getUnknownFields().writeTo(output);
     }
@@ -436,7 +492,7 @@ public final class UtilProto {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, data_);
+          .computeBytesSize(1, getDataBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -562,7 +618,7 @@ public final class UtilProto {
       
       public Builder clear() {
         super.clear();
-        data_ = com.google.protobuf.ByteString.EMPTY;
+        data_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
@@ -671,15 +727,22 @@ public final class UtilProto {
       
       private int bitField0_;
       
-      // required bytes data = 1;
-      private com.google.protobuf.ByteString data_ = com.google.protobuf.ByteString.EMPTY;
+      // required string data = 1;
+      private java.lang.Object data_ = "";
       public boolean hasData() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public com.google.protobuf.ByteString getData() {
-        return data_;
+      public String getData() {
+        java.lang.Object ref = data_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          data_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
       }
-      public Builder setData(com.google.protobuf.ByteString value) {
+      public Builder setData(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -693,6 +756,11 @@ public final class UtilProto {
         data_ = getDefaultInstance().getData();
         onChanged();
         return this;
+      }
+      void setData(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000001;
+        data_ = value;
+        onChanged();
       }
       
       // @@protoc_insertion_point(builder_scope:Priority)
@@ -1113,8 +1181,8 @@ public final class UtilProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\nutil.proto\"\024\n\004UUID\022\014\n\004data\030\001 \002(\014\"\030\n\010Pr" +
-      "iority\022\014\n\004data\030\001 \002(\014\"\031\n\tTimestamp\022\014\n\004dat" +
+      "\n\nutil.proto\"\024\n\004UUID\022\014\n\004data\030\001 \002(\t\"\030\n\010Pr" +
+      "iority\022\014\n\004data\030\001 \002(\t\"\031\n\tTimestamp\022\014\n\004dat" +
       "a\030\001 \002(\tB\035\n\020waldo_protobuffsB\tUtilProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
