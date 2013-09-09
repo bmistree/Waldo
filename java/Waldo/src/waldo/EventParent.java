@@ -89,18 +89,18 @@ public abstract class EventParent {
     @param {bool} copied_partner_contacted --- True if
 
     @param {dict} copied_other_endpoints_contacted --- indices are
-    uuids, values are Endpoints
+    uuids, values are EventSubscribedTo
 	 */
 	public void send_promotion_messages(
             boolean copied_partner_contacted,
-            HashMap<String,Endpoint>  copied_other_endpoints_contacted,
+            HashMap<String,EventSubscribedTo>  copied_other_endpoints_contacted,
             String new_priority)
 	{
 		if (copied_partner_contacted)
 			local_endpoint._forward_promotion_message(uuid,new_priority);
 		
-		for (Endpoint endpoint : copied_other_endpoints_contacted.values())
-			endpoint._receive_promotion(uuid,new_priority);
+		for (EventSubscribedTo evt_subscribed_to : copied_other_endpoints_contacted.values())
+			evt_subscribed_to.endpoint_object._receive_promotion(uuid,new_priority);
 		
 	}
                 

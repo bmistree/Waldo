@@ -15,6 +15,11 @@ public class Util {
 	 * For queues that are only really supposed to have one result returned in them.
 	 */
 	static public int SMALL_QUEUE_CAPACITIES = 3;
+
+	/**
+	 * How many signal functions can get added to an event.
+	 */
+	public static int MEDIUM_QUEUE_CAPACITIES = 10;
 	
 	/**
 	 * 	Takes in the name of the function that another endpoint has

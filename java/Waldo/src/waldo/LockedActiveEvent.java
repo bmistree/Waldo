@@ -399,7 +399,7 @@ public class LockedActiveEvent {
 	public void add_signal_call(SignalFunction signaler)
 	{
 		if (signal_queue == null)
-		    signal_queue = new ArrayBlockingQueue<SignalFunction>();
+		    signal_queue = new ArrayBlockingQueue<SignalFunction>(Util.MEDIUM_QUEUE_CAPACITIES);
 		signal_queue.add(signaler);
 	}
 
@@ -915,7 +915,7 @@ public class LockedActiveEvent {
             event_parent.local_endpoint._host_uuid);
 
         //# FIXME: eventually, want to remove pickle-ing here
-        seq_local_var_store.incorporate_deltas(
+        seq_local_var_store.incorporate_deltas(this,
         		msg.getSequenceLocalVarStoreDeltas());
         
         ExecutingEventContext evt_ctx =  new ExecutingEventContext(

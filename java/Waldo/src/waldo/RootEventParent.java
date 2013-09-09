@@ -87,7 +87,7 @@ public class RootEventParent extends EventParent {
     			ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject> message_listening_queue = 
     					message_listening_queues_map.get(reply_with_uuid);
     			message_listening_queue.add(
-    					new WaldoCallResults.NetworkFailureCallResult(error));
+    					new WaldoCallResults.NetworkFailureCallResult(error.toString()));
     		}
     	}
     }
