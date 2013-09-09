@@ -1,5 +1,5 @@
 package WaldoCallResults;
 
-public class RescheduleRootCallResult {
+public class RescheduleRootCallResult extends RootCallResultObject {
 	public RescheduleRootCallResult(){}
 }

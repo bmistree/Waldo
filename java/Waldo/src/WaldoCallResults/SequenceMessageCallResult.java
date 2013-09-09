@@ -2,7 +2,7 @@ package WaldoCallResults;
 
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 
-public class SequenceMessageCallResult {
+public class SequenceMessageCallResult extends MessageCallResultObject{
 
 	/**
 	@see comment above self.message_listening_queues_map in

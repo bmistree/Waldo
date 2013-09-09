@@ -1,5 +1,5 @@
 package WaldoCallResults;
 
-public class StopAlreadyCalledEndpointCallResult {
+public class StopAlreadyCalledEndpointCallResult extends EndpointCallResultObject{
 	public StopAlreadyCalledEndpointCallResult(){}
 }

@@ -1,5 +1,5 @@
 package WaldoCallResults;
 
-public class BackoutBeforeReceiveMessageResult {
+public class BackoutBeforeReceiveMessageResult extends MessageCallResultObject {
 	public BackoutBeforeReceiveMessageResult(){}
 }

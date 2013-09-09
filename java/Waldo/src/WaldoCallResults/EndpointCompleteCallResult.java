@@ -1,7 +1,7 @@
 package WaldoCallResults;
 import java.util.ArrayList;
 
-public class EndpointCallResult 
+public class EndpointCompleteCallResult extends EndpointCallResultObject 
 {
 	public ArrayList<Object> result_array;
 	
@@ -14,7 +14,7 @@ public class EndpointCallResult
 		_EndpointCallResult in, which contains the returned values.
 	 * @param _result_array
 	 */
-	public EndpointCallResult (ArrayList<Object>_result_array)
+	public EndpointCompleteCallResult (ArrayList<Object>_result_array)
 	{
 		result_array = _result_array;
 	}

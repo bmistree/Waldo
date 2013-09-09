@@ -2,6 +2,7 @@ package waldo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import waldo_protobuffs.PartnerErrorProto.PartnerError;
 import waldo_protobuffs.PartnerRequestSequenceBlockProto.PartnerRequestSequenceBlock;
@@ -57,8 +58,8 @@ public class LockedActiveEvent {
 	//# each and tell it to enter first phase commit.
 	 * 
 	 */
-    private HashMap<String,Endpoint> other_endpoints_contacted = 
-    		new HashMap<String,Endpoint>();
+    private HashMap<String,EventSubscribedTo> other_endpoints_contacted = 
+    		new HashMap<String,EventSubscribedTo>();
 
     private boolean partner_contacted = false;
     
@@ -109,9 +110,9 @@ public class LockedActiveEvent {
 	//# waldoExecutingEvent._ExecutingEventContext.to_reply_with_uuid.)
     */
     HashMap<String,
-    	java.util.concurrent.ArrayBlockingQueue<MessageResultObject>> message_listening_queues_map = 
+    	ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject>> message_listening_queues_map = 
     	
-    	new HashMap<String, java.util.concurrent.ArrayBlockingQueue<MessageResultObject>>();
+    	new HashMap<String, ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject>>();
 
     /**
      * # keeps a list of functions that we should exec when we
@@ -242,8 +243,8 @@ public class LockedActiveEvent {
 
 		_others_contacted_lock();
 		boolean copied_partner_contacted = partner_contacted;
-		HashMap<String,Endpoint> copied_other_endpoints_contacted = 
-				new HashMap<String,Endpoint>(other_endpoints_contacted);
+		HashMap<String,EventSubscribedTo> copied_other_endpoints_contacted = 
+				new HashMap<String,EventSubscribedTo>(other_endpoints_contacted);
 		_others_contacted_unlock();
 		
 		event_parent.send_promotion_messages(
@@ -398,7 +399,7 @@ public class LockedActiveEvent {
 	public void add_signal_call(SignalFunction signaler)
 	{
 		if (signal_queue == null)
-		    signal_queue = new java.util.concurrent.ArrayBlockingQueue<SignalFunction>();
+		    signal_queue = new ArrayBlockingQueue<SignalFunction>();
 		signal_queue.add(signaler);
 	}
 
@@ -553,11 +554,11 @@ public class LockedActiveEvent {
 	 */
 	private void rollback_unblock_waiting_queues(boolean stop_request)
 	{
-		for (java.util.concurrent.ArrayBlockingQueue<MessageResultObject> msg_queue_to_unblock : message_listening_queues_map.values())
+		for (ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject> msg_queue_to_unblock : message_listening_queues_map.values())
 		{
-			MessageResultObject queue_feeder = null;
+			WaldoCallResults.MessageCallResultObject queue_feeder = null;
 			if (stop_request)
-				queue_feeder = new WaldoCallResults.StopAlreadyCalledEndpointCallResult();
+				queue_feeder = new WaldoCallResults.StopAlreadyCalledMessageCallResult();
 			else
 				queue_feeder = new WaldoCallResults.BackoutBeforeReceiveMessageResult();
 			msg_queue_to_unblock.add(queue_feeder);
@@ -570,9 +571,9 @@ public class LockedActiveEvent {
 
 		for (EventSubscribedTo subscribed_to_element : other_endpoints_contacted.values())
 		{
-			for (java.util.concurrent.ArrayBlockingQueue<EndpointResultObject> res_queue : subscribed_to_element.result_queues)
-			{
-				EndpointResultObject queue_feeder;
+			for (ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject> res_queue : subscribed_to_element.result_queues)
+			{	
+				WaldoCallResults.EndpointCallResultObject queue_feeder;
 				if (stop_request)
 					queue_feeder = new WaldoCallResults.StopAlreadyCalledEndpointCallResult();
 				else
@@ -660,7 +661,7 @@ public class LockedActiveEvent {
 	 */
 	public boolean issue_partner_sequence_block_call(
             ExecutingEventContext ctx, String func_name,
-            java.util.concurrent.ArrayBlockingQueue<MessageResultObject>threadsafe_unblock_queue, boolean first_msg)
+            ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject>threadsafe_unblock_queue, boolean first_msg)
 	{
         boolean partner_call_requested = false;
         _lock();
@@ -725,7 +726,7 @@ public class LockedActiveEvent {
 	 */
 	public boolean issue_endpoint_object_call(
             Endpoint endpoint_calling,String func_name,
-            java.util.concurrent.ArrayBlockingQueue<EndpointResultObject>result_queue,
+            ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject>result_queue,
             Object...args)            
 	{
 
@@ -770,7 +771,7 @@ public class LockedActiveEvent {
             {
                 other_endpoints_contacted.put(
                 		endpoint_calling._uuid, 
-                		new EventSubscribedTo(endpoint_calling,result_queue);
+                		new EventSubscribedTo(endpoint_calling,result_queue));
             }
             else
             {
@@ -1043,13 +1044,13 @@ public class LockedActiveEvent {
         {
 			//### FIXME: It probably isn't necessary to send an exception result to
 			//### each queue.
-        	java.util.concurrent.ArrayBlockingQueue<MessageResultObject> message_listening_queue = 
+        	java.util.concurrent.ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject> message_listening_queue = 
         			message_listening_queues_map.get(reply_with_uuid);
 
         	if (error.getType() == PartnerError.ErrorType.APPLICATION)
-                message_listening_queue.add(ApplicationExceptionCallResult(error.getTrace()));
+                message_listening_queue.add(new WaldoCallResults.ApplicationExceptionCallResult(error.getTrace()));
         	else if (error.getType() == PartnerError.ErrorType.NETWORK)
-                message_listening_queue.add(NetworkFailureCallResult(error.getTrace()));
+                message_listening_queue.add(new WaldoCallResults.NetworkFailureCallResult(error.getTrace()));
         }
         _unlock();
 	}

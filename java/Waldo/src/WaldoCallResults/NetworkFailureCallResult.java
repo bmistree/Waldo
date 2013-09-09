@@ -2,9 +2,20 @@ package WaldoCallResults;
 
 
 
-public class NetworkFailureCallResult extends HandleableCallResult {
+public class NetworkFailureCallResult extends MessageCallResultObject 
+   implements HandleableCallResult
+{
+	private String trace = "";
+	
 	public NetworkFailureCallResult(String _trace)
 	{
-		super(_trace);
+		trace = _trace;
+	}
+	
+
+	@Override
+	public String get_trace() 
+	{
+		return trace;
 	}
 }

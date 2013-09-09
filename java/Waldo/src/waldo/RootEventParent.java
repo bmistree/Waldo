@@ -17,8 +17,8 @@ public class RootEventParent extends EventParent {
 	# when the root tries to commit the event, it blocks while
 	# reading the event_complete_queue
 	*/
-    ArrayBlockingQueue<RootCallResultObject>event_complete_queue = 
-    		new ArrayBlockingQueue<RootCallResultObject>(Util.SMALL_QUEUE_CAPACITIES);
+    ArrayBlockingQueue<WaldoCallResults.RootCallResultObject>event_complete_queue = 
+    		new ArrayBlockingQueue<WaldoCallResults.RootCallResultObject>(Util.SMALL_QUEUE_CAPACITIES);
 
 	/**
 	# we can add and remove events to waiting on commit lock from
@@ -64,7 +64,7 @@ public class RootEventParent extends EventParent {
             HashMap<String,EventSubscribedTo>same_host_endpoints_contacted_dict,    		
             boolean partner_contacted)
     {
-    	event_complete_queue.add(new CompleteRootCallResult());
+    	event_complete_queue.add(new WaldoCallResults.CompleteRootCallResult());
     	super.second_phase_transition_success(same_host_endpoints_contacted_dict, partner_contacted);
     	
     }
@@ -76,16 +76,18 @@ public class RootEventParent extends EventParent {
      */
     @Override
     public void put_exception(
-    		Exception error, HashMap<String,ArrayBlockingQueue<MessageResultObject>> message_listening_queues_map)
+    		Exception error, 
+    		HashMap<String,ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject>> message_listening_queues_map)
     {
     	if (WaldoExceptions.NetworkException.class.isInstance(error))
     	{
     		//# Send a NetworkFailureCallResult to each listening queue
-    		for (String reply_with_uuid : message_listening_queues_map.keys())
+    		for (String reply_with_uuid : message_listening_queues_map.keySet())
     		{
-    			ArrayBlockingQueue<MessageResultObject> message_listening_queue = 
+    			ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject> message_listening_queue = 
     					message_listening_queues_map.get(reply_with_uuid);
-    			message_listening_queue.add(WaldoExceptions.NetworkFailureCallResult(error));
+    			message_listening_queue.add(
+    					new WaldoCallResults.NetworkFailureCallResult(error));
     		}
     	}
     }
@@ -154,13 +156,13 @@ public class RootEventParent extends EventParent {
         //# put val to read into event_complete_queue so can know
         //# whether or not to retry event.
         
-        RootCallResultObject queue_feeder = null;
+        WaldoCallResults.RootCallResultObject queue_feeder = null;
         if (stop_request)
-            queue_feeder = new WaldoCallResults._StopRootCallResult();
+            queue_feeder = new WaldoCallResults.StopRootCallResult();
         else
-            queue_feeder = new WaldoCallResults._RescheduleRootCallResult();
+            queue_feeder = new WaldoCallResults.RescheduleRootCallResult();
         
-        event_complete_queue.put(queue_feeder);
+        event_complete_queue.add(queue_feeder);
     }
 
     /**

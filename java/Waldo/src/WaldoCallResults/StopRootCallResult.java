@@ -1,5 +1,5 @@
 package WaldoCallResults;
 
-public class StopRootCallResult {
+public class StopRootCallResult extends RootCallResultObject {
 	public StopRootCallResult(){}
 }

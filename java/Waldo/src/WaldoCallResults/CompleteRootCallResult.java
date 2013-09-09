@@ -1,5 +1,5 @@
 package WaldoCallResults;
 
-public class CompleteRootCallResult {
+public class CompleteRootCallResult extends RootCallResultObject{
 	public CompleteRootCallResult(){}
 }

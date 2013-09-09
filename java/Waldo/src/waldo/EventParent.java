@@ -115,7 +115,7 @@ public abstract class EventParent {
 	 * @param message_listening_queues_map
 	 */
 	public abstract void put_exception(Exception error,
-			HashMap<String,ArrayBlockingQueue<MessageResultObject>> message_listening_queues_map);
+			HashMap<String,ArrayBlockingQueue<WaldoCallResults.MessageCallResultObject>> message_listening_queues_map);
 
 
 	/**
@@ -259,11 +259,3 @@ public abstract class EventParent {
 }
 	
 		
-    
-
-	
-	
-
-	
-	
-}
