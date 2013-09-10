@@ -493,7 +493,7 @@ public class LockedActiveEvent {
 		//# a lock on this event, and then try to lock the object during
 		//# backout.  These two together can cause deadlock.  Using a
 		//# separate thread instead.
-        ServiceAction service_action = new EventBackoutTouchedObjs();
+        ServiceAction service_action = new WaldoServiceActions.EventBackoutTouchedObjs(this);
         event_parent.local_endpoint._thread_pool.add_service_action(service_action);
             
         //# 3
@@ -503,9 +503,8 @@ public class LockedActiveEvent {
 		//# is either None (if this is not a root event) or a new root
 		//# event (if this is a root event).  @see comments on
 		//# retry_event in constructor.
-        LockedActiveEvent _;
-        EventMapRemoveResult emrr = event_map.remove_event(uuid,true);
-        retry_event = emrr.retry_event;
+        ActiveEventTwoTuple event_map_remove_result = event_map.remove_event(uuid,true);
+        retry_event = event_map_remove_result.b;
         
 		//# 5
 		//# do not need to acquire locks on other_endpoints_contacted
@@ -521,7 +520,7 @@ public class LockedActiveEvent {
 	 * Called from a separate thread in waldoServiceActions.  Runs
         through all touched objects and backs out of them.
 	 */
-	private void _backout_touched_objs()
+	public void _backout_touched_objs()
 	{
         _touched_objs_lock();
         HashMap<String,MultiThreadedLockedObject> copied_touched_objs =
