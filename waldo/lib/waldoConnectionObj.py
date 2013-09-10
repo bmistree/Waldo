@@ -320,7 +320,7 @@ class _WaldoSTCPConnectionObj(_WaldoTCPConnectionObj):
             cert.gmtime_adj_notAfter(10*365*24*60*60)
             cert.set_issuer(cert.get_subject())
             cert.set_pubkey(key)
-            cert.sign(key, 'sha1')
+            cert.sign(key, 'sha256')
 
             f = open("tmp/certificate.pem", "w")
             cert = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
@@ -522,7 +522,7 @@ class _STCPAcceptThread(threading.Thread):
             self.cert.gmtime_adj_notAfter(10*365*24*60*60)
             self.cert.set_issuer(self.cert.get_subject())
             self.cert.set_pubkey(self.key)
-            self.cert.sign(self.key, 'sha1')
+            self.cert.sign(self.key, 'sha256')
 
             f = open("certificate.pem", "w")
             self.cert = crypto.dump_certificate(crypto.FILETYPE_PEM, self.cert)
