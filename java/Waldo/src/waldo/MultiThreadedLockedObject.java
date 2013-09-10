@@ -383,7 +383,6 @@ public abstract class MultiThreadedLockedObject<T,D> extends LockedObject<T,D>
         		}        		
         	}.start();
         }
-        _unlock();
 	}
 	
 	public D de_waldoify(LockedActiveEvent active_event) throws BackoutException

@@ -2,7 +2,7 @@ package WaldoServiceActions;
 
 import waldo.LockedActiveEvent;
 
-public class PromoteBoostedAction implements ServiceAction {
+public class PromoteBoostedAction extends ServiceAction {
 
 	private LockedActiveEvent evt_to_promote;
 	private String new_priority;
@@ -14,7 +14,7 @@ public class PromoteBoostedAction implements ServiceAction {
 	}
 	
 	@Override
-	public void service() 
+	public void run() 
 	{
 		evt_to_promote.promote_boosted(new_priority);
 	}

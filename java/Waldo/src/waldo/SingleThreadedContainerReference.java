@@ -1,6 +1,7 @@
 package waldo;
 
 
+import WaldoExceptions.BackoutException;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.Builder;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleListDelta;
@@ -38,7 +39,7 @@ public class SingleThreadedContainerReference <K,V,D>
 	}
 	
 	
-	public D de_waldoify(LockedActiveEvent active_event)
+	public D de_waldoify(LockedActiveEvent active_event) throws BackoutException
 	{
 		return val.de_waldoify(active_event);
 	}

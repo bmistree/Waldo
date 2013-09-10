@@ -12,7 +12,7 @@ public class Util {
 	 * Queues must be declared with capacities.  All queues have this default capacity
 	 */
 	static public int QUEUE_CAPACITIES = 100;
-
+	
 	/**
 	 * For queues that are only really supposed to have one result returned in them.
 	 */
@@ -22,6 +22,8 @@ public class Util {
 	 * How many signal functions can get added to an event.
 	 */
 	public static int MEDIUM_QUEUE_CAPACITIES = 10;
+
+	public static int DEFAULT_NUM_THREADS = 100;
 	
 	/**
 	 * 	Takes in the name of the function that another endpoint has

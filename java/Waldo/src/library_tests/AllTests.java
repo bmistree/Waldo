@@ -42,6 +42,11 @@ public class AllTests
 		run_single_test(
 				"Multithreaded full read/write/commit number",
 				new MultiThreadedCommit());
+		
+		
+		run_single_test(
+				"Multithreaded conflict number",
+				new MultiThreadedConflict());
 				
 		
 	}

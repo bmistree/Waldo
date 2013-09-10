@@ -15,7 +15,7 @@ import waldo.Util;
  *
  */
 
-public class ReceiveRequestBackoutAction  implements ServiceAction{
+public class ReceiveRequestBackoutAction extends ServiceAction{
 
 	
 	private waldo.Endpoint local_endpoint = null;
@@ -38,7 +38,7 @@ public class ReceiveRequestBackoutAction  implements ServiceAction{
 		requesting_endpoint = _requesting_endpoint;
 	}
 
-	public void service()
+	public void run()
 	{
 		waldo.LockedActiveEvent event = local_endpoint._act_event_map.get_event(uuid);
 		if (event == null)

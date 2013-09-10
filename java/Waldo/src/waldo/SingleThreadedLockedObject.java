@@ -1,5 +1,6 @@
 package waldo;
 
+import WaldoExceptions.BackoutException;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 
 
@@ -98,7 +99,7 @@ public abstract class SingleThreadedLockedObject<T,D> extends LockedObject<T,D> 
 	}
 
 	@Override
-	public D de_waldoify(LockedActiveEvent active_event) {
+	public D de_waldoify(LockedActiveEvent active_event) throws BackoutException {
         return val.de_waldoify(active_event);
 	}
 

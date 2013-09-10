@@ -9,7 +9,7 @@ public class WaldoGlobals {
 	{
 		all_endpoints = new AllEndpoints();
 		clock = new Clock(all_endpoints);
-		thread_pool = new ThreadPool();		
+		thread_pool = new ThreadPool(Util.DEFAULT_NUM_THREADS);		
 	}
 	
 }

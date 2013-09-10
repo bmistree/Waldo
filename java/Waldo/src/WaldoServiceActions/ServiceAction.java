@@ -1,5 +1,4 @@
 package WaldoServiceActions;
 
-public interface ServiceAction {
-	public void service();
+public abstract class ServiceAction implements Runnable{
 }
