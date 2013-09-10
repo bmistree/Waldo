@@ -379,7 +379,7 @@ public class Endpoint
 	public void _receive_request_complete_commit(String event_uuid)
 	{
 		WaldoServiceActions.ServiceAction req_complete_commit_action = 
-				new WaldoServiceActions.ReceiveREquestCompleteCommitAction(this,event_uuid,false);
+				new WaldoServiceActions.ReceiveRequestCompleteCommitAction(this,event_uuid,false);
         _thread_pool.add_service_action(req_complete_commit_action);
 	}
 	
