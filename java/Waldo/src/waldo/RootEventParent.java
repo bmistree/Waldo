@@ -17,7 +17,7 @@ public class RootEventParent extends EventParent {
 	# when the root tries to commit the event, it blocks while
 	# reading the event_complete_queue
 	*/
-    ArrayBlockingQueue<WaldoCallResults.RootCallResultObject>event_complete_queue = 
+    public ArrayBlockingQueue<WaldoCallResults.RootCallResultObject>event_complete_queue = 
     		new ArrayBlockingQueue<WaldoCallResults.RootCallResultObject>(Util.SMALL_QUEUE_CAPACITIES);
 
 	/**
