@@ -876,7 +876,11 @@ class LockedActiveEvent(object):
         del self.message_listening_queues_map[msg.reply_to_uuid.data]
 
 
+    def receive_unsuccessful_first_phase_commit_msg(
+        self,event_uuid,msg_originator_endpoint_uuid):
+        self.forward_backout_request_and_backout_self()
 
+        
     def send_exception_to_listener(self, error):
         '''
         @param     error     GeneralMessage.error
