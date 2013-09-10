@@ -406,7 +406,8 @@ public class Endpoint
         message to the partner containing the event and endpoint
         uuids.
 	 */
-	private void _propagate_back_exception(String event_uuid,String priority,Exception exception)
+	
+	public void _propagate_back_exception(String event_uuid,String priority,Exception exception)
 	{
 		GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
 		general_message.setMessageType(GeneralMessage.MessageType.PARTNER_ERROR);
