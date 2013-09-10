@@ -1104,7 +1104,13 @@ public class LockedActiveEvent {
         return failure;
     }
 
+    
 
+	public void receive_unsuccessful_first_phase_commit_msg(String event_uuid,
+			String msg_originator_endpoint_uuid) 
+	{
+		forward_backout_request_and_backout_self();
+	}
 	
 }
 

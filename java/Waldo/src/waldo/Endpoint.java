@@ -520,14 +520,14 @@ public class Endpoint
         {
         	WaldoServiceActions.ServiceAction service_action = 
         			new WaldoServiceActions.ReceiveRequestCompleteCommitAction(
-        					this,general_msg.getCompleteCommitRequest().getEventUuid().getData());
+        					this,general_msg.getCompleteCommitRequest().getEventUuid().getData(),true);
         	_thread_pool.add_service_action(service_action);
         }
         else if (general_msg.hasCommitRequest())
         {
         	String event_uuid = general_msg.getCommitRequest().getEventUuid().getData();
         	WaldoServiceActions.ServiceAction service_action = 
-        			new WaldoServiceActions.ReceiveCommitRequest(
+        			new WaldoServiceActions.ReceiveRequestCommitAction(
         					this,event_uuid,true);
         	_thread_pool.add_service_action(service_action);
         }
@@ -655,8 +655,7 @@ public class Endpoint
 		
 		first_phase_result.setSuccessful(false);
 		first_phase_result.setEventUuid(event_uuid_msg);
-		first_phase_result.setEndpointUuid(sending_endpoint_uuid_msg);
-		
+		first_phase_result.setSendingEndpointUuid(sending_endpoint_uuid_msg);
 		
 		general_message.setFirstPhaseResult(first_phase_result);
 		

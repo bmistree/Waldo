@@ -24,6 +24,7 @@ public class ReceiveRequestCompleteCommitAction extends ServiceAction {
 	}
 
 	
+	
 	/**
 	 *  1.  Grab the endpoint from active event map (if it exists)
         

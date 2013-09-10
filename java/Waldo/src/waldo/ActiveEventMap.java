@@ -3,6 +3,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
+import WaldoExceptions.StoppedException;
+
 
 public class ActiveEventMap {
 	private HashMap<String,LockedActiveEvent> map = new HashMap<String,LockedActiveEvent>();
@@ -170,7 +172,40 @@ public class ActiveEventMap {
         _unlock();
         return to_return;
     }
-    
 
+    /**
+     * Get or create an event because partner endpoint requested it.
+        Note: if we have to create an event and are in stop phase,
+        then we throw a stopped exception.  If the event already
+        exists though, we return it (this is so that we can finish any
+        commits that we were waiting on).
+     * @throws StoppedException 
+        
+        @returns {_ActiveEvent}
+     */
+	public LockedActiveEvent get_or_create_partner_event(String uuid,
+			String priority) throws StoppedException 
+	{
+		_lock();
+		
+		if (! map.containsKey(uuid))
+		{
+			if (in_stop_phase)
+			{
+				_unlock();
+				throw new WaldoExceptions.StoppedException();
+			}
+			else 
+			{
+				PartnerEventParent pep = new PartnerEventParent(local_endpoint,uuid,priority);
+				LockedActiveEvent new_event = new LockedActiveEvent(pep,this);
+				map.put(uuid, new_event);
+			}
+		}
+
+		LockedActiveEvent to_return = map.get(uuid);
+		_unlock();
+		return to_return;
+	}
     
 }
