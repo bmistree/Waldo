@@ -311,7 +311,7 @@ public class Endpoint
 	 * @see noe above _partner_uuid.
 	 * @param uuid
 	 */
-	private void _set_partner_uuid(String uuid)
+	public void _set_partner_uuid(String uuid)
 	{
         _partner_uuid = uuid;
 	}
