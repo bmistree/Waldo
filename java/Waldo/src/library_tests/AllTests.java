@@ -47,6 +47,10 @@ public class AllTests
 		run_single_test(
 				"Multithreaded conflict number",
 				new MultiThreadedConflict());
+		
+		run_single_test(
+				"Running sequence with seq local data",
+				new PartnerNoConflictTest());
 				
 		
 	}
