@@ -8,14 +8,14 @@ public class SequenceMessageCallResult extends MessageCallResultObject{
 	@see comment above self.message_listening_queues_map in
     waldoActiveEvent._ActiveEvent.
     */
-	private String reply_with_msg_field;
+	public String reply_with_msg_field;
 	
 	/**
 	 * In a message sequence, tells us the next internal function to
        execute in the sequence.  If it is None, then it means that
        there is no more to execute in the sequence.
 	 */
-	private String to_exec_next_name_msg_field = null;
+	public String to_exec_next_name_msg_field = null;
 	
 
 	/**
@@ -23,7 +23,7 @@ public class SequenceMessageCallResult extends MessageCallResultObject{
         to update each of an event's pieces of peered data.  @see
         waldoVariableStore._VariableStore.incorporate_deltas
 	 */
-	private VarStoreDeltas sequence_local_var_store_deltas = null;
+	public VarStoreDeltas sequence_local_var_store_deltas = null;
 	
     
     // We must update the event context with the new

@@ -1,5 +1,5 @@
 package WaldoCallResults;
 
-public class EndpointCallResultObject {
+public abstract class EndpointCallResultObject {
 
 }

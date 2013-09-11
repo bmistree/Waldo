@@ -9,7 +9,7 @@ public class ExecutingEvent
 	private LockedActiveEvent active_event;
 	private ExecutingEventContext ctx;
 	private java.util.concurrent.ArrayBlockingQueue<Object> result_queue;
-	private ArrayList<Object> to_exec_args;
+	private Object[] to_exec_args;
 	
 	/**
     @param {Closure} to_exec_internal_name --- The internal
@@ -47,7 +47,14 @@ public class ExecutingEvent
 		to_exec_args = _to_exec_args;
 	}
 	
-	public void run()
+	
+	/**
+	 * @see arguments to constructor.
+	 */
+	public static void static_run(
+			String to_exec_internal_name,LockedActiveEvent active_event,
+			ExecutingEventContext ctx,java.util.concurrent.ArrayBlockingQueue<Object> result_queue,
+			Object...to_exec_args)
 	{
         Object result = active_event.event_parent.local_endpoint._dispatch_method(to_exec_internal_name,active_event,ctx,to_exec_args);
         
@@ -67,8 +74,13 @@ public class ExecutingEvent
         else
         {
         	result_queue.add(new WaldoCallResults.EndpointCallResult(result));
-        }
-		
+        }		
+	}
+			
+			
+	public void run()
+	{
+		static_run(to_exec_internal_name,active_event,ctx,result_queue,to_exec_args);
 	}
 		
 }
