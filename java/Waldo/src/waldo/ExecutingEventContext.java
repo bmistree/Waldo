@@ -16,12 +16,12 @@ public class ExecutingEventContext {
 	 @param {_WaldoVariableStore} global_store --- Keeps track of
         endpoint globals and peered data.
 	 */
-	private VariableStore global_store = null;
+	public VariableStore global_store = null;
 	/**
         @param {_WaldoVariableStore} sequence_local_store --- Keeps
         track of sequence local data.
 	 */
-	private VariableStore sequence_local_store = null;
+	VariableStore sequence_local_store = null;
 	
 
 	/**
@@ -371,9 +371,10 @@ public class ExecutingEventContext {
 
         Used when loading arguments to message send into sequence
         local data space.
+	 * @throws BackoutException 
 	 */
 	public LockedObject convert_for_seq_local(
-			Object val, LockedActiveEvent active_event, String host_uuid)
+			Object val, LockedActiveEvent active_event, String host_uuid) throws BackoutException
 	{
         return turn_into_waldo_var(
             val,true,active_event,host_uuid,
@@ -460,8 +461,9 @@ public class ExecutingEventContext {
 
     /**
      * For bracket statements + struct statements
+     * @throws BackoutException 
      */
-    public boolean assign_on_key(Object lhs,Object key,Object rhs, LockedActiveEvent active_event)
+    public boolean assign_on_key(Object lhs,Object key,Object rhs, LockedActiveEvent active_event) throws BackoutException
     {
         if (! LockedObject.class.isInstance(lhs))
             return false;
@@ -499,7 +501,7 @@ public class ExecutingEventContext {
     }
 
 
-    public Object get_val_on_key(Object to_get_from, Object key, LockedActiveEvent active_event)
+    public Object get_val_on_key(Object to_get_from, Object key, LockedActiveEvent active_event) throws BackoutException
     {
     	Object raw_key = get_val_if_waldo(key,active_event);
         
@@ -519,7 +521,7 @@ public class ExecutingEventContext {
             return  raw_string.substring(index,index+1);
         }
 
-        if (LockedVarUtils.is_waldo_external_text_variable)
+        if (LockedVarUtils.is_external_text_variable(to_get_from))
         {
         	/*
             if isinstance(lhs,WaldoExternalTextVariable):
@@ -570,10 +572,11 @@ public class ExecutingEventContext {
     /**
      * Can support python lists, dicts, strings, or waldo lists, waldo maps,
         waldo texts.
+     * @throws BackoutException 
         
         @returns {int}
      */
-    public int handle_len(Object what_calling_len_on, LockedActiveEvent active_event)
+    public int handle_len(Object what_calling_len_on, LockedActiveEvent active_event) throws BackoutException
     {
     	if (HashMap.class.isInstance(what_calling_len_on))
     		return ((HashMap)what_calling_len_on).size();
@@ -691,7 +694,7 @@ public class ExecutingEventContext {
     public ArrayList<Object> hide_endpoint_call( 
     		LockedActiveEvent active_event,
     		ExecutingEventContext context, Endpoint endpoint_obj, String method_name,
-    		Object...args)
+    		Object...args) throws BackoutException, NetworkException, ApplicationException
 	{
     	ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject> threadsafe_result_queue = 
     			new ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject>(Util.SMALL_QUEUE_CAPACITIES);
@@ -701,18 +704,23 @@ public class ExecutingEventContext {
 
     	WaldoCallResults.EndpointCallResultObject queue_elem = null;
     	
-        queue_elem = threadsafe_result_queue.take();
+        try {
+			queue_elem = threadsafe_result_queue.take();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
-        if (WaldoCallResults.ApplicationExceptionCallResult.class.isInstance(queue_elem))
+        if (WaldoCallResults.ApplicationExceptionEndpointCallResult.class.isInstance(queue_elem))
         {
-        	WaldoCallResults.ApplicationExceptionCallResult casted = 
-        			(WaldoCallResults.ApplicationExceptionCallResult)queue_elem;
+        	WaldoCallResults.ApplicationExceptionEndpointCallResult casted = 
+        			(WaldoCallResults.ApplicationExceptionEndpointCallResult)queue_elem;
         	throw new WaldoExceptions.ApplicationException(casted.get_trace());
         }
-        else if (WaldoCallResults.NetworkFailureCallResult.class.isInstance(queue_elem))
+        else if (WaldoCallResults.NetworkFailureEndpointCallResult.class.isInstance(queue_elem))
         {
-        	WaldoCallResults.NetworkFailureCallResult casted = 
-        			(WaldoCallResults.NetworkFailureCallResult)queue_elem;
+        	WaldoCallResults.NetworkFailureEndpointCallResult casted = 
+        			(WaldoCallResults.NetworkFailureEndpointCallResult)queue_elem;
         	throw new WaldoExceptions.NetworkException("Network failure");
         }
         
