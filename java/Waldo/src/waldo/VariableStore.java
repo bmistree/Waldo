@@ -287,7 +287,7 @@ public class VariableStore
 		}
 		
 		// FIXME: fill in the rest of the deserialization for other container types.
-		Util.logger_warn("Note: still must print incorporate all non-vlaue type deltas\n");
+		Util.logger_warn("Note: still must print incorporate all non-value type deltas\n");
 		
 	}
 

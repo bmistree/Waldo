@@ -21,7 +21,7 @@ public class ExecutingEventContext {
         @param {_WaldoVariableStore} sequence_local_store --- Keeps
         track of sequence local data.
 	 */
-	VariableStore sequence_local_store = null;
+	public VariableStore sequence_local_store = null;
 	
 
 	/**
@@ -691,7 +691,7 @@ public class ExecutingEventContext {
         }
     }
 
-    public ArrayList<Object> hide_endpoint_call( 
+    public Object hide_endpoint_call( 
     		LockedActiveEvent active_event,
     		ExecutingEventContext context, Endpoint endpoint_obj, String method_name,
     		Object...args) throws BackoutException, NetworkException, ApplicationException
@@ -736,7 +736,7 @@ public class ExecutingEventContext {
         WaldoCallResults.EndpointCompleteCallResult casted = 
         		(WaldoCallResults.EndpointCompleteCallResult) queue_elem;
         
-        return casted.result_array;
+        return casted.result;
 	}
     
 

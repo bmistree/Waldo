@@ -8,6 +8,7 @@ import WaldoServiceActions.ServiceAction;
 
 import waldo_protobuffs.PartnerErrorProto.PartnerError;
 import waldo_protobuffs.PartnerRequestSequenceBlockProto.PartnerRequestSequenceBlock;
+import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas;
 
 public class LockedActiveEvent {
 	
@@ -915,9 +916,11 @@ public class LockedActiveEvent {
         VariableStore seq_local_var_store = new VariableStore(
             event_parent.local_endpoint._host_uuid);
 
+        VarStoreDeltas seq_local_deltas = msg.getSequenceLocalVarStoreDeltas();
+        
         //# FIXME: eventually, want to remove pickle-ing here
         seq_local_var_store.incorporate_deltas(this,
-        		msg.getSequenceLocalVarStoreDeltas());
+        		seq_local_deltas);
         
         ExecutingEventContext evt_ctx =  new ExecutingEventContext(
 			//# already incorporated deltas for global_var_store
@@ -925,7 +928,7 @@ public class LockedActiveEvent {
         	event_parent.local_endpoint._global_var_store,
             seq_local_var_store);
 
-        evt_ctx.set_to_reply_with(msg.getReplyWithUuid());
+        evt_ctx.set_to_reply_with(msg.getReplyWithUuid().getData());
 
         
 		//# used to actually start execution of context thread at end

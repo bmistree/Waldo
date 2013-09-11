@@ -11,6 +11,8 @@ import WaldoCallResults.EndpointCompleteCallResult;
 public class ExecutingEvent 
 {
 
+	private static Class[] param_types = {LockedActiveEvent.class, ExecutingEventContext.class, Object[].class};
+	
 	private String to_exec_internal_name;
 	private LockedActiveEvent active_event;
 	private ExecutingEventContext ctx;
@@ -66,7 +68,9 @@ public class ExecutingEvent
 		Endpoint endpt_to_run_on = active_event.event_parent.local_endpoint;
 		Method to_run = null;
 		try {
-			to_run = endpt_to_run_on.getClass().getMethod(to_exec_internal_name);
+			to_run = endpt_to_run_on.getClass().getMethod(to_exec_internal_name, param_types);
+			//endpt_to_run_on.getClass().getMethod(to_exec_internal_name, parameterTypes)
+			
 		} catch (SecurityException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -76,15 +80,13 @@ public class ExecutingEvent
 			e1.printStackTrace();
 			Util.logger_assert("Invoke error");
 		}
-		
-		ArrayList<Object> args_to_exec = new ArrayList<Object>();
-		args_to_exec.add(active_event);
-		args_to_exec.add(ctx);
-		args_to_exec.addAll(Arrays.asList(to_exec_args));
-		
+				
+		//ArrayList<Object> args_to_exec = new ArrayList<Object>();
+		//args_to_exec.addAll(Arrays.asList(to_exec_args));
+				
 		Object result = null;
 		try {
-			result = to_run.invoke(endpt_to_run_on,args_to_exec.toArray());
+			result = to_run.invoke(endpt_to_run_on,active_event, ctx,new Object[0]);
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
