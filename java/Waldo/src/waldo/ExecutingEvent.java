@@ -2,6 +2,8 @@ package waldo;
 
 import java.util.ArrayList;
 
+import WaldoCallResults.EndpointCompleteCallResult;
+
 public class ExecutingEvent 
 {
 
@@ -73,7 +75,7 @@ public class ExecutingEvent
         }
         else
         {
-        	result_queue.add(new WaldoCallResults.EndpointCallResult(result));
+        	result_queue.add(new EndpointCompleteCallResult(result));
         }		
 	}
 			

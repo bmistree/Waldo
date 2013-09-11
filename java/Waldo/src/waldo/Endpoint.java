@@ -561,7 +561,7 @@ public class Endpoint
 	{
 		_receive_partner_ready(null);
 	}
-	public void _recieve_partner_ready(String partner_uuid)
+	public void _receive_partner_ready(String partner_uuid)
 	{
 	    WaldoServiceActions.ServiceAction service_action = WaldoServiceActions.ReceivePartnerReadyAction(this);
         _thread_pool.add_service_action(service_action);

@@ -277,22 +277,22 @@ public class ExecutingEventContext {
 			else if (Number.class.isInstance(val))
 				return new LockedVariables.LockedNumberVariable(host_uuid,new_peered,(Number)val);
 			else if (Boolean.class.isInstance(val))
-				return new LockedVariables.LockedBooleanVariable(host_uuid,new_peered,(Boolean)val);
+				return new LockedVariables.LockedTrueFalseVariable(host_uuid,new_peered,(Boolean)val);
 			
 			else
 			{
 				/**
-				 *             elif isinstance(val,dict):
-                constructor = LockedMapVariable
-            elif isinstance(val,list):
-                constructor = LockedListVariable
-            elif isinstance(val,EndpointBase):
-                constructor = LockedEndpointVariable
-            #### DEBUG
-            elif hasattr(val,'__call__'):
-                # checks if is function
-                util.logger_assert(
-                    'Should use special call func_turn_into_waldo_var for function objects')
+				 *  elif isinstance(val,dict):
+		                constructor = LockedMapVariable
+		            elif isinstance(val,list):
+		                constructor = LockedListVariable
+		            elif isinstance(val,EndpointBase):
+		                constructor = LockedEndpointVariable
+		            #### DEBUG
+		            elif hasattr(val,'__call__'):
+		                # checks if is function
+		                util.logger_assert(
+		                    'Should use special call func_turn_into_waldo_var for function objects')
 
 				 */
 				Util.logger_assert("Still must add constructors for lists, maps, endpoints, etc.");
@@ -513,7 +513,7 @@ public class ExecutingEventContext {
         {	
         	int index = ((Number)raw_key).intValue();
         	String raw_string = (String)locked_to_get_from.get_val(active_event);
-            return (String) raw_string.charAt(index);
+            return  raw_string.substring(index,index+1);
         }
 
         if (LockedVarUtils.is_waldo_external_text_variable)

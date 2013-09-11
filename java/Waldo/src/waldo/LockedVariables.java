@@ -64,6 +64,21 @@ public class LockedVariables {
 		}		
 	}
 
+	public static class LockedTextVariable extends LockedValueVariable<String,String>
+	{
+		public LockedTextVariable(String _host_uuid, boolean _peered,String init_val)
+		{
+			super(_host_uuid,_peered,init_val,default_text,text_value_type_data_wrapper_constructor);		
+		}		
+	}
+	
+	public static class LockedTrueFalseVariable extends LockedValueVariable<Boolean,Boolean>
+	{
+		public LockedTrueFalseVariable(String _host_uuid, boolean _peered,Boolean init_val)
+		{
+			super(_host_uuid,_peered,init_val,default_tf,true_false_value_type_data_wrapper_constructor);		
+		}		
+	}
 	
 	
 	
