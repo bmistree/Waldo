@@ -1,9 +1,9 @@
 package WaldoCallResults;
-import java.util.ArrayList;
+
 
 public class EndpointCompleteCallResult extends EndpointCallResultObject 
 {
-	public ArrayList<Object> result_array;
+	public Object result;
 	
 	/**
 	 *  When an active event issues an endpoint call, it blocks on reading a
@@ -12,10 +12,10 @@ public class EndpointCompleteCallResult extends EndpointCallResultObject
 		_BackoutBeforeEndpointCallResult into the queue so that the event
 		knows not to perform any additional work.  Otherwise, put an
 		_EndpointCallResult in, which contains the returned values.
-	 * @param _result_array
+	 * @param result
 	 */
-	public EndpointCompleteCallResult (ArrayList<Object>_result_array)
+	public EndpointCompleteCallResult (Object _result)
 	{
-		result_array = _result_array;
+		result = _result;
 	}
 }

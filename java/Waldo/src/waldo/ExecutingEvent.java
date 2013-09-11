@@ -1,6 +1,10 @@
 package waldo;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import WaldoCallResults.EndpointCompleteCallResult;
 
@@ -10,7 +14,7 @@ public class ExecutingEvent
 	private String to_exec_internal_name;
 	private LockedActiveEvent active_event;
 	private ExecutingEventContext ctx;
-	private java.util.concurrent.ArrayBlockingQueue<Object> result_queue;
+	private ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject> result_queue;
 	private Object[] to_exec_args;
 	
 	/**
@@ -39,7 +43,7 @@ public class ExecutingEvent
     get passed to the closure to be executed.
 	*/
 	public ExecutingEvent(String _to_exec_internal_name,LockedActiveEvent _active_event,
-			ExecutingEventContext _ctx,java.util.concurrent.ArrayBlockingQueue<Object> _result_queue,
+			ExecutingEventContext _ctx,ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject> _result_queue,
 			Object..._to_exec_args)
 	{
 		to_exec_internal_name = _to_exec_internal_name;
@@ -55,10 +59,46 @@ public class ExecutingEvent
 	 */
 	public static void static_run(
 			String to_exec_internal_name,LockedActiveEvent active_event,
-			ExecutingEventContext ctx,java.util.concurrent.ArrayBlockingQueue<Object> result_queue,
-			Object...to_exec_args)
+			ExecutingEventContext ctx,ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject> result_queue,
+			Object...to_exec_args) 
 	{
-        Object result = active_event.event_parent.local_endpoint._dispatch_method(to_exec_internal_name,active_event,ctx,to_exec_args);
+		// for now, using reflection		
+		Endpoint endpt_to_run_on = active_event.event_parent.local_endpoint;
+		Method to_run = null;
+		try {
+			to_run = endpt_to_run_on.getClass().getMethod(to_exec_internal_name);
+		} catch (SecurityException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			Util.logger_assert("Invoke error");
+		} catch (NoSuchMethodException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			Util.logger_assert("Invoke error");
+		}
+		
+		ArrayList<Object> args_to_exec = new ArrayList<Object>();
+		args_to_exec.add(active_event);
+		args_to_exec.add(ctx);
+		args_to_exec.addAll(Arrays.asList(to_exec_args));
+		
+		Object result = null;
+		try {
+			result = to_run.invoke(endpt_to_run_on,args_to_exec.toArray());
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			Util.logger_assert("Invoke error");
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			Util.logger_assert("Invoke error");
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			Util.logger_assert("Invoke error");
+		} 
+				
         
         if (result_queue == null)
         	return;
@@ -80,7 +120,7 @@ public class ExecutingEvent
 	}
 			
 			
-	public void run()
+	public void run() 
 	{
 		static_run(to_exec_internal_name,active_event,ctx,result_queue,to_exec_args);
 	}
