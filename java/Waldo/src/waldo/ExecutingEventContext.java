@@ -190,14 +190,15 @@ public class ExecutingEventContext {
 
 
 	/**
- 	  @see turn_into_waldo_var, except that we will only turn into a
+ 	  @throws BackoutException 
+	 * @see turn_into_waldo_var, except that we will only turn into a
       Waldo variable if the previous value had been a Waldo variable.
 
       Otherwise, return the value and variable keeps Python form.
 	 */
 	public Object turn_into_waldo_var_if_was_var(
 		   Object val, boolean force_copy, LockedActiveEvent active_event,
-		   String host_uuid, boolean new_peered, boolean new_multi_threaded)
+		   String host_uuid, boolean new_peered, boolean new_multi_threaded) throws BackoutException
 	{
 		if (LockedObject.class.isInstance(val) ||
 				HashMap.class.isInstance(val) ||
@@ -229,6 +230,7 @@ public class ExecutingEventContext {
         to copy a value, the copy should be peered.  Used for loading
         arguments into sequence local data when message send is
         called.  @see convert_for_seq_local.
+	 * @throws BackoutException 
 
         @returns {WaldoVariable}
 
@@ -253,7 +255,7 @@ public class ExecutingEventContext {
 	 */
 	public LockedObject turn_into_waldo_var(
 			Object val, boolean force_copy, LockedActiveEvent active_event,
-			String host_uuid, boolean new_peered, boolean new_multi_threaded)
+			String host_uuid, boolean new_peered, boolean new_multi_threaded) throws BackoutException
 	{
 		//# FIXME: Start using some of the single threaded constructors
 		//# as well.
@@ -263,7 +265,8 @@ public class ExecutingEventContext {
 			{
 				//# means that it was a WaldoVariable: just call its copy
 				//# method
-				return ((LockedObject)val).copy(active_event, new_peered, new_multi_threaded);
+				LockedObject casted_val = (LockedObject)val;
+				return (LockedObject) casted_val.copy(active_event, new_peered, new_multi_threaded);
 			}
 			//# otherwise, just return val
 			return (LockedObject)val;
