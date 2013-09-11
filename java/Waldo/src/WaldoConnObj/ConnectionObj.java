@@ -1,4 +1,6 @@
 package WaldoConnObj;
+import java.io.IOException;
+
 import waldo_protobuffs.GeneralMessageProto.GeneralMessage;
 
 public interface ConnectionObj {
@@ -9,6 +11,6 @@ public interface ConnectionObj {
 
 	public void write_stop(GeneralMessage msg_to_write,waldo.Endpoint endpoint_writing);
 
-	public void close();
+	public void close() throws IOException;
 	        
 }
