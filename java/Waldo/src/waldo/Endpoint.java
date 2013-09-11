@@ -611,6 +611,8 @@ public class Endpoint
 		promotion_message.setEventUuid(event_uuid_builder);
 		promotion_message.setNewPriority(new_priority_builder);
 		
+		general_message.setPromotion(promotion_message);
+		
         _conn_obj.write(general_message.build(),this);
 	}
 
