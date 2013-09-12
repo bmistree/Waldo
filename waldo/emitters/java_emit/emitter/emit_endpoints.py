@@ -84,18 +84,18 @@ def emit_endpoint_body(
     endpoint_body_text += '\n\n'
 
     # emit oncreate method
-    endpoint_body_text += '### OnCreate method\n'
+    endpoint_body_text += '// OnCreate method\n'
     endpoint_body_text += emit_endpoint_oncreate_method_def(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
 
     
     # emit public and private method
-    endpoint_body_text += '### USER DEFINED METHODS ###\n'
+    endpoint_body_text += '// USER DEFINED METHODS ###\n'
     endpoint_body_text += emit_endpoint_publics_privates(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
     
     # emit sequence blocks
-    endpoint_body_text += '### USER DEFINED SEQUENCE BLOCKS ###\n'
+    endpoint_body_text += '// USER DEFINED SEQUENCE BLOCKS ###\n'
     endpoint_body_text += emit_endpoint_message_sequence_blocks(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
 
@@ -112,13 +112,13 @@ def emit_endpoint_constructor(
     if oncreate_node != None:
         oncreate_arg_names = get_method_arg_names(oncreate_node)
         oncreate_argument_string = reduce (
-            lambda x, y : x + ',' + y,
+            lambda x, y : x + y + ',',
             oncreate_arg_names,'')
 
     init_header = '''
 public %s(
     waldo.AllGlobals __waldo_classes, String __host_uuid,
-    WaldoConnObj.ConnectionObj __conn_obj, %s)
+    WaldoConnObj.ConnectionObj __conn_obj %s)
 {
     super(__waldo_classes,__host_uuid,__conn_obj, new waldo.VariableStore(__host_uuid));
 
@@ -183,9 +183,9 @@ while True:  # FIXME: currently using infinite retry
     if isinstance(_commit_resp,%s):
         # means it isn't a backout message: we're done
 
-        # local endpoint's initialization has succeeded, tell other side that
-        # we're done initializing.
-        self._this_side_ready()
+        // local endpoint's initialization has succeeded, tell other side that
+        // we're done initializing.
+        _this_side_ready();
 
         return _to_return
 
@@ -205,9 +205,9 @@ while True:  # FIXME: currently using infinite retry
     # we list self._this_side_ready() twice: only one of them will
     # ever be called.
     oncreate_call_txt += '''
-# local endpoint's initialization has succeeded, tell other side that
-# we're done initializing.
-self._this_side_ready()
+// local endpoint's initialization has succeeded, tell other side that
+// we're done initializing.
+_this_side_ready();
 '''
     return oncreate_call_txt
 
@@ -256,7 +256,7 @@ def emit_endpoint_oncreate_method_def(
             oncreate_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
             lib_util.internal_oncreate_func_call_name)
     else:
-        oncreate_method_txt = '\n# no oncreate defined to emit method for \n'
+        oncreate_method_txt = '\n//# no oncreate defined to emit method for \n'
         
     return oncreate_method_txt
 
@@ -289,7 +289,7 @@ def create_wvariables_array(
 
         wvar_load_text += '''
 _global_var_store.add_var(
-    '%s',%s)
+    '%s',%s);
 ''' % (var_name,var_declaration)
 
     return wvar_load_text
@@ -568,7 +568,7 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
             # variable store.
             converted_args_string +='''
 _context.sequence_local_store.add_var(
-    "%s", %s)
+    "%s", %s);
 ''' % ( arg_unique_name , convert_call_txt)
 
     return converted_args_string
@@ -692,11 +692,11 @@ def emit_endpoint_message_sequence_blocks(
     Emits all of the message sequence blocks for endpoint with name
     endpoint_name
     '''
-    emitted_txt = '\n### User-defined message send blocks ###\n'
+    emitted_txt = '\n//### User-defined message send blocks ###\n'
     emitted_txt += emit_endpoint_message_send_blocks(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
     
-    emitted_txt += '\n### User-defined message receive blocks ###\n'
+    emitted_txt += '\n//### User-defined message receive blocks ###\n'
     emitted_txt += emit_endpoint_message_receive_blocks(
         endpoint_name,ast_root,fdep_dict,emit_ctx)
     emitted_txt += '\n'
