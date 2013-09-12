@@ -11,6 +11,6 @@ public interface ConnectionObj {
 
 	public void write_stop(GeneralMessage msg_to_write,waldo.Endpoint endpoint_writing);
 
-	public void close() throws IOException;
+	public void close();
 	        
 }

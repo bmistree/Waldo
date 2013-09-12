@@ -2,8 +2,16 @@ package WaldoConnObj;
 
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import waldo.Endpoint;
+import waldo.EndpointConstructorObj;
+import waldo.SignalFunction;
+import waldo.Stoppable;
+import waldo.WaldoGlobals;
 import waldo_protobuffs.GeneralMessageProto.GeneralMessage;
 
 public class TCPConnectionObj implements ConnectionObj, Runnable
@@ -103,6 +111,103 @@ public class TCPConnectionObj implements ConnectionObj, Runnable
 		}
 	}
 	
+	
+	public static class TCPAcceptThread extends Thread
+	{
+		
+		private Stoppable stoppable = null;
+		private EndpointConstructorObj endpoint_constructor = null;
+		private WaldoGlobals waldo_globals = null;
+		private String host_listen_on ;
+		private int port_listen_on;
+		private SignalFunction cb = null;
+		private String host_uuid;
+		ArrayBlockingQueue<Boolean> synchronization_listening_queue = null;
+		
+		
+		/**
+		 * @param{_TCPListeningStoppable object} stoppable --- Every 1s,
+	        breaks out of listening for new connections and checks if
+	        should stop waiting on connections.
+	        
+	        @param{function}endpoint_constructor --- An _Endpoint object's
+	        constructor.  It takes in a tcp connection object, reservation
+	        manager object, and any additional arguments specified in its
+	        oncreate method.
+	        
+	        @param{String} host_listen_on --- The ip/host to listen for
+	        new connections on.
+
+	        @param{int} port_listen_on --- The prot to listen for new
+	        connections on.
+
+	        @param {function or Non} cb --- When receive a new connection,
+	        execute the callback, passing in a new Endpoint object in its
+	        callback.  
+
+	        @param{UUID} host_uuid ---
+
+	        
+	        @param {Queue.Queue} synchronization_listening_queue --- The
+	        thread that began this thread blocks waiting for a value on
+	        this queue so that it does not return before this thread has
+	        started to listen for the connection.
+		 */
+		public TCPAcceptThread(
+				Stoppable _stoppable, waldo.EndpointConstructorObj _endpoint_constructor,
+				waldo.WaldoGlobals _waldo_globals, String _host_listen_on,
+				int _port_listen_on, SignalFunction _cb, String _host_uuid, 
+				ArrayBlockingQueue<Boolean> _synchronization_listening_queue)
+		{
+			stoppable = _stoppable;
+			endpoint_constructor = _endpoint_constructor;
+			waldo_globals = _waldo_globals;
+			host_listen_on = _host_listen_on;
+			port_listen_on = _port_listen_on;
+			cb = _cb;
+			host_uuid = _host_uuid;
+			synchronization_listening_queue = _synchronization_listening_queue;
+			setDaemon(true);
+		}
+		
+
+		public void run()
+		{
+			ServerSocket sock = null;
+			
+			try {
+				sock = new ServerSocket(port_listen_on);
+				sock.setSoTimeout(1000);
+			} catch (IOException e) {
+				synchronization_listening_queue.add(new Boolean(false));	
+				return;
+			}
+						
+			synchronization_listening_queue.add(new Boolean(true));
+			while (true)
+			{
+				Socket client_conn;
+				try 
+				{
+					client_conn = sock.accept();
+				} catch (IOException e) 
+				{
+					if (stoppable.is_stopped())
+						break;
+					continue;
+				}
+				TCPConnectionObj tcp_conn_obj = new TCPConnectionObj(client_conn);
+				
+				Endpoint created_endpoint = endpoint_constructor.construct(waldo_globals, host_uuid, tcp_conn_obj);
+				if (cb != null)
+					cb.fire(created_endpoint);
+				
+				if (stoppable.is_stopped())
+					break;
+				
+			}
+		}
+	}
 }
 
 
