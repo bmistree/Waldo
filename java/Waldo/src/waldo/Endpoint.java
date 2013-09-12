@@ -118,7 +118,7 @@ public class Endpoint
 	 */
 	public Endpoint (
 			WaldoGlobals waldo_classes,String host_uuid,WaldoConnObj.ConnectionObj conn_obj,
-			VariableStore global_var_store,Object...args)
+			VariableStore global_var_store)
 	{
         _clock = waldo_classes.clock;
         _act_event_map = new ActiveEventMap(this,_clock);

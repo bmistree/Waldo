@@ -37,13 +37,13 @@ public class TCPConnectionObj implements ConnectionObj, Runnable
 	public TCPConnectionObj(java.net.Socket _sock) 
 	{
 		sock = _sock;
-		/*
+		
 		try {
 			sock.setTcpNoDelay(true);
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}*/
+		}
 	}
 	
 	/**
