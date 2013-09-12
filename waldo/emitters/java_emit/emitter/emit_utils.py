@@ -243,7 +243,11 @@ def get_var_type_txt_from_type_dict(var_type_dict,multithreaded=True):
         elif TypeCheck.templateUtil.isListType(var_type_dict):
             variable_type_str = library_transform('WaldoListVariable')
         elif TypeCheck.templateUtil.isMapType(var_type_dict):
-            variable_type_str = library_transform('WaldoMapVariable')
+            variable_type_str = ('waldo.LockedVariables.LockedMapVariable<%s,%s,%s>' %
+                (get_javaized_map_key_type(var_type_dict),
+                 get_javaized_map_val_type(var_type_dict,multithreaded),
+                 get_javaized_dewaldoified_map_type(var_type_dict)))
+
         elif TypeCheck.templateUtil.is_endpoint(var_type_dict):
             variable_type_str = library_transform('WaldoEndpointVariable')
 
@@ -289,7 +293,7 @@ def get_var_type_txt_from_type_dict(var_type_dict,multithreaded=True):
             variable_type_str = (
                 'waldo.LockedVariables.SingleThreadedLockedMapVariable<%s,%s,%s>' %
                 (get_javaized_map_key_type(var_type_dict),
-                 get_javaized_val_key_type(var_type_dict,multithreaded),
+                 get_javaized_map_val_type(var_type_dict,multithreaded),
                  get_javaized_dewaldoified_map_type(var_type_dict)))
         elif TypeCheck.templateUtil.is_endpoint(var_type_dict):
             variable_type_str = library_transform('WaldoSingleThreadEndpointVariable')
@@ -321,7 +325,7 @@ def get_javaized_map_key_type(var_type_dict):
     return dewaldoified_java_type(index_type_dict)
         
 
-def get_javaized_val_key_type(var_type_dict,multithreaded):
+def get_javaized_map_val_type(var_type_dict,multithreaded):
     '''
     @param {dict} var_type_dict --- Gotten from an AstNode's .type
     field.
@@ -330,7 +334,8 @@ def get_javaized_val_key_type(var_type_dict,multithreaded):
     map template type
     '''
     val_type = TypeCheck.templateUtil.getMapValueType(var_type_dict)
-    return get_var_type_txt_from_type_dict(val_type,multithreaded)
+    to_return,_bool = get_var_type_txt_from_type_dict(val_type,multithreaded)
+    return to_return
 
 def get_javaized_dewaldoified_map_type(var_type_dict):
     '''
