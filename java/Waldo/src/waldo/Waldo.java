@@ -73,7 +73,7 @@ public class Waldo {
       additional connections.  Note: listeners will not stop instantly, but
       probably within the next second or two.
 	 */
-	public Stoppable tcp_accept(EndpointConstructorObj constructor_obj, String host, int port)
+	public static Stoppable tcp_accept(EndpointConstructorObj constructor_obj, String host, int port)
 	{
 		return tcp_accept(constructor_obj,host,port, null);
 	}
@@ -86,7 +86,7 @@ public class Waldo {
 	 * @param connected_callback --- Can be null
 	 * @return
 	 */
-	public Stoppable tcp_accept(
+	public static Stoppable tcp_accept(
 			EndpointConstructorObj constructor_obj, String host, int port,
 			SignalFunction connected_callback)
 	{

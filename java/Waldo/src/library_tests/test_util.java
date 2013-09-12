@@ -1,7 +1,10 @@
 package library_tests;
 
+import WaldoConnObj.ConnectionObj;
 import WaldoConnObj.SingleSideConnection;
 import WaldoExceptions.BackoutException;
+import waldo.Endpoint;
+import waldo.EndpointConstructorObj;
 import waldo.LockedVariables.SingleThreadedLockedNumberVariable;
 import waldo.VariableStore;
 import waldo.WaldoGlobals;
@@ -17,6 +20,20 @@ public class test_util
 					new SingleSideConnection(),
 					glob_var_store);
 			
+		}
+	}
+	
+	
+	public static class SameHostEndpointConstructor implements EndpointConstructorObj
+	{
+
+		@Override
+		public Endpoint construct(WaldoGlobals globals, String host_uuid,
+				ConnectionObj conn_obj) 
+		{
+			Endpoint to_return = new SameHostEndpoint(host_uuid,new VariableStore(host_uuid), conn_obj); 
+			to_return._this_side_ready();
+			return to_return;
 		}
 	}
 	

@@ -105,7 +105,7 @@ public class PerfPartnerNoConflictTest implements TestInterface
 		
 		long start_time = System.nanoTime();
 		
-		for (int i =0; i < 10000; ++i)
+		for (int i =0; i < 100000; ++i)
 			run_seq( endpta, endptb, host_uuid, initial_value, seq_local_num, new_val);
 		
 		long finish_time = System.nanoTime();

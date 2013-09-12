@@ -68,7 +68,7 @@ public class Util {
 	
 	static public void logger_warn(String to_warn)
 	{
-		System.out.println("Compiler warn: " + to_warn);		
+		//System.out.println("Compiler warn: " + to_warn);		
 	}
 	
 	

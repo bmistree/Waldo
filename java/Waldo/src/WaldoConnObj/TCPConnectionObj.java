@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import waldo.Endpoint;
@@ -36,6 +37,13 @@ public class TCPConnectionObj implements ConnectionObj, Runnable
 	public TCPConnectionObj(java.net.Socket _sock) 
 	{
 		sock = _sock;
+		/*
+		try {
+			sock.setTcpNoDelay(true);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
 	}
 	
 	/**

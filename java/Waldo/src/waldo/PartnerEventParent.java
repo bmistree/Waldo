@@ -33,7 +33,7 @@ public class PartnerEventParent extends EventParent {
 
         if (partner_contacted)
             children_endpoints.add(local_endpoint._partner_uuid);
-
+        
         local_endpoint._forward_first_phase_commit_successful(
             uuid,local_endpoint._uuid,children_endpoints);
 	}

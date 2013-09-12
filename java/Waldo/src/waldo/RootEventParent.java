@@ -106,7 +106,7 @@ public class RootEventParent extends EventParent {
     	
     	if (partner_contacted)
     		endpoints_waiting_on_commit.put(local_endpoint._partner_uuid, false);
-
+    		
     	for (String waiting_on_uuid : same_host_endpoints_contacted_dict.keySet())
             endpoints_waiting_on_commit.put(waiting_on_uuid, false);
     	

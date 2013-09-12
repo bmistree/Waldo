@@ -257,7 +257,7 @@ public class Endpoint
 	Gets called when the other side sends a message that its
     ready.
     */
-	private void _other_side_ready()
+	public void _other_side_ready()
 	{
         _ready_lock();
         _other_side_ready_bool = true;
@@ -283,7 +283,7 @@ public class Endpoint
 	 * Gets called when this side finishes its initialization
 	 * @return
 	 */
-	private void _this_side_ready()
+	public void _this_side_ready()
 	{
         _ready_lock();
         _this_side_ready_bool = true;
@@ -563,9 +563,9 @@ public class Endpoint
 	}
 	public void _receive_partner_ready(String partner_uuid)
 	{
-	    WaldoServiceActions.ServiceAction service_action = WaldoServiceActions.ReceivePartnerReadyAction(this);
-        _thread_pool.add_service_action(service_action);
-        _set_partner_uuid(partner_uuid);
+		_set_partner_uuid(partner_uuid);
+		WaldoServiceActions.ServiceAction service_action = new WaldoServiceActions.ReceivePartnerReadyAction(this);
+        _thread_pool.add_service_action(service_action);        
 	}
 	
 	/**
@@ -702,7 +702,6 @@ public class Endpoint
 		{
 			UtilProto.UUID.Builder child_event_uuid_msg = UtilProto.UUID.newBuilder();
 			child_event_uuid_msg.setData(child_event_uuid);
-			
 			first_phase_result_msg.addChildrenEventEndpointUuids(child_event_uuid_msg);
 		}
 
