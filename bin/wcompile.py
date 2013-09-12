@@ -23,14 +23,21 @@ def resetErrorEncountered(versionNum):
 
 import re
 import json
-from waldo.emitters.v4Emit.emitter import ast_emit as v4Emit
-
+from waldo.emitters.v4Emit.emitter import ast_emit as python_v4Emit
+from waldo.emitters.java_emit.emitter import ast_emit as java_v4Emit
 
 from waldo.parser.ast.astBuilder import WaldoParseException;
 from waldo.lexer.waldoLex import WaldoLexException
 
 
-def getEmitter(versionNum):
+def getEmitter(emit_java):
+    '''
+    @param {bool} emit_java --- True if should emit java text.  False
+    for python.
+    '''
+    if emit_java:
+        return java_v4Emit
+    
     return v4Emit
 
 
@@ -164,7 +171,7 @@ def lexAndParse(progText,outputErrStream,versionNum,suppress_warnings):
         
 def handleArgs(
     inputFilename,graphicalOutputArg,textOutputArg,printOutputArg,
-    typeCheckArg,emitArg,versionNum,suppress_warnings):
+    typeCheckArg,emitArg,versionNum,suppress_warnings,emit_java):
 
     errOutputStream = sys.stderr;
 
@@ -210,7 +217,7 @@ def handleArgs(
                 errMsg = '\nType error: cancelling code emit\n';
                 print >> errOutputStream, errMsg;
             else:
-                emitText = getEmitter(versionNum).astEmit(astRootNode)
+                emitText = getEmitter(emit_java).astEmit(astRootNode)
                 if (emitText == None):
                     errMsg = '\nBehram error when requesting emission of ';
                     errMsg += 'source code from astHead.py.\n';
@@ -269,6 +276,8 @@ def printUsage():
 
     -w Turn parse and lex warnings on.  Otherwise, they are off.
 
+    -j Emit java
+
     single arg (filename) .... try compiling the file to emitted.py
 
     
@@ -287,6 +296,8 @@ if __name__ == '__main__':
     skipNext = False
     versionNum = 4
     suppress_warnings = True
+
+    emit_java = False
     
     for s in range(0,len(sys.argv)):
         if (skipNext):
@@ -307,6 +318,9 @@ if __name__ == '__main__':
         if sys.argv[s] == '-w':
             suppress_warnings = False
 
+
+        if sys.argv[s] == '-j':
+            emit_java = True
             
         if (sys.argv[s] == '-go'):
             if (s+1 < len(sys.argv)):
@@ -366,5 +380,5 @@ if __name__ == '__main__':
         else:
             handleArgs(
                 inputFilenameArg,graphicalOutputArg,textOutputArg,
-                printOutputArg,typeCheckArg,emitArg,versionNum,suppress_warnings)
+                printOutputArg,typeCheckArg,emitArg,versionNum,suppress_warnings,emit_java)
             
