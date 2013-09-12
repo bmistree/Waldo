@@ -47,7 +47,7 @@ def library_transform(name):
 def emit_assert(err_msg):
     print '\n\nEmit error: ' + err_msg + '\n\n'
     assert(False)
-
+    
 def emit_warn(warn_msg):
     print '\n\nEmit warn: ' + warn_msg + '\n\n'
     

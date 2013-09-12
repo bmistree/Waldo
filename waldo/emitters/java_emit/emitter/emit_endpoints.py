@@ -583,25 +583,31 @@ def emit_public_method_interface(
     '''
     method_name_node = public_method_node.children[0]
     method_name = method_name_node.value
-
+    
     method_arg_names = get_method_arg_names(public_method_node)
     # turns the array of argnames above into a single string of csv
     # arg names
     comma_sep_arg_names = reduce (
-        lambda x, y : x + ',' + y,
+        lambda x, y : x + ' Object ' + y + ',',
         method_arg_names,'')
-
+    # take off last comma:
+    comma_sep_arg_names = comma_sep_arg_names[:-1]
+    
+    return_type = get_java_method_return_type(public_method_node)
+    
     public_header = '''
-def %s(self%s, **kwargs):
-''' % (method_name, comma_sep_arg_names)
+public %s %s(%s)
+{
+''' % (return_type,method_name, comma_sep_arg_names)
 
     # wait until ready initialization for node has completed before
     # continuing
     public_body = '''
-# ensure that both sides have completed their onCreate calls
-# before continuing
-self._block_ready()
+//# ensure that both sides have completed their onCreate calls
+//# before continuing
+_block_ready();
 '''
+
     
     #### Deep copy non-external args
     # non_ext_arg_names is an array of strings
@@ -622,8 +628,9 @@ self._block_ready()
     #### create a root event + ctx for event, call internal, and reurn
     internal_method_name = lib_util.endpoint_call_func_name(method_name)
     public_body += '''
-_root_retrier = None
-while True:  # FIXME: currently using infinite retry
+LockedActiveEvent _root_retrier = null;
+while (true) // # FIXME: currently using infinite retry
+{
     _root_event = _root_retrier
     if _root_event is None:
         _root_event = self._act_event_map.create_root_event()
@@ -670,7 +677,7 @@ while True:  # FIXME: currently using infinite retry
             # event.
             self._act_event_map.remove_event(_root_retrier.uuid,False)
             raise %s()
-
+}
 ''' % (emit_utils.library_transform('ExecutingEventContext'),
        emit_utils.library_transform('VariableStore'),
        internal_method_name,
@@ -683,7 +690,7 @@ while True:  # FIXME: currently using infinite retry
        emit_utils.library_transform('RetryCanceledException')
        )
 
-    return public_header + emit_utils.indent_str(public_body)
+    return public_header + emit_utils.indent_str(public_body) + '\n}\n'
 
 
 def emit_endpoint_message_sequence_blocks(
@@ -1012,6 +1019,32 @@ def get_oncreate_node(endpoint_name,ast_root):
 
     
 
+def get_java_method_return_type(method_node):
+    '''
+    @param {AstNode} method_node --- Either a public method node or a
+    private method node
+
+    Getting ugly: a method can only return a void type or an object
+    type.  Caller must cast the value to what will use.
+    
+    '''
+    if ((method_node.label == AST_ONCREATE_FUNCTION) or
+        (method_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
+        return ' void '
+    
+    emit_utils.emit_warn(
+        'Warning: do not know how to disambiguate between ' +
+        'single threaded and multithreaded variables currently')
+
+    
+    return_node_index = get_return_index_from_func_node_label(method_node.label)
+    if TypeCheck.templateUtil.is_nothing_type(method_node.children[return_node_index].type):
+        return ' void '
+
+    return ' Object '
+
+
+
 def get_method_arg_names(method_node):
     '''
     @param {AstNode} method_node --- Either a public method node or a
@@ -1027,7 +1060,8 @@ def get_method_arg_names(method_node):
     func_decl_arglist_node = method_node.children[arg_node_index]
     for func_decl_arg_node in func_decl_arglist_node.children:
         arg_name_node = func_decl_arg_node.children[1]
-        arg_names.append(arg_name_node.value)
+        arg_name = arg_name_node.value
+        arg_names.append(arg_name)
     
     return arg_names
     
@@ -1209,6 +1243,21 @@ def get_return_type_index_from_func_node_label(label):
         
     return return_node_index
     
+
+def get_return_index_from_func_node_label(label):
+    return_node_index = None
+
+    if label == AST_PUBLIC_FUNCTION:
+        return_node_index = 1
+    elif label == AST_PRIVATE_FUNCTION:
+        return_node_index = 1
+    elif label == AST_ONCREATE_FUNCTION:
+        return_node_index = 1
+    else:
+        emit_utils.emit_assert(
+            'Unknown method node label when getting return index')
+        
+    return return_node_index
 
 def get_arg_index_from_func_node_label(label):
     arg_node_index = None
