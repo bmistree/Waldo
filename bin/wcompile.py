@@ -38,7 +38,7 @@ def getEmitter(emit_java):
     if emit_java:
         return java_v4Emit
     
-    return v4Emit
+    return python_v4Emit
 
 
 
