@@ -11,6 +11,25 @@ public class Waldo {
 	private static WaldoGlobals all_globals = new WaldoGlobals();
 	private static String host_uuid = Util.generate_uuid();
 	
+
+	/**
+	 *  Creates an endpoint without its partner.
+
+    Returns:
+    
+      Waldo endpoint: Calls constructor with args for an endpoint that has no
+      partner.
+
+	 * @param constructor
+	 */
+	public static Endpoint no_partner_create(EndpointConstructorObj constructor)
+	{
+		return constructor.construct(
+				all_globals,host_uuid,
+				new WaldoConnObj.SingleSideConnection());
+	}
+        
+	
 	
 	/**
 	 * 	Tries to connect an endpoint to another endpoint via a TCP
