@@ -47,7 +47,13 @@ public class GlobVarTCPPerfPartnerNoConflictTest implements TestInterface
 						
 			//# actually try to commit write event
 		    multi_event.begin_first_phase_commit();
-			
+
+		    try {
+				((waldo.RootEventParent)multi_event.event_parent).event_complete_queue.take();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		    
 		} catch (StoppedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

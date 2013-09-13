@@ -31,15 +31,16 @@ public class PerfPartnerNoConflictTest implements TestInterface
 		
 		try {
 			
+			LockedActiveEvent multi_event;
+			multi_event = endpta._act_event_map.create_root_event();
+
+			
 			// create sequence local variable
 			LockedVariables.SingleThreadedLockedNumberVariable num_var = 
 					new LockedVariables.SingleThreadedLockedNumberVariable(host_uuid, true, initial_value);
 			ctx.sequence_local_store.add_var(seq_local_num, num_var);
 			
-			LockedActiveEvent multi_event;
-				multi_event = endpta._act_event_map.create_root_event();
 			num_var.set_val(multi_event, new_val);
-			
 			
 			// send message to other side
 			//# send sequence message to the other side to perform write there.
@@ -58,11 +59,19 @@ public class PerfPartnerNoConflictTest implements TestInterface
 				System.out.println("Received incorrect result from other side");
 				return false;
 			}
-			
+
 			
 			//# actually try to commit write event
 		    multi_event.begin_first_phase_commit();
 			
+		    try {
+				((waldo.RootEventParent)multi_event.event_parent).event_complete_queue.take();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		    
+		    
 		} catch (StoppedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -103,9 +112,12 @@ public class PerfPartnerNoConflictTest implements TestInterface
 		SameHostEndpoint endpta = new SameHostEndpoint (host_uuid,glob_var_store,conn_obj);
 		SameHostEndpoint endptb = new SameHostEndpoint (host_uuid,glob_var_store,conn_obj);
 		
+		for (int i =0; i < 10000; ++i)
+			run_seq( endpta, endptb, host_uuid, initial_value, seq_local_num, new_val);
+		
 		long start_time = System.nanoTime();
 		
-		for (int i =0; i < 100000; ++i)
+		for (int i =0; i < 30000; ++i)
 			run_seq( endpta, endptb, host_uuid, initial_value, seq_local_num, new_val);
 		
 		long finish_time = System.nanoTime();

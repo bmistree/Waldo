@@ -33,16 +33,14 @@ public class TCPPerfPartnerNoConflictTest implements TestInterface
 		waldo.ExecutingEventContext ctx = test_util.create_context(endpta);
 		
 		try {
+			LockedActiveEvent multi_event;
+			multi_event = endpta._act_event_map.create_root_event();
 			
 			// create sequence local variable
 			LockedVariables.SingleThreadedLockedNumberVariable num_var = 
 					new LockedVariables.SingleThreadedLockedNumberVariable(host_uuid, true, initial_value);
 			ctx.sequence_local_store.add_var(seq_local_num, num_var);
-			
-			LockedActiveEvent multi_event;
-				multi_event = endpta._act_event_map.create_root_event();
 			num_var.set_val(multi_event, new_val);
-			
 			
 			// send message to other side
 			//# send sequence message to the other side to perform write there.
@@ -65,6 +63,14 @@ public class TCPPerfPartnerNoConflictTest implements TestInterface
 			
 			//# actually try to commit write event
 		    multi_event.begin_first_phase_commit();
+		    
+		    try {
+				((waldo.RootEventParent)multi_event.event_parent).event_complete_queue.take();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		    
 			
 		} catch (StoppedException e) {
 			// TODO Auto-generated catch block
@@ -117,7 +123,7 @@ public class TCPPerfPartnerNoConflictTest implements TestInterface
 		}
 		
 		System.out.println("\nFirst\n");
-		int num_times = 3000;
+		int num_times = 30000;
 		//int num_times = 100;
 		for (int i =0; i < num_times; ++i)
 			run_seq( endpta, host_uuid, initial_value, seq_local_num, new_val);
