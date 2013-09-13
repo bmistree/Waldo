@@ -59,9 +59,12 @@ public class LockedVariables {
 	{
 		public LockedNumberVariable(String _host_uuid, boolean _peered,Number init_val)
 		{
-			super(_host_uuid,_peered,init_val,default_number,number_value_type_data_wrapper_constructor);
-		
-		}		
+			super(_host_uuid,_peered,init_val,default_number,number_value_type_data_wrapper_constructor);		
+		}
+		public LockedNumberVariable(String _host_uuid, boolean _peered)
+		{
+			super(_host_uuid,_peered,default_number,default_number,number_value_type_data_wrapper_constructor);		
+		}
 	}
 
 	public static class LockedTextVariable extends LockedValueVariable<String,String>
@@ -69,7 +72,11 @@ public class LockedVariables {
 		public LockedTextVariable(String _host_uuid, boolean _peered,String init_val)
 		{
 			super(_host_uuid,_peered,init_val,default_text,text_value_type_data_wrapper_constructor);		
-		}		
+		}
+		public LockedTextVariable(String _host_uuid, boolean _peered)
+		{
+			super(_host_uuid,_peered,default_text,default_text,text_value_type_data_wrapper_constructor);		
+		}
 	}
 	
 	public static class LockedTrueFalseVariable extends LockedValueVariable<Boolean,Boolean>
@@ -77,7 +84,11 @@ public class LockedVariables {
 		public LockedTrueFalseVariable(String _host_uuid, boolean _peered,Boolean init_val)
 		{
 			super(_host_uuid,_peered,init_val,default_tf,true_false_value_type_data_wrapper_constructor);		
-		}		
+		}
+		public LockedTrueFalseVariable(String _host_uuid, boolean _peered)
+		{
+			super(_host_uuid,_peered,default_tf,default_tf,true_false_value_type_data_wrapper_constructor);		
+		}
 	}
 	
 	
@@ -87,10 +98,13 @@ public class LockedVariables {
 		public SingleThreadedLockedNumberVariable(String _host_uuid, boolean _peered,
 			Number init_val)
 		{
-			super(_host_uuid,_peered,init_val,default_number,number_value_type_data_wrapper_constructor);
-			
+			super(_host_uuid,_peered,init_val,default_number,number_value_type_data_wrapper_constructor);			
 		}
 
+		public SingleThreadedLockedNumberVariable(String _host_uuid, boolean _peered)
+			{
+				super(_host_uuid,_peered,default_number,default_number,number_value_type_data_wrapper_constructor);			
+			}
 		
 		@Override
 		protected boolean value_variable_py_val_serialize(
@@ -136,6 +150,11 @@ public class LockedVariables {
 			super(_host_uuid,_peered,init_val,default_text,text_value_type_data_wrapper_constructor);
 		}
 		
+		public SingleThreadedLockedTextVariable(String _host_uuid, boolean _peered)
+			{
+				super(_host_uuid,_peered,default_text,default_text,text_value_type_data_wrapper_constructor);
+			}
+		
 		@Override
 		protected boolean value_variable_py_val_serialize(
 				waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.Builder parent_delta,
@@ -177,6 +196,12 @@ public class LockedVariables {
 		{
 			super(_host_uuid,_peered,init_val,default_tf,true_false_value_type_data_wrapper_constructor);
 		}
+
+		public SingleThreadedLockedTrueFalseVariable(String _host_uuid, boolean _peered)
+			{
+				super(_host_uuid,_peered,default_tf,default_tf,true_false_value_type_data_wrapper_constructor);
+			}
+
 		
 		@Override
 		protected boolean value_variable_py_val_serialize(

@@ -8,7 +8,9 @@ def uniform_header():
     '''
 
     return '''
-# Waldo emitted file
+//# Waldo emitted file
+import java.util.HashMap;
+import java.util.ArrayList;
 
 
 '''.lstrip()

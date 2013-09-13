@@ -207,5 +207,9 @@ public class ActiveEventMap {
 		_unlock();
 		return to_return;
 	}
+
+	public ActiveEventTwoTuple remove_event(String uuid_to_remove) {
+		return remove_event(uuid_to_remove,false);
+	}
     
 }

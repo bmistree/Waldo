@@ -523,11 +523,12 @@ def _emit_return_statement(
 
     # all returend objects are returned as tuples
     return_txt = '''
-if _returning_to_public_ext_array != None:
-    # must de-waldo-ify objects before passing back
+if (_returning_to_public_ext)
+{
+    //# must de-waldo-ify objects before passing back
     %s
-
-# otherwise, use regular return mechanism... do not de-waldo-ify
+}
+//# otherwise, use regular return mechanism... do not de-waldo-ify
 %s
 ''' % (de_waldoed_return_txt,non_de_waldoed_return_txt)
 
@@ -538,56 +539,51 @@ def _emit_non_de_waldoed_return(
     return_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     
     ret_list_node = return_node.children[0]
-    return_txt = 'return _context.flatten_into_single_return_tuple('
+    # return_txt = 'return _context.flatten_into_single_return_tuple('
+    return_txt = 'return '
 
+    
     if len(ret_list_node.children) == 0:
-        return_txt += 'None'
+        return_txt += ';\n'
+        return return_txt
 
-    for counter in range(0,len(ret_list_node.children)):
-        ret_item_node = ret_list_node.children[counter]
-        return_txt += emit_statement(
-            ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-        
-        if counter != len(ret_list_node.children) -1:        
-            return_txt += ','
+    if len(ret_list_node.children) > 1:
+        emit_utisls.emit_warn('Warning: disabled tuple return type in java branch')
 
-    return_txt += ')\n'
+
+    ret_item_node = ret_list_node.children[0]
+    return_txt += emit_statement(
+        ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
+    return_txt += ';\n'
+
     return return_txt
 
 
 def _emit_de_waldoed_return(
     return_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     ret_list_node = return_node.children[0]    
-    return_txt = 'return _context.flatten_into_single_return_tuple('
+    return_txt = ''
 
     if len(ret_list_node.children) == 0:
-        return_txt += 'None'
+        return_txt += 'return;\n'
+        return return_txt
 
-    for counter in range(0,len(ret_list_node.children)):
-        ret_item_node = ret_list_node.children[counter]
+    if len(ret_list_node.children) > 1:
+        emit_utisls.emit_warn('Warning: disabled tuple return type in java branch')
 
-        # the actual emission of the return value
-        item_emit = emit_statement(
-            ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-
-        # Example output of below: 
-        # a if 1 in _returning_to_public_ext_array else _context.de_waldoify(a)
-        #
-        # Ie, output the reference to the piece of data if we are
-        # supposed to return an external (index is in
-        # _returning_to_public_ext_array).  Otherwise, output a
-        # de_waldoified version of data.
-        ret_item_txt = (
-            '%s if %s in _returning_to_public_ext_array else %s' %
-            (item_emit, str(counter), '_context.de_waldoify(' + item_emit +
-             ',_active_event)'))
+    ret_item_node = ret_list_node.children[0]
         
-        return_txt += ret_item_txt
-        
-        if counter != len(ret_list_node.children) -1:
-            return_txt += ','
+    # the actual emission of the return value
+    item_emit = emit_statement(
+        ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-    return_txt += ')\n'
+    return_txt = '''
+if (_returning_to_public)
+    _context.de_waldoify(%s,_active_event);
+else
+    %s;
+''' % (item_emit,item_emit)
+
     return return_txt
 
 

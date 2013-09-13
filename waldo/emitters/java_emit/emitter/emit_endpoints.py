@@ -117,7 +117,7 @@ def emit_endpoint_constructor(
 
     init_header = '''
 public %s(
-    waldo.AllGlobals __waldo_classes, String __host_uuid,
+    waldo.WaldoGlobals __waldo_classes, String __host_uuid,
     WaldoConnObj.ConnectionObj __conn_obj %s)
 {
     super(__waldo_classes,__host_uuid,__conn_obj, new waldo.VariableStore(__host_uuid));
@@ -140,7 +140,7 @@ public %s(
     # emit call to oncreate method
     init_body += emit_oncreate_call(endpoint_name,ast_root)
 
-    return init_header + emit_utils.indent_str(init_body)
+    return init_header + emit_utils.indent_str(init_body) + '\n}\n'
 
 
 def emit_oncreate_call(endpoint_name,ast_root):
@@ -162,12 +162,12 @@ def emit_oncreate_call(endpoint_name,ast_root):
         # run the initializer
         oncreate_call_txt = '''
 while True:  # FIXME: currently using infinite retry
-    _root_event = self._act_event_map.create_root_event()
+    _root_event = self._act_event_map.create_root_event();
 
-    _ctx = %s(
-        self._global_var_store,
+    _context = %s(
+        _global_var_store,
         # not using sequence local store
-        %s(self._host_uuid))
+        %s(_host_uuid));
 
     # call internal function... note True as last param tells internal
     # version of function that it needs to de-waldo-ify all return
@@ -175,11 +175,16 @@ while True:  # FIXME: currently using infinite retry
     # return them....if it were false, might just get back refrences
     # to Waldo variables, and de-waldo-ifying them outside of the
     # transaction might return over-written/inconsistent values.
-    _to_return = self.%s(_root_event,_ctx %s,[])
+    _to_return = self.%s(_root_event,_context %s,[]);
 
     # try committing root event
-    _root_event.begin_first_phase_commit()
-    _commit_resp = _root_event.event_parent.event_complete_queue.get()
+    _root_event.begin_first_phase_commit();
+    try{
+    _commit_resp = _root_event.event_parent.event_complete_queue.take();
+    } catch(InterruptedException e)
+    {
+        e.printStackTrace();
+    }
     if isinstance(_commit_resp,%s):
         //# means it isn't a backout message: we're done
 
@@ -289,7 +294,7 @@ def create_wvariables_array(
 
         wvar_load_text += '''
 _global_var_store.add_var(
-    '%s',%s);
+    "%s",%s);
 ''' % (var_name,var_declaration)
 
     return wvar_load_text
@@ -374,37 +379,10 @@ def emit_private_method_interface(
     # _returning_to_public_ext_array correspond to which return values
     # should be returned as externals (ie, we do not de-waldo-ify
     # them).
-
-    
-#     method_arg_names = ['_returning_to_public_ext=False']
-#     if method_node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
-#         # will fill in the default value of None in reduce
-#         method_arg_names = ['_returning_to_public_ext=False']
-#     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
-#         # message receives take no arguments
-#         method_arg_names = get_method_arg_names(method_node) + method_arg_names
-
-#     if method_node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
-#         comma_sep_arg_names = reduce (
-#             lambda x, y : x + ',' + y,
-#             method_arg_names,'')
-#     else:
-#         # provide default values for all argument sequence local data.
-#         # That way, jumps are easier (we do not have to match # of
-#         # arguments when jumping).
-#         comma_sep_arg_names = reduce (
-#             lambda x, y : x + ',' + y + '=None',
-#             method_arg_names,'')
-        
-#     private_header = '''
-# private %s(waldo.LockedActiveEvent _active_event,waldo.ExecutingEventContext _context%s)
-# {
-# ''' % (internal_method_name, comma_sep_arg_names)
-
     overloaded_private = emit_private_overloaded_not_from_public(method_node,name_mangler)
 
     
-    private_header,returns_non_void = private_method_signature(method_node,name_mangler,False)
+    private_header,returns_non_void = private_method_signature(method_node,name_mangler,True)
     
     # actually emit body of function
     private_body = '\n'
@@ -420,7 +398,7 @@ def emit_private_method_interface(
             # data.
             private_body = prefix
 
-    private_body += 'try:\n'
+    private_body += 'try{\n'
             
     private_body_emitted = ''
     method_body_node = get_method_body_node_from_method_node(method_node)
@@ -432,17 +410,17 @@ def emit_private_method_interface(
         indented_body += '\n'
         private_body_emitted += emit_utils.indent_str(indented_body)
 
-    if private_body_emitted.strip() == '':
-        # in case of empty functions
-        private_body_emitted += emit_utils.indent_str('pass\n')
 
     private_body += private_body_emitted
 
-    except_str = '''
-except Exception as err: # ApplicationExceptions should be backed out and the partner should be
-        # notified
-    _active_event.put_exception(err)
-    raise
+    except_str = '''}
+catch (Exception _ex){
+    //# ApplicationExceptions should be backed
+    //# out and the partner should be
+    //# notified
+    _active_event.put_exception(_ex);
+    throw _ex;
+}
     '''
 
     private_body += except_str
@@ -476,7 +454,7 @@ def emit_private_overloaded_not_from_public(method_node,name_mangler):
         method_arg_names,'')
     
     private_body = (
-        ('%s(_active_event,_ctx,' % internal_method_name) +
+        ('%s(_active_event,_context,' % internal_method_name) +
         comma_sep_arg_names + ' false);')
 
     if returns_non_void:
@@ -529,7 +507,7 @@ def private_method_signature(method_node,name_mangler,include_external_return):
         comma_sep_arg_names += ', boolean _returning_to_public_ext'
 
     private_header = '''
-private %s %s(waldo.LockedActiveEvent _active_event,waldo.ExecutingEventContext _context%s)
+private %s %s(waldo.LockedActiveEvent _active_event,waldo.ExecutingEventContext _context%s) throws Exception
 {
 ''' % (return_type, internal_method_name, comma_sep_arg_names)
 
@@ -578,15 +556,15 @@ def convert_args_to_waldo(method_node,sequence_local=False):
     # rather than used by reference.  (Across non-endpoint method call
     # boundaries, they're used by reference.)
 
-    converted_args_string = 'if _context.check_and_set_from_endpoint_call_false():\n'
+    converted_args_string = 'if (_context.check_and_set_from_endpoint_call_false()){\n'
     converted_args_string += emit_utils.indent_str(
-        convert_args_helper(func_decl_arglist_node,sequence_local,True) +
-        '\npass\n')
+        convert_args_helper(func_decl_arglist_node,sequence_local,True))
+    converted_args_string += '\n}\n'
     
-    converted_args_string += '\nelse:\n'
+    converted_args_string += '\nelse{\n'
     converted_args_string += emit_utils.indent_str(
-        convert_args_helper(func_decl_arglist_node,sequence_local,False) +
-        '\npass\n')
+        convert_args_helper(func_decl_arglist_node,sequence_local,False))
+    converted_args_string += '\n}\n'
 
     converted_args_string += '\n'
     return converted_args_string
@@ -611,19 +589,19 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
 
         
         if not sequence_local:
-            force_copy = 'True'
+            force_copy = 'true'
 
-            multi_threaded= 'False'
+            multi_threaded= 'false'
             
             if TypeCheck.templateUtil.is_external(func_decl_arg_node.type):
-                force_copy = 'False'
-                multi_threaded = 'True'
+                force_copy = 'false'
+                multi_threaded = 'true'
             
             if ((not is_endpoint_call) and
                 emit_utils.is_reference_type(func_decl_arg_node)):
                 # we force copy maps, lists, and user structs only if
                 # it's an endpoint call and they're not external.  
-                force_copy = 'False'
+                force_copy = 'false'
 
             if TypeCheck.templateUtil.is_basic_function_type(func_decl_arg_node.type):
                 # functions copied in must have their external args
@@ -635,14 +613,14 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
                 converted_args_string += (
                     arg_name + ' = ' +
                     '_context.func_turn_into_waldo_var(' + arg_name +
-                    ',%s,_active_event,self._host_uuid,False,%s,%s)\n' %
+                    ',%s,_active_event,_host_uuid,false,%s,%s);\n' %
                     (force_copy,ext_args_array_txt,multi_threaded))
 
             else:
                 converted_args_string += (
                     arg_name + ' = ' +
                     '_context.turn_into_waldo_var_if_was_var(' + arg_name +
-                    ',%s,_active_event,self._host_uuid,False,%s)\n' % (force_copy,multi_threaded))
+                    ',%s,_active_event,_host_uuid,false,%s);\n' % (force_copy,multi_threaded))
 
         else:
 
@@ -659,7 +637,7 @@ def convert_args_helper (func_decl_arglist_node,sequence_local,is_endpoint_call)
             # returns a peered version of passed in data
             convert_call_txt = (
                 '_context.convert_for_seq_local(' + arg_name + ',' +
-                '_active_event,self._host_uuid)\n' )
+                '_active_event,_host_uuid)\n' )
 
             # actually adds the created peered variable above to the
             # variable store.
@@ -697,7 +675,7 @@ def emit_public_method_interface(
     return_type,return_non_void = get_java_method_return_type(public_method_node)
     
     public_header = '''
-public %s %s(%s)
+public %s %s(%s) throws WaldoExceptions.StoppedException
 {
 ''' % (return_type,method_name, comma_sep_arg_names_and_types)
 
@@ -736,7 +714,7 @@ while (true) // # FIXME: currently using infinite retry
     if (_root_event == null)
         _root_event = _act_event_map.create_root_event();
 
-    waldo.ExecutingEventContext _ctx = new waldo.ExecutingEventContext(
+    waldo.ExecutingEventContext _context = new waldo.ExecutingEventContext(
         _global_var_store,
         //# not using sequence local store
         new waldo.VariableStore(_host_uuid));
@@ -753,7 +731,11 @@ while (true) // # FIXME: currently using infinite retry
     Object _to_return = null;
     try
     {
-        _to_return = %s(_root_event,_ctx, %s %s);
+        //_to_return = s(_root_event,_context, s s);
+        // or
+        // s(_root_event,_context, s s);
+        // depending if void
+        %s %s(_root_event,_context, %s %s);
     }
     catch (Exception _ex)
     {
@@ -762,8 +744,14 @@ while (true) // # FIXME: currently using infinite retry
 
     //# try committing root event
     _root_event.begin_first_phase_commit();
-    WaldoCallResults.RootCallResultObject _commit_resp =
-        ((waldo.RootEventParent)_root_event.event_parent).event_complete_queue.get();
+    WaldoCallResults.RootCallResultObject _commit_resp = null;
+    try{
+        _commit_resp = ((waldo.RootEventParent)_root_event.event_parent).event_complete_queue.take();
+    } catch (InterruptedException _ex)
+    {
+        _ex.printStackTrace();
+    }
+
 
     if (WaldoCallResults.CompleteRootCallResult.class.isInstance(_commit_resp) ||
         WaldoCallResults.NetworkFailureCallResult.class.isInstance(_commit_resp))
@@ -775,8 +763,8 @@ while (true) // # FIXME: currently using infinite retry
     {
         //# backout got called: that means that we must remove the retry
         //# event that we generated when backing out from active event map
-        _act_event_map.remove_event(_root_event.retry_event);
-        throw new WaldoExceptions.StoppedExceptions();
+        _act_event_map.remove_event(_root_event.retry_event.uuid);
+        throw new WaldoExceptions.StoppedException();
     }
 
     //# event was backed out.  we have a retry event
@@ -789,7 +777,8 @@ while (true) // # FIXME: currently using infinite retry
 //            self._act_event_map.remove_event(_root_retrier.uuid,False)
 //            raise s()
 }
-''' % (internal_method_name,
+''' % ( '_to_return = ' if return_non_void else '',
+        internal_method_name,
        comma_sep_arg_names,
        convert_return_external_positions_to_string(list_return_external_positions),
        'return _to_return'  if return_non_void else 'return',
