@@ -331,8 +331,17 @@ def emit_endpoint_publics_privates(
 
 def emit_private_method_interface(
     method_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-    name_mangler=lib_util.endpoint_call_func_name,prefix=None):
+    name_mangler=lib_util.endpoint_call_func_name,prefix=None,
+    emit_wrapper_and_bool_end=True):
     '''
+    @param {boolean} emit_wrapper --- If true, creates two versions of
+    this method.  One, without a boolean from_external argument, calls
+    into a version of an overloaded version of the function that does
+    have a boolean wrapper.  If false, only produce a version of the
+    method without the wrapper and without an additional, external
+    boolean argument.  Additionally, do not close that method body
+    with a }
+    
     @param {AstNode} method_node --- Either a public method node or a
     private method node.  If it's a public method, then we emit the
     internal method that gets called from the public interface of the
@@ -361,16 +370,6 @@ def emit_private_method_interface(
     Also can be called to emit a message send or message receive
     function.
     '''
-
-    # name_node_index = 0
-    # if emit_utils.is_message_sequence_node(method_node):
-    #     name_node_index = 1
-    
-    # method_name_node = method_node.children[name_node_index]
-    # src_method_name = method_name_node.value
-    # internal_method_name = name_mangler(src_method_name)
-
-
     
     # When returning, check if it was a call from an outside-Waldo
     # function into this function... if it was (ie,
@@ -379,7 +378,9 @@ def emit_private_method_interface(
     # _returning_to_public_ext_array correspond to which return values
     # should be returned as externals (ie, we do not de-waldo-ify
     # them).
-    overloaded_private = emit_private_overloaded_not_from_public(method_node,name_mangler)
+    overloaded_private= ''
+    if emit_wrapper_and_bool_end:
+        overloaded_private = emit_private_overloaded_not_from_public(method_node,name_mangler)
 
     
     private_header,returns_non_void = private_method_signature(method_node,name_mangler,True)
@@ -425,7 +426,10 @@ catch (Exception _ex){
 
     private_body += except_str
 
-    full_private = private_header + emit_utils.indent_str(private_body) + '\n}\n'
+    full_private = private_header + emit_utils.indent_str(private_body)
+
+    if emit_wrapper_and_bool_end:
+        full_private += '\n}\n'
     
     return full_private + '\n' + overloaded_private
 
@@ -872,14 +876,16 @@ def emit_message_send(
 
     method_arg_names = get_method_arg_names(message_send_node)
     seq_local_init_prefix = '''
-_first_msg = False
-if not _context.set_msg_send_initialized_bit_true():
-    # we must load all arguments into sequence local data and perform
-    # initialization on sequence local data....start by loading
-    # arguments into sequence local data
-    # below tells the message send that it must serialize and
-    # send all sequence local data.
-    _first_msg = True
+boolean _first_msg = false;
+if (! _context.set_msg_send_initialized_bit_true())
+{
+    //# we must load all arguments into sequence local data and perform
+    //# initialization on sequence local data....start by loading
+    //# arguments into sequence local data
+    //# below tells the message send that it must serialize and
+    //# send all sequence local data.
+    _first_msg = true;
+
 '''
     seq_local_init_prefix += emit_utils.indent_str(
         convert_args_to_waldo(message_send_node,True))
@@ -887,8 +893,7 @@ if not _context.set_msg_send_initialized_bit_true():
     # (this will also emit for the return nodes).
     seq_local_init_prefix += emit_utils.indent_str(emit_statement.emit_statement(
             seq_globals_node,endpoint_name,ast_root,fdep_dict,emit_ctx))    
-    seq_local_init_prefix += emit_utils.indent_str('\npass\n')
-    seq_local_init_prefix += '\n'
+    seq_local_init_prefix += '\n}\n'
 
     
     # when message send ends, it must grab the sequence local data
@@ -921,7 +926,7 @@ if not _context.set_msg_send_initialized_bit_true():
     # keep track of the return statement to issue on jump calls)
     msg_send_txt = emit_private_method_interface(
         message_send_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-        lib_util.partner_endpoint_msg_call_func_name,seq_local_init_prefix)
+        lib_util.partner_endpoint_msg_call_func_name,seq_local_init_prefix,False)
 
     # issue call for what to call next
     msg_send_txt += '\n'
@@ -931,7 +936,7 @@ if not _context.set_msg_send_initialized_bit_true():
     # takes care of fall-through return (ie, message send has
     # completed)
     msg_send_txt += emit_utils.indent_str(msg_send_return_txt)
-    msg_send_txt += '\n'
+    msg_send_txt += '\n}\n'
     emit_ctx.in_message_send = False
     emit_ctx.message_seq_return_txt = ''
     return msg_send_txt
@@ -955,14 +960,14 @@ def emit_message_receive(
 
     msg_receive_txt = emit_private_method_interface(
         message_receive_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-        lib_util.partner_endpoint_msg_call_func_name)
+        lib_util.partner_endpoint_msg_call_func_name,None,False)
     msg_receive_txt += '\n'
     
     emit_ctx.in_message_receive = False
     emit_ctx.message_seq_return_txt = ''
 
     ## Ends by telling the opposite side what to do next
-    next_to_call_txt = 'None'
+    next_to_call_txt = 'null'
     if next_to_call_node != None:
         # the name of the next sequence block to execute, as it
         # appears in the source Waldo text, ie, before mangling.
@@ -980,10 +985,10 @@ def emit_message_receive(
     next_sequence_txt = '''
 
 _context.hide_partner_call(
-    self,_active_event,%s,False)
+    this,_active_event,%s,false);
 ''' % (next_to_call_txt)
 
-    msg_receive_txt += emit_utils.indent_str(next_sequence_txt)
+    msg_receive_txt += emit_utils.indent_str(next_sequence_txt) + '\n}\n'
     return msg_receive_txt
 
 
@@ -1008,7 +1013,7 @@ def emit_message_node_what_to_call_next(next_to_call_node,emit_ctx):
     next_message_name_node = next_to_call_node.children[1]
     next_message_name = next_message_name_node.value
 
-    issue_call_is_first_txt = 'False'
+    issue_call_is_first_txt = 'false'
     if emit_ctx.in_message_send:
         # allows us to determine if this is the first message in a
         # sequence block that is being sent.  If it is, then we need
@@ -1019,7 +1024,7 @@ def emit_message_node_what_to_call_next(next_to_call_node,emit_ctx):
     return  '''
 
 _context.hide_partner_call(
-    self,_active_event,'%s',%s)
+    this,_active_event,"%s",%s);
 
 ''' % (
        next_message_name, # the name of the message receive func to
@@ -1151,6 +1156,9 @@ def get_java_method_return_type(method_node):
     if ((method_node.label == AST_ONCREATE_FUNCTION) or
         (method_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
         return ' void ', False
+
+    if method_node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+        return ' Object ', True
     
     emit_utils.emit_warn(
         'Warning: do not know how to disambiguate between ' +
@@ -1158,6 +1166,7 @@ def get_java_method_return_type(method_node):
 
     
     return_node_index = get_return_index_from_func_node_label(method_node.label)
+    
     return_array = method_node.children[return_node_index].type;
     emit_utils.emit_warn('Warning: not handling tuple returns in java waldo')
     return_type = return_array
@@ -1182,6 +1191,10 @@ def get_method_arg_names(method_node):
     '''
     arg_names = []
 
+    if method_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        return arg_names
+
+    
     arg_node_index = get_arg_index_from_func_node_label(method_node.label)
     
     func_decl_arglist_node = method_node.children[arg_node_index]
@@ -1322,6 +1335,10 @@ def get_non_external_arg_names_from_func_node(func_node):
     @returns {Array} --- Each element is a string representing the
     name of a non-external argument that the user passed in.
     '''
+
+    if func_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+        return []
+    
     arg_node_index = get_arg_index_from_func_node_label(func_node.label)
 
     returner = []

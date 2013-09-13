@@ -50,10 +50,11 @@ public class test_util
 		}
 		
 		public void _partner_endpoint_msg_func_call_prefix__waldo__test_partner(
-				waldo.LockedActiveEvent active_event, waldo.ExecutingEventContext context, Object...args)
+				waldo.LockedActiveEvent active_event, waldo.ExecutingEventContext context)
 		{
 			SingleThreadedLockedNumberVariable num_var = 
 					(SingleThreadedLockedNumberVariable) context.sequence_local_store.get_var_if_exists("num_var");
+			
 			
 			try {
 				num_var.set_val(active_event, ( ((Number)context.get_val_if_waldo(num_var, active_event)).doubleValue() + 1));
@@ -93,8 +94,9 @@ public class test_util
 		}
 		
 		public void _partner_endpoint_msg_func_call_prefix__waldo__test_partner(
-				waldo.LockedActiveEvent active_event, waldo.ExecutingEventContext context, Object...args)
+				waldo.LockedActiveEvent active_event, waldo.ExecutingEventContext context)
 		{
+			
 			LockedNumberVariable num_var = 
 					(LockedNumberVariable) context.global_store.get_var_if_exists("num_var");
 			
@@ -104,6 +106,7 @@ public class test_util
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
 			context.hide_sequence_completed_call(this, active_event);
 			
 		}

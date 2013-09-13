@@ -937,9 +937,10 @@ public class LockedActiveEvent {
 		//# don't block waiting on its return.
         ExecutingEvent exec_event = new ExecutingEvent(
             block_to_exec_internal_name,this,evt_ctx,
-            null //# using None here means that we do not need to
+            null, //# using None here means that we do not need to
                  //# bother with waiting for modified peered-s to
                  //# update.
+            false
             );
 
         return exec_event;

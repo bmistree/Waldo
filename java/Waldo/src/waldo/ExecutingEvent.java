@@ -11,13 +11,15 @@ import WaldoCallResults.EndpointCompleteCallResult;
 public class ExecutingEvent 
 {
 
-	private static Class[] param_types = {LockedActiveEvent.class, ExecutingEventContext.class, Object[].class};
+	private static Class[] param_types_args = {LockedActiveEvent.class, ExecutingEventContext.class, Object[].class};
+	private static Class[] param_types_no_args = {LockedActiveEvent.class, ExecutingEventContext.class};
 	
 	private String to_exec_internal_name;
 	private LockedActiveEvent active_event;
 	private ExecutingEventContext ctx;
 	private ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject> result_queue;
 	private Object[] to_exec_args;
+	private boolean takes_args;
 	
 	/**
     @param {Closure} to_exec_internal_name --- The internal
@@ -46,10 +48,12 @@ public class ExecutingEvent
 	*/
 	public ExecutingEvent(String _to_exec_internal_name,LockedActiveEvent _active_event,
 			ExecutingEventContext _ctx,ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject> _result_queue,
+			boolean _takes_args,// sequence calls do not take arguments
 			Object..._to_exec_args)
 	{
 		to_exec_internal_name = _to_exec_internal_name;
 		active_event = _active_event;
+		takes_args = _takes_args;
 		ctx = _ctx;
 		result_queue = _result_queue;
 		to_exec_args = _to_exec_args;
@@ -62,15 +66,18 @@ public class ExecutingEvent
 	public static void static_run(
 			String to_exec_internal_name,LockedActiveEvent active_event,
 			ExecutingEventContext ctx,ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject> result_queue,
+			boolean takes_args,
 			Object...to_exec_args) 
 	{
 		// for now, using reflection		
 		Endpoint endpt_to_run_on = active_event.event_parent.local_endpoint;
 		Method to_run = null;
 		try {
-			to_run = endpt_to_run_on.getClass().getMethod(to_exec_internal_name, param_types);
-			//endpt_to_run_on.getClass().getMethod(to_exec_internal_name, parameterTypes)
-			
+			if (takes_args)
+				to_run = endpt_to_run_on.getClass().getMethod(to_exec_internal_name, param_types_args);
+			else
+				to_run = endpt_to_run_on.getClass().getMethod(to_exec_internal_name, param_types_no_args);
+				
 		} catch (SecurityException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -81,12 +88,13 @@ public class ExecutingEvent
 			Util.logger_assert("Invoke error");
 		}
 				
-		//ArrayList<Object> args_to_exec = new ArrayList<Object>();
-		//args_to_exec.addAll(Arrays.asList(to_exec_args));
-				
 		Object result = null;
 		try {
-			result = to_run.invoke(endpt_to_run_on,active_event, ctx,new Object[0]);
+			if (takes_args)
+				result = to_run.invoke(endpt_to_run_on,active_event, ctx,new Object[0]);
+			else
+				result = to_run.invoke(endpt_to_run_on,active_event, ctx);
+			
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -124,7 +132,7 @@ public class ExecutingEvent
 			
 	public void run() 
 	{
-		static_run(to_exec_internal_name,active_event,ctx,result_queue,to_exec_args);
+		static_run(to_exec_internal_name,active_event,ctx,result_queue,takes_args,to_exec_args);
 	}
 		
 }
