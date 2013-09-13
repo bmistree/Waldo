@@ -357,14 +357,16 @@ def emit_private_method_interface(
     function.
     '''
 
-    name_node_index = 0
-    if emit_utils.is_message_sequence_node(method_node):
-        name_node_index = 1
+    # name_node_index = 0
+    # if emit_utils.is_message_sequence_node(method_node):
+    #     name_node_index = 1
     
-    method_name_node = method_node.children[name_node_index]
-    src_method_name = method_name_node.value
-    internal_method_name = name_mangler(src_method_name)
+    # method_name_node = method_node.children[name_node_index]
+    # src_method_name = method_name_node.value
+    # internal_method_name = name_mangler(src_method_name)
 
+
+    
     # When returning, check if it was a call from an outside-Waldo
     # function into this function... if it was (ie,
     # _returning_to_public_ext_array is not None), then we must
@@ -372,30 +374,38 @@ def emit_private_method_interface(
     # _returning_to_public_ext_array correspond to which return values
     # should be returned as externals (ie, we do not de-waldo-ify
     # them).
-    method_arg_names = ['_returning_to_public_ext_array=None']
-    if method_node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
-        # will fill in the default value of None in reduce
-        method_arg_names = ['_returning_to_public_ext_array']
-    if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
-        # message receives take no arguments
-        method_arg_names = get_method_arg_names(method_node) + method_arg_names
 
-    if method_node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
-        comma_sep_arg_names = reduce (
-            lambda x, y : x + ',' + y,
-            method_arg_names,'')
-    else:
-        # provide default values for all argument sequence local data.
-        # That way, jumps are easier (we do not have to match # of
-        # arguments when jumping).
-        comma_sep_arg_names = reduce (
-            lambda x, y : x + ',' + y + '=None',
-            method_arg_names,'')
+    
+#     method_arg_names = ['_returning_to_public_ext=False']
+#     if method_node.label == AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+#         # will fill in the default value of None in reduce
+#         method_arg_names = ['_returning_to_public_ext=False']
+#     if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+#         # message receives take no arguments
+#         method_arg_names = get_method_arg_names(method_node) + method_arg_names
+
+#     if method_node.label != AST_MESSAGE_SEND_SEQUENCE_FUNCTION:
+#         comma_sep_arg_names = reduce (
+#             lambda x, y : x + ',' + y,
+#             method_arg_names,'')
+#     else:
+#         # provide default values for all argument sequence local data.
+#         # That way, jumps are easier (we do not have to match # of
+#         # arguments when jumping).
+#         comma_sep_arg_names = reduce (
+#             lambda x, y : x + ',' + y + '=None',
+#             method_arg_names,'')
         
-    private_header = '''
-def %s(self,_active_event,_context%s):
-''' % (internal_method_name, comma_sep_arg_names)
+#     private_header = '''
+# private %s(waldo.LockedActiveEvent _active_event,waldo.ExecutingEventContext _context%s)
+# {
+# ''' % (internal_method_name, comma_sep_arg_names)
 
+    overloaded_private = emit_private_overloaded_not_from_public(method_node,name_mangler)
+
+    
+    private_header,returns_non_void = private_method_signature(method_node,name_mangler,False)
+    
     # actually emit body of function
     private_body = '\n'
 
@@ -436,10 +446,97 @@ except Exception as err: # ApplicationExceptions should be backed out and the pa
     '''
 
     private_body += except_str
-        
+
+    full_private = private_header + emit_utils.indent_str(private_body) + '\n}\n'
     
-    return private_header + emit_utils.indent_str(private_body)
-        
+    return full_private + '\n' + overloaded_private
+
+
+def emit_private_overloaded_not_from_public(method_node,name_mangler):
+    '''
+    Java has different rules for overloading functions.  Instead of
+    providing default values for arguments, java allows you to create
+    overloaded functions, each with different arguments.  This method
+    handles the private emit for methods that aren't explicitly called
+    directly from public methods.
+    '''
+    private_header,returns_non_void = private_method_signature(method_node,name_mangler,False)
+    
+    name_node_index = 0
+    if emit_utils.is_message_sequence_node(method_node):
+        name_node_index = 1
+    
+    method_name_node = method_node.children[name_node_index]
+    src_method_name = method_name_node.value
+    internal_method_name = name_mangler(src_method_name)
+
+    method_arg_names = get_method_arg_names(method_node)
+    comma_sep_arg_names = reduce (
+        lambda x, y : x + y + ',',
+        method_arg_names,'')
+    
+    private_body = (
+        ('%s(_active_event,_ctx,' % internal_method_name) +
+        comma_sep_arg_names + ' false);')
+
+    if returns_non_void:
+        private_body = 'return ' + private_body
+    
+    return private_header + emit_utils.indent_str(private_body) + '\n}\n'
+
+
+    
+
+def private_method_signature(method_node,name_mangler,include_external_return):
+    '''
+    @param{method_node}
+
+    @param {bool} include_external_array --- If true, means that we
+    should append to the signature a boolean for the last return
+    item. False otherwise.
+    
+    @returns {2-tuple} --- (a,b)
+    
+      a {String} --- The function signature for the node
+      in the argument method_node
+
+      b {boolean} --- Whether or not this method returns a value or
+      it's void.
+      
+    '''
+
+    name_node_index = 0
+    if emit_utils.is_message_sequence_node(method_node):
+        name_node_index = 1
+
+
+    return_type, returns_non_void = get_java_method_return_type(method_node)
+    method_name_node = method_node.children[name_node_index]
+    src_method_name = method_name_node.value
+    internal_method_name = name_mangler(src_method_name)
+
+    method_arg_names = get_method_arg_names(method_node)
+    # if method_node.label != AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION:
+    #     # message receives take no arguments beyond active event + context
+    #     method_arg_names = get_method_arg_names(method_node) + method_arg_names
+
+    
+    comma_sep_arg_names = reduce (
+        lambda x, y : x + ', Object ' + y,
+        method_arg_names,'')
+
+    if include_external_return:
+        comma_sep_arg_names += ', boolean _returning_to_public_ext'
+
+    private_header = '''
+private %s %s(waldo.LockedActiveEvent _active_event,waldo.ExecutingEventContext _context%s)
+{
+''' % (return_type, internal_method_name, comma_sep_arg_names)
+
+
+    return private_header,returns_non_void
+    
+
 
 def convert_args_to_waldo(method_node,sequence_local=False):
     '''
