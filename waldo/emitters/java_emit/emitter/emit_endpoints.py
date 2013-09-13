@@ -181,13 +181,13 @@ while True:  # FIXME: currently using infinite retry
     _root_event.begin_first_phase_commit()
     _commit_resp = _root_event.event_parent.event_complete_queue.get()
     if isinstance(_commit_resp,%s):
-        # means it isn't a backout message: we're done
+        //# means it isn't a backout message: we're done
 
         // local endpoint's initialization has succeeded, tell other side that
         // we're done initializing.
         _this_side_ready();
 
-        return _to_return
+        return;
 
     ''' % (emit_utils.library_transform('ExecutingEventContext'),
            emit_utils.library_transform('VariableStore'),
@@ -587,18 +587,22 @@ def emit_public_method_interface(
     method_arg_names = get_method_arg_names(public_method_node)
     # turns the array of argnames above into a single string of csv
     # arg names
-    comma_sep_arg_names = reduce (
+    comma_sep_arg_names_and_types = reduce (
         lambda x, y : x + ' Object ' + y + ',',
         method_arg_names,'')
     # take off last comma:
-    comma_sep_arg_names = comma_sep_arg_names[:-1]
+    comma_sep_arg_names_and_types = comma_sep_arg_names_and_types[:-1]
+
+    comma_sep_arg_names = reduce(
+        lambda x,y : x + y + ',',
+        method_arg_names,'')
     
-    return_type = get_java_method_return_type(public_method_node)
+    return_type,return_non_void = get_java_method_return_type(public_method_node)
     
     public_header = '''
 public %s %s(%s)
 {
-''' % (return_type,method_name, comma_sep_arg_names)
+''' % (return_type,method_name, comma_sep_arg_names_and_types)
 
     # wait until ready initialization for node has completed before
     # continuing
@@ -628,69 +632,95 @@ _block_ready();
     #### create a root event + ctx for event, call internal, and reurn
     internal_method_name = lib_util.endpoint_call_func_name(method_name)
     public_body += '''
-LockedActiveEvent _root_retrier = null;
+waldo.LockedActiveEvent _root_retrier = null;
 while (true) // # FIXME: currently using infinite retry
 {
-    _root_event = _root_retrier
-    if _root_event is None:
-        _root_event = self._act_event_map.create_root_event()
+    waldo.LockedActiveEvent _root_event = _root_retrier;
+    if (_root_event == null)
+        _root_event = _act_event_map.create_root_event();
 
-    _ctx = %s(
-        self._global_var_store,
-        # not using sequence local store
-        %s(self._host_uuid))
+    waldo.ExecutingEventContext _ctx = new waldo.ExecutingEventContext(
+        _global_var_store,
+        //# not using sequence local store
+        new waldo.VariableStore(_host_uuid));
 
-    _retry_cb = kwargs.get('retry_cb',None)
 
-    # call internal function... note True as last param tells internal
-    # version of function that it needs to de-waldo-ify all return
-    # arguments (while inside transaction) so that this method may
-    # return them....if it were false, might just get back refrences
-    # to Waldo variables, and de-waldo-ifying them outside of the
-    # transaction might return over-written/inconsistent values.
-    try:
-        _to_return = self.%s(_root_event,_ctx %s,%s)
-    except Exception as _ex:
-        _root_event.put_exception(_ex)
+    //_retry_cb = kwargs.get('retry_cb',None)
 
-    # try committing root event
+    //# call internal function... note True as last param tells internal
+    //# version of function that it needs to de-waldo-ify all return
+    //# arguments (while inside transaction) so that this method may
+    //# return them....if it were false, might just get back refrences
+    //# to Waldo variables, and de-waldo-ifying them outside of the
+    //# transaction might return over-written/inconsistent values.
+    Object _to_return = null;
+    try
+    {
+        _to_return = %s(_root_event,_ctx, %s %s);
+    }
+    catch (Exception _ex)
+    {
+        _root_event.put_exception(_ex);
+    }
 
-    _root_event.begin_first_phase_commit()
-    _commit_resp = _root_event.event_parent.event_complete_queue.get()
-    if (isinstance(_commit_resp,%s) or
-        isinstance(_commit_resp,%s)):
-        # means it isn't a backout message: we're done
-        return _to_return
-    elif isinstance(_commit_resp,%s):
-        # backout got called: that means that we must remove the retry
-        # event that we generated when backing out from active event map
-        self._act_event_map.remove_event(_root_event.retry_event)
+    //# try committing root event
+    _root_event.begin_first_phase_commit();
+    WaldoCallResults.RootCallResultObject _commit_resp =
+        ((waldo.RootEventParent)_root_event.event_parent).event_complete_queue.get();
 
-        raise %s()
+    if (WaldoCallResults.CompleteRootCallResult.class.isInstance(_commit_resp) ||
+        WaldoCallResults.NetworkFailureCallResult.class.isInstance(_commit_resp))
+    {
+        //# means it isn't a backout message: we're done
+        %s;
+    }
+    else if (WaldoCallResults.StopRootCallResult.class.isInstance(_commit_resp))
+    {
+        //# backout got called: that means that we must remove the retry
+        //# event that we generated when backing out from active event map
+        _act_event_map.remove_event(_root_event.retry_event);
+        throw new WaldoExceptions.StoppedExceptions();
+    }
 
-    # event was backed out.  we have a retry event
-    _root_retrier = _root_event.retry_event
+    //# event was backed out.  we have a retry event
+    _root_retrier = _root_event.retry_event;
 
-    if _retry_cb is not None:
-        if not _retry_cb(self):
-            # user canceled event in retry callback.  unschedule retry
-            # event.
-            self._act_event_map.remove_event(_root_retrier.uuid,False)
-            raise %s()
+//    if _retry_cb is not None:
+//        if not _retry_cb(self):
+//            # user canceled event in retry callback.  unschedule retry
+//            # event.
+//            self._act_event_map.remove_event(_root_retrier.uuid,False)
+//            raise s()
 }
-''' % (emit_utils.library_transform('ExecutingEventContext'),
-       emit_utils.library_transform('VariableStore'),
-       internal_method_name,
+''' % (internal_method_name,
        comma_sep_arg_names,
-       str(list_return_external_positions),
-       emit_utils.library_transform('CompleteRootCallResult'),
-       emit_utils.library_transform('NetworkFailureCallResult'),
-       emit_utils.library_transform('StopRootCallResult'),
-       emit_utils.library_transform('StoppedException'),
-       emit_utils.library_transform('RetryCanceledException')
+       convert_return_external_positions_to_string(list_return_external_positions),
+       'return _to_return'  if return_non_void else 'return',
        )
 
     return public_header + emit_utils.indent_str(public_body) + '\n}\n'
+
+def convert_return_external_positions_to_string(
+    list_return_external_positions):
+    '''
+    @param {list} list_return_external_positions --- Each element is
+    a number.  If a number is in the list, it means that the value that
+    is supposed to be returned in that position of the tuple should be
+    an external.  Otherwise, don't return it as an external.
+
+    Importantly, the java version of Waldo will not have tuple return
+    values.  This means that we just check whether the zero element is
+    in the list. if it is, then return 'true'.  Otherwise, return
+    'false'.
+    
+    @returns {String} --- Each method gets passed a boolean.  This
+    boolean signifies whether the object that is returned from this
+    method should be external or not.  
+    
+    '''
+    if 0 in list_return_external_positions:
+        return 'true'
+    return 'false'
 
 
 def emit_endpoint_message_sequence_blocks(
@@ -1026,11 +1056,15 @@ def get_java_method_return_type(method_node):
 
     Getting ugly: a method can only return a void type or an object
     type.  Caller must cast the value to what will use.
+
+    @returns {2-tuple} (a,b) ---
+        a {String} --- The actual java-ized return type
+        b {boolean } --- True if returns non-void.  False otherwise.
     
     '''
     if ((method_node.label == AST_ONCREATE_FUNCTION) or
         (method_node.label == AST_MESSAGE_RECEIVE_SEQUENCE_FUNCTION)):
-        return ' void '
+        return ' void ', False
     
     emit_utils.emit_warn(
         'Warning: do not know how to disambiguate between ' +
@@ -1038,10 +1072,17 @@ def get_java_method_return_type(method_node):
 
     
     return_node_index = get_return_index_from_func_node_label(method_node.label)
-    if TypeCheck.templateUtil.is_nothing_type(method_node.children[return_node_index].type):
-        return ' void '
+    return_array = method_node.children[return_node_index].type;
+    emit_utils.emit_warn('Warning: not handling tuple returns in java waldo')
+    return_type = return_array
+    if isinstance(return_array,list):
+        return_type = return_array[0]
 
-    return ' Object '
+    
+    if TypeCheck.templateUtil.is_nothing_type(return_type):
+        return ' void ', False
+
+    return ' Object ', True
 
 
 
