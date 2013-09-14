@@ -906,7 +906,7 @@ if (! _context.set_msg_send_initialized_bit_true())
     return_var_name_nodes = get_message_send_return_var_names(
         message_send_node)
 
-    msg_send_return_txt = '\nreturn '
+    msg_send_return_txt = ''
     for counter in range(0,len(return_var_name_nodes)):
         var_name_node = return_var_name_nodes[counter]
         msg_send_return_txt += (
@@ -915,7 +915,11 @@ if (! _context.set_msg_send_initialized_bit_true())
         if counter != (len(return_var_name_nodes) -1):
             msg_send_return_txt += ','
             
-
+    if len(msg_send_return_txt) == 0:
+        msg_send_return_txt = '\nreturn null;\n'
+    else:
+        msg_send_return_txt = '\nreturn ' + msg_send_return_txt + ';\n'
+            
         
     emit_ctx.in_message_send = True
     emit_ctx.message_seq_return_txt = msg_send_return_txt
