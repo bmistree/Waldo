@@ -121,7 +121,7 @@ public %s(
     WaldoConnObj.ConnectionObj __conn_obj %s)
 {
     super(__waldo_classes,__host_uuid,__conn_obj, new waldo.VariableStore(__host_uuid));
-
+    try{
 ''' %( endpoint_name, oncreate_argument_string)
 
 
@@ -137,6 +137,14 @@ public %s(
     # actually initialize super class
     init_body = endpoint_global_and_peered_variable_store_load_txt
 
+    init_body += '''
+} catch (WaldoExceptions.BackoutException _ex){
+    // impossible to get backout exception when
+    // initializing endpoint variables
+} 
+
+'''
+    
     # emit call to oncreate method
     init_body += emit_oncreate_call(endpoint_name,ast_root)
 

@@ -57,9 +57,9 @@ public class LockedVariables {
 	
 	public static class LockedNumberVariable extends LockedValueVariable<Number,Number>
 	{
-		public LockedNumberVariable(String _host_uuid, boolean _peered,Number init_val)
+		public LockedNumberVariable(String _host_uuid, boolean _peered,Object  object)
 		{
-			super(_host_uuid,_peered,init_val,default_number,number_value_type_data_wrapper_constructor);		
+			super(_host_uuid,_peered, (Number) object,default_number,number_value_type_data_wrapper_constructor);		
 		}
 		public LockedNumberVariable(String _host_uuid, boolean _peered)
 		{
@@ -69,9 +69,9 @@ public class LockedVariables {
 
 	public static class LockedTextVariable extends LockedValueVariable<String,String>
 	{
-		public LockedTextVariable(String _host_uuid, boolean _peered,String init_val)
+		public LockedTextVariable(String _host_uuid, boolean _peered,Object init_val)
 		{
-			super(_host_uuid,_peered,init_val,default_text,text_value_type_data_wrapper_constructor);		
+			super(_host_uuid,_peered,(String)init_val,default_text,text_value_type_data_wrapper_constructor);		
 		}
 		public LockedTextVariable(String _host_uuid, boolean _peered)
 		{
@@ -81,9 +81,9 @@ public class LockedVariables {
 	
 	public static class LockedTrueFalseVariable extends LockedValueVariable<Boolean,Boolean>
 	{
-		public LockedTrueFalseVariable(String _host_uuid, boolean _peered,Boolean init_val)
+		public LockedTrueFalseVariable(String _host_uuid, boolean _peered,Object init_val)
 		{
-			super(_host_uuid,_peered,init_val,default_tf,true_false_value_type_data_wrapper_constructor);		
+			super(_host_uuid,_peered,(Boolean)init_val,default_tf,true_false_value_type_data_wrapper_constructor);		
 		}
 		public LockedTrueFalseVariable(String _host_uuid, boolean _peered)
 		{

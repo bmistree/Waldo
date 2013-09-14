@@ -25,7 +25,8 @@ def ast_emit(ast_root_node):
     @returns {String or None} ---- String if succeeded, none if
     failed.
     '''
-
+    waldo_name = ast_root_node.children[0].value
+    
     emit_ctx = emit_utils.EmitContext()
     
     ####### slice the ast
@@ -42,9 +43,20 @@ def ast_emit(ast_root_node):
     # all Waldo files start the same way, regardless of contents
     returner = uniform_header.uniform_header()
 
+    # now, encapsulate both emitted endpoints in a wrapping class
+    returner += '''
+public class %s
+{
+
+''' % waldo_name
+
+    
     # now actually emit each endpoint object (including user-defined
     # functions specified in program source text).
-    returner += emit_endpoints.emit_endpoints(ast_root_node,fdep_dict,emit_ctx)
+    returner += emit_utils.indent_str(
+        emit_endpoints.emit_endpoints(ast_root_node,fdep_dict,emit_ctx))
+
+    returner += '\n\n}\n'
     
-    return returner;
+    return returner
 

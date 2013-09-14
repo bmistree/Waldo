@@ -578,7 +578,7 @@ def _emit_de_waldoed_return(
         ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
     return_txt = '''
-if (_returning_to_public)
+if (_returning_to_public_ext)
     _context.de_waldoify(%s,_active_event);
 else
     %s;
