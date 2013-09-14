@@ -216,9 +216,12 @@ def emit_statement(
 
         bin_op_txt = get_binary_operator_from_label(statement_node.label)
 
+        lhs_cast = get_java_caster_from_type(lhs_node.type)
+        rhs_cast = get_java_caster_from_type(rhs_node.type)
+        
         statement_txt = (
-            '(_context.get_val_if_waldo(%s,_active_event) %s _context.get_val_if_waldo(%s,_active_event))'
-            % (lhs_txt, bin_op_txt, rhs_txt))
+            '( ((%s) _context.get_val_if_waldo(%s,_active_event)) %s ((%s)_context.get_val_if_waldo(%s,_active_event)))'
+            % (lhs_cast,lhs_txt, bin_op_txt, rhs_cast,rhs_txt))
         
 
     elif statement_node.label == AST_APPEND_STATEMENT:
@@ -521,15 +524,16 @@ def _emit_return_statement(
     non_de_waldoed_return_txt = _emit_non_de_waldoed_return(
         return_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
+    
     # all returend objects are returned as tuples
     return_txt = '''
 if (_returning_to_public_ext)
 {
     //# must de-waldo-ify objects before passing back
-    %s
+    %s;
 }
 //# otherwise, use regular return mechanism... do not de-waldo-ify
-%s
+%s;
 ''' % (de_waldoed_return_txt,non_de_waldoed_return_txt)
 
     return return_txt
@@ -578,11 +582,8 @@ def _emit_de_waldoed_return(
         ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
     return_txt = '''
-if (_returning_to_public_ext)
-    _context.de_waldoify(%s,_active_event);
-else
-    %s;
-''' % (item_emit,item_emit)
+    return _context.de_waldoify(%s,_active_event);
+''' % (item_emit)
 
     return return_txt
 
@@ -1455,3 +1456,18 @@ def intermediate_python_name_from_identifier(identifier_node):
     '''
     waldo_src_name = identifier_node.value
     return '_secret_waldo_for_iter____' + waldo_src_name
+
+
+def get_java_caster_from_type(node_type_dict):
+    '''
+    @param {dict} node_type_dict
+    @returns {String}
+    '''
+    if TypeCheck.templateUtil.is_number(node_type_dict):
+        return 'Double'
+    elif TypeCheck.templateUtil.is_text(node_type_dict):
+        return 'String'
+    elif TypeCheck.templateUtil.is_true_false(node_type_dict):
+        return 'Boolean'
+
+    emit_utils.emit_assert('Unknown type to get java cast for')

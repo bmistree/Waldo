@@ -10,9 +10,9 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTextDelta;
 import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta;
 
 public class LockedVariables {
-	final static ValueTypeDataWrapperConstructor<Number,Number> number_value_type_data_wrapper_constructor =
-			new ValueTypeDataWrapperConstructor<Number,Number>();
-	final static Number default_number = new Double(0);
+	final static ValueTypeDataWrapperConstructor<Double,Double> number_value_type_data_wrapper_constructor =
+			new ValueTypeDataWrapperConstructor<Double,Double>();
+	final static Double default_number = new Double(0);
 
 	final static ValueTypeDataWrapperConstructor<String,String> text_value_type_data_wrapper_constructor =
 			new ValueTypeDataWrapperConstructor<String,String>();
@@ -55,11 +55,11 @@ public class LockedVariables {
 	}
 	
 	
-	public static class LockedNumberVariable extends LockedValueVariable<Number,Number>
+	public static class LockedNumberVariable extends LockedValueVariable<Double,Double>
 	{
 		public LockedNumberVariable(String _host_uuid, boolean _peered,Object  object)
 		{
-			super(_host_uuid,_peered, (Number) object,default_number,number_value_type_data_wrapper_constructor);		
+			super(_host_uuid,_peered, (Double) object,default_number,number_value_type_data_wrapper_constructor);		
 		}
 		public LockedNumberVariable(String _host_uuid, boolean _peered)
 		{
@@ -93,10 +93,10 @@ public class LockedVariables {
 	
 	
 	
-	public static class SingleThreadedLockedNumberVariable extends SingleThreadedLockedValueVariable<Number,Number>
+	public static class SingleThreadedLockedNumberVariable extends SingleThreadedLockedValueVariable<Double,Double>
 	{
 		public SingleThreadedLockedNumberVariable(String _host_uuid, boolean _peered,
-			Number init_val)
+			Double init_val)
 		{
 			super(_host_uuid,_peered,init_val,default_number,number_value_type_data_wrapper_constructor);			
 		}
@@ -109,7 +109,7 @@ public class LockedVariables {
 		@Override
 		protected boolean value_variable_py_val_serialize(
 				waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.Builder parent_delta,
-				Number var_data, String var_name) 
+				Double var_data, String var_name) 
 		{
 			// can only add a pure number to var store a holder or to
 	        // an added key
@@ -123,7 +123,7 @@ public class LockedVariables {
 		@Override
 		protected boolean value_variable_py_val_serialize(
 				waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerAddedKey.Builder parent_delta,
-				Number var_data, String var_name) 
+				Double var_data, String var_name) 
 		{
 			//parent_delta.added_what_num = var_data
 			parent_delta.setAddedWhatNum(var_data.doubleValue());
@@ -133,7 +133,7 @@ public class LockedVariables {
 		@Override
 		protected boolean value_variable_py_val_serialize(
 				waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.ContainerAction.ContainerWriteKey.Builder parent_delta,
-				Number var_data, String var_name) 
+				Double var_data, String var_name) 
 		{
 			// parent.what_written_num = var_data
 			parent_delta.setWhatWrittenNum(var_data.doubleValue());
