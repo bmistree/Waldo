@@ -511,7 +511,7 @@ def private_method_signature(method_node,name_mangler,include_external_return):
         comma_sep_arg_names += ', boolean _returning_to_public_ext'
 
     private_header = '''
-private %s %s(waldo.LockedActiveEvent _active_event,waldo.ExecutingEventContext _context%s) throws Exception
+public %s %s(waldo.LockedActiveEvent _active_event,waldo.ExecutingEventContext _context%s) throws Exception
 {
 ''' % (return_type, internal_method_name, comma_sep_arg_names)
 

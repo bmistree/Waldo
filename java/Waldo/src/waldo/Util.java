@@ -1,8 +1,5 @@
 package waldo;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Util {
 	
@@ -23,7 +20,7 @@ public class Util {
 	 */
 	public static int MEDIUM_QUEUE_CAPACITIES = 10;
 
-	public static int DEFAULT_NUM_THREADS = 100;
+	public static int DEFAULT_NUM_THREADS = 10;
 	
 	/**
 	 * 	Takes in the name of the function that another endpoint has
@@ -55,6 +52,7 @@ public class Util {
 	    return "_onCreate";
 	}
 
+	
 	static public String generate_uuid()
 	{
 		return java.util.UUID.randomUUID().toString();

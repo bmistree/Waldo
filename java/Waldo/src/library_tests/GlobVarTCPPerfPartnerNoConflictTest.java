@@ -105,7 +105,7 @@ public class GlobVarTCPPerfPartnerNoConflictTest implements TestInterface
 		}
 		
 		System.out.println("\nFirst trans\n");
-		int num_times = 10000;
+		int num_times = 100;
 		//int num_times = 100;
 		for (int i =0; i < num_times; ++i)
 			run_seq( endpta, host_uuid, initial_value, seq_local_num, new_val);

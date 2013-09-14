@@ -94,9 +94,8 @@ public class ExecutingEventContext {
 	public void reset_to_reply_with()
 	{
         set_to_reply_with(null);
-	}
+    }
      
-
 	/**
         @see emitter.emit_statement._emit_msg_seq_begin_call
 

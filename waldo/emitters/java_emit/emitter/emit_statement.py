@@ -24,7 +24,7 @@ def emit_statement(
         for child_node in statement_node.children:
             statement_txt += emit_statement(
                 child_node,endpoint_name,ast_root,fdep_dict,
-                emit_ctx)
+                emit_ctx) + ';\n'
 
     elif statement_node.label == AST_SELF:
         statement_txt = 'self'
@@ -670,7 +670,7 @@ def _emit_public_private_method_call(
     method_call_name_node = method_call_node.children[0]
     method_call_name = method_call_name_node.value
 
-    method_call_txt = 'self.%s(_active_event,_context,' % name_mangler_func(
+    method_call_txt = '%s(_active_event,_context,' % name_mangler_func(
         method_call_name)
 
     method_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
@@ -692,6 +692,10 @@ def _emit_public_private_method_call(
 def _emit_msg_seq_begin_call(
     msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
     '''
+    # @param {bool} assignment --- True if we are assigning the value to
+    # another variable.  False otherwise.
+
+    NOT TRUE ANY MORE broken in java release.
     Before beginning a message sequence call, we set context's
     sequence initialized bit to False.  Inside of the message send
     function, we check context's sequence initialized bit.  If it is
@@ -734,9 +738,7 @@ def _emit_msg_seq_begin_call(
         msg_seq_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
         lib_util.partner_endpoint_msg_call_func_name)
     
-    return (
-        '(%s if _context.set_msg_send_initialized_bit_false() else None)' %
-        method_call_txt)
+    return method_call_txt 
 
 
 def _emit_endpoint_method_call(
