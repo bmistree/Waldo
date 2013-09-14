@@ -670,12 +670,13 @@ def _emit_public_private_method_call(
     method_call_name_node = method_call_node.children[0]
     method_call_name = method_call_name_node.value
 
-    method_call_txt = '%s(_active_event,_context,' % name_mangler_func(
+    method_call_txt = '%s(_active_event,_context' % name_mangler_func(
         method_call_name)
 
     method_call_arg_list_node = emit_utils.get_method_call_arg_list_node(
         method_call_node)
-    
+
+
     for method_call_arg_node in method_call_arg_list_node.children:
         arg_txt = emit_statement(
             method_call_arg_node, endpoint_name,ast_root,fdep_dict,emit_ctx)
@@ -684,8 +685,8 @@ def _emit_public_private_method_call(
         # variable), because the first thing that the callee does is
         # go through all the arguments that it received and copy them
         # if they're non-external value types.
-        method_call_txt += arg_txt + ','
-
+        method_call_txt += ',' + arg_txt 
+        
     return method_call_txt + ')'
 
 
