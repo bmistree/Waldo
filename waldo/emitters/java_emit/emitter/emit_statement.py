@@ -820,7 +820,7 @@ def _emit_assignment(
     # match each to the place they go in Waldo
     intermediate_assign_txt = ''
     for counter in range(0,len(comma_list_node.children)):
-        intermediate_assign_txt += '_tmp' + str(counter)
+        intermediate_assign_txt += 'Object _tmp' + str(counter)
         if counter != len(comma_list_node.children) -1:
             intermediate_assign_txt += ','
 
@@ -832,7 +832,7 @@ def _emit_assignment(
         to_assign_txt = emit_statement(
             rhs_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
-    first_level_assign_txt = intermediate_assign_txt + ' = ' + to_assign_txt + '\n'
+    first_level_assign_txt = intermediate_assign_txt + ' = ' + to_assign_txt + ';\n'
 
 
     # after first level assign, can take each individual element from
@@ -916,17 +916,14 @@ def _emit_second_level_assign(
             # will do work anyways and just input pass.  Otherwise,
             # emit it.
             all_assignments_txt += (                
-                'if not _context.assign(' + lhs_txt + ',' + rhs + ',_active_event):\n')
-            inside_if_txt = lhs_txt + ' = ' + rhs + '\n'
+                'if (! _context.assign(' + lhs_txt + ',' + rhs + ',_active_event)) {\n')
+
+            if '_context.global' in lhs_txt:
+                inside_if_txt = ''
+            else:
+                inside_if_txt = lhs_txt + ' = ' + rhs + '\n'
             
-            try:
-                exec (inside_if_txt)
-            except SyntaxError:
-                inside_if_txt = 'pass\n'
-            except:
-                pass
-            
-            all_assignments_txt += emit_utils.indent_str(inside_if_txt,1)
+            all_assignments_txt += emit_utils.indent_str(inside_if_txt,1) + '\n}\n'
 
             
     return all_assignments_txt
