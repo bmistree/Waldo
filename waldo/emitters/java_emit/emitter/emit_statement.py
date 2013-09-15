@@ -533,7 +533,7 @@ if (_returning_to_public_ext)
     %s;
 }
 //# otherwise, use regular return mechanism... do not de-waldo-ify
-%s;
+%s
 ''' % (de_waldoed_return_txt,non_de_waldoed_return_txt)
 
     return return_txt
@@ -548,7 +548,7 @@ def _emit_non_de_waldoed_return(
 
     
     if len(ret_list_node.children) == 0:
-        return_txt += ';\n'
+        return_txt += '\n'
         return return_txt
 
     if len(ret_list_node.children) > 1:
@@ -558,7 +558,7 @@ def _emit_non_de_waldoed_return(
     ret_item_node = ret_list_node.children[0]
     return_txt += emit_statement(
         ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
-    return_txt += ';\n'
+    return_txt += '\n'
 
     return return_txt
 
@@ -569,7 +569,7 @@ def _emit_de_waldoed_return(
     return_txt = ''
 
     if len(ret_list_node.children) == 0:
-        return_txt += 'return;\n'
+        return_txt += 'return\n'
         return return_txt
 
     if len(ret_list_node.children) > 1:
@@ -582,7 +582,7 @@ def _emit_de_waldoed_return(
         ret_item_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
 
     return_txt = '''
-    return _context.de_waldoify(%s,_active_event);
+    return _context.de_waldoify(%s,_active_event)
 ''' % (item_emit)
 
     return return_txt
