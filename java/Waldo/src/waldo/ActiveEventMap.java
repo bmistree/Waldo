@@ -2,6 +2,7 @@ package waldo;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import WaldoExceptions.StoppedException;
 
@@ -211,5 +212,40 @@ public class ActiveEventMap {
 	public ActiveEventTwoTuple remove_event(String uuid_to_remove) {
 		return remove_event(uuid_to_remove,false);
 	}
+
+	/**
+    @param {Endpoint object} endpoint --- The endpoint that made
+    the endpoint call onto us.
+	 * @throws StoppedException 
+
+    @see description above get_or_create_partner_event
     
+    Create an event because received an endpoint call
+	 */
+	
+	public LockedActiveEvent get_or_create_endpoint_called_event(
+			Endpoint endpoint_calling, String event_uuid, String priority,
+			ArrayBlockingQueue<WaldoCallResults.EndpointCallResultObject>result_queue) throws StoppedException 
+	{
+		_lock();
+		if (! map.containsKey(event_uuid))
+		{
+			if (in_stop_phase)
+			{
+				_unlock();
+				throw new WaldoExceptions.StoppedException();
+			}
+			
+			EndpointEventParent eep = new EndpointEventParent(event_uuid,endpoint_calling, local_endpoint,result_queue,priority);
+			LockedActiveEvent new_event = new LockedActiveEvent(eep,this);
+			map.put(event_uuid, new_event);
+		}
+		LockedActiveEvent to_return = map.get(event_uuid);
+		
+		_unlock();
+		return to_return;
+	
+	}
+    
+
 }

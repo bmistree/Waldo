@@ -30,9 +30,9 @@ public class LockedVariables {
 		{
 			return new LockedVariables.SingleThreadedLockedTrueFalseVariable(host_uuid,false,(Boolean) to_write);
 		}
-		else if (Number.class.isInstance(to_write))
+		else if (Double.class.isInstance(to_write))
 		{
-			return new LockedVariables.SingleThreadedLockedNumberVariable(host_uuid,false,(Number) to_write);
+			return new LockedVariables.SingleThreadedLockedNumberVariable(host_uuid,false,(Double) to_write);
 		}
 		else if (String.class.isInstance(to_write))
 		{

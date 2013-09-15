@@ -305,7 +305,7 @@ public class ExecutingEventContext {
 			if (String.class.isInstance(val))
 				return new LockedVariables.SingleThreadedLockedTextVariable(host_uuid, new_peered, (String)val);
 			else if (Number.class.isInstance(val))
-				return new LockedVariables.SingleThreadedLockedNumberVariable(host_uuid, new_peered, (Number)val);
+				return new LockedVariables.SingleThreadedLockedNumberVariable(host_uuid, new_peered, (Double)val);
 			else if (Boolean.class.isInstance(val))
 				return new LockedVariables.SingleThreadedLockedTrueFalseVariable(host_uuid,new_peered,(Boolean)val);
 			else if (HashMap.class.isInstance(val))
