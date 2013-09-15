@@ -87,11 +87,12 @@ public class ExecutingEvent
 			e1.printStackTrace();
 			Util.logger_assert("Invoke error");
 		}
-				
+			
+		
 		Object result = null;
 		try {
 			if (takes_args)
-				result = to_run.invoke(endpt_to_run_on,active_event, ctx,new Object[0]);
+				result = to_run.invoke(endpt_to_run_on,active_event, ctx,to_exec_args);
 			else
 				result = to_run.invoke(endpt_to_run_on,active_event, ctx);
 			

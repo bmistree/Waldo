@@ -22,6 +22,27 @@ public class test_util
 					glob_var_store);
 			
 		}
+		
+
+		/**
+		 * To test endpoint calls, increment local num_var, which should be in global var store.  Then add it to 
+		 * a lockedObject that was passed in as the first argument in args.
+		 * @return
+		 * @throws BackoutException 
+		 */
+		public Object _endpoint_func_call_prefix__waldo__test_endpoint(
+				waldo.LockedActiveEvent active_event, waldo.ExecutingEventContext context, Object...args) throws BackoutException
+		{
+			Object input = args[0];			
+			waldo.LockedObject num_var = context.global_store.get_var_if_exists("num_var");
+			
+			num_var.set_val(
+					active_event, 
+					((Double)context.get_val_if_waldo(input, active_event)) + 1);
+			
+			return num_var.get_val(active_event);
+		}
+		
 	}
 	
 	
@@ -49,6 +70,7 @@ public class test_util
 			
 		}
 		
+		
 		public void _partner_endpoint_msg_func_call_prefix__waldo__test_partner(
 				waldo.LockedActiveEvent active_event, waldo.ExecutingEventContext context)
 		{
@@ -65,6 +87,9 @@ public class test_util
 			context.hide_sequence_completed_call(this, active_event);
 			
 		}
+		
+		
+		
 	}
 
 	public static class SameHostEndpointGlobVarConstructor implements EndpointConstructorObj

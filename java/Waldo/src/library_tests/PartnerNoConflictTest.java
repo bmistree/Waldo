@@ -1,7 +1,5 @@
 package library_tests;
 
-import java.util.concurrent.ArrayBlockingQueue;
-
 import WaldoExceptions.ApplicationException;
 import WaldoExceptions.BackoutException;
 import WaldoExceptions.NetworkException;
