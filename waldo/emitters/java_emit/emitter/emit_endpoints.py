@@ -138,12 +138,14 @@ public %s(
     init_body = endpoint_global_and_peered_variable_store_load_txt
 
     init_body += '''
-} catch (WaldoExceptions.BackoutException _ex){
+} catch (Exception _ex){
     // impossible to get backout exception when
-    // initializing endpoint variables
+    // initializing endpoint variables...
+    // (or, hopefully, any other type of exception)
 } 
 
 '''
+
     
     # emit call to oncreate method
     init_body += emit_oncreate_call(endpoint_name,ast_root)
