@@ -337,7 +337,7 @@ def emit_endpoint_publics_privates(
 
 def emit_private_method_interface(
     method_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-    name_mangler=lib_util.endpoint_call_func_name,prefix=None,
+    name_mangler=lib_util.internal_call_func_name,prefix=None,
     emit_wrapper_and_bool_end=True):
     '''
     @param {boolean} emit_wrapper --- If true, creates two versions of
@@ -659,6 +659,38 @@ _context.sequence_local_store.add_var(
     return converted_args_string
 
     
+def emit_endpoint_call_internal(public_method_node):
+    '''
+    For each public method, need to emit a thin wrapper around
+    internal call.  This method receives endpoint calls and turns them
+    into internal calls (note: we do this essentially) to handle
+    arguments.
+    
+    @returns {String}
+    '''
+    method_name_node = public_method_node.children[0]
+    method_name = method_name_node.value
+
+    arg_string = ''
+    method_arg_names = get_method_arg_names(public_method_node)
+    # turns the array of argnames above into a single string of csv
+    # arg names
+    for counter in range(0,len(method_arg_names)):
+        arg_string += ', args[' + str(counter) + ']'
+
+    txt_to_return = ('''
+public Object %s (waldo.LockedActiveEvent _active_event, waldo.ExecutingEventContext _ctx, Object...args) throws Exception
+{
+    return %s(_active_event,_ctx %s);
+}
+''' %
+    (lib_util.endpoint_call_func_name(method_name),
+     lib_util.internal_call_func_name(method_name),
+     arg_string
+     ))
+    
+    return txt_to_return
+
 
 def emit_public_method_interface(
     public_method_node,endpoint_name,ast_root,fdep_dict,emit_ctx):
@@ -666,6 +698,8 @@ def emit_public_method_interface(
     @param {AstNode} public_method_node --- An AstNode with label
     AST_PUBLIC_FUNCTION
     '''
+    endpoint_call_interface = emit_endpoint_call_internal(public_method_node)
+
     method_name_node = public_method_node.children[0]
     method_name = method_name_node.value
     
@@ -715,7 +749,7 @@ _block_ready();
         get_external_return_positions_from_func_node(public_method_node))
 
     #### create a root event + ctx for event, call internal, and reurn
-    internal_method_name = lib_util.endpoint_call_func_name(method_name)
+    internal_method_name = lib_util.internal_call_func_name(method_name)
     public_body += '''
 waldo.LockedActiveEvent _root_retrier = null;
 while (true) // # FIXME: currently using infinite retry
@@ -794,7 +828,11 @@ while (true) // # FIXME: currently using infinite retry
        'return _to_return'  if return_non_void else 'return',
        )
 
-    return public_header + emit_utils.indent_str(public_body) + '\n}\n'
+
+    emitted_txt = endpoint_call_interface
+    emitted_txt += public_header + emit_utils.indent_str(public_body) + '\n}\n'
+
+    return emitted_txt
 
 
 def convert_return_external_positions_to_string(

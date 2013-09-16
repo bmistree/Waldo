@@ -656,7 +656,7 @@ def emit_func_object_call(
 
 def _emit_public_private_method_call(
     method_call_node,endpoint_name,ast_root,fdep_dict,emit_ctx,
-    name_mangler_func=lib_util.endpoint_call_func_name):
+    name_mangler_func=lib_util.internal_call_func_name):
     '''
     @param {Function} name_mangler_func --- Takes in a string and
     returns a string.  The compiler uses different internal names for

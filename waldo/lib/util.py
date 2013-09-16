@@ -34,6 +34,9 @@ def endpoint_call_func_name(func_name):
     '''
     return '_endpoint_func_call_prefix__waldo__' + func_name
 
+def internal_call_func_name(func_name):
+    return '_internal_func_call_prefix__waldo__' + func_name
+
 def partner_endpoint_msg_call_func_name(func_name):
     '''
     @see endpoint_call_func_name, except as a result of partner
