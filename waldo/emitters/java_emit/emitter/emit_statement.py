@@ -382,8 +382,13 @@ def emit_statement(
                     '_context.get_val_if_waldo(%s,_active_event)' %
                     emit_statement(
                         initializer_node, endpoint_name,ast_root,fdep_dict,emit_ctx))
+
+
+        type_decl = get_java_caster_from_type(var_name_node.type)
                 
-        statement_txt = var_name_waldo_src + ' = ' + decl_txt 
+        statement_txt = (
+            type_decl + ' ' + var_name_waldo_src + ' = new ' +
+            type_decl + '( ' + decl_txt + ') ')
 
 
         
@@ -534,7 +539,7 @@ if (_returning_to_public_ext)
 }
 //# otherwise, use regular return mechanism... do not de-waldo-ify
 %s
-''' % (de_waldoed_return_txt,non_de_waldoed_return_txt)
+''' % (non_de_waldoed_return_txt,de_waldoed_return_txt)
 
     return return_txt
     
@@ -775,13 +780,19 @@ def _emit_endpoint_method_call(
             arg_node,endpoint_name,ast_root,fdep_dict,emit_ctx)
         method_arg_str += ','
 
-
+    if len(method_arg_str) == 0:
+        method_arg_str = ' null'
+    else:
+        method_arg_str = 'new Object [] {' + method_arg_str + '}'
+        
+        
     call_txt = (
         '_context.hide_endpoint_call(_active_event,_context,' +
-        ('_context.get_val_if_waldo(%s,_active_event)' % emitted_endpoint_name) +
-         ',"' + method_name + '",' + method_arg_str + ')'
+        ('(waldo.Endpoint) _context.get_val_if_waldo(%s,_active_event)' % emitted_endpoint_name) +
+         ',"' + method_name + '", ' + method_arg_str + ')'
         )
 
+    
     return call_txt
 
 
@@ -921,8 +932,11 @@ def _emit_second_level_assign(
             if '_context.global' in lhs_txt:
                 inside_if_txt = ''
             else:
-                inside_if_txt = lhs_txt + ' = ' + rhs + '\n'
-            
+                expected_type = get_java_caster_from_type(lhs_node.type)
+                
+                inside_if_txt = lhs_txt + ' = ' + '(' + expected_type + ')'  + rhs + ';\n'
+
+                
             all_assignments_txt += emit_utils.indent_str(inside_if_txt,1) + '\n}\n'
 
             

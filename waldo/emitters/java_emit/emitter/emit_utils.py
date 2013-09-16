@@ -388,9 +388,9 @@ def emit_value_type_default(type_dict):
             'Incorrect type passed into default value type')
     #### END DEBUG
     if TypeCheck.templateUtil.is_number(type_dict):
-        return '0'
+        return '0.0'
     elif TypeCheck.templateUtil.is_true_false(type_dict):
-        return 'False'
+        return 'false'
     elif TypeCheck.templateUtil.is_text(type_dict):
         return '""'
 

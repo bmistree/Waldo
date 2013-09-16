@@ -55,13 +55,9 @@ def SingleSide(_waldo_classes,_host_uuid,_conn_obj):
     argument that dynamically tells us how to make the Endpoint
     inherit from the hidden Waldo _Endpoint.
     '''
-    endpoint_factory_func = (
-        'def %s (_waldo_classes,_host_uuid,_conn_obj,*args):\n' %
-        endpoint_name)
-
 
     endpoint_header = '''
-public class %s extends waldo.Endpoint
+public static class %s extends waldo.Endpoint
 {
 ''' % endpoint_name
 
@@ -799,6 +795,7 @@ while (true) // # FIXME: currently using infinite retry
        )
 
     return public_header + emit_utils.indent_str(public_body) + '\n}\n'
+
 
 def convert_return_external_positions_to_string(
     list_return_external_positions):

@@ -12,7 +12,7 @@ import waldo_protobuffs.VarStoreDeltasProto.VarStoreDeltas.SingleTrueFalseDelta;
 public class LockedVariables {
 	final static ValueTypeDataWrapperConstructor<Double,Double> number_value_type_data_wrapper_constructor =
 			new ValueTypeDataWrapperConstructor<Double,Double>();
-	final static Double default_number = new Double(0);
+	final static Double default_number = new Double(0.0);
 
 	final static ValueTypeDataWrapperConstructor<String,String> text_value_type_data_wrapper_constructor =
 			new ValueTypeDataWrapperConstructor<String,String>();
@@ -57,9 +57,9 @@ public class LockedVariables {
 	
 	public static class LockedNumberVariable extends LockedValueVariable<Double,Double>
 	{
-		public LockedNumberVariable(String _host_uuid, boolean _peered,Object  object)
+		public LockedNumberVariable(String _host_uuid, boolean _peered,Object init_val)
 		{
-			super(_host_uuid,_peered, (Double) object,default_number,number_value_type_data_wrapper_constructor);		
+			super(_host_uuid,_peered, new Double(((Number) init_val).doubleValue()),default_number,number_value_type_data_wrapper_constructor);		
 		}
 		public LockedNumberVariable(String _host_uuid, boolean _peered)
 		{
