@@ -214,6 +214,7 @@ public class Endpoint
 		Timestamp.Builder timestamp_updated = Timestamp.newBuilder();
 		timestamp_updated.setData(current_clock_timestamp);
 		general_message.setTimestampUpdated(timestamp_updated);
+		general_message.setTimestamp(_clock.get_int_timestamp());
 		_conn_obj.write(general_message.build(),this);
 	}
 
@@ -411,7 +412,7 @@ public class Endpoint
 	{
 		GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
 		general_message.setMessageType(GeneralMessage.MessageType.PARTNER_ERROR);
-		
+		general_message.setTimestamp(_clock.get_int_timestamp());
 		PartnerError.Builder error = PartnerError.newBuilder();
 		UUID.Builder msg_evt_uuid = UUID.newBuilder();
 		msg_evt_uuid.setData(event_uuid);
@@ -452,6 +453,9 @@ public class Endpoint
 	 */
 	public void _receive_msg_from_partner(GeneralMessage general_msg)
 	{
+		long tstamp = general_msg.getTimestamp();
+		_clock.check_update_timestamp(tstamp);
+		
         if (general_msg.hasNotifyReady())
         {
         	String endpoint_uuid = general_msg.getNotifyReady().getEndpointUuid().getData();
@@ -575,7 +579,7 @@ public class Endpoint
 	{
 		GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
 		general_message.setMessageType(GeneralMessage.MessageType.PARTNER_NOTIFY_READY);
-		
+		general_message.setTimestamp(_clock.get_int_timestamp());
 		
 		PartnerNotifyReady.Builder partner_notify_ready = PartnerNotifyReady.newBuilder();
 		
@@ -599,7 +603,7 @@ public class Endpoint
 	{
 		GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
 		general_message.setMessageType(GeneralMessage.MessageType.PROMOTION);
-
+		general_message.setTimestamp(_clock.get_int_timestamp());
 		Promotion.Builder promotion_message = Promotion.newBuilder();
 		
 		UtilProto.UUID.Builder event_uuid_builder = UtilProto.UUID.newBuilder();
@@ -646,7 +650,7 @@ public class Endpoint
 	{
 		GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
 		general_message.setMessageType(GeneralMessage.MessageType.PARTNER_FIRST_PHASE_RESULT);
-		
+		general_message.setTimestamp(_clock.get_int_timestamp());
 		PartnerFirstPhaseResultMessage.Builder first_phase_result = PartnerFirstPhaseResultMessage.newBuilder();
 		
 		UtilProto.UUID.Builder event_uuid_msg = UtilProto.UUID.newBuilder();
@@ -685,7 +689,7 @@ public class Endpoint
 	{
 		GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
 		general_message.setMessageType(GeneralMessage.MessageType.PARTNER_FIRST_PHASE_RESULT);
-		
+		general_message.setTimestamp(_clock.get_int_timestamp());
 		PartnerFirstPhaseResultMessage.Builder first_phase_result_msg = PartnerFirstPhaseResultMessage.newBuilder();
 		
 		UtilProto.UUID.Builder event_uuid_msg = UtilProto.UUID.newBuilder();
@@ -910,7 +914,7 @@ public class Endpoint
     {
     	GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
     	general_message.setMessageType(GeneralMessage.MessageType.PARTNER_REQUEST_SEQUENCE_BLOCK);
-
+    	general_message.setTimestamp(_clock.get_int_timestamp());
 
     	PartnerRequestSequenceBlock.Builder request_sequence_block_msg = PartnerRequestSequenceBlock.newBuilder();
     	
@@ -969,7 +973,7 @@ public class Endpoint
 		//# sequence.
     	GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
     	general_message.setMessageType(GeneralMessage.MessageType.PARTNER_COMMIT_REQUEST);
-
+    	general_message.setTimestamp(_clock.get_int_timestamp());
     	PartnerCommitRequest.Builder commit_request_msg = PartnerCommitRequest.newBuilder();
     	UtilProto.UUID.Builder event_uuid_msg = UtilProto.UUID.newBuilder();
     	event_uuid_msg.setData(active_event_uuid);
@@ -1011,7 +1015,7 @@ public class Endpoint
     {
     	GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
     	general_message.setMessageType(GeneralMessage.MessageType.PARTNER_COMPLETE_COMMIT_REQUEST);
-    	
+    	general_message.setTimestamp(_clock.get_int_timestamp());
     	PartnerCompleteCommitRequest.Builder complete_commit_request_msg = PartnerCompleteCommitRequest.newBuilder();
     	
     	UtilProto.UUID.Builder active_event_uuid_msg = UtilProto.UUID.newBuilder();
@@ -1031,7 +1035,7 @@ public class Endpoint
     {
     	GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
     	general_message.setMessageType(GeneralMessage.MessageType.PARTNER_BACKOUT_COMMIT_REQUEST);
-    	
+    	general_message.setTimestamp(_clock.get_int_timestamp());
     	PartnerBackoutCommitRequest.Builder backout_commit_request = PartnerBackoutCommitRequest.newBuilder();
     	UtilProto.UUID.Builder event_uuid_builder = UtilProto.UUID.newBuilder();
     	event_uuid_builder.setData(active_event_uuid);
@@ -1044,7 +1048,7 @@ public class Endpoint
     {
     	GeneralMessage.Builder general_message = GeneralMessage.newBuilder();
     	general_message.setMessageType(GeneralMessage.MessageType.PARTNER_STOP);
-    	
+    	general_message.setTimestamp(_clock.get_int_timestamp());
     	PartnerStop.Builder partner_stop_message = PartnerStop.newBuilder();
     	partner_stop_message.setDummy(false);
     	

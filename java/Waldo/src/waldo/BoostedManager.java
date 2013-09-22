@@ -35,7 +35,7 @@ public class BoostedManager {
         if (event_list.isEmpty())
             evt_priority = EventPriority.generate_boosted_priority(last_boosted_complete);
         else
-            evt_priority = EventPriority.generate_timed_priority(clock.get_timestamp());
+            evt_priority = EventPriority.generate_timed_priority(clock.get_and_increment_timestamp());
 
         RootEventParent rep = 
         		new RootEventParent(act_event_map.local_endpoint,evt_uuid,evt_priority);

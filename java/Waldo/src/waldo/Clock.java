@@ -5,28 +5,41 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Clock {
 	private float delta = 0;
-	private ReentrantLock _delta_mutex = new ReentrantLock();
-	private AllEndpoints all_endpoints = null;
+	protected ReentrantLock _delta_mutex = new ReentrantLock();
+	protected AllEndpoints all_endpoints = null;
 	
 
 	public Clock(AllEndpoints _all_endpoints)
 	{		
 		all_endpoints = _all_endpoints;
 	}
-
+	public String get_and_increment_timestamp()
+	{
+		Util.logger_assert("Error: use only for lamport.");
+		return "";
+	}
 	
 	public Clock(AllEndpoints _all_endpoints,float _initial_delta)
 	{
 		delta = _initial_delta;
 		all_endpoints = _all_endpoints;
 	}
+	public long get_int_timestamp()
+	{
+		Util.logger_assert("Error: clock has no get_int_timestamp.  That's only for lamport.");
+		return 0;
+	}
 	
+	public void check_update_timestamp(long comparison)
+	{
+		Util.logger_assert("Error: clock has no get_int_timestamp.  That's only for lamport.");
+	}
 	
-    private void _delta_lock()
+    protected void _delta_lock()
     {
     	_delta_mutex.lock();
     }
-    private void _delta_unlock()
+    protected void _delta_unlock()
     {
         _delta_mutex.unlock();
     }

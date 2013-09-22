@@ -20,7 +20,7 @@ public class Util {
 	 */
 	public static int MEDIUM_QUEUE_CAPACITIES = 10;
 
-	public static int DEFAULT_NUM_THREADS = 10;
+	public static int DEFAULT_NUM_THREADS = 70;
 	
 	/**
 	 * 	Takes in the name of the function that another endpoint has

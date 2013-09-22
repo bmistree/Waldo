@@ -16,7 +16,7 @@ public class WaldoGlobals {
 	public WaldoGlobals()
 	{
 		all_endpoints = new AllEndpoints();
-		clock = new Clock(all_endpoints);
+		clock = new LamportClock(all_endpoints);
 		thread_pool = new ThreadPool(Util.DEFAULT_NUM_THREADS);		
 	}
 

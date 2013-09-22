@@ -53,4 +53,6 @@ message GeneralMessage
     optional Heartbeat heartbeat = 14;
     optional Promotion promotion = 15;
     optional Timestamp timestamp_updated = 16;
+    
+    required uint64 timestamp = 17;
 }

@@ -89,6 +89,10 @@ public final class GeneralMessageProto {
     boolean hasTimestampUpdated();
     waldo_protobuffs.UtilProto.Timestamp getTimestampUpdated();
     waldo_protobuffs.UtilProto.TimestampOrBuilder getTimestampUpdatedOrBuilder();
+    
+    // required uint64 timestamp = 17;
+    boolean hasTimestamp();
+    long getTimestamp();
   }
   public static final class GeneralMessage extends
       com.google.protobuf.GeneratedMessage
@@ -432,6 +436,16 @@ public final class GeneralMessageProto {
       return timestampUpdated_;
     }
     
+    // required uint64 timestamp = 17;
+    public static final int TIMESTAMP_FIELD_NUMBER = 17;
+    private long timestamp_;
+    public boolean hasTimestamp() {
+      return ((bitField0_ & 0x00010000) == 0x00010000);
+    }
+    public long getTimestamp() {
+      return timestamp_;
+    }
+    
     private void initFields() {
       messageType_ = waldo_protobuffs.GeneralMessageProto.GeneralMessage.MessageType.PARTNER_NOTIFY_READY;
       notifyReady_ = waldo_protobuffs.PartnerNotifyReadyProto.PartnerNotifyReady.getDefaultInstance();
@@ -449,6 +463,7 @@ public final class GeneralMessageProto {
       heartbeat_ = waldo_protobuffs.HeartbeatProto.Heartbeat.getDefaultInstance();
       promotion_ = waldo_protobuffs.PromotionProto.Promotion.getDefaultInstance();
       timestampUpdated_ = waldo_protobuffs.UtilProto.Timestamp.getDefaultInstance();
+      timestamp_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -456,6 +471,10 @@ public final class GeneralMessageProto {
       if (isInitialized != -1) return isInitialized == 1;
       
       if (!hasMessageType()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasTimestamp()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -604,6 +623,9 @@ public final class GeneralMessageProto {
       if (((bitField0_ & 0x00008000) == 0x00008000)) {
         output.writeMessage(16, timestampUpdated_);
       }
+      if (((bitField0_ & 0x00010000) == 0x00010000)) {
+        output.writeUInt64(17, timestamp_);
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -676,6 +698,10 @@ public final class GeneralMessageProto {
       if (((bitField0_ & 0x00008000) == 0x00008000)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(16, timestampUpdated_);
+      }
+      if (((bitField0_ & 0x00010000) == 0x00010000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt64Size(17, timestamp_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -908,6 +934,8 @@ public final class GeneralMessageProto {
           timestampUpdatedBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00008000);
+        timestamp_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00010000);
         return this;
       }
       
@@ -1070,6 +1098,10 @@ public final class GeneralMessageProto {
         } else {
           result.timestampUpdated_ = timestampUpdatedBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00010000) == 0x00010000)) {
+          to_bitField0_ |= 0x00010000;
+        }
+        result.timestamp_ = timestamp_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1134,12 +1166,19 @@ public final class GeneralMessageProto {
         if (other.hasTimestampUpdated()) {
           mergeTimestampUpdated(other.getTimestampUpdated());
         }
+        if (other.hasTimestamp()) {
+          setTimestamp(other.getTimestamp());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
       
       public final boolean isInitialized() {
         if (!hasMessageType()) {
+          
+          return false;
+        }
+        if (!hasTimestamp()) {
           
           return false;
         }
@@ -1403,6 +1442,11 @@ public final class GeneralMessageProto {
               }
               input.readMessage(subBuilder, extensionRegistry);
               setTimestampUpdated(subBuilder.buildPartial());
+              break;
+            }
+            case 136: {
+              bitField0_ |= 0x00010000;
+              timestamp_ = input.readUInt64();
               break;
             }
           }
@@ -2785,6 +2829,27 @@ public final class GeneralMessageProto {
         return timestampUpdatedBuilder_;
       }
       
+      // required uint64 timestamp = 17;
+      private long timestamp_ ;
+      public boolean hasTimestamp() {
+        return ((bitField0_ & 0x00010000) == 0x00010000);
+      }
+      public long getTimestamp() {
+        return timestamp_;
+      }
+      public Builder setTimestamp(long value) {
+        bitField0_ |= 0x00010000;
+        timestamp_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearTimestamp() {
+        bitField0_ = (bitField0_ & ~0x00010000);
+        timestamp_ = 0L;
+        onChanged();
+        return this;
+      }
+      
       // @@protoc_insertion_point(builder_scope:GeneralMessage)
     }
     
@@ -2821,7 +2886,7 @@ public final class GeneralMessageProto {
       "teCommitRequest.proto\032\032partnerCommitRequ" +
       "est.proto\032\021partnerStop.proto\032\022partnerErr",
       "or.proto\032\017heartbeat.proto\032\026promotionMess" +
-      "age.proto\032\nutil.proto\"\202\n\n\016GeneralMessage" +
+      "age.proto\032\nutil.proto\"\225\n\n\016GeneralMessage" +
       "\0221\n\014message_type\030\001 \002(\0162\033.GeneralMessage." +
       "MessageType\022)\n\014notify_ready\030\002 \001(\0132\023.Part" +
       "nerNotifyReady\022N\n\036notify_of_peered_modif" +
@@ -2842,19 +2907,20 @@ public final class GeneralMessageProto {
       "p\022\034\n\005error\030\r \001(\0132\r.PartnerError\022\035\n\theart",
       "beat\030\016 \001(\0132\n.Heartbeat\022\035\n\tpromotion\030\017 \001(" +
       "\0132\n.Promotion\022%\n\021timestamp_updated\030\020 \001(\013" +
-      "2\n.Timestamp\"\303\003\n\013MessageType\022\030\n\024PARTNER_" +
-      "NOTIFY_READY\020\000\022.\n*PARTNER_NOTIFY_OF_PEER" +
-      "ED_MODIFIED_RESPONSE\020\001\022\"\n\036PARTNER_REQUES" +
-      "T_SEQUENCE_BLOCK\020\002\022%\n!PARTNER_NOTIFY_OF_" +
-      "PEERED_MODIFIED\020\003\022\036\n\032PARTNER_FIRST_PHASE" +
-      "_RESULT\020\004\022!\n\035PARTNER_ADDITIONAL_SUBSCRIB" +
-      "ER\020\005\022\036\n\032PARTNER_REMOVED_SUBSCRIBER\020\006\022\"\n\036" +
-      "PARTNER_BACKOUT_COMMIT_REQUEST\020\007\022#\n\037PART",
-      "NER_COMPLETE_COMMIT_REQUEST\020\010\022\032\n\026PARTNER" +
-      "_COMMIT_REQUEST\020\t\022\020\n\014PARTNER_STOP\020\n\022\021\n\rP" +
-      "ARTNER_ERROR\020\013\022\r\n\tHEARTBEAT\020\014\022\r\n\tPROMOTI" +
-      "ON\020\r\022\024\n\020TIMESTAMP_UPDATE\020\016B\'\n\020waldo_prot" +
-      "obuffsB\023GeneralMessageProto"
+      "2\n.Timestamp\022\021\n\ttimestamp\030\021 \002(\004\"\303\003\n\013Mess" +
+      "ageType\022\030\n\024PARTNER_NOTIFY_READY\020\000\022.\n*PAR" +
+      "TNER_NOTIFY_OF_PEERED_MODIFIED_RESPONSE\020" +
+      "\001\022\"\n\036PARTNER_REQUEST_SEQUENCE_BLOCK\020\002\022%\n" +
+      "!PARTNER_NOTIFY_OF_PEERED_MODIFIED\020\003\022\036\n\032" +
+      "PARTNER_FIRST_PHASE_RESULT\020\004\022!\n\035PARTNER_" +
+      "ADDITIONAL_SUBSCRIBER\020\005\022\036\n\032PARTNER_REMOV" +
+      "ED_SUBSCRIBER\020\006\022\"\n\036PARTNER_BACKOUT_COMMI",
+      "T_REQUEST\020\007\022#\n\037PARTNER_COMPLETE_COMMIT_R" +
+      "EQUEST\020\010\022\032\n\026PARTNER_COMMIT_REQUEST\020\t\022\020\n\014" +
+      "PARTNER_STOP\020\n\022\021\n\rPARTNER_ERROR\020\013\022\r\n\tHEA" +
+      "RTBEAT\020\014\022\r\n\tPROMOTION\020\r\022\024\n\020TIMESTAMP_UPD" +
+      "ATE\020\016B\'\n\020waldo_protobuffsB\023GeneralMessag" +
+      "eProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -2866,7 +2932,7 @@ public final class GeneralMessageProto {
           internal_static_GeneralMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_GeneralMessage_descriptor,
-              new java.lang.String[] { "MessageType", "NotifyReady", "NotifyOfPeeredModifiedResp", "RequestSequenceBlock", "NotifyOfPeeredModified", "FirstPhaseResult", "AdditionalSubscriber", "RemovedSubscriber", "BackoutCommitRequest", "CompleteCommitRequest", "CommitRequest", "Stop", "Error", "Heartbeat", "Promotion", "TimestampUpdated", },
+              new java.lang.String[] { "MessageType", "NotifyReady", "NotifyOfPeeredModifiedResp", "RequestSequenceBlock", "NotifyOfPeeredModified", "FirstPhaseResult", "AdditionalSubscriber", "RemovedSubscriber", "BackoutCommitRequest", "CompleteCommitRequest", "CommitRequest", "Stop", "Error", "Heartbeat", "Promotion", "TimestampUpdated", "Timestamp", },
               waldo_protobuffs.GeneralMessageProto.GeneralMessage.class,
               waldo_protobuffs.GeneralMessageProto.GeneralMessage.Builder.class);
           return null;
